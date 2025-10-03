@@ -2156,6 +2156,10 @@ SPACE(NULL);
 VARCHAR;
 
 # dialect: snowflake
+SQRT(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 SPLIT('hello world', ' ');
 ARRAY;
 

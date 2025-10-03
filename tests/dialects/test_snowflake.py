@@ -816,6 +816,7 @@ class TestSnowflake(Validator):
                 "tsql": "SQUARE(x)",
             },
         )
+        self.validate_identity("SELECT SQRT(x)")
         self.validate_all(
             "DIV0(foo, bar)",
             write={

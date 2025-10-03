@@ -50,6 +50,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT UNICODE(column_name)")
         self.validate_identity("SELECT SPLIT_PART('11.22.33', '.', 1)")
+        self.validate_identity("SELECT * FROM TABLE(SPLIT_TO_TABLE('a.b', '.'))")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
         self.validate_identity("SELECT {*} FROM my_table")

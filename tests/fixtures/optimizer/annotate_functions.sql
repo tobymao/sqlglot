@@ -2172,6 +2172,10 @@ SPLIT_PART('11.22.33', '.', 1);
 VARCHAR;
 
 # dialect: snowflake
+SPLIT_TO_TABLE('a.b', '.');
+ARRAY;
+
+# dialect: snowflake
 STRTOK('hello world');
 VARCHAR;
 

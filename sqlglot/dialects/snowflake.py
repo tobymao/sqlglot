@@ -603,6 +603,7 @@ class Snowflake(Dialect):
             exp.Split,
             exp.RegexpExtractAll,
             exp.StringToArray,
+            exp.SplitToTable,
         },
         exp.DataType.Type.OBJECT: {
             exp.ParseUrl,

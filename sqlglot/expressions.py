@@ -6790,6 +6790,13 @@ class JSONTable(Func):
     }
 
 
+class SplitToTable(Func):
+    arg_types = {
+        "this": True,
+        "delimiter": True,
+    }
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_type
 # https://doris.apache.org/docs/sql-manual/sql-functions/scalar-functions/json-functions/json-type#description
 class JSONType(Func):

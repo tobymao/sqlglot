@@ -867,6 +867,8 @@ class BigQuery(Dialect):
             "FROM_HEX": exp.Unhex.from_arg_list,
             "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
         }
+        # Remove SEARCH to avoid parameter routing issues - let it fall back to Anonymous function
+        FUNCTIONS.pop("SEARCH")
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,

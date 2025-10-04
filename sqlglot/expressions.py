@@ -5385,7 +5385,7 @@ class TimeUnit(Expression):
 
     def __init__(self, **args):
         unit = args.get("unit")
-        if type(unit) in self.VAR_LIKE:
+        if type(unit) in self.VAR_LIKE and not (isinstance(unit, Column) and len(unit.parts) != 1):
             args["unit"] = Var(
                 this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper()
             )
@@ -6172,7 +6172,9 @@ class DateTrunc(Func):
         unabbreviate = args.pop("unabbreviate", True)
 
         unit = args.get("unit")
-        if isinstance(unit, TimeUnit.VAR_LIKE):
+        if isinstance(unit, TimeUnit.VAR_LIKE) and not (
+            isinstance(unit, Column) and len(unit.parts) != 1
+        ):
             unit_name = unit.name.upper()
             if unabbreviate and unit_name in TimeUnit.UNABBREVIATED_UNIT_NAME:
                 unit_name = TimeUnit.UNABBREVIATED_UNIT_NAME[unit_name]

@@ -1640,6 +1640,22 @@ DECOMPRESS_STRING('compressed_data', 'ZSTD');
 VARCHAR;
 
 # dialect: snowflake
+DIV0(10, 0);
+DOUBLE;
+
+# dialect: snowflake
+DIV0(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+DIV0NULL(10, 0);
+DOUBLE;
+
+# dialect: snowflake
+DIV0NULL(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 LPAD('Hello', 10, '*');
 VARCHAR;
 

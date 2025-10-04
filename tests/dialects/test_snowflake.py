@@ -58,15 +58,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT {* EXCLUDE (col1)} FROM my_table")
         self.validate_identity("SELECT {* EXCLUDE (col1, col2)} FROM my_table")
         self.validate_identity("SELECT a, b, COUNT(*) FROM x GROUP BY ALL LIMIT 100")
-        self.validate_identity(
-            "SELECT STRTOK('hello world')", "SELECT SPLIT_PART('hello world', ' ', 1)"
-        )
-        self.validate_identity(
-            "SELECT STRTOK('hello world', ' ')", "SELECT SPLIT_PART('hello world', ' ', 1)"
-        )
-        self.validate_identity(
-            "SELECT STRTOK('hello world', ' ', 2)", "SELECT SPLIT_PART('hello world', ' ', 2)"
-        )
         self.validate_identity("STRTOK_TO_ARRAY('a b c')")
         self.validate_identity("STRTOK_TO_ARRAY('a.b.c', '.')")
         self.validate_identity("GET(a, b)")
@@ -135,6 +126,18 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET_PATH(foo, 'bar')")
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
+        self.validate_identity(
+            "SELECT DATEADD(DAY, -7, DATEADD(t.m, 1, CAST('2023-01-03' AS DATE))) FROM (SELECT 'month' AS m) AS t"
+        ).selects[0].this.unit.assert_is(exp.Column)
+        self.validate_identity(
+            "SELECT STRTOK('hello world')", "SELECT SPLIT_PART('hello world', ' ', 1)"
+        )
+        self.validate_identity(
+            "SELECT STRTOK('hello world', ' ')", "SELECT SPLIT_PART('hello world', ' ', 1)"
+        )
+        self.validate_identity(
+            "SELECT STRTOK('hello world', ' ', 2)", "SELECT SPLIT_PART('hello world', ' ', 2)"
+        )
         self.validate_identity("SELECT FILE_URL FROM DIRECTORY(@mystage) WHERE SIZE > 100000").args[
             "from"
         ].this.this.assert_is(exp.DirectoryStage).this.assert_is(exp.Var)

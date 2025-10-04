@@ -1715,7 +1715,7 @@ def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart)):
+    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
         return unit
 
     value = unit.name if unit else default
@@ -1736,7 +1736,9 @@ def map_date_part(
 
 def map_date_part(part, dialect: DialectType = Dialect):
     mapped = (
-        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper()) if part else None
+        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper())
+        if part and not (isinstance(part, exp.Column) and len(part.parts) != 1)
+        else None
     )
     if mapped:
         return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)

@@ -8,6 +8,7 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity(
             "select count() OVER(partition by a order by a range offset preceding exclude current row)",
             "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",

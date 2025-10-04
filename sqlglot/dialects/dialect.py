@@ -525,6 +525,13 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    ALTER_TABLE_SUPPORTS_CASCADE = False
+    """
+    Hive by default does not update the schema of existing partitions when a column is changed.
+    the CASCADE clause is used to indicate that the change should be propagated to all existing partitions.
+    the Spark dialect, while derived from Hive, does not support the CASCADE clause.
+    """
+
     # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 

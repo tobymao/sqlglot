@@ -211,6 +211,14 @@ class Hive(Dialect):
     SAFE_DIVISION = True
     ARRAY_AGG_INCLUDES_NULLS = None
     REGEXP_EXTRACT_DEFAULT_GROUP = 1
+    ALTER_TABLE_SUPPORTS_CASCADE = True
+    CHANGE_COLUMN_STYLE = "HIVE"
+    """
+    Spark and its derivatives support both the Hive style CHANGE COLUMN syntax and more traditional ALTER/RENAME COLUMN syntax. Spark also
+    accepts ALTER COLUMN syntax when using the CHANGE COLUMN keyword but not vice versa. The Parser needs to be able to handle both styles
+    for Spark dialects and the Generator will use ALTER COLUMN syntax when possible. This also means that there are circumstances where it's
+    not possible to transpile commands from Spark to Hive due to missing information (e.g. missing data types).
+    """
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -310,6 +318,7 @@ class Hive(Dialect):
         VALUES_FOLLOWED_BY_PAREN = False
         JOINS_HAVE_EQUAL_PRECEDENCE = True
         ADD_JOIN_ON_TRUE = True
+        ALTER_TABLE_PARTITIONS = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -376,6 +385,17 @@ class Hive(Dialect):
             "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
+        }
+
+        ALTER_PARSERS = {
+            "ADD": lambda self: self._parse_alter_table_add(),
+            "AS": lambda self: self._parse_select(),
+            "CHANGE": lambda self: self._parse_alter_table_change(),
+            "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
+            "DROP": lambda self: self._parse_alter_table_drop(),
+            "PARTITION": lambda self: self._parse_alter_table_partition(),
+            "RENAME": lambda self: self._parse_alter_table_rename(),
+            "SET": lambda self: self._parse_alter_table_set(),
         }
 
         def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
@@ -451,6 +471,37 @@ class Hive(Dialect):
 
             return this
 
+        def _parse_alter_table_change(self) -> t.Optional[exp.Expression]:
+            self._match(TokenType.COLUMN)
+            this = self._parse_column()
+
+            if self.dialect.CHANGE_COLUMN_STYLE == "SPARK" and self._match_text_seq("TYPE"):
+                return self.expression(
+                    exp.AlterColumn,
+                    this=this,
+                    dtype=self._parse_types(schema=True),
+                )
+
+            column_new = self._parse_column()
+            dtype = self._parse_types(schema=True)
+
+            comment = None
+            if self._match(TokenType.COMMENT):
+                comment = self._parse_string()
+
+            if not this or not column_new or not dtype:
+                self.raise_error(
+                    "Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'"
+                )
+
+            return self.expression(
+                exp.AlterColumn,
+                this=this,
+                rename_to=column_new,
+                dtype=dtype,
+                comment=comment,
+            )
+
         def _parse_partition_and_order(
             self,
         ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
@@ -500,6 +551,7 @@ class Hive(Dialect):
         PAD_FILL_PATTERN_IS_REQUIRED = True
         SUPPORTS_MEDIAN = False
         ARRAY_SIZE_NAME = "SIZE"
+        ALTER_SET_TYPE = ""
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,
@@ -757,6 +809,34 @@ class Hive(Dialect):
                 ),
             )
 
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            this = self.sql(expression, "this")
+            new_name = self.sql(expression, "rename_to") or this
+            dtype = self.sql(expression, "dtype")
+            comment = (
+                f" COMMENT {self.sql(expression, 'comment')}"
+                if self.sql(expression, "comment")
+                else ""
+            )
+            default = self.sql(expression, "default")
+            visible = expression.args.get("visible")
+            allow_null = expression.args.get("allow_null")
+            drop = expression.args.get("drop")
+
+            if any([default, drop, visible, allow_null, drop]):
+                self.unsupported("Unsupported CHANGE COLUMN syntax")
+            if self.dialect.CHANGE_COLUMN_STYLE == "SPARK":
+                if new_name == this:
+                    if comment:
+                        return f"ALTER COLUMN {this}{comment}"
+                    return super().altercolumn_sql(expression)
+                return f"RENAME COLUMN {this} TO {new_name}"
+
+            if not dtype:
+                self.unsupported("CHANGE COLUMN without a type is not supported")
+
+            return f"CHANGE COLUMN {this} {new_name} {dtype}{comment}"
+
         def alterset_sql(self, expression: exp.AlterSet) -> str:
             exprs = self.expressions(expression, flat=True)
             exprs = f" {exprs}" if exprs else ""
@@ -770,6 +850,14 @@ class Hive(Dialect):
             tags = f" TAGS {tags}" if tags else ""
 
             return f"SET{serde}{exprs}{location}{file_format}{tags}"
+
+        def alter_sql(self, expression: exp.Alter) -> str:
+            if self.dialect.CHANGE_COLUMN_STYLE == "HIVE":
+                actions = expression.args["actions"]
+                for action in actions:
+                    if isinstance(action, exp.RenameColumn):
+                        self.unsupported("Cannot rename columns without data type defined in Hive")
+            return super().alter_sql(expression)
 
         def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
             prefix = "WITH " if expression.args.get("with") else ""

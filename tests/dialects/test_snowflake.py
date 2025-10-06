@@ -2463,7 +2463,43 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_EXTRACT_ALL(subject, pattern)",
         )
 
-        self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l')")
+        self.validate_identity("SELECT SEARCH((play, line), 'dream')")
+        self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
+        self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
+        self.validate_identity(
+            "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
+        )
+
+        # AST validation tests - verify argument mapping
+        ast = self.validate_identity("SELECT SEARCH(line, 'king')")
+        search_ast = ast.find(exp.Search)
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertIsNone(search_ast.args.get("analyzer"))
+        self.assertIsNone(search_ast.args.get("search_mode"))
+
+        ast = self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
+        search_ast = ast.find(exp.Search)
+        self.assertIsNotNone(search_ast.args.get("analyzer"))
+        self.assertIsNone(search_ast.args.get("search_mode"))
+
+        ast = self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
+        search_ast = ast.find(exp.Search)
+        self.assertIsNone(search_ast.args.get("analyzer"))
+        self.assertIsNotNone(search_ast.args.get("search_mode"))
+
+        # Test with arguments in different order (search_mode first, then analyzer)
+        ast = self.validate_identity(
+            "SELECT SEARCH(line, 'king', SEARCH_MODE => 'AND', ANALYZER => 'PATTERN_ANALYZER')",
+            "SELECT SEARCH(line, 'king', ANALYZER => 'PATTERN_ANALYZER', SEARCH_MODE => 'AND')",
+        )
+        search_ast = ast.find(exp.Search)
+        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        analyzer = search_ast.args.get("analyzer")
+        self.assertIsNotNone(analyzer)
+        search_mode = search_ast.args.get("search_mode")
+        self.assertIsNotNone(search_mode)
+
+        self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l ')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")
 

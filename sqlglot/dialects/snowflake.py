@@ -168,6 +168,33 @@ def _build_if_from_zeroifnull(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
 
 
+def _build_search(args: t.List) -> exp.Search:
+    arg2 = seq_get(args, 2)
+    arg3 = seq_get(args, 3)
+
+    analyzer_val = None
+    search_mode_val = None
+
+    if arg2 and isinstance(arg2, exp.Kwarg):
+        if arg2.this.name.lower() == "analyzer":
+            analyzer_val = arg2
+        elif arg2.this.name.lower() == "search_mode":
+            search_mode_val = arg2
+
+    if arg3 and isinstance(arg3, exp.Kwarg):
+        if arg3.this.name.lower() == "analyzer":
+            analyzer_val = arg3
+        elif arg3.this.name.lower() == "search_mode":
+            search_mode_val = arg3
+
+    return exp.Search(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        analyzer=analyzer_val,
+        search_mode=search_mode_val,
+    )
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _build_if_from_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
@@ -622,6 +649,13 @@ class Snowflake(Dialect):
             exp.ParseUrl,
             exp.ParseIp,
         },
+        exp.DataType.Type.DECIMAL: {
+            exp.RegexpCount,
+        },
+        exp.DataType.Type.BOOLEAN: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
+            exp.Search,
+        },
     }
 
     ANNOTATORS = {
@@ -834,6 +868,7 @@ class Snowflake(Dialect):
             "ZEROIFNULL": _build_if_from_zeroifnull,
             "LIKE": _build_like(exp.Like),
             "ILIKE": _build_like(exp.ILike),
+            "SEARCH": _build_search,
         }
         FUNCTIONS.pop("PREDICT")
 

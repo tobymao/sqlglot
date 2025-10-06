@@ -5549,6 +5549,10 @@ class Sinh(Func):
     pass
 
 
+class Tan(Func):
+    pass
+
+
 class CosineDistance(Func):
     arg_types = {"this": True, "expression": True}
 

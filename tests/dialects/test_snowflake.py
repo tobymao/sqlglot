@@ -2473,7 +2473,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         # AST validation tests - verify argument mapping
         ast = self.validate_identity("SELECT SEARCH(line, 'king')")
         search_ast = ast.find(exp.Search)
-        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertEqual(list(search_ast.args), ["this", "expression"])
         self.assertIsNone(search_ast.args.get("analyzer"))
         self.assertIsNone(search_ast.args.get("search_mode"))
 
@@ -2493,7 +2493,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT SEARCH(line, 'king', ANALYZER => 'PATTERN_ANALYZER', SEARCH_MODE => 'AND')",
         )
         search_ast = ast.find(exp.Search)
-        self.assertEqual(list(search_ast.args), ["this", "expression", "analyzer", "search_mode"])
+        self.assertEqual(list(search_ast.args), ["this", "expression", "search_mode", "analyzer"])
         analyzer = search_ast.args.get("analyzer")
         self.assertIsNotNone(analyzer)
         search_mode = search_ast.args.get("search_mode")

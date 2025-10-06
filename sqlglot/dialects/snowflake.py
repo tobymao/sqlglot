@@ -148,6 +148,20 @@ def _build_if_from_div0(args: t.List) -> exp.If:
     return exp.If(this=cond, true=true, false=false)
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/div0null
+def _build_if_from_div0null(args: t.List) -> exp.If:
+    lhs = exp._wrap(seq_get(args, 0), exp.Binary)
+    rhs = exp._wrap(seq_get(args, 1), exp.Binary)
+
+    # Returns 0 when divisor is 0 OR NULL
+    cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).or_(
+        exp.Is(this=rhs, expression=exp.null())
+    )
+    true = exp.Literal.number(0)
+    false = exp.Div(this=lhs, expression=rhs)
+    return exp.If(this=cond, true=true, false=false)
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _build_if_from_zeroifnull(args: t.List) -> exp.If:
     cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
@@ -746,6 +760,7 @@ class Snowflake(Dialect):
             "DATEDIFF": _build_datediff,
             "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,
             "DIV0": _build_if_from_div0,
+            "DIV0NULL": _build_if_from_div0null,
             "EDITDISTANCE": lambda args: exp.Levenshtein(
                 this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
             ),

@@ -169,30 +169,12 @@ def _build_if_from_zeroifnull(args: t.List) -> exp.If:
 
 
 def _build_search(args: t.List) -> exp.Search:
-    arg2 = seq_get(args, 2)
-    arg3 = seq_get(args, 3)
-
-    analyzer_val = None
-    search_mode_val = None
-
-    if arg2 and isinstance(arg2, exp.Kwarg):
-        if arg2.this.name.lower() == "analyzer":
-            analyzer_val = arg2
-        elif arg2.this.name.lower() == "search_mode":
-            search_mode_val = arg2
-
-    if arg3 and isinstance(arg3, exp.Kwarg):
-        if arg3.this.name.lower() == "analyzer":
-            analyzer_val = arg3
-        elif arg3.this.name.lower() == "search_mode":
-            search_mode_val = arg3
-
-    return exp.Search(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        analyzer=analyzer_val,
-        search_mode=search_mode_val,
-    )
+    kwargs = {
+        "this": seq_get(args, 0),
+        "expression": seq_get(args, 1),
+        **{arg.name.lower(): arg for arg in args[2:] if isinstance(arg, exp.Kwarg)},
+    }
+    return exp.Search(**kwargs)
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull

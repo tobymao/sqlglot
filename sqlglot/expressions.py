@@ -5525,6 +5525,10 @@ class Coth(Func):
     pass
 
 
+class Cos(Func):
+    pass
+
+
 class Csc(Func):
     pass
 

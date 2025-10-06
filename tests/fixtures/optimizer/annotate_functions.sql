@@ -1696,6 +1696,10 @@ COT(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+COS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 

@@ -7281,6 +7281,10 @@ class RegexpILike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
+class RegexpFullMatch(Binary, Func):
+    arg_types = {"this": True, "expression": True, "options": False}
+
+
 class RegexpInstr(Func):
     arg_types = {
         "this": True,

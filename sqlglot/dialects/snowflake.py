@@ -153,10 +153,11 @@ def _build_if_from_div0null(args: t.List) -> exp.If:
     lhs = exp._wrap(seq_get(args, 0), exp.Binary)
     rhs = exp._wrap(seq_get(args, 1), exp.Binary)
 
-    cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).and_(
-        exp.Is(this=lhs, expression=exp.null()).not_()
+    # Returns 0 when divisor is 0 OR NULL
+    cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).or_(
+        exp.Is(this=rhs, expression=exp.null())
     )
-    true = exp.null()
+    true = exp.Literal.number(0)
     false = exp.Div(this=lhs, expression=rhs)
     return exp.If(this=cond, true=true, false=false)
 

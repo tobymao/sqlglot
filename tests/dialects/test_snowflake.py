@@ -841,23 +841,23 @@ class TestSnowflake(Validator):
         self.validate_all(
             "DIV0NULL(foo, bar)",
             write={
-                "snowflake": "IFF(bar = 0 AND NOT foo IS NULL, NULL, foo / bar)",
-                "sqlite": "IIF(bar = 0 AND NOT foo IS NULL, NULL, CAST(foo AS REAL) / bar)",
-                "presto": "IF(bar = 0 AND NOT foo IS NULL, NULL, CAST(foo AS DOUBLE) / bar)",
-                "spark": "IF(bar = 0 AND NOT foo IS NULL, NULL, foo / bar)",
-                "hive": "IF(bar = 0 AND NOT foo IS NULL, NULL, foo / bar)",
-                "duckdb": "CASE WHEN bar = 0 AND NOT foo IS NULL THEN NULL ELSE foo / bar END",
+                "snowflake": "IFF(bar = 0 OR bar IS NULL, 0, foo / bar)",
+                "sqlite": "IIF(bar = 0 OR bar IS NULL, 0, CAST(foo AS REAL) / bar)",
+                "presto": "IF(bar = 0 OR bar IS NULL, 0, CAST(foo AS DOUBLE) / bar)",
+                "spark": "IF(bar = 0 OR bar IS NULL, 0, foo / bar)",
+                "hive": "IF(bar = 0 OR bar IS NULL, 0, foo / bar)",
+                "duckdb": "CASE WHEN bar = 0 OR bar IS NULL THEN 0 ELSE foo / bar END",
             },
         )
         self.validate_all(
             "DIV0NULL(a - b, c - d)",
             write={
-                "snowflake": "IFF((c - d) = 0 AND NOT (a - b) IS NULL, NULL, (a - b) / (c - d))",
-                "sqlite": "IIF((c - d) = 0 AND NOT (a - b) IS NULL, NULL, CAST((a - b) AS REAL) / (c - d))",
-                "presto": "IF((c - d) = 0 AND NOT (a - b) IS NULL, NULL, CAST((a - b) AS DOUBLE) / (c - d))",
-                "spark": "IF((c - d) = 0 AND NOT (a - b) IS NULL, NULL, (a - b) / (c - d))",
-                "hive": "IF((c - d) = 0 AND NOT (a - b) IS NULL, NULL, (a - b) / (c - d))",
-                "duckdb": "CASE WHEN (c - d) = 0 AND NOT (a - b) IS NULL THEN NULL ELSE (a - b) / (c - d) END",
+                "snowflake": "IFF((c - d) = 0 OR (c - d) IS NULL, 0, (a - b) / (c - d))",
+                "sqlite": "IIF((c - d) = 0 OR (c - d) IS NULL, 0, CAST((a - b) AS REAL) / (c - d))",
+                "presto": "IF((c - d) = 0 OR (c - d) IS NULL, 0, CAST((a - b) AS DOUBLE) / (c - d))",
+                "spark": "IF((c - d) = 0 OR (c - d) IS NULL, 0, (a - b) / (c - d))",
+                "hive": "IF((c - d) = 0 OR (c - d) IS NULL, 0, (a - b) / (c - d))",
+                "duckdb": "CASE WHEN (c - d) = 0 OR (c - d) IS NULL THEN 0 ELSE (a - b) / (c - d) END",
             },
         )
         self.validate_all(

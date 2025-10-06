@@ -1684,6 +1684,10 @@ COLLATION('hello');
 VARCHAR;
 
 # dialect: snowflake
+COT(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 CONCAT('Hello', 'World!');
 VARCHAR;
 
@@ -2152,6 +2156,10 @@ SHA2_HEX('foo', null);
 VARCHAR;
 
 # dialect: snowflake
+SIN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 SOUNDEX(tbl.str_col);
 VARCHAR;
 
@@ -2258,6 +2266,10 @@ BINARY;
 # dialect: snowflake
 SUBSTR(tbl.str_col, NULL);
 STRING;
+
+# dialect: snowflake
+TAN(tbl.double_col);
+DOUBLE;
 
 # dialect: snowflake
 TRANSLATE('hello world', 'elo', 'XYZ');

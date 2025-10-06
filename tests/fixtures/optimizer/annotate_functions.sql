@@ -1536,6 +1536,14 @@ STRUCT<str_col STRING>;
 --------------------------------------
 
 # dialect: snowflake
+ABS(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+ABS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 AI_AGG('foo', 'bar');
 VARCHAR;
 
@@ -2158,6 +2166,10 @@ VARCHAR;
 # dialect: snowflake
 SIN(tbl.double_col);
 DOUBLE;
+
+# dialect: snowflake
+SIGN(tbl.double_col);
+INT;
 
 # dialect: snowflake
 SOUNDEX(tbl.str_col);

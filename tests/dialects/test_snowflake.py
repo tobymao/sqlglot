@@ -47,6 +47,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RPAD(tbl.bin_col, 10)")
         self.validate_identity("SELECT SOUNDEX(column_name)")
         self.validate_identity("SELECT SOUNDEX_P123(column_name)")
+        self.validate_identity("SELECT ABS(x)")
+        self.validate_identity("SELECT SIGN(x)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT UNICODE(column_name)")

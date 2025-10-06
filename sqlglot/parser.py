@@ -4743,11 +4743,15 @@ class Parser(metaclass=_Parser):
             exp.Ordered, this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill
         )
 
-    def _parse_limit_options(self) -> exp.LimitOptions:
-        percent = self._match(TokenType.PERCENT)
+    def _parse_limit_options(self) -> t.Optional[exp.LimitOptions]:
+        percent = self._match_set((TokenType.PERCENT, TokenType.MOD))
         rows = self._match_set((TokenType.ROW, TokenType.ROWS))
         self._match_text_seq("ONLY")
         with_ties = self._match_text_seq("WITH", "TIES")
+
+        if not (percent or rows or with_ties):
+            return None
+
         return self.expression(exp.LimitOptions, percent=percent, rows=rows, with_ties=with_ties)
 
     def _parse_limit(
@@ -4765,10 +4769,13 @@ class Parser(metaclass=_Parser):
                 if limit_paren:
                     self._match_r_paren()
 
-                limit_options = self._parse_limit_options()
             else:
-                limit_options = None
-                expression = self._parse_term()
+                # Parsing LIMIT x% (i.e x PERCENT) as a term leads to an error, since
+                # we try to build an exp.Mod expr. For that matter, we backtrack and instead
+                # consume the factor plus parse the percentage separately
+                expression = self._try_parse(self._parse_term) or self._parse_factor()
+
+            limit_options = self._parse_limit_options()
 
             if self._match(TokenType.COMMA):
                 offset = expression

@@ -461,7 +461,9 @@ class TestDuckDB(Validator):
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
-        self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
+        self.validate_identity("x ~ y", "REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("x !~ y", "NOT REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
             "SELECT LIST(DISTINCT sample_col) FROM sample_table",

@@ -63,7 +63,10 @@ class TestSnowflake(Validator):
         self.validate_identity("GET(a, b)")
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
-        self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
+        self.validate_identity(
+            "SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))",
+            "SELECT CAST([1, 2, 3] AS VECTOR(DOUBLE, 3))",
+        )
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
@@ -111,7 +114,7 @@ class TestSnowflake(Validator):
         self.validate_identity("$x")  # parameter
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
-        self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
+        self.validate_identity("CREATE TABLE foo (bar DOUBLE AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
@@ -3289,3 +3292,11 @@ FROM SEMANTIC_VIEW(
         self.validate_identity(
             "SELECT * FROM TABLE(model_trained_with_labeled_data!DETECT_ANOMALIES(INPUT_DATA => TABLE(view_with_data_to_analyze), TIMESTAMP_COLNAME => 'date', TARGET_COLNAME => 'sales', CONFIG_OBJECT => OBJECT_CONSTRUCT('prediction_interval', 0.99)))"
         )
+
+    def test_float_types(self):
+        for f_type in ("FLOAT", "FLOAT4", "FLOAT8", "DOUBLE PRECISION", "REAL"):
+            with self.subTest(f"Testing {f_type} to DOUBLE"):
+                self.validate_identity(
+                    f"CAST(x AS {f_type})",
+                    "CAST(x AS DOUBLE)",
+                )

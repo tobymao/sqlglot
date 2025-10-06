@@ -7443,6 +7443,19 @@ class StrPosition(Func):
     }
 
 
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search
+# BigQuery: https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#search
+class Search(Func):
+    arg_types = {
+        "this": True,  # data_to_search / search_data
+        "expression": True,  # search_query / search_string
+        "json_scope": False,  # BigQuery: JSON_VALUES | JSON_KEYS | JSON_KEYS_AND_VALUES
+        "analyzer": False,  # Both: analyzer / ANALYZER
+        "analyzer_options": False,  # BigQuery: analyzer_options_values
+        "search_mode": False,  # Snowflake: OR | AND
+    }
+
+
 class StrToDate(Func):
     arg_types = {"this": True, "format": False, "safe": False}
 

@@ -19,10 +19,17 @@ def optimize_joins(expression):
     """
 
     for select in expression.find_all(exp.Select):
+        joins = select.args.get("joins", [])
+
+        # Skip CROSS JOIN optimization if any join has a side (LEFT/RIGHT/FULL)
+        # because it can change query semantics
+        if any(join.side for join in joins):
+            continue
+
         references = {}
         cross_joins = []
 
-        for join in select.args.get("joins", []):
+        for join in joins:
             tables = other_table_names(join)
 
             if tables:
@@ -59,11 +66,21 @@ def reorder_joins(expression):
     """
     for from_ in expression.find_all(exp.From):
         parent = from_.parent
-        joins = {join.alias_or_name: join for join in parent.args.get("joins", [])}
-        dag = {name: other_table_names(join) for name, join in joins.items()}
+        joins = parent.args.get("joins", [])
+
+        # Skip reordering if any join has a side (LEFT/RIGHT/FULL)
+        if any(join.side for join in joins):
+            continue
+
+        joins_by_name = {join.alias_or_name: join for join in joins}
+        dag = {name: other_table_names(join) for name, join in joins_by_name.items()}
         parent.set(
             "joins",
-            [joins[name] for name in tsort(dag) if name != from_.alias_or_name and name in joins],
+            [
+                joins_by_name[name]
+                for name in tsort(dag)
+                if name != from_.alias_or_name and name in joins_by_name
+            ],
         )
     return expression
 

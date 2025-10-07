@@ -5557,6 +5557,14 @@ class Tan(Func):
     pass
 
 
+class Degrees(Func):
+    pass
+
+
+class Cosh(Func):
+    pass
+
+
 class CosineDistance(Func):
     arg_types = {"this": True, "expression": True}
 

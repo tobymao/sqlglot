@@ -1632,12 +1632,24 @@ COLLATE('hello', 'utf8');
 VARCHAR;
 
 # dialect: snowflake
+COSH(1.5);
+DOUBLE;
+
+# dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
 BINARY;
 
 # dialect: snowflake
 COMPRESS('Hello World', 'zlib(1)');
 BINARY;
+
+# dialect: snowflake
+DEGREES(PI()/3);
+DOUBLE;
+
+# dialect: snowflake
+DEGREES(1);
+DOUBLE;
 
 # dialect: snowflake
 DECOMPRESS_BINARY('compressed_data', 'SNAPPY');
@@ -1746,6 +1758,14 @@ INT;
 # dialect: snowflake
 EDITDISTANCE('hello', 'world', 3);
 INT;
+
+# dialect: snowflake
+EXP(1);
+DOUBLE;
+
+# dialect: snowflake
+EXP(5.5);
+DOUBLE;
 
 # dialect: snowflake
 ENDSWITH('hello world', 'world');

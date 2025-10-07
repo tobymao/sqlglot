@@ -1426,7 +1426,11 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
-            exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
+            exp.ArrayContains: lambda self, e: self.func(
+                "ARRAY_CONTAINS",
+                exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),
+                e.this,
+            ),
             exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this

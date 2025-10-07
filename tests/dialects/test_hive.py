@@ -617,7 +617,7 @@ class TestHive(Validator):
                 "presto": "CONTAINS(x, 1)",
                 "hive": "ARRAY_CONTAINS(x, 1)",
                 "spark": "ARRAY_CONTAINS(x, 1)",
-                "snowflake": "ARRAY_CONTAINS(1, x)",
+                "snowflake": "ARRAY_CONTAINS(CAST(1 AS VARIANT), x)",
             },
         )
         self.validate_all(

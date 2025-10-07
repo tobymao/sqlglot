@@ -1632,6 +1632,10 @@ COLLATE('hello', 'utf8');
 VARCHAR;
 
 # dialect: snowflake
+COSH(1.5);
+DOUBLE;
+
+# dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
 BINARY;
 

@@ -30,6 +30,7 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
@@ -49,6 +50,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SOUNDEX_P123(column_name)")
         self.validate_identity("SELECT ABS(x)")
         self.validate_identity("SELECT SIGN(x)")
+        self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT UNICODE(column_name)")

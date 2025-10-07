@@ -8,10 +8,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        self.validate_identity(
-            "select count() OVER(partition by a order by a range offset preceding exclude current row)",
-            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
-        )
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
@@ -26,6 +22,8 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
         self.validate_identity("SHA384(x)")
         self.validate_identity("1.x", "1. AS x")
@@ -160,6 +158,10 @@ class TestPostgres(Validator):
             "WHERE c.relname OPERATOR(pg_catalog.~) '^(courses)$' COLLATE pg_catalog.default AND "
             "pg_catalog.PG_TABLE_IS_VISIBLE(c.oid) "
             "ORDER BY 2, 3"
+        )
+        self.validate_identity(
+            "select count() OVER(partition by a order by a range offset preceding exclude current row)",
+            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
         )
         self.validate_identity(
             "x::JSON -> 'duration' ->> -1",

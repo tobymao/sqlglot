@@ -7,10 +7,12 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("SELECT COSH(1.5)")
         null_type = exp.DataType.build("VOID", dialect="databricks")
         self.assertEqual(null_type.sql(), "NULL")
         self.assertEqual(null_type.sql("databricks"), "VOID")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("REGEXP_LIKE(x, y)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")
         self.validate_identity("SELECT void FROM t")

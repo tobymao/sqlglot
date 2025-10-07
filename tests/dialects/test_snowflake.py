@@ -1456,6 +1456,22 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT TRY_HEX_DECODE_STRING('48656C6C6F')")
 
+        self.validate_all(
+            "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
+            read={
+                "presto": "SELECT CONTAINS(ARRAY['1'], '1')",
+                "snowflake": "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
+            read={
+                "presto": "SELECT CONTAINS(ARRAY[DATE '2020-10-10'], DATE '2020-10-10')",
+                "snowflake": "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
+            },
+        )
+        self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

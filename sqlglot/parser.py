@@ -3539,9 +3539,13 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_query_modifiers(
-        self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]:
+    @t.overload
+    def _parse_query_modifiers(self, this: E) -> E: ...
+
+    @t.overload
+    def _parse_query_modifiers(self, this: None) -> None: ...
+
+    def _parse_query_modifiers(self, this):
         if isinstance(this, self.MODIFIABLES):
             for join in self._parse_joins():
                 this.append("joins", join)
@@ -5053,9 +5057,14 @@ class Parser(metaclass=_Parser):
         elif self._match_set((TokenType.L_PAREN, TokenType.L_BRACKET)):
             matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
+            query = expressions[0]
 
-            if len(expressions) == 1 and isinstance(expressions[0], exp.Query):
-                this = self.expression(exp.In, this=this, query=expressions[0].subquery(copy=False))
+            if len(expressions) == 1 and isinstance(query, exp.Query):
+                this = self.expression(
+                    exp.In,
+                    this=this,
+                    query=self._parse_query_modifiers(query).subquery(copy=False),
+                )
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
@@ -5785,14 +5794,17 @@ class Parser(metaclass=_Parser):
         else:
             expressions = self._parse_expressions()
 
-        this = self._parse_query_modifiers(seq_get(expressions, 0))
+        this = seq_get(expressions, 0)
 
         if not this and self._match(TokenType.R_PAREN, advance=False):
             this = self.expression(exp.Tuple)
         elif isinstance(this, exp.UNWRAPPED_QUERIES):
             this = self._parse_subquery(this=this, parse_alias=False)
         elif isinstance(this, exp.Subquery):
-            this = self._parse_subquery(this=self._parse_set_operations(this), parse_alias=False)
+            this = self._parse_subquery(
+                this=self._parse_query_modifiers(self._parse_set_operations(this)),
+                parse_alias=False,
+            )
         elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
             this = self.expression(exp.Tuple, expressions=expressions)
         else:

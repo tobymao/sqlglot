@@ -567,6 +567,7 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DOUBLE],
             exp.Cosh,
             exp.Cot,
+            exp.Exp,
             exp.Sin,
             exp.Tan,
         },

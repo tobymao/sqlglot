@@ -750,7 +750,7 @@ class Snowflake(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
-                this=seq_get(args, 1), expression=seq_get(args, 0)
+                this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
@@ -1426,7 +1426,13 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
-            exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
+            exp.ArrayContains: lambda self, e: self.func(
+                "ARRAY_CONTAINS",
+                e.expression
+                if e.args.get("ensure_variant") is False
+                else exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),
+                e.this,
+            ),
             exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this

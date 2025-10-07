@@ -179,7 +179,7 @@ class TestHive(Validator):
         self.validate_identity("ALTER TABLE x PARTITION(y = z) ADD COLUMN a VARCHAR(10)")
         self.validate_identity(
             "ALTER TABLE x CHANGE a a VARCHAR(10)",
-            write_sql="ALTER TABLE x CHANGE COLUMN a a VARCHAR(10)",
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10)",
         )
 
         self.validate_all(

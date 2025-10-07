@@ -152,7 +152,6 @@ def _annotate_by_similar_args(
 
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
-    CHANGE_COLUMN_STYLE = "SPARK"
 
     ANNOTATORS = {
         **Hive.ANNOTATORS,
@@ -175,6 +174,7 @@ class Spark2(Hive):
 
     class Parser(Hive.Parser):
         TRIM_PATTERN_FIRST = True
+        CHANGE_COLUMN_ALTER_SYNTAX = True
 
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
@@ -235,11 +235,6 @@ class Spark2(Hive):
             "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
             "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
-        }
-
-        ALTER_PARSERS = {
-            **Hive.Parser.ALTER_PARSERS,
-            "ALTER": lambda self: self._parse_alter_table_alter(),
         }
 
         def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
@@ -373,3 +368,16 @@ class Spark2(Hive):
                 return super().fileformatproperty_sql(expression)
 
             return f"USING {expression.name.upper()}"
+
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            this = self.sql(expression, "this")
+            new_name = self.sql(expression, "rename_to") or this
+            comment = self.sql(expression, "comment")
+            if new_name == this:
+                if comment:
+                    return f"ALTER COLUMN {this} COMMENT {comment}"
+                return super(Hive.Generator, self).altercolumn_sql(expression)
+            return f"RENAME COLUMN {this} TO {new_name}"
+
+        def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
+            return super(Hive.Generator, self).renamecolumn_sql(expression)

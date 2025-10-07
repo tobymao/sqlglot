@@ -5856,7 +5856,7 @@ class ArrayConstructCompact(Func):
 
 
 class ArrayContains(Binary, Func):
-    arg_types = {"this": True, "expression": True, "skip_cast": False}
+    arg_types = {"this": True, "expression": True, "ensure_variant": False}
     _sql_names = ["ARRAY_CONTAINS", "ARRAY_HAS"]
 
 

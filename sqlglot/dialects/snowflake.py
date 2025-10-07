@@ -750,7 +750,7 @@ class Snowflake(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
-                this=seq_get(args, 1), expression=seq_get(args, 0), skip_cast=True
+                this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
@@ -1429,7 +1429,7 @@ class Snowflake(Dialect):
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
                 e.expression
-                if e.args.get("skip_cast")
+                if e.args.get("ensure_variant") is False
                 else exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),
                 e.this,
             ),

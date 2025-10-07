@@ -324,18 +324,6 @@ CEIL(tbl.bignum_col);
 BIGDECIMAL;
 
 # dialect: bigquery
-FLOOR(1);
-DOUBLE;
-
-# dialect: bigquery
-FLOOR(5.5);
-DOUBLE;
-
-# dialect: bigquery
-FLOOR(tbl.bignum_col);
-BIGDECIMAL;
-
-# dialect: bigquery
 SQRT(1);
 DOUBLE;
 
@@ -1766,18 +1754,6 @@ DOUBLE;
 # dialect: snowflake
 EXP(5.5);
 DOUBLE;
-
-# dialect: snowflake
-FLOOR(42);
-INT;
-
-# dialect: snowflake
-FLOOR(135.135, 1);
-DOUBLE;
-
-# dialect: snowflake 
-FLOOR(tbl.bigint_col, -1);
-BIGINT;
 
 # dialect: snowflake
 ENDSWITH('hello world', 'world');

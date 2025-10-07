@@ -8,6 +8,26 @@ from sqlglot.helper import tsort
 JOIN_ATTRS = ("on", "side", "kind", "using", "method")
 
 
+def _is_reorderable(joins: t.List[exp.Join]) -> bool:
+    """
+    Checks if joins can be reordered without changing query semantics.
+
+    Joins with a side (LEFT, RIGHT, FULL) cannot be reordered easily,
+    the order affects which rows are included in the result.
+
+    Example:
+        >>> from sqlglot import parse_one, exp
+        >>> from sqlglot.optimizer.optimize_joins import _is_reorderable
+        >>> ast = parse_one("SELECT * FROM x JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        True
+        >>> ast = parse_one("SELECT * FROM x LEFT JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        False
+    """
+    return not any(join.side for join in joins)
+
+
 def optimize_joins(expression):
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
@@ -21,9 +41,7 @@ def optimize_joins(expression):
     for select in expression.find_all(exp.Select):
         joins = select.args.get("joins", [])
 
-        # Skip CROSS JOIN optimization if any join has a side (LEFT/RIGHT/FULL)
-        # because it can change query semantics
-        if any(join.side for join in joins):
+        if not _is_reorderable(joins):
             continue
 
         references = {}
@@ -68,8 +86,7 @@ def reorder_joins(expression):
         parent = from_.parent
         joins = parent.args.get("joins", [])
 
-        # Skip reordering if any join has a side (LEFT/RIGHT/FULL)
-        if any(join.side for join in joins):
+        if not _is_reorderable(joins):
             continue
 
         joins_by_name = {join.alias_or_name: join for join in joins}

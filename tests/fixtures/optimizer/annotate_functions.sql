@@ -1768,6 +1768,18 @@ EXP(5.5);
 DOUBLE;
 
 # dialect: snowflake
+FLOOR(42);
+INT;
+
+# dialect: snowflake
+FLOOR(135.135, 1);
+DOUBLE;
+
+# dialect: snowflake 
+FLOOR(tbl.bigint_col, -1);
+BIGINT;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 
@@ -1906,6 +1918,18 @@ VARCHAR;
 # dialect: snowflake
 LTRIM(NULL);
 VARCHAR;
+
+# dialect: snowflake
+MOD(tbl.bigint_col, 3);
+BIGINT;
+
+# dialect: snowflake
+MOD(tbl.double_col, 2.5);
+DOUBLE;
+
+# dialect: snowflake
+MOD(42, 7);
+INT;
 
 # dialect: snowflake
 'foo' REGEXP 'bar';

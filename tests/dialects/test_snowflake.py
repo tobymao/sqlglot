@@ -20,6 +20,7 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT GET(a, b)")
         self.validate_identity("SELECT TAN(x)")
+        self.validate_identity("SELECT COS(x)")
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),

@@ -1470,6 +1470,7 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
             },
         )
+        self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")
 
     def test_null_treatment(self):
         self.validate_all(

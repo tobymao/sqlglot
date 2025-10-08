@@ -10,7 +10,7 @@ jobs:
     name: run benchmark
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: boa-dev/criterion-compare-action@v3
         with:
           branchName: ${{ github.base_ref }}

@@ -14,7 +14,7 @@ jobs:
     outputs:
       deploy: ${{ steps.check_deploy.outputs.deploy }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - id: check_deploy
@@ -47,7 +47,7 @@ jobs:
           target: aarch64
     runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
@@ -76,7 +76,7 @@ jobs:
     if: needs.should-deploy-rs.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Build sdist
       uses: PyO3/maturin-action@v1
       with:
@@ -112,7 +112,9 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Fetch all history and tags
     - name: Set up Python
       uses: actions/setup-python@v3
       with:

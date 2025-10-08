@@ -3218,7 +3218,9 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
-        return f"{this}{kind}{path}"
+
+        ordinality = " FOR ORDINALITY" if expression.args.get("ordinality") else ""
+        return f"{this}{kind}{path}{ordinality}"
 
     def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
         return self.func("COLUMNS", *expression.expressions)

@@ -210,6 +210,9 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
         self.validate_identity("SELECT a || b", "SELECT a OR b")
         self.validate_identity(
+            "SELECT * FROM source, JSON_TABLE(source.links, '$.org[*]' COLUMNS(row_id FOR ORDINALITY, link VARCHAR(255) PATH '$.link')) AS links"
+        )
+        self.validate_identity(
             "SELECT * FROM x ORDER BY BINARY a", "SELECT * FROM x ORDER BY CAST(a AS BINARY)"
         )
         self.validate_identity(

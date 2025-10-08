@@ -6755,7 +6755,13 @@ class JSONExists(Func):
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 # Note: parsing of JSON column definitions is currently incomplete.
 class JSONColumnDef(Expression):
-    arg_types = {"this": False, "kind": False, "path": False, "nested_schema": False}
+    arg_types = {
+        "this": False,
+        "kind": False,
+        "path": False,
+        "nested_schema": False,
+        "ordinality": False,
+    }
 
 
 class JSONSchema(Expression):

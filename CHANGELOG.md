@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v27.22.1] - 2025-10-08
+### :boom: BREAKING CHANGES
+- due to [`7ac01c2`](https://github.com/tobymao/sqlglot/commit/7ac01c2ae9bc4375efb63c60e3221e85088fdd1f) - bump sqlglotrs to 0.7.1 *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  bump sqlglotrs to 0.7.1
+
+
+### :wrench: Chores
+- [`7ac01c2`](https://github.com/tobymao/sqlglot/commit/7ac01c2ae9bc4375efb63c60e3221e85088fdd1f) - bump sqlglotrs to 0.7.1 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.22.0] - 2025-10-08
 ### :boom: BREAKING CHANGES
 - due to [`6beb917`](https://github.com/tobymao/sqlglot/commit/6beb9172dffd0aaea46b75477485060737e774b9) - Annotate type for snowflake ROUND function *(PR [#6032](https://github.com/tobymao/sqlglot/pull/6032) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -7769,3 +7780,4 @@ Changelog
 [v27.20.0]: https://github.com/tobymao/sqlglot/compare/v27.19.0...v27.20.0
 [v27.21.0]: https://github.com/tobymao/sqlglot/compare/v27.20.0...v27.21.0
 [v27.22.0]: https://github.com/tobymao/sqlglot/compare/v27.21.0...v27.22.0
+[v27.22.1]: https://github.com/tobymao/sqlglot/compare/v27.22.0...v27.22.1

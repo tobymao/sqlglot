@@ -1908,6 +1908,14 @@ LOWER(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+LN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+LOG(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 LTRIM('  hello world  ');
 VARCHAR;
 

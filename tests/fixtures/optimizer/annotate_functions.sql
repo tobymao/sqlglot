@@ -1545,7 +1545,7 @@ DOUBLE;
 
 # dialect: snowflake
 ASIN(tbl.double_col);
-DOUBLE;
+FLOAT;
 
 # dialect: snowflake
 AI_AGG('foo', 'bar');

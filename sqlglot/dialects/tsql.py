@@ -908,6 +908,11 @@ class TSQL(Dialect):
 
             return self.expression(exp.UniqueColumnConstraint, this=this)
 
+        def _parse_update(self) -> exp.Update:
+            expression = super()._parse_update()
+            expression.set("options", self._parse_options())
+            return expression
+
         def _parse_partition(self) -> t.Optional[exp.Partition]:
             if not self._match_text_seq("WITH", "(", "PARTITIONS"):
                 return None

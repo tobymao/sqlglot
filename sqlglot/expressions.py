@@ -3633,6 +3633,7 @@ class Update(DML):
         "returning": False,
         "order": False,
         "limit": False,
+        "options": False,
     }
 
     def table(

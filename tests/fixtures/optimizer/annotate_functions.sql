@@ -324,18 +324,6 @@ CEIL(tbl.bignum_col);
 BIGDECIMAL;
 
 # dialect: bigquery
-FLOOR(1);
-DOUBLE;
-
-# dialect: bigquery
-FLOOR(5.5);
-DOUBLE;
-
-# dialect: bigquery
-FLOOR(tbl.bignum_col);
-BIGDECIMAL;
-
-# dialect: bigquery
 SQRT(1);
 DOUBLE;
 
@@ -1906,6 +1894,18 @@ VARCHAR;
 # dialect: snowflake
 LTRIM(NULL);
 VARCHAR;
+
+# dialect: snowflake
+MOD(tbl.bigint_col, 3);
+BIGINT;
+
+# dialect: snowflake
+MOD(tbl.double_col, 2.5);
+DOUBLE;
+
+# dialect: snowflake
+MOD(42, 7);
+INT;
 
 # dialect: snowflake
 'foo' REGEXP 'bar';

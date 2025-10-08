@@ -1432,11 +1432,7 @@ class Parser(metaclass=_Parser):
 
     IS_JSON_PREDICATE_KIND = {"VALUE", "SCALAR", "ARRAY", "OBJECT"}
 
-    ODBC_DATETIME_LITERALS = {
-        "d": exp.Date,
-        "t": exp.Time,
-        "ts": exp.Timestamp,
-    }
+    ODBC_DATETIME_LITERALS: t.Dict[str, t.Type[exp.Expression]] = {}
 
     ON_CONDITION_TOKENS = {"ERROR", "NULL", "TRUE", "FALSE", "EMPTY"}
 

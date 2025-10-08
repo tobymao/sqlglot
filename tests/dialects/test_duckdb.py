@@ -287,6 +287,9 @@ class TestDuckDB(Validator):
             "SELECT LIST_TRANSFORM(LIST_FILTER([0, 1, 2, 3, 4, 5], LAMBDA x : x % 2 = 0), LAMBDA y : y * y)"
         )
         self.validate_identity(
+            """ARG_MIN({'d': "DATE", 'ts': "TIMESTAMP", 'i': "INT", 'b': "BIGINT", 's': "VARCHAR"}, "DOUBLE")"""
+        )
+        self.validate_identity(
             "ARG_MAX(keyword_name, keyword_category, 3 ORDER BY keyword_name DESC)"
         )
         self.validate_identity("CREATE TABLE notes (watermark TEXT)")

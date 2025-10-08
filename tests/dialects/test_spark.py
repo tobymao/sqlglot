@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
+from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -130,6 +131,27 @@ TBLPROPERTIES (
             "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
             write={
                 "spark": "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+            write={
+                "spark": "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+                "hive": "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            write={
+                "spark": "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+                "hive": "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE db.example RENAME COLUMN col_a TO col_b",
+            write={
+                "spark": "ALTER TABLE db.example RENAME COLUMN col_a TO col_b",
+                "hive": UnsupportedError,
             },
         )
         self.validate_all(

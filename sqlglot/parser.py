@@ -1531,6 +1531,9 @@ class Parser(metaclass=_Parser):
     # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_RENAME_REQUIRES_COLUMN = True
 
+    # Whether Alter statements are allowed to contain Partition specifications
+    ALTER_TABLE_PARTITIONS = False
+
     # Whether all join types have the same precedence, i.e., they "naturally" produce a left-deep tree.
     # In standard SQL, joins that use the JOIN keyword take higher precedence than comma-joins. That is
     # to say, JOIN operators happen before comma operators. This is not the case in some dialects, such
@@ -7732,7 +7735,7 @@ class Parser(metaclass=_Parser):
             check = None
             cluster = None
         else:
-            this = self._parse_table(schema=True)
+            this = self._parse_table(schema=True, parse_partition=self.ALTER_TABLE_PARTITIONS)
             check = self._match_text_seq("WITH", "CHECK")
             cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
@@ -7744,6 +7747,7 @@ class Parser(metaclass=_Parser):
             actions = ensure_list(parser(self))
             not_valid = self._match_text_seq("NOT", "VALID")
             options = self._parse_csv(self._parse_property)
+            cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr and actions:
                 return self.expression(
@@ -7757,6 +7761,7 @@ class Parser(metaclass=_Parser):
                     cluster=cluster,
                     not_valid=not_valid,
                     check=check,
+                    cascade=cascade,
                 )
 
         return self._parse_as_command(start)

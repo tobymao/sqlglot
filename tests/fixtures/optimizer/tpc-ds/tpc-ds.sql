@@ -47,12 +47,12 @@ WITH "customer_total_return" AS (
 SELECT
   "customer"."c_customer_id" AS "c_customer_id"
 FROM "customer_total_return" AS "ctr1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_store_sk"
-JOIN "customer" AS "customer"
-  ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
 JOIN "store" AS "store"
   ON "ctr1"."ctr_store_sk" = "store"."s_store_sk" AND "store"."s_state" = 'TN'
+JOIN "customer" AS "customer"
+  ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "ctr1"."ctr_store_sk"
 WHERE
   "_u_0"."_col_0" < "ctr1"."ctr_total_return"
 ORDER BY
@@ -1983,12 +1983,6 @@ SELECT
   "customer_demographics"."cd_dep_college_count" AS "cd_dep_college_count",
   COUNT(*) AS "cnt6"
 FROM "customer" AS "c"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "c"."c_customer_sk"
-LEFT JOIN "_u_2" AS "_u_2"
-  ON "_u_2"."_u_3" = "c"."c_customer_sk"
-LEFT JOIN "_u_4" AS "_u_4"
-  ON "_u_4"."_u_5" = "c"."c_customer_sk"
 JOIN "customer_address" AS "ca"
   ON "c"."c_current_addr_sk" = "ca"."ca_address_sk"
   AND "ca"."ca_county" IN (
@@ -2000,6 +1994,12 @@ JOIN "customer_address" AS "ca"
   )
 JOIN "customer_demographics" AS "customer_demographics"
   ON "c"."c_current_cdemo_sk" = "customer_demographics"."cd_demo_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "c"."c_customer_sk"
+LEFT JOIN "_u_2" AS "_u_2"
+  ON "_u_2"."_u_3" = "c"."c_customer_sk"
+LEFT JOIN "_u_4" AS "_u_4"
+  ON "_u_4"."_u_5" = "c"."c_customer_sk"
 WHERE
   NOT "_u_0"."_u_1" IS NULL
   AND (
@@ -2607,10 +2607,14 @@ WITH "item_2" AS (
   SELECT
     AVG("x"."quantity" * "x"."list_price") AS "average_sales"
   FROM "x" AS "x"
-), "_u_1" AS (
+), "date_dim_3" AS (
   SELECT
-    "avg_sales"."average_sales" AS "average_sales"
-  FROM "avg_sales" AS "avg_sales"
+    "date_dim"."d_date_sk" AS "d_date_sk",
+    "date_dim"."d_year" AS "d_year",
+    "date_dim"."d_moy" AS "d_moy"
+  FROM "date_dim" AS "date_dim"
+  WHERE
+    "date_dim"."d_moy" = 11 AND "date_dim"."d_year" = 2001
 ), "_u_0" AS (
   SELECT
     "item"."i_item_sk" AS "ss_item_sk"
@@ -2621,14 +2625,10 @@ WITH "item_2" AS (
     AND "_q_0"."class_id" = "item"."i_class_id"
   GROUP BY
     "item"."i_item_sk"
-), "date_dim_3" AS (
+), "_u_1" AS (
   SELECT
-    "date_dim"."d_date_sk" AS "d_date_sk",
-    "date_dim"."d_year" AS "d_year",
-    "date_dim"."d_moy" AS "d_moy"
-  FROM "date_dim" AS "date_dim"
-  WHERE
-    "date_dim"."d_moy" = 11 AND "date_dim"."d_year" = 2001
+    "avg_sales"."average_sales" AS "average_sales"
+  FROM "avg_sales" AS "avg_sales"
 ), "y" AS (
   SELECT
     'store' AS "channel",
@@ -2638,13 +2638,13 @@ WITH "item_2" AS (
     SUM("store_sales"."ss_quantity" * "store_sales"."ss_list_price") AS "sales",
     COUNT(*) AS "number_sales"
   FROM "store_sales" AS "store_sales"
-  CROSS JOIN "_u_1" AS "_u_1"
-  LEFT JOIN "_u_0" AS "_u_0"
-    ON "_u_0"."ss_item_sk" = "store_sales"."ss_item_sk"
-  JOIN "date_dim_3" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
+  JOIN "date_dim_3" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  LEFT JOIN "_u_0" AS "_u_0"
+    ON "_u_0"."ss_item_sk" = "store_sales"."ss_item_sk"
+  CROSS JOIN "_u_1" AS "_u_1"
   WHERE
     NOT "_u_0"."ss_item_sk" IS NULL
   GROUP BY
@@ -2662,13 +2662,13 @@ WITH "item_2" AS (
     SUM("catalog_sales"."cs_quantity" * "catalog_sales"."cs_list_price") AS "sales",
     COUNT(*) AS "number_sales"
   FROM "catalog_sales" AS "catalog_sales"
-  CROSS JOIN "_u_1" AS "_u_3"
-  LEFT JOIN "_u_0" AS "_u_2"
-    ON "_u_2"."ss_item_sk" = "catalog_sales"."cs_item_sk"
-  JOIN "date_dim_3" AS "date_dim"
-    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
+  JOIN "date_dim_3" AS "date_dim"
+    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  LEFT JOIN "_u_0" AS "_u_2"
+    ON "_u_2"."ss_item_sk" = "catalog_sales"."cs_item_sk"
+  CROSS JOIN "_u_1" AS "_u_3"
   WHERE
     NOT "_u_2"."ss_item_sk" IS NULL
   GROUP BY
@@ -2686,13 +2686,13 @@ WITH "item_2" AS (
     SUM("web_sales"."ws_quantity" * "web_sales"."ws_list_price") AS "sales",
     COUNT(*) AS "number_sales"
   FROM "web_sales" AS "web_sales"
-  CROSS JOIN "_u_1" AS "_u_5"
-  LEFT JOIN "_u_0" AS "_u_4"
-    ON "_u_4"."ss_item_sk" = "web_sales"."ws_item_sk"
-  JOIN "date_dim_3" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
+  JOIN "date_dim_3" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  LEFT JOIN "_u_0" AS "_u_4"
+    ON "_u_4"."ss_item_sk" = "web_sales"."ws_item_sk"
+  CROSS JOIN "_u_1" AS "_u_5"
   WHERE
     NOT "_u_4"."ss_item_sk" IS NULL
   GROUP BY
@@ -2824,10 +2824,15 @@ SELECT
   SUM("cs1"."cs_ext_ship_cost") AS "total shipping cost",
   SUM("cs1"."cs_net_profit") AS "total net profit"
 FROM "catalog_sales" AS "cs1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "cs1"."cs_order_number"
-LEFT JOIN "_u_3" AS "_u_3"
-  ON "_u_3"."_u_4" = "cs1"."cs_order_number"
+JOIN "date_dim" AS "date_dim"
+  ON "cs1"."cs_ship_date_sk" = "date_dim"."d_date_sk"
+  AND "date_dim"."d_date" >= '2002-3-01'
+  AND (
+    CAST('2002-3-01' AS DATE) + INTERVAL '60' DAY
+  ) >= CAST("date_dim"."d_date" AS DATE)
+JOIN "customer_address" AS "customer_address"
+  ON "cs1"."cs_ship_addr_sk" = "customer_address"."ca_address_sk"
+  AND "customer_address"."ca_state" = 'IA'
 JOIN "call_center" AS "call_center"
   ON "call_center"."cc_call_center_sk" = "cs1"."cs_call_center_sk"
   AND "call_center"."cc_county" IN (
@@ -2837,15 +2842,10 @@ JOIN "call_center" AS "call_center"
     'Williamson County',
     'Williamson County'
   )
-JOIN "customer_address" AS "customer_address"
-  ON "cs1"."cs_ship_addr_sk" = "customer_address"."ca_address_sk"
-  AND "customer_address"."ca_state" = 'IA'
-JOIN "date_dim" AS "date_dim"
-  ON "cs1"."cs_ship_date_sk" = "date_dim"."d_date_sk"
-  AND "date_dim"."d_date" >= '2002-3-01'
-  AND (
-    CAST('2002-3-01' AS DATE) + INTERVAL '60' DAY
-  ) >= CAST("date_dim"."d_date" AS DATE)
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "cs1"."cs_order_number"
+LEFT JOIN "_u_3" AS "_u_3"
+  ON "_u_3"."_u_4" = "cs1"."cs_order_number"
 WHERE
   "_u_3"."_u_4" IS NULL
   AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "cs1"."cs_warehouse_sk" <> "_x")
@@ -3420,6 +3420,14 @@ WITH "frequent_ss_items" AS (
     "customer"."c_customer_sk"
   HAVING
     0.95 * MAX("max_store_sales"."tpcds_cmax") < SUM("store_sales"."ss_quantity" * "store_sales"."ss_sales_price")
+), "date_dim_4" AS (
+  SELECT
+    "date_dim"."d_date_sk" AS "d_date_sk",
+    "date_dim"."d_year" AS "d_year",
+    "date_dim"."d_moy" AS "d_moy"
+  FROM "date_dim" AS "date_dim"
+  WHERE
+    "date_dim"."d_moy" = 6 AND "date_dim"."d_year" = 1998
 ), "_u_1" AS (
   SELECT
     "frequent_ss_items"."item_sk" AS "item_sk"
@@ -3432,36 +3440,28 @@ WITH "frequent_ss_items" AS (
   FROM "best_ss_customer" AS "best_ss_customer"
   GROUP BY
     "best_ss_customer"."c_customer_sk"
-), "date_dim_4" AS (
-  SELECT
-    "date_dim"."d_date_sk" AS "d_date_sk",
-    "date_dim"."d_year" AS "d_year",
-    "date_dim"."d_moy" AS "d_moy"
-  FROM "date_dim" AS "date_dim"
-  WHERE
-    "date_dim"."d_moy" = 6 AND "date_dim"."d_year" = 1998
 ), "_q_1" AS (
   SELECT
     "catalog_sales"."cs_quantity" * "catalog_sales"."cs_list_price" AS "sales"
   FROM "catalog_sales" AS "catalog_sales"
+  JOIN "date_dim_4" AS "date_dim"
+    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   LEFT JOIN "_u_1" AS "_u_1"
     ON "_u_1"."item_sk" = "catalog_sales"."cs_item_sk"
   LEFT JOIN "_u_2" AS "_u_2"
     ON "_u_2"."c_customer_sk" = "catalog_sales"."cs_bill_customer_sk"
-  JOIN "date_dim_4" AS "date_dim"
-    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   WHERE
     NOT "_u_1"."item_sk" IS NULL AND NOT "_u_2"."c_customer_sk" IS NULL
   UNION ALL
   SELECT
     "web_sales"."ws_quantity" * "web_sales"."ws_list_price" AS "sales"
   FROM "web_sales" AS "web_sales"
+  JOIN "date_dim_4" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   LEFT JOIN "_u_1" AS "_u_3"
     ON "_u_3"."item_sk" = "web_sales"."ws_item_sk"
   LEFT JOIN "_u_2" AS "_u_4"
     ON "_u_4"."c_customer_sk" = "web_sales"."ws_bill_customer_sk"
-  JOIN "date_dim_4" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   WHERE
     NOT "_u_3"."item_sk" IS NULL AND NOT "_u_4"."c_customer_sk" IS NULL
 )
@@ -4137,13 +4137,13 @@ SELECT
   "customer"."c_last_review_date" AS "c_last_review_date",
   "ctr1"."ctr_total_return" AS "ctr_total_return"
 FROM "customer_total_return" AS "ctr1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
+JOIN "customer_address" AS "customer_address"
+  ON "customer_address"."ca_state" = 'IN'
 JOIN "customer" AS "customer"
   ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
-JOIN "customer_address" AS "customer_address"
-  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
-  AND "customer_address"."ca_state" = 'IN'
+  AND "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
 WHERE
   "_u_0"."_col_0" < "ctr1"."ctr_total_return"
 ORDER BY
@@ -4381,11 +4381,11 @@ WITH "catalog_sales_2" AS (
 SELECT
   SUM("catalog_sales"."cs_ext_discount_amt") AS "excess discount amount"
 FROM "catalog_sales_2" AS "catalog_sales"
-JOIN "date_dim_2" AS "date_dim"
-  ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
 JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   AND "item"."i_manufact_id" = 610
+JOIN "date_dim_2" AS "date_dim"
+  ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "item"."i_item_sk"
 WHERE
@@ -4460,14 +4460,7 @@ FROM   (SELECT *
 GROUP  BY i_manufact_id
 ORDER  BY total_sales
 LIMIT 100;
-WITH "customer_address_2" AS (
-  SELECT
-    "customer_address"."ca_address_sk" AS "ca_address_sk",
-    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
-  FROM "customer_address" AS "customer_address"
-  WHERE
-    "customer_address"."ca_gmt_offset" = -5
-), "date_dim_2" AS (
+WITH "date_dim_2" AS (
   SELECT
     "date_dim"."d_date_sk" AS "d_date_sk",
     "date_dim"."d_year" AS "d_year",
@@ -4475,6 +4468,13 @@ WITH "customer_address_2" AS (
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_moy" = 3 AND "date_dim"."d_year" = 1999
+), "customer_address_2" AS (
+  SELECT
+    "customer_address"."ca_address_sk" AS "ca_address_sk",
+    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
+  FROM "customer_address" AS "customer_address"
+  WHERE
+    "customer_address"."ca_gmt_offset" = -5
 ), "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
@@ -4493,10 +4493,10 @@ WITH "customer_address_2" AS (
     "item"."i_manufact_id" AS "i_manufact_id",
     SUM("store_sales"."ss_ext_sales_price") AS "total_sales"
   FROM "store_sales" AS "store_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
   LEFT JOIN "_u_0" AS "_u_0"
@@ -4510,10 +4510,10 @@ WITH "customer_address_2" AS (
     "item"."i_manufact_id" AS "i_manufact_id",
     SUM("catalog_sales"."cs_ext_sales_price") AS "total_sales"
   FROM "catalog_sales" AS "catalog_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   LEFT JOIN "_u_0" AS "_u_1"
@@ -4527,10 +4527,10 @@ WITH "customer_address_2" AS (
     "item"."i_manufact_id" AS "i_manufact_id",
     SUM("web_sales"."ws_ext_sales_price") AS "total_sales"
   FROM "web_sales" AS "web_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
   LEFT JOIN "_u_0" AS "_u_2"
@@ -4816,16 +4816,16 @@ SELECT
   AVG("customer_demographics"."cd_dep_college_count") AS "_col_16",
   MAX("customer_demographics"."cd_dep_college_count") AS "_col_17"
 FROM "customer" AS "c"
+JOIN "customer_address" AS "ca"
+  ON "c"."c_current_addr_sk" = "ca"."ca_address_sk"
+JOIN "customer_demographics" AS "customer_demographics"
+  ON "c"."c_current_cdemo_sk" = "customer_demographics"."cd_demo_sk"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "c"."c_customer_sk"
 LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."_u_3" = "c"."c_customer_sk"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "_u_4"."_u_5" = "c"."c_customer_sk"
-JOIN "customer_address" AS "ca"
-  ON "c"."c_current_addr_sk" = "ca"."ca_address_sk"
-JOIN "customer_demographics" AS "customer_demographics"
-  ON "c"."c_current_cdemo_sk" = "customer_demographics"."cd_demo_sk"
 WHERE
   NOT "_u_0"."_u_1" IS NULL
   AND (
@@ -5220,16 +5220,16 @@ FROM "catalog_sales" AS "catalog_sales"
 LEFT JOIN "catalog_returns" AS "catalog_returns"
   ON "catalog_returns"."cr_item_sk" = "catalog_sales"."cs_item_sk"
   AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
-JOIN "date_dim" AS "date_dim"
-  ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2002-07-01' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2002-05-02' AS DATE)
+JOIN "warehouse" AS "warehouse"
+  ON "catalog_sales"."cs_warehouse_sk" = "warehouse"."w_warehouse_sk"
 JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   AND "item"."i_current_price" <= 1.49
   AND "item"."i_current_price" >= 0.99
-JOIN "warehouse" AS "warehouse"
-  ON "catalog_sales"."cs_warehouse_sk" = "warehouse"."w_warehouse_sk"
+JOIN "date_dim" AS "date_dim"
+  ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2002-07-01' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2002-05-02' AS DATE)
 GROUP BY
   "warehouse"."w_state",
   "item"."i_item_id"
@@ -5763,6 +5763,8 @@ SELECT
 FROM "web_sales" AS "web_sales"
 JOIN "customer" AS "customer"
   ON "customer"."c_customer_sk" = "web_sales"."ws_bill_customer_sk"
+JOIN "customer_address" AS "customer_address"
+  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   AND "date_dim"."d_qoy" = 1
@@ -5771,8 +5773,6 @@ JOIN "item" AS "item"
   ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."i_item_id" = "item"."i_item_id"
-JOIN "customer_address" AS "customer_address"
-  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
 WHERE
   NOT "_u_0"."i_item_id" IS NULL
   OR SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
@@ -6276,11 +6276,11 @@ WITH "date_dim_2" AS (
     CAST(SUM(COALESCE("wr"."wr_return_quantity", 0)) AS DECIMAL(15, 4)) / CAST(SUM(COALESCE("ws"."ws_quantity", 0)) AS DECIMAL(15, 4)) AS "return_ratio",
     CAST(SUM(COALESCE("wr"."wr_return_amt", 0)) AS DECIMAL(15, 4)) / CAST(SUM(COALESCE("ws"."ws_net_paid", 0)) AS DECIMAL(15, 4)) AS "currency_ratio"
   FROM "web_sales" AS "ws"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "ws"."ws_sold_date_sk"
   LEFT JOIN "web_returns" AS "wr"
     ON "wr"."wr_item_sk" = "ws"."ws_item_sk"
     AND "wr"."wr_order_number" = "ws"."ws_order_number"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "ws"."ws_sold_date_sk"
   WHERE
     "wr"."wr_return_amt" > 10000
     AND "ws"."ws_net_paid" > 0
@@ -6326,11 +6326,11 @@ WITH "date_dim_2" AS (
     CAST(SUM(COALESCE("sr"."sr_return_quantity", 0)) AS DECIMAL(15, 4)) / CAST(SUM(COALESCE("sts"."ss_quantity", 0)) AS DECIMAL(15, 4)) AS "return_ratio",
     CAST(SUM(COALESCE("sr"."sr_return_amt", 0)) AS DECIMAL(15, 4)) / CAST(SUM(COALESCE("sts"."ss_net_paid", 0)) AS DECIMAL(15, 4)) AS "currency_ratio"
   FROM "store_sales" AS "sts"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "sts"."ss_sold_date_sk"
   LEFT JOIN "store_returns" AS "sr"
     ON "sr"."sr_item_sk" = "sts"."ss_item_sk"
     AND "sr"."sr_ticket_number" = "sts"."ss_ticket_number"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "sts"."ss_sold_date_sk"
   WHERE
     "sr"."sr_return_amt" > 10000
     AND "sts"."ss_net_paid" > 0
@@ -7112,14 +7112,7 @@ FROM   (SELECT *
 GROUP  BY i_item_id
 ORDER  BY total_sales
 LIMIT 100;
-WITH "customer_address_2" AS (
-  SELECT
-    "customer_address"."ca_address_sk" AS "ca_address_sk",
-    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
-  FROM "customer_address" AS "customer_address"
-  WHERE
-    "customer_address"."ca_gmt_offset" = -6
-), "date_dim_2" AS (
+WITH "date_dim_2" AS (
   SELECT
     "date_dim"."d_date_sk" AS "d_date_sk",
     "date_dim"."d_year" AS "d_year",
@@ -7127,6 +7120,13 @@ WITH "customer_address_2" AS (
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_moy" = 3 AND "date_dim"."d_year" = 1998
+), "customer_address_2" AS (
+  SELECT
+    "customer_address"."ca_address_sk" AS "ca_address_sk",
+    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
+  FROM "customer_address" AS "customer_address"
+  WHERE
+    "customer_address"."ca_gmt_offset" = -6
 ), "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
@@ -7145,10 +7145,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("store_sales"."ss_ext_sales_price") AS "total_sales"
   FROM "store_sales" AS "store_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
   LEFT JOIN "_u_0" AS "_u_0"
@@ -7162,10 +7162,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("catalog_sales"."cs_ext_sales_price") AS "total_sales"
   FROM "catalog_sales" AS "catalog_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   LEFT JOIN "_u_0" AS "_u_1"
@@ -7179,10 +7179,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("web_sales"."ws_ext_sales_price") AS "total_sales"
   FROM "web_sales" AS "web_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
   LEFT JOIN "_u_0" AS "_u_2"
@@ -7434,16 +7434,16 @@ WHERE  ss_items.item_id = cs_items.item_id
 ORDER  BY item_id,
           ss_item_rev
 LIMIT 100;
-WITH "date_dim_2" AS (
-  SELECT
-    "date_dim"."d_date_sk" AS "d_date_sk",
-    "date_dim"."d_date" AS "d_date"
-  FROM "date_dim" AS "date_dim"
-), "item_2" AS (
+WITH "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
     "item"."i_item_id" AS "i_item_id"
   FROM "item" AS "item"
+), "date_dim_2" AS (
+  SELECT
+    "date_dim"."d_date_sk" AS "d_date_sk",
+    "date_dim"."d_date" AS "d_date"
+  FROM "date_dim" AS "date_dim"
 ), "_u_0" AS (
   SELECT
     "date_dim"."d_week_seq" AS "d_week_seq"
@@ -7463,10 +7463,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("store_sales"."ss_ext_sales_price") AS "ss_item_rev"
   FROM "store_sales" AS "store_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   LEFT JOIN "_u_1" AS "_u_1"
     ON "_u_1"."d_date" = "date_dim"."d_date"
   WHERE
@@ -7486,10 +7486,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("catalog_sales"."cs_ext_sales_price") AS "cs_item_rev"
   FROM "catalog_sales" AS "catalog_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   LEFT JOIN "_u_3" AS "_u_3"
     ON "_u_3"."d_date" = "date_dim"."d_date"
   WHERE
@@ -7509,10 +7509,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("web_sales"."ws_ext_sales_price") AS "ws_item_rev"
   FROM "web_sales" AS "web_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   LEFT JOIN "_u_5" AS "_u_5"
     ON "_u_5"."d_date" = "date_dim"."d_date"
   WHERE
@@ -7821,14 +7821,7 @@ GROUP  BY i_item_id
 ORDER  BY i_item_id,
           total_sales
 LIMIT 100;
-WITH "customer_address_2" AS (
-  SELECT
-    "customer_address"."ca_address_sk" AS "ca_address_sk",
-    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
-  FROM "customer_address" AS "customer_address"
-  WHERE
-    "customer_address"."ca_gmt_offset" = -6
-), "date_dim_2" AS (
+WITH "date_dim_2" AS (
   SELECT
     "date_dim"."d_date_sk" AS "d_date_sk",
     "date_dim"."d_year" AS "d_year",
@@ -7836,6 +7829,13 @@ WITH "customer_address_2" AS (
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_moy" = 8 AND "date_dim"."d_year" = 1999
+), "customer_address_2" AS (
+  SELECT
+    "customer_address"."ca_address_sk" AS "ca_address_sk",
+    "customer_address"."ca_gmt_offset" AS "ca_gmt_offset"
+  FROM "customer_address" AS "customer_address"
+  WHERE
+    "customer_address"."ca_gmt_offset" = -6
 ), "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
@@ -7854,10 +7854,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("store_sales"."ss_ext_sales_price") AS "total_sales"
   FROM "store_sales" AS "store_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
   LEFT JOIN "_u_0" AS "_u_0"
@@ -7871,10 +7871,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("catalog_sales"."cs_ext_sales_price") AS "total_sales"
   FROM "catalog_sales" AS "catalog_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "catalog_sales"."cs_bill_addr_sk" = "customer_address"."ca_address_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   LEFT JOIN "_u_0" AS "_u_1"
@@ -7888,10 +7888,10 @@ WITH "customer_address_2" AS (
     "item"."i_item_id" AS "i_item_id",
     SUM("web_sales"."ws_ext_sales_price") AS "total_sales"
   FROM "web_sales" AS "web_sales"
-  JOIN "customer_address_2" AS "customer_address"
-    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  JOIN "customer_address_2" AS "customer_address"
+    ON "customer_address"."ca_address_sk" = "web_sales"."ws_bill_addr_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
   LEFT JOIN "_u_0" AS "_u_2"
@@ -9772,17 +9772,17 @@ SELECT
   "customer_demographics"."cd_credit_rating" AS "cd_credit_rating",
   COUNT(*) AS "cnt3"
 FROM "customer" AS "c"
+JOIN "customer_address" AS "ca"
+  ON "c"."c_current_addr_sk" = "ca"."ca_address_sk"
+  AND "ca"."ca_state" IN ('KS', 'AZ', 'NE')
+JOIN "customer_demographics" AS "customer_demographics"
+  ON "c"."c_current_cdemo_sk" = "customer_demographics"."cd_demo_sk"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "c"."c_customer_sk"
 LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."_u_3" = "c"."c_customer_sk"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "_u_4"."_u_5" = "c"."c_customer_sk"
-JOIN "customer_address" AS "ca"
-  ON "c"."c_current_addr_sk" = "ca"."ca_address_sk"
-  AND "ca"."ca_state" IN ('KS', 'AZ', 'NE')
-JOIN "customer_demographics" AS "customer_demographics"
-  ON "c"."c_current_cdemo_sk" = "customer_demographics"."cd_demo_sk"
 WHERE
   "_u_2"."_u_3" IS NULL AND "_u_4"."_u_5" IS NULL AND NOT "_u_0"."_u_1" IS NULL
 GROUP BY
@@ -10068,32 +10068,32 @@ SELECT
   SUM(CASE WHEN NOT "promotion"."p_promo_sk" IS NULL THEN 1 ELSE 0 END) AS "promo",
   COUNT(*) AS "total_cnt"
 FROM "catalog_sales" AS "catalog_sales"
-LEFT JOIN "catalog_returns" AS "catalog_returns"
-  ON "catalog_returns"."cr_item_sk" = "catalog_sales"."cs_item_sk"
-  AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
-JOIN "customer_demographics" AS "customer_demographics"
-  ON "catalog_sales"."cs_bill_cdemo_sk" = "customer_demographics"."cd_demo_sk"
-  AND "customer_demographics"."cd_marital_status" = 'M'
-JOIN "date_dim" AS "d1"
-  ON "catalog_sales"."cs_sold_date_sk" = "d1"."d_date_sk" AND "d1"."d_year" = 2002
-JOIN "household_demographics" AS "household_demographics"
-  ON "catalog_sales"."cs_bill_hdemo_sk" = "household_demographics"."hd_demo_sk"
-  AND "household_demographics"."hd_buy_potential" = '501-1000'
 JOIN "inventory" AS "inventory"
   ON "catalog_sales"."cs_item_sk" = "inventory"."inv_item_sk"
   AND "catalog_sales"."cs_quantity" > "inventory"."inv_quantity_on_hand"
+JOIN "warehouse" AS "warehouse"
+  ON "inventory"."inv_warehouse_sk" = "warehouse"."w_warehouse_sk"
 JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
-LEFT JOIN "promotion" AS "promotion"
-  ON "catalog_sales"."cs_promo_sk" = "promotion"."p_promo_sk"
+JOIN "customer_demographics" AS "customer_demographics"
+  ON "catalog_sales"."cs_bill_cdemo_sk" = "customer_demographics"."cd_demo_sk"
+  AND "customer_demographics"."cd_marital_status" = 'M'
+JOIN "household_demographics" AS "household_demographics"
+  ON "catalog_sales"."cs_bill_hdemo_sk" = "household_demographics"."hd_demo_sk"
+  AND "household_demographics"."hd_buy_potential" = '501-1000'
+JOIN "date_dim" AS "d1"
+  ON "catalog_sales"."cs_sold_date_sk" = "d1"."d_date_sk" AND "d1"."d_year" = 2002
 JOIN "date_dim" AS "d2"
   ON "d1"."d_week_seq" = "d2"."d_week_seq"
   AND "d2"."d_date_sk" = "inventory"."inv_date_sk"
 JOIN "date_dim" AS "d3"
   ON "catalog_sales"."cs_ship_date_sk" = "d3"."d_date_sk"
   AND "d3"."d_date" > "d1"."d_date" + INTERVAL '5' DAY
-JOIN "warehouse" AS "warehouse"
-  ON "inventory"."inv_warehouse_sk" = "warehouse"."w_warehouse_sk"
+LEFT JOIN "promotion" AS "promotion"
+  ON "catalog_sales"."cs_promo_sk" = "promotion"."p_promo_sk"
+LEFT JOIN "catalog_returns" AS "catalog_returns"
+  ON "catalog_returns"."cr_item_sk" = "catalog_sales"."cs_item_sk"
+  AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
 GROUP BY
   "item"."i_item_desc",
   "warehouse"."w_warehouse_name",
@@ -10454,12 +10454,7 @@ WHERE  curr_yr.i_brand_id = prev_yr.i_brand_id
            < 0.9
 ORDER  BY sales_cnt_diff
 LIMIT 100;
-WITH "date_dim_2" AS (
-  SELECT
-    "date_dim"."d_date_sk" AS "d_date_sk",
-    "date_dim"."d_year" AS "d_year"
-  FROM "date_dim" AS "date_dim"
-), "item_2" AS (
+WITH "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
     "item"."i_brand_id" AS "i_brand_id",
@@ -10470,6 +10465,11 @@ WITH "date_dim_2" AS (
   FROM "item" AS "item"
   WHERE
     "item"."i_category" = 'Men'
+), "date_dim_2" AS (
+  SELECT
+    "date_dim"."d_date_sk" AS "d_date_sk",
+    "date_dim"."d_year" AS "d_year"
+  FROM "date_dim" AS "date_dim"
 ), "sales_detail" AS (
   SELECT
     "date_dim"."d_year" AS "d_year",
@@ -10480,13 +10480,13 @@ WITH "date_dim_2" AS (
     "catalog_sales"."cs_quantity" - COALESCE("catalog_returns"."cr_return_quantity", 0) AS "sales_cnt",
     "catalog_sales"."cs_ext_sales_price" - COALESCE("catalog_returns"."cr_return_amount", 0.0) AS "sales_amt"
   FROM "catalog_sales" AS "catalog_sales"
+  JOIN "item_2" AS "item"
+    ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
   LEFT JOIN "catalog_returns" AS "catalog_returns"
     ON "catalog_returns"."cr_item_sk" = "catalog_sales"."cs_item_sk"
     AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-  JOIN "item_2" AS "item"
-    ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   UNION
   SELECT
     "date_dim"."d_year" AS "d_year",
@@ -10497,10 +10497,10 @@ WITH "date_dim_2" AS (
     "store_sales"."ss_quantity" - COALESCE("store_returns"."sr_return_quantity", 0) AS "sales_cnt",
     "store_sales"."ss_ext_sales_price" - COALESCE("store_returns"."sr_return_amt", 0.0) AS "sales_amt"
   FROM "store_sales" AS "store_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   LEFT JOIN "store_returns" AS "store_returns"
     ON "store_returns"."sr_item_sk" = "store_sales"."ss_item_sk"
     AND "store_returns"."sr_ticket_number" = "store_sales"."ss_ticket_number"
@@ -10514,10 +10514,10 @@ WITH "date_dim_2" AS (
     "web_sales"."ws_quantity" - COALESCE("web_returns"."wr_return_quantity", 0) AS "sales_cnt",
     "web_sales"."ws_ext_sales_price" - COALESCE("web_returns"."wr_return_amt", 0.0) AS "sales_amt"
   FROM "web_sales" AS "web_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   LEFT JOIN "web_returns" AS "web_returns"
     ON "web_returns"."wr_item_sk" = "web_sales"."ws_item_sk"
     AND "web_returns"."wr_order_number" = "web_sales"."ws_order_number"
@@ -11044,11 +11044,11 @@ WITH "date_dim_2" AS (
     SUM("web_sales"."ws_wholesale_cost") AS "ws_wc",
     SUM("web_sales"."ws_sales_price") AS "ws_sp"
   FROM "web_sales" AS "web_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   LEFT JOIN "web_returns" AS "web_returns"
     ON "web_returns"."wr_item_sk" = "web_sales"."ws_item_sk"
     AND "web_returns"."wr_order_number" = "web_sales"."ws_order_number"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
   WHERE
     "web_returns"."wr_order_number" IS NULL
   GROUP BY
@@ -11084,11 +11084,11 @@ WITH "date_dim_2" AS (
     SUM("store_sales"."ss_wholesale_cost") AS "ss_wc",
     SUM("store_sales"."ss_sales_price") AS "ss_sp"
   FROM "store_sales" AS "store_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   LEFT JOIN "store_returns" AS "store_returns"
     ON "store_returns"."sr_item_sk" = "store_sales"."ss_item_sk"
     AND "store_returns"."sr_ticket_number" = "store_sales"."ss_ticket_number"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
   WHERE
     "store_returns"."sr_ticket_number" IS NULL
   GROUP BY
@@ -11106,14 +11106,14 @@ SELECT
   COALESCE("ws"."ws_wc", 0) + COALESCE("cs"."cs_wc", 0) AS "other_chan_wholesale_cost",
   COALESCE("ws"."ws_sp", 0) + COALESCE("cs"."cs_sp", 0) AS "other_chan_sales_price"
 FROM "ss" AS "ss"
-LEFT JOIN "cs" AS "cs"
-  ON "cs"."cs_customer_sk" = "ss"."ss_customer_sk"
-  AND "cs"."cs_item_sk" = "cs"."cs_item_sk"
-  AND "cs"."cs_sold_year" = "ss"."ss_sold_year"
 LEFT JOIN "ws" AS "ws"
   ON "ss"."ss_customer_sk" = "ws"."ws_customer_sk"
   AND "ss"."ss_item_sk" = "ws"."ws_item_sk"
   AND "ss"."ss_sold_year" = "ws"."ws_sold_year"
+LEFT JOIN "cs" AS "cs"
+  ON "cs"."cs_customer_sk" = "ss"."ss_customer_sk"
+  AND "cs"."cs_item_sk" = "cs"."cs_item_sk"
+  AND "cs"."cs_sold_year" = "ss"."ss_sold_year"
 WHERE
   "ss"."ss_sold_year" = 1999
   AND COALESCE("cs"."cs_qty", 0) > 0
@@ -11348,17 +11348,17 @@ WITH "date_dim_2" AS (
     SUM(COALESCE("store_returns"."sr_return_amt", 0)) AS "returns1",
     SUM("store_sales"."ss_net_profit" - COALESCE("store_returns"."sr_net_loss", 0)) AS "profit"
   FROM "store_sales" AS "store_sales"
+  LEFT JOIN "store_returns" AS "store_returns"
+    ON "store_returns"."sr_item_sk" = "store_sales"."ss_item_sk"
+    AND "store_returns"."sr_ticket_number" = "store_sales"."ss_ticket_number"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  JOIN "store" AS "store"
+    ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
   JOIN "promotion_2" AS "promotion"
     ON "promotion"."p_promo_sk" = "store_sales"."ss_promo_sk"
-  JOIN "store" AS "store"
-    ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
-  LEFT JOIN "store_returns" AS "store_returns"
-    ON "store_returns"."sr_item_sk" = "store_sales"."ss_item_sk"
-    AND "store_returns"."sr_ticket_number" = "store_sales"."ss_ticket_number"
   GROUP BY
     "store"."s_store_id"
 ), "csr" AS (
@@ -11368,13 +11368,13 @@ WITH "date_dim_2" AS (
     SUM(COALESCE("catalog_returns"."cr_return_amount", 0)) AS "returns1",
     SUM("catalog_sales"."cs_net_profit" - COALESCE("catalog_returns"."cr_net_loss", 0)) AS "profit"
   FROM "catalog_sales" AS "catalog_sales"
-  JOIN "catalog_page" AS "catalog_page"
-    ON "catalog_page"."cp_catalog_page_sk" = "catalog_sales"."cs_catalog_page_sk"
   LEFT JOIN "catalog_returns" AS "catalog_returns"
     ON "catalog_returns"."cr_item_sk" = "catalog_sales"."cs_item_sk"
     AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
   JOIN "date_dim_2" AS "date_dim"
     ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+  JOIN "catalog_page" AS "catalog_page"
+    ON "catalog_page"."cp_catalog_page_sk" = "catalog_sales"."cs_catalog_page_sk"
   JOIN "item_2" AS "item"
     ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   JOIN "promotion_2" AS "promotion"
@@ -11388,17 +11388,17 @@ WITH "date_dim_2" AS (
     SUM(COALESCE("web_returns"."wr_return_amt", 0)) AS "returns1",
     SUM("web_sales"."ws_net_profit" - COALESCE("web_returns"."wr_net_loss", 0)) AS "profit"
   FROM "web_sales" AS "web_sales"
+  LEFT JOIN "web_returns" AS "web_returns"
+    ON "web_returns"."wr_item_sk" = "web_sales"."ws_item_sk"
+    AND "web_returns"."wr_order_number" = "web_sales"."ws_order_number"
   JOIN "date_dim_2" AS "date_dim"
     ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  JOIN "web_site" AS "web_site"
+    ON "web_sales"."ws_web_site_sk" = "web_site"."web_site_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_sales"."ws_item_sk"
   JOIN "promotion_2" AS "promotion"
     ON "promotion"."p_promo_sk" = "web_sales"."ws_promo_sk"
-  LEFT JOIN "web_returns" AS "web_returns"
-    ON "web_returns"."wr_item_sk" = "web_sales"."ws_item_sk"
-    AND "web_returns"."wr_order_number" = "web_sales"."ws_order_number"
-  JOIN "web_site" AS "web_site"
-    ON "web_sales"."ws_web_site_sk" = "web_site"."web_site_sk"
   GROUP BY
     "web_site"."web_site_id"
 ), "x" AS (
@@ -11541,13 +11541,13 @@ SELECT
   "customer_address"."ca_location_type" AS "ca_location_type",
   "ctr1"."ctr_total_return" AS "ctr_total_return"
 FROM "customer_total_return" AS "ctr1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
+JOIN "customer_address" AS "customer_address"
+  ON "customer_address"."ca_state" = 'TX'
 JOIN "customer" AS "customer"
   ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
-JOIN "customer_address" AS "customer_address"
-  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
-  AND "customer_address"."ca_state" = 'TX'
+  AND "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
 WHERE
   "_u_0"."_col_0" < "ctr1"."ctr_total_return"
 ORDER BY
@@ -11698,16 +11698,16 @@ WHERE  sr_items.item_id = cr_items.item_id
 ORDER  BY sr_items.item_id,
           sr_item_qty
 LIMIT 100;
-WITH "date_dim_2" AS (
-  SELECT
-    "date_dim"."d_date_sk" AS "d_date_sk",
-    "date_dim"."d_date" AS "d_date"
-  FROM "date_dim" AS "date_dim"
-), "item_2" AS (
+WITH "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
     "item"."i_item_id" AS "i_item_id"
   FROM "item" AS "item"
+), "date_dim_2" AS (
+  SELECT
+    "date_dim"."d_date_sk" AS "d_date_sk",
+    "date_dim"."d_date" AS "d_date"
+  FROM "date_dim" AS "date_dim"
 ), "_u_0" AS (
   SELECT
     "date_dim"."d_week_seq" AS "d_week_seq"
@@ -11731,10 +11731,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("store_returns"."sr_return_quantity") AS "sr_item_qty"
   FROM "store_returns" AS "store_returns"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "store_returns"."sr_returned_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "store_returns"."sr_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "store_returns"."sr_returned_date_sk"
   LEFT JOIN "_u_1" AS "_u_1"
     ON "_u_1"."d_date" = "date_dim"."d_date"
   WHERE
@@ -11756,10 +11756,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("catalog_returns"."cr_return_quantity") AS "cr_item_qty"
   FROM "catalog_returns" AS "catalog_returns"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "catalog_returns"."cr_returned_date_sk" = "date_dim"."d_date_sk"
   JOIN "item_2" AS "item"
     ON "catalog_returns"."cr_item_sk" = "item"."i_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "catalog_returns"."cr_returned_date_sk" = "date_dim"."d_date_sk"
   LEFT JOIN "_u_3" AS "_u_3"
     ON "_u_3"."d_date" = "date_dim"."d_date"
   WHERE
@@ -11781,10 +11781,10 @@ WITH "date_dim_2" AS (
     "item"."i_item_id" AS "item_id",
     SUM("web_returns"."wr_return_quantity") AS "wr_item_qty"
   FROM "web_returns" AS "web_returns"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_returns"."wr_returned_date_sk"
   JOIN "item_2" AS "item"
     ON "item"."i_item_sk" = "web_returns"."wr_item_sk"
+  JOIN "date_dim_2" AS "date_dim"
+    ON "date_dim"."d_date_sk" = "web_returns"."wr_returned_date_sk"
   LEFT JOIN "_u_5" AS "_u_5"
     ON "_u_5"."d_date" = "date_dim"."d_date"
   WHERE
@@ -12696,10 +12696,10 @@ WITH "web_sales_2" AS (
 SELECT
   SUM("web_sales"."ws_ext_discount_amt") AS "Excess Discount Amount"
 FROM "web_sales_2" AS "web_sales"
-JOIN "date_dim_2" AS "date_dim"
-  ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
 JOIN "item" AS "item"
   ON "item"."i_item_sk" = "web_sales"."ws_item_sk" AND "item"."i_manufact_id" = 718
+JOIN "date_dim_2" AS "date_dim"
+  ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "item"."i_item_sk"
 WHERE
@@ -12747,11 +12747,11 @@ SELECT
     END
   ) AS "sumsales"
 FROM "store_sales" AS "store_sales"
-JOIN "reason" AS "reason"
-  ON "reason"."r_reason_desc" = 'reason 38'
 LEFT JOIN "store_returns" AS "store_returns"
   ON "store_returns"."sr_item_sk" = "store_sales"."ss_item_sk"
   AND "store_returns"."sr_ticket_number" = "store_sales"."ss_ticket_number"
+JOIN "reason" AS "reason"
+  ON "reason"."r_reason_desc" = 'reason 38'
 WHERE
   "reason"."r_reason_sk" = "store_returns"."sr_reason_sk"
 GROUP BY
@@ -12811,22 +12811,22 @@ SELECT
   SUM("ws1"."ws_ext_ship_cost") AS "total shipping cost",
   SUM("ws1"."ws_net_profit") AS "total net profit"
 FROM "web_sales" AS "ws1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ws1"."ws_order_number"
-LEFT JOIN "_u_3" AS "_u_3"
-  ON "_u_3"."_u_4" = "ws1"."ws_order_number"
-JOIN "customer_address" AS "customer_address"
-  ON "customer_address"."ca_address_sk" = "ws1"."ws_ship_addr_sk"
-  AND "customer_address"."ca_state" = 'MT'
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-3-01'
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
     CAST('2000-3-01' AS DATE) + INTERVAL '60' DAY
   ) >= CAST("date_dim"."d_date" AS DATE)
+JOIN "customer_address" AS "customer_address"
+  ON "customer_address"."ca_address_sk" = "ws1"."ws_ship_addr_sk"
+  AND "customer_address"."ca_state" = 'MT'
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'
   AND "web_site"."web_site_sk" = "ws1"."ws_web_site_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "ws1"."ws_order_number"
+LEFT JOIN "_u_3" AS "_u_3"
+  ON "_u_3"."_u_4" = "ws1"."ws_order_number"
 WHERE
   "_u_3"."_u_4" IS NULL
   AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "ws1"."ws_warehouse_sk" <> "_x")
@@ -12901,22 +12901,22 @@ SELECT
   SUM("ws1"."ws_ext_ship_cost") AS "total shipping cost",
   SUM("ws1"."ws_net_profit") AS "total net profit"
 FROM "web_sales" AS "ws1"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."ws_order_number" = "ws1"."ws_order_number"
-LEFT JOIN "_u_1" AS "_u_1"
-  ON "_u_1"."wr_order_number" = "ws1"."ws_order_number"
-JOIN "customer_address" AS "customer_address"
-  ON "customer_address"."ca_address_sk" = "ws1"."ws_ship_addr_sk"
-  AND "customer_address"."ca_state" = 'IN'
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-4-01'
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
     CAST('2000-4-01' AS DATE) + INTERVAL '60' DAY
   ) >= CAST("date_dim"."d_date" AS DATE)
+JOIN "customer_address" AS "customer_address"
+  ON "customer_address"."ca_address_sk" = "ws1"."ws_ship_addr_sk"
+  AND "customer_address"."ca_state" = 'IN'
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'
   AND "web_site"."web_site_sk" = "ws1"."ws_web_site_sk"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."ws_order_number" = "ws1"."ws_order_number"
+LEFT JOIN "_u_1" AS "_u_1"
+  ON "_u_1"."wr_order_number" = "ws1"."ws_order_number"
 WHERE
   NOT "_u_0"."ws_order_number" IS NULL AND NOT "_u_1"."wr_order_number" IS NULL
 ORDER BY
@@ -13225,3 +13225,4 @@ ORDER BY
   "sm_type",
   "cc_name"
 LIMIT 100;
+

@@ -2072,6 +2072,18 @@ REVERSE(NULL);
 VARCHAR;
 
 # dialect: snowflake
+ROUND(42);
+INT;
+
+# dialect: snowflake
+ROUND(tbl.bigint_col, -1);
+BIGINT;
+
+# dialect: snowflake
+ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
+DOUBLE;
+
+# dialect: snowflake
 RIGHT('hello world', 5);
 VARCHAR;
 

@@ -48,6 +48,8 @@ jobs:
     runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
@@ -77,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Build sdist
       uses: PyO3/maturin-action@v1
       with:
@@ -114,7 +118,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        fetch-depth: 0  # Fetch all history and tags
+        fetch-depth: 0
     - name: Set up Python
       uses: actions/setup-python@v3
       with:

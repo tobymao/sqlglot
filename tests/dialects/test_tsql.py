@@ -537,6 +537,8 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_identity("UPDATE t1 SET k = t2.k FROM t2 OPTION (MAXRECURSION 0)")
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

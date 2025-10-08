@@ -668,7 +668,6 @@ class TSQL(Dialect):
             "USE": ("PLAN",),
         }
 
-
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)
 

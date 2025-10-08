@@ -8656,7 +8656,7 @@ class Parser(metaclass=_Parser):
             args.append(self.expression(exp.Distinct, expressions=[self._parse_lambda()]))
             self._match(TokenType.COMMA)
 
-        args.extend(self._parse_csv(self._parse_lambda))
+        args.extend(self._parse_function_args())
 
         return self.expression(
             expr_type, this=seq_get(args, 0), expression=seq_get(args, 1), count=seq_get(args, 2)

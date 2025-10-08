@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
 from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -214,6 +217,31 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
     trunc.set("unit", map_date_part(trunc.args["unit"]))
     return trunc
+
+
+def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
+    """
+    Handle TRUNC/TRUNCATE overloading in Snowflake:
+    - TRUNC(number, scale) -> numeric truncation (exp.Truncate)
+    - TRUNC(date/timestamp, unit) -> date/time truncation (exp.DateTrunc/exp.TimestampTrunc)
+    """
+    first, second = seq_get(args, 0), seq_get(args, 1)
+
+    if not first or not second:
+        return exp.Truncate.from_arg_list(args)
+
+    if not first.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        first = annotate_types(first, dialect=dialect)
+
+    if (
+        first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIME, exp.DataType.Type.TIMESTAMP)
+        and second.is_string
+    ):
+        return _date_trunc_to_time([second, first])
+
+    return exp.Truncate.from_arg_list(args)
 
 
 def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
@@ -580,6 +608,7 @@ class Snowflake(Dialect):
             exp.Atan2,
             exp.Atanh,
             exp.Cbrt,
+            exp.Truncate,
         },
         exp.DataType.Type.INT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.INT],
@@ -803,6 +832,8 @@ class Snowflake(Dialect):
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
+            "TRUNC": _build_trunc,
+            "TRUNCATE": _build_trunc,
             "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,
             "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,

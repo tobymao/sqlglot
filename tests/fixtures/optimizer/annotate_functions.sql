@@ -2464,6 +2464,22 @@ SUBSTR(tbl.str_col, NULL);
 STRING;
 
 # dialect: snowflake
+TRUNC(123.456);
+DOUBLE;
+
+# dialect: snowflake
+TRUNC(123.456, 2);
+DOUBLE;
+
+# dialect: snowflake
+TRUNCATE(123.456);
+DOUBLE;
+
+# dialect: snowflake
+TRUNCATE(123.456, 2);
+DOUBLE;
+
+# dialect: snowflake
 TAN(tbl.double_col);
 DOUBLE;
 

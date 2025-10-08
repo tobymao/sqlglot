@@ -42,6 +42,10 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")
+        self.validate_identity("SELECT TRUNC(123.456)")
+        self.validate_identity("SELECT TRUNC(123.456, 0)")
+        self.validate_identity("SELECT TRUNCATE(123.456)", "SELECT TRUNC(123.456)")
+        self.validate_identity("SELECT TRUNCATE(-975.975, -1)", "SELECT TRUNC(-975.975, -1)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")

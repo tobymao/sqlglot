@@ -7378,6 +7378,11 @@ class Round(Func):
     arg_types = {"this": True, "decimals": False, "truncate": False}
 
 
+class Truncate(Func):
+    _sql_names = ["TRUNC", "TRUNCATE"]
+    arg_types = {"this": True, "expression": False}
+
+
 class RowNumber(Func):
     arg_types = {"this": False}
 

@@ -22,6 +22,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT MOD(x, y)", "SELECT x % y")
+        self.validate_identity("SELECT ROUND(x)")
+        self.validate_identity("SELECT ROUND(123.456, -1)")
+        self.validate_identity("SELECT ROUND(123.456, 2, 'HALF_AWAY_FROM_ZERO')")
+
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),

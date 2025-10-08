@@ -1548,6 +1548,10 @@ ASIN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+CBRT(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 AI_AGG('foo', 'bar');
 VARCHAR;
 

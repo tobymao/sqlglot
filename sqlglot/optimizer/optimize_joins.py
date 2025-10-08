@@ -8,26 +8,6 @@ from sqlglot.helper import tsort
 JOIN_ATTRS = ("on", "side", "kind", "using", "method")
 
 
-def _is_reorderable(joins: t.List[exp.Join]) -> bool:
-    """
-    Checks if joins can be reordered without changing query semantics.
-
-    Joins with a side (LEFT, RIGHT, FULL) cannot be reordered easily,
-    the order affects which rows are included in the result.
-
-    Example:
-        >>> from sqlglot import parse_one, exp
-        >>> from sqlglot.optimizer.optimize_joins import _is_reorderable
-        >>> ast = parse_one("SELECT * FROM x JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
-        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
-        True
-        >>> ast = parse_one("SELECT * FROM x LEFT JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
-        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
-        False
-    """
-    return not any(join.side for join in joins)
-
-
 def optimize_joins(expression):
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
@@ -124,3 +104,23 @@ def normalize(expression):
 def other_table_names(join: exp.Join) -> t.Set[str]:
     on = join.args.get("on")
     return exp.column_table_names(on, join.alias_or_name) if on else set()
+
+
+def _is_reorderable(joins: t.List[exp.Join]) -> bool:
+    """
+    Checks if joins can be reordered without changing query semantics.
+
+    Joins with a side (LEFT, RIGHT, FULL) cannot be reordered easily,
+    the order affects which rows are included in the result.
+
+    Example:
+        >>> from sqlglot import parse_one, exp
+        >>> from sqlglot.optimizer.optimize_joins import _is_reorderable
+        >>> ast = parse_one("SELECT * FROM x JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        True
+        >>> ast = parse_one("SELECT * FROM x LEFT JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        False
+    """
+    return not any(join.side for join in joins)

@@ -1544,6 +1544,10 @@ ABS(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+ASIN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 AI_AGG('foo', 'bar');
 VARCHAR;
 

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v27.22.2] - 2025-10-08
+### :wrench: Chores
+- [`9ab3a96`](https://github.com/tobymao/sqlglot/commit/9ab3a96a853639224c80a9daff4674187a1a84ef) - bump sqlglotrs to 0.7.2 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.22.1] - 2025-10-08
 ### :boom: BREAKING CHANGES
 - due to [`7ac01c2`](https://github.com/tobymao/sqlglot/commit/7ac01c2ae9bc4375efb63c60e3221e85088fdd1f) - bump sqlglotrs to 0.7.1 *(commit by [@georgesittas](https://github.com/georgesittas))*:
@@ -9948,3 +9953,4 @@ Changelog
 [v27.21.0]: https://github.com/tobymao/sqlglot/compare/v27.20.0...v27.21.0
 [v27.22.0]: https://github.com/tobymao/sqlglot/compare/v27.21.0...v27.22.0
 [v27.22.1]: https://github.com/tobymao/sqlglot/compare/v27.22.0...v27.22.1
+[v27.22.2]: https://github.com/tobymao/sqlglot/compare/v27.22.1...v27.22.2

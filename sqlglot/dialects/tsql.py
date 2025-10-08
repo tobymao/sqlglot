@@ -904,11 +904,7 @@ class TSQL(Dialect):
 
         def _parse_update(self) -> exp.Update:
             expression = super()._parse_update()
-
-            options = self._parse_options()
-            if options:
-                expression.set("options", options)
-
+            expression.set("options", self._parse_options())
             return expression
 
         def _parse_partition(self) -> t.Optional[exp.Partition]:

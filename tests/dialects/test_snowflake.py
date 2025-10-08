@@ -21,6 +21,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET(a, b)")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
+        self.validate_identity("SELECT SINH(1.5)")
         self.validate_identity("SELECT MOD(x, y)", "SELECT x % y")
         self.validate_identity("SELECT ROUND(x)")
         self.validate_identity("SELECT ROUND(123.456, -1)")

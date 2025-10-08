@@ -376,7 +376,7 @@ class Spark2(Hive):
             if new_name == this:
                 if comment:
                     return f"ALTER COLUMN {this} COMMENT {comment}"
-                return super(Hive.Generator, self).altercolumn_sql(expression)
+                return super().altercolumn_sql(expression)
             return f"RENAME COLUMN {this} TO {new_name}"
 
         def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:

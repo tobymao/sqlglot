@@ -573,6 +573,7 @@ class Snowflake(Dialect):
             exp.Sin,
             exp.Tan,
             exp.Asin,
+            exp.Cbrt,
         },
         exp.DataType.Type.INT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.INT],

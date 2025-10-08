@@ -5063,9 +5063,8 @@ class Parser(metaclass=_Parser):
         elif self._match_set((TokenType.L_PAREN, TokenType.L_BRACKET)):
             matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
-            query = expressions[0]
 
-            if len(expressions) == 1 and isinstance(query, exp.Query):
+            if len(expressions) == 1 and isinstance(query := expressions[0], exp.Query):
                 this = self.expression(
                     exp.In,
                     this=this,

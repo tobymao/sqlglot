@@ -18,7 +18,7 @@ jobs:
        contains(github.event.pull_request.body, '/benchmark'))
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # Needed to fetch main branch too
       - name: Set up Python

@@ -4586,17 +4586,11 @@ class Parser(metaclass=_Parser):
             before_with_index = self._index
             with_prefix = self._match(TokenType.WITH)
 
-            cube_or_rollup = self._parse_cube_or_rollup(with_prefix=with_prefix)
-            if cube_or_rollup:
+            if cube_or_rollup := self._parse_cube_or_rollup(with_prefix=with_prefix):
                 key = "rollup" if isinstance(cube_or_rollup, exp.Rollup) else "cube"
                 elements[key].append(cube_or_rollup)
-            elif self._match(TokenType.GROUPING_SETS):
-                elements["grouping_sets"].append(
-                    self.expression(
-                        exp.GroupingSets,
-                        expressions=self._parse_wrapped_csv(self._parse_grouping_set),
-                    )
-                )
+            elif grouping_sets := self._parse_grouping_sets():
+                elements["grouping_sets"].append(grouping_sets)
             elif self._match_text_seq("TOTALS"):
                 elements["totals"] = True  # type: ignore
 
@@ -4621,8 +4615,15 @@ class Parser(metaclass=_Parser):
             kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_column)
         )
 
+    def _parse_grouping_sets(self) -> t.Optional[exp.GroupingSets]:
+        if self._match(TokenType.GROUPING_SETS):
+            return self.expression(
+                exp.GroupingSets, expressions=self._parse_wrapped_csv(self._parse_grouping_set)
+            )
+        return None
+
     def _parse_grouping_set(self) -> t.Optional[exp.Expression]:
-        return self._parse_cube_or_rollup() or self._parse_bitwise()
+        return self._parse_grouping_sets() or self._parse_cube_or_rollup() or self._parse_bitwise()
 
     def _parse_having(self, skip_having_token: bool = False) -> t.Optional[exp.Having]:
         if not skip_having_token and not self._match(TokenType.HAVING):

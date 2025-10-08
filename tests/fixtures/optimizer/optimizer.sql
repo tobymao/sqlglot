@@ -131,10 +131,10 @@ SELECT
   "x"."a" AS "a",
   SUM("y"."b") AS "sum_b"
 FROM "x" AS "x"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "x"."b"
 JOIN "y" AS "y"
   ON "x"."b" = "y"."b"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "x"."b"
 WHERE
   "_u_0"."_col_0" >= 0 AND "x"."a" > 1
 GROUP BY
@@ -240,10 +240,10 @@ SELECT
   "n"."b" AS "b",
   "o"."b" AS "b"
 FROM "n" AS "n"
-JOIN "n" AS "n2"
-  ON "n"."a" = "n2"."a"
 FULL JOIN "o" AS "o"
   ON "n"."a" = "o"."a"
+JOIN "n" AS "n2"
+  ON "n"."a" = "n2"."a"
 WHERE
   "o"."b" > 0;
 
@@ -1389,10 +1389,15 @@ SELECT
   SUM(`cs1`.`cs_ext_ship_cost`) AS `total shipping cost`,
   SUM(`cs1`.`cs_net_profit`) AS `total net profit`
 FROM `catalog_sales` AS `cs1`
-LEFT JOIN `_u_0` AS `_u_0`
-  ON `_u_0`.`_u_1` = `cs1`.`cs_order_number`
-LEFT JOIN `_u_3` AS `_u_3`
-  ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
+JOIN `date_dim` AS `date_dim`
+  ON `cs1`.`cs_ship_date_sk` = `date_dim`.`d_date_sk`
+  AND `date_dim`.`d_date` <= (
+    CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
+  )
+  AND `date_dim`.`d_date` >= '2002-02-01'
+JOIN `customer_address` AS `customer_address`
+  ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
+  AND `customer_address`.`ca_state` = 'GA'
 JOIN `call_center` AS `call_center`
   ON `call_center`.`cc_call_center_sk` = `cs1`.`cs_call_center_sk`
   AND `call_center`.`cc_county` IN (
@@ -1402,15 +1407,10 @@ JOIN `call_center` AS `call_center`
     'Williamson County',
     'Williamson County'
   )
-JOIN `customer_address` AS `customer_address`
-  ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
-  AND `customer_address`.`ca_state` = 'GA'
-JOIN `date_dim` AS `date_dim`
-  ON `cs1`.`cs_ship_date_sk` = `date_dim`.`d_date_sk`
-  AND `date_dim`.`d_date` <= (
-    CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
-  )
-  AND `date_dim`.`d_date` >= '2002-02-01'
+LEFT JOIN `_u_0` AS `_u_0`
+  ON `_u_0`.`_u_1` = `cs1`.`cs_order_number`
+LEFT JOIN `_u_3` AS `_u_3`
+  ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
 WHERE
   `_u_3`.`_u_4` IS NULL
   AND (
@@ -1498,3 +1498,41 @@ SELECT
   `_q_0`.`key` AS `key`,
   `_q_0`.`value` AS `value`
 FROM `_q_0` AS `_q_0`;
+
+# title: avoid reordering of non inner joins
+# execute: true
+WITH t1 AS (
+    SELECT NULL AS id1
+),
+t2 AS (
+    SELECT 1 AS id2
+),
+t3 AS (
+    SELECT 'info' AS info
+)
+SELECT 
+  t1.id1 AS id1,
+  t2.id2 AS id2,
+  t3.info AS info
+FROM t1
+RIGHT JOIN t2 AS t2
+  ON t1.id1 = t2.id2
+RIGHT JOIN t3 ON TRUE;
+WITH "t1" AS (
+  SELECT
+    NULL AS "id1"
+), "t2" AS (
+  SELECT
+    1 AS "id2"
+), "t3" AS (
+  SELECT
+    'info' AS "info"
+)
+SELECT
+  "t1"."id1" AS "id1",
+  "t2"."id2" AS "id2",
+  "t3"."info" AS "info"
+FROM "t1" AS "t1"
+RIGHT JOIN "t2" AS "t2"
+  ON "t1"."id1" = "t2"."id2"
+CROSS JOIN "t3" AS "t3";

@@ -19,10 +19,15 @@ def optimize_joins(expression):
     """
 
     for select in expression.find_all(exp.Select):
+        joins = select.args.get("joins", [])
+
+        if not _is_reorderable(joins):
+            continue
+
         references = {}
         cross_joins = []
 
-        for join in select.args.get("joins", []):
+        for join in joins:
             tables = other_table_names(join)
 
             if tables:
@@ -59,11 +64,20 @@ def reorder_joins(expression):
     """
     for from_ in expression.find_all(exp.From):
         parent = from_.parent
-        joins = {join.alias_or_name: join for join in parent.args.get("joins", [])}
-        dag = {name: other_table_names(join) for name, join in joins.items()}
+        joins = parent.args.get("joins", [])
+
+        if not _is_reorderable(joins):
+            continue
+
+        joins_by_name = {join.alias_or_name: join for join in joins}
+        dag = {name: other_table_names(join) for name, join in joins_by_name.items()}
         parent.set(
             "joins",
-            [joins[name] for name in tsort(dag) if name != from_.alias_or_name and name in joins],
+            [
+                joins_by_name[name]
+                for name in tsort(dag)
+                if name != from_.alias_or_name and name in joins_by_name
+            ],
         )
     return expression
 
@@ -90,3 +104,23 @@ def normalize(expression):
 def other_table_names(join: exp.Join) -> t.Set[str]:
     on = join.args.get("on")
     return exp.column_table_names(on, join.alias_or_name) if on else set()
+
+
+def _is_reorderable(joins: t.List[exp.Join]) -> bool:
+    """
+    Checks if joins can be reordered without changing query semantics.
+
+    Joins with a side (LEFT, RIGHT, FULL) cannot be reordered easily,
+    the order affects which rows are included in the result.
+
+    Example:
+        >>> from sqlglot import parse_one, exp
+        >>> from sqlglot.optimizer.optimize_joins import _is_reorderable
+        >>> ast = parse_one("SELECT * FROM x JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        True
+        >>> ast = parse_one("SELECT * FROM x LEFT JOIN y ON x.id = y.id JOIN z ON y.id = z.id")
+        >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
+        False
+    """
+    return not any(join.side for join in joins)

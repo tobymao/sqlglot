@@ -66,6 +66,43 @@ DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
 BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
 
+# Unsupported options:
+# - OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
+# - TABLE HINT
+OPTIONS: parser.OPTIONS_TYPE = {
+    **dict.fromkeys(
+        (
+            "DISABLE_OPTIMIZED_PLAN_FORCING",
+            "FAST",
+            "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX",
+            "LABEL",
+            "MAXDOP",
+            "MAXRECURSION",
+            "MAX_GRANT_PERCENT",
+            "MIN_GRANT_PERCENT",
+            "NO_PERFORMANCE_SPOOL",
+            "QUERYTRACEON",
+            "RECOMPILE",
+        ),
+        tuple(),
+    ),
+    "CONCAT": ("UNION",),
+    "DISABLE": ("EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"),
+    "EXPAND": ("VIEWS",),
+    "FORCE": ("EXTERNALPUSHDOWN", "ORDER", "SCALEOUTEXECUTION"),
+    "HASH": ("GROUP", "JOIN", "UNION"),
+    "KEEP": ("PLAN",),
+    "KEEPFIXED": ("PLAN",),
+    "LOOP": ("JOIN",),
+    "MERGE": ("JOIN", "UNION"),
+    "OPTIMIZE": (("FOR", "UNKNOWN"),),
+    "ORDER": ("GROUP",),
+    "PARAMETERIZATION": ("FORCED", "SIMPLE"),
+    "ROBUST": ("PLAN",),
+    "USE": ("PLAN",),
+}
+
+
 XML_OPTIONS: parser.OPTIONS_TYPE = {
     **dict.fromkeys(
         (
@@ -528,6 +565,7 @@ class TSQL(Dialect):
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
+            TokenType.OPTION: lambda self: ("options", self._parse_options()),
             TokenType.FOR: lambda self: ("for", self._parse_for()),
         }
 
@@ -632,42 +670,6 @@ class TSQL(Dialect):
 
         SET_OP_MODIFIERS = {"offset"}
 
-        # Unsupported options:
-        # - OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
-        # - TABLE HINT
-        OPTIONS: parser.OPTIONS_TYPE = {
-            **dict.fromkeys(
-                (
-                    "DISABLE_OPTIMIZED_PLAN_FORCING",
-                    "FAST",
-                    "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX",
-                    "LABEL",
-                    "MAXDOP",
-                    "MAXRECURSION",
-                    "MAX_GRANT_PERCENT",
-                    "MIN_GRANT_PERCENT",
-                    "NO_PERFORMANCE_SPOOL",
-                    "QUERYTRACEON",
-                    "RECOMPILE",
-                ),
-                tuple(),
-            ),
-            "CONCAT": ("UNION",),
-            "DISABLE": ("EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"),
-            "EXPAND": ("VIEWS",),
-            "FORCE": ("EXTERNALPUSHDOWN", "ORDER", "SCALEOUTEXECUTION"),
-            "HASH": ("GROUP", "JOIN", "UNION"),
-            "KEEP": ("PLAN",),
-            "KEEPFIXED": ("PLAN",),
-            "LOOP": ("JOIN",),
-            "MERGE": ("JOIN", "UNION"),
-            "OPTIMIZE": (("FOR", "UNKNOWN"),),
-            "ORDER": ("GROUP",),
-            "PARAMETERIZATION": ("FORCED", "SIMPLE"),
-            "ROBUST": ("PLAN",),
-            "USE": ("PLAN",),
-        }
-
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)
 
@@ -687,6 +689,22 @@ class TSQL(Dialect):
                 return self._parse_types()
 
             return self._parse_function() or self._parse_types()
+
+        def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
+            if not self._match(TokenType.OPTION):
+                return None
+
+            def _parse_option() -> t.Optional[exp.Expression]:
+                option = self._parse_var_from_options(OPTIONS)
+                if not option:
+                    return None
+
+                self._match(TokenType.EQ)
+                return self.expression(
+                    exp.QueryOption, this=option, expression=self._parse_primary_or_var()
+                )
+
+            return self._parse_wrapped_csv(_parse_option)
 
         def _parse_xml_key_value_option(self) -> exp.XMLKeyValueOption:
             this = self._parse_primary_or_var()
@@ -883,6 +901,15 @@ class TSQL(Dialect):
                 this = self._parse_schema(self._parse_id_var(any_token=False))
 
             return self.expression(exp.UniqueColumnConstraint, this=this)
+
+        def _parse_update(self) -> exp.Update:
+            expression = super()._parse_update()
+
+            options = self._parse_options()
+            if options:
+                expression.set("options", options)
+
+            return expression
 
         def _parse_partition(self) -> t.Optional[exp.Partition]:
             if not self._match_text_seq("WITH", "(", "PARTITIONS"):

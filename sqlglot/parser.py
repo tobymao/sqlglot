@@ -1273,7 +1273,6 @@ class Parser(metaclass=_Parser):
         TokenType.QUALIFY: lambda self: ("qualify", self._parse_qualify()),
         TokenType.WINDOW: lambda self: ("windows", self._parse_window_clause()),
         TokenType.ORDER_BY: lambda self: ("order", self._parse_order()),
-        TokenType.OPTION: lambda self: ("options", self._parse_options()),
         TokenType.LIMIT: lambda self: ("limit", self._parse_limit()),
         TokenType.FETCH: lambda self: ("limit", self._parse_limit()),
         TokenType.OFFSET: lambda self: ("offset", self._parse_offset()),
@@ -1303,8 +1302,6 @@ class Parser(metaclass=_Parser):
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
-
-    OPTIONS: OPTIONS_TYPE = {}
 
     TYPE_LITERAL_PARSERS = {
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
@@ -3121,22 +3118,6 @@ class Parser(metaclass=_Parser):
             limit=self._parse_limit(),
         )
 
-    def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
-        if not self._match(TokenType.OPTION):
-            return None
-
-        def _parse_option() -> t.Optional[exp.Expression]:
-            option = self._parse_var_from_options(self.OPTIONS)
-            if not option:
-                return None
-
-            self._match(TokenType.EQ)
-            return self.expression(
-                exp.QueryOption, this=option, expression=self._parse_primary_or_var()
-            )
-
-        return self._parse_wrapped_csv(_parse_option)
-
     def _parse_update(self) -> exp.Update:
         kwargs: t.Dict[str, t.Any] = {
             "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
@@ -3154,8 +3135,6 @@ class Parser(metaclass=_Parser):
                 kwargs["order"] = self._parse_order()
             elif self._match(TokenType.LIMIT, advance=False):
                 kwargs["limit"] = self._parse_limit()
-            elif self._match(TokenType.OPTION, advance=False):
-                kwargs["options"] = self._parse_options()
             else:
                 break
 

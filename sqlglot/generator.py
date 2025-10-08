@@ -2201,7 +2201,7 @@ class Generator(metaclass=_Generator):
         else:
             expression_sql = f"{returning}{from_sql}{where_sql}"
         options = self.expressions(expression, key="options")
-        options = f" OPTION ({options})" if options else ""
+        options = f" OPTION({options})" if options else ""
         sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}{options}"
         return self.prepend_ctes(expression, sql)
 

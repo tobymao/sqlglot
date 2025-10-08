@@ -6918,10 +6918,12 @@ class Parser(metaclass=_Parser):
     def _parse_json_column_def(self) -> exp.JSONColumnDef:
         if not self._match_text_seq("NESTED"):
             this = self._parse_id_var()
+            ordinality = self._match_pair(TokenType.FOR, TokenType.ORDINALITY)
             kind = self._parse_types(allow_identifiers=False)
             nested = None
         else:
             this = None
+            ordinality = None
             kind = None
             nested = True
 
@@ -6934,6 +6936,7 @@ class Parser(metaclass=_Parser):
             kind=kind,
             path=path,
             nested_schema=nested_schema,
+            ordinality=ordinality,
         )
 
     def _parse_json_schema(self) -> exp.JSONSchema:

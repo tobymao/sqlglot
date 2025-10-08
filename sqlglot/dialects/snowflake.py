@@ -573,8 +573,6 @@ class Snowflake(Dialect):
             exp.Sin,
             exp.Tan,
             exp.Asin,
-        },
-        exp.DataType.Type.FLOAT: {
             exp.Cbrt,
         },
         exp.DataType.Type.INT: {

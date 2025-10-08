@@ -1549,7 +1549,7 @@ DOUBLE;
 
 # dialect: snowflake
 CBRT(tbl.double_col);
-FLOAT;
+DOUBLE;
 
 # dialect: snowflake
 AI_AGG('foo', 'bar');

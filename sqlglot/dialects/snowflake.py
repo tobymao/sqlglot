@@ -674,6 +674,7 @@ class Snowflake(Dialect):
                 exp.Stuff,
                 exp.Substring,
                 exp.Round,
+                exp.Ceil,
             )
         },
         **{

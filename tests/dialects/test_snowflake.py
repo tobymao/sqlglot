@@ -362,6 +362,12 @@ class TestSnowflake(Validator):
             "SELECT CEIL(5.3)",
         )
         self.validate_identity(
+            "SELECT CEIL(3.14)",
+        )
+        self.validate_identity(
+            "SELECT CEIL(3.14, 1)",
+        )
+        self.validate_identity(
             "CAST(x AS BYTEINT)",
             "CAST(x AS INT)",
         )

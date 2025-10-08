@@ -1768,6 +1768,18 @@ EXP(5.5);
 DOUBLE;
 
 # dialect: snowflake
+FLOOR(42);
+INT;
+
+# dialect: snowflake
+FLOOR(135.135, 1);
+DOUBLE;
+
+# dialect: snowflake
+FLOOR(tbl.bigint_col, -1);
+BIGINT;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 

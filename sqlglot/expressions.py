@@ -7356,7 +7356,7 @@ class Replace(Func):
 
 
 class Radians(Func):
-    arg_types = {"this": True}
+    pass
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16

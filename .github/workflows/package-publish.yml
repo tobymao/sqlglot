@@ -148,9 +148,15 @@ jobs:
       with:
         token: ${{ github.token }}
         tag: ${{ github.ref_name }}
-    - name: Commit API docs, CHANGELOG.md
+    - name: Commit CHANGELOG.md
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         branch: main
-        commit_message: 'docs: update API docs, CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
-        file_pattern: 'docs CHANGELOG.md'
+        commit_message: "Update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+        file_pattern: "CHANGELOG.md"
+    - name: Commit API docs
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        branch: api-docs
+        commit_message: 'Update API docs for ${{ github.ref_name }} [skip ci]'
+        file_pattern: 'docs'

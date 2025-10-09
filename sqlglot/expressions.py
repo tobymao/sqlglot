@@ -1727,6 +1727,7 @@ class CTE(DerivedTable):
         "alias": True,
         "scalar": False,
         "materialized": False,
+        "key_expressions": False,
     }
 
 

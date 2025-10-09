@@ -1332,7 +1332,10 @@ class Generator(metaclass=_Generator):
         elif materialized:
             materialized = "MATERIALIZED "
 
-        return f"{alias_sql} AS {materialized or ''}{self.wrap(expression)}"
+        key_expressions = self.expressions(expression, key="key_expressions", flat=True)
+        key_expressions = f" USING KEY ({key_expressions})" if key_expressions else ""
+
+        return f"{alias_sql}{key_expressions} AS {materialized or ''}{self.wrap(expression)}"
 
     def tablealias_sql(self, expression: exp.TableAlias) -> str:
         alias = self.sql(expression, "this")

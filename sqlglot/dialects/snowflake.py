@@ -571,6 +571,7 @@ class Snowflake(Dialect):
             exp.Degrees,
             exp.Exp,
             exp.Sin,
+            exp.Sinh,
             exp.Tan,
             exp.Asin,
             exp.Asinh,

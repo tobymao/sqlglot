@@ -2272,6 +2272,14 @@ SIN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+SINH(1);
+DOUBLE;
+
+# dialect: snowflake
+SINH(1.5);
+DOUBLE;
+
+# dialect: snowflake
 SIGN(tbl.double_col);
 INT;
 

@@ -1,6 +1,37 @@
 Changelog
 =========
 
+## [v27.25.0] - 2025-10-09
+### :boom: BREAKING CHANGES
+- due to [`6f31b86`](https://github.com/tobymao/sqlglot/commit/6f31b86599258afe156aa3d9ccc42389cac37021) - Annotate type for snowflake FLOOR function *(PR [#6030](https://github.com/tobymao/sqlglot/pull/6030) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake FLOOR function (#6030)
+
+- due to [`cecab2f`](https://github.com/tobymao/sqlglot/commit/cecab2fd66d578ddc765b5fd0e7b155971280a0c) - annotate type for Snowflake ATANH function *(PR [#6054](https://github.com/tobymao/sqlglot/pull/6054) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake ATANH function (#6054)
+
+- due to [`08339a9`](https://github.com/tobymao/sqlglot/commit/08339a902138211f67cfb009d2576b22ea8d8e42) - annotate type for Snowflake FACTORIAL function *(PR [#6053](https://github.com/tobymao/sqlglot/pull/6053) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  annotate type for Snowflake FACTORIAL function (#6053)
+
+
+### :sparkles: New Features
+- [`6f31b86`](https://github.com/tobymao/sqlglot/commit/6f31b86599258afe156aa3d9ccc42389cac37021) - **optimizer**: Annotate type for snowflake FLOOR function *(PR [#6030](https://github.com/tobymao/sqlglot/pull/6030) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`b7463d5`](https://github.com/tobymao/sqlglot/commit/b7463d5b0a1e286498d7ccfd9a07ef7edfa80bb2) - **optimizer**: Annotate type for snowflake ASIN function. *(PR [#6049](https://github.com/tobymao/sqlglot/pull/6049) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`fe959a5`](https://github.com/tobymao/sqlglot/commit/fe959a5598508526ed5910a4c62372116b5d3c30) - **optimizer**: Annotate type for snowflake CBRT function *(PR [#6050](https://github.com/tobymao/sqlglot/pull/6050) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`cecab2f`](https://github.com/tobymao/sqlglot/commit/cecab2fd66d578ddc765b5fd0e7b155971280a0c) - **optimizer**: annotate type for Snowflake ATANH function *(PR [#6054](https://github.com/tobymao/sqlglot/pull/6054) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`08339a9`](https://github.com/tobymao/sqlglot/commit/08339a902138211f67cfb009d2576b22ea8d8e42) - **optimizer**: annotate type for Snowflake FACTORIAL function *(PR [#6053](https://github.com/tobymao/sqlglot/pull/6053) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+
+### :bug: Bug Fixes
+- [`3bb6bb3`](https://github.com/tobymao/sqlglot/commit/3bb6bb3e5193ed53c803c3786a1791f15cd2f89a) - **parser**: support :: cast operator after IS NULL/IS NOT NULL *(PR [#6056](https://github.com/tobymao/sqlglot/pull/6056) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#6055](https://github.com/tobymao/sqlglot/issues/6055) opened by [@vchan](https://github.com/vchan)*
+
+### :wrench: Chores
+- [`15030a3`](https://github.com/tobymao/sqlglot/commit/15030a3996d005d79f27408a68d17f94c98aec68) - **optimizer**: Add tests for snowflake LN and LOG functions *(PR [#6048](https://github.com/tobymao/sqlglot/pull/6048) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`2ae8dbd`](https://github.com/tobymao/sqlglot/commit/2ae8dbd4d1b43bb27647144c32b2a781ff3edbeb) - push docs to `api-docs` branch instead of main *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.22.2] - 2025-10-08
 ### :wrench: Chores
 - [`9ab3a96`](https://github.com/tobymao/sqlglot/commit/9ab3a96a853639224c80a9daff4674187a1a84ef) - bump sqlglotrs to 0.7.2 *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -7787,3 +7818,4 @@ Changelog
 [v27.22.0]: https://github.com/tobymao/sqlglot/compare/v27.21.0...v27.22.0
 [v27.22.1]: https://github.com/tobymao/sqlglot/compare/v27.22.0...v27.22.1
 [v27.22.2]: https://github.com/tobymao/sqlglot/compare/v27.22.1...v27.22.2
+[v27.25.0]: https://github.com/tobymao/sqlglot/compare/v27.24.2...v27.25.0

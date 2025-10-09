@@ -1640,6 +1640,22 @@ CHARINDEX('world', 'hello world', 1);
 INT;
 
 # dialect: snowflake
+CEIL(3.14);
+DOUBLE;
+
+# dialect: snowflake
+CEIL(3.14::FLOAT, 1);
+FLOAT;
+
+# dialect: snowflake
+CEIL(3.14, 1);
+DOUBLE;
+
+# dialect: snowflake
+CEIL(10::NUMERIC);
+NUMBER;
+
+# dialect: snowflake
 CHAR(65);
 VARCHAR;
 

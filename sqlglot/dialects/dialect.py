@@ -721,6 +721,7 @@ class Dialect(metaclass=_Dialect):
             exp.Exp,
             exp.Ln,
             exp.Log,
+            exp.Pi,
             exp.Pow,
             exp.Quantile,
             exp.Round,

@@ -1548,6 +1548,10 @@ ASIN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+ATAN2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 ATANH(tbl.double_col);
 DOUBLE;
 

@@ -2136,6 +2136,10 @@ ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
 DOUBLE;
 
 # dialect: snowflake
+SQUARE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 RIGHT('hello world', 5);
 VARCHAR;
 

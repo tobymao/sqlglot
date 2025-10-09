@@ -50,6 +50,20 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtr
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
 
+JSON_PATH_FUNCTIONS = (
+    exp.JSONExtract,
+    exp.JSONExtractScalar,
+    exp.JSONExtractArray,
+    exp.JSONBExtract,
+    exp.JSONBExtractScalar,
+    exp.JSONValueArray,
+    exp.JSONKeysAtDepth,
+    exp.JSONSet,
+    exp.JSONRemove,
+    exp.JSONArrayAppend,
+    exp.JSONArrayInsert,
+)
+
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
@@ -674,6 +688,19 @@ class BigQuery(Dialect):
             and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
         ):
             parent = expression.parent
+
+            # JSON PATHs use case-sensitive dot-notation
+            current = parent
+            while current:
+                if isinstance(current, JSON_PATH_FUNCTIONS):
+                    return t.cast(E, expression)
+
+                # node isn't part of a path expression
+                if not isinstance(current, (exp.Dot, exp.Column)):
+                    break
+
+                current = current.parent
+
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 

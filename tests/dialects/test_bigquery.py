@@ -3066,3 +3066,72 @@ OPTIONS (
                 "snowflake": """SELECT TO_JSON(OBJECT_CONSTRUCT('name', 'Alice')) AS json_data""",
             },
         )
+
+    def test_json_path_case_preservation(self):
+        """Test that JSON function paths preserve case while regular identifiers are normalized.
+
+        BigQuery's JSON functions like JSON_VALUE and JSON_EXTRACT_SCALAR use case-sensitive
+        dot-notation to access JSON fields.
+        """
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+
+        def parse_normalize_generate(sql, dialect="bigquery"):
+            parsed = parse_one(sql, dialect=dialect)
+            normalized = normalize_identifiers(parsed, dialect=dialect)
+            return normalized.sql(dialect=dialect)
+
+        with self.subTest("JSON_VALUE with single field"):
+            result = parse_normalize_generate("SELECT JSON_VALUE(CaseSensitiveField, '$')")
+            self.assertIn("CaseSensitiveField", result)
+
+        with self.subTest("JSON_VALUE with deeply nested path"):
+            result = parse_normalize_generate(
+                "SELECT JSON_VALUE(sync_stats.extract_metrics.UnstructuredFileStats.fileOperationStatistics.UPLOADED.numberOfFiles, '$')"
+            )
+            self.assertIn("UnstructuredFileStats", result)
+            self.assertIn("fileOperationStatistics", result)
+            self.assertIn("UPLOADED", result)
+            self.assertIn("numberOfFiles", result)
+
+        with self.subTest("JSON_VALUE with regular columns"):
+            result = parse_normalize_generate(
+                "SELECT RegularColumn, JSON_VALUE(data.JsonField, '$') FROM MyTable"
+            )
+            self.assertIn("JsonField", result)
+            self.assertIn("regularcolumn", result)
+            self.assertNotIn("RegularColumn", result)
+            self.assertIn("mytable", result)
+            self.assertNotIn("MyTable", result)
+
+        with self.subTest("JSON_VALUE in WHERE clause"):
+            result = parse_normalize_generate(
+                "SELECT * FROM mytable WHERE JSON_VALUE(data.StatusField, '$') = 'active'"
+            )
+            self.assertIn("StatusField", result)
+            self.assertIn("mytable", result)
+
+        json_path_functions = [
+            ("JSON_EXTRACT", "SELECT JSON_EXTRACT(data.mixedCASE.CamelCase, '$')"),
+            (
+                "JSON_EXTRACT_SCALAR",
+                "SELECT JSON_EXTRACT_SCALAR(data.mixedCASE.CamelCase, '$.path')",
+            ),
+            ("JSON_VALUE_ARRAY", "SELECT JSON_VALUE_ARRAY(data.mixedCASE.CamelCase, '$')"),
+            ("JSON_EXTRACT_ARRAY", "SELECT JSON_EXTRACT_ARRAY(data.mixedCASE.CamelCase, '$')"),
+            ("JSON_KEYS", "SELECT JSON_KEYS(data.mixedCASE.CamelCase)"),
+            ("JSON_SET", "SELECT JSON_SET(data.mixedCASE.CamelCase, '$.new', 'value')"),
+            ("JSON_REMOVE", "SELECT JSON_REMOVE(data.mixedCASE.CamelCase, '$.path')"),
+            (
+                "JSON_ARRAY_APPEND",
+                "SELECT JSON_ARRAY_APPEND(data.mixedCASE.CamelCase, '$.path', 'value')",
+            ),
+            (
+                "JSON_ARRAY_INSERT",
+                "SELECT JSON_ARRAY_INSERT(data.mixedCASE.CamelCase, '$.path[0]', 'value')",
+            ),
+        ]
+        for func_name, sql in json_path_functions:
+            with self.subTest(f"{func_name} with nested path"):
+                result = parse_normalize_generate(sql)
+                self.assertIn("mixedCASE", result)
+                self.assertIn("CamelCase", result)

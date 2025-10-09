@@ -62,6 +62,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ASIN(0.5)")
         self.validate_identity("SELECT ATANH(0.5)")
         self.validate_identity("SELECT CBRT(27.0)")
+        self.validate_identity("SELECT POW(2, 3)", "SELECT POWER(2, 3)")
+        self.validate_identity("SELECT POW(2.5, 3.0)", "SELECT POWER(2.5, 3.0)")
         self.validate_identity("SELECT SIGN(x)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")

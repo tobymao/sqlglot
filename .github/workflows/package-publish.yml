@@ -144,11 +144,13 @@ jobs:
         make docs
     - name: Update CHANGELOG
       id: changelog
+      continue-on-error: true
       uses: requarks/changelog-action@v1
       with:
         token: ${{ github.token }}
         tag: ${{ github.ref_name }}
     - name: Commit CHANGELOG.md
+      continue-on-error: true
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         branch: main

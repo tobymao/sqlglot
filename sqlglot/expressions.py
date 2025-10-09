@@ -7355,6 +7355,10 @@ class Replace(Func):
     arg_types = {"this": True, "expression": True, "replacement": False}
 
 
+class Radians(Func):
+    arg_types = {"this": True}
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
 # tsql third argument function == trunctaion if not 0
 class Round(Func):

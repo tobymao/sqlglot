@@ -1928,6 +1928,10 @@ POSITION('abc', 'abcdef', 1);
 INT;
 
 # dialect: snowflake
+PI();
+DOUBLE;
+
+# dialect: snowflake
 POW(tbl.double_col, 2);
 DOUBLE;
 

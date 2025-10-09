@@ -7201,6 +7201,10 @@ class VectorSearch(Func):
     }
 
 
+class Pi(Func):
+    arg_types = {}
+
+
 class Pow(Binary, Func):
     _sql_names = ["POWER", "POW"]
 

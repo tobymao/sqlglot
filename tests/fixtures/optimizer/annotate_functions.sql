@@ -1920,6 +1920,10 @@ POSITION('abc', 'abcdef', 1);
 INT;
 
 # dialect: snowflake
+POW(tbl.double_col, 2);
+DOUBLE;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 

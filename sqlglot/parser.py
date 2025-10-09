@@ -5053,7 +5053,8 @@ class Parser(metaclass=_Parser):
                 return None
 
         this = self.expression(exp.Is, this=this, expression=expression)
-        return self.expression(exp.Not, this=this) if negate else this
+        this = self.expression(exp.Not, this=this) if negate else this
+        return self._parse_column_ops(this)
 
     def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.In:
         unnest = self._parse_unnest(with_alias=False)

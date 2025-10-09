@@ -4238,3 +4238,23 @@ FROM subquery2""",
                 "databricks": "x IS NOT UNKNOWN",
             },
         )
+
+    def test_is_with_dcolon(self):
+        self.validate_all(
+            "SELECT CAST(col IS NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
+            read={
+                "": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "duckdb": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "redshift": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "postgres": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(NOT col IS NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
+            read={
+                "": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "duckdb": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "redshift": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "postgres": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+            },
+        )

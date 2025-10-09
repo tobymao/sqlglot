@@ -573,6 +573,7 @@ class Snowflake(Dialect):
             exp.Sin,
             exp.Tan,
             exp.Asin,
+            exp.Asinh,
             exp.Atan2,
             exp.Atanh,
             exp.Cbrt,

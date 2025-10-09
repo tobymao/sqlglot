@@ -1487,6 +1487,14 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")
 
+        self.validate_all(
+            "SELECT x'ABCD'",
+            write={
+                "snowflake": "SELECT x'ABCD'",
+                "duckdb": "SELECT CAST(HEX(FROM_HEX('ABCD')) AS VARBINARY)",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

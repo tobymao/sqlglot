@@ -1834,6 +1834,14 @@ WHERE
         self.validate_identity("SELECT TRANSLATE(MODEL, 'in', 't') FROM (SELECT 'input' AS MODEL)")
         self.validate_identity("SELECT GRANT FROM (SELECT 'input' AS GRANT)")
 
+        self.validate_all(
+            "SELECT 0xA",
+            write={
+                "bigquery": "SELECT 0xA",
+                "duckdb": "SELECT 10",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

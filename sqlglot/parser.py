@@ -3434,6 +3434,10 @@ class Parser(metaclass=_Parser):
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 
+        key_expressions = (
+            self._parse_wrapped_id_vars() if self._match_text_seq("USING", "KEY") else None
+        )
+
         if not self._match(TokenType.ALIAS) and not self.OPTIONAL_ALIAS_TOKEN_CTE:
             self._retreat(index)
             return None
@@ -3452,6 +3456,7 @@ class Parser(metaclass=_Parser):
             this=self._parse_wrapped(self._parse_statement),
             alias=alias,
             materialized=materialized,
+            key_expressions=key_expressions,
             comments=comments,
         )
 

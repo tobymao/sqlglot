@@ -60,6 +60,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SOUNDEX_P123(column_name)")
         self.validate_identity("SELECT ABS(x)")
         self.validate_identity("SELECT ASIN(0.5)")
+        self.validate_identity("SELECT ATAN2(0.5, 0.3)")
         self.validate_identity("SELECT ATANH(0.5)")
         self.validate_identity("SELECT CBRT(27.0)")
         self.validate_identity("SELECT POW(2, 3)", "SELECT POWER(2, 3)")

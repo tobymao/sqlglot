@@ -1780,6 +1780,10 @@ EXP(5.5);
 DOUBLE;
 
 # dialect: snowflake
+FACTORIAL(5);
+BIGINT;
+
+# dialect: snowflake
 FLOOR(42);
 INT;
 

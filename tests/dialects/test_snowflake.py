@@ -40,6 +40,7 @@ class TestSnowflake(Validator):
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("SELECT FACTORIAL(5)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")

@@ -6406,6 +6406,10 @@ class Exp(Func):
     pass
 
 
+class Factorial(Func):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/flatten
 class Explode(Func, UDTF):
     arg_types = {"this": True, "expressions": False}

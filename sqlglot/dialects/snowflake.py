@@ -631,6 +631,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.BIGINT: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BIGINT],
+            exp.Factorial,
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
         },

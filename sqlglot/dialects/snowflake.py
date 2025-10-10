@@ -592,6 +592,7 @@ class Snowflake(Dialect):
             exp.JarowinklerSimilarity,
             exp.StrPosition,
             exp.Unicode,
+            exp.WidthBucket,
         },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],

@@ -1781,6 +1781,10 @@ class TestSnowflake(Validator):
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+        self.validate_identity(
+            "SELECT DATE_TRUNC('year', TO_DATE('2024-05-09'))",
+            "SELECT DATE_TRUNC('YEAR', CAST('2024-05-09' AS DATE))",
+        )
 
         self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
 

@@ -547,6 +547,23 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
+def _annotate_date_trunc(
+    self: TypeAnnotator, expression: exp.DateTrunc | exp.TimestampTrunc
+) -> exp.DateTrunc | exp.TimestampTrunc:
+    self._annotate_args(expression)
+
+    this_type = expression.this.type
+
+    if not this_type:
+        self._set_type(expression, exp.DataType.Type.UNKNOWN)
+        return expression
+
+    # DATE_TRUNC returns the same data type as the input expression
+    self._set_type(expression, this_type.this)
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -690,6 +707,8 @@ class Snowflake(Dialect):
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
+        exp.DateTrunc: _annotate_date_trunc,
+        exp.TimestampTrunc: _annotate_date_trunc,
     }
 
     TIME_MAPPING = {

@@ -5562,6 +5562,10 @@ class Tan(Func):
     pass
 
 
+class Tanh(Func):
+    pass
+
+
 class Degrees(Func):
     pass
 

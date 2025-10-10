@@ -1552,6 +1552,10 @@ ASINH(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+ATAN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 ATAN2(tbl.double_col, tbl.double_col);
 DOUBLE;
 
@@ -2165,6 +2169,10 @@ DOUBLE;
 
 # dialect: snowflake
 SQUARE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+TANH(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake

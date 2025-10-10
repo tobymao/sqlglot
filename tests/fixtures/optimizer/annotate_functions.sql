@@ -1788,6 +1788,18 @@ CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
 # dialect: snowflake
+DATE_TRUNC('year', TO_DATE('2024-05-09'));
+DATE;
+
+# dialect: snowflake
+DATE_TRUNC('minute', TO_TIME('08:50:48'));
+TIME;
+
+# dialect: snowflake
+DATE_TRUNC('minute', TO_TIMESTAMP('2024-05-09 08:50:57.891'));
+TIMESTAMP;
+
+# dialect: snowflake
 EDITDISTANCE('hello', 'world');
 INT;
 

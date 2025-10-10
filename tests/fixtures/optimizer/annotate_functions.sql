@@ -1692,6 +1692,10 @@ DEGREES(1);
 DOUBLE;
 
 # dialect: snowflake
+DATE_FROM_PARTS(1977, 8, 7);
+DATE;
+
+# dialect: snowflake
 DECOMPRESS_BINARY('compressed_data', 'SNAPPY');
 BINARY;
 

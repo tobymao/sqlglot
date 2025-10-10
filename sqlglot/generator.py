@@ -1481,7 +1481,7 @@ class Generator(metaclass=_Generator):
     def delete_sql(self, expression: exp.Delete) -> str:
         this = self.sql(expression, "this")
         this = f" FROM {this}" if this else ""
-        using = self.sql(expression, "using")
+        using = self.expressions(expression, key="using")
         using = f" USING {using}" if using else ""
         cluster = self.sql(expression, "cluster")
         cluster = f" {cluster}" if cluster else ""

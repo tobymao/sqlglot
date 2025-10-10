@@ -650,8 +650,8 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             anti_join_clause = exp.select("1").from_(expression.args["from"]).where(join_conditions)
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
-            expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
-            expression.args.pop("order", None)  # remove order by from LEFT side
+            expression_copy.set("with", None)  # remove CTEs from RIGHT side
+            expression.set("order", None)  # remove order by from LEFT side
 
             return exp.union(expression, expression_copy, copy=False, distinct=False)
 

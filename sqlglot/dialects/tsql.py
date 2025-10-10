@@ -1219,7 +1219,8 @@ class TSQL(Dialect):
 
         def create_sql(self, expression: exp.Create) -> str:
             kind = expression.kind
-            exists = expression.args.pop("exists", None)
+            exists = expression.args.get("exists")
+            expression.set("exists", None)
 
             like_property = expression.find(exp.LikeProperty)
             if like_property:

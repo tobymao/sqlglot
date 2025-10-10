@@ -189,7 +189,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     # exists queries should not have any selects as it only checks if there are any rows
     # all selects will be added by the optimizer and only used for join keys
     if isinstance(parent_predicate, exp.Exists):
-        select.args["expressions"] = []
+        select.set("expressions", [])
 
     for key, alias in key_aliases.items():
         if key in group_by:

@@ -717,7 +717,6 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.DOUBLE: {
             exp.ApproxQuantile,
-            exp.Atan,
             exp.Avg,
             exp.Exp,
             exp.Ln,
@@ -731,7 +730,6 @@ class Dialect(metaclass=_Dialect):
             exp.Stddev,
             exp.StddevPop,
             exp.StddevSamp,
-            exp.Tanh,
             exp.ToDouble,
             exp.Variance,
             exp.VariancePop,

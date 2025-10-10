@@ -592,6 +592,7 @@ class Snowflake(Dialect):
             exp.JarowinklerSimilarity,
             exp.StrPosition,
             exp.Unicode,
+            exp.DatePart,
         },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
@@ -1078,8 +1079,13 @@ class Snowflake(Dialect):
             if not this:
                 return None
 
-            self._match(TokenType.COMMA)
-            expression = self._parse_bitwise()
+            # Handle both syntaxes: DATE_PART(part, expr) and DATE_PART(part FROM expr)
+            if self._match(TokenType.FROM):
+                expression = self._parse_bitwise()
+            else:
+                self._match(TokenType.COMMA)
+                expression = self._parse_bitwise()
+
             this = map_date_part(this)
             name = this.name.upper()
 
@@ -1101,7 +1107,7 @@ class Snowflake(Dialect):
 
                 return to_unix
 
-            return self.expression(exp.Extract, this=this, expression=expression)
+            return self.expression(exp.DatePart, this=this, expression=expression)
 
         def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
             if is_map:
@@ -1470,6 +1476,9 @@ class Snowflake(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: lambda self, e: self.func(
+                "DATE_PART", map_date_part(e.this, self.dialect), e.expression
+            ),
+            exp.DatePart: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression
             ),
             exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),

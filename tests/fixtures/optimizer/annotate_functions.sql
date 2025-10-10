@@ -1684,6 +1684,18 @@ COMPRESS('Hello World', 'zlib(1)');
 BINARY;
 
 # dialect: snowflake
+DATE_PART('year', tbl.date_col);
+INT;
+
+# dialect: snowflake
+DATE_PART('month', tbl.timestamp_col);
+INT;
+
+# dialect: snowflake
+DATE_PART('day', tbl.date_col);
+INT;
+
+# dialect: snowflake
 DEGREES(PI()/3);
 DOUBLE;
 

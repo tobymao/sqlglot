@@ -848,6 +848,7 @@ class Dialect(metaclass=_Dialect):
         exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Extract: lambda self, e: self._annotate_extract(e),
+        exp.DatePart: lambda self, e: self._annotate_extract(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.GenerateSeries: lambda self, e: self._annotate_by_args(
             e, "start", "end", "step", array=True

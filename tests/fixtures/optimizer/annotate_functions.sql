@@ -1788,6 +1788,14 @@ CONTAINS(tbl.bin_col, NULL);
 BOOLEAN;
 
 # dialect: snowflake
+CONVERT_TIMEZONE('America/New_York', '2024-08-06 09:10:00.000');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
 EDITDISTANCE('hello', 'world');
 INT;
 

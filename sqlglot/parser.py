@@ -3573,7 +3573,8 @@ class Parser(metaclass=_Parser):
 
                         this.set(key, expression)
                         if key == "limit":
-                            offset = expression.args.pop("offset", None)
+                            offset = expression.args.get("offset")
+                            expression.set("offset", None)
 
                             if offset:
                                 offset = exp.Offset(expression=offset)
@@ -5273,8 +5274,8 @@ class Parser(metaclass=_Parser):
             this = self.expression(klass, this=this, comments=comments, expression=expression)
 
             if isinstance(this, exp.Div):
-                this.args["typed"] = self.dialect.TYPED_DIVISION
-                this.args["safe"] = self.dialect.SAFE_DIVISION
+                this.set("typed", self.dialect.TYPED_DIVISION)
+                this.set("safe", self.dialect.SAFE_DIVISION)
 
         return this
 

@@ -162,7 +162,7 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
-            table_alias.args.pop("columns", None)
+            table_alias.set("columns", None)
 
 
 def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
@@ -239,7 +239,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
                 if join_table not in tables:
                     tables[join_table] = None
 
-        join.args.pop("using")
+        join.set("using", None)
         join.set("on", exp.and_(*conditions, copy=False))
 
     if column_tables:

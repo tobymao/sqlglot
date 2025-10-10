@@ -72,7 +72,8 @@ def qualify_tables(
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):
-                    joins = unnested.args.pop("joins", None)
+                    joins = unnested.args.get("joins")
+                    unnested.set("joins", None)
                     derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
                     derived_table.this.set("joins", joins)
 

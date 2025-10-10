@@ -1196,7 +1196,7 @@ def no_paren_current_date_sql(self: Generator, expression: exp.CurrentDate) -> s
 def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")
-        expression.args["recursive"] = False
+        expression.set("recursive", False)
     return self.with_sql(expression)
 
 

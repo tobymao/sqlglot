@@ -769,7 +769,9 @@ class ClickHouse(Dialect):
         ) -> t.Optional[exp.Join]:
             join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
             if join:
-                join.set("global", join.args.pop("method", None))
+                method = join.args.get("method")
+                join.set("method", None)
+                join.set("global", method)
 
                 # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join

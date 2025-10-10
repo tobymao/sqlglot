@@ -40,6 +40,8 @@ class TestParser(unittest.TestCase):
             "Failed to parse 'SELECT * FROM tbl' into <class 'sqlglot.expressions.Table'>",
         )
 
+        self.assertIsInstance(parse_one("foo INT NOT NULL", into=exp.ColumnDef), exp.ColumnDef)
+
     def test_parse_into_error(self):
         expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>]"
         expected_errors = [

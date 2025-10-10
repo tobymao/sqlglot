@@ -805,6 +805,7 @@ class Parser(metaclass=_Parser):
     EXPRESSION_PARSERS = {
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
+        exp.ColumnDef: lambda self: self._parse_column_def(self._parse_column()),
         exp.Condition: lambda self: self._parse_assignment(),
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False, schema=True),
         exp.Expression: lambda self: self._parse_expression(),

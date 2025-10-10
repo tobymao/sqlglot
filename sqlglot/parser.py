@@ -3110,7 +3110,8 @@ class Parser(metaclass=_Parser):
             exp.Delete,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
-            using=self._match(TokenType.USING) and self._parse_table(joins=True),
+            using=self._match(TokenType.USING)
+            and self._parse_csv(lambda: self._parse_table(joins=True)),
             cluster=self._match(TokenType.ON) and self._parse_on_property(),
             where=self._parse_where(),
             returning=returning or self._parse_returning(),

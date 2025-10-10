@@ -2428,6 +2428,10 @@ UNICODE('€');
 INT;
 
 # dialect: snowflake
+WIDTH_BUCKET(tbl.double_col, 0, 100, 10);
+INT;
+
+# dialect: snowflake
 TRIM('hello world');
 VARCHAR;
 

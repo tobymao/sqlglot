@@ -412,6 +412,15 @@ class TSQL(Dialect):
 
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
+    TYPE_TO_EXPRESSIONS = {
+        **Dialect.TYPE_TO_EXPRESSIONS,
+    }
+
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        exp.Radians: lambda self, e: self._annotate_by_args(e, "this"),
+    }
+
     TIME_MAPPING = {
         "year": "%Y",
         "dayofyear": "%j",

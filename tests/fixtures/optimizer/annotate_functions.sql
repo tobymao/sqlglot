@@ -2538,3 +2538,7 @@ OBJECT;
 # dialect: tsql
 SYSDATETIMEOFFSET();
 TIMESTAMPTZ;
+
+# dialect: tsql
+RADIANS(90);
+INT;

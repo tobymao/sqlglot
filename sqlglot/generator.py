@@ -3023,6 +3023,10 @@ class Generator(metaclass=_Generator):
 
         return f"EXTRACT({this_sql} FROM {expression_sql})"
 
+    def datepart_sql(self, expression: exp.DatePart) -> str:
+        # By default, transpile DatePart to Extract for other dialects
+        return self.extract_sql(exp.Extract(this=expression.this, expression=expression.expression))
+
     def trim_sql(self, expression: exp.Trim) -> str:
         trim_type = self.sql(expression, "position")
 

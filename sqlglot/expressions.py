@@ -6306,6 +6306,10 @@ class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class DatePart(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Exists(Func, SubqueryPredicate):
     arg_types = {"this": True, "expression": False}
 

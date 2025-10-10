@@ -570,7 +570,6 @@ class Snowflake(Dialect):
             exp.Cot,
             exp.Degrees,
             exp.Exp,
-            exp.Radians,
             exp.Sin,
             exp.Tan,
             exp.Asin,

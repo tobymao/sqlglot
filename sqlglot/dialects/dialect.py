@@ -724,6 +724,7 @@ class Dialect(metaclass=_Dialect):
             exp.Pi,
             exp.Pow,
             exp.Quantile,
+            exp.Radians,
             exp.Round,
             exp.SafeDivide,
             exp.Sqrt,

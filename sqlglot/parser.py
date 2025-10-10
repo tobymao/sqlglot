@@ -2962,6 +2962,7 @@ class Parser(metaclass=_Parser):
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE) and self._parse_assignment(),
             partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
             settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
+            default=self._match_text_seq("DEFAULT", "VALUES"),
             expression=self._parse_derived_table_values() or self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
             returning=returning or self._parse_returning(),

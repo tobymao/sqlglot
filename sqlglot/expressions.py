@@ -2387,6 +2387,7 @@ class Insert(DDL, DML):
         "partition": False,
         "settings": False,
         "source": False,
+        "default": False,
     }
 
     def with_(

@@ -1038,8 +1038,8 @@ class DuckDB(Dialect):
                 if isinstance(expression.this, exp.Unnest):
                     return super().join_sql(expression.on(exp.true()))
 
-                expression.args.pop("side", None)
-                expression.args.pop("kind", None)
+                expression.set("side", None)
+                expression.set("kind", None)
 
             return super().join_sql(expression)
 

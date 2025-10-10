@@ -1008,8 +1008,8 @@ class Expression(metaclass=_Expression):
 
     def div(self, other: ExpOrStr, typed: bool = False, safe: bool = False) -> Div:
         div = self._binop(Div, other)
-        div.args["typed"] = typed
-        div.args["safe"] = safe
+        div.set("typed", typed)
+        div.set("safe", safe)
         return div
 
     def asc(self, nulls_first: bool = True) -> Ordered:

@@ -67,7 +67,7 @@ def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB]
 
         e = self._simplify_unless_literal(expression.expression)
         if isinstance(e, exp.Literal):
-            e.args["is_string"] = True
+            e.set("is_string", True)
         elif e.is_number:
             e = exp.Literal.string(e.to_py())
         else:

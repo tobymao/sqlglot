@@ -1695,6 +1695,28 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")
 
+        # Test DATE_PART with comma syntax
+        self.validate_identity("SELECT DATE_PART(year, CAST('2024-04-08' AS DATE))").expressions[
+            0
+        ].assert_is(exp.Extract)
+        self.validate_identity("SELECT DATE_PART('month', CAST('2024-04-08' AS DATE))").expressions[
+            0
+        ].assert_is(exp.Extract)
+        self.validate_identity("SELECT DATE_PART(day, a)").expressions[0].assert_is(exp.Extract)
+
+        # Test DATE_PART with FROM syntax (should normalize to comma syntax)
+        self.validate_identity(
+            "SELECT DATE_PART(year FROM CAST('2024-04-08' AS DATE))",
+            "SELECT DATE_PART(year, CAST('2024-04-08' AS DATE))",
+        ).expressions[0].assert_is(exp.Extract)
+        self.validate_identity(
+            "SELECT DATE_PART('month' FROM CAST('2024-04-08' AS DATE))",
+            "SELECT DATE_PART('month', CAST('2024-04-08' AS DATE))",
+        ).expressions[0].assert_is(exp.Extract)
+        self.validate_identity(
+            "SELECT DATE_PART(day FROM a)", "SELECT DATE_PART(day, a)"
+        ).expressions[0].assert_is(exp.Extract)
+
         for data_type in (
             "TIMESTAMP",
             "TIMESTAMPLTZ",

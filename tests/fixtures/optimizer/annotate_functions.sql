@@ -1956,6 +1956,10 @@ POW(tbl.double_col, 2);
 DOUBLE;
 
 # dialect: snowflake
+RADIANS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 LOWER(tbl.str_col);
 VARCHAR;
 
@@ -2566,3 +2570,7 @@ OBJECT;
 # dialect: tsql
 SYSDATETIMEOFFSET();
 TIMESTAMPTZ;
+
+# dialect: tsql
+RADIANS(90);
+INT;

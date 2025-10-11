@@ -22,6 +22,7 @@ if t.TYPE_CHECKING:
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 PYTHON_VERSION = sys.version_info[:2]
+UNIT_TESTING = "unittest" in sys.modules or "pytest" in sys.modules
 logger = logging.getLogger("sqlglot")
 
 

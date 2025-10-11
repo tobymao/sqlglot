@@ -27,6 +27,7 @@ from functools import reduce
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import (
     AutoName,
+    UNIT_TESTING,
     camel_to_snake_case,
     ensure_collection,
     ensure_list,
@@ -57,6 +58,7 @@ class _Expression(type):
 
         # This is so that docstrings are not inherited in pdoc
         klass.__doc__ = klass.__doc__ or ""
+        klass._mandatory_args = tuple(k for k, v in klass.arg_types.items() if v)
 
         return klass
 
@@ -102,6 +104,7 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
+    _mandatory_args: t.Tuple[str, ...] = tuple()  # automatically set, used for caching purposes
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
 
     def __init__(self, **args: t.Any):
@@ -769,19 +772,20 @@ class Expression(metaclass=_Expression):
         """
         errors: t.List[str] = []
 
-        for k in self.args:
-            if k not in self.arg_types:
-                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
-        for k, mandatory in self.arg_types.items():
+        if UNIT_TESTING:
+            for k in self.args:
+                if k not in self.arg_types:
+                    errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
+        for k in self._mandatory_args:
             v = self.args.get(k)
-            if mandatory and (v is None or (isinstance(v, list) and not v)):
+            if v is None or (type(v) is list and not v):
                 errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
 
         if (
             args
             and isinstance(self, Func)
-            and len(args) > len(self.arg_types)
             and not self.is_var_len_args
+            and len(args) > len(self.arg_types)
         ):
             errors.append(
                 f"The number of provided arguments ({len(args)}) is greater than "

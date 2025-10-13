@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
@@ -43,6 +44,10 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
+
+# Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
+# The pattern matches timezone offsets that appear after the time portion
+TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
 
 
 # BigQuery -> DuckDB conversion for the DATE function
@@ -211,7 +216,18 @@ def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYP
 def _implicit_datetime_cast(
     arg: t.Optional[exp.Expression], type: exp.DataType.Type = exp.DataType.Type.DATE
 ) -> t.Optional[exp.Expression]:
-    return exp.cast(arg, type) if isinstance(arg, exp.Literal) else arg
+    if isinstance(arg, exp.Literal) and arg.is_string:
+        ts = arg.name
+        if type == exp.DataType.Type.DATE and ":" in ts:
+            type = (
+                exp.DataType.Type.TIMESTAMPTZ
+                if TIMEZONE_PATTERN.search(ts)
+                else exp.DataType.Type.TIMESTAMP
+            )
+
+        arg = exp.cast(arg, type)
+
+    return arg
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:

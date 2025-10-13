@@ -1079,11 +1079,9 @@ class Snowflake(Dialect):
                 return None
 
             # Handle both syntaxes: DATE_PART(part, expr) and DATE_PART(part FROM expr)
-            if self._match(TokenType.FROM):
-                expression = self._parse_bitwise()
-            else:
-                self._match(TokenType.COMMA)
-                expression = self._parse_bitwise()
+            expression = (
+                self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
+            )
 
             this = map_date_part(this)
             name = this.name.upper()

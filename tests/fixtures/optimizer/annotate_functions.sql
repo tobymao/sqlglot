@@ -1696,6 +1696,22 @@ DATE_PART('day', tbl.date_col);
 INT;
 
 # dialect: snowflake
+DATEADD(HOUR, 3, TO_TIME('05:00:00'));
+TIME;
+
+# dialect: snowflake
+DATEADD(YEAR, 1, TO_TIMESTAMP('2022-05-08 14:30:00'));
+TIMESTAMP;
+
+# dialect: snowflake
+DATEADD(MONTH, 1, '2023-01-31'::DATE);
+DATE;
+
+# dialect: snowflake
+DATEADD(HOUR, 2, '2022-04-05'::DATE);
+TIMESTAMPNTZ;
+
+# dialect: snowflake
 DEGREES(PI()/3);
 DOUBLE;
 

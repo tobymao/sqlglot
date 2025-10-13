@@ -41,6 +41,9 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E, B
 
 
+DATE_PARTS = ["YEAR", "QUARTER", "MONTH", "WEEK", "DAY"]
+
+
 def _build_strtok(args: t.List) -> exp.SplitPart:
     # Add default delimiter (space) if missing - per Snowflake docs
     if len(args) == 1:
@@ -547,6 +550,20 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
+def _annotate_dateadd(self: TypeAnnotator, expression: exp.DateAdd) -> exp.DateAdd:
+    self._annotate_args(expression)
+
+    if (
+        expression.this.is_type(exp.DataType.Type.DATE)
+        and expression.text("unit").upper() not in DATE_PARTS
+    ):
+        self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
+    else:
+        self._annotate_by_args(expression, "this")
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -698,6 +715,7 @@ class Snowflake(Dialect):
             if e.args.get("source_tz")
             else exp.DataType.Type.TIMESTAMPTZ,
         ),
+        exp.DateAdd: _annotate_dateadd,
         exp.Reverse: _annotate_reverse,
     }
 

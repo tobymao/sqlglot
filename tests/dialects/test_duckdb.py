@@ -268,6 +268,26 @@ class TestDuckDB(Validator):
                 "bigquery": "SELECT IF(pos = pos_2, y, NULL) + 1 AS y FROM UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH(x)) - 1)) AS pos CROSS JOIN UNNEST(x) AS y WITH OFFSET AS pos_2 WHERE pos = pos_2 OR (pos > (ARRAY_LENGTH(x) - 1) AND pos_2 = (ARRAY_LENGTH(x) - 1))",
             },
         )
+        self.validate_all(
+            "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2025-10-12' AS DATE))",
+            read={
+                "snowflake": "SELECT DATEDIFF('day', '2020-01-01', '2025-10-12')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
+            read={
+                "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
+                "snowflake": "SELECT DATEDIFF('second', '2020-01-01', '2025-10-12 00:56:42.345')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345+07:00' AS TIMESTAMPTZ))",
+            read={
+                "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345+07:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATEDIFF('second', '2020-01-01', '2025-10-12 00:56:42.345+07:00')",
+            },
+        )
 
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(

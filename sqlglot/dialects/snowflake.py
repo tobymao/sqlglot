@@ -690,6 +690,12 @@ class Snowflake(Dialect):
             )
         },
         exp.ConcatWs: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.ConvertTimezone: lambda self, e: self._annotate_with_type(
+            e,
+            exp.DataType.Type.TIMESTAMPNTZ
+            if e.args.get("source_tz")
+            else exp.DataType.Type.TIMESTAMPTZ,
+        ),
         exp.Reverse: _annotate_reverse,
     }
 

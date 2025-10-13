@@ -678,6 +678,8 @@ class Snowflake(Dialect):
                 exp.Substring,
                 exp.Round,
                 exp.Ceil,
+                exp.DateTrunc,
+                exp.TimestampTrunc,
             )
         },
         **{

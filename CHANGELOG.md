@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v27.27.0] - 2025-10-13
+### :boom: BREAKING CHANGES
+- due to [`c67276d`](https://github.com/tobymao/sqlglot/commit/c67276d5be970252e14d1817d8498fc9985222d9) - Annotate type for snowflake RADIANS function. *(PR [#6064](https://github.com/tobymao/sqlglot/pull/6064) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Annotate type for snowflake RADIANS function. (#6064)
+
+
+### :sparkles: New Features
+- [`c67276d`](https://github.com/tobymao/sqlglot/commit/c67276d5be970252e14d1817d8498fc9985222d9) - **optimizer**: Annotate type for snowflake RADIANS function. *(PR [#6064](https://github.com/tobymao/sqlglot/pull/6064) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :wrench: Chores
+- [`dab2a3f`](https://github.com/tobymao/sqlglot/commit/dab2a3fbdb8a523f05319eb34a1fd34534272206) - bump sqlglotrs version to 0.7.3 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v27.26.0] - 2025-10-10
 ### :boom: BREAKING CHANGES
 - due to [`9060f60`](https://github.com/tobymao/sqlglot/commit/9060f603818db863b7570a2c3c50c3eb88155e76) - Annotate type for snowflake ATAN2 function. *(PR [#6060](https://github.com/tobymao/sqlglot/pull/6060) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -7870,3 +7884,4 @@ Changelog
 [v27.22.2]: https://github.com/tobymao/sqlglot/compare/v27.22.1...v27.22.2
 [v27.25.0]: https://github.com/tobymao/sqlglot/compare/v27.24.2...v27.25.0
 [v27.26.0]: https://github.com/tobymao/sqlglot/compare/v27.25.2...v27.26.0
+[v27.27.0]: https://github.com/tobymao/sqlglot/compare/v27.26.0...v27.27.0

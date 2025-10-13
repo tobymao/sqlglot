@@ -3225,6 +3225,7 @@ class Parser(metaclass=_Parser):
                 this = select
             else:
                 this = exp.select("*").from_(t.cast(exp.From, from_))
+                this = self._parse_query_modifiers(self._parse_set_operations(this))
         else:
             this = (
                 self._parse_table(consume_pipe=True)

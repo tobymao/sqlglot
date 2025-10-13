@@ -1119,6 +1119,23 @@ class TestDuckDB(Validator):
             "DELETE FROM t USING (VALUES (1)) AS t1(c), (VALUES (1), (2)) AS t2(c) WHERE t.c = t1.c AND t.c = t2.c"
         )
 
+        self.validate_identity(
+            "FROM (FROM t1 UNION FROM t2)",
+            "SELECT * FROM (SELECT * FROM t1 UNION SELECT * FROM t2)",
+        )
+        self.validate_identity(
+            "FROM (FROM (SELECT 1) AS t2(c), (SELECT t2.c AS c0))",
+            "SELECT * FROM (SELECT * FROM (SELECT 1) AS t2(c), (SELECT t2.c AS c0))",
+        )
+        self.validate_identity(
+            "FROM (FROM (SELECT 2000 as amount) t GROUP BY amount HAVING SUM(amount) > 1000)",
+            "SELECT * FROM (SELECT * FROM (SELECT 2000 AS amount) AS t GROUP BY amount HAVING SUM(amount) > 1000)",
+        )
+        self.validate_identity(
+            "(FROM (SELECT 1) t1(c) EXCEPT FROM (SELECT 2) t2(c)) UNION ALL (FROM (SELECT 3) t3(c) EXCEPT FROM (SELECT 4) t4(c))",
+            "(SELECT * FROM (SELECT 1) AS t1(c) EXCEPT SELECT * FROM (SELECT 2) AS t2(c)) UNION ALL (SELECT * FROM (SELECT 3) AS t3(c) EXCEPT SELECT * FROM (SELECT 4) AS t4(c))",
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

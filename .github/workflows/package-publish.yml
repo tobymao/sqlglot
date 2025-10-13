@@ -138,10 +138,6 @@ jobs:
         source ./.venv/bin/activate
         python -m build
         twine upload dist/*
-    - name: Update API docs
-      run: |
-        source ./.venv/bin/activate
-        make docs
     - name: Update CHANGELOG
       id: changelog
       continue-on-error: true
@@ -156,6 +152,11 @@ jobs:
         branch: main
         commit_message: "Update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
         file_pattern: "CHANGELOG.md"
+    - name: Update API docs
+      run: |
+        git checkout api-docs
+        source ./.venv/bin/activate
+        make docs
     - name: Commit API docs
       uses: stefanzweifel/git-auto-commit-action@v4
       with:

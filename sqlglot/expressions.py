@@ -7749,7 +7749,6 @@ class VariancePop(AggFunc):
 
 
 class WidthBucket(Func):
-    _sql_names = ["WIDTH_BUCKET"]
     arg_types = {"this": True, "min_value": True, "max_value": True, "num_buckets": True}
 
 

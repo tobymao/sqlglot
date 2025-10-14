@@ -3834,6 +3834,7 @@ class Update(DML):
         )
 
 
+# DuckDB supports VALUES followed by https://duckdb.org/docs/stable/sql/query_syntax/limit
 class Values(UDTF):
     arg_types = {
         "expressions": True,

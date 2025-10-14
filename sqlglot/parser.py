@@ -1473,7 +1473,7 @@ class Parser(metaclass=_Parser):
 
     RECURSIVE_CTE_SEARCH_KIND = {"BREADTH", "DEPTH", "CYCLE"}
 
-    MODIFIABLES = (exp.Query, exp.Table, exp.TableFromRows)
+    MODIFIABLES = (exp.Query, exp.Table, exp.TableFromRows, exp.Values)
 
     STRICT_CAST = True
 
@@ -5815,7 +5815,7 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.Tuple)
         elif isinstance(this, exp.UNWRAPPED_QUERIES):
             this = self._parse_subquery(this=this, parse_alias=False)
-        elif isinstance(this, exp.Subquery):
+        elif isinstance(this, (exp.Subquery, exp.Values)):
             this = self._parse_subquery(
                 this=self._parse_query_modifiers(self._parse_set_operations(this)),
                 parse_alias=False,

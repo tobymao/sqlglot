@@ -1812,6 +1812,14 @@ CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00
 TIMESTAMPNTZ;
 
 # dialect: snowflake
+DATEDIFF('year', tbl.date_col, tbl.date_col);
+INT;
+
+# dialect: snowflake
+DATEDIFF('month', tbl.timestamp_col, tbl.timestamp_col);
+INT;
+
+# dialect: snowflake
 DATE_TRUNC('year', TO_DATE('2024-05-09'));
 DATE;
 

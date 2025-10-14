@@ -1417,6 +1417,20 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
+        # EXTRACT - converts to DATE_PART in Snowflake
+        self.validate_identity(
+            "SELECT EXTRACT(YEAR FROM CAST('2024-05-09' AS DATE))",
+            "SELECT DATE_PART(YEAR, CAST('2024-05-09' AS DATE))",
+        )
+        self.validate_identity(
+            "SELECT EXTRACT(MONTH FROM CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
+            "SELECT DATE_PART(MONTH, CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
+        )
+        self.validate_identity(
+            "SELECT EXTRACT(MINUTE, CAST('08:50:57' AS TIME))",
+            "SELECT DATE_PART(MINUTE, CAST('08:50:57' AS TIME))",
+        )
+
         for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
                 self.validate_all(

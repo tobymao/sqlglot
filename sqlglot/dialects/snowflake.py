@@ -680,6 +680,7 @@ class Snowflake(Dialect):
                 exp.Round,
                 exp.Ceil,
                 exp.DateTrunc,
+                exp.TimeSlice,
                 exp.TimestampTrunc,
             )
         },

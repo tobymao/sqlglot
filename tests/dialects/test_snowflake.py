@@ -1417,6 +1417,14 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
+        self.validate_identity(
+            "SELECT TIME_SLICE(CAST('2024-05-09 08:50:57.891' AS TIMESTAMP), 15, MINUTE)"
+        )
+        self.validate_identity("SELECT TIME_SLICE(CAST('08:50:57.891' AS TIME), 5, SECOND)")
+        self.validate_identity(
+            "SELECT TIME_SLICE(CAST('2024-05-09 08:50:57.891' AS TIMESTAMP), 1, HOUR, 'start')"
+        )
+
         for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
                 self.validate_all(

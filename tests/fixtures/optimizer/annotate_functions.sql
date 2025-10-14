@@ -1544,6 +1544,14 @@ ABS(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+ADD_MONTHS(tbl.date_col, 2);
+DATE;
+
+# dialect: snowflake
+ADD_MONTHS(tbl.timestamp_col, -1);
+TIMESTAMP;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 

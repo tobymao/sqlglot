@@ -670,6 +670,7 @@ class Snowflake(Dialect):
         **{
             expr_type: lambda self, e: self._annotate_by_args(e, "this")
             for expr_type in (
+                exp.AddMonths,
                 exp.Floor,
                 exp.Left,
                 exp.Pad,

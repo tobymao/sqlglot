@@ -6587,6 +6587,18 @@ class HexEncode(Func):
     arg_types = {"this": True, "case": False}
 
 
+class Hour(Func):
+    pass
+
+
+class Minute(Func):
+    pass
+
+
+class Second(Func):
+    pass
+
+
 # T-SQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/compress-transact-sql?view=sql-server-ver17
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/compress
 class Compress(Func):

@@ -1852,6 +1852,18 @@ EDITDISTANCE('hello', 'world', 3);
 INT;
 
 # dialect: snowflake
+EXTRACT(YEAR, CAST('2024-05-09' AS DATE));
+INT;
+
+# dialect: snowflake
+EXTRACT(MONTH FROM CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+INT;
+
+# dialect: snowflake
+EXTRACT(MINUTE, CAST('08:50:57' AS TIME));
+INT;
+
+# dialect: snowflake
 EXP(1);
 DOUBLE;
 
@@ -1910,6 +1922,10 @@ VARCHAR;
 # dialect: snowflake
 HEX_ENCODE('Hello World', 'lower');
 VARCHAR;
+
+# dialect: snowflake
+HOUR(CAST('08:50:57' AS TIME));
+INT;
 
 # dialect: snowflake
 INITCAP('hello world');
@@ -2034,6 +2050,10 @@ VARCHAR;
 # dialect: snowflake
 LTRIM(NULL);
 VARCHAR;
+
+# dialect: snowflake
+MINUTE(CAST('08:50:57' AS TIME));
+INT;
 
 # dialect: snowflake
 MOD(tbl.bigint_col, 3);
@@ -2222,6 +2242,10 @@ BIGINT;
 # dialect: snowflake
 ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
 DOUBLE;
+
+# dialect: snowflake
+SECOND(CAST('08:50:57' AS TIME));
+INT;
 
 # dialect: snowflake
 SQUARE(tbl.double_col);

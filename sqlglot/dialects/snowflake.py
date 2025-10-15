@@ -1559,6 +1559,13 @@ class Snowflake(Dialect):
             exp.Stuff: rename_func("INSERT"),
             exp.StPoint: rename_func("ST_MAKEPOINT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
+            exp.TimeSlice: lambda self, e: self.func(
+                "TIME_SLICE",
+                e.this,
+                e.expression,
+                exp.Literal.string(str(e.unit)),
+                e.args.get("kind"),
+            ),
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: date_delta_sql("TIMESTAMPADD"),
             exp.TimestampDiff: lambda self, e: self.func(

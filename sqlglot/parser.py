@@ -4625,7 +4625,7 @@ class Parser(metaclass=_Parser):
             return None
 
         return self.expression(
-            kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_column)
+            kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_bitwise)
         )
 
     def _parse_grouping_sets(self) -> t.Optional[exp.GroupingSets]:

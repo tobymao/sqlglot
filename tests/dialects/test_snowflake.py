@@ -1430,6 +1430,10 @@ class TestSnowflake(Validator):
             "SELECT EXTRACT(MINUTE, CAST('08:50:57' AS TIME))",
             "SELECT DATE_PART(MINUTE, CAST('08:50:57' AS TIME))",
         )
+        self.validate_identity("SELECT HOUR(CAST('08:50:57' AS TIME))")
+        self.validate_identity("SELECT MINUTE(CAST('08:50:57' AS TIME))")
+        self.validate_identity("SELECT SECOND(CAST('08:50:57' AS TIME))")
+        self.validate_identity("SELECT HOUR(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
 
         for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):

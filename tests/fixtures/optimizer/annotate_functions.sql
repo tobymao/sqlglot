@@ -1972,6 +1972,18 @@ LEFT(tbl.bin_col, NULL);
 BINARY;
 
 # dialect: snowflake
+LAST_DAY(CAST('2024-05-09' AS DATE));
+DATE;
+
+# dialect: snowflake
+LAST_DAY(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+DATE;
+
+# dialect: snowflake
+LAST_DAY(CAST('2024-02-15' AS DATE), MONTH);
+DATE;
+
+# dialect: snowflake
 LEN(tbl.str_col);
 INT;
 

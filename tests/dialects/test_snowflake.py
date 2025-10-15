@@ -1435,6 +1435,11 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SECOND(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT HOUR(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
 
+        self.validate_identity("SELECT LAST_DAY(CAST('2024-05-09' AS DATE))")
+        self.validate_identity("SELECT LAST_DAY(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
+        self.validate_identity("SELECT LAST_DAY(CAST('2024-02-15' AS DATE), MONTH)")
+        self.validate_identity("SELECT LAST_DAY(CAST('2024-02-15' AS DATE), YEAR)")
+
         for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
                 self.validate_all(

@@ -1131,6 +1131,15 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "NEXT_DAY(x, y)",
+            write={
+                "snowflake": "NEXT_DAY(x, y)",
+                "databricks": "NEXT_DAY(x, y)",
+                "oracle": "NEXT_DAY(x, y)",
+                "redshift": "NEXT_DAY(x, y)",
+            },
+        )
+        self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
             write={
                 "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",

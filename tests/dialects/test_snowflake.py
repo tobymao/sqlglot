@@ -1436,6 +1436,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT HOUR(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
 
         self.validate_identity(
+            "SELECT MONTHS_BETWEEN(CAST('2019-03-15' AS DATE), CAST('2019-02-15' AS DATE))"
+        )
+        self.validate_identity(
+            "SELECT MONTHS_BETWEEN(CAST('2019-03-01 02:00:00' AS TIMESTAMP), CAST('2019-02-15 01:00:00' AS TIMESTAMP))"
+        )
+
+        self.validate_identity(
             "SELECT TIME_SLICE(CAST('2024-05-09 08:50:57.891' AS TIMESTAMP), 15, 'MINUTE')"
         )
         self.validate_identity("SELECT TIME_SLICE(CAST('2024-05-09' AS DATE), 1, 'DAY')")

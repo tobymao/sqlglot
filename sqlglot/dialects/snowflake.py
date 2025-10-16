@@ -571,6 +571,7 @@ class Snowflake(Dialect):
             exp.Cot,
             exp.Degrees,
             exp.Exp,
+            exp.MonthsBetween,
             exp.Sin,
             exp.Sinh,
             exp.Tan,

@@ -6294,7 +6294,7 @@ class LastDay(Func, TimeUnit):
 
 
 class PreviousDay(Func):
-    arg_types = {"this": True, "day_of_week": True}
+    arg_types = {"this": True, "expression": True}
 
 
 class LaxBool(Func):

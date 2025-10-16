@@ -2544,6 +2544,22 @@ TAN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+TIME_FROM_PARTS(14, 30, 45);
+TIME;
+
+# dialect: snowflake
+TIME_FROM_PARTS(14, 30, 45, 123);
+TIME;
+
+# dialect: snowflake
+TIMEFROMPARTS(14, 30, 45);
+TIME;
+
+# dialect: snowflake
+TIMEFROMPARTS(14, 30, 45, 123);
+TIME;
+
+# dialect: snowflake
 TIME_SLICE(tbl.timestamp_col, 15, 'minute');
 TIMESTAMP;
 

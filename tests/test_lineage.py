@@ -42,6 +42,22 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.source_name, "y")
         self.assertGreater(len(node.to_html()._repr_html_()), 1000)
 
+        # test that sql is not modified
+        sql = "SELECT a FROM x"
+        ast = sqlglot.parse_one(sql)
+        node = lineage("a", ast)
+        self.assertEqual(ast.sql(), sql)
+
+        # test that sources are not modified
+        ast = sqlglot.parse_one(sql)
+
+        source_sql = "SELECT a FROM y"
+        source = sqlglot.parse_one(source_sql)
+
+        node = lineage("a", ast, sources={"x": source})
+
+        self.assertEqual(source.sql(), source_sql)
+
     def test_lineage_sql_with_cte(self) -> None:
         node = lineage(
             "a",

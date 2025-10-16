@@ -132,7 +132,7 @@ a AND b;
 
 # dialect: mysql
 A XOR A;
-FALSE;
+A XOR A;
 
 TRUE AND TRUE OR TRUE AND FALSE;
 TRUE;

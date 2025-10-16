@@ -293,9 +293,6 @@ def simplify_connectors(expression, root=True):
             if is_false(right):
                 return left
             return _simplify_comparison(expression, left, right, or_=True)
-        elif isinstance(expression, exp.Xor):
-            if left == right:
-                return exp.false()
 
     if isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_connectors, root)

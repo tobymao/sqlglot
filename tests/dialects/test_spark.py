@@ -345,6 +345,13 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "SELECT * FROM parquet.`name.parquet`",
+            read={
+                "duckdb": "SELECT * FROM READ_PARQUET('name.parquet')",
+                "spark": "SELECT * FROM parquet.`name.parquet`",
+            },
+        )
+        self.validate_all(
             "SELECT TO_JSON(STRUCT('blah' AS x)) AS y",
             write={
                 "presto": "SELECT JSON_FORMAT(CAST(CAST(ROW('blah') AS ROW(x VARCHAR)) AS JSON)) AS y",

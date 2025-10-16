@@ -2068,6 +2068,10 @@ MINUTE(CAST('08:50:57' AS TIME));
 INT;
 
 # dialect: snowflake
+MONTHNAME(CAST('2024-05-09' AS DATE));
+VARCHAR;
+
+# dialect: snowflake
 MOD(tbl.bigint_col, 3);
 BIGINT;
 

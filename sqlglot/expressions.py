@@ -7167,6 +7167,10 @@ class Month(Func):
     pass
 
 
+class MonthName(Func):
+    pass
+
+
 class AddMonths(Func):
     arg_types = {"this": True, "expression": True}
 

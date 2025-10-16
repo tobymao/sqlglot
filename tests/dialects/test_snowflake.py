@@ -1434,6 +1434,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MINUTE(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT SECOND(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT HOUR(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
+        self.validate_identity("SELECT MONTHNAME(CAST('2024-05-09' AS DATE))")
+        self.validate_all(
+            "SELECT MONTHNAME(date_col)",
+            write={
+                "snowflake": "SELECT MONTHNAME(date_col)",
+                "mysql": "SELECT DATE_FORMAT(date_col, '%M')",
+            },
+        )
 
         self.validate_identity(
             "SELECT TIME_SLICE(CAST('2024-05-09 08:50:57.891' AS TIMESTAMP), 15, 'MINUTE')"

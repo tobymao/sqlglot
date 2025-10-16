@@ -1559,7 +1559,7 @@ WHERE
                 f"SELECT DATEPART({fmt}, '2024-11-21')",
                 "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
             )
-    
+
         for fmt in ("ISOWK", "ISOWW", "ISO_WEEK"):
             self.validate_identity(
                 f"SELECT DATEPART({fmt}, '2024-11-21')",

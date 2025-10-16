@@ -100,6 +100,8 @@ def lineage(
             {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
             dialect=dialect,
         )
+    else:
+        expression = expression.copy()  # make a copy to avoid modifying input
 
     if not scope:
         expression = qualify.qualify(

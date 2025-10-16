@@ -2104,6 +2104,14 @@ MOD(42, 7);
 INT;
 
 # dialect: snowflake
+MONTHS_BETWEEN(tbl.date_col, CAST('2019-01-01' AS DATE));
+DOUBLE;
+
+# dialect: snowflake
+MONTHS_BETWEEN(tbl.timestamp_col, CAST('2019-02-15 01:00:00' AS TIMESTAMP));
+DOUBLE;
+
+# dialect: snowflake
 'foo' REGEXP 'bar';
 BOOLEAN;
 

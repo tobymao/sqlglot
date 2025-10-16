@@ -646,6 +646,7 @@ class Snowflake(Dialect):
             exp.Factorial,
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
+            exp.Rand,
         },
         exp.DataType.Type.ARRAY: {
             exp.Split,

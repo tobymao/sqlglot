@@ -7802,8 +7802,10 @@ class Week(Func):
 class WeekStart(Expression):
     pass
 
+
 class NextDay(Func):
     arg_types = {"this": True, "expression": True}
+
 
 class XMLElement(Func):
     _sql_names = ["XMLELEMENT"]

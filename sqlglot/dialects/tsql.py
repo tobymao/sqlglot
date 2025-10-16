@@ -200,7 +200,7 @@ def _build_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
-DATEPART_ONLY_FORMATS = {"DW", "WK", "HOUR", "QUARTER"}
+DATEPART_ONLY_FORMATS = {"DW", "WK", "HOUR", "QUARTER", "ISO_WEEK"}
 
 
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
@@ -426,6 +426,9 @@ class TSQL(Dialect):
         "week": "%W",
         "ww": "%W",
         "wk": "%W",
+        "isowk": "%IW",
+        "isoww": "%IW",
+        "iso_week": "%IW",
         "hour": "%h",
         "hh": "%I",
         "minute": "%M",

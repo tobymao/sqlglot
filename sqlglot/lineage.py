@@ -73,6 +73,7 @@ def lineage(
     dialect: DialectType = None,
     scope: t.Optional[Scope] = None,
     trim_selects: bool = True,
+    copy: bool = False,
     **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -85,25 +86,29 @@ def lineage(
         dialect: The dialect of input SQL.
         scope: A pre-created scope to use instead.
         trim_selects: Whether or not to clean up selects by trimming to only relevant columns.
+        copy: Defines whether the input expressions are copied internally before any modifications.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
         A lineage node.
     """
 
-    expression = maybe_parse(sql, dialect=dialect)
+    expression = maybe_parse(sql, dialect=dialect, copy=copy)
     column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
 
     if sources:
         expression = exp.expand(
             expression,
-            {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
+            {
+                k: t.cast(exp.Query, maybe_parse(v, dialect=dialect, copy=copy))
+                for k, v in sources.items()
+            },
             dialect=dialect,
         )
 
     if not scope:
         expression = qualify.qualify(
-            expression.copy(),
+            expression,
             dialect=dialect,
             schema=schema,
             **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore

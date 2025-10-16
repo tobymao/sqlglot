@@ -42,6 +42,17 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.source_name, "y")
         self.assertGreater(len(node.to_html()._repr_html_()), 1000)
 
+        # test copy
+        sql = "SELECT a FROM z"
+
+        ast = sqlglot.parse_one(sql)
+        node = lineage("a", ast, copy=True)
+        self.assertEqual(ast.sql(), sql)
+
+        ast = sqlglot.parse_one(sql)
+        node = lineage("a", ast)
+        self.assertEqual(ast.sql(), "SELECT z.a AS a FROM z AS z")
+
     def test_lineage_sql_with_cte(self) -> None:
         node = lineage(
             "a",

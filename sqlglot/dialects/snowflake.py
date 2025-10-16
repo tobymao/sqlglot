@@ -1537,7 +1537,6 @@ class Snowflake(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
-            exp.PreviousDay: rename_func("PREVIOUS_DAY"),
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,

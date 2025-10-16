@@ -1150,6 +1150,9 @@ class TestDuckDB(Validator):
                     f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))"
                 )
 
+        self.validate_identity("FORMAT('foo')")
+        self.validate_identity("FORMAT('foo', 'foo2', 'foo3')")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

@@ -710,6 +710,7 @@ class DuckDB(Dialect):
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
+            exp.DatetimeDiff: _date_diff_sql,
             exp.DatetimeSub: date_delta_to_binary_interval_op(),
             exp.DatetimeAdd: date_delta_to_binary_interval_op(),
             exp.DateToDi: lambda self,

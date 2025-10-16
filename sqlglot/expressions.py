@@ -6293,6 +6293,10 @@ class LastDay(Func, TimeUnit):
     arg_types = {"this": True, "unit": False}
 
 
+class PreviousDay(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class LaxBool(Func):
     pass
 
@@ -7164,6 +7168,10 @@ class Min(AggFunc):
 
 
 class Month(Func):
+    pass
+
+
+class Monthname(Func):
     pass
 
 

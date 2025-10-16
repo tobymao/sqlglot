@@ -2028,6 +2028,14 @@ POSITION('abc', 'abcdef', 1);
 INT;
 
 # dialect: snowflake
+PREVIOUS_DAY(CAST('2024-05-09' AS DATE), 'MONDAY');
+DATE;
+
+# dialect: snowflake
+PREVIOUS_DAY(CAST('2024-05-09 08:50:57' AS TIMESTAMP), 'MONDAY');
+DATE;
+
+# dialect: snowflake
 PI();
 DOUBLE;
 
@@ -2066,6 +2074,14 @@ VARCHAR;
 # dialect: snowflake
 MINUTE(CAST('08:50:57' AS TIME));
 INT;
+
+# dialect: snowflake
+MONTHNAME(CAST('2024-05-09' AS DATE));
+VARCHAR;
+
+# dialect: snowflake
+MONTHNAME(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+VARCHAR;
 
 # dialect: snowflake
 MOD(tbl.bigint_col, 3);

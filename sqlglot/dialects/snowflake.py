@@ -616,6 +616,7 @@ class Snowflake(Dialect):
             exp.TryHexDecodeString,
             exp.HexEncode,
             exp.Initcap,
+            exp.Monthname,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
@@ -662,6 +663,10 @@ class Snowflake(Dialect):
         exp.DataType.Type.BOOLEAN: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
             exp.Search,
+        },
+        exp.DataType.Type.DATE: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATE],
+            exp.PreviousDay,
         },
     }
 

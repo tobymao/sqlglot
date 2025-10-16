@@ -6293,6 +6293,10 @@ class LastDay(Func, TimeUnit):
     arg_types = {"this": True, "unit": False}
 
 
+class PreviousDay(Func):
+    arg_types = {"this": True, "day_of_week": True}
+
+
 class LaxBool(Func):
     pass
 

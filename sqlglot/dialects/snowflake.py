@@ -663,6 +663,10 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
             exp.Search,
         },
+        exp.DataType.Type.DATE: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATE],
+            exp.PreviousDay,
+        },
     }
 
     ANNOTATORS = {
@@ -842,6 +846,7 @@ class Snowflake(Dialect):
             "PARSE_URL": lambda args: exp.ParseUrl(
                 this=seq_get(args, 0), permissive=seq_get(args, 1)
             ),
+            "PREVIOUS_DAY": exp.PreviousDay.from_arg_list,
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
@@ -1532,6 +1537,7 @@ class Snowflake(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
+            exp.PreviousDay: rename_func("PREVIOUS_DAY"),
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,

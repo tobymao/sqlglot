@@ -831,7 +831,6 @@ class Snowflake(Dialect):
             "MD5_BINARY": exp.MD5Digest.from_arg_list,
             "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
             "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
-            "MONTHNAME": exp.Monthname.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),

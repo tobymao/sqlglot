@@ -7307,6 +7307,11 @@ class ReadCSV(Func):
     arg_types = {"this": True, "expressions": False}
 
 
+class ReadParquet(Func):
+    is_var_len_args = True
+    arg_types = {"expressions": True}
+
+
 class Reduce(Func):
     arg_types = {"this": True, "initial": True, "merge": True, "finish": False}
 

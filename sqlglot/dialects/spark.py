@@ -258,3 +258,11 @@ class Spark(Spark2):
                 return super().placeholder_sql(expression)
 
             return f"{{{expression.name}}}"
+
+        def readparquet_sql(self, expression: exp.ReadParquet) -> str:
+            if len(expression.expressions) != 1:
+                self.unsupported("READ_PARQUET with multiple arguments is not supported")
+                return ""
+
+            parquet_file = expression.expressions[0]
+            return f"parquet.`{parquet_file.name}`"

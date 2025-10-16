@@ -2044,6 +2044,14 @@ POW(tbl.double_col, 2);
 DOUBLE;
 
 # dialect: snowflake
+RANDOM();
+BIGINT;
+
+# dialect: snowflake
+RANDOM(123);
+BIGINT;
+
+# dialect: snowflake
 RADIANS(tbl.double_col);
 DOUBLE;
 

@@ -665,6 +665,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.DATE: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATE],
+            exp.NextDay,
             exp.PreviousDay,
         },
     }

@@ -100,6 +100,10 @@ INT;
 LAST_DAY(tbl.timestamp_col);
 DATE;
 
+# dialect: snowflake
+NEXT_DAY(tbl.date_col, 'MONDAY');
+DATE;
+
 JUSTIFY_DAYS(INTERVAL '1' DAY);
 INTERVAL;
 

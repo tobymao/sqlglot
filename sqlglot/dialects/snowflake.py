@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestamptrunc_sql,
     timestrtotime_sql,
+    unit_to_str,
     var_map_sql,
     map_date_part,
     no_timestamp_sql,
@@ -683,6 +684,7 @@ class Snowflake(Dialect):
                 exp.Round,
                 exp.Ceil,
                 exp.DateTrunc,
+                exp.TimeSlice,
                 exp.TimestampTrunc,
             )
         },
@@ -1561,6 +1563,13 @@ class Snowflake(Dialect):
             exp.Stuff: rename_func("INSERT"),
             exp.StPoint: rename_func("ST_MAKEPOINT"),
             exp.TimeAdd: date_delta_sql("TIMEADD"),
+            exp.TimeSlice: lambda self, e: self.func(
+                "TIME_SLICE",
+                e.this,
+                e.expression,
+                unit_to_str(e),
+                e.args.get("kind"),
+            ),
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: date_delta_sql("TIMESTAMPADD"),
             exp.TimestampDiff: lambda self, e: self.func(

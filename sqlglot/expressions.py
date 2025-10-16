@@ -6338,6 +6338,10 @@ class TimestampTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class TimeSlice(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": True, "kind": False}
+
+
 class TimeAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
@@ -6720,7 +6724,7 @@ class FormatJson(Expression):
 
 
 class Format(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 

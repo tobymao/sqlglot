@@ -846,7 +846,6 @@ class Snowflake(Dialect):
             "PARSE_URL": lambda args: exp.ParseUrl(
                 this=seq_get(args, 0), permissive=seq_get(args, 1)
             ),
-            "PREVIOUS_DAY": exp.PreviousDay.from_arg_list,
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),

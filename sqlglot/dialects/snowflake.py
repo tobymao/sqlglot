@@ -667,6 +667,10 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATE],
             exp.PreviousDay,
         },
+        exp.DataType.Type.TIME: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIME],
+            exp.TimeFromParts,
+        },
     }
 
     ANNOTATORS = {

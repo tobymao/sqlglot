@@ -103,7 +103,7 @@ def lineage(
 
     if not scope:
         expression = qualify.qualify(
-            expression,
+            expression.copy(),
             dialect=dialect,
             schema=schema,
             **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore

@@ -2500,6 +2500,14 @@ TAN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+TIME_SLICE(tbl.timestamp_col, 15, 'minute');
+TIMESTAMP;
+
+# dialect: snowflake
+TIME_SLICE(tbl.date_col, 1, 'day', 'start');
+DATE;
+
+# dialect: snowflake
 TRANSLATE('hello world', 'elo', 'XYZ');
 VARCHAR;
 

@@ -615,7 +615,7 @@ class Snowflake(Dialect):
             exp.TryHexDecodeString,
             exp.HexEncode,
             exp.Initcap,
-            exp.MonthName,
+            exp.Monthname,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
@@ -831,7 +831,7 @@ class Snowflake(Dialect):
             "MD5_BINARY": exp.MD5Digest.from_arg_list,
             "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
             "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
-            "MONTHNAME": exp.MonthName.from_arg_list,
+            "MONTHNAME": exp.Monthname.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),
@@ -1552,7 +1552,6 @@ class Snowflake(Dialect):
             exp.MD5Digest: rename_func("MD5_BINARY"),
             exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
-            exp.MonthName: rename_func("MONTHNAME"),
             exp.LowerHex: rename_func("TO_CHAR"),
             exp.SortArray: rename_func("ARRAY_SORT"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),

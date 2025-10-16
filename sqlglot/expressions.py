@@ -7167,7 +7167,7 @@ class Month(Func):
     pass
 
 
-class MonthName(Func):
+class Monthname(Func):
     pass
 
 

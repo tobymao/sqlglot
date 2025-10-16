@@ -817,7 +817,6 @@ class BigQuery(Dialect):
             "DATETIME": _build_datetime,
             "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
-            "DATETIME_DIFF": exp.DatetimeDiff.from_arg_list,
             "DIV": binary_from_function(exp.IntDiv),
             "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),

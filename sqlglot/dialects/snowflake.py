@@ -563,19 +563,18 @@ def _annotate_dateadd(self: TypeAnnotator, expression: exp.DateAdd) -> exp.DateA
         self._annotate_by_args(expression, "this")
     return expression
 
-    
+
 def _annotate_timeadd(self: TypeAnnotator, expression: exp.TimeAdd) -> exp.TimeAdd:
-    expression = self._annotate_by_args(expression, "this")
+    self._annotate_args(expression)
 
-    if (
-        expression.this.type
-        and expression.this.type.is_type(exp.DataType.Type.DATE)
-        and expression.unit
-        and isinstance(expression.unit, exp.Var)
-        and expression.unit.name.upper() in ("HOUR", "MINUTE", "SECOND")
+    if expression.this.is_type(exp.DataType.Type.DATE) and expression.text("unit").upper() in (
+        "HOUR",
+        "MINUTE",
+        "SECOND",
     ):
-        self._set_type(expression, exp.DataType.Type.TIMESTAMP)
-
+        self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
+    else:
+        self._annotate_by_args(expression, "this")
     return expression
 
 

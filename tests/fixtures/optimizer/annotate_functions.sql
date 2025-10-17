@@ -2601,7 +2601,7 @@ DATE;
 
 # dialect: snowflake
 TIMEADD(hour, 1, CAST('2024-05-09' AS DATE));
-TIMESTAMP;
+TIMESTAMPNTZ;
 
 # dialect: snowflake
 TIME_FROM_PARTS(14, 30, 45);

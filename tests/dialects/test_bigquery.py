@@ -830,6 +830,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+            write={
+                "bigquery": "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '2' HOUR",
+            },
+        )
+        self.validate_all(
             "LOWER(TO_HEX(x))",
             write={
                 "": "LOWER(HEX(x))",

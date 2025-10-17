@@ -775,6 +775,7 @@ class DuckDB(Dialect):
             exp.Struct: _struct_sql,
             exp.Transform: rename_func("LIST_TRANSFORM"),
             exp.TimeAdd: date_delta_to_binary_interval_op(),
+            exp.TimeSub: date_delta_to_binary_interval_op(),
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,

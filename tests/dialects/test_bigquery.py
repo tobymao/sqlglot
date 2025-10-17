@@ -2499,6 +2499,14 @@ OPTIONS (
         for dialect in ("bigquery", "spark", "databricks"):
             parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)
 
+    def test_unix_micros(self):
+        self.validate_all(
+            "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
+            write={
+                "duckdb": "SELECT EPOCH_US('2008-12-25 15:30:00+00')",
+            },
+        )
+
     def test_regexp_extract(self):
         self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
         self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")

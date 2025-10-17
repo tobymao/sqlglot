@@ -1252,6 +1252,13 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "UNIX_MICROS(x)",
+            write={
+                "bigquery": "UNIX_MICROS(x)",
+                "duckdb": "EPOCH_US(x)",
+            },
+        )
+        self.validate_all(
             "STRFTIME(x, '%y-%-m-%S')",
             write={
                 "bigquery": "FORMAT_DATE('%y-%-m-%S', x)",

@@ -1896,6 +1896,54 @@ DATE_TRUNC('minute', TO_TIMESTAMP('2024-05-09 08:50:57.891'));
 TIMESTAMP;
 
 # dialect: snowflake
+TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_FROM_PARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMPFROMPARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMPFROMPARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_LTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_LTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_NTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_NTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_NTZ_FROM_PARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_TZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123, 'UTC');
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_TZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
 EDITDISTANCE('hello', 'world');
 INT;
 

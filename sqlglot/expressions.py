@@ -7768,15 +7768,17 @@ class Uuid(Func):
 class TimestampFromParts(Func):
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
-        "year": True,
-        "month": True,
-        "day": True,
-        "hour": True,
-        "min": True,
-        "sec": True,
+        "year": False,
+        "month": False,
+        "day": False,
+        "hour": False,
+        "min": False,
+        "sec": False,
         "nano": False,
         "zone": False,
         "milli": False,
+        "this": False,
+        "expression": False,
     }
 
 

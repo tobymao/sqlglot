@@ -1125,7 +1125,7 @@ def remove_where_true(expression):
 
 def always_true(expression):
     return (isinstance(expression, exp.Boolean) and expression.this) or (
-        isinstance(expression, exp.Literal) and not is_zero(expression)
+        isinstance(expression, exp.Literal) and expression.is_number and not is_zero(expression)
     )
 
 

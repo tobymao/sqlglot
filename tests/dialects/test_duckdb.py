@@ -1242,13 +1242,13 @@ class TestDuckDB(Validator):
         self.validate_all(
             "EPOCH_MS(x)",
             write={
-                "bigquery": "TIMESTAMP_MILLIS(x)",
-                "clickhouse": "fromUnixTimestamp64Milli(CAST(x AS Nullable(Int64)))",
+                "bigquery": "UNIX_MILLIS(x)",
+                "clickhouse": "toUnixTimestamp64Milli(x)",
                 "duckdb": "EPOCH_MS(x)",
-                "mysql": "FROM_UNIXTIME(x / POWER(10, 3))",
-                "postgres": "TO_TIMESTAMP(CAST(x AS DOUBLE PRECISION) / POWER(10, 3))",
-                "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / POW(10, 3))",
-                "spark": "TIMESTAMP_MILLIS(x)",
+                "mysql": "UNIX_TIMESTAMP(x) * POWER(10, 3)",
+                "postgres": "EXTRACT(EPOCH FROM x) * POWER(10, 3)",
+                "presto": "UNIX_MILLIS(x)",
+                "spark": "UNIX_MILLIS(x)",
             },
         )
         self.validate_all(

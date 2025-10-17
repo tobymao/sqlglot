@@ -1149,6 +1149,7 @@ class ClickHouse(Dialect):
             exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.UnixMillis: lambda self, e: self.func("toUnixTimestamp64Milli", e.this),
             exp.UnixToTime: _unix_to_time_sql,
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),

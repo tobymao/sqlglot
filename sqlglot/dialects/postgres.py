@@ -673,6 +673,12 @@ class Postgres(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("+"),
             exp.TsOrDsDiff: _date_diff_sql,
+            exp.UnixMillis: lambda self, e: self.sql(
+                exp.Mul(
+                    this=exp.Extract(this="EPOCH", expression=e.this),
+                    expression=exp.func("POW", 10, 3),
+                )
+            ),
             exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this),
             exp.Uuid: lambda *_: "GEN_RANDOM_UUID()",
             exp.TimeToUnix: lambda self, e: self.func(

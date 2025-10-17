@@ -397,9 +397,7 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
             "EPOCH": exp.TimeToUnix.from_arg_list,
-            "EPOCH_MS": lambda args: exp.UnixToTime(
-                this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
-            ),
+            "EPOCH_MS": exp.UnixMillis.from_arg_list,
             "GENERATE_SERIES": _build_generate_series(),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
@@ -798,6 +796,7 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, exp.DataType.Type.TIMESTAMP),
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
             ),
+            exp.UnixMillis: rename_func("EPOCH_MS"),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),

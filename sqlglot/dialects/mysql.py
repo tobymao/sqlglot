@@ -325,7 +325,7 @@ class MySQL(Dialect):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -755,7 +755,7 @@ class MySQL(Dialect):
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
-            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")

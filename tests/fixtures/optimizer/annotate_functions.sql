@@ -1848,6 +1848,14 @@ DATEDIFF('month', tbl.timestamp_col, tbl.timestamp_col);
 INT;
 
 # dialect: snowflake
+TIMESTAMPDIFF('year', tbl.date_col, tbl.date_col);
+INT;
+
+# dialect: snowflake
+TIMESTAMPDIFF('month', tbl.timestamp_col, tbl.timestamp_col);
+INT;
+
+# dialect: snowflake
 DATE_TRUNC('year', TO_DATE('2024-05-09'));
 DATE;
 

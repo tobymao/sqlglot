@@ -568,6 +568,12 @@ DATE_ADD(x, 1, 'MONTH');
 DATE_ADD(x, 1);
 DATE_ADD(x, 1, 'DAY');
 
+SELECT 1 WHERE 'foo';
+SELECT 1 WHERE 'foo';
+
+SELECT 1 WHERE NOT 'foo';
+SELECT 1 WHERE NOT 'foo';
+
 --------------------------------------
 -- Comparisons
 --------------------------------------

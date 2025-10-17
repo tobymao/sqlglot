@@ -128,7 +128,7 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT TIMESTAMP_FROM_PARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME))"
         )
-       
+
         self.validate_identity("SELECT DATE_FROM_PARTS(1977, 8, 7)")
         self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")

@@ -160,3 +160,65 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH ASYNC MODE WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
         )
+
+    def test_is_bool_allowed(self):
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS TRUE",
+            write={
+                "starrocks": "SELECT * FROM t WHERE col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS FALSE",
+            write={
+                "starrocks": "SELECT * FROM t WHERE NOT col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS NOT TRUE",
+            write={
+                "starrocks": "SELECT * FROM t WHERE NOT col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS NOT FALSE",
+            write={
+                "starrocks": "SELECT * FROM t WHERE NOT NOT col",
+            },
+        )
+        self.validate_all(
+            "SELECT col IS TRUE FROM t",
+            write={
+                "starrocks": "SELECT col FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT col IS FALSE FROM t",
+            write={
+                "starrocks": "SELECT NOT col FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t HAVING col IS TRUE",
+            write={
+                "starrocks": "SELECT * FROM t HAVING col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t HAVING col IS FALSE",
+            write={
+                "starrocks": "SELECT * FROM t HAVING NOT col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS NULL",
+            write={
+                "starrocks": "SELECT * FROM t WHERE col IS NULL",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE col IS NOT NULL",
+            write={
+                "starrocks": "SELECT * FROM t WHERE NOT col IS NULL",
+            },
+        )

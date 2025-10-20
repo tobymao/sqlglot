@@ -43,7 +43,6 @@ if t.TYPE_CHECKING:
 
 
 DATE_PARTS = ["YEAR", "QUARTER", "MONTH", "WEEK", "DAY"]
-TIME_PARTS = ["HOUR", "MINUTE", "SECOND"]
 
 
 def _build_strtok(args: t.List) -> exp.SplitPart:
@@ -570,7 +569,7 @@ def _annotate_timeadd(self: TypeAnnotator, expression: exp.TimeAdd) -> exp.TimeA
 
     if (
         expression.this.is_type(exp.DataType.Type.DATE)
-        and expression.text("unit").upper() in TIME_PARTS
+        and expression.text("unit").upper() not in DATE_PARTS
     ):
         self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
     else:

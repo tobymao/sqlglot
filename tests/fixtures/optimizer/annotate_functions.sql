@@ -2588,6 +2588,18 @@ TIME_SLICE(tbl.date_col, 1, 'day', 'start');
 DATE;
 
 # dialect: snowflake
+TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE));
+DATE;
+
+# dialect: snowflake
+TIMESTAMPADD(HOUR, 3, TO_TIME('05:00:00'));
+TIME;
+
+# dialect: snowflake
+TIMESTAMPADD(YEAR, 1, TO_TIMESTAMP('2022-05-08 14:30:00'));
+TIMESTAMP;
+
+# dialect: snowflake
 TRANSLATE('hello world', 'elo', 'XYZ');
 VARCHAR;
 

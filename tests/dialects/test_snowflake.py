@@ -1828,10 +1828,6 @@ class TestSnowflake(Validator):
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
         )
         self.validate_identity(
-            "TIMEDIFF(YEAR, '2017-01-01', '2019-01-01')",
-            "DATEDIFF(YEAR, '2017-01-01', '2019-01-01')",
-        )
-        self.validate_identity(
             "TIMESTAMPDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
         )

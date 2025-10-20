@@ -280,9 +280,9 @@ def simplify_connectors(expression, root=True):
                 return exp.null()
             if always_true(left) and always_true(right):
                 return exp.true()
-            if always_true(left):
+            if is_true(left):
                 return right
-            if always_true(right):
+            if is_true(right):
                 return left
             return _simplify_comparison(expression, left, right)
         elif isinstance(expression, exp.Or):
@@ -1130,7 +1130,7 @@ def remove_where_true(expression):
 
 
 def always_true(expression):
-    return (isinstance(expression, exp.Boolean) and expression.this) or (
+    return is_true(expression) or (
         isinstance(expression, exp.Literal) and expression.is_number and not is_zero(expression)
     )
 
@@ -1149,6 +1149,10 @@ def is_complement(a, b):
 
 def is_false(a: exp.Expression) -> bool:
     return type(a) is exp.Boolean and not a.this
+
+
+def is_true(a: exp.Expression):
+    return type(a) is exp.Boolean and a.this
 
 
 def is_null(a: exp.Expression) -> bool:

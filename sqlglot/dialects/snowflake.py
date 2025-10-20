@@ -886,7 +886,7 @@ class Snowflake(Dialect):
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
-            "TIMESTAMPADD": _build_date_time_add(exp.TimestampAdd),
+            "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,

@@ -1812,12 +1812,14 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            read={
+                "snowflake": "TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            },
             write={
                 "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
             },
         )
-        self.validate_identity("TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE))")
         self.validate_identity(
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))"
         )

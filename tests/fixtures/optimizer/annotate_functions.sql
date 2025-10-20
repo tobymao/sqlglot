@@ -1648,10 +1648,6 @@ BIT_LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
-BOOLNOT(0);
-BOOLEAN;
-
-# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 

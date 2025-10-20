@@ -47,6 +47,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BOOLNOT(0)")
         self.validate_identity("SELECT BOOLNOT(-3.79)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
+        self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
         self.validate_identity("SELECT HEX_ENCODE('Hello World')")

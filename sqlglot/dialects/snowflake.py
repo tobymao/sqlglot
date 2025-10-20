@@ -680,6 +680,7 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.BOOLEAN: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
+            exp.Boolnot,
             exp.Search,
         },
         exp.DataType.Type.DATE: {

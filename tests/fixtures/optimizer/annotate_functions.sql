@@ -1648,6 +1648,14 @@ BIT_LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+BOOLNOT(tbl.int_col);
+BOOLEAN;
+
+# dialect: snowflake
+BOOLNOT(NULL);
+BOOLEAN;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

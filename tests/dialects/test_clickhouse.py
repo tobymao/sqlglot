@@ -189,6 +189,10 @@ class TestClickhouse(Validator):
             "SELECT generate_series FROM generate_series(0, 10) AS g(x)",
         )
         self.validate_identity(
+            "SELECT t.c FROM (SELECT arrayJoin([1,2,3,4,5]) AS c) AS t WHERE (t.c + 0) NOT IN (1,2)",
+            "SELECT t.c FROM (SELECT arrayJoin([1, 2, 3, 4, 5]) AS c) AS t WHERE NOT ((t.c + 0) IN (1, 2))",
+        )
+        self.validate_identity(
             "SELECT * FROM t1, t2",
             "SELECT * FROM t1 CROSS JOIN t2",
         )

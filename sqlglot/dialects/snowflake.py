@@ -550,7 +550,20 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
-def _annotate_date_or_time_add(self: TypeAnnotator, expression: E) -> E:
+def _build_timestamp_from_parts(args: t.List) -> exp.Func:
+    """Build TimestampFromParts with support for both syntaxes:
+    1. TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second [, nanosecond] [, time_zone])
+    2. TIMESTAMP_FROM_PARTS(date_expr, time_expr) - Snowflake specific
+    """
+    if len(args) == 2:
+        # Snowflake 2-argument syntax: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
+        return exp.TimestampFromParts(this=seq_get(args, 0), expression=seq_get(args, 1))
+    else:
+        # Standard syntax: TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second [, nanosecond] [, time_zone])
+        return exp.TimestampFromParts.from_arg_list(args)
+
+
+def _annotate_dateadd(self: TypeAnnotator, expression: exp.DateAdd) -> exp.DateAdd:
     self._annotate_args(expression)
 
     if (
@@ -704,6 +717,8 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIMESTAMP],
             exp.TimestampFromParts,
         },
+        exp.DataType.Type.TIMESTAMPLTZ: {exp.TimestampLtzFromParts},
+        exp.DataType.Type.TIMESTAMPTZ: {exp.TimestampTzFromParts},
     }
 
     ANNOTATORS = {
@@ -749,7 +764,6 @@ class Snowflake(Dialect):
         exp.DateAdd: _annotate_date_or_time_add,
         exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
-        exp.TimeAdd: _annotate_date_or_time_add,
     }
 
     TIME_MAPPING = {
@@ -907,10 +921,10 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-            "TIMESTAMPLTZFROMPARTS": _build_timestamp_from_parts,
-            "TIMESTAMP_LTZ_FROM_PARTS": _build_timestamp_from_parts,
-            "TIMESTAMPTZFROMPARTS": _build_timestamp_from_parts,
-            "TIMESTAMP_TZ_FROM_PARTS": _build_timestamp_from_parts,
+            "TIMESTAMPLTZFROMPARTS": lambda args: exp.TimestampLtzFromParts.from_arg_list(args),
+            "TIMESTAMP_LTZ_FROM_PARTS": lambda args: exp.TimestampLtzFromParts.from_arg_list(args),
+            "TIMESTAMPTZFROMPARTS": lambda args: exp.TimestampTzFromParts.from_arg_list(args),
+            "TIMESTAMP_TZ_FROM_PARTS": lambda args: exp.TimestampTzFromParts.from_arg_list(args),
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
             "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),

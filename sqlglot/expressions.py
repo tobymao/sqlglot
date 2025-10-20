@@ -7782,6 +7782,33 @@ class TimestampFromParts(Func):
     }
 
 
+class TimestampLtzFromParts(Func):
+    _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
+    arg_types = {
+        "year": False,
+        "month": False,
+        "day": False,
+        "hour": False,
+        "min": False,
+        "sec": False,
+        "nano": False,
+    }
+
+
+class TimestampTzFromParts(Func):
+    _sql_names = ["TIMESTAMP_TZ_FROM_PARTS", "TIMESTAMPTZFROMPARTS"]
+    arg_types = {
+        "year": False,
+        "month": False,
+        "day": False,
+        "hour": False,
+        "min": False,
+        "sec": False,
+        "nano": False,
+        "zone": False,
+    }
+
+
 class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 

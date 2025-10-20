@@ -51,6 +51,9 @@ def normalize(expression, **kwargs):
 
 
 def simplify(expression, **kwargs):
+    schema = kwargs.pop("schema", None)
+
+    expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(
         expression, constant_propagation=True, coalesce_simplification=True, **kwargs
     )
@@ -127,6 +130,9 @@ class TestOptimizer(unittest.TestCase):
                 "one": "STRUCT<a_1 INT, b_1 VARCHAR>",
                 "nested_0": "STRUCT<a_1 INT, nested_1 STRUCT<a_2 INT, nested_2 STRUCT<a_3 INT>>>",
                 "quoted": 'STRUCT<"foo bar" INT>',
+            },
+            "t_bool": {
+                "a": "BOOLEAN",
             },
         }
 
@@ -531,12 +537,12 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", simplify)
+        self.check_file("simplify", simplify, schema=self.schema)
 
         # Stress test with huge union query
         union_sql = "SELECT 1 UNION ALL " * 1000 + "SELECT 1"
         expression = parse_one(union_sql)
-        self.assertEqual(simplify(expression).sql(), union_sql)
+        self.assertEqual(optimizer.simplify.simplify(expression).sql(), union_sql)
 
         # Ensure simplify mutates the AST properly
         expression = parse_one("SELECT 1 + 2")

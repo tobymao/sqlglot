@@ -1312,3 +1312,9 @@ STARTS_WITH('x', y);
 
 STARTS_WITH(x, 'y');
 STARTS_WITH(x, 'y');
+
+--------------------------------------
+-- Simplify NOT
+--------------------------------------
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT t_bool.a FROM t_bool;

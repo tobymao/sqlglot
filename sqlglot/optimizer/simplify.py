@@ -244,9 +244,11 @@ def simplify_not(expression):
         if is_false(this):
             return exp.true()
         if isinstance(this, exp.Not):
-            # double negation
-            # NOT NOT x -> x
-            return this.this
+            inner = this.this
+            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
+                # double negation
+                # NOT NOT x -> x, if x is BOOLEAN type
+                return inner
     return expression
 
 

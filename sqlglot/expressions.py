@@ -5621,7 +5621,6 @@ class Boolnot(Func):
 
 
 class Booland(Func):
-    _sql_names = ["BOOLAND"]
     arg_types = {"this": True, "expression": True}
 
 

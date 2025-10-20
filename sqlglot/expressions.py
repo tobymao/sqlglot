@@ -454,9 +454,8 @@ class Expression(metaclass=_Expression):
                 for v in reversed(vs) if reverse else vs:  # type: ignore
                     if hasattr(v, "parent"):
                         yield v
-            else:
-                if hasattr(vs, "parent"):
-                    yield vs
+            elif hasattr(vs, "parent"):
+                yield vs
 
     def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
         """

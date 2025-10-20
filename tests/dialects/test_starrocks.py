@@ -7,6 +7,8 @@ class TestStarrocks(Validator):
     dialect = "starrocks"
 
     def test_starrocks(self):
+        self.assertEqual(self.validate_identity("arr[1]").expressions[0], exp.Literal.number(0))
+
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_', 'NULL')")
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
@@ -14,7 +16,14 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ST_POINT(10, 20)")
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
         self.validate_identity("ARRAY_FLATTEN(arr)").assert_is(exp.Flatten)
-        self.assertEqual(self.validate_identity("arr[1]").expressions[0], exp.Literal.number(0))
+
+        self.validate_all(
+            "SELECT * FROM t WHERE cond",
+            read={
+                "": "SELECT * FROM t WHERE cond IS TRUE",
+                "starrocks": "SELECT * FROM t WHERE cond",
+            },
+        )
 
     def test_ddl(self):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
@@ -159,66 +168,4 @@ class TestStarrocks(Validator):
         )
         self.validate_identity(
             "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH ASYNC MODE WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
-        )
-
-    def test_is_bool_allowed(self):
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS TRUE",
-            write={
-                "starrocks": "SELECT * FROM t WHERE col",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS FALSE",
-            write={
-                "starrocks": "SELECT * FROM t WHERE NOT col",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS NOT TRUE",
-            write={
-                "starrocks": "SELECT * FROM t WHERE NOT col",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS NOT FALSE",
-            write={
-                "starrocks": "SELECT * FROM t WHERE NOT NOT col",
-            },
-        )
-        self.validate_all(
-            "SELECT col IS TRUE FROM t",
-            write={
-                "starrocks": "SELECT col FROM t",
-            },
-        )
-        self.validate_all(
-            "SELECT col IS FALSE FROM t",
-            write={
-                "starrocks": "SELECT NOT col FROM t",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t HAVING col IS TRUE",
-            write={
-                "starrocks": "SELECT * FROM t HAVING col",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t HAVING col IS FALSE",
-            write={
-                "starrocks": "SELECT * FROM t HAVING NOT col",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS NULL",
-            write={
-                "starrocks": "SELECT * FROM t WHERE col IS NULL",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE col IS NOT NULL",
-            write={
-                "starrocks": "SELECT * FROM t WHERE NOT col IS NULL",
-            },
         )

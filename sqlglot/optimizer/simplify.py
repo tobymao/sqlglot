@@ -270,7 +270,11 @@ def simplify_connectors(expression, root=True):
                 return exp.false()
             if is_zero(left) or is_zero(right):
                 return exp.false()
-            if is_null(left) or is_null(right):
+            if (
+                (is_null(left) and is_null(right))
+                or (is_null(left) and always_true(right))
+                or (always_true(left) and is_null(right))
+            ):
                 return exp.null()
             if always_true(left) and always_true(right):
                 return exp.true()

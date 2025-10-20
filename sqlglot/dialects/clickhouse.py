@@ -1418,9 +1418,12 @@ class ClickHouse(Dialect):
             return in_sql
 
         def not_sql(self, expression: exp.Not) -> str:
-            if isinstance(expression.this, exp.In) and expression.this.args.get("is_global"):
-                # let `GLOBAL IN` child interpose `NOT`
-                return self.sql(expression, "this")
+            if isinstance(expression.this, exp.In):
+                if expression.this.args.get("is_global"):
+                    # let `GLOBAL IN` child interpose `NOT`
+                    return self.sql(expression, "this")
+
+                expression.set("this", exp.paren(expression.this, copy=False))
 
             return super().not_sql(expression)
 

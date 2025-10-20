@@ -331,6 +331,7 @@ def _expand_alias_refs(
                     # We should not qualify "id" with "custom_fields" in either clause, since the aggregation shadows the actual table
                     # and we'd get the error: "Column custom_fields contains an aggregation function, which is not allowed in GROUP BY clause"
                     column.replace(exp.to_identifier(column.name))
+                    replaced = True
                     return
 
             if table and (not alias_expr or skip_replace):
@@ -341,6 +342,7 @@ def _expand_alias_refs(
                 ):
                     if literal_index:
                         column.replace(exp.Literal.number(i))
+                        replaced = True
                 else:
                     replaced = True
                     column = column.replace(exp.paren(alias_expr))

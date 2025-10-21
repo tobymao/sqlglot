@@ -2592,6 +2592,22 @@ TAN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+TIMEADD(hour, 1, CAST('14:30:45' AS TIME));
+TIME;
+
+# dialect: snowflake
+TIMEADD(minute, 30, CAST('2024-05-09 14:30:45' AS TIMESTAMP));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMEADD(day, 1, CAST('2024-05-09' AS DATE));
+DATE;
+
+# dialect: snowflake
+TIMEADD(hour, 1, CAST('2024-05-09' AS DATE));
+TIMESTAMPNTZ;
+
+# dialect: snowflake
 TIME_FROM_PARTS(14, 30, 45);
 TIME;
 

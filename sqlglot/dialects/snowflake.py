@@ -561,7 +561,19 @@ def _annotate_dateadd(self: TypeAnnotator, expression: exp.DateAdd) -> exp.DateA
         self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
     else:
         self._annotate_by_args(expression, "this")
+    return expression
 
+
+def _annotate_timeadd(self: TypeAnnotator, expression: exp.TimeAdd) -> exp.TimeAdd:
+    self._annotate_args(expression)
+
+    if (
+        expression.this.is_type(exp.DataType.Type.DATE)
+        and expression.text("unit").upper() not in DATE_PARTS
+    ):
+        self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
+    else:
+        self._annotate_by_args(expression, "this")
     return expression
 
 
@@ -718,6 +730,7 @@ class Snowflake(Dialect):
                 exp.TimestampTrunc,
             )
         },
+        exp.TimeAdd: _annotate_timeadd,
         **{
             expr_type: lambda self, e: self._annotate_with_type(
                 e, exp.DataType.build("NUMBER", dialect="snowflake")

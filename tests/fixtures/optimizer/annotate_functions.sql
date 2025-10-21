@@ -1656,6 +1656,10 @@ BOOLNOT(NULL);
 BOOLEAN;
 
 # dialect: snowflake
+BOOLXOR(2, 0);
+BOOLEAN;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

@@ -6276,6 +6276,18 @@ class WeekOfYear(Func):
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
+class WeekIso(Func):
+    _sql_names = ["WEEK_ISO", "WEEKISO"]
+
+
+class YearOfWeek(Func):
+    _sql_names = ["YEAR_OF_WEEK", "YEAROFWEEK"]
+
+
+class YearOfWeekIso(Func):
+    _sql_names = ["YEAR_OF_WEEK_ISO", "YEAROFWEEKISO"]
+
+
 class MonthsBetween(Func):
     arg_types = {"this": True, "expression": True, "roundoff": False}
 

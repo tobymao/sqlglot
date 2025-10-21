@@ -1912,6 +1912,110 @@ EXTRACT(MINUTE, CAST('08:50:57' AS TIME));
 INT;
 
 # dialect: snowflake
+YEAR(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+YEAR(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+YEAROFWEEK(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+YEAROFWEEK(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+YEAROFWEEKISO(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+YEAROFWEEKISO(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+DAY(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+DAY(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+DAYOFMONTH(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+DAYOFMONTH(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+DAYOFWEEK(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+DAYOFWEEK(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+DAYOFWEEKISO(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+DAYOFWEEKISO(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+DAYOFYEAR(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+DAYOFYEAR(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+WEEK(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+WEEK(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+WEEKOFYEAR(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+WEEKOFYEAR(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+WEEKISO(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+WEEKISO(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+MONTH(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+MONTH(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
+QUARTER(CAST('2024-05-09' AS DATE));
+TINYINT;
+
+# dialect: snowflake
+QUARTER(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
+TINYINT;
+
+# dialect: snowflake
 EXP(1);
 DOUBLE;
 

@@ -615,6 +615,17 @@ class Snowflake(Dialect):
             exp.Unicode,
             exp.WidthBucket,
         },
+        exp.DataType.Type.TINYINT: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TINYINT],
+            exp.DayOfWeek,
+            exp.DayOfWeekIso,
+            exp.DayOfMonth,
+            exp.DayOfYear,
+            exp.WeekOfYear,
+            exp.WeekIso,
+            exp.YearOfWeek,
+            exp.YearOfWeekIso,
+        },
         exp.DataType.Type.VARCHAR: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
             exp.Base64DecodeString,
@@ -1625,6 +1636,9 @@ class Snowflake(Dialect):
             exp.Uuid: rename_func("UUID_STRING"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.WeekIso: rename_func("WEEKISO"),
+            exp.YearOfWeek: rename_func("YEAROFWEEK"),
+            exp.YearOfWeekIso: rename_func("YEAROFWEEKISO"),
             exp.Xor: rename_func("BOOLXOR"),
             exp.ByteLength: rename_func("OCTET_LENGTH"),
         }

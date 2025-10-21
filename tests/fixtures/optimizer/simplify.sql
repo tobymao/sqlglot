@@ -153,11 +153,17 @@ COALESCE(x, y) <> ALL (SELECT z FROM w);
 SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
 SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 
-x AND TRUE;
-x;
+SELECT t_bool.b AND TRUE FROM t_bool;
+SELECT t_bool.b FROM t_bool;
 
-TRUE AND x;
-x;
+SELECT TRUE AND t_bool.b FROM t_bool;
+SELECT t_bool.b FROM t_bool;
+
+SELECT t_bool.b OR FALSE FROM t_bool;
+SELECT t_bool.b FROM t_bool;
+
+SELECT FALSE OR t_bool.b FROM t_bool;
+SELECT t_bool.b FROM t_bool;
 
 --------------------------------------
 -- Absorption
@@ -166,49 +172,49 @@ x;
 (A OR B) AND (C OR NOT A);
 
 A AND (A OR B);
-A;
+A AND TRUE;
 
 A AND D AND E AND (B OR A);
-A AND D AND E;
+A AND D AND E AND TRUE;
 
 D AND A AND E AND (B OR A);
-A AND D AND E;
+A AND D AND E AND TRUE;
 
 (A OR B) AND A;
-A;
+A AND TRUE;
 
 C AND D AND (A OR B) AND E AND F AND A;
-A AND C AND D AND E AND F;
+A AND C AND D AND E AND F AND TRUE;
 
 A OR (A AND B);
-A;
+A OR FALSE;
 
 (A AND B) OR A;
-A;
+A OR FALSE;
 
 A AND (NOT A OR B);
-A AND B;
+A AND (B OR FALSE);
 
 (NOT A OR B) AND A;
-A AND B;
+A AND (B OR FALSE);
 
 A OR (NOT A AND B);
-A OR B;
+A OR (B AND TRUE);
 
 (A OR C) AND ((A OR C) OR B);
-A OR C;
+(A OR C) AND TRUE;
 
 (A OR C) AND (A OR B OR C);
-A OR C;
+(A OR C) AND TRUE;
 
 A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
 A AND (A OR B) AND (A OR B OR C);
-A;
+A AND TRUE;
 
 (A OR B) AND (A OR C) AND (A OR B OR C);
-(A OR B) AND (A OR C);
+(A OR B) AND (A OR C) AND TRUE;
 
 --------------------------------------
 -- Elimination
@@ -863,41 +869,41 @@ COALESCE(x);
 x;
 
 COALESCE(x, 1) = 2;
-NOT x IS NULL AND x = 2;
+FALSE OR (NOT x IS NULL AND x = 2);
 
 # dialect: redshift
 COALESCE(x, 1) = 2;
 COALESCE(x, 1) = 2;
 
 2 = COALESCE(x, 1);
-NOT x IS NULL AND x = 2;
+FALSE OR (NOT x IS NULL AND x = 2);
 
 COALESCE(x, 1, 1) = 1 + 1;
-NOT x IS NULL AND x = 2;
+FALSE OR (NOT x IS NULL AND x = 2);
 
 COALESCE(x, 1, 2) = 2;
-NOT x IS NULL AND x = 2;
+FALSE OR (NOT x IS NULL AND x = 2);
 
 COALESCE(x, 3) <= 2;
-NOT x IS NULL AND x <= 2;
+FALSE OR (NOT x IS NULL AND x <= 2);
 
 COALESCE(x, 1) <> 2;
-x <> 2 OR x IS NULL;
+(NOT x IS NULL AND x <> 2) OR (TRUE AND x IS NULL);
 
 COALESCE(x, 1) <= 2;
-x <= 2 OR x IS NULL;
+(NOT x IS NULL AND x <= 2) OR (TRUE AND x IS NULL);
 
 COALESCE(x, 1) = 1;
-x = 1 OR x IS NULL;
+(NOT x IS NULL AND x = 1) OR (TRUE AND x IS NULL);
 
 COALESCE(x, 1) IS NULL;
 FALSE;
 
 COALESCE(ROW() OVER (), 1) = 1;
-ROW() OVER () = 1 OR ROW() OVER () IS NULL;
+(NOT ROW() OVER () IS NULL AND ROW() OVER () = 1) OR (TRUE AND ROW() OVER () IS NULL);
 
 a AND b AND COALESCE(ROW() OVER (), 1) = 1;
-(ROW() OVER () = 1 OR ROW() OVER () IS NULL) AND a AND b;
+((NOT ROW() OVER () IS NULL AND ROW() OVER () = 1) OR (TRUE AND ROW() OVER () IS NULL)) AND a AND b;
 
 COALESCE(1, 2);
 1;

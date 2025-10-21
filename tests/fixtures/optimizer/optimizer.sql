@@ -534,7 +534,10 @@ SELECT
   ) AS "sort_order"
 FROM "unioned" AS "unioned"
 WHERE
-  "unioned"."source_system" = 'bamboohr' OR "unioned"."source_system" = 'workday'
+  (
+    "unioned"."source_system" = 'bamboohr' OR "unioned"."source_system" = 'workday'
+  )
+  AND TRUE
 QUALIFY
   ROW_NUMBER() OVER (
     PARTITION BY "unioned"."unique_filter_key"

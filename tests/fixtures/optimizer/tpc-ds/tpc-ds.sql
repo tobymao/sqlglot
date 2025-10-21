@@ -5774,8 +5774,11 @@ JOIN "item" AS "item"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."i_item_id" = "item"."i_item_id"
 WHERE
-  NOT "_u_0"."i_item_id" IS NULL
-  OR SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
+  (
+    NOT "_u_0"."i_item_id" IS NULL
+    OR SUBSTRING("customer_address"."ca_zip", 1, 5) IN ('85669', '86197', '88274', '83405', '86475', '85392', '85460', '80348', '81792')
+  )
+  AND TRUE
 GROUP BY
   "customer_address"."ca_zip",
   "customer_address"."ca_state"

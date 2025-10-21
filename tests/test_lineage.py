@@ -673,3 +673,53 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "cte.2024-10")
         self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.loan_id")
         self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.loan_id")
+
+    def test_copy_flag(self) -> None:
+        schema = {
+            "x": {
+                "a": "int",
+            },
+        }
+
+        query = sqlglot.parse_one("SELECT a FROM z")
+        sources = {
+            "y": sqlglot.parse_one("SELECT * FROM x"),
+            "z": sqlglot.parse_one("SELECT * FROM y"),
+        }
+
+        lineage("a", query, schema=schema, sources=sources, copy=False)
+
+        self.assertEqual(sources["y"].sql(), "SELECT * FROM x")
+        self.assertEqual(sources["z"].sql(), "SELECT * FROM y")
+        self.assertEqual(
+            query.sql(),
+            "SELECT z.a AS a FROM (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) AS z /* source: z */",
+        )
+
+        query = sqlglot.parse_one("SELECT a FROM z")
+        sources = {
+            "y": sqlglot.parse_one("SELECT * FROM x"),
+            "z": sqlglot.parse_one("SELECT * FROM y"),
+        }
+
+        lineage("a", query, schema=schema, sources=sources, copy=True)
+
+        self.assertEqual(sources["y"].sql(), "SELECT * FROM x")
+        self.assertEqual(sources["z"].sql(), "SELECT * FROM y")
+        self.assertEqual(query.sql(), "SELECT a FROM z")
+
+        query = sqlglot.parse_one("SELECT a FROM z")
+        sources = {
+            "y": sqlglot.parse_one("SELECT * FROM x"),
+            "z": sqlglot.parse_one("SELECT * FROM y"),
+        }
+
+        query = sqlglot.parse_one("SELECT a FROM x")
+        lineage("a", query, schema=schema, copy=False)
+
+        self.assertEqual(query.sql(), "SELECT x.a AS a FROM x AS x")
+
+        query = sqlglot.parse_one("SELECT a FROM x")
+        lineage("a", query, schema=schema, copy=True)
+
+        self.assertEqual(query.sql(), "SELECT a FROM x")

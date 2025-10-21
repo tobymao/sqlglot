@@ -551,20 +551,7 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
-def _annotate_dateadd(self: TypeAnnotator, expression: exp.DateAdd) -> exp.DateAdd:
-    self._annotate_args(expression)
-
-    if (
-        expression.this.is_type(exp.DataType.Type.DATE)
-        and expression.text("unit").upper() not in DATE_PARTS
-    ):
-        self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
-    else:
-        self._annotate_by_args(expression, "this")
-    return expression
-
-
-def _annotate_timeadd(self: TypeAnnotator, expression: exp.TimeAdd) -> exp.TimeAdd:
+def _annotate_date_or_time_add(self: TypeAnnotator, expression: E) -> E:
     self._annotate_args(expression)
 
     if (
@@ -730,7 +717,6 @@ class Snowflake(Dialect):
                 exp.TimestampTrunc,
             )
         },
-        exp.TimeAdd: _annotate_timeadd,
         **{
             expr_type: lambda self, e: self._annotate_with_type(
                 e, exp.DataType.build("NUMBER", dialect="snowflake")
@@ -747,8 +733,9 @@ class Snowflake(Dialect):
             if e.args.get("source_tz")
             else exp.DataType.Type.TIMESTAMPTZ,
         ),
-        exp.DateAdd: _annotate_dateadd,
+        exp.DateAdd: _annotate_date_or_time_add,
         exp.Reverse: _annotate_reverse,
+        exp.TimeAdd: _annotate_date_or_time_add,
     }
 
     TIME_MAPPING = {

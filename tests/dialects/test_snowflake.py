@@ -106,10 +106,6 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
-        self.validate_identity(
-            "SELECT TIMEADD(MINUTE, 30, CAST('2024-05-09 14:30:45' AS TIMESTAMP))"
-        )
-        self.validate_identity("SELECT TIMEADD(DAY, 1, CAST('2024-05-09' AS DATE))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
         self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")

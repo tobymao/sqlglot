@@ -104,9 +104,8 @@ def lineage(
                 for k, v in sources.items()
             },
             dialect=dialect,
+            copy=copy,
         )
-    elif copy:
-        expression = expression.copy()
 
     if not scope:
         expression = qualify.qualify(

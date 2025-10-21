@@ -125,7 +125,7 @@ def simplify(
                 node.set(k, v)
 
             # Post-order transformations
-            new_node = simplify_not(node)
+            new_node = simplify_not(node, dialect)
             new_node = flatten(new_node)
             new_node = simplify_connectors(new_node, root)
             new_node = remove_complements(new_node, root)
@@ -202,7 +202,7 @@ COMPLEMENT_SUBQUERY_PREDICATES = {
 }
 
 
-def simplify_not(expression):
+def simplify_not(expression, dialect: DialectType = None):
     """
     Demorgan's Law
     NOT (x OR y) -> NOT x AND NOT y
@@ -245,7 +245,9 @@ def simplify_not(expression):
             return exp.true()
         if isinstance(this, exp.Not):
             inner = this.this
-            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
+            if (inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate)) and (
+                dialect not in ("mysql", "sqlite")
+            ):
                 # double negation
                 # NOT NOT x -> x, if x is BOOLEAN type
                 return inner

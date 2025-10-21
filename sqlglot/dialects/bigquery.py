@@ -508,6 +508,7 @@ class BigQuery(Dialect):
             exp.FarmFingerprint,
             exp.Grouping,
             exp.LaxInt64,
+            exp.Length,
             exp.Ntile,
             exp.Rank,
             exp.RangeBucket,

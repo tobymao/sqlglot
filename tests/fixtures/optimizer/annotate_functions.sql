@@ -1535,6 +1535,14 @@ STRING;
 STRUCT(tbl.str_col);
 STRUCT<str_col STRING>;
 
+# dialect: bigquery
+LENGTH(tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+LENGTH(tbl.bin_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -1312,3 +1312,28 @@ STARTS_WITH('x', y);
 
 STARTS_WITH(x, 'y');
 STARTS_WITH(x, 'y');
+
+--------------------------------------
+-- Simplify NOT
+--------------------------------------
+SELECT NOT(NOT(a)) FROM x;
+SELECT NOT NOT a FROM x;
+
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+# dialect: mysql
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT NOT NOT NOT NOT t_bool.a FROM t_bool;
+
+# dialect: sqlite
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT NOT NOT NOT NOT t_bool.a FROM t_bool;
+
+# dialect: mysql
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT(NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;
+
+# dialect: sqlite
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT (NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;

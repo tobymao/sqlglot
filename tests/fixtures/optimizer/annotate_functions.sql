@@ -1535,6 +1535,14 @@ STRING;
 STRUCT(tbl.str_col);
 STRUCT<str_col STRING>;
 
+# dialect: bigquery
+LENGTH(tbl.str_col);
+BIGINT;
+
+# dialect: bigquery
+LENGTH(tbl.bin_col);
+BIGINT;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -1646,6 +1654,10 @@ INT;
 # dialect: snowflake
 BIT_LENGTH(tbl.bin_col);
 INT;
+
+# dialect: snowflake
+BOOLAND(1, -2);
+BOOLEAN;
 
 # dialect: snowflake
 BOOLNOT(tbl.int_col);
@@ -1892,6 +1904,50 @@ DATE_TRUNC('minute', TO_TIMESTAMP('2024-05-09 08:50:57.891'));
 TIMESTAMP;
 
 # dialect: snowflake
+TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_FROM_PARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMPFROMPARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMPFROMPARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME));
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_LTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TIMESTAMP_LTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TIMESTAMP_NTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_NTZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMP;
+
+# dialect: snowflake
+TIMESTAMP_TZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123, 'UTC');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+TIMESTAMP_TZ_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123);
+TIMESTAMPTZ;
+
+# dialect: snowflake
 EDITDISTANCE('hello', 'world');
 INT;
 
@@ -1940,6 +1996,26 @@ FLOOR(tbl.bigint_col, -1);
 BIGINT;
 
 # dialect: snowflake
+GREATEST(tbl.bigint_col, tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+GREATEST(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+GREATEST(tbl.str_col, tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+GREATEST(tbl.double_col, tbl.bigint_col);
+DOUBLE;
+
+# dialect: snowflake
+GREATEST(tbl.bigint_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 
@@ -1954,6 +2030,22 @@ BOOLEAN;
 # dialect: snowflake
 ENDSWITH(tbl.bin_col, NULL);
 BOOLEAN;
+
+# dialect: snowflake
+GREATEST_IGNORE_NULLS(1, 2, 3);
+INT;
+
+# dialect: snowflake
+GREATEST_IGNORE_NULLS(1, 2.5, 3);
+DOUBLE;
+
+# dialect: snowflake
+GREATEST_IGNORE_NULLS('a', 'b', 'c');
+VARCHAR;
+
+# dialect: snowflake
+GREATEST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
+DATE;
 
 # dialect: snowflake
 HEX_DECODE_BINARY('48656C6C6F');

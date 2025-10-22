@@ -539,6 +539,10 @@ class Dialect(metaclass=_Dialect):
     # STRING type (Snowflake's case) or can be of any type
     TRY_CAST_REQUIRES_STRING: t.Optional[bool] = None
 
+    # Whether the double negation can be applied
+    # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

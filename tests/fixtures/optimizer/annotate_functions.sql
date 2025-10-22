@@ -2068,6 +2068,14 @@ HOUR(CAST('08:50:57' AS TIME));
 INT;
 
 # dialect: snowflake
+tbl.str_col IS NULL;
+BOOLEAN;
+
+# dialect: snowflake
+tbl.str_col IS NOT NULL;
+BOOLEAN;
+
+# dialect: snowflake
 INITCAP('hello world');
 VARCHAR;
 

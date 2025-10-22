@@ -28,6 +28,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ROUND(123.456, -1)")
         self.validate_identity("SELECT ROUND(123.456, 2, 'HALF_AWAY_FROM_ZERO')")
 
+        # IS NULL and IS NOT NULL tests
+        self.validate_identity("x IS NULL")
+        self.validate_identity("x IS NOT NULL", "NOT x IS NULL")
+
         self.validate_identity("SELECT FLOOR(x)")
         self.validate_identity("SELECT FLOOR(135.135, 1)")
         self.validate_identity("SELECT FLOOR(x, -1)")

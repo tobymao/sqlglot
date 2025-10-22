@@ -6571,7 +6571,7 @@ class Greatest(Func):
 
 
 class GreatestIgnoreNulls(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"expressions": True}
     is_var_len_args = True
 
 

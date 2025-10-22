@@ -2092,6 +2092,10 @@ INSERT(tbl.bin_col, 1, 2, tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+IS_NULL_VALUE(tbl.variant_col);
+BOOLEAN;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

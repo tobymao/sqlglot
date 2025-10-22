@@ -375,6 +375,9 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)
+        self.validate_identity(
+            """COPY (SELECT * FROM "input.parquet" USING SAMPLE RESERVOIR (5000 ROWS)) TO 'output.parquet' WITH (FORMAT PARQUET, KV_METADATA {'origin': 'Dagster', 'dagster_run_id': '98c85a11-d05c-4935-bfa2-198214c2204'})"""
+        )
 
         for join_type in ("LEFT", "LEFT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of join {join_type} with UNNEST"):

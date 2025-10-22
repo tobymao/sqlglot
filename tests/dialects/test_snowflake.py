@@ -140,7 +140,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DAY(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
-        self.validate_identity("WEEKOFYEAR(tstamp)", "WEEKISO(tstamp)")
+        self.validate_identity("WEEKOFYEAR(tstamp)", "WEEK(tstamp)")
         self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")

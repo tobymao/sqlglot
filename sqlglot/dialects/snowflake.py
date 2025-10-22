@@ -866,6 +866,7 @@ class Snowflake(Dialect):
             "BITXOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
+            "BOOLOR": binary_from_function(exp.Or),
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
             "BOOLAND": binary_from_function(exp.And),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),

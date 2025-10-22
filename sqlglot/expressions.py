@@ -7789,9 +7789,7 @@ class TimestampFromParts(Func):
 
 class TimestampLtzFromParts(Func):
     _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
-    arg_types = {
-        **TIMESTAMP_PARTS,
-    }
+    arg_types = TIMESTAMP_PARTS.copy()
 
 
 class TimestampTzFromParts(Func):

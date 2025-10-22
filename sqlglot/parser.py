@@ -7964,14 +7964,12 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.USING)
         using = self._parse_table()
 
-        self._match(TokenType.ON)
-        on = self._parse_assignment()
-
         return self.expression(
             exp.Merge,
             this=target,
             using=using,
-            on=on,
+            on=self._match(TokenType.ON) and self._parse_assignment(),
+            using_cond=self._match(TokenType.USING) and self._parse_using_identifiers(),
             whens=self._parse_when_matched(),
             returning=self._parse_returning(),
         )

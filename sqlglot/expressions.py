@@ -7862,7 +7862,8 @@ class Merge(DML):
     arg_types = {
         "this": True,
         "using": True,
-        "on": True,
+        "on": False,
+        "using_cond": False,
         "whens": True,
         "with": False,
         "returning": False,

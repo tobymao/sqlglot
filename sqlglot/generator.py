@@ -4078,8 +4078,14 @@ class Generator(metaclass=_Generator):
 
         this = self.sql(table)
         using = f"USING {self.sql(expression, 'using')}"
-        on = f"ON {self.sql(expression, 'on')}"
         whens = self.sql(expression, "whens")
+
+        on = self.sql(expression, "on")
+        on = f"ON {on}" if on else ""
+
+        if not on:
+            on = self.expressions(expression, key="using_cond")
+            on = f"USING ({on})" if on else ""
 
         returning = self.sql(expression, "returning")
         if returning:

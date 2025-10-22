@@ -9387,6 +9387,26 @@ def replace_tree(
     return new_node
 
 
+def find_tables(expression: Expression) -> t.Set[Table]:
+    """
+    Find all tables referenced in a query.
+
+    Args:
+        expressions: The query to find the tables in.
+
+    Returns:
+        A set of all the tables.
+    """
+    from sqlglot.optimizer.scope import traverse_scope
+
+    return {
+        table
+        for scope in traverse_scope(expression)
+        for table in scope.tables
+        if table.name and table.name not in scope.cte_sources
+    }
+
+
 def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
     """
     Return all table names referenced through columns in an expression.

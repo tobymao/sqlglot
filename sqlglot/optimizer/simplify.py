@@ -245,8 +245,8 @@ def simplify_not(expression, dialect: Dialect):
             return exp.true()
         if isinstance(this, exp.Not):
             inner = this.this
-            if (inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate)) and (
-                dialect not in ("mysql", "sqlite")
+            if dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION and (
+                inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate)
             ):
                 # double negation
                 # NOT NOT x -> x, if x is BOOLEAN type

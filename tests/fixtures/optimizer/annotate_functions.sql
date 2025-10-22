@@ -1956,6 +1956,14 @@ GREATEST(tbl.str_col, tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+GREATEST(tbl.double_col, tbl.bigint_col);
+DOUBLE;
+
+# dialect: snowflake
+GREATEST(tbl.bigint_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 

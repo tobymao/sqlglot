@@ -51,11 +51,12 @@ def normalize(expression, **kwargs):
 
 
 def simplify(expression, **kwargs):
-    schema = kwargs.pop("schema", None)
+    dialect = kwargs.get("dialect")
+    schema = kwargs.get("schema")
 
     expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(
-        expression, constant_propagation=True, coalesce_simplification=True, **kwargs
+        expression, constant_propagation=True, coalesce_simplification=True, dialect=dialect
     )
 
 

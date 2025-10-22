@@ -919,9 +919,8 @@ class Snowflake(Dialect):
             "LIKE": _build_like(exp.Like),
             "ILIKE": _build_like(exp.ILike),
             "SEARCH": _build_search,
+            "WEEKISO": exp.WeekOfYear.from_arg_list,
             "WEEKOFYEAR": exp.Week.from_arg_list,
-            "YEAROFWEEK": exp.YearOfWeek.from_arg_list,
-            "YEAROFWEEKISO": exp.YearOfWeekIso.from_arg_list,
         }
         FUNCTIONS.pop("PREDICT")
 

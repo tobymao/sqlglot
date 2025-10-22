@@ -6273,15 +6273,15 @@ class ToDays(Func):
 
 
 class WeekOfYear(Func):
-    _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR", "WEEKISO"]
+    _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
 class YearOfWeek(Func):
-    pass
+    _sql_names = ["YEAR_OF_WEEK", "YEAROFWEEK"]
 
 
 class YearOfWeekIso(Func):
-    pass
+    _sql_names = ["YEAR_OF_WEEK_ISO", "YEAROFWEEKISO"]
 
 
 class MonthsBetween(Func):

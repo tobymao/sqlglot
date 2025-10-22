@@ -123,11 +123,23 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
         self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)
-
         self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45)")
         self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(2024, 5, 9, 14, 30, 45, 123)")
+        self.validate_identity("SELECT TIMESTAMP_LTZ_FROM_PARTS(2013, 4, 5, 12, 00, 00)")
+        self.validate_identity("SELECT TIMESTAMP_TZ_FROM_PARTS(2013, 4, 5, 12, 00, 00)")
+        self.validate_identity(
+            "SELECT TIMESTAMP_TZ_FROM_PARTS(2013, 4, 5, 12, 00, 00, 0, 'America/Los_Angeles')"
+        )
         self.validate_identity(
             "SELECT TIMESTAMP_FROM_PARTS(CAST('2024-05-09' AS DATE), CAST('14:30:45' AS TIME))"
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP_NTZ_FROM_PARTS(TO_DATE('2013-04-05'), TO_TIME('12:00:00'))",
+            "SELECT TIMESTAMP_FROM_PARTS(CAST('2013-04-05' AS DATE), CAST('12:00:00' AS TIME))",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP_NTZ_FROM_PARTS(2013, 4, 5, 12, 00, 00, 987654321)",
+            "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00, 987654321)",
         )
 
         self.validate_identity("SELECT DATE_FROM_PARTS(1977, 8, 7)")

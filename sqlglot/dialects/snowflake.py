@@ -679,7 +679,6 @@ class Snowflake(Dialect):
         },
         exp.DataType.Type.BOOLEAN: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
-            exp.Booland,
             exp.Boolnot,
             exp.Search,
         },
@@ -839,6 +838,7 @@ class Snowflake(Dialect):
             "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
+            "BOOLAND": binary_from_function(exp.And),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),

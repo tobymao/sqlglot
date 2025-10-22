@@ -6576,6 +6576,11 @@ class Greatest(Func):
     is_var_len_args = True
 
 
+class GreatestIgnoreNulls(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 # Trino's `ON OVERFLOW TRUNCATE [filler_string] {WITH | WITHOUT} COUNT`
 # https://trino.io/docs/current/functions/aggregate.html#listagg
 class OverflowTruncateBehavior(Expression):

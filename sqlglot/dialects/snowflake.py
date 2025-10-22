@@ -707,6 +707,8 @@ class Snowflake(Dialect):
         exp.DataType.Type.BOOLEAN: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
             exp.Boolnot,
+            exp.Booland,
+            exp.Boolor,
             exp.Search,
         },
         exp.DataType.Type.DATE: {
@@ -1654,6 +1656,8 @@ class Snowflake(Dialect):
             exp.Uuid: rename_func("UUID_STRING"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Booland: rename_func("BOOLAND"),
+            exp.Boolor: rename_func("BOOLOR"),
             exp.Xor: rename_func("BOOLXOR"),
             exp.ByteLength: rename_func("OCTET_LENGTH"),
         }

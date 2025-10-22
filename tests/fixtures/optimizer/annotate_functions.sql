@@ -1664,6 +1664,14 @@ BOOLNOT(NULL);
 BOOLEAN;
 
 # dialect: snowflake
+BOOLAND(1, -2);
+BOOLEAN;
+
+# dialect: snowflake
+BOOLOR(1, 0);
+BOOLEAN;
+
+# dialect: snowflake
 BOOLXOR(2, 0);
 BOOLEAN;
 

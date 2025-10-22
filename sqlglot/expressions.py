@@ -5626,6 +5626,16 @@ class Boolnot(Func):
     pass
 
 
+class Booland(Func):
+    _sql_names = ["BOOLAND"]
+    arg_types = {"this": True, "expression": True}
+
+
+class Boolor(Func):
+    _sql_names = ["BOOLOR"]
+    arg_types = {"this": True, "expression": True}
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#bool_for_json
 class JSONBool(Func):
     pass

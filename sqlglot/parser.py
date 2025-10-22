@@ -8451,7 +8451,7 @@ class Parser(metaclass=_Parser):
                 # T-SQL's external file format case
                 param.set("expression", self._parse_field())
             else:
-                param.set("expression", self._parse_unquoted_field())
+                param.set("expression", self._parse_unquoted_field() or self._parse_bracket())
 
             options.append(param)
             self._match(sep)

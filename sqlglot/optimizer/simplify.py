@@ -243,11 +243,9 @@ def simplify_not(expression, dialect: Dialect):
             return exp.false()
         if is_false(this):
             return exp.true()
-        if isinstance(this, exp.Not):
+        if isinstance(this, exp.Not) and dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION:
             inner = this.this
-            if dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION and (
-                inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate)
-            ):
+            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
                 # double negation
                 # NOT NOT x -> x, if x is BOOLEAN type
                 return inner

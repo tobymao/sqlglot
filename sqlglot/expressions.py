@@ -5627,12 +5627,10 @@ class Boolnot(Func):
 
 
 class Booland(Func):
-    _sql_names = ["BOOLAND"]
     arg_types = {"this": True, "expression": True}
 
 
 class Boolor(Func):
-    _sql_names = ["BOOLOR"]
     arg_types = {"this": True, "expression": True}
 
 

@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     build_default_decimal_type,
     build_replace_with_optional_replacement,
-    build_timestamp_from_parts,
     date_delta_sql,
     date_trunc_to_time,
     datestrtodate_sql,
@@ -551,6 +550,34 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
+def _annotate_timestamp_from_parts(
+    self: TypeAnnotator, expression: exp.TimestampFromParts
+) -> exp.TimestampFromParts:
+    """Annotate TimestampFromParts with correct type based on arguments.
+    TIMESTAMP_FROM_PARTS with time_zone -> TIMESTAMPTZ
+    TIMESTAMP_FROM_PARTS without time_zone -> TIMESTAMP (defaults to TIMESTAMP_NTZ)
+    """
+    self._annotate_args(expression)
+
+    if expression.args.get("zone"):
+        self._set_type(expression, exp.DataType.Type.TIMESTAMPTZ)
+    else:
+        self._set_type(expression, exp.DataType.Type.TIMESTAMP)
+
+    return expression
+
+
+def _build_timestamp_from_parts(args: t.List) -> exp.Func:
+    """Build TimestampFromParts with support for both syntaxes:
+    1. TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second [, nanosecond] [, time_zone])
+    2. TIMESTAMP_FROM_PARTS(date_expr, time_expr) - Snowflake specific
+    """
+    if len(args) == 2:
+        return exp.TimestampFromParts(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+    return exp.TimestampFromParts.from_arg_list(args)
+
+
 def _annotate_date_or_time_add(self: TypeAnnotator, expression: E) -> E:
     self._annotate_args(expression)
 
@@ -734,9 +761,10 @@ class Snowflake(Dialect):
             else exp.DataType.Type.TIMESTAMPTZ,
         ),
         exp.DateAdd: _annotate_date_or_time_add,
+        exp.TimeAdd: _annotate_date_or_time_add,
         exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
-        exp.TimeAdd: _annotate_date_or_time_add,
+        exp.TimestampFromParts: _annotate_timestamp_from_parts,
     }
 
     TIME_MAPPING = {
@@ -891,10 +919,10 @@ class Snowflake(Dialect):
             "TIMEDIFF": _build_datediff,
             "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
             "TIMESTAMPDIFF": _build_datediff,
-            "TIMESTAMPFROMPARTS": build_timestamp_from_parts,
-            "TIMESTAMP_FROM_PARTS": build_timestamp_from_parts,
-            "TIMESTAMPNTZFROMPARTS": build_timestamp_from_parts,
-            "TIMESTAMP_NTZ_FROM_PARTS": build_timestamp_from_parts,
+            "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
+            "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
+            "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
+            "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
             "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),

@@ -575,9 +575,8 @@ def _build_timestamp_from_parts(args: t.List) -> exp.Func:
     if len(args) == 2:
         # Snowflake 2-argument syntax: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
         return exp.TimestampFromParts(this=seq_get(args, 0), expression=seq_get(args, 1))
-    else:
-        # Standard syntax: TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second [, nanosecond] [, time_zone])
-        return exp.TimestampFromParts.from_arg_list(args)
+
+    return exp.TimestampFromParts.from_arg_list(args)
 
 
 def _annotate_date_or_time_add(self: TypeAnnotator, expression: E) -> E:

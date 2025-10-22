@@ -125,7 +125,7 @@ def simplify(
                 node.set(k, v)
 
             # Post-order transformations
-            new_node = simplify_not(node)
+            new_node = simplify_not(node, dialect)
             new_node = flatten(new_node)
             new_node = simplify_connectors(new_node, root)
             new_node = remove_complements(new_node, root)
@@ -202,7 +202,7 @@ COMPLEMENT_SUBQUERY_PREDICATES = {
 }
 
 
-def simplify_not(expression):
+def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression:
     """
     Demorgan's Law
     NOT (x OR y) -> NOT x AND NOT y
@@ -243,10 +243,12 @@ def simplify_not(expression):
             return exp.false()
         if is_false(this):
             return exp.true()
-        if isinstance(this, exp.Not):
-            # double negation
-            # NOT NOT x -> x
-            return this.this
+        if isinstance(this, exp.Not) and dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION:
+            inner = this.this
+            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
+                # double negation
+                # NOT NOT x -> x, if x is BOOLEAN type
+                return inner
     return expression
 
 

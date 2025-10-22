@@ -202,10 +202,10 @@ A OR (NOT A AND B);
 A OR (B AND TRUE);
 
 (A OR C) AND ((A OR C) OR B);
-(A OR C) AND TRUE;
+A OR C;
 
 (A OR C) AND (A OR B OR C);
-(A OR C) AND TRUE;
+A OR C;
 
 A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
@@ -214,7 +214,7 @@ A AND (A OR B) AND (A OR B OR C);
 A AND TRUE;
 
 (A OR B) AND (A OR C) AND (A OR B OR C);
-(A OR B) AND (A OR C) AND TRUE;
+(A OR B) AND (A OR C);
 
 --------------------------------------
 -- Elimination
@@ -869,23 +869,23 @@ COALESCE(x);
 x;
 
 COALESCE(x, 1) = 2;
-FALSE OR (NOT x IS NULL AND x = 2);
+NOT x IS NULL AND x = 2;
 
 # dialect: redshift
 COALESCE(x, 1) = 2;
 COALESCE(x, 1) = 2;
 
 2 = COALESCE(x, 1);
-FALSE OR (NOT x IS NULL AND x = 2);
+NOT x IS NULL AND x = 2;
 
 COALESCE(x, 1, 1) = 1 + 1;
-FALSE OR (NOT x IS NULL AND x = 2);
+NOT x IS NULL AND x = 2;
 
 COALESCE(x, 1, 2) = 2;
-FALSE OR (NOT x IS NULL AND x = 2);
+NOT x IS NULL AND x = 2;
 
 COALESCE(x, 3) <= 2;
-FALSE OR (NOT x IS NULL AND x <= 2);
+NOT x IS NULL AND x <= 2;
 
 COALESCE(x, 1) <> 2;
 (NOT x IS NULL AND x <> 2) OR (TRUE AND x IS NULL);

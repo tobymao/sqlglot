@@ -4244,10 +4244,12 @@ class Generator(metaclass=_Generator):
     def comprehension_sql(self, expression: exp.Comprehension) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
+        position = self.sql(expression, "position")
+        position = f", {position}" if position else ""
         iterator = self.sql(expression, "iterator")
         condition = self.sql(expression, "condition")
         condition = f" IF {condition}" if condition else ""
-        return f"{this} FOR {expr} IN {iterator}{condition}"
+        return f"{this} FOR {expr}{position} IN {iterator}{condition}"
 
     def columnprefix_sql(self, expression: exp.ColumnPrefix) -> str:
         return f"{self.sql(expression, 'this')}({self.sql(expression, 'expression')})"

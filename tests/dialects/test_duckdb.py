@@ -1169,6 +1169,7 @@ class TestDuckDB(Validator):
             self.validate_identity(
                 "[x.STRING_SPLIT(' ')[i] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]"
             )
+            self.validate_identity("SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i = 2] AS filtered")
             self.validate_identity(
                 """SELECT LIST_VALUE(1)[i]""",
                 """SELECT [1][i]""",

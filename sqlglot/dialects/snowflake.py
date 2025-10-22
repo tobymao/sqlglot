@@ -734,7 +734,7 @@ class Snowflake(Dialect):
             else exp.DataType.Type.TIMESTAMPTZ,
         ),
         exp.DateAdd: _annotate_date_or_time_add,
-        exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
+        exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
         exp.TimeAdd: _annotate_date_or_time_add,
     }

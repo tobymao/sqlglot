@@ -573,7 +573,6 @@ def _build_timestamp_from_parts(args: t.List) -> exp.Func:
     2. TIMESTAMP_FROM_PARTS(date_expr, time_expr) - Snowflake specific
     """
     if len(args) == 2:
-        # Snowflake 2-argument syntax: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
         return exp.TimestampFromParts(this=seq_get(args, 0), expression=seq_get(args, 1))
 
     return exp.TimestampFromParts.from_arg_list(args)

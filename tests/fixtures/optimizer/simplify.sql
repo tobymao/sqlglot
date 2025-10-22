@@ -153,17 +153,17 @@ COALESCE(x, y) <> ALL (SELECT z FROM w);
 SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
 SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 
-SELECT t_bool.b AND TRUE FROM t_bool;
-SELECT t_bool.b FROM t_bool;
+SELECT t_bool.a AND TRUE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
-SELECT TRUE AND t_bool.b FROM t_bool;
-SELECT t_bool.b FROM t_bool;
+SELECT TRUE AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
-SELECT t_bool.b OR FALSE FROM t_bool;
-SELECT t_bool.b FROM t_bool;
+SELECT t_bool.a OR FALSE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
-SELECT FALSE OR t_bool.b FROM t_bool;
-SELECT t_bool.b FROM t_bool;
+SELECT FALSE OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
 --------------------------------------
 -- Absorption

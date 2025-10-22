@@ -202,7 +202,7 @@ COMPLEMENT_SUBQUERY_PREDICATES = {
 }
 
 
-def simplify_not(expression, dialect: Dialect) -> exp.Expression:
+def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression:
     """
     Demorgan's Law
     NOT (x OR y) -> NOT x AND NOT y

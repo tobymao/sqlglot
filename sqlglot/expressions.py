@@ -7765,18 +7765,38 @@ class Uuid(Func):
     arg_types = {"this": False, "name": False}
 
 
+TIMESTAMP_PARTS = {
+    "year": False,
+    "month": False,
+    "day": False,
+    "hour": False,
+    "min": False,
+    "sec": False,
+    "nano": False,
+}
+
+
 class TimestampFromParts(Func):
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
-        "year": True,
-        "month": True,
-        "day": True,
-        "hour": True,
-        "min": True,
-        "sec": True,
-        "nano": False,
+        **TIMESTAMP_PARTS,
         "zone": False,
         "milli": False,
+        "this": False,
+        "expression": False,
+    }
+
+
+class TimestampLtzFromParts(Func):
+    _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
+    arg_types = TIMESTAMP_PARTS.copy()
+
+
+class TimestampTzFromParts(Func):
+    _sql_names = ["TIMESTAMP_TZ_FROM_PARTS", "TIMESTAMPTZFROMPARTS"]
+    arg_types = {
+        **TIMESTAMP_PARTS,
+        "zone": False,
     }
 
 

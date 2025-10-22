@@ -7765,16 +7765,21 @@ class Uuid(Func):
     arg_types = {"this": False, "name": False}
 
 
+TIMESTAMP_PARTS = {
+    "year": False,
+    "month": False,
+    "day": False,
+    "hour": False,
+    "min": False,
+    "sec": False,
+    "nano": False,
+}
+
+
 class TimestampFromParts(Func):
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
-        "year": False,
-        "month": False,
-        "day": False,
-        "hour": False,
-        "min": False,
-        "sec": False,
-        "nano": False,
+        **TIMESTAMP_PARTS,
         "zone": False,
         "milli": False,
         "this": False,
@@ -7785,26 +7790,14 @@ class TimestampFromParts(Func):
 class TimestampLtzFromParts(Func):
     _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
     arg_types = {
-        "year": False,
-        "month": False,
-        "day": False,
-        "hour": False,
-        "min": False,
-        "sec": False,
-        "nano": False,
+        **TIMESTAMP_PARTS,
     }
 
 
 class TimestampTzFromParts(Func):
     _sql_names = ["TIMESTAMP_TZ_FROM_PARTS", "TIMESTAMPTZFROMPARTS"]
     arg_types = {
-        "year": False,
-        "month": False,
-        "day": False,
-        "hour": False,
-        "min": False,
-        "sec": False,
-        "nano": False,
+        **TIMESTAMP_PARTS,
         "zone": False,
     }
 

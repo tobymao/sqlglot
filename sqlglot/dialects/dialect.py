@@ -769,8 +769,12 @@ class Dialect(metaclass=_Dialect):
             exp.TimeAdd,
             exp.TimeSub,
         },
+        exp.DataType.Type.TIMESTAMPLTZ: {
+            exp.TimestampLtzFromParts,
+        },
         exp.DataType.Type.TIMESTAMPTZ: {
             exp.CurrentTimestampLTZ,
+            exp.TimestampTzFromParts,
         },
         exp.DataType.Type.TIMESTAMP: {
             exp.CurrentTimestamp,

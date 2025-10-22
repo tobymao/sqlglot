@@ -718,10 +718,6 @@ class Snowflake(Dialect):
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIME],
             exp.TimeFromParts,
         },
-        exp.DataType.Type.TIMESTAMP: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIMESTAMP],
-            exp.TimestampFromParts,
-        },
     }
 
     ANNOTATORS = {

@@ -969,23 +969,39 @@ class Resolver:
         Returns:
             The table name if it can be found/inferred.
         """
-        if column:
-            # Determine which sources are available based on context
-            source_columns = self._get_available_source_columns(column)
-            unambiguous_columns = self._get_unambiguous_columns(source_columns)
-        else:
-            # Fall back to original behavior if no context provided
-            source_columns = self._get_all_source_columns()
-            if self._unambiguous_columns is None:
-                self._unambiguous_columns = self._get_unambiguous_columns(source_columns)
-            unambiguous_columns = self._unambiguous_columns
+        all_source_columns = self._get_all_source_columns()
 
-        table_name = unambiguous_columns.get(column_name)
+        def _get_table_name_from_sources(
+            source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None,
+        ) -> t.Optional[str]:
+            if not source_columns:
+                # If not supplied, get all sources to calculate unambiguous columns
+                if self._unambiguous_columns is None:
+                    self._unambiguous_columns = self._get_unambiguous_columns(all_source_columns)
+
+                unambiguous_columns = self._unambiguous_columns
+            else:
+                unambiguous_columns = self._get_unambiguous_columns(source_columns)
+
+            return unambiguous_columns.get(column_name)
+
+        table_name = _get_table_name_from_sources()
+
+        if not table_name and isinstance(column, exp.Column):
+            # Fall-back case: If we couldn't find the `table_name` from ALL of the sources,
+            # attempt to disambiguate the column based on other characteristics e.g if this column is in a join condition,
+            # we may be able to disambiguate based on the source order.
+            if disambiguate_node := self._maybe_disambiguate_column(column):
+                # In this case, the return value will be the join that _may_ be able to disambiguate the column
+                # and we can use the source columns available at that join to get the table name
+                table_name = _get_table_name_from_sources(
+                    self._get_available_source_columns(disambiguate_node)
+                )
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(
                 source
-                for source, columns in source_columns.items()
+                for source, columns in all_source_columns.items()
                 if not columns or "*" in columns
             )
             if len(sources_without_schema) == 1:
@@ -1119,7 +1135,25 @@ class Resolver:
             }
         return self._source_columns
 
-    def _get_available_source_columns(self, column: exp.Column) -> t.Dict[str, t.Sequence[str]]:
+    def _maybe_disambiguate_column(self, column: exp.Column) -> t.Optional[exp.Join]:
+        """
+        Check if a column can be disambiguated e.g if this column is in a join
+        condition, we may be able to disambiguate based on the source order.
+        """
+        args = self.scope.expression.args
+        joins = args.get("joins")
+
+        if not joins or args.get("laterals") or args.get("pivots"):
+            # Feature gap: We currently don't try to disambiguate columns if other sources
+            # (e.g laterals, pivots) exist alongside joins
+            return None
+
+        join_ancestor = column.find_ancestor(exp.Join, exp.Select)
+        return join_ancestor if isinstance(join_ancestor, exp.Join) else None
+
+    def _get_available_source_columns(
+        self, join_ancestor: exp.Join
+    ) -> t.Dict[str, t.Sequence[str]]:
         """
         Get the source columns that are available at the point where a column is referenced.
 
@@ -1127,39 +1161,26 @@ class Resolver:
         up to that point. Example:
 
         ```
-        SELECT * FROM x INNER JOIN ... INNER JOIN y ON x.a = c INNER JOIN z ON ...
+        SELECT * FROM t_1 INNER JOIN ... INNER JOIN t_n ON t_1.a = c INNER JOIN t_n+1 ON ...
         ```                                                  ^
                                                              |
-                                |----------------------------|
+                                +----------------------------+
+                                |
                                 ⌄
-        The unqualified column `c` is not ambiguous if no other sources contain a column named `c` up until that join.
+        The unqualified column `c` is not ambiguous if no other sources up until that
+        join i.e t_1, ..., t_n, contain a column named `c`.
 
         """
-        # Check if this column is in a JOIN's ON clause
-        # We also check by exp.Select to stop the upwards traversal early
-        join_ancestor = column.find_ancestor(exp.Join)
-        joins = self.scope.expression.args.get("joins")
-
-        if not isinstance(join_ancestor, exp.Join) or not joins:
-            return self._get_all_source_columns()
-
-        # Add sources from FROM clause (before any joins)
-        # These are the tables that appear directly in FROM, not as part of JOINs
-        join_by_name = {join: join.alias_or_name for join in joins}
-        non_joined_sources = self.scope.selected_sources.keys() - join_by_name.values()
+        args = self.scope.expression.args
 
         # Collect tables in order: FROM clause tables + joined tables up to current join
-        available_sources = {
-            source_name: self.get_source_columns(source_name) for source_name in non_joined_sources
-        }
+        from_name = args.get("from").alias_or_name
+        available_sources = {from_name: self.get_source_columns(from_name)}
 
-        # Add each joined table in order, stopping at (and including) the current join
-        for join, join_name in join_by_name.items():
-            available_sources[join_name] = self.get_source_columns(join_name)
+        joins = args.get("joins")
 
-            # If this is the join containing our column, stop here
-            if join is join_ancestor:
-                break
+        for join in joins[: t.cast(int, join_ancestor.index) + 1]:
+            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
 
         return available_sources
 

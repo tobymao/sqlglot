@@ -551,15 +551,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
-            column_table = resolver.get_table(column_name)
-            if not column_table:
-                # If the first lookup failed, try again with the column node to get context e.g
-                # if this column is in a join condition, we may be able to disambiguate based on the source order
-                join_ancestor = column.find_ancestor(exp.Join, exp.Select)
-                expression = scope.expression
-
-                if isinstance(join_ancestor, exp.Join) and expression.args.get("joins"):
-                    column_table = resolver.get_table(column_name, column)
+            column_table = resolver.get_table(column)
 
             if column_table:
                 column.set("table", column_table)
@@ -957,9 +949,7 @@ class Resolver:
         self._infer_schema = infer_schema
         self._get_source_columns_cache: t.Dict[t.Tuple[str, bool], t.Sequence[str]] = {}
 
-    def get_table(
-        self, column_name: str, column: t.Optional[exp.Column] = None
-    ) -> t.Optional[exp.Identifier]:
+    def get_table(self, column: str | exp.Column) -> t.Optional[exp.Identifier]:
         """
         Get the table for a column name.
 
@@ -969,6 +959,7 @@ class Resolver:
         Returns:
             The table name if it can be found/inferred.
         """
+        column_name = column if isinstance(column, str) else column.name
         all_source_columns = self._get_all_source_columns()
 
         def _get_table_name_from_sources(
@@ -1149,7 +1140,16 @@ class Resolver:
             return None
 
         join_ancestor = column.find_ancestor(exp.Join, exp.Select)
-        return join_ancestor if isinstance(join_ancestor, exp.Join) else None
+
+        if (
+            isinstance(join_ancestor, exp.Join)
+            and join_ancestor.alias_or_name in self.scope.selected_sources
+        ):
+            # Ensure that the found ancestor is a join that contains an actual source,
+            # e.g in Clickhouse `b` is an array expression in `a ARRAY JOIN b`
+            return join_ancestor
+
+        return None
 
     def _get_available_source_columns(
         self, join_ancestor: exp.Join

@@ -1,4 +1,3 @@
-import ast
 import collections
 import itertools
 import math
@@ -9,7 +8,7 @@ from sqlglot.errors import ExecuteError
 from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import RowReader, Table
-from sqlglot.helper import csv_reader, subclasses
+from sqlglot.helper import subclasses
 
 
 class PythonExecutor:
@@ -97,9 +96,6 @@ class PythonExecutor:
             if not step.projections and not step.condition:
                 return self.context({step.name: context.tables[source]})
             table_iter = context.table_iter(source)
-        elif isinstance(step.source, exp.Table) and isinstance(step.source.this, exp.ReadCSV):
-            table_iter = self.scan_csv(step)
-            context = next(table_iter)
         else:
             context, table_iter = self.scan_table(step)
 
@@ -131,30 +127,6 @@ class PythonExecutor:
         table = self.tables.find(step.source)
         context = self.context({step.source.alias_or_name: table})
         return context, iter(table)
-
-    def scan_csv(self, step):
-        alias = step.source.alias
-        source = step.source.this
-
-        with csv_reader(source) as reader:
-            columns = next(reader)
-            table = Table(columns)
-            context = self.context({alias: table})
-            yield context
-            types = []
-            for row in reader:
-                if not types:
-                    for v in row:
-                        try:
-                            types.append(type(ast.literal_eval(v)))
-                        except (ValueError, SyntaxError):
-                            types.append(str)
-
-                # We can't cast empty values ('') to non-string types, so we convert them to None instead
-                context.set_row(
-                    tuple(None if (t is not str and v == "") else t(v) for t, v in zip(types, row))
-                )
-                yield context.table.reader
 
     def join(self, step, context):
         source = step.source_name

@@ -31,7 +31,6 @@ if t.TYPE_CHECKING:
 def execute(
     sql: str | Expression,
     schema: t.Optional[t.Dict | Schema] = None,
-    read: DialectType = None,
     dialect: DialectType = None,
     tables: t.Optional[t.Dict] = None,
 ) -> Table:
@@ -45,15 +44,13 @@ def execute(
             1. {table: {col: type}}
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
-        read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
-        dialect: the SQL dialect (alias for read).
+        dialect: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
         tables: additional tables to register.
 
     Returns:
         Simple columnar data structure.
     """
-    read = read or dialect
-    tables_ = ensure_tables(tables, dialect=read)
+    tables_ = ensure_tables(tables, dialect=dialect)
 
     if not schema:
         schema = {}
@@ -66,19 +63,17 @@ def execute(
             for column in table.columns:
                 value = table[0][column]
                 column_type = (
-                    annotate_types(exp.convert(value), dialect=read).type or type(value).__name__
+                    annotate_types(exp.convert(value), dialect=dialect).type or type(value).__name__
                 )
                 nested_set(schema, [*keys, column], column_type)
 
-    schema = ensure_schema(schema, dialect=read)
+    schema = ensure_schema(schema, dialect=dialect)
 
     if tables_.supported_table_args and tables_.supported_table_args != schema.supported_table_args:
         raise ExecuteError("Tables must support the same table args as schema")
 
     now = time.time()
-    expression = optimize(
-        sql, schema, leave_tables_isolated=True, infer_csv_schemas=True, dialect=read
-    )
+    expression = optimize(sql, schema, leave_tables_isolated=True, dialect=dialect)
 
     logger.debug("Optimization finished: %f", time.time() - now)
     logger.debug("Optimized SQL: %s", expression.sql(pretty=True))

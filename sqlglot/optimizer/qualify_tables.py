@@ -5,9 +5,8 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import DialectType
-from sqlglot.helper import csv_reader, name_sequence
+from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import Schema
 from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
@@ -18,8 +17,7 @@ def qualify_tables(
     expression: E,
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
-    schema: t.Optional[Schema] = None,
-    infer_csv_schemas: bool = False,
+    on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
     dialect: DialectType = None,
 ) -> E:
     """
@@ -40,8 +38,7 @@ def qualify_tables(
         expression: Expression to qualify
         db: Database name
         catalog: Catalog name
-        schema: A schema to populate
-        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs' schemas.
+        on_qualify: Callback after a table has been qualified.
         dialect: The dialect to parse catalog and schema into.
 
     Returns:
@@ -115,15 +112,8 @@ def qualify_tables(
 
                 _qualify(source)
 
-                if infer_csv_schemas and schema and isinstance(source.this, exp.ReadCSV):
-                    with csv_reader(source.this) as reader:
-                        header = next(reader)
-                        columns = next(reader)
-                        schema.add_table(
-                            source,
-                            {k: type(v).__name__ for k, v in zip(header, columns)},
-                            match_depth=False,
-                        )
+                if on_qualify:
+                    on_qualify(source)
             elif isinstance(source, Scope) and source.is_udtf:
                 udtf = source.expression
                 table_alias = udtf.args.get("alias") or exp.TableAlias(

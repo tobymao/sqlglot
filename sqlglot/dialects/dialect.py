@@ -786,10 +786,17 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.TINYINT: {
             exp.Day,
-            exp.Month,
+            exp.DayOfWeek,
+            exp.DayOfWeekIso,
+            exp.DayOfMonth,
+            exp.DayOfYear,
             exp.Week,
-            exp.Year,
+            exp.WeekOfYear,
+            exp.Month,
             exp.Quarter,
+            exp.Year,
+            exp.YearOfWeek,
+            exp.YearOfWeekIso,
         },
         exp.DataType.Type.VARCHAR: {
             exp.ArrayConcat,
@@ -1971,6 +1978,15 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
             start = exp.cast(start, target_type)
 
     return self.func("SEQUENCE", start, end, step)
+
+
+def build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
+    def _builder(args: t.List) -> E | exp.Escape:
+        like_expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+        escape = seq_get(args, 2)
+        return exp.Escape(this=like_expr, expression=escape) if escape else like_expr
+
+    return _builder
 
 
 def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:

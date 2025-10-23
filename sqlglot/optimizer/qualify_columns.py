@@ -551,7 +551,8 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
-            column_table = resolver.get_table(column_name)
+            column_table = resolver.get_table(column)
+
             if column_table:
                 column.set("table", column_table)
             elif (
@@ -948,21 +949,29 @@ class Resolver:
         self._infer_schema = infer_schema
         self._get_source_columns_cache: t.Dict[t.Tuple[str, bool], t.Sequence[str]] = {}
 
-    def get_table(self, column_name: str) -> t.Optional[exp.Identifier]:
+    def get_table(self, column: str | exp.Column) -> t.Optional[exp.Identifier]:
         """
         Get the table for a column name.
 
         Args:
-            column_name: The column name to find the table for.
+            column: The column expression (or column name) to find the table for.
         Returns:
             The table name if it can be found/inferred.
         """
-        if self._unambiguous_columns is None:
-            self._unambiguous_columns = self._get_unambiguous_columns(
-                self._get_all_source_columns()
-            )
+        column_name = column if isinstance(column, str) else column.name
 
-        table_name = self._unambiguous_columns.get(column_name)
+        table_name = self._get_table_name_from_sources(column_name)
+
+        if not table_name and isinstance(column, exp.Column):
+            # Fall-back case: If we couldn't find the `table_name` from ALL of the sources,
+            # attempt to disambiguate the column based on other characteristics e.g if this column is in a join condition,
+            # we may be able to disambiguate based on the source order.
+            if join_context := self._get_column_join_context(column):
+                # In this case, the return value will be the join that _may_ be able to disambiguate the column
+                # and we can use the source columns available at that join to get the table name
+                table_name = self._get_table_name_from_sources(
+                    column_name, self._get_available_source_columns(join_context)
+                )
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(
@@ -1100,6 +1109,77 @@ class Resolver:
                 )
             }
         return self._source_columns
+
+    def _get_table_name_from_sources(
+        self, column_name: str, source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
+    ) -> t.Optional[str]:
+        if not source_columns:
+            # If not supplied, get all sources to calculate unambiguous columns
+            if self._unambiguous_columns is None:
+                self._unambiguous_columns = self._get_unambiguous_columns(
+                    self._get_all_source_columns()
+                )
+
+            unambiguous_columns = self._unambiguous_columns
+        else:
+            unambiguous_columns = self._get_unambiguous_columns(source_columns)
+
+        return unambiguous_columns.get(column_name)
+
+    def _get_column_join_context(self, column: exp.Column) -> t.Optional[exp.Join]:
+        """
+        Check if a column participating in a join can be qualified based on the source order.
+        """
+        args = self.scope.expression.args
+        joins = args.get("joins")
+
+        if not joins or args.get("laterals") or args.get("pivots"):
+            # Feature gap: We currently don't try to disambiguate columns if other sources
+            # (e.g laterals, pivots) exist alongside joins
+            return None
+
+        join_ancestor = column.find_ancestor(exp.Join, exp.Select)
+
+        if (
+            isinstance(join_ancestor, exp.Join)
+            and join_ancestor.alias_or_name in self.scope.selected_sources
+        ):
+            # Ensure that the found ancestor is a join that contains an actual source,
+            # e.g in Clickhouse `b` is an array expression in `a ARRAY JOIN b`
+            return join_ancestor
+
+        return None
+
+    def _get_available_source_columns(
+        self, join_ancestor: exp.Join
+    ) -> t.Dict[str, t.Sequence[str]]:
+        """
+        Get the source columns that are available at the point where a column is referenced.
+
+        For columns in JOIN conditions, this only includes tables that have been joined
+        up to that point. Example:
+
+        ```
+        SELECT * FROM t_1 INNER JOIN ... INNER JOIN t_n ON t_1.a = c INNER JOIN t_n+1 ON ...
+        ```                                                        ^
+                                                                   |
+                                +----------------------------------+
+                                |
+                                ⌄
+        The unqualified column `c` is not ambiguous if no other sources up until that
+        join i.e t_1, ..., t_n, contain a column named `c`.
+
+        """
+        args = self.scope.expression.args
+
+        # Collect tables in order: FROM clause tables + joined tables up to current join
+        from_name = args["from"].alias_or_name
+        available_sources = {from_name: self.get_source_columns(from_name)}
+
+        for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
+            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+
+        return available_sources
 
     def _get_unambiguous_columns(
         self, source_columns: t.Dict[str, t.Sequence[str]]

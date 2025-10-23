@@ -1960,6 +1960,10 @@ EDITDISTANCE('hello', 'world', 3);
 INT;
 
 # dialect: snowflake
+EQUAL_NULL(1, 2);
+BOOLEAN;
+
+# dialect: snowflake
 EXTRACT(YEAR, CAST('2024-05-09' AS DATE));
 INT;
 

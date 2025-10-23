@@ -6,6 +6,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     Version,
     rename_func,
+    build_like,
     unit_to_var,
     timestampdiff_sql,
     build_date_delta,
@@ -147,6 +148,8 @@ class Spark(Spark2):
                 offset=1,
                 safe=True,
             ),
+            "LIKE": build_like(exp.Like),
+            "ILIKE": build_like(exp.ILike),
         }
 
         PLACEHOLDER_PARSERS = {

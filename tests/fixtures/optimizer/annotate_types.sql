@@ -25,6 +25,12 @@ bool;
 false;
 bool;
 
+x is null;
+bool;
+
+x is not null;
+bool;
+
 null;
 UNKNOWN;
 

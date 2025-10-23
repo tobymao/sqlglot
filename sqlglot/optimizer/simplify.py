@@ -36,12 +36,6 @@ class UnsupportedUnit(Exception):
     pass
 
 
-def annotate_boolean(expression: exp.Expression) -> exp.Expression:
-    if expression and not expression.type:
-        expression.type = exp.DataType.Type.BOOLEAN
-    return expression
-
-
 def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
@@ -138,7 +132,6 @@ def simplify(
 
             if coalesce_simplification:
                 new_node = simplify_coalesce(new_node, dialect)
-
             new_node.parent = parent
 
             new_node = simplify_literals(new_node, root)
@@ -183,14 +176,18 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
 
         expression = annotate_boolean(
             exp.and_(
-                exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
-                exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
+                annotate_boolean(
+                    exp.GTE(this=expression.this.copy(), expression=expression.args["low"])
+                ),
+                annotate_boolean(
+                    exp.LTE(this=expression.this.copy(), expression=expression.args["high"])
+                ),
                 copy=False,
             )
         )
 
         if negate:
-            expression = exp.paren(expression, copy=False)
+            expression = annotate_boolean(exp.paren(expression, copy=False))
 
     return expression
 
@@ -457,7 +454,9 @@ def uniq_sort(expression, root=True):
         else:
             # we didn't have to sort but maybe we need to dedup
             if deduped and len(deduped) < len(flattened):
-                expression = annotate_boolean(result_func(*deduped.values(), copy=False))
+                expression = annotate_boolean(
+                    result_func(*(e for e in deduped.values()), copy=False)
+                )
 
     return expression
 
@@ -867,7 +866,8 @@ def simplify_coalesce(expression: exp.Expression, dialect: DialectType) -> exp.E
         )
     )
 
-    return exp.paren(annotate_boolean(exp.or_(and_rhs, and_lhs, copy=False)))
+    or_expr = annotate_boolean(exp.or_(and_rhs, and_lhs, copy=False))
+    return annotate_boolean(exp.paren(or_expr))
 
 
 CONCATS = (exp.Concat, exp.DPipe)
@@ -1105,12 +1105,13 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
             ranges = merge_ranges(ranges)
             target_type = extract_type(*rs)
 
-            return annotate_boolean(
+            or_expr = annotate_boolean(
                 exp.or_(
                     *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges],
                     copy=False,
                 )
             )
+            return or_expr
 
     return expression
 
@@ -1192,7 +1193,21 @@ def is_null(a: exp.Expression) -> bool:
 
 
 def is_boolean(expression: exp.Expression) -> bool:
-    return expression.unnest().is_type(exp.DataType.Type.BOOLEAN)
+    return expression.is_type(exp.DataType.Type.BOOLEAN)
+
+
+def annotate_boolean(expression: exp.Expression) -> exp.Expression:
+    if not expression.type:
+        expression.type = (
+            expression.this.type if isinstance(expression, exp.Paren) else exp.DataType.Type.BOOLEAN
+        )
+
+        if isinstance(expression, exp.Connector):
+            if isinstance(left := expression.left, exp.Paren):
+                left.type = exp.DataType.Type.BOOLEAN
+            if isinstance(right := expression.right, exp.Paren):
+                right.type = exp.DataType.Type.BOOLEAN
+    return expression
 
 
 def eval_boolean(expression, a, b):
@@ -1358,6 +1373,9 @@ def _flat_simplify(expression, simplifier, root=True):
         operands = []
         queue = deque(expression.flatten(unnest=False))
         size = len(queue)
+
+        for operand in queue:
+            annotate_boolean(operand)
 
         while queue:
             a = queue.popleft()

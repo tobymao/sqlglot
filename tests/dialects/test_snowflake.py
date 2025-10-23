@@ -1193,6 +1193,26 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT BOOLAND(1, -2)",
+            read={
+                "snowflake": "SELECT BOOLAND(1, -2)",
+            },
+            write={
+                "snowflake": "SELECT BOOLAND(1, -2)",
+                "duckdb": "SELECT ((1) AND (-2))",
+            }
+        )
+        self.validate_all(
+            "SELECT BOOLOR(1, 0)",
+            read={
+                "snowflake": "SELECT BOOLOR(1, 0)",
+            },
+            write={
+                "snowflake": "SELECT BOOLOR(1, 0)",
+                "duckdb": "SELECT ((1) OR (0))",
+            }
+        )
+        self.validate_all(
             "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
             read={
                 "trino": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",

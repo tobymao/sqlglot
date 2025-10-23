@@ -2532,10 +2532,10 @@ class Generator(metaclass=_Generator):
         return "TRUE" if expression.this else "FALSE"
 
     def booland_sql(self, expression: exp.Booland) -> str:
-        return f"({self.sql(expression, 'this')} AND {self.sql(expression, 'expression')})"
+        return f"(({self.sql(expression, 'this')}) AND ({self.sql(expression, 'expression')}))"
 
     def boolor_sql(self, expression: exp.Boolor) -> str:
-        return f"({self.sql(expression, 'this')} OR {self.sql(expression, 'expression')})"
+        return f"(({self.sql(expression, 'this')}) OR ({self.sql(expression, 'expression')}))"
 
     def order_sql(self, expression: exp.Order, flat: bool = False) -> str:
         this = self.sql(expression, "this")

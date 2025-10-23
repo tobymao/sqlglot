@@ -743,22 +743,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.check_file("tpc-ds/tpc-ds", optimizer.optimize, schema=TPCDS_SCHEMA, pretty=True)
 
     def test_file_schema(self):
-        expression = parse_one(
-            """
-            SELECT *
-            FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|')
-            """
-        )
         self.assertEqual(
-            """
-SELECT
-  "_q_0"."n_nationkey" AS "n_nationkey",
-  "_q_0"."n_name" AS "n_name",
-  "_q_0"."n_regionkey" AS "n_regionkey",
-  "_q_0"."n_comment" AS "n_comment"
-FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') AS "_q_0"
-""".strip(),
-            optimizer.optimize(expression, infer_csv_schemas=True).sql(pretty=True),
+            optimizer.optimize(
+                "SELECT * FROM foo",
+                on_qualify=lambda table: table.replace(exp.to_table("bar")),
+            ).sql(),
+            'SELECT * FROM "bar"',
         )
 
     def test_scope(self):

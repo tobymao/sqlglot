@@ -47,9 +47,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
         self.validate_identity("SELECT BOOLNOT(0)")
         self.validate_identity("SELECT BOOLNOT(-3.79)")
+        self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
-        self.validate_identity("SELECT BOOLOR(1, -2)", "SELECT 1 OR -2")
-        self.validate_identity("SELECT BOOLAND(1, -2)", "SELECT 1 AND -2")
+        self.validate_identity("SELECT BOOLOR(1, 0)")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
         self.validate_identity("SELECT HEX_ENCODE('Hello World')")
@@ -1197,6 +1197,26 @@ class TestSnowflake(Validator):
             write={
                 "duckdb": "CASE WHEN TRUE = (a.b = 'value') OR (TRUE IS NULL AND (a.b = 'value') IS NULL) THEN 'value' END",
                 "snowflake": "DECODE(TRUE, a.b = 'value', 'value')",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLAND(1, -2)",
+            read={
+                "snowflake": "SELECT BOOLAND(1, -2)",
+            },
+            write={
+                "snowflake": "SELECT BOOLAND(1, -2)",
+                "duckdb": "SELECT ((1) AND (-2))",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLOR(1, 0)",
+            read={
+                "snowflake": "SELECT BOOLOR(1, 0)",
+            },
+            write={
+                "snowflake": "SELECT BOOLOR(1, 0)",
+                "duckdb": "SELECT ((1) OR (0))",
             },
         )
         self.validate_all(

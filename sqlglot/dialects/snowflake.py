@@ -699,6 +699,8 @@ class Snowflake(Dialect):
         exp.DataType.Type.BOOLEAN: {
             *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
             exp.Boolnot,
+            exp.Booland,
+            exp.Boolor,
             exp.Search,
         },
         exp.DataType.Type.DATE: {
@@ -858,9 +860,7 @@ class Snowflake(Dialect):
             "BITXOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
-            "BOOLOR": binary_from_function(exp.Or),
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
-            "BOOLAND": binary_from_function(exp.And),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
@@ -1649,6 +1649,8 @@ class Snowflake(Dialect):
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.Uuid: rename_func("UUID_STRING"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.Booland: rename_func("BOOLAND"),
+            exp.Boolor: rename_func("BOOLOR"),
             exp.WeekOfYear: rename_func("WEEKISO"),
             exp.YearOfWeek: rename_func("YEAROFWEEK"),
             exp.YearOfWeekIso: rename_func("YEAROFWEEKISO"),

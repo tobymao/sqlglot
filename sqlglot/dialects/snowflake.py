@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     annotate_with_type_lambda,
     build_timetostr_or_tochar,
+    build_like,
     binary_from_function,
     build_default_decimal_type,
     build_replace_with_optional_replacement,
@@ -357,15 +358,6 @@ def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
             parameters=seq_get(args, 4),
             group=seq_get(args, 5) or exp.Literal.number(0),
         )
-
-    return _builder
-
-
-def _build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
-    def _builder(args: t.List) -> E | exp.Escape:
-        like_expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
-        escape = seq_get(args, 2)
-        return exp.Escape(this=like_expr, expression=escape) if escape else like_expr
 
     return _builder
 
@@ -947,8 +939,8 @@ class Snowflake(Dialect):
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
-            "LIKE": _build_like(exp.Like),
-            "ILIKE": _build_like(exp.ILike),
+            "LIKE": build_like(exp.Like),
+            "ILIKE": build_like(exp.ILike),
             "SEARCH": _build_search,
             "WEEKISO": exp.WeekOfYear.from_arg_list,
             "WEEKOFYEAR": exp.Week.from_arg_list,

@@ -892,6 +892,34 @@ TBLPROPERTIES (
                 "spark": "LISTAGG(x, ', ')",
             },
         )
+        self.validate_all(
+            "LIKE(foo, 'pattern')",
+            write={
+                "spark": "foo LIKE 'pattern'",
+                "databricks": "foo LIKE 'pattern'",
+            },
+        )
+        self.validate_all(
+            "LIKE(foo, 'pattern', '!')",
+            write={
+                "spark": "foo LIKE 'pattern' ESCAPE '!'",
+                "databricks": "foo LIKE 'pattern' ESCAPE '!'",
+            },
+        )
+        self.validate_all(
+            "ILIKE(foo, 'pattern')",
+            write={
+                "spark": "foo ILIKE 'pattern'",
+                "databricks": "foo ILIKE 'pattern'",
+            },
+        )
+        self.validate_all(
+            "ILIKE(foo, 'pattern', '!')",
+            write={
+                "spark": "foo ILIKE 'pattern' ESCAPE '!'",
+                "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(

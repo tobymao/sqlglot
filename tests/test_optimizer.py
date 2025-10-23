@@ -233,6 +233,17 @@ class TestOptimizer(unittest.TestCase):
 
     def test_qualify_tables(self):
         self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),
+                db="db",
+                catalog="catalog",
+                dialect="bigquery",
+                quote_identifiers=False,
+            ).sql("bigquery"),
+            "WITH test AS (SELECT * FROM catalog.db.t1 AS t1) SELECT * FROM test AS test",
+        )
+
+        self.assertEqual(
             optimizer.qualify_tables.qualify_tables(
                 parse_one(
                     "WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'))"

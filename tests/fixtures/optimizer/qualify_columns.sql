@@ -988,6 +988,9 @@ SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _q_0 INNER JOIN y AS y ON
 SELECT a, c FROM x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y TABLESAMPLE SYSTEM (10 ROWS);
 SELECT x.a AS a, y.c AS c FROM x AS x TABLESAMPLE SYSTEM (10 ROWS) CROSS JOIN y AS y TABLESAMPLE SYSTEM (10 ROWS);
 
+SELECT x.a FROM x INNER JOIN y ON x.a = c INNER JOIN z ON x.a = z.c;
+SELECT x.a AS a FROM x AS x INNER JOIN y AS y ON x.a = y.c INNER JOIN z AS z ON x.a = z.c;
+
 --------------------------------------
 -- Snowflake allows column alias to be used in almost all clauses
 --------------------------------------

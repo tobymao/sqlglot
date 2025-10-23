@@ -978,6 +978,16 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "SELECT JSON_AGG(DISTINCT c1 ORDER BY c1) FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"
         )
+        self.validate_all(
+            "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            read={
+                "postgres": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+                "duckdb": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            },
+            write={
+                "duckdb": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            },
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

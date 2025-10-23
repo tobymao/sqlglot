@@ -44,6 +44,7 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
+from sqlglot.dialects.postgres import _regexp_replace_global_modifier
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
@@ -427,6 +428,7 @@ class DuckDB(Dialect):
                 expression=seq_get(args, 1),
                 replacement=seq_get(args, 2),
                 modifiers=seq_get(args, 3),
+                single_replace=True,
             ),
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "STRFTIME": build_formatted_time(exp.TimeToStr, "duckdb"),
@@ -754,7 +756,7 @@ class DuckDB(Dialect):
                 e.this,
                 e.expression,
                 e.args.get("replacement"),
-                e.args.get("modifiers"),
+                _regexp_replace_global_modifier(self, e),
             ),
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpILike: lambda self, e: self.func(

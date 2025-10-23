@@ -1162,9 +1162,9 @@ class Resolver:
 
         ```
         SELECT * FROM t_1 INNER JOIN ... INNER JOIN t_n ON t_1.a = c INNER JOIN t_n+1 ON ...
-        ```                                                  ^
-                                                             |
-                                +----------------------------+
+        ```                                                        ^
+                                                                   |
+                                +----------------------------------+
                                 |
                                 ⌄
         The unqualified column `c` is not ambiguous if no other sources up until that

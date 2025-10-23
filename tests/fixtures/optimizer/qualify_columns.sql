@@ -627,6 +627,10 @@ WITH RECURSIVE cte(x) AS (SELECT 1 AS x), cte2(y) AS (SELECT 2 AS y) SELECT cte.
 WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
+# execute: false
+WITH tesT AS (SELECT c1 FROM t1) SELECT c1 FROM test;
+WITH test AS (SELECT t1.c1 AS c1 FROM t1 AS t1) SELECT test.c1 AS c1 FROM test AS test;
+
 --------------------------------------
 -- Except, Replace, Rename
 --------------------------------------

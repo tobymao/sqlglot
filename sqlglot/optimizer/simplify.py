@@ -375,9 +375,9 @@ def _simplify_comparison(expression, left, right, or_=False):
 
             for (a, av), (b, bv) in itertools.permutations(((left, l), (right, r))):
                 if isinstance(a, LT_LTE) and isinstance(b, LT_LTE):
-                    return annotate_boolean(left if (av > bv if or_ else av <= bv) else right)
+                    return left if (av > bv if or_ else av <= bv) else right
                 if isinstance(a, GT_GTE) and isinstance(b, GT_GTE):
-                    return annotate_boolean(left if (av < bv if or_ else av >= bv) else right)
+                    return left if (av < bv if or_ else av >= bv) else right
 
                 # we can't ever shortcut to true because the column could be null
                 if not or_:

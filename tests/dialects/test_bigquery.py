@@ -1430,9 +1430,7 @@ LANGUAGE js AS
             "CURRENT_DATE('UTC')",
             write={
                 "bigquery": "CURRENT_DATE('UTC')",
-                "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",
-                "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
-                "snowflake": "CAST(CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()) AS DATE)",
+                "duckdb": "CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)",
             },
         )
         self.validate_all(

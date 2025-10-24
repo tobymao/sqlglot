@@ -4786,8 +4786,13 @@ class Parser(metaclass=_Parser):
                 # Parsing LIMIT x% (i.e x PERCENT) as a term leads to an error, since
                 # we try to build an exp.Mod expr. For that matter, we backtrack and instead
                 # consume the factor plus parse the percentage separately
-                expression = self._try_parse(self._parse_term) or self._parse_factor()
-
+                index = self._index
+                expression = self._try_parse(self._parse_term)
+                if isinstance(expression, exp.Mod):
+                    self._retreat(index)
+                    expression = self._parse_factor()
+                elif not expression:
+                    expression = self._parse_factor()
             limit_options = self._parse_limit_options()
 
             if self._match(TokenType.COMMA):

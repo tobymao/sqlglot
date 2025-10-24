@@ -701,6 +701,7 @@ class Snowflake(Dialect):
             exp.Boolnot,
             exp.Booland,
             exp.Boolor,
+            exp.EqualNull,
             exp.Search,
         },
         exp.DataType.Type.DATE: {

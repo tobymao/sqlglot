@@ -7380,6 +7380,7 @@ class RegexpReplace(Func):
         "position": False,
         "occurrence": False,
         "modifiers": False,
+        "single_replace": False,
     }
 
 

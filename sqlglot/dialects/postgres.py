@@ -37,6 +37,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     groupconcat_sql,
     Version,
+    regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -203,6 +204,7 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     # Any one of `start`, `N` and `flags` can be column references, meaning that
     # unless we can statically see that the last argument is a non-integer string
     # (eg. not '0'), then it's not possible to construct the correct AST
+    regexp_replace = None
     if len(args) > 3:
         last = args[-1]
         if not is_int(last.name):
@@ -214,9 +216,10 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
             if last.is_type(*exp.DataType.TEXT_TYPES):
                 regexp_replace = exp.RegexpReplace.from_arg_list(args[:-1])
                 regexp_replace.set("modifiers", last)
-                return regexp_replace
 
-    return exp.RegexpReplace.from_arg_list(args)
+    regexp_replace = regexp_replace or exp.RegexpReplace.from_arg_list(args)
+    regexp_replace.set("single_replace", True)
+    return regexp_replace
 
 
 def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> str:
@@ -651,6 +654,15 @@ class Postgres(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args.get("replacement"),
+                e.args.get("position"),
+                e.args.get("occurrence"),
+                regexp_replace_global_modifier(e),
+            ),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_semi_and_anti_joins,

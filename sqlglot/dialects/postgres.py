@@ -37,6 +37,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     groupconcat_sql,
     Version,
+    regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -219,26 +220,6 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     regexp_replace = regexp_replace or exp.RegexpReplace.from_arg_list(args)
     regexp_replace.set("single_replace", True)
     return regexp_replace
-
-
-def _regexp_replace_global_modifier(
-    self: generator.Generator, expression: exp.RegexpReplace
-) -> t.Optional[exp.Expression]:
-    modifiers = expression.args.get("modifiers")
-    single_replace = expression.args.get("single_replace")
-
-    occurrence = expression.args.get("occurrence")
-
-    if not single_replace and (not occurrence or (occurrence.is_int and occurrence.to_py() == 0)):
-        if not modifiers:
-            modifiers = exp.Literal.string("g")
-        elif modifiers.is_string:
-            modifiers_value = modifiers.name
-
-            if "g" not in modifiers_value:
-                modifiers = exp.Literal.string(modifiers_value + "g")
-
-    return modifiers
 
 
 def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> str:
@@ -680,7 +661,7 @@ class Postgres(Dialect):
                 e.args.get("replacement"),
                 e.args.get("position"),
                 e.args.get("occurrence"),
-                _regexp_replace_global_modifier(self, e),
+                regexp_replace_global_modifier(e),
             ),
             exp.Select: transforms.preprocess(
                 [

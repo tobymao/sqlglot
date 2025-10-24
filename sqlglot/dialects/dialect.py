@@ -2083,3 +2083,19 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Expression | None:
+    modifiers = expression.args.get("modifiers")
+    single_replace = expression.args.get("single_replace")
+    occurrence = expression.args.get("occurrence")
+
+    if not single_replace and (not occurrence or (occurrence.is_int and occurrence.to_py() == 0)):
+        if not modifiers or modifiers.is_string:
+            # Append 'g' to the modifiers if they are not provided since
+            # the semantics of REGEXP_REPLACE from the input dialect
+            # is to replace all occurrences of the pattern.
+            value = "" if not modifiers else modifiers.name
+            modifiers = exp.Literal.string(value + "g")
+
+    return modifiers

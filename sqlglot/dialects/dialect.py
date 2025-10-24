@@ -44,6 +44,7 @@ DATETIME_DELTA = t.Union[
     exp.DatetimeSub,
     exp.TimeAdd,
     exp.TimeSub,
+    exp.TimestampAdd,
     exp.TimestampSub,
     exp.TsOrDsAdd,
 ]
@@ -1699,7 +1700,10 @@ def date_delta_to_binary_interval_op(
         unit = unit_to_var(expression)
         op = (
             "+"
-            if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
+            if isinstance(
+                expression,
+                (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd),
+            )
             else "-"
         )
 

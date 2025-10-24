@@ -2192,6 +2192,10 @@ INITCAP(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+IS_NULL_VALUE(payload:field);
+BOOLEAN;
+
+# dialect: snowflake
 JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 

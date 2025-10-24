@@ -6700,7 +6700,7 @@ class IsInf(Func):
 
 
 class IsNullValue(Func):
-    _sql_names = ["IS_NULL_VALUE"]
+    pass
 
 
 # https://www.postgresql.org/docs/current/functions-json.html

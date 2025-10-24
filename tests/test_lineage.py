@@ -139,6 +139,44 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.source_name, "")
         self.assertEqual(downstream.reference_node_name, "y")
 
+    def test_lineage_join_with_star(self) -> None:
+        node = lineage(
+            "*",
+            "SELECT * from x JOIN y USING (uid)",
+        )
+        self.assertEqual(
+            node.source.sql(),
+            "SELECT * FROM x AS x JOIN y AS y ON x.uid = y.uid",
+        )
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
+        self.assertEqual(len(node.downstream), 2)
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.expression.sql(), "x AS x")
+        self.assertEqual(downstream.name, "*")
+
+        downstream = node.downstream[1]
+        self.assertEqual(downstream.expression.sql(), "y AS y")
+        self.assertEqual(downstream.name, "*")
+
+    def test_lineage_join_with_qualified_star(self) -> None:
+        node = lineage(
+            "*",
+            "SELECT x.* from x JOIN y USING (uid)",
+        )
+        self.assertEqual(
+            node.source.sql(),
+            "SELECT x.* FROM x AS x JOIN y AS y ON x.uid = y.uid",
+        )
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
+        self.assertEqual(len(node.downstream), 1)
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.expression.sql(), "x AS x")
+        self.assertEqual(downstream.name, "x.*")
+
     def test_lineage_external_col(self) -> None:
         node = lineage(
             "a",
@@ -278,10 +316,12 @@ class TestLineage(unittest.TestCase):
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TABLE.A")
         self.assertEqual(
-            downstream.source.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+            downstream.source.sql(dialect="snowflake"),
+            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
         )
         self.assertEqual(
-            downstream.expression.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+            downstream.expression.sql(dialect="snowflake"),
+            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
         )
 
     def test_subquery(self) -> None:
@@ -483,7 +523,8 @@ class TestLineage(unittest.TestCase):
         downstream = node.downstream[0]
         self.assertEqual(downstream.name, "SUBQ.Y")
         self.assertEqual(
-            downstream.expression.sql(dialect="oracle"), "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y"
+            downstream.expression.sql(dialect="oracle"),
+            "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y",
         )
 
     def test_trim(self) -> None:
@@ -666,7 +707,8 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].name, "cte.product_type")
         self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.product_type")
         self.assertEqual(
-            node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.product_type"
+            node.downstream[0].downstream[0].downstream[0].name,
+            "loan_ledger.product_type",
         )
 
         node = lineage('"2024-10"', sql, dialect="duckdb", schema=schema)

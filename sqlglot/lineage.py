@@ -232,7 +232,7 @@ def to_node(
             )
 
     # if the select is a star add all scope sources as downstreams
-    if select.is_star:
+    if isinstance(select, exp.Star):
         for source in scope.sources.values():
             if isinstance(source, Scope):
                 source = source.expression

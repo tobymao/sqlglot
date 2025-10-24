@@ -2675,7 +2675,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_REPLACE(subject, pattern)",
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, '')",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, '')",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, '', 'g')",
                 "hive": "REGEXP_REPLACE(subject, pattern, '')",
                 "snowflake": "REGEXP_REPLACE(subject, pattern, '')",
                 "spark": "REGEXP_REPLACE(subject, pattern, '')",
@@ -2691,7 +2691,8 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'g')",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 'g')",
                 "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
                 "snowflake": "REGEXP_REPLACE(subject, pattern, replacement)",
                 "spark": "REGEXP_REPLACE(subject, pattern, replacement)",
@@ -2704,20 +2705,31 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'g')",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, position, 'g')",
                 "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
                 "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position)",
                 "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
             },
         )
         self.validate_all(
-            "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
+            "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, 'c')",
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, parameters)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'c')",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, 'c')",
                 "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, 'c')",
                 "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+            },
+        )
+
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'c')",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'c')",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'cg')",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'cg')",
             },
         )
 

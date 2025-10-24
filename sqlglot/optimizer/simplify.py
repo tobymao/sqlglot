@@ -132,7 +132,6 @@ def simplify(
 
             if coalesce_simplification:
                 new_node = simplify_coalesce(new_node, dialect)
-
             new_node.parent = parent
 
             new_node = simplify_literals(new_node, root)
@@ -175,14 +174,20 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Between):
         negate = isinstance(expression.parent, exp.Not)
 
-        expression = exp.and_(
-            exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
-            exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
-            copy=False,
+        expression = annotate_boolean(
+            exp.and_(
+                annotate_boolean(
+                    exp.GTE(this=expression.this.copy(), expression=expression.args["low"])
+                ),
+                annotate_boolean(
+                    exp.LTE(this=expression.this.copy(), expression=expression.args["high"])
+                ),
+                copy=False,
+            )
         )
 
         if negate:
-            expression = exp.paren(expression, copy=False)
+            expression = annotate_boolean(exp.paren(expression, copy=False))
 
     return expression
 
@@ -218,34 +223,38 @@ def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression
             if complement_subquery_predicate:
                 right = complement_subquery_predicate(this=right.this)
 
-            return COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right)
+            return annotate_boolean(
+                COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right)
+            )
         if isinstance(this, exp.Paren):
             condition = this.unnest()
             if isinstance(condition, exp.And):
-                return exp.paren(
+                or_expr = annotate_boolean(
                     exp.or_(
-                        exp.not_(condition.left, copy=False),
-                        exp.not_(condition.right, copy=False),
+                        annotate_boolean(exp.not_(condition.left, copy=False)),
+                        annotate_boolean(exp.not_(condition.right, copy=False)),
                         copy=False,
                     )
                 )
+                return annotate_boolean(exp.paren(or_expr))
             if isinstance(condition, exp.Or):
-                return exp.paren(
+                and_expr = annotate_boolean(
                     exp.and_(
-                        exp.not_(condition.left, copy=False),
-                        exp.not_(condition.right, copy=False),
+                        annotate_boolean(exp.not_(condition.left, copy=False)),
+                        annotate_boolean(exp.not_(condition.right, copy=False)),
                         copy=False,
                     )
                 )
+                return annotate_boolean(exp.paren(and_expr))
             if is_null(condition):
                 return exp.null()
         if always_true(this):
-            return exp.false()
+            return annotate_boolean(exp.false())
         if is_false(this):
-            return exp.true()
+            return annotate_boolean(exp.true())
         if isinstance(this, exp.Not) and dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION:
             inner = this.this
-            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
+            if is_boolean(inner):
                 # double negation
                 # NOT NOT x -> x, if x is BOOLEAN type
                 return inner
@@ -269,9 +278,9 @@ def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
         if isinstance(expression, exp.And):
             if is_false(left) or is_false(right):
-                return exp.false()
+                return annotate_boolean(exp.false())
             if is_zero(left) or is_zero(right):
-                return exp.false()
+                return annotate_boolean(exp.false())
             if (
                 (is_null(left) and is_null(right))
                 or (is_null(left) and always_true(right))
@@ -279,24 +288,24 @@ def simplify_connectors(expression, root=True):
             ):
                 return exp.null()
             if always_true(left) and always_true(right):
-                return exp.true()
-            if always_true(left):
+                return annotate_boolean(exp.true())
+            if always_true(left) and is_boolean(right):
                 return right
-            if always_true(right):
+            if always_true(right) and is_boolean(left):
                 return left
             return _simplify_comparison(expression, left, right)
         elif isinstance(expression, exp.Or):
             if always_true(left) or always_true(right):
-                return exp.true()
+                return annotate_boolean(exp.true())
             if (
                 (is_null(left) and is_null(right))
                 or (is_null(left) and always_false(right))
                 or (always_false(left) and is_null(right))
             ):
                 return exp.null()
-            if is_false(left):
+            if is_false(left) and is_boolean(right):
                 return right
-            if is_false(right):
+            if is_false(right) and is_boolean(left):
                 return left
             return _simplify_comparison(expression, left, right, or_=True)
 
@@ -371,21 +380,31 @@ def _simplify_comparison(expression, left, right, or_=False):
                 if not or_:
                     if isinstance(a, exp.LT) and isinstance(b, GT_GTE):
                         if av <= bv:
-                            return exp.false()
+                            return annotate_boolean(exp.false())
                     elif isinstance(a, exp.GT) and isinstance(b, LT_LTE):
                         if av >= bv:
-                            return exp.false()
+                            return annotate_boolean(exp.false())
                     elif isinstance(a, exp.EQ):
                         if isinstance(b, exp.LT):
-                            return exp.false() if av >= bv else a
+                            if av >= bv:
+                                return annotate_boolean(exp.false())
+                            return annotate_boolean(a)
                         if isinstance(b, exp.LTE):
-                            return exp.false() if av > bv else a
+                            if av > bv:
+                                return annotate_boolean(exp.false())
+                            return annotate_boolean(a)
                         if isinstance(b, exp.GT):
-                            return exp.false() if av <= bv else a
+                            if av <= bv:
+                                return annotate_boolean(exp.false())
+                            return annotate_boolean(a)
                         if isinstance(b, exp.GTE):
-                            return exp.false() if av < bv else a
+                            if av < bv:
+                                return annotate_boolean(exp.false())
+                            return annotate_boolean(a)
                         if isinstance(b, exp.NEQ):
-                            return exp.false() if av == bv else a
+                            if av == bv:
+                                return annotate_boolean(exp.false())
+                            return annotate_boolean(a)
     return None
 
 
@@ -400,7 +419,9 @@ def remove_complements(expression, root=True):
         ops = set(expression.flatten())
         for op in ops:
             if isinstance(op, exp.Not) and op.this in ops:
-                return exp.false() if isinstance(expression, exp.And) else exp.true()
+                return annotate_boolean(
+                    exp.false() if isinstance(expression, exp.And) else exp.true()
+                )
 
     return expression
 
@@ -428,12 +449,14 @@ def uniq_sort(expression, root=True):
         # A AND C AND B -> A AND B AND C
         for i, (sql, e) in enumerate(arr[1:]):
             if sql < arr[i][0]:
-                expression = result_func(*(e for _, e in sorted(arr)), copy=False)
+                expression = annotate_boolean(result_func(*(e for _, e in sorted(arr)), copy=False))
                 break
         else:
             # we didn't have to sort but maybe we need to dedup
             if deduped and len(deduped) < len(flattened):
-                expression = result_func(*deduped.values(), copy=False)
+                expression = annotate_boolean(
+                    result_func(*(e for e in deduped.values()), copy=False)
+                )
 
     return expression
 
@@ -492,14 +515,14 @@ def absorb_and_eliminate(expression, root=True):
 
             # Absorb
             if isinstance(a, exp.Not) and a.this in op_set:
-                a.replace(exp.true() if kind == exp.And else exp.false())
+                a.replace(annotate_boolean(exp.true() if kind == exp.And else exp.false()))
                 continue
             if isinstance(b, exp.Not) and b.this in op_set:
-                b.replace(exp.true() if kind == exp.And else exp.false())
+                b.replace(annotate_boolean(exp.true() if kind == exp.And else exp.false()))
                 continue
             superset = set(op.flatten())
             if any(any(subset < superset for subset in subops[i]) for i in superset):
-                op.replace(exp.false() if kind == exp.And else exp.true())
+                op.replace(annotate_boolean(exp.false() if kind == exp.And else exp.true()))
                 continue
 
             # Eliminate
@@ -675,9 +698,9 @@ def _simplify_binary(expression, a, b):
 
         if is_null(c):
             if isinstance(a, exp.Literal):
-                return exp.true() if not_ else exp.false()
+                return annotate_boolean(exp.true() if not_ else exp.false())
             if is_null(a):
-                return exp.false() if not_ else exp.true()
+                return annotate_boolean(exp.false() if not_ else exp.true())
     elif isinstance(expression, NULL_OK):
         return None
     elif is_null(a) or is_null(b):
@@ -827,21 +850,24 @@ def simplify_coalesce(expression: exp.Expression, dialect: DialectType) -> exp.E
     coalesce = coalesce if coalesce.expressions else coalesce.this
 
     # This expression is more complex than when we started, but it will get simplified further
-    return exp.paren(
-        exp.or_(
-            exp.and_(
-                coalesce.is_(exp.null()).not_(copy=False),
-                expression.copy(),
-                copy=False,
-            ),
-            exp.and_(
-                coalesce.is_(exp.null()),
-                type(expression)(this=arg.copy(), expression=other.copy()),
-                copy=False,
-            ),
+    and_rhs = annotate_boolean(
+        exp.and_(
+            annotate_boolean(annotate_boolean(coalesce.is_(exp.null())).not_(copy=False)),
+            expression.copy(),
             copy=False,
         )
     )
+
+    and_lhs = annotate_boolean(
+        exp.and_(
+            annotate_boolean(coalesce.is_(exp.null())),
+            annotate_boolean(type(expression)(this=arg.copy(), expression=other.copy())),
+            copy=False,
+        )
+    )
+
+    or_expr = annotate_boolean(exp.or_(and_rhs, and_lhs, copy=False))
+    return annotate_boolean(exp.paren(or_expr))
 
 
 CONCATS = (exp.Concat, exp.DPipe)
@@ -930,7 +956,7 @@ def simplify_startswith(expression: exp.Expression) -> exp.Expression:
         and expression.this.is_string
         and expression.expression.is_string
     ):
-        return exp.convert(expression.name.startswith(expression.expression.name))
+        return annotate_boolean(exp.convert(expression.name.startswith(expression.expression.name)))
 
     return expression
 
@@ -960,10 +986,12 @@ def _datetrunc_eq_expression(
     left: exp.Expression, drange: DateRange, target_type: t.Optional[exp.DataType]
 ) -> exp.Expression:
     """Get the logical expression for a date range"""
-    return exp.and_(
-        left >= date_literal(drange[0], target_type),
-        left < date_literal(drange[1], target_type),
-        copy=False,
+    return annotate_boolean(
+        exp.and_(
+            left >= date_literal(drange[0], target_type),
+            left < date_literal(drange[1], target_type),
+            copy=False,
+        )
     )
 
 
@@ -992,10 +1020,12 @@ def _datetrunc_neq(
     if not drange:
         return None
 
-    return exp.and_(
-        left < date_literal(drange[0], target_type),
-        left >= date_literal(drange[1], target_type),
-        copy=False,
+    return annotate_boolean(
+        exp.and_(
+            left < date_literal(drange[0], target_type),
+            left >= date_literal(drange[1], target_type),
+            copy=False,
+        )
     )
 
 
@@ -1044,12 +1074,13 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
         if not date:
             return expression
 
-        return (
-            DATETRUNC_BINARY_COMPARISONS[comparison](
-                trunc_arg, date, unit, dialect, extract_type(r)
-            )
-            or expression
+        datetrunc_comp = DATETRUNC_BINARY_COMPARISONS[comparison](
+            trunc_arg, date, unit, dialect, extract_type(r)
         )
+
+        if datetrunc_comp:
+            return annotate_boolean(datetrunc_comp)
+        return expression
 
     if isinstance(expression, exp.In):
         l = expression.this
@@ -1074,9 +1105,13 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
             ranges = merge_ranges(ranges)
             target_type = extract_type(*rs)
 
-            return exp.or_(
-                *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges], copy=False
+            or_expr = annotate_boolean(
+                exp.or_(
+                    *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges],
+                    copy=False,
+                )
             )
+            return or_expr
 
     return expression
 
@@ -1096,8 +1131,10 @@ def sort_comparison(expression: exp.Expression) -> exp.Expression:
         ):
             return expression
         if (r_column and not l_column) or (l_const and not r_const) or (gen(l) > gen(r)):
-            return INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(
-                this=r, expression=l
+            return annotate_boolean(
+                INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(
+                    this=r, expression=l
+                )
             )
     return expression
 
@@ -1153,6 +1190,24 @@ def is_false(a: exp.Expression) -> bool:
 
 def is_null(a: exp.Expression) -> bool:
     return type(a) is exp.Null
+
+
+def is_boolean(expression: exp.Expression) -> bool:
+    return expression.is_type(exp.DataType.Type.BOOLEAN)
+
+
+def annotate_boolean(expression: exp.Expression) -> exp.Expression:
+    if not expression.type:
+        expression.type = (
+            expression.this.type if isinstance(expression, exp.Paren) else exp.DataType.Type.BOOLEAN
+        )
+
+        if isinstance(expression, exp.Connector):
+            if isinstance(left := expression.left, exp.Paren):
+                left.type = exp.DataType.Type.BOOLEAN
+            if isinstance(right := expression.right, exp.Paren):
+                right.type = exp.DataType.Type.BOOLEAN
+    return expression
 
 
 def eval_boolean(expression, a, b):
@@ -1310,7 +1365,7 @@ def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
 
 
 def boolean_literal(condition):
-    return exp.true() if condition else exp.false()
+    return annotate_boolean(exp.true() if condition else exp.false())
 
 
 def _flat_simplify(expression, simplifier, root=True):
@@ -1318,6 +1373,9 @@ def _flat_simplify(expression, simplifier, root=True):
         operands = []
         queue = deque(expression.flatten(unnest=False))
         size = len(queue)
+
+        for operand in queue:
+            annotate_boolean(operand)
 
         while queue:
             a = queue.popleft()
@@ -1333,9 +1391,11 @@ def _flat_simplify(expression, simplifier, root=True):
                 operands.append(a)
 
         if len(operands) < size:
-            return functools.reduce(
-                lambda a, b: expression.__class__(this=a, expression=b), operands
-            )
+
+            def combine(a, b):
+                return annotate_boolean(expression.__class__(this=a, expression=b))
+
+            return functools.reduce(combine, operands)
     return expression
 
 

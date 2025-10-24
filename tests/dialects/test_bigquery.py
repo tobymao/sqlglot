@@ -2511,7 +2511,14 @@ OPTIONS (
             "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
             write={
                 "bigquery": "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
-                "duckdb": "SELECT EPOCH_US('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT EPOCH_US(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_MICROS(TIMESTAMP '2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MICROS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "duckdb": "SELECT EPOCH_US(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
             },
         )
 

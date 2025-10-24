@@ -370,6 +370,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT DATE(2024, 1, 15)",
+            write={
+                "bigquery": "SELECT DATE(2024, 1, 15)",
+                "duckdb": "SELECT MAKE_DATE(2024, 1, 15)",
+            },
+        )
+        self.validate_all(
             "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
             write={
                 "bigquery": "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",

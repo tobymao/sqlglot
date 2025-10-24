@@ -2192,6 +2192,10 @@ VARCHAR;
 BOOLEAN;
 
 # dialect: snowflake
+1 NOT IN (1, 2, 3);
+BOOLEAN;
+
+# dialect: snowflake
 JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 

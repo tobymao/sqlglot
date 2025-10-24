@@ -1206,7 +1206,10 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT MAKE_DATE(2016, 12, 25)",
             read={"bigquery": "SELECT DATE(2016, 12, 25)"},
-            write={"bigquery": "SELECT DATE(2016, 12, 25)", "duckdb": "SELECT MAKE_DATE(2016, 12, 25)"},
+            write={
+                "bigquery": "SELECT DATE(2016, 12, 25)",
+                "duckdb": "SELECT MAKE_DATE(2016, 12, 25)",
+            },
         )
         self.validate_all(
             "SELECT CAST(CAST('2016-12-25 23:59:59' AS TIMESTAMP) AS DATE)",

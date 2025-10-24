@@ -1114,6 +1114,11 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT * FROM t LIMIT 10 PERCENT")
         self.validate_identity("SELECT * FROM t LIMIT 10%", "SELECT * FROM t LIMIT 10 PERCENT")
 
+        self.validate_identity("SELECT * FROM t LIMIT 10 PERCENT OFFSET 1")
+        self.validate_identity(
+            "SELECT * FROM t LIMIT 10% OFFSET 1", "SELECT * FROM t LIMIT 10 PERCENT OFFSET 1"
+        )
+
         self.validate_identity(
             "SELECT CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))",
             "SELECT CAST(ROW(1, 2) AS STRUCT(a INT, b INT))",

@@ -6699,6 +6699,10 @@ class IsInf(Func):
     _sql_names = ["IS_INF", "ISINF"]
 
 
+class IsNullValue(Func):
+    pass
+
+
 # https://www.postgresql.org/docs/current/functions-json.html
 class JSON(Expression):
     arg_types = {"this": False, "with": False, "unique": False}

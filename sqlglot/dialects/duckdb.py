@@ -698,7 +698,6 @@ class DuckDB(Dialect):
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
-            exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
@@ -991,6 +990,17 @@ class DuckDB(Dialect):
                 formatted_time = self.format_time(expression)
                 return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
             return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
+
+        def currentdate_sql(self, expression: exp.CurrentDate) -> str:
+            zone = self.sql(expression, "this")
+            if not zone:
+                return super().currentdate_sql(expression)
+
+            expr = exp.Cast(
+                this=exp.AtTimeZone(this=exp.CurrentTimestamp(), zone=expression.this),
+                to=exp.DataType(this=exp.DataType.Type.DATE),
+            )
+            return self.sql(expr)
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this

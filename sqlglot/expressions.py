@@ -6448,6 +6448,10 @@ class Encode(Func):
     arg_types = {"this": True, "charset": True}
 
 
+class EqualNull(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Exp(Func):
     pass
 

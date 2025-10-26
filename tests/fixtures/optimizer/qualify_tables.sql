@@ -42,7 +42,7 @@ SELECT 1 FROM c.y.z AS z, z.a;
 # title: bigquery implicit unnest syntax, coordinates.position should be a column, not a table
 # dialect: bigquery
 SELECT results FROM Coordinates, coordinates.position AS results;
-SELECT results FROM c.db.Coordinates AS Coordinates CROSS JOIN UNNEST(coordinates.position) AS results;
+SELECT results FROM c.db.Coordinates AS coordinates CROSS JOIN UNNEST(coordinates.position) AS results;
 
 # title: bigquery implicit unnest syntax, table is already qualified
 # dialect: bigquery

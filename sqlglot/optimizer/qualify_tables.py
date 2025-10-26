@@ -4,11 +4,10 @@ import itertools
 import typing as t
 
 from sqlglot import alias, exp
-from sqlglot.dialects.dialect import DialectType
-from sqlglot.helper import csv_reader, name_sequence
+from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.helper import name_sequence
+from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import Schema
-from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -18,8 +17,7 @@ def qualify_tables(
     expression: E,
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
-    schema: t.Optional[Schema] = None,
-    infer_csv_schemas: bool = False,
+    on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
     dialect: DialectType = None,
 ) -> E:
     """
@@ -40,17 +38,27 @@ def qualify_tables(
         expression: Expression to qualify
         db: Database name
         catalog: Catalog name
-        schema: A schema to populate
-        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs' schemas.
+        on_qualify: Callback after a table has been qualified.
         dialect: The dialect to parse catalog and schema into.
 
     Returns:
         The qualified expression.
     """
-    next_alias_name = name_sequence("_q_")
-    db = exp.parse_identifier(db, dialect=dialect) if db else None
-    catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
     dialect = Dialect.get_or_raise(dialect)
+
+    alias_sequence = name_sequence("_q_")
+
+    def next_alias_name() -> str:
+        return normalize_identifiers(alias_sequence(), dialect=dialect).name
+
+    if db := db or None:
+        db = exp.parse_identifier(db, dialect=dialect)
+        db.meta["is_table"] = True
+        db = normalize_identifiers(db, dialect=dialect)
+    if catalog := catalog or None:
+        catalog = exp.parse_identifier(catalog, dialect=dialect)
+        catalog.meta["is_table"] = True
+        catalog = normalize_identifiers(catalog, dialect=dialect)
 
     def _qualify(table: exp.Table) -> None:
         if isinstance(table.this, exp.Identifier):
@@ -72,7 +80,8 @@ def qualify_tables(
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):
-                    joins = unnested.args.pop("joins", None)
+                    joins = unnested.args.get("joins")
+                    unnested.set("joins", None)
                     derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
                     derived_table.this.set("joins", joins)
 
@@ -96,7 +105,10 @@ def qualify_tables(
                         name = source.name
 
                     # Mutates the source by attaching an alias to it
-                    alias(source, name or source.name or next_alias_name(), copy=False, table=True)
+                    normalized_alias = normalize_identifiers(
+                        name or source.name or alias_sequence(), dialect=dialect
+                    )
+                    alias(source, normalized_alias, copy=False, table=True)
 
                 table_aliases[".".join(p.name for p in source.parts)] = exp.to_identifier(
                     source.alias
@@ -105,7 +117,10 @@ def qualify_tables(
                 if pivots:
                     pivot = pivots[0]
                     if not pivot.alias:
-                        pivot_alias = source.alias if pivot.unpivot else next_alias_name()
+                        pivot_alias = normalize_identifiers(
+                            source.alias if pivot.unpivot else alias_sequence(),
+                            dialect=dialect,
+                        )
                         pivot.set("alias", exp.TableAlias(this=exp.to_identifier(pivot_alias)))
 
                     # This case corresponds to a pivoted CTE, we don't want to qualify that
@@ -114,15 +129,8 @@ def qualify_tables(
 
                 _qualify(source)
 
-                if infer_csv_schemas and schema and isinstance(source.this, exp.ReadCSV):
-                    with csv_reader(source.this) as reader:
-                        header = next(reader)
-                        columns = next(reader)
-                        schema.add_table(
-                            source,
-                            {k: type(v).__name__ for k, v in zip(header, columns)},
-                            match_depth=False,
-                        )
+                if on_qualify:
+                    on_qualify(source)
             elif isinstance(source, Scope) and source.is_udtf:
                 udtf = source.expression
                 table_alias = udtf.args.get("alias") or exp.TableAlias(
@@ -133,7 +141,10 @@ def qualify_tables(
                 if not table_alias.name:
                     table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    column_aliases = dialect.generate_values_aliases(udtf)
+                    column_aliases = [
+                        normalize_identifiers(i, dialect=dialect)
+                        for i in dialect.generate_values_aliases(udtf)
+                    ]
                     table_alias.set("columns", column_aliases)
             else:
                 for node in scope.walk():

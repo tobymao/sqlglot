@@ -8,10 +8,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
-        self.validate_identity(
-            "select count() OVER(partition by a order by a range offset preceding exclude current row)",
-            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
-        )
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
@@ -26,6 +22,9 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
+        self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
         self.validate_identity("SHA384(x)")
         self.validate_identity("1.x", "1. AS x")
@@ -84,6 +83,9 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
         self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
         self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
+        self.validate_identity(
+            "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"
+        )
         self.validate_identity(
             "SELECT * FROM test_data, LATERAL JSONB_ARRAY_ELEMENTS(data) WITH ORDINALITY AS elem(value, ordinality)"
         )
@@ -157,6 +159,18 @@ class TestPostgres(Validator):
             "WHERE c.relname OPERATOR(pg_catalog.~) '^(courses)$' COLLATE pg_catalog.default AND "
             "pg_catalog.PG_TABLE_IS_VISIBLE(c.oid) "
             "ORDER BY 2, 3"
+        )
+        self.validate_identity(
+            "select count() OVER(partition by a order by a range offset preceding exclude current row)",
+            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
+        )
+        self.validate_identity(
+            "x::JSON -> 'duration' ->> -1",
+            "JSON_EXTRACT_PATH_TEXT(CAST(x AS JSON) -> 'duration', -1)",
+        ).assert_is(exp.JSONExtractScalar).this.assert_is(exp.JSONExtract)
+        self.validate_identity(
+            "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
+            "SELECT SUBSTRING('Thomas' FROM 2 FOR 3)",
         )
         self.validate_identity(
             "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
@@ -957,8 +971,22 @@ FROM json_data, field_ids""",
             """SELECT CAST('["a", {"b":1}]' AS JSONB) #- '{1,b}'""",
         )
 
+        self.validate_identity("SELECT JSON_AGG(DISTINCT name) FROM users")
         self.validate_identity(
             "SELECT JSON_AGG(c1 ORDER BY c1) FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"
+        )
+        self.validate_identity(
+            "SELECT JSON_AGG(DISTINCT c1 ORDER BY c1) FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"
+        )
+        self.validate_all(
+            "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            read={
+                "postgres": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+                "duckdb": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            },
+            write={
+                "duckdb": "SELECT REGEXP_REPLACE('aaa', 'a', 'b')",
+            },
         )
 
     def test_ddl(self):
@@ -1626,3 +1654,25 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     self.validate_identity(
                         f"BEGIN {keyword} {level}, {level}", f"BEGIN {level}, {level}"
                     ).assert_is(exp.Transaction)
+
+    def test_interval_span(self):
+        for time_str in ["1 01:", "1 01:00", "1.5 01:", "-0.25 01:"]:
+            with self.subTest(f"Postgres INTERVAL span, omitted DAY TO MINUTE unit: {time_str}"):
+                self.validate_identity(f"INTERVAL '{time_str}'")
+
+        for time_str in [
+            "1 01:01:",
+            "1 01:01:",
+            "1 01:01:01",
+            "1 01:01:01.01",
+            "1.5 01:01:",
+            "-0.25 01:01:",
+        ]:
+            with self.subTest(f"Postgres INTERVAL span, omitted DAY TO SECOND unit: {time_str}"):
+                self.validate_identity(f"INTERVAL '{time_str}'")
+
+        # Ensure AND is not consumed as a unit following an omitted-span interval
+        with self.subTest("Postgres INTERVAL span, omitted unit with following AND"):
+            day_time_str = "a > INTERVAL '1 00:00' AND TRUE"
+            self.validate_identity(day_time_str, "a > INTERVAL '1 00:00' AND TRUE")
+            self.assertIsInstance(self.parse_one(day_time_str), exp.And)

@@ -511,3 +511,31 @@ with cte as (
 )
 select cte.mult from cte;
 SELECT x.a * x.b AS mult FROM x AS x;
+
+# title: avoid merging subquery with JOIN
+WITH t0 AS (
+  SELECT
+    5 AS id
+), t1 AS (
+  SELECT
+    1 AS id,
+    'US' AS cid
+), t2 AS (
+  SELECT
+    1 AS id,
+    'US' AS cid
+)
+SELECT
+  t0.id,
+  t3.cid AS cid
+FROM t0
+INNER JOIN (
+  SELECT
+    t1.id,
+    t2.cid
+  FROM t1
+  RIGHT JOIN t2
+    ON t1.cid = t2.cid
+) AS t3
+  ON t0.id = t3.id;
+WITH t0 AS (SELECT 5 AS id), t1 AS (SELECT 1 AS id, 'US' AS cid), t2 AS (SELECT 1 AS id, 'US' AS cid) SELECT t0.id AS id, t3.cid AS cid FROM t0 AS t0 INNER JOIN (SELECT t1.id AS id, t2.cid AS cid FROM t1 AS t1 RIGHT JOIN t2 AS t2 ON t1.cid = t2.cid) AS t3 ON t0.id = t3.id;

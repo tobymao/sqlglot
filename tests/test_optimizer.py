@@ -51,8 +51,12 @@ def normalize(expression, **kwargs):
 
 
 def simplify(expression, **kwargs):
+    dialect = kwargs.get("dialect")
+    schema = kwargs.get("schema")
+
+    expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(
-        expression, constant_propagation=True, coalesce_simplification=True, **kwargs
+        expression, constant_propagation=True, coalesce_simplification=True, dialect=dialect
     )
 
 
@@ -127,6 +131,9 @@ class TestOptimizer(unittest.TestCase):
                 "one": "STRUCT<a_1 INT, b_1 VARCHAR>",
                 "nested_0": "STRUCT<a_1 INT, nested_1 STRUCT<a_2 INT, nested_2 STRUCT<a_3 INT>>>",
                 "quoted": 'STRUCT<"foo bar" INT>',
+            },
+            "t_bool": {
+                "a": "BOOLEAN",
             },
         }
 
@@ -225,6 +232,17 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_tables(self):
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),
+                db="db",
+                catalog="catalog",
+                dialect="bigquery",
+                quote_identifiers=False,
+            ).sql("bigquery"),
+            "WITH test AS (SELECT * FROM catalog.db.t1 AS t1) SELECT * FROM test AS test",
+        )
+
         self.assertEqual(
             optimizer.qualify_tables.qualify_tables(
                 parse_one(
@@ -531,12 +549,12 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", simplify)
+        self.check_file("simplify", simplify, schema=self.schema)
 
         # Stress test with huge union query
         union_sql = "SELECT 1 UNION ALL " * 1000 + "SELECT 1"
         expression = parse_one(union_sql)
-        self.assertEqual(simplify(expression).sql(), union_sql)
+        self.assertEqual(optimizer.simplify.simplify(expression).sql(), union_sql)
 
         # Ensure simplify mutates the AST properly
         expression = parse_one("SELECT 1 + 2")
@@ -736,22 +754,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.check_file("tpc-ds/tpc-ds", optimizer.optimize, schema=TPCDS_SCHEMA, pretty=True)
 
     def test_file_schema(self):
-        expression = parse_one(
-            """
-            SELECT *
-            FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|')
-            """
-        )
         self.assertEqual(
-            """
-SELECT
-  "_q_0"."n_nationkey" AS "n_nationkey",
-  "_q_0"."n_name" AS "n_name",
-  "_q_0"."n_regionkey" AS "n_regionkey",
-  "_q_0"."n_comment" AS "n_comment"
-FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') AS "_q_0"
-""".strip(),
-            optimizer.optimize(expression, infer_csv_schemas=True).sql(pretty=True),
+            optimizer.optimize(
+                "SELECT * FROM foo",
+                on_qualify=lambda table: table.replace(exp.to_table("bar")),
+            ).sql(),
+            'SELECT * FROM "bar"',
         )
 
     def test_scope(self):
@@ -1659,4 +1667,27 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(
             sql,
             "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
+        )
+
+    def test_struct_annotation_bigquery(self):
+        sql = """
+        WITH t1 AS (SELECT 'foo' AS c),
+             t2 AS (SELECT ARRAY_AGG(STRUCT(c)) AS arr FROM t1)
+        SELECT arr[0].c FROM t2
+        """
+
+        query = parse_one(sql, dialect="bigquery")
+        qualified = optimizer.qualify.qualify(query, dialect="bigquery")
+        annotated = optimizer.annotate_types.annotate_types(qualified, dialect="bigquery")
+
+        assert annotated.selects[0].type == exp.DataType.build("VARCHAR")
+
+    def test_annotate_object_construct(self):
+        sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"
+
+        query = parse_one(sql, dialect="snowflake")
+        annotated = optimizer.annotate_types.annotate_types(query, dialect="snowflake")
+
+        self.assertEqual(
+            annotated.selects[0].type.sql("snowflake"), 'OBJECT("foo" VARCHAR, "a b" VARCHAR)'
         )

@@ -19,7 +19,9 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT SYSDATETIMEOFFSET()")
+        self.validate_identity("SELECT COMPRESS('Hello World')")
         self.validate_identity("GO").assert_is(exp.Command)
         self.validate_identity("SELECT go").selects[0].assert_is(exp.Column)
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
@@ -578,6 +580,7 @@ class TestTSQL(Validator):
             # "UPDATE Customers SET ContactName = 'Alfred Schmidt', City = 'Frankfurt' WHERE CustomerID = 1",
             "SELECT * FROM Table1",
             "SELECT * FROM Table1 WHERE id = 2",
+            "UPDATE t1 SET k = t2.k FROM t2",
         ]
 
         for statement in possible_statements:
@@ -1557,6 +1560,12 @@ WHERE
                 "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
             )
 
+        for fmt in ("ISOWK", "ISOWW", "ISO_WEEK"):
+            self.validate_identity(
+                f"SELECT DATEPART({fmt}, '2024-11-21')",
+                "SELECT DATEPART(ISO_WEEK, CAST('2024-11-21' AS DATETIME2))",
+            )
+
     def test_convert(self):
         self.validate_all(
             "CONVERT(NVARCHAR(200), x)",
@@ -2377,3 +2386,15 @@ FROM OPENJSON(@json) WITH (
         self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
             exp.Alter
         ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)
+
+    def test_odbc_date_literals(self):
+        for value, cls in [
+            ("{d'2024-01-01'}", exp.Date),
+            ("{t'12:00:00'}", exp.Time),
+            ("{ts'2024-01-01 12:00:00'}", exp.Timestamp),
+        ]:
+            with self.subTest(f"Testing ODBC date literal: {value}"):
+                sql = f"INSERT INTO tab(ds) VALUES ({value})"
+                expr = self.parse_one(sql)
+                self.assertIsInstance(expr, exp.Insert)
+                self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)

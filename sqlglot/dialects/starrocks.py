@@ -32,6 +32,7 @@ def st_distance_sphere(self, expression: exp.StDistance) -> str:
 
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
+    INDEX_OFFSET = 1
 
     class Tokenizer(MySQL.Tokenizer):
         KEYWORDS = {
@@ -49,6 +50,7 @@ class StarRocks(MySQL):
             "DATE_DIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
             ),
+            "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
@@ -125,6 +127,9 @@ class StarRocks(MySQL):
         PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
 
+        # StarRocks doesn't support "IS TRUE/FALSE" syntax.
+        IS_BOOL_ALLOWED = False
+
         CAST_MAPPING = {}
 
         TYPE_MAPPING = {
@@ -152,6 +157,7 @@ class StarRocks(MySQL):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),
+            exp.Flatten: rename_func("ARRAY_FLATTEN"),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.Property: property_sql,

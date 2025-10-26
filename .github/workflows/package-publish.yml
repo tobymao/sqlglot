@@ -14,7 +14,7 @@ jobs:
     outputs:
       deploy: ${{ steps.check_deploy.outputs.deploy }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - id: check_deploy
@@ -47,7 +47,9 @@ jobs:
           target: aarch64
     runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
@@ -61,7 +63,7 @@ jobs:
       uses: PyO3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
-        args: --release --out dist --interpreter 3.9 3.10 3.11 3.12 3.13
+        args: --release --out dist --interpreter 3.9 3.10 3.11 3.12 3.13 3.14
         sccache: 'true'
         manylinux: auto
         working-directory: ./sqlglotrs
@@ -76,7 +78,9 @@ jobs:
     if: needs.should-deploy-rs.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Build sdist
       uses: PyO3/maturin-action@v1
       with:
@@ -112,7 +116,9 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
@@ -132,19 +138,28 @@ jobs:
         source ./.venv/bin/activate
         python -m build
         twine upload dist/*
-    - name: Update API docs
-      run: |
-        source ./.venv/bin/activate
-        make docs
     - name: Update CHANGELOG
       id: changelog
+      continue-on-error: true
       uses: requarks/changelog-action@v1
       with:
         token: ${{ github.token }}
         tag: ${{ github.ref_name }}
-    - name: Commit API docs, CHANGELOG.md
+    - name: Commit CHANGELOG.md
+      continue-on-error: true
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         branch: main
-        commit_message: 'docs: update API docs, CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
-        file_pattern: 'docs CHANGELOG.md'
+        commit_message: "Update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+        file_pattern: "CHANGELOG.md"
+    - name: Update API docs
+      run: |
+        git checkout api-docs
+        source ./.venv/bin/activate
+        make docs
+    - name: Commit API docs
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        branch: api-docs
+        commit_message: 'Update API docs for ${{ github.ref_name }} [skip ci]'
+        file_pattern: 'docs'

@@ -31,7 +31,7 @@ def qualify(
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
     identify: bool = True,
-    infer_csv_schemas: bool = False,
+    on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -63,21 +63,21 @@ def qualify(
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
         identify: If True, quote all identifiers, else only necessary ones.
-        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs' schemas.
+        on_qualify: Callback after a table has been qualified.
 
     Returns:
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
+
+    expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(
         expression,
         db=db,
         catalog=catalog,
-        schema=schema,
         dialect=dialect,
-        infer_csv_schemas=infer_csv_schemas,
+        on_qualify=on_qualify,
     )
-    expression = normalize_identifiers(expression, dialect=dialect)
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)

@@ -444,13 +444,13 @@ impl<'a> TokenizerState<'a> {
 
                 if !tag.is_empty()
                     && self.settings.heredoc_tag_is_identifier
-                    && (self.is_end || !self.is_identifier(&tag))
+                    && (self.is_end || tag.chars().all(|c| c.is_ascii_digit()) || tag.chars().any(|c| c.is_whitespace()))
                 {
                     if !self.is_end {
                         self.advance(-1)?;
                     }
 
-                    self.advance(-(tag.len() as isize))?;
+                    self.advance(-(tag.chars().count() as isize))?;
                     self.add(self.token_types.heredoc_string_alternative, None)?;
                     return Ok(true);
                 }
@@ -687,9 +687,10 @@ impl<'a> TokenizerState<'a> {
                     continue;
                 }
             }
-            if self.chars(delimiter.len()) == delimiter {
-                if delimiter.len() > 1 {
-                    self.advance((delimiter.len() - 1) as isize)?;
+            let delimiter_char_count = delimiter.chars().count();
+            if self.chars(delimiter_char_count) == delimiter {
+                if delimiter_char_count > 1 {
+                    self.advance((delimiter_char_count - 1) as isize)?;
                 }
                 break;
             }
@@ -718,16 +719,6 @@ impl<'a> TokenizerState<'a> {
 
     fn is_alphabetic_or_underscore(&self, name: char) -> bool {
         name.is_alphabetic() || name == '_'
-    }
-
-    fn is_identifier(&self, s: &str) -> bool {
-        s.chars().enumerate().all(|(i, c)| {
-            if i == 0 {
-                self.is_alphabetic_or_underscore(c)
-            } else {
-                self.is_alphabetic_or_underscore(c) || c.is_ascii_digit()
-            }
-        })
     }
 
     fn is_numeric(&self, s: &str) -> bool {

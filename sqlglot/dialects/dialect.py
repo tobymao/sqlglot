@@ -99,6 +99,7 @@ class Dialects(str, Enum):
     REDSHIFT = "redshift"
     RISINGWAVE = "risingwave"
     SNOWFLAKE = "snowflake"
+    SOLR = "solr"
     SPARK = "spark"
     SPARK2 = "spark2"
     SQLITE = "sqlite"
@@ -290,6 +291,12 @@ class _Dialect(type):
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
+
+        klass.VALID_INTERVAL_UNITS = {
+            *klass.VALID_INTERVAL_UNITS,
+            *klass.DATE_PART_MAPPING.keys(),
+            *klass.DATE_PART_MAPPING.values(),
+        }
 
         return klass
 
@@ -518,12 +525,23 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    ALTER_TABLE_SUPPORTS_CASCADE = False
+    """
+    Hive by default does not update the schema of existing partitions when a column is changed.
+    the CASCADE clause is used to indicate that the change should be propagated to all existing partitions.
+    the Spark dialect, while derived from Hive, does not support the CASCADE clause.
+    """
+
     # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
     # Whether the value/LHS of the TRY_CAST(<value> AS <type>) should strictly be a
     # STRING type (Snowflake's case) or can be of any type
     TRY_CAST_REQUIRES_STRING: t.Optional[bool] = None
+
+    # Whether the double negation can be applied
+    # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
 
     # --- Autofilled ---
 
@@ -550,6 +568,8 @@ class Dialect(metaclass=_Dialect):
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
+
+    VALID_INTERVAL_UNITS: t.Set[str] = set()
 
     # Delimiters for bit, hex, byte and unicode literals
     BIT_START: t.Optional[str] = None
@@ -705,8 +725,10 @@ class Dialect(metaclass=_Dialect):
             exp.Exp,
             exp.Ln,
             exp.Log,
+            exp.Pi,
             exp.Pow,
             exp.Quantile,
+            exp.Radians,
             exp.Round,
             exp.SafeDivide,
             exp.Sqrt,
@@ -747,8 +769,12 @@ class Dialect(metaclass=_Dialect):
             exp.TimeAdd,
             exp.TimeSub,
         },
+        exp.DataType.Type.TIMESTAMPLTZ: {
+            exp.TimestampLtzFromParts,
+        },
         exp.DataType.Type.TIMESTAMPTZ: {
             exp.CurrentTimestampLTZ,
+            exp.TimestampTzFromParts,
         },
         exp.DataType.Type.TIMESTAMP: {
             exp.CurrentTimestamp,
@@ -760,10 +786,17 @@ class Dialect(metaclass=_Dialect):
         },
         exp.DataType.Type.TINYINT: {
             exp.Day,
-            exp.Month,
+            exp.DayOfWeek,
+            exp.DayOfWeekIso,
+            exp.DayOfMonth,
+            exp.DayOfYear,
             exp.Week,
-            exp.Year,
+            exp.WeekOfYear,
+            exp.Month,
             exp.Quarter,
+            exp.Year,
+            exp.YearOfWeek,
+            exp.YearOfWeekIso,
         },
         exp.DataType.Type.VARCHAR: {
             exp.ArrayConcat,
@@ -1179,7 +1212,7 @@ def no_paren_current_date_sql(self: Generator, expression: exp.CurrentDate) -> s
 def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")
-        expression.args["recursive"] = False
+        expression.set("recursive", False)
     return self.with_sql(expression)
 
 
@@ -1706,7 +1739,7 @@ def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart)):
+    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
         return unit
 
     value = unit.name if unit else default
@@ -1727,7 +1760,9 @@ def map_date_part(
 
 def map_date_part(part, dialect: DialectType = Dialect):
     mapped = (
-        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper()) if part else None
+        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper())
+        if part and not (isinstance(part, exp.Column) and len(part.parts) != 1)
+        else None
     )
     if mapped:
         return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
@@ -1945,6 +1980,15 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
+def build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
+    def _builder(args: t.List) -> E | exp.Escape:
+        like_expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+        escape = seq_get(args, 2)
+        return exp.Escape(this=like_expr, expression=escape) if escape else like_expr
+
+    return _builder
+
+
 def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
     def _builder(args: t.List, dialect: Dialect) -> E:
         return expr_type(
@@ -2055,3 +2099,19 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Expression | None:
+    modifiers = expression.args.get("modifiers")
+    single_replace = expression.args.get("single_replace")
+    occurrence = expression.args.get("occurrence")
+
+    if not single_replace and (not occurrence or (occurrence.is_int and occurrence.to_py() == 0)):
+        if not modifiers or modifiers.is_string:
+            # Append 'g' to the modifiers if they are not provided since
+            # the semantics of REGEXP_REPLACE from the input dialect
+            # is to replace all occurrences of the pattern.
+            value = "" if not modifiers else modifiers.name
+            modifiers = exp.Literal.string(value + "g")
+
+    return modifiers

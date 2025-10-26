@@ -37,6 +37,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     groupconcat_sql,
     Version,
+    regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -67,7 +68,7 @@ def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB]
 
         e = self._simplify_unless_literal(expression.expression)
         if isinstance(e, exp.Literal):
-            e.args["is_string"] = True
+            e.set("is_string", True)
         elif e.is_number:
             e = exp.Literal.string(e.to_py())
         else:
@@ -203,6 +204,7 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     # Any one of `start`, `N` and `flags` can be column references, meaning that
     # unless we can statically see that the last argument is a non-integer string
     # (eg. not '0'), then it's not possible to construct the correct AST
+    regexp_replace = None
     if len(args) > 3:
         last = args[-1]
         if not is_int(last.name):
@@ -214,9 +216,10 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
             if last.is_type(*exp.DataType.TEXT_TYPES):
                 regexp_replace = exp.RegexpReplace.from_arg_list(args[:-1])
                 regexp_replace.set("modifiers", last)
-                return regexp_replace
 
-    return exp.RegexpReplace.from_arg_list(args)
+    regexp_replace = regexp_replace or exp.RegexpReplace.from_arg_list(args)
+    regexp_replace.set("single_replace", True)
+    return regexp_replace
 
 
 def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> str:
@@ -375,6 +378,8 @@ class Postgres(Dialect):
         VAR_SINGLE_TOKENS = {"$"}
 
     class Parser(parser.Parser):
+        SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
@@ -426,7 +431,7 @@ class Postgres(Dialect):
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSON_AGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
-                this=self._parse_bitwise(),
+                this=self._parse_lambda(),
                 order=self._parse_order(),
             ),
             "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
@@ -459,12 +464,16 @@ class Postgres(Dialect):
 
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
-            TokenType.ARROW: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
-            )([this, path]),
-            TokenType.DARROW: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtractScalar, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
-            )([this, path]),
+            TokenType.ARROW: lambda self, this, path: self.validate_expression(
+                build_json_extract_path(
+                    exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
+                )([this, path])
+            ),
+            TokenType.DARROW: lambda self, this, path: self.validate_expression(
+                build_json_extract_path(
+                    exp.JSONExtractScalar, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE
+                )([this, path])
+            ),
         }
 
         def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
@@ -645,6 +654,15 @@ class Postgres(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args.get("replacement"),
+                e.args.get("position"),
+                e.args.get("occurrence"),
+                regexp_replace_global_modifier(e),
+            ),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_semi_and_anti_joins,

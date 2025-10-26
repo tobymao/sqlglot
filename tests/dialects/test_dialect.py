@@ -1131,6 +1131,15 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "NEXT_DAY(x, y)",
+            write={
+                "snowflake": "NEXT_DAY(x, y)",
+                "databricks": "NEXT_DAY(x, y)",
+                "oracle": "NEXT_DAY(x, y)",
+                "redshift": "NEXT_DAY(x, y)",
+            },
+        )
+        self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
             write={
                 "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
@@ -2475,6 +2484,25 @@ class TestDialect(Validator):
 
     def test_alias(self):
         self.validate_all(
+            "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+            write={
+                "": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "hive": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "oracle": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+                "presto": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT x AS x FROM t GROUP BY x",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+            write={
+                "": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "hive": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "oracle": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+                "presto": "WITH t AS (SELECT 1 AS x, 2 AS y) SELECT SUM(x) AS y, y AS x FROM t GROUP BY y",
+            },
+        )
+
+        self.validate_all(
             'SELECT 1 AS "foo"',
             read={
                 "mysql": "SELECT 1 'foo'",
@@ -2496,18 +2524,6 @@ class TestDialect(Validator):
                 with self.assertRaises(ParseError):
                     parse_one("SELECT 1 'foo'", dialect=dialect)
 
-        self.validate_all(
-            "SELECT a AS b FROM x GROUP BY b",
-            write={
-                "drill": "SELECT a AS b FROM x GROUP BY b",
-                "duckdb": "SELECT a AS b FROM x GROUP BY b",
-                "presto": "SELECT a AS b FROM x GROUP BY 1",
-                "hive": "SELECT a AS b FROM x GROUP BY 1",
-                "oracle": "SELECT a AS b FROM x GROUP BY 1",
-                "spark": "SELECT a AS b FROM x GROUP BY b",
-                "spark2": "SELECT a AS b FROM x GROUP BY 1",
-            },
-        )
         self.validate_all(
             "SELECT y x FROM my_table t",
             write={
@@ -3744,6 +3760,19 @@ FROM subquery2""",
             },
         )
 
+    def test_week_of_year(self):
+        self.validate_all(
+            "WEEKOFYEAR(CAST('2025-01-01' AS DATE))",
+            write={
+                "duckdb": "WEEKOFYEAR(CAST('2025-01-01' AS DATE))",
+                "exasol": "WEEK(CAST('2025-01-01' AS DATE))",
+                "hive": "WEEKOFYEAR(CAST('2025-01-01' AS DATE))",
+                "mysql": "WEEKOFYEAR(CAST('2025-01-01' AS DATE))",
+                "spark": "WEEKOFYEAR(CAST('2025-01-01' AS DATE))",
+                "snowflake": "WEEKISO(CAST('2025-01-01' AS DATE))",
+            },
+        )
+
     def test_justify(self):
         self.validate_all(
             "JUSTIFY_DAYS(INTERVAL '1' DAY)",
@@ -4231,3 +4260,36 @@ FROM subquery2""",
                 "databricks": "x IS NOT UNKNOWN",
             },
         )
+
+    def test_is_with_dcolon(self):
+        self.validate_all(
+            "SELECT CAST(col IS NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
+            read={
+                "": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "duckdb": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "redshift": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "postgres": "SELECT col IS NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(NOT col IS NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
+            read={
+                "": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "duckdb": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "redshift": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+                "postgres": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+            },
+        )
+
+    def test_regexp_replace(self):
+        for target_dialect in ("postgres", "duckdb"):
+            # Transpilations from other dialects to Postgres or DuckDB should append 'g'
+            # since their semantics is to replace all occurrences of the pattern.
+            for read_dialect in ("", "bigquery", "presto", "trino", "spark", "databricks"):
+                with self.subTest(
+                    f"Testing REGEXP_REPLACE appending 'g' flag from {read_dialect} to {target_dialect}"
+                ):
+                    sql = parse_one("REGEXP_REPLACE('aaa', 'a', 'b')", read=read_dialect).sql(
+                        target_dialect
+                    )
+                    self.assertEqual(sql, "REGEXP_REPLACE('aaa', 'a', 'b', 'g')")

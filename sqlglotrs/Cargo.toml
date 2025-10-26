@@ -1,6 +1,6 @@
 [package]
 name = "sqlglotrs"
-version = "0.6.2"
+version = "0.7.3"
 edition = "2021"
 license = "MIT"
 
@@ -19,7 +19,8 @@ default = []
 profiling = ["serde", "serde_json"]
 
 [dependencies]
-pyo3 = {version ="0.25"}
+# https://www.maturin.rs/distribution.html#cross-compile-to-windows - explains `features`
+pyo3 = { version ="0.25", features = ["extension-module", "generate-import-lib"] }
 rustc-hash = { version = "2.1" }
 
 # Optional dependencies used for profiling

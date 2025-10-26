@@ -131,39 +131,6 @@ def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def unalias_group(expression: exp.Expression) -> exp.Expression:
-    """
-    Replace references to select aliases in GROUP BY clauses.
-
-    Example:
-        >>> import sqlglot
-        >>> sqlglot.parse_one("SELECT a AS b FROM x GROUP BY b").transform(unalias_group).sql()
-        'SELECT a AS b FROM x GROUP BY 1'
-
-    Args:
-        expression: the expression that will be transformed.
-
-    Returns:
-        The transformed expression.
-    """
-    if isinstance(expression, exp.Group) and isinstance(expression.parent, exp.Select):
-        aliased_selects = {
-            e.alias: i
-            for i, e in enumerate(expression.parent.expressions, start=1)
-            if isinstance(e, exp.Alias)
-        }
-
-        for group_by in expression.expressions:
-            if (
-                isinstance(group_by, exp.Column)
-                and not group_by.table
-                and group_by.name in aliased_selects
-            ):
-                group_by.replace(exp.Literal.number(aliased_selects.get(group_by.name)))
-
-    return expression
-
-
 def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
     """
     Convert SELECT DISTINCT ON statements to a subquery with a window function.
@@ -683,8 +650,8 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             anti_join_clause = exp.select("1").from_(expression.args["from"]).where(join_conditions)
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
-            expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
-            expression.args.pop("order", None)  # remove order by from LEFT side
+            expression_copy.set("with", None)  # remove CTEs from RIGHT side
+            expression.set("order", None)  # remove order by from LEFT side
 
             return exp.union(expression, expression_copy, copy=False, distinct=False)
 

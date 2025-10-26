@@ -56,6 +56,7 @@ class TestBigQuery(Validator):
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")
@@ -79,6 +80,24 @@ class TestBigQuery(Validator):
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
         self.validate_identity("FOO(values)")
         self.validate_identity("STRUCT(values AS value)")
+
+        self.validate_identity("SELECT SEARCH(data_to_search, 'search_query')")
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', json_scope => 'JSON_KEYS_AND_VALUES')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer => 'PATTERN_ANALYZER')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer_options => 'analyzer_options_values')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', json_scope => 'JSON_VALUES', analyzer => 'LOG_ANALYZER')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer => 'PATTERN_ANALYZER', analyzer_options => 'options')"
+        )
+
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
@@ -190,6 +209,10 @@ class TestBigQuery(Validator):
         )
         self.validate_identity(
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
+        )
+        self.validate_identity(
+            '''SELECT b"\\x0a$'x'00"''',
+            """SELECT b'\\x0a$\\'x\\'00'""",
         )
         self.validate_identity(
             "--c\nARRAY_AGG(v IGNORE NULLS)",
@@ -735,6 +758,7 @@ LANGUAGE js AS
                     "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                     "snowflake": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT DATE_DIFF('MILLISECOND', CAST('2023-01-01T05:00:00' AS TIMESTAMP), CAST('2023-01-01T00:00:00' AS TIMESTAMP))",
                 },
             ),
         )
@@ -803,6 +827,13 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
                 "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+            write={
+                "bigquery": "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '2' HOUR",
             },
         )
         self.validate_all(
@@ -1809,6 +1840,15 @@ WHERE
         self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
         self.validate_identity("RANGE_BUCKET(20, [0, 10, 20, 30, 40])")
         self.validate_identity("SELECT TRANSLATE(MODEL, 'in', 't') FROM (SELECT 'input' AS MODEL)")
+        self.validate_identity("SELECT GRANT FROM (SELECT 'input' AS GRANT)")
+
+        self.validate_all(
+            "SELECT 0xA",
+            write={
+                "bigquery": "SELECT 0xA",
+                "duckdb": "SELECT 10",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):
@@ -2085,6 +2125,7 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL mydataset.mymodel, (SELECT custom_label, column1, column2 FROM mydataset.mytable), STRUCT(0.55 AS threshold))"
         )
+        self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL `my_project`.my_dataset.my_model, (SELECT * FROM input_data))"
         )
@@ -2464,6 +2505,15 @@ OPTIONS (
 
         for dialect in ("bigquery", "spark", "databricks"):
             parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)
+
+    def test_unix_micros(self):
+        self.validate_all(
+            "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT EPOCH_US('2008-12-25 15:30:00+00')",
+            },
+        )
 
     def test_regexp_extract(self):
         self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
@@ -2929,6 +2979,15 @@ OPTIONS (
             write={
                 "bigquery": "SELECT 1 & 1",
                 "snowflake": "SELECT BITAND(1, 1)",
+            },
+        )
+
+    def test_bitwise_not(self):
+        self.validate_all(
+            "SELECT ~1",
+            write={
+                "bigquery": "SELECT ~1",
+                "snowflake": "SELECT BITNOT(1)",
             },
         )
 

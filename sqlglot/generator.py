@@ -727,6 +727,7 @@ class Generator(metaclass=_Generator):
         "dialect",
         "unsupported_messages",
         "_escaped_quote_end",
+        "_escaped_byte_quote_end",
         "_escaped_identifier_end",
         "_next_name",
         "_identifier_start",
@@ -772,6 +773,11 @@ class Generator(metaclass=_Generator):
         self.unsupported_messages: t.List[str] = []
         self._escaped_quote_end: str = (
             self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.QUOTE_END
+        )
+        self._escaped_byte_quote_end: str = (
+            self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.BYTE_END
+            if self.dialect.BYTE_END
+            else ""
         )
         self._escaped_identifier_end = self.dialect.IDENTIFIER_END * 2
 
@@ -1326,7 +1332,10 @@ class Generator(metaclass=_Generator):
         elif materialized:
             materialized = "MATERIALIZED "
 
-        return f"{alias_sql} AS {materialized or ''}{self.wrap(expression)}"
+        key_expressions = self.expressions(expression, key="key_expressions", flat=True)
+        key_expressions = f" USING KEY ({key_expressions})" if key_expressions else ""
+
+        return f"{alias_sql}{key_expressions} AS {materialized or ''}{self.wrap(expression)}"
 
     def tablealias_sql(self, expression: exp.TableAlias) -> str:
         alias = self.sql(expression, "this")
@@ -1376,7 +1385,13 @@ class Generator(metaclass=_Generator):
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
         if self.dialect.BYTE_START:
-            return f"{self.dialect.BYTE_START}{this}{self.dialect.BYTE_END}"
+            escaped_byte_string = self.escape_str(
+                this,
+                escape_backslash=False,
+                delimiter=self.dialect.BYTE_END,
+                escaped_delimiter=self._escaped_byte_quote_end,
+            )
+            return f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
         return this
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
@@ -1466,7 +1481,7 @@ class Generator(metaclass=_Generator):
     def delete_sql(self, expression: exp.Delete) -> str:
         this = self.sql(expression, "this")
         this = f" FROM {this}" if this else ""
-        using = self.sql(expression, "using")
+        using = self.expressions(expression, key="using")
         using = f" USING {using}" if using else ""
         cluster = self.sql(expression, "cluster")
         cluster = f" {cluster}" if cluster else ""
@@ -1940,10 +1955,11 @@ class Generator(metaclass=_Generator):
         on_conflict = self.sql(expression, "conflict")
         on_conflict = f" {on_conflict}" if on_conflict else ""
         by_name = " BY NAME" if expression.args.get("by_name") else ""
+        default_values = "DEFAULT VALUES" if expression.args.get("default") else ""
         returning = self.sql(expression, "returning")
 
         if self.RETURNING_END:
-            expression_sql = f"{expression_sql}{on_conflict}{returning}"
+            expression_sql = f"{expression_sql}{on_conflict}{default_values}{returning}"
         else:
             expression_sql = f"{returning}{expression_sql}{on_conflict}"
 
@@ -2188,7 +2204,9 @@ class Generator(metaclass=_Generator):
             expression_sql = f"{from_sql}{where_sql}{returning}"
         else:
             expression_sql = f"{returning}{from_sql}{where_sql}"
-        sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}"
+        options = self.expressions(expression, key="options")
+        options = f" OPTION({options})" if options else ""
+        sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}{options}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
@@ -2205,6 +2223,7 @@ class Generator(metaclass=_Generator):
                 and (alias or isinstance(expression.parent, (exp.From, exp.Table)))
                 else values
             )
+            values = self.query_modifiers(expression, values)
             return f"{values} AS {alias}" if alias else values
 
         # Converts `VALUES...` expression into a series of select unions.
@@ -2475,16 +2494,23 @@ class Generator(metaclass=_Generator):
             text = f"{self.dialect.QUOTE_START}{self.escape_str(text)}{self.dialect.QUOTE_END}"
         return text
 
-    def escape_str(self, text: str, escape_backslash: bool = True) -> str:
+    def escape_str(
+        self,
+        text: str,
+        escape_backslash: bool = True,
+        delimiter: t.Optional[str] = None,
+        escaped_delimiter: t.Optional[str] = None,
+    ) -> str:
         if self.dialect.ESCAPED_SEQUENCES:
             to_escaped = self.dialect.ESCAPED_SEQUENCES
             text = "".join(
                 to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
             )
 
-        return self._replace_line_breaks(text).replace(
-            self.dialect.QUOTE_END, self._escaped_quote_end
-        )
+        delimiter = delimiter or self.dialect.QUOTE_END
+        escaped_delimiter = escaped_delimiter or self._escaped_quote_end
+
+        return self._replace_line_breaks(text).replace(delimiter, escaped_delimiter)
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
         local = " LOCAL" if expression.args.get("local") else ""
@@ -2504,6 +2530,12 @@ class Generator(metaclass=_Generator):
 
     def boolean_sql(self, expression: exp.Boolean) -> str:
         return "TRUE" if expression.this else "FALSE"
+
+    def booland_sql(self, expression: exp.Booland) -> str:
+        return f"(({self.sql(expression, 'this')}) AND ({self.sql(expression, 'expression')}))"
+
+    def boolor_sql(self, expression: exp.Boolor) -> str:
+        return f"(({self.sql(expression, 'this')}) OR ({self.sql(expression, 'expression')}))"
 
     def order_sql(self, expression: exp.Order, flat: bool = False) -> str:
         this = self.sql(expression, "this")
@@ -3197,7 +3229,9 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
-        return f"{this}{kind}{path}"
+
+        ordinality = " FOR ORDINALITY" if expression.args.get("ordinality") else ""
+        return f"{this}{kind}{path}{ordinality}"
 
     def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
         return self.func("COLUMNS", *expression.expressions)
@@ -3256,14 +3290,19 @@ class Generator(metaclass=_Generator):
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
-        unit = self.sql(expression, "unit")
+        unit_expression = expression.args.get("unit")
+        unit = self.sql(unit_expression) if unit_expression else ""
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
             unit = self.TIME_PART_SINGULARS.get(unit, unit)
         unit = f" {unit}" if unit else ""
 
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
-            return f"INTERVAL '{this}{unit}'" if this else f"INTERVAL{unit}"
+            if this:
+                if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
+                    return f"INTERVAL '{this}'{unit}"
+                return f"INTERVAL '{this}{unit}'"
+            return f"INTERVAL{unit}"
 
         this = self.sql(expression, "this")
         if this:
@@ -3597,10 +3636,15 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
+        cascade = (
+            " CASCADE"
+            if expression.args.get("cascade") and self.dialect.ALTER_TABLE_SUPPORTS_CASCADE
+            else ""
+        )
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}"
+        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)
@@ -4040,8 +4084,14 @@ class Generator(metaclass=_Generator):
 
         this = self.sql(table)
         using = f"USING {self.sql(expression, 'using')}"
-        on = f"ON {self.sql(expression, 'on')}"
         whens = self.sql(expression, "whens")
+
+        on = self.sql(expression, "on")
+        on = f"ON {on}" if on else ""
+
+        if not on:
+            on = self.expressions(expression, key="using_cond")
+            on = f"USING ({on})" if on else ""
 
         returning = self.sql(expression, "returning")
         if returning:
@@ -4206,10 +4256,12 @@ class Generator(metaclass=_Generator):
     def comprehension_sql(self, expression: exp.Comprehension) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
+        position = self.sql(expression, "position")
+        position = f", {position}" if position else ""
         iterator = self.sql(expression, "iterator")
         condition = self.sql(expression, "condition")
         condition = f" IF {condition}" if condition else ""
-        return f"{this} FOR {expr} IN {iterator}{condition}"
+        return f"{this} FOR {expr}{position} IN {iterator}{condition}"
 
     def columnprefix_sql(self, expression: exp.ColumnPrefix) -> str:
         return f"{self.sql(expression, 'this')}({self.sql(expression, 'expression')})"
@@ -5198,6 +5250,10 @@ class Generator(metaclass=_Generator):
         self.unsupported("Unsupported SHOW statement")
         return ""
 
+    def install_sql(self, expression: exp.Install) -> str:
+        self.unsupported("Unsupported INSTALL statement")
+        return ""
+
     def get_put_sql(self, expression: exp.Put | exp.Get) -> str:
         # Snowflake GET/PUT statements:
         #   PUT <file> <internalStage> <properties>
@@ -5302,3 +5358,10 @@ class Generator(metaclass=_Generator):
         starts = f" STARTS {starts}" if starts else ""
 
         return f"REFRESH {method} ON {kind}{every}{starts}"
+
+    def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
+        self.unsupported("The model!attribute syntax is not supported")
+        return ""
+
+    def directorystage_sql(self, expression: exp.DirectoryStage) -> str:
+        return self.func("DIRECTORY", expression.this)

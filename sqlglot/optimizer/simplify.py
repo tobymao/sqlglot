@@ -125,7 +125,7 @@ def simplify(
                 node.set(k, v)
 
             # Post-order transformations
-            new_node = simplify_not(node)
+            new_node = simplify_not(node, dialect)
             new_node = flatten(new_node)
             new_node = simplify_connectors(new_node, root)
             new_node = remove_complements(new_node, root)
@@ -202,7 +202,7 @@ COMPLEMENT_SUBQUERY_PREDICATES = {
 }
 
 
-def simplify_not(expression):
+def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression:
     """
     Demorgan's Law
     NOT (x OR y) -> NOT x AND NOT y
@@ -243,10 +243,12 @@ def simplify_not(expression):
             return exp.false()
         if is_false(this):
             return exp.true()
-        if isinstance(this, exp.Not):
-            # double negation
-            # NOT NOT x -> x
-            return this.this
+        if isinstance(this, exp.Not) and dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION:
+            inner = this.this
+            if inner.is_type(exp.DataType.Type.BOOLEAN) or isinstance(inner, exp.Predicate):
+                # double negation
+                # NOT NOT x -> x, if x is BOOLEAN type
+                return inner
     return expression
 
 
@@ -270,7 +272,11 @@ def simplify_connectors(expression, root=True):
                 return exp.false()
             if is_zero(left) or is_zero(right):
                 return exp.false()
-            if is_null(left) or is_null(right):
+            if (
+                (is_null(left) and is_null(right))
+                or (is_null(left) and always_true(right))
+                or (always_true(left) and is_null(right))
+            ):
                 return exp.null()
             if always_true(left) and always_true(right):
                 return exp.true()
@@ -293,9 +299,6 @@ def simplify_connectors(expression, root=True):
             if is_false(right):
                 return left
             return _simplify_comparison(expression, left, right, or_=True)
-        elif isinstance(expression, exp.Xor):
-            if left == right:
-                return exp.false()
 
     if isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_connectors, root)
@@ -1128,7 +1131,7 @@ def remove_where_true(expression):
 
 def always_true(expression):
     return (isinstance(expression, exp.Boolean) and expression.this) or (
-        isinstance(expression, exp.Literal) and not is_zero(expression)
+        isinstance(expression, exp.Literal) and expression.is_number and not is_zero(expression)
     )
 
 
@@ -1588,7 +1591,7 @@ class Gen:
         kvs = []
         arg_types = list(node.arg_types)[arg_index:] if arg_index else node.arg_types
 
-        for k in arg_types or arg_types:
+        for k in arg_types:
             v = node.args.get(k)
 
             if v is not None:

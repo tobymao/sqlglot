@@ -88,6 +88,7 @@ class TokenType(AutoName):
     QMARK_AMP = auto()
     QMARK_PIPE = auto()
     HASH_DASH = auto()
+    EXCLAMATION = auto()
 
     URI_START = auto()
 
@@ -313,6 +314,7 @@ class TokenType(AutoName):
     INDEX = auto()
     INNER = auto()
     INSERT = auto()
+    INSTALL = auto()
     INTERSECT = auto()
     INTERVAL = auto()
     INTO = auto()
@@ -1419,7 +1421,11 @@ class Tokenizer(metaclass=_Tokenizer):
                         raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
-                if tag and self.HEREDOC_TAG_IS_IDENTIFIER and (self._end or not tag.isidentifier()):
+                if (
+                    tag
+                    and self.HEREDOC_TAG_IS_IDENTIFIER
+                    and (self._end or tag.isdigit() or any(c.isspace() for c in tag))
+                ):
                     if not self._end:
                         self._advance(-1)
 

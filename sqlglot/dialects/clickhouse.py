@@ -332,7 +332,6 @@ class ClickHouse(Dialect):
             "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "STR_TO_DATE": _build_str_to_date,
-            "TUPLE": exp.Struct.from_arg_list,
             "TIMESTAMP_SUB": build_date_delta(exp.TimestampSub, default_unit=None),
             "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
             "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
@@ -505,14 +504,13 @@ class ClickHouse(Dialect):
             }
         )(AGG_FUNCTIONS, AGG_FUNCTIONS_SUFFIXES)
 
-        FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
-
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
             "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
+            "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
         }
 
         FUNCTION_PARSERS.pop("MATCH")
@@ -771,7 +769,9 @@ class ClickHouse(Dialect):
         ) -> t.Optional[exp.Join]:
             join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
             if join:
-                join.set("global", join.args.pop("method", None))
+                method = join.args.get("method")
+                join.set("method", None)
+                join.set("global", method)
 
                 # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join
@@ -1126,6 +1126,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
+            exp.Struct: rename_func("tuple"),
             exp.EndsWith: rename_func("endsWith"),
             exp.EuclideanDistance: rename_func("L2Distance"),
             exp.StrPosition: lambda self, e: strposition_sql(
@@ -1417,9 +1418,12 @@ class ClickHouse(Dialect):
             return in_sql
 
         def not_sql(self, expression: exp.Not) -> str:
-            if isinstance(expression.this, exp.In) and expression.this.args.get("is_global"):
-                # let `GLOBAL IN` child interpose `NOT`
-                return self.sql(expression, "this")
+            if isinstance(expression.this, exp.In):
+                if expression.this.args.get("is_global"):
+                    # let `GLOBAL IN` child interpose `NOT`
+                    return self.sql(expression, "this")
+
+                expression.set("this", exp.paren(expression.this, copy=False))
 
             return super().not_sql(expression)
 

@@ -77,4 +77,7 @@ SELECT s.t FROM s LEFT JOIN (SELECT MAX(t.a) AS t1 FROM t) AS _u_0 ON 1 = _u_0.t
 
 # title: can't create GROUP BY clause with an aggregate (nested)
 SELECT s.t FROM s WHERE 1 IN (SELECT MAX(t.a) + 1 AS t1 FROM t);
-SELECT s.t FROM s LEFT JOIN (SELECT MAX(t.a) + 1 AS t1 FROM t) AS _u_0 ON 1 = _u_0.t1 WHERE NOT _u_0.t1 IS NULL
+SELECT s.t FROM s LEFT JOIN (SELECT MAX(t.a) + 1 AS t1 FROM t) AS _u_0 ON 1 = _u_0.t1 WHERE NOT _u_0.t1 IS NULL;
+
+SELECT BIT_COUNT(EXISTS(SELECT 1 WHERE FALSE)) AS col FROM t0;
+SELECT BIT_COUNT(EXISTS(SELECT 1 WHERE FALSE)) AS col FROM t0;

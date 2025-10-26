@@ -6,6 +6,7 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("SELECT COSH(1.5)")
         self.validate_all(
             "SELECT SPLIT_TO_ARRAY('12,345,6789')",
             write={
@@ -326,6 +327,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("ALTER TABLE table_name ALTER COLUMN bla TYPE VARCHAR")
         self.validate_identity("SELECT CAST(value AS FLOAT(8))")
         self.validate_identity("1 div", "1 AS div")

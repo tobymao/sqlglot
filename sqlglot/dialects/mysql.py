@@ -163,6 +163,7 @@ class MySQL(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     SAFE_DIVISION = True
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -177,6 +178,21 @@ class MySQL(Dialect):
         "%l": "%-I",
         "%T": "%H:%M:%S",
         "%W": "%A",
+    }
+
+    VALID_INTERVAL_UNITS = {
+        *Dialect.VALID_INTERVAL_UNITS,
+        "SECOND_MICROSECOND",
+        "MINUTE_MICROSECOND",
+        "MINUTE_SECOND",
+        "HOUR_MICROSECOND",
+        "HOUR_SECOND",
+        "HOUR_MINUTE",
+        "DAY_MICROSECOND",
+        "DAY_SECOND",
+        "DAY_MINUTE",
+        "DAY_HOUR",
+        "YEAR_MONTH",
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -310,7 +326,7 @@ class MySQL(Dialect):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -740,7 +756,7 @@ class MySQL(Dialect):
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
-            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")

@@ -9,6 +9,7 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("SELECT COSH(1.5)")
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -193,6 +194,7 @@ class TestDuckDB(Validator):
                 },
             )
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("""SELECT '{"duck": [1, 2, 3]}' -> '$.duck[#-1]'""")
         self.validate_all(
             """SELECT JSON_EXTRACT('{"duck": [1, 2, 3]}', '/duck/0')""",
@@ -266,6 +268,26 @@ class TestDuckDB(Validator):
                 "bigquery": "SELECT IF(pos = pos_2, y, NULL) + 1 AS y FROM UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH(x)) - 1)) AS pos CROSS JOIN UNNEST(x) AS y WITH OFFSET AS pos_2 WHERE pos = pos_2 OR (pos > (ARRAY_LENGTH(x) - 1) AND pos_2 = (ARRAY_LENGTH(x) - 1))",
             },
         )
+        self.validate_all(
+            "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2025-10-12' AS DATE))",
+            read={
+                "snowflake": "SELECT DATEDIFF('day', '2020-01-01', '2025-10-12')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
+            read={
+                "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
+                "snowflake": "SELECT DATEDIFF('second', '2020-01-01', '2025-10-12 00:56:42.345')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345+07:00' AS TIMESTAMPTZ))",
+            read={
+                "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345+07:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATEDIFF('second', '2020-01-01', '2025-10-12 00:56:42.345+07:00')",
+            },
+        )
 
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(
@@ -284,6 +306,14 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT LIST_TRANSFORM(LIST_FILTER([0, 1, 2, 3, 4, 5], LAMBDA x : x % 2 = 0), LAMBDA y : y * y)"
         )
+        self.validate_identity(
+            """ARG_MIN({'d': "DATE", 'ts': "TIMESTAMP", 'i': "INT", 'b': "BIGINT", 's': "VARCHAR"}, "DOUBLE")"""
+        )
+        self.validate_identity(
+            "ARG_MAX(keyword_name, keyword_category, 3 ORDER BY keyword_name DESC)"
+        )
+        self.validate_identity("INSERT INTO t DEFAULT VALUES RETURNING (c1)")
+        self.validate_identity("CREATE TABLE notes (watermark TEXT)")
         self.validate_identity("SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x : COALESCE(x, 0) + 1)")
         self.validate_identity("SELECT LIST_TRANSFORM(nbr, LAMBDA x : x + 1) FROM article AS a")
         self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
@@ -334,6 +364,9 @@ class TestDuckDB(Validator):
             exp.Identifier
         )
         self.validate_identity(
+            "MERGE INTO people USING (SELECT 1 AS id, 98000.0 AS salary) AS salary_updates USING (id) WHEN MATCHED THEN UPDATE SET salary = salary_updates.salary"
+        )
+        self.validate_identity(
             "SELECT species, island, COUNT(*) FROM t GROUP BY GROUPING SETS (species), GROUPING SETS (island)"
         )
         self.validate_identity(
@@ -345,6 +378,9 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv'"
         ).assert_is(exp.Summarize)
+        self.validate_identity(
+            """COPY (SELECT * FROM "input.parquet" USING SAMPLE RESERVOIR (5000 ROWS)) TO 'output.parquet' WITH (FORMAT PARQUET, KV_METADATA {'origin': 'Dagster', 'dagster_run_id': '98c85a11-d05c-4935-bfa2-198214c2204'})"""
+        )
 
         for join_type in ("LEFT", "LEFT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of join {join_type} with UNNEST"):
@@ -361,6 +397,10 @@ class TestDuckDB(Validator):
 
         self.validate_identity(
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
+        )
+        self.validate_identity(
+            "SELECT $🦆$foo$🦆$",
+            "SELECT 'foo'",
         )
         self.validate_identity(
             "SELECT * FROM t PIVOT(FIRST(t) AS t, FOR quarter IN ('Q1', 'Q2'))",
@@ -460,7 +500,9 @@ class TestDuckDB(Validator):
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
-        self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
+        self.validate_identity("x ~ y", "REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("x !~ y", "NOT REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
             "SELECT LIST(DISTINCT sample_col) FROM sample_table",
@@ -1069,6 +1111,59 @@ class TestDuckDB(Validator):
         self.validate_identity("LIST_COSINE_DISTANCE(x, y)")
         self.validate_identity("LIST_DISTANCE(x, y)")
 
+        self.validate_identity("SELECT * FROM t LIMIT 10 PERCENT")
+        self.validate_identity("SELECT * FROM t LIMIT 10%", "SELECT * FROM t LIMIT 10 PERCENT")
+
+        self.validate_identity("SELECT * FROM t LIMIT 10 PERCENT OFFSET 1")
+        self.validate_identity(
+            "SELECT * FROM t LIMIT 10% OFFSET 1", "SELECT * FROM t LIMIT 10 PERCENT OFFSET 1"
+        )
+
+        self.validate_identity(
+            "SELECT CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))",
+            "SELECT CAST(ROW(1, 2) AS STRUCT(a INT, b INT))",
+        )
+
+        self.validate_identity("SELECT row")
+
+        self.validate_identity(
+            "DELETE FROM t USING (VALUES (1)) AS t1(c), (VALUES (1), (2)) AS t2(c) WHERE t.c = t1.c AND t.c = t2.c"
+        )
+
+        self.validate_identity(
+            "FROM (FROM t1 UNION FROM t2)",
+            "SELECT * FROM (SELECT * FROM t1 UNION SELECT * FROM t2)",
+        )
+        self.validate_identity(
+            "FROM (FROM (SELECT 1) AS t2(c), (SELECT t2.c AS c0))",
+            "SELECT * FROM (SELECT * FROM (SELECT 1) AS t2(c), (SELECT t2.c AS c0))",
+        )
+        self.validate_identity(
+            "FROM (FROM (SELECT 2000 as amount) t GROUP BY amount HAVING SUM(amount) > 1000)",
+            "SELECT * FROM (SELECT * FROM (SELECT 2000 AS amount) AS t GROUP BY amount HAVING SUM(amount) > 1000)",
+        )
+        self.validate_identity(
+            "(FROM (SELECT 1) t1(c) EXCEPT FROM (SELECT 2) t2(c)) UNION ALL (FROM (SELECT 3) t3(c) EXCEPT FROM (SELECT 4) t4(c))",
+            "(SELECT * FROM (SELECT 1) AS t1(c) EXCEPT SELECT * FROM (SELECT 2) AS t2(c)) UNION ALL (SELECT * FROM (SELECT 3) AS t3(c) EXCEPT SELECT * FROM (SELECT 4) AS t4(c))",
+        )
+
+        for option in (
+            "ORDER BY 1",
+            "LIMIT 1",
+            "OFFSET 1",
+            "ORDER BY 1 LIMIT 1",
+            "ORDER BY 1 OFFSET 1",
+            "ORDER BY 1 LIMIT 1 OFFSET 1",
+            "LIMIT 1 OFFSET 1",
+        ):
+            with self.subTest(f"Testing DuckDB VALUES with modifier option: {option}"):
+                self.validate_identity(
+                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))"
+                )
+
+        self.validate_identity("FORMAT('foo')")
+        self.validate_identity("FORMAT('foo', 'foo2', 'foo3')")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
@@ -1085,6 +1180,7 @@ class TestDuckDB(Validator):
             self.validate_identity(
                 "[x.STRING_SPLIT(' ')[i] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]"
             )
+            self.validate_identity("SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i = 2] AS filtered")
             self.validate_identity(
                 """SELECT LIST_VALUE(1)[i]""",
                 """SELECT [1][i]""",
@@ -1813,3 +1909,23 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 NO CYCLE")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE")
+
+    def test_install(self):
+        ast = self.validate_identity("INSTALL httpfs")
+        ast.assert_is(exp.Install).name == "httpfs"
+        assert isinstance(ast.this, exp.Identifier)
+
+        self.validate_identity("INSTALL httpfs FROM community")
+        self.validate_identity("INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+        self.validate_identity("FORCE INSTALL httpfs").assert_is(exp.Install).name == "httpfs"
+        self.validate_identity("FORCE INSTALL httpfs FROM community")
+        self.validate_identity("FORCE INSTALL httpfs FROM 'https://extensions.duckdb.org'")
+        self.validate_identity("FORCE CHECKPOINT db", check_command_warning=True)
+
+    def test_cte_using_key(self):
+        self.validate_identity(
+            "WITH RECURSIVE tbl(a, b) USING KEY (a) AS (SELECT a, b FROM (VALUES (1, 3), (2, 4)) AS t(a, b) UNION SELECT a + 1, b FROM tbl WHERE a < 3) SELECT * FROM tbl"
+        )
+        self.validate_identity(
+            "WITH RECURSIVE tbl(a, b) USING KEY (a, b) AS (SELECT a, b FROM (VALUES (1, 3), (2, 4)) AS t(a, b) UNION SELECT a + 1, b FROM tbl WHERE a < 3) SELECT * FROM tbl"
+        )

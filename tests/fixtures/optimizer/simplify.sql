@@ -85,6 +85,12 @@ NULL;
 NULL = NULL;
 NULL;
 
+SELECT (EXISTS(SELECT 1 WHERE FALSE)) AND NULL;
+SELECT EXISTS(SELECT 1 WHERE FALSE) AND NULL;
+
+SELECT NULL AND (EXISTS(SELECT 1 WHERE FALSE));
+SELECT EXISTS(SELECT 1 WHERE FALSE) AND NULL;
+
 1 AND 0;
 FALSE;
 
@@ -132,7 +138,11 @@ a AND b;
 
 # dialect: mysql
 A XOR A;
-FALSE;
+A XOR A;
+
+# dialect: mysql
+SELECT DISTINCT GREATEST(EXISTS(SELECT 1 WHERE FALSE), (EXISTS(SELECT 1 WHERE FALSE)) XOR ((0.08) IN ((t1.c0) XOR (t1.c0)))) AS ref0 FROM (SELECT NULL AS c0 UNION ALL SELECT 1 AS c0) AS t1, (SELECT 0.01 AS c1) AS t0;
+SELECT DISTINCT GREATEST(EXISTS(SELECT 1 WHERE FALSE), 0.08 IN (t1.c0 XOR t1.c0) XOR EXISTS(SELECT 1 WHERE FALSE)) AS ref0 FROM (SELECT NULL AS c0 UNION ALL SELECT 1 AS c0) AS t1, (SELECT 0.01 AS c1) AS t0;
 
 TRUE AND TRUE OR TRUE AND FALSE;
 TRUE;
@@ -563,6 +573,12 @@ DATE_ADD(x, 1, 'MONTH');
 
 DATE_ADD(x, 1);
 DATE_ADD(x, 1, 'DAY');
+
+SELECT 1 WHERE 'foo';
+SELECT 1 WHERE 'foo';
+
+SELECT 1 WHERE NOT 'foo';
+SELECT 1 WHERE NOT 'foo';
 
 --------------------------------------
 -- Comparisons
@@ -1296,3 +1312,28 @@ STARTS_WITH('x', y);
 
 STARTS_WITH(x, 'y');
 STARTS_WITH(x, 'y');
+
+--------------------------------------
+-- Simplify NOT
+--------------------------------------
+SELECT NOT(NOT(a)) FROM x;
+SELECT NOT NOT a FROM x;
+
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+# dialect: mysql
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT NOT NOT NOT NOT t_bool.a FROM t_bool;
+
+# dialect: sqlite
+SELECT NOT(NOT(NOT(NOT t_bool.a))) FROM t_bool;
+SELECT NOT NOT NOT NOT t_bool.a FROM t_bool;
+
+# dialect: mysql
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT(NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;
+
+# dialect: sqlite
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT (NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
+WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;

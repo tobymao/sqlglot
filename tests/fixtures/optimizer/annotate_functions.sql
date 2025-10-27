@@ -2196,6 +2196,14 @@ IS_NULL_VALUE(payload:field);
 BOOLEAN;
 
 # dialect: snowflake
+1 IN (1, 2, 3);
+BOOLEAN;
+
+# dialect: snowflake
+1 NOT IN (1, 2, 3);
+BOOLEAN;
+
+# dialect: snowflake
 JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 
@@ -2862,6 +2870,26 @@ INT;
 # dialect: snowflake
 WIDTH_BUCKET(tbl.double_col, 0, 100, 10);
 INT;
+
+# dialect: snowflake
+ZEROIFNULL(5);
+INT;
+
+# dialect: snowflake
+ZEROIFNULL(5::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+ZEROIFNULL(5.5);
+DOUBLE;
+
+# dialect: snowflake
+ZEROIFNULL(5.5::FLOAT);
+FLOAT;
+
+# dialect: snowflake
+ZEROIFNULL(5.12::DECIMAL(10,2));
+DECIMAL(10, 2);
 
 # dialect: snowflake
 TRIM('hello world');

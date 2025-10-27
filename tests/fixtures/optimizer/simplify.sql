@@ -376,6 +376,13 @@ ANY(t.value);
 SELECT (ARRAY_AGG(foo))[1];
 SELECT (ARRAY_AGG(foo))[1];
 
+SELECT -(x.a > x.b) FROM x;
+SELECT -(x.a > x.b) FROM x;
+
+SELECT (-((x.a) IS NULL)) FROM x;
+SELECT -(x.a IS NULL) FROM x;
+
+
 --------------------------------------
 -- Literals
 --------------------------------------

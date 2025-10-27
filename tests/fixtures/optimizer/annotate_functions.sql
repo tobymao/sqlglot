@@ -2868,6 +2868,26 @@ WIDTH_BUCKET(tbl.double_col, 0, 100, 10);
 INT;
 
 # dialect: snowflake
+ZEROIFNULL(5);
+INT;
+
+# dialect: snowflake
+ZEROIFNULL(5::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+ZEROIFNULL(5.5);
+DOUBLE;
+
+# dialect: snowflake
+ZEROIFNULL(5.5::FLOAT);
+FLOAT;
+
+# dialect: snowflake
+ZEROIFNULL(5.12::DECIMAL(10,2));
+DECIMAL(10, 2);
+
+# dialect: snowflake
 TRIM('hello world');
 VARCHAR;
 

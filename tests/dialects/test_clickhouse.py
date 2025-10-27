@@ -48,7 +48,6 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT STR_TO_DATE(str, fmt, tz)")
         self.validate_identity("SELECT STR_TO_DATE('05 12 2000', '%d %m %Y')")
         self.validate_identity("SELECT EXTRACT(YEAR FROM toDateTime('2023-02-01'))")
-        # self.validate_identity("extract(haystack, pattern)")
         self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
         self.validate_identity("SELECT CAST(x AS Tuple(String, Array(Nullable(Float64))))")
         self.validate_identity("countIf(x, y)")

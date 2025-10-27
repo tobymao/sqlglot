@@ -48,6 +48,7 @@ DATETIME_DELTA = t.Union[
     exp.TimestampSub,
     exp.TsOrDsAdd,
 ]
+DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd)
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
@@ -1698,14 +1699,7 @@ def date_delta_to_binary_interval_op(
     def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
         this = expression.this
         unit = unit_to_var(expression)
-        op = (
-            "+"
-            if isinstance(
-                expression,
-                (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd),
-            )
-            else "-"
-        )
+        op = "+" if isinstance(expression, DATETIME_ADD) else "-"
 
         to_type: t.Optional[exp.DATA_TYPE] = None
         if cast:

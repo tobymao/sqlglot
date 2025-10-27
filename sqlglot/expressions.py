@@ -118,7 +118,7 @@ class Expression(metaclass=_Expression):
             self._set_parent(arg_key, value)
 
     def __eq__(self, other) -> bool:
-        return type(self) is type(other) and hash(self) == hash(other)
+        return self is other or (type(self) is type(other) and hash(self) == hash(other))
 
     def __hash__(self) -> int:
         if self._hash is None:

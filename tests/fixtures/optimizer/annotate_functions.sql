@@ -2192,6 +2192,10 @@ INITCAP(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+IS_NULL_VALUE(payload:field);
+BOOLEAN;
+
+# dialect: snowflake
 1 IN (1, 2, 3);
 BOOLEAN;
 

@@ -2356,6 +2356,22 @@ MONTHNAME(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
 VARCHAR;
 
 # dialect: snowflake
+NULLIFZERO(5);
+INT;
+
+# dialect: snowflake
+NULLIFZERO(5::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+NULLIFZERO(5.5);
+DOUBLE;
+
+# dialect: snowflake
+NULLIFZERO(5.5::FLOAT);
+FLOAT;
+
+# dialect: snowflake
 MOD(tbl.bigint_col, 3);
 BIGINT;
 

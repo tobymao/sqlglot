@@ -762,7 +762,10 @@ def simplify_parens(expression: exp.Expression, dialect: DialectType = None) -> 
             not isinstance(this, exp.Binary)
             and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
         )
-        or (isinstance(this, exp.Predicate) and not parent_is_predicate)
+        or (
+            isinstance(this, exp.Predicate)
+            and not (parent_is_predicate or isinstance(parent, exp.Neg))
+        )
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))

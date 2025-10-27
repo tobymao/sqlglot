@@ -542,6 +542,40 @@ def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Rever
     return expression
 
 
+def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> exp.DecodeCase:
+    """Annotate DecodeCase with the type inferred from return values only.
+
+    DECODE uses the format: DECODE(expr, val1, ret1, val2, ret2, ..., default)
+    We only look at the return values (ret1, ret2, ..., default) to determine the type,
+    not the comparison values (val1, val2, ...) or the expression being compared.
+    """
+    self._annotate_args(expression)
+
+    expressions = expression.expressions
+    if not expressions:
+        self._set_type(expression, exp.DataType.Type.UNKNOWN)
+        return expression
+
+    # Return values are at indices 2, 4, 6, ... and the last element (if odd length)
+    # DECODE(expr, val1, ret1, val2, ret2, ..., default)
+    return_types = []
+    for i in range(2, len(expressions), 2):
+        return_types.append(expressions[i].type)
+
+    # If the total number of expressions is odd, the last one is the default
+    if len(expressions) % 2 == 1:
+        return_types.append(expressions[-1].type)
+
+    # Determine the common type from all return values
+    last_type = None
+    for ret_type in return_types:
+        if not ret_type.is_type(exp.DataType.Type.UNKNOWN):
+            last_type = self._maybe_coerce(last_type or ret_type, ret_type)
+
+    self._set_type(expression, last_type or exp.DataType.Type.UNKNOWN)
+    return expression
+
+
 def _annotate_timestamp_from_parts(
     self: TypeAnnotator, expression: exp.TimestampFromParts
 ) -> exp.TimestampFromParts:
@@ -760,7 +794,7 @@ class Snowflake(Dialect):
         exp.TimeAdd: _annotate_date_or_time_add,
         exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.LeastIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
-        exp.DecodeCase: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.DecodeCase: _annotate_decode_case,
         exp.Reverse: _annotate_reverse,
         exp.TimestampFromParts: _annotate_timestamp_from_parts,
     }

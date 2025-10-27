@@ -1209,6 +1209,13 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
 
         self.validate_all(
+            "SELECT CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)",
+            read={
+                "bigquery": "SELECT CURRENT_DATE('UTC')",
+                "duckdb": "SELECT CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)",
+            },
+        )
+        self.validate_all(
             "SELECT MAKE_DATE(2016, 12, 25)",
             read={
                 "bigquery": "SELECT DATE(2016, 12, 25)",

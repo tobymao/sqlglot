@@ -2192,6 +2192,14 @@ INITCAP(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+1 IN (1, 2, 3);
+BOOLEAN;
+
+# dialect: snowflake
+1 NOT IN (1, 2, 3);
+BOOLEAN;
+
+# dialect: snowflake
 JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 

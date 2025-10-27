@@ -6644,7 +6644,7 @@ class Parser(metaclass=_Parser):
             order=self._match(TokenType.OVER) and self._parse_wrapped(self._parse_order),
         )
 
-    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+    def _parse_extract(self) -> exp.Extract | exp.RegexpExtract:
         this = self._parse_function() or self._parse_var_or_string(upper=True)
 
         if self._match(TokenType.FROM):

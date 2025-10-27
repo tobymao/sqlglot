@@ -1,6 +1,7 @@
 from __future__ import annotations
 import typing as t
 import datetime
+import re
 from sqlglot import exp, generator, parser, tokens
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
@@ -615,21 +616,30 @@ class ClickHouse(Dialect):
 
             return dtype
 
-        def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+        def _parse_extract(self) -> exp.Extract | exp.RegexpExtract:
             index = self._index
             this = self._parse_bitwise()
             if self._match(TokenType.FROM):
                 self._retreat(index)
                 return super()._parse_extract()
 
-            # We return Anonymous here because extract and regexpExtract have different semantics,
-            # so parsing extract(foo, bar) into RegexpExtract can potentially break queries. E.g.,
-            # `extract('foobar', 'b')` works, but ClickHouse crashes for `regexpExtract('foobar', 'b')`.
-            #
-            # TODO: can we somehow convert the former into an equivalent `regexpExtract` call?
             self._match(TokenType.COMMA)
+            pattern_expr = self._parse_bitwise()
+            try:
+                group = (
+                    1
+                    if isinstance(pattern_expr, exp.Literal)
+                    and re.compile(pattern_expr.name).groups > 0
+                    else 0
+                )
+            except re.error:
+                group = 0
+
             return self.expression(
-                exp.Anonymous, this="extract", expressions=[this, self._parse_bitwise()]
+                exp.RegexpExtract,
+                this=this,
+                expression=pattern_expr,
+                group=exp.Literal.number(group),
             )
 
         def _parse_assignment(self) -> t.Optional[exp.Expression]:

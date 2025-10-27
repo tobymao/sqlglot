@@ -760,6 +760,7 @@ class Snowflake(Dialect):
         exp.TimeAdd: _annotate_date_or_time_add,
         exp.GreatestIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.LeastIgnoreNulls: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.DecodeCase: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Reverse: _annotate_reverse,
         exp.TimestampFromParts: _annotate_timestamp_from_parts,
     }

@@ -2156,6 +2156,22 @@ GREATEST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
 DATE;
 
 # dialect: snowflake
+LEAST_IGNORE_NULLS(1, 2, 3);
+INT;
+
+# dialect: snowflake
+LEAST_IGNORE_NULLS(1, 2.5, 3);
+DOUBLE;
+
+# dialect: snowflake
+LEAST_IGNORE_NULLS('a', 'b', 'c');
+VARCHAR;
+
+# dialect: snowflake
+LEAST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
+DATE;
+
+# dialect: snowflake
 HEX_DECODE_BINARY('48656C6C6F');
 BINARY;
 

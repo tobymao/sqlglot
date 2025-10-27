@@ -992,9 +992,8 @@ class DuckDB(Dialect):
             return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
-            zone = self.sql(expression, "this")
-            if not zone:
-                return super().currentdate_sql(expression)
+            if not expression.this:
+                return "CURRENT_DATE"
 
             expr = exp.Cast(
                 this=exp.AtTimeZone(this=exp.CurrentTimestamp(), zone=expression.this),

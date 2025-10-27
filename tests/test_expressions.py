@@ -78,6 +78,11 @@ class TestExpressions(unittest.TestCase):
             exp.Identifier(this="a"),
         )
 
+    def test_eq_on_same_instance_short_circuits(self):
+        expr = parse_one("1")
+        expr == expr
+        self.assertIsNone(expr._hash)
+
     def test_find(self):
         expression = parse_one("CREATE TABLE x STORED AS PARQUET AS SELECT * FROM y")
         self.assertTrue(expression.find(exp.Create))

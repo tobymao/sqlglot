@@ -1644,6 +1644,30 @@ BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrst
 VARCHAR;
 
 # dialect: snowflake
+1 BETWEEN 0 AND 10;
+BOOLEAN;
+
+# dialect: snowflake
+1.5 BETWEEN 0.0 AND 10.0;
+BOOLEAN;
+
+# dialect: snowflake
+5::BIGINT BETWEEN 1::BIGINT AND 10::BIGINT;
+BOOLEAN;
+
+# dialect: snowflake
+"hello" BETWEEN "a" AND "z";
+BOOLEAN;
+
+# dialect: snowflake
+5 NOT BETWEEN 1 AND 3;
+BOOLEAN;
+
+# dialect: snowflake
+"x" NOT BETWEEN "a" AND "m";
+BOOLEAN;
+
+# dialect: snowflake
 BIT_LENGTH('abc');
 INT;
 

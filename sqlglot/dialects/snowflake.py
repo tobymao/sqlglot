@@ -558,12 +558,13 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 
     # Return values are at indices 2, 4, 6, ... and the last element (if odd length)
     # DECODE(expr, val1, ret1, val2, ret2, ..., default)
-    return_types = []
-    for i in range(2, len(expressions), 2):
-        return_types.append(expressions[i].type)
+    return_types = [expressions[i].type for i in range(2, len(expressions), 2)]
 
-    # If the total number of expressions is odd, the last one is the default
-    if len(expressions) % 2 == 1:
+    # If the total number of expressions is even, the last one is the default
+    # Example:
+    #   DECODE(x, 1, 'a', 2, 'b')             -> len=5 (odd), no default
+    #   DECODE(x, 1, 'a', 2, 'b', 'default')  -> len=6 (even), has default
+    if len(expressions) % 2 == 0:
         return_types.append(expressions[-1].type)
 
     # Determine the common type from all return values

@@ -2327,6 +2327,10 @@ DECODE(score, 100, 'Perfect', 90, 'Good', 'Try Again');
 VARCHAR;
 
 # dialect: snowflake
+DECODE(100, 100, 1, 90, 2, 5.5);
+DOUBLE;
+
+# dialect: snowflake
 PI();
 DOUBLE;
 

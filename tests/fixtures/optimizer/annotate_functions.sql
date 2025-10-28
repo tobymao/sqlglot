@@ -2412,6 +2412,10 @@ REGR_VALX(1.0, 2.0);
 DOUBLE;
 
 # dialect: snowflake
+REGR_VALY(1.0, 2.0);
+DOUBLE;
+
+# dialect: snowflake
 'foo' REGEXP 'bar';
 BOOLEAN;
 

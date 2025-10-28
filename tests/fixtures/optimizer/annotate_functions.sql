@@ -1684,6 +1684,14 @@ CHARINDEX('world', 'hello world', 1);
 INT;
 
 # dialect: snowflake
+CASE WHEN score >= 90 THEN 100 WHEN score >= 80 THEN 220 END;
+INT;
+
+# dialect: snowflake
+CASE WHEN score >= 90 THEN 'A' WHEN score >= 80 THEN 'B' ELSE 'C' END;
+VARCHAR;
+
+# dialect: snowflake
 CEIL(3.14);
 DOUBLE;
 

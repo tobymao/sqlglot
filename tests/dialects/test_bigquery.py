@@ -1850,6 +1850,14 @@ WHERE
             },
         )
 
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(1)",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")
@@ -2781,14 +2789,6 @@ OPTIONS (
             "WITH x AS ( SELECT 1 AS id), test_cte AS ( SELECT ARRAY_CONCAT(( SELECT id FROM x WHERE FALSE)) AS result ) SELECT * FROM test_cte;",
             write={
                 "snowflake": "WITH x AS (SELECT 1 AS id), test_cte AS (SELECT ARRAY_CAT((SELECT id FROM x WHERE FALSE), []) AS result) SELECT * FROM test_cte",
-            },
-        )
-
-    def test_array_concat_agg(self):
-        self.validate_all(
-            "SELECT ARRAY_CONCAT_AGG(1);",
-            write={
-                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
             },
         )
 

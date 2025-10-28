@@ -2444,10 +2444,10 @@ class Generator(metaclass=_Generator):
 
     def setitem_sql(self, expression: exp.SetItem) -> str:
         kind = self.sql(expression, "kind")
-        if self.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD:
-            kind = f"{kind} " if kind else ""
+        if not self.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD and kind == "VARIABLE":
+            kind = ""
         else:
-            kind = f"{kind} " if kind and kind != "VARIABLE" else ""
+            kind = f"{kind} " if kind else ""
         this = self.sql(expression, "this")
         expressions = self.expressions(expression)
         collate = self.sql(expression, "collate")

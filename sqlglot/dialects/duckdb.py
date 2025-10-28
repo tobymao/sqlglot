@@ -785,6 +785,7 @@ class DuckDB(Dialect):
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
+            exp.TimestampSub: date_delta_to_binary_interval_op(),
             exp.TimestampTrunc: timestamptrunc_sql(),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,

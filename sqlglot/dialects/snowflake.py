@@ -1660,6 +1660,9 @@ class Snowflake(Dialect):
             exp.YearOfWeekIso: rename_func("YEAROFWEEKISO"),
             exp.Xor: rename_func("BOOLXOR"),
             exp.ByteLength: rename_func("OCTET_LENGTH"),
+            exp.ArrayConcatAgg: lambda self, e: self.func(
+                "ARRAY_FLATTEN", exp.ArrayAgg(this=e.this)
+            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

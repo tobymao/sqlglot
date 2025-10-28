@@ -608,6 +608,7 @@ class Snowflake(Dialect):
             exp.Exp,
             exp.MonthsBetween,
             exp.RegrValx,
+            exp.RegrValy,
             exp.Sin,
             exp.Sinh,
             exp.Tan,

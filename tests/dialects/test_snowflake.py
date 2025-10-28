@@ -92,6 +92,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DEGREES(1)")
         self.validate_identity("SELECT RADIANS(180)")
         self.validate_identity("SELECT REGR_VALX(y, x)")
+        self.validate_identity("SELECT REGR_VALY(y, x)")
         self.validate_identity("SELECT RANDOM()")
         self.validate_identity("SELECT RANDOM(123)")
         self.validate_identity("PARSE_URL('https://example.com/path')")

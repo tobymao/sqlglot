@@ -59,6 +59,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT HEX_ENCODE('Hello World', 1)")
         self.validate_identity("SELECT HEX_ENCODE('Hello World', 0)")
         self.validate_identity("SELECT NEXT_DAY('2025-10-15', 'FRIDAY')")
+        self.validate_identity("SELECT NVL2(col1, col2, col3)")
         self.validate_identity("SELECT CHR(8364)")
         self.validate_identity("SELECT COMPRESS('Hello World', 'ZLIB')")
         self.validate_identity("SELECT DECOMPRESS_BINARY('compressed_data', 'SNAPPY')")

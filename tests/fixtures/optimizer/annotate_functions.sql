@@ -2372,6 +2372,10 @@ MONTHNAME(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
 VARCHAR;
 
 # dialect: snowflake
+NVL2(col1, col2, col3);
+UNKNOWN;
+
+# dialect: snowflake
 NULLIFZERO(5);
 INT;
 

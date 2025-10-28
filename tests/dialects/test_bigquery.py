@@ -1860,6 +1860,14 @@ WHERE
             },
         )
 
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(1)",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

@@ -509,6 +509,9 @@ class Generator(metaclass=_Generator):
     # Prefix which is appended to exp.Table expressions in MATCH AGAINST
     MATCH_AGAINST_TABLE_PREFIX: t.Optional[str] = None
 
+    # Whether to include the VARIABLE keyword for SET assignments
+    SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2441,7 +2444,10 @@ class Generator(metaclass=_Generator):
 
     def setitem_sql(self, expression: exp.SetItem) -> str:
         kind = self.sql(expression, "kind")
-        kind = f"{kind} " if kind else ""
+        if not self.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD and kind == "VARIABLE":
+            kind = ""
+        else:
+            kind = f"{kind} " if kind else ""
         this = self.sql(expression, "this")
         expressions = self.expressions(expression)
         collate = self.sql(expression, "collate")

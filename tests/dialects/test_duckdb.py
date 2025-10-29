@@ -1899,6 +1899,15 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SET VARIABLE my_var TO 30", "SET VARIABLE my_var = 30")
 
+        self.validate_all(
+            "SET VARIABLE a = 1",
+            write={
+                "duckdb": "SET VARIABLE a = 1",
+                "bigquery": "SET a = 1",
+                "snowflake": "SET a = 1",
+            },
+        )
+
     def test_reset(self):
         self.validate_identity("RESET threads", check_command_warning=True)
         self.validate_identity("RESET memory_limit", check_command_warning=True)

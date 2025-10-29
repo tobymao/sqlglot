@@ -1441,6 +1441,15 @@ class Snowflake(Dialect):
 
             return self.expression(exp.SemanticView, **kwargs)
 
+        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+            set = super()._parse_set(unset=unset, tag=tag)
+
+            if isinstance(set, exp.Set):
+                for expr in set.expressions:
+                    if isinstance(expr, exp.SetItem):
+                        expr.set("kind", "VARIABLE")
+            return set
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]

@@ -2236,6 +2236,10 @@ IFF(TRUE, 42, 0);
 INT;
 
 # dialect: snowflake
+IFF(TRUE, 42, NULL);
+INT;
+
+# dialect: snowflake
 IFF(col1 > 0, 'yes', 'no');
 VARCHAR;
 

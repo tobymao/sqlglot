@@ -2232,6 +2232,26 @@ INITCAP(tbl.str_col);
 VARCHAR;
 
 # dialect: snowflake
+IFF(TRUE, 42, 0);
+INT;
+
+# dialect: snowflake
+IFF(TRUE, 42, NULL);
+INT;
+
+# dialect: snowflake
+IFF(col1 > 0, 'yes', 'no');
+VARCHAR;
+
+# dialect: snowflake
+IFF(FALSE, 1.5, 2.7);
+DOUBLE;
+
+# dialect: snowflake
+IFF(TRUE, CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
+DATE;
+
+# dialect: snowflake
 IS_NULL_VALUE(payload:field);
 BOOLEAN;
 

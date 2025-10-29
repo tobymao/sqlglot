@@ -501,7 +501,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                 last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
-        sself._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
+        self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

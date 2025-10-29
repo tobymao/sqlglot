@@ -739,6 +739,9 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.Lower: lambda self, e: f"CAST({self.func('LOWER', e.this)} AS BLOB)"
+            if isinstance(e.this, exp.ByteString)
+            else self.func("LOWER", e.this),
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(

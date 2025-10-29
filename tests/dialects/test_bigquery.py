@@ -846,6 +846,16 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "LOWER(b'\x41\x42\x43')",
+            write={
+                "bigquery": "LOWER(b'\x41\x42\x43')",
+                "duckdb": "CAST(LOWER(e'\x41\x42\x43') AS BLOB)",
+            },
+        )
+        self.validate_all(
+            "LOWER('HELLO')", write={"bigquery": "LOWER('HELLO')", "duckdb": "LOWER('HELLO')"}
+        )
+        self.validate_all(
             "LOWER(TO_HEX(x))",
             write={
                 "": "LOWER(HEX(x))",

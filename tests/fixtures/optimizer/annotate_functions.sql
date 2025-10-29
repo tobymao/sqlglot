@@ -2376,6 +2376,26 @@ NVL2(col1, col2, col3);
 UNKNOWN;
 
 # dialect: snowflake
+NVL('hello', 'world');
+VARCHAR;
+
+# dialect: snowflake
+NVL(tbl.int_col, 42);
+INT;
+
+# dialect: snowflake
+NVL(tbl.date_col, CAST('2024-01-01' AS DATE));
+DATE;
+
+# dialect: snowflake
+NVL(1, 3.14);
+DOUBLE;
+
+# dialect: snowflake
+NVL(5::BIGINT, 2.71::FLOAT);
+FLOAT;
+
+# dialect: snowflake
 NULLIFZERO(5);
 INT;
 

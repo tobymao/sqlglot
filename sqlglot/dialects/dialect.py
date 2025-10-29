@@ -545,9 +545,6 @@ class Dialect(metaclass=_Dialect):
     # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
 
-    # Whether to include the VARIABLE keyword for SET assignments
-    SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = False
-
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

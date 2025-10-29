@@ -287,7 +287,6 @@ class DuckDB(Dialect):
         "DAYOFWEEKISO": "ISODOW",
     }
     DATE_PART_MAPPING.pop("WEEKDAY")
-    SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):

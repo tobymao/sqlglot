@@ -8074,13 +8074,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_set_item(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SET_PARSERS, self.SET_TRIE)
-        if self.dialect.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD and not self._match_text_seq(
-            "VARIABLE"
-        ):
-            kind = None
-        else:
-            kind = "VARIABLE"
-        return parser(self) if parser else self._parse_set_item_assignment(kind=kind)
+        return parser(self) if parser else self._parse_set_item_assignment(kind=None)
 
     def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
         index = self._index

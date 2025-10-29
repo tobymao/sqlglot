@@ -1716,6 +1716,30 @@ COSH(1.5);
 DOUBLE;
 
 # dialect: snowflake
+COALESCE(42, 0, 100);
+INT;
+
+# dialect: snowflake
+COALESCE(1.5, 2.7);
+DOUBLE;
+
+# dialect: snowflake
+COALESCE(1::BIGINT, 2::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+COALESCE('hello', 'world');
+VARCHAR;
+
+# dialect: snowflake
+COALESCE(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
+DATE;
+
+# dialect: snowflake
+COALESCE(TRUE, FALSE);
+BOOLEAN;
+
+# dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
 BINARY;
 

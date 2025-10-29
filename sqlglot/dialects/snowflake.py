@@ -1443,7 +1443,7 @@ class Snowflake(Dialect):
 
         def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
             set = super()._parse_set(unset=unset, tag=tag)
-            print(f"\n{set}\n")
+
             if isinstance(set, exp.Set):
                 for expr in set.expressions:
                     if isinstance(expr, exp.SetItem):

@@ -417,6 +417,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             type2_value = type2
 
+        if type1_value == exp.DataType.Type.NULL:
+            return type2_value
+        if type2_value == exp.DataType.Type.NULL:
+            return type1_value
+
         # We propagate the UNKNOWN type upwards if found
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
@@ -496,8 +501,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                 last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
-
-        self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
+        self._set_type(expression, last_datatype or last_datatype or exp.DataType.Type.UNKNOWN)
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

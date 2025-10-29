@@ -1692,6 +1692,10 @@ CASE WHEN score >= 90 THEN 'A' WHEN score >= 80 THEN 'B' ELSE 'C' END;
 VARCHAR;
 
 # dialect: snowflake
+CASE WHEN score >= 90 THEN TRUE WHEN score >= 80 THEN FALSE ELSE NULL END;
+BOOLEAN;
+
+# dialect: snowflake
 CEIL(3.14);
 DOUBLE;
 

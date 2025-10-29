@@ -397,8 +397,6 @@ def remove_complements(expression, root=True):
 
     A AND NOT A -> FALSE (only for non-NULL literals)
     A OR NOT A -> TRUE (only for non-NULL literals)
-    NULL AND NOT NULL -> NULL
-    NULL OR NOT NULL -> NULL
     """
     if isinstance(expression, AND_OR) and (root or not expression.same_parent):
         ops = set(expression.flatten())
@@ -406,8 +404,6 @@ def remove_complements(expression, root=True):
             if isinstance(op, exp.Not) and op.this in ops:
                 operand = op.this
                 if isinstance(operand, exp.Literal):
-                    if is_null(operand):
-                        return exp.null()
                     return exp.false() if isinstance(expression, exp.And) else exp.true()
 
     return expression

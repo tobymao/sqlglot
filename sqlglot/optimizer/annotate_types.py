@@ -130,7 +130,6 @@ class _TypeAnnotator(type):
             for data_type in type_precedence:
                 klass.COERCES_TO[data_type] = coerces_to.copy()
                 coerces_to |= {data_type}
-            set(exp.DataType.Type)
         return klass
 
 

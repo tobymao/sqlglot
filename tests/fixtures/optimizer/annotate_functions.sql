@@ -2400,6 +2400,22 @@ PREVIOUS_DAY(CAST('2024-05-09 08:50:57' AS TIMESTAMP), 'MONDAY');
 DATE;
 
 # dialect: snowflake
+DECODE(x, 1, 100, 2, 200, 0);
+INT;
+
+# dialect: snowflake
+DECODE(status, 'A', 'Active', 'I', 'Inactive', 'Neither');
+VARCHAR;
+
+# dialect: snowflake
+DECODE(100, 100, 1, 90, 2, 5.5);
+DOUBLE;
+
+# dialect: snowflake
+DECODE(x, 1, 100, NULL);
+INT;
+
+# dialect: snowflake
 PI();
 DOUBLE;
 

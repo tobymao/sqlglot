@@ -2540,6 +2540,22 @@ OPTIONS (
             },
         )
 
+    def test_unix_millis(self):
+        self.validate_all(
+            "SELECT UNIX_MILLIS('2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MILLIS('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT EPOCH_MS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_MILLIS(TIMESTAMP '2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "duckdb": "SELECT EPOCH_MS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+
     def test_regexp_extract(self):
         self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
         self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")

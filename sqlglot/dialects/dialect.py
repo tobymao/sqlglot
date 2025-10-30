@@ -17,7 +17,6 @@ from sqlglot.helper import (
     flatten,
     is_int,
     seq_get,
-    subclasses,
     suggest_closest_match_and_fail,
     to_bool,
 )
@@ -26,6 +25,7 @@ from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
+from sqlglot.typing import EXPRESSION_SPEC
 
 DATE_ADD_OR_DIFF = t.Union[
     exp.DateAdd,
@@ -53,10 +53,6 @@ DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.Ti
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
 
-    from sqlglot.optimizer.annotate_types import TypeAnnotator
-
-    AnnotatorsType = t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]
-
 logger = logging.getLogger("sqlglot")
 
 UNESCAPED_SEQUENCES = {
@@ -69,10 +65,6 @@ UNESCAPED_SEQUENCES = {
     "\\v": "\v",
     "\\\\": "\\",
 }
-
-
-def annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[TypeAnnotator, E], E]:
-    return lambda self, e: self._annotate_with_type(e, data_type)
 
 
 class Dialects(str, Enum):
@@ -677,233 +669,11 @@ class Dialect(metaclass=_Dialect):
         "CENTURIES": "CENTURY",
     }
 
-    TYPE_TO_EXPRESSIONS: t.Dict[exp.DataType.Type, t.Set[t.Type[exp.Expression]]] = {
-        exp.DataType.Type.BIGINT: {
-            exp.ApproxDistinct,
-            exp.ArraySize,
-            exp.CountIf,
-            exp.Int64,
-            exp.Length,
-            exp.UnixDate,
-            exp.UnixSeconds,
-            exp.UnixMicros,
-            exp.UnixMillis,
-        },
-        exp.DataType.Type.BINARY: {
-            exp.FromBase32,
-            exp.FromBase64,
-        },
-        exp.DataType.Type.BOOLEAN: {
-            exp.Between,
-            exp.Boolean,
-            exp.Contains,
-            exp.EndsWith,
-            exp.In,
-            exp.LogicalAnd,
-            exp.LogicalOr,
-            exp.RegexpLike,
-            exp.StartsWith,
-        },
-        exp.DataType.Type.DATE: {
-            exp.CurrentDate,
-            exp.Date,
-            exp.DateFromParts,
-            exp.DateStrToDate,
-            exp.DiToDate,
-            exp.LastDay,
-            exp.StrToDate,
-            exp.TimeStrToDate,
-            exp.TsOrDsToDate,
-        },
-        exp.DataType.Type.DATETIME: {
-            exp.CurrentDatetime,
-            exp.Datetime,
-            exp.DatetimeAdd,
-            exp.DatetimeSub,
-        },
-        exp.DataType.Type.DOUBLE: {
-            exp.ApproxQuantile,
-            exp.Avg,
-            exp.Exp,
-            exp.Ln,
-            exp.Log,
-            exp.Pi,
-            exp.Pow,
-            exp.Quantile,
-            exp.Radians,
-            exp.Round,
-            exp.SafeDivide,
-            exp.Sqrt,
-            exp.Stddev,
-            exp.StddevPop,
-            exp.StddevSamp,
-            exp.ToDouble,
-            exp.Variance,
-            exp.VariancePop,
-        },
-        exp.DataType.Type.INT: {
-            exp.Ascii,
-            exp.Ceil,
-            exp.DatetimeDiff,
-            exp.DateDiff,
-            exp.TimestampDiff,
-            exp.TimeDiff,
-            exp.Unicode,
-            exp.DateToDi,
-            exp.Levenshtein,
-            exp.Sign,
-            exp.StrPosition,
-            exp.TsOrDiToDi,
-        },
-        exp.DataType.Type.INTERVAL: {
-            exp.Interval,
-            exp.JustifyDays,
-            exp.JustifyHours,
-            exp.JustifyInterval,
-            exp.MakeInterval,
-        },
-        exp.DataType.Type.JSON: {
-            exp.ParseJSON,
-        },
-        exp.DataType.Type.TIME: {
-            exp.CurrentTime,
-            exp.Time,
-            exp.TimeAdd,
-            exp.TimeSub,
-        },
-        exp.DataType.Type.TIMESTAMPLTZ: {
-            exp.TimestampLtzFromParts,
-        },
-        exp.DataType.Type.TIMESTAMPTZ: {
-            exp.CurrentTimestampLTZ,
-            exp.TimestampTzFromParts,
-        },
-        exp.DataType.Type.TIMESTAMP: {
-            exp.CurrentTimestamp,
-            exp.StrToTime,
-            exp.TimeStrToTime,
-            exp.TimestampAdd,
-            exp.TimestampSub,
-            exp.UnixToTime,
-        },
-        exp.DataType.Type.TINYINT: {
-            exp.Day,
-            exp.DayOfWeek,
-            exp.DayOfWeekIso,
-            exp.DayOfMonth,
-            exp.DayOfYear,
-            exp.Week,
-            exp.WeekOfYear,
-            exp.Month,
-            exp.Quarter,
-            exp.Year,
-            exp.YearOfWeek,
-            exp.YearOfWeekIso,
-        },
-        exp.DataType.Type.VARCHAR: {
-            exp.ArrayConcat,
-            exp.ArrayToString,
-            exp.Concat,
-            exp.ConcatWs,
-            exp.Chr,
-            exp.DateToDateStr,
-            exp.DPipe,
-            exp.GroupConcat,
-            exp.Initcap,
-            exp.Lower,
-            exp.Substring,
-            exp.String,
-            exp.TimeToStr,
-            exp.TimeToTimeStr,
-            exp.Trim,
-            exp.ToBase32,
-            exp.ToBase64,
-            exp.TsOrDsToDateStr,
-            exp.UnixToStr,
-            exp.UnixToTimeStr,
-            exp.Upper,
-        },
-    }
-
-    ANNOTATORS: AnnotatorsType = {
-        **{
-            expr_type: lambda self, e: self._annotate_unary(e)
-            for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
-        },
-        **{
-            expr_type: lambda self, e: self._annotate_binary(e)
-            for expr_type in subclasses(exp.__name__, exp.Binary)
-        },
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
-        },
-        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
-        exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
-        exp.AnyValue: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.ArrayConcatAgg: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArrayFirst: lambda self, e: self._annotate_by_array_element(e),
-        exp.ArrayLast: lambda self, e: self._annotate_by_array_element(e),
-        exp.ArrayReverse: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArraySlice: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Bracket: lambda self, e: self._annotate_bracket(e),
-        exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
-        exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
-        exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Count: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
-        ),
-        exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
-        exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
-        exp.DateSub: lambda self, e: self._annotate_timeunit(e),
-        exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
-        exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
-        exp.Div: lambda self, e: self._annotate_div(e),
-        exp.Dot: lambda self, e: self._annotate_dot(e),
-        exp.Explode: lambda self, e: self._annotate_explode(e),
-        exp.Extract: lambda self, e: self._annotate_extract(e),
-        exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.GenerateSeries: lambda self, e: self._annotate_by_args(
-            e, "start", "end", "step", array=True
-        ),
-        exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<DATE>")
-        ),
-        exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>")
-        ),
-        exp.Greatest: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
-        exp.Least: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Literal: lambda self, e: self._annotate_literal(e),
-        exp.LastValue: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Map: lambda self, e: self._annotate_map(e),
-        exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
-        exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
-        exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
-        exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
-        exp.Struct: lambda self, e: self._annotate_struct(e),
-        exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
-        exp.SortArray: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Timestamp: lambda self, e: self._annotate_with_type(
-            e,
-            exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
-        ),
-        exp.ToMap: lambda self, e: self._annotate_to_map(e),
-        exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
-        exp.Unnest: lambda self, e: self._annotate_unnest(e),
-        exp.VarMap: lambda self, e: self._annotate_map(e),
-        exp.Window: lambda self, e: self._annotate_by_args(e, "this"),
-    }
-
     # Specifies what types a given type can be coerced into
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
+
+    # Specifies type inference & validation rules for expressions
+    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
 
     # Determines the supported Dialect instance settings
     SUPPORTED_SETTINGS = {

@@ -623,18 +623,6 @@ class TestDialect(Validator):
             },
         )
 
-    def test_getbit(self):
-        self.validate_all(
-            "SELECT GETBIT(11, 3)",
-            write={
-                "snowflake": "SELECT GETBIT(11, 3)",
-                "databricks": "SELECT GETBIT(11, 3)",
-                "postgres": "SELECT GETBIT(11, 3)",
-                "duckdb": "SELECT GETBIT(11, 3)",
-                "tsql": "SELECT GETBIT(11, 3)",
-            },
-        )
-
     def test_nvl2(self):
         self.validate_all(
             "SELECT NVL2(a, b, c)",

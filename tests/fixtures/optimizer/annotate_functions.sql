@@ -2252,6 +2252,26 @@ IFF(TRUE, CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+IFNULL('hello', 'world');
+VARCHAR;
+
+# dialect: snowflake
+IFNULL(1, 2);
+INT;
+
+# dialect: snowflake
+IFNULL(1.5, 2.7);
+DOUBLE;
+
+# dialect: snowflake
+IFNULL(5::BIGINT, 10::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+IFNULL(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
+DATE;
+
+# dialect: snowflake
 IS_NULL_VALUE(payload:field);
 BOOLEAN;
 

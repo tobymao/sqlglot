@@ -620,6 +620,14 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             },
         )
+        self.validate_all(
+            "SELECT GETBIT(11, 3)",
+            write={
+                "snowflake": "SELECT GETBIT(11, 3)",
+                "databricks": "SELECT GETBIT(11, 3)",
+                "redshift": "SELECT GETBIT(11, 3)",
+            },
+        )
         self.validate_identity(
             "SELECT TIMESTAMPNTZFROMPARTS(2013, 4, 5, 12, 00, 00)",
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",

@@ -627,6 +627,7 @@ class Snowflake(Dialect):
             exp.Length,
             exp.RtrimmedLength,
             exp.BitLength,
+            exp.Getbit,
             exp.Hour,
             exp.Levenshtein,
             exp.JarowinklerSimilarity,

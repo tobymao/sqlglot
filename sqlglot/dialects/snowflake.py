@@ -552,9 +552,6 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     self._annotate_args(expression)
 
     expressions = expression.expressions
-    if not expressions:
-        self._set_type(expression, exp.DataType.Type.UNKNOWN)
-        return expression
 
     # Return values are at indices 2, 4, 6, ... and the last element (if odd length)
     # DECODE(expr, val1, ret1, val2, ret2, ..., default)

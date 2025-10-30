@@ -2128,6 +2128,10 @@ FLOOR(tbl.bigint_col, -1);
 BIGINT;
 
 # dialect: snowflake
+GETBIT(11, 3);
+INT;
+
+# dialect: snowflake
 GREATEST(tbl.bigint_col, tbl.bigint_col);
 BIGINT;
 

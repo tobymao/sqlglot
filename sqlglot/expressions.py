@@ -6591,6 +6591,10 @@ class GetExtract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Getbit(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Greatest(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

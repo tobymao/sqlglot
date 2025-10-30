@@ -570,10 +570,9 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     # Determine the common type from all return values
     last_type = None
     for ret_type in return_types:
-        if not ret_type.is_type(exp.DataType.Type.UNKNOWN):
-            last_type = self._maybe_coerce(last_type or ret_type, ret_type)
+        last_type = self._maybe_coerce(last_type or ret_type, ret_type)
 
-    self._set_type(expression, last_type or exp.DataType.Type.UNKNOWN)
+    self._set_type(expression, last_type)
     return expression
 
 

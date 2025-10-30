@@ -2480,6 +2480,14 @@ NULLIF(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+NULLIF(1::INT, 2::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+NULLIF(1::INT, 2.5::DOUBLE);
+DOUBLE;
+
+# dialect: snowflake
 NULLIFZERO(5);
 INT;
 

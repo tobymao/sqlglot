@@ -553,7 +553,7 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 
     expressions = expression.expressions
 
-    # Return values are at indices 2, 4, 6, ... and the last element (if odd length)
+    # Return values are at indices 2, 4, 6, ... and the last element (if even length)
     # DECODE(expr, val1, ret1, val2, ret2, ..., default)
     return_types = [expressions[i].type for i in range(2, len(expressions), 2)]
 

@@ -130,14 +130,6 @@ class _TypeAnnotator(type):
             for data_type in type_precedence:
                 klass.COERCES_TO[data_type] = coerces_to.copy()
                 coerces_to |= {data_type}
-
-        # NULL can be coerced to any type, so e.g. NULL + 1 will have type INT
-        klass.COERCES_TO[exp.DataType.Type.NULL] = {
-            *text_precedence,
-            *numeric_precedence,
-            *timelike_precedence,
-        }
-
         return klass
 
 
@@ -421,6 +413,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
+        if type1_value == exp.DataType.Type.NULL:
+            return type2_value
+        if type2_value == exp.DataType.Type.NULL:
+            return type1_value
+
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
     def _annotate_binary(self, expression: B) -> B:
@@ -496,7 +493,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                 last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
-
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 
         if promote:

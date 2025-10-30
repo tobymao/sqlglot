@@ -208,8 +208,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         prev_type = expression.type
         expression_id = id(expression)
 
-        expression.type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
+        expr_type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
+        expression.type = expr_type
         self._visited.add(expression_id)
+
+        if isinstance(expr_type, exp.DataType):
+            if isinstance(expression, exp.Null) or (
+                isinstance(expression, exp.Column) and expr_type.args.get("nullable") is None
+            ):
+                expr_type.set("nullable", True)
 
         if (
             not self._supports_null_type
@@ -437,14 +444,23 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, None)
             return expression
 
-        left_type, right_type = left.type.this, right.type.this  # type: ignore
+        left_type, right_type = left.type, right.type
+        left_type_this, right_type_this = left_type.this, right_type.this  # type: ignore
 
         if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
-        elif (left_type, right_type) in self.binary_coercions:
-            self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
+            expr_type = expression.type
+            if expr_type and (
+                (left_type and left_type.args.get("nullable"))
+                or (right_type and right_type.args.get("nullable"))
+            ):
+                expr_type.set("nullable", True)
+        elif (left_type_this, right_type_this) in self.binary_coercions:
+            self._set_type(
+                expression, self.binary_coercions[(left_type_this, right_type_this)](left, right)
+            )
         else:
-            self._set_type(expression, self._maybe_coerce(left_type, right_type))
+            self._set_type(expression, self._maybe_coerce(left_type_this, right_type_this))
 
         return expression
 

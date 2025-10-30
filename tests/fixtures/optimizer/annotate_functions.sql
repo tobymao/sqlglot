@@ -1656,6 +1656,10 @@ BIT_LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+BITXOR(5, 3);
+INT;
+
+# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 

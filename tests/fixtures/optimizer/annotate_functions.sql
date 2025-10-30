@@ -2272,6 +2272,10 @@ IFNULL(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+IFNULL(5::BIGINT, 2.71::FLOAT);
+FLOAT;
+
+# dialect: snowflake
 IS_NULL_VALUE(payload:field);
 BOOLEAN;
 

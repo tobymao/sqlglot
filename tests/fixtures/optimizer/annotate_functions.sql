@@ -2464,6 +2464,22 @@ NVL(5::BIGINT, 2.71::FLOAT);
 FLOAT;
 
 # dialect: snowflake
+NULLIF(1, 2);
+INT;
+
+# dialect: snowflake
+NULLIF(1.5, 2.7);
+DOUBLE;
+
+# dialect: snowflake
+NULLIF(5::BIGINT, 10::BIGINT);
+BIGINT;
+
+# dialect: snowflake
+NULLIF(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
+DATE;
+
+# dialect: snowflake
 NULLIFZERO(5);
 INT;
 

@@ -805,6 +805,7 @@ class DuckDB(Dialect):
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
             ),
             exp.UnixMicros: lambda self, e: self.func("EPOCH_US", _implicit_datetime_cast(e.this)),
+            exp.UnixMillis: lambda self, e: self.func("EPOCH_MS", _implicit_datetime_cast(e.this)),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),

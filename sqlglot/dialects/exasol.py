@@ -115,6 +115,7 @@ class Exasol(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
+        IDENTIFIERS = ['"',  ("[", "]")]
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "USER": TokenType.CURRENT_USER,

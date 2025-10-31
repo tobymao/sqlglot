@@ -81,6 +81,102 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
+def _extract_precision_scale(data_type: exp.DataType) -> t.Tuple[t.Optional[int], t.Optional[int]]:
+    """Extract precision and scale from a parameterized numeric type."""
+    expressions = data_type.expressions
+    if not expressions:
+        return None, None
+
+    precision = None
+    scale = None
+
+    if len(expressions) >= 1:
+        p_expr = expressions[0]
+        if isinstance(p_expr, exp.DataTypeParam) and isinstance(p_expr.this, exp.Literal):
+            precision = int(p_expr.this.this) if p_expr.this.is_int else None
+
+    if len(expressions) >= 2:
+        s_expr = expressions[1]
+        if isinstance(s_expr, exp.DataTypeParam) and isinstance(s_expr.this, exp.Literal):
+            scale = int(s_expr.this.this) if s_expr.this.is_int else None
+
+    return precision, scale
+
+
+def _compute_nullif_result_type(
+    base_type: exp.DataType, p1: int, s1: int, p2: int, s2: int
+) -> t.Optional[exp.DataType]:
+    """
+    Compute result type for NULLIF with two parameterized numeric types.
+
+    Rules:
+    - If p1 >= p2 AND s1 >= s2: return type1
+    - If p2 >= p1 AND s2 >= s1: return type2
+    - Otherwise: return DECIMAL(max(p1, p2) + |s2 - s1|, max(s1, s2))
+    """
+
+    if p1 >= p2 and s1 >= s2:
+        return base_type.copy()
+
+    if p2 >= p1 and s2 >= s1:
+        return exp.DataType(
+            this=base_type.this,
+            expressions=[
+                exp.DataTypeParam(this=exp.Literal.number(p2)),
+                exp.DataTypeParam(this=exp.Literal.number(s2)),
+            ],
+        )
+
+    result_scale = max(s1, s2)
+    result_precision = max(p1, p2) + abs(s2 - s1)
+
+    return exp.DataType(
+        this=base_type.this,
+        expressions=[
+            exp.DataTypeParam(this=exp.Literal.number(result_precision)),
+            exp.DataTypeParam(this=exp.Literal.number(result_scale)),
+        ],
+    )
+
+
+def _annotate_nullif(self: TypeAnnotator, expression: exp.Nullif) -> exp.Nullif:
+    """
+    Annotate NULLIF with Snowflake-specific type coercion rules for parameterized numeric types.
+
+    When both arguments are parameterized numeric types (e.g., DECIMAL(p, s)):
+    - If one type dominates (p1 >= p2 AND s1 >= s2), use that type
+    - Otherwise, compute new type with:
+        - scale = max(s1, s2)
+        - precision = max(p1, p2) + |s2 - s1|
+    """
+
+    self._annotate_args(expression)
+
+    this_type = expression.this.type
+    expr_type = expression.expression.type
+
+    if not this_type or not expr_type:
+        return self._annotate_by_args(expression, "this", "expression")
+
+    # Snowflake specific type coercion for NULLIF with parameterized numeric types
+    if (
+        this_type.is_type(*exp.DataType.NUMERIC_TYPES)
+        and expr_type.is_type(*exp.DataType.NUMERIC_TYPES)
+        and this_type.expressions
+        and expr_type.expressions
+    ):
+        p1, s1 = _extract_precision_scale(this_type)
+        p2, s2 = _extract_precision_scale(expr_type)
+
+        if p1 is not None and s1 is not None and p2 is not None and s2 is not None:
+            result_type = _compute_nullif_result_type(this_type, p1, s1, p2, s2)
+            if result_type:
+                self._set_type(expression, result_type)
+                return expression
+
+    return self._annotate_by_args(expression, "this", "expression")
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -263,6 +359,7 @@ EXPRESSION_METADATA = {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
     },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
+    exp.Nullif: {"annotator": _annotate_nullif},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},

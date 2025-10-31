@@ -2552,6 +2552,26 @@ NULLIF(1::INT, 2.5::DOUBLE);
 DOUBLE;
 
 # dialect: snowflake
+NULLIF(1::DECIMAL(10, 2), 2::DECIMAL(10, 2));
+DECIMAL(10, 2);
+
+# dialect: snowflake
+NULLIF(1::DECIMAL(12, 3), 2::DECIMAL(10, 2));
+DECIMAL(12, 3);
+
+# dialect: snowflake
+NULLIF(1::DECIMAL(10, 2), 2::DECIMAL(12, 3));
+DECIMAL(12, 3);
+
+# dialect: snowflake
+NULLIF(1::DECIMAL(12, 2), 2::DECIMAL(10, 3));
+DECIMAL(13, 3);
+
+# dialect: snowflake
+NULLIF(1::DECIMAL(10, 3), 2::DECIMAL(12, 2));
+DECIMAL(13, 3);
+
+# dialect: snowflake
 NULLIFZERO(5);
 INT;
 

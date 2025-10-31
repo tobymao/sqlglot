@@ -130,6 +130,33 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], e
     return _parse
 
 
+def _get_inherited_struct_field_names(
+    expression: exp.Struct, is_bq_inline_struct: bool
+) -> t.Optional[t.List[str]]:
+    """
+    BigQuery allows shorthand notation where the first STRUCT in an array defines field names
+    and subsequent STRUCTs inherit them. Check if the first item in the array contains names
+    and remember them for the rest of the elements.
+    """
+    if is_bq_inline_struct or expression.find(exp.PropertyEQ) is not None:
+        return None
+
+    ancestor_array = expression.find_ancestor(exp.Array)
+    if not ancestor_array or not ancestor_array.expressions:
+        return None
+
+    # Check if the first item in the array is a STRUCT with field names
+    first_item = ancestor_array.expressions[0]
+    if not isinstance(first_item, exp.Struct):
+        return None
+
+    property_eqs = [e for e in first_item.expressions if isinstance(e, exp.PropertyEQ)]
+    if property_eqs and len(property_eqs) == len(expression.expressions):
+        return [pe.name for pe in property_eqs]
+
+    return None
+
+
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
 
@@ -139,14 +166,16 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     #  1. The STRUCT itself does not have proper fields (key := value) as a "proper" STRUCT would
     #  2. A cast to STRUCT / ARRAY of STRUCTs is found
     ancestor_cast = expression.find_ancestor(exp.Cast)
-    is_bq_inline_struct = (
+    is_bq_inline_struct: bool = (
         (expression.find(exp.PropertyEQ) is None)
-        and ancestor_cast
+        and ancestor_cast is not None
         and any(
             casted_type.is_type(exp.DataType.Type.STRUCT)
             for casted_type in ancestor_cast.find_all(exp.DataType)
         )
     )
+
+    inherited_field_names = _get_inherited_struct_field_names(expression, is_bq_inline_struct)
 
     for i, expr in enumerate(expression.expressions):
         is_property_eq = isinstance(expr, exp.PropertyEQ)
@@ -160,6 +189,9 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
                     key = self.sql(exp.Literal.string(expr.name))
                 else:
                     key = self.sql(expr.this)
+            elif inherited_field_names:
+                # Use inherited field name from first STRUCT in array
+                key = self.sql(exp.Literal.string(inherited_field_names[i]))
             else:
                 key = self.sql(exp.Literal.string(f"_{i}"))
 

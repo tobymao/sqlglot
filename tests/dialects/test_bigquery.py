@@ -2338,6 +2338,26 @@ OPTIONS (
                 "duckdb": "SELECT CAST(ROW(1, ROW('c_str')) AS STRUCT(a BIGINT, b STRUCT(c TEXT)))",
             },
         )
+        self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92)])",
+            write={
+                "duckdb": "SELECT * FROM (SELECT UNNEST([{'name': 'Alice', 'score': 85}, {'name': 'Bob', 'score': 92}], max_depth => 2))",
+            },
+        )
+        self.validate_all(
+            "SELECT MAX_BY(name, score) FROM table1",
+            write={
+                "bigquery": "SELECT MAX_BY(name, score) FROM table1",
+                "duckdb": "SELECT ARG_MAX(name, score) FROM table1",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN_BY(product, price) FROM table1",
+            write={
+                "bigquery": "SELECT MIN_BY(product, price) FROM table1",
+                "duckdb": "SELECT ARG_MIN(product, price) FROM table1",
+            },
+        )
 
     def test_convert(self):
         for value, expected in [

@@ -850,7 +850,7 @@ LANGUAGE js AS
             "LOWER(b'\x41\x42\x43')",
             write={
                 "bigquery": "LOWER(b'\x41\x42\x43')",
-                "duckdb": "CAST(CAST(LOWER(e'\x41\x42\x43') AS VARCHAR) AS BLOB)",
+                "duckdb": "CAST(LOWER(CAST(e'\x41\x42\x43' AS TEXT)) AS BLOB)",
             },
         )
         self.validate_all(

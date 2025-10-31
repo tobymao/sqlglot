@@ -845,11 +845,12 @@ LANGUAGE js AS
                 "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '2' HOUR",
             },
         )
+
         self.validate_all(
             "LOWER(b'\x41\x42\x43')",
             write={
                 "bigquery": "LOWER(b'\x41\x42\x43')",
-                "duckdb": "CAST(LOWER(e'\x41\x42\x43') AS BLOB)",
+                "duckdb": "CAST(CAST(LOWER(e'\x41\x42\x43') AS VARCHAR) AS BLOB)",
             },
         )
         self.validate_all(

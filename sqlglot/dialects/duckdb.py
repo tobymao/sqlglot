@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
     Version,
+    annotate_with_type_lambda,
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -287,6 +288,22 @@ class DuckDB(Dialect):
         "DAYOFWEEKISO": "ISODOW",
     }
     DATE_PART_MAPPING.pop("WEEKDAY")
+
+    TYPE_TO_EXPRESSIONS = {
+        **Dialect.TYPE_TO_EXPRESSIONS,
+        exp.DataType.Type.BINARY: {
+            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BINARY],
+            exp.ByteString,
+        },
+    }
+    ANNOTATORS = {
+        **Dialect.ANNOTATORS,
+        **{
+            expr_type: annotate_with_type_lambda(data_type)
+            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
+            for expr_type in expressions
+        },
+    }
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
@@ -739,9 +756,6 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
-            exp.Lower: lambda self, e: f"CAST({self.func('LOWER', e.this)} AS BLOB)"
-            if isinstance(e.this, exp.ByteString)
-            else self.func("LOWER", e.this),
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(
@@ -1167,6 +1181,18 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        def lower_sql(self, expression: exp.Lower) -> str:
+            arg = expression.this
+            if not arg.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                arg = annotate_types(arg, dialect=self.dialect)
+
+            if arg.is_type(exp.DataType.Type.BINARY):
+                return f"CAST(CAST({self.func('LOWER', expression.this)} AS VARCHAR) AS BLOB)"
+
+            return self.func("LOWER", expression.this)
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this

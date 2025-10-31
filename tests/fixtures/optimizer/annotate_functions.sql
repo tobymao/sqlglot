@@ -1660,6 +1660,10 @@ BITXOR(5, 3);
 INT;
 
 # dialect: snowflake
+BITXOR(tbl.bin_col, tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 

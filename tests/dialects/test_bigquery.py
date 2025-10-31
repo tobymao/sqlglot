@@ -2516,7 +2516,7 @@ OPTIONS (
             write={
                 "spark": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
                 "databricks": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
-                "duckdb": "SELECT EPOCH(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+                "duckdb": "SELECT CAST(EPOCH(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ)) AS BIGINT)",
                 "snowflake": "SELECT TIMESTAMPDIFF(SECONDS, CAST('1970-01-01 00:00:00+00' AS TIMESTAMPTZ), '2008-12-25 15:30:00+00')",
             },
         )

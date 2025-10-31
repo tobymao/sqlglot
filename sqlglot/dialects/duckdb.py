@@ -1190,7 +1190,8 @@ class DuckDB(Dialect):
                 arg = annotate_types(arg, dialect=self.dialect)
 
             if arg.is_type(exp.DataType.Type.BINARY):
-                return f"CAST(CAST({self.func('LOWER', expression.this)} AS VARCHAR) AS BLOB)"
+                expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
+                return self.sql(exp.cast(expression, exp.DataType.Type.BINARY))
 
             return self.func("LOWER", expression.this)
 

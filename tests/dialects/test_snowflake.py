@@ -1353,6 +1353,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
         self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
+        self.validate_identity("SELECT BITSHIFTRIGHT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTRIGHT(a, 1)", "SELECT BITSHIFTRIGHT(a, 1)")
         self.validate_all(
             "OCTET_LENGTH('A')",

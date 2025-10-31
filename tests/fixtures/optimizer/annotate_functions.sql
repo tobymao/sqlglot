@@ -1664,6 +1664,14 @@ BITSHIFTLEFT(tbl.bin_col, 4);
 BINARY;
 
 # dialect: snowflake
+BITSHIFTRIGHT(24, 1);
+INT;
+
+# dialect: snowflake
+BITSHIFTRIGHT(tbl.bin_col, 4);
+BINARY;
+
+# dialect: snowflake
 BITXOR(5, 3);
 INT;
 

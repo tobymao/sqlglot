@@ -1656,6 +1656,14 @@ BIT_LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+BITNOT(5);
+INT;
+
+# dialect: snowflake
+BITNOT(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
 BITOR(2, 4);
 INT;
 

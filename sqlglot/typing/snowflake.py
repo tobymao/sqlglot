@@ -8,6 +8,8 @@ from sqlglot.typing import EXPRESSION_SPEC
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
+DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
+
 
 def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
     expression = self._annotate_by_args(expression, "this")
@@ -37,8 +39,6 @@ def _annotate_timestamp_from_parts(
 
 def _annotate_date_or_time_add(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
     self._annotate_args(expression)
-
-    DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
 
     if (
         expression.this.is_type(exp.DataType.Type.DATE)

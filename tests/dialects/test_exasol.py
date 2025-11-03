@@ -5,6 +5,12 @@ class TestExasol(Validator):
     dialect = "exasol"
     maxDiff = None
 
+    def test_exasol(self):
+        self.validate_identity(
+            "SELECT 1 AS [x]",
+            'SELECT 1 AS "x"',
+        )
+
     def test_type_mappings(self):
         self.validate_identity("CAST(x AS BLOB)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS LONGBLOB)", "CAST(x AS VARCHAR)")

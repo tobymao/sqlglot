@@ -927,11 +927,11 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             sql = f"SELECT {sql} FROM tbl"
 
             for dialect in dialect.split(", "):
-                result = parse_and_optimize(
-                    annotate_functions, sql, dialect, schema=test_schema, dialect=dialect
-                )
-
                 with self.subTest(title):
+                    result = parse_and_optimize(
+                        annotate_functions, sql, dialect, schema=test_schema, dialect=dialect
+                    )
+
                     self.assertEqual(
                         result.type.sql(dialect),
                         exp.DataType.build(expected, dialect=dialect).sql(dialect),

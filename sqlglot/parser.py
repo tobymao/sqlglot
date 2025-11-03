@@ -8937,13 +8937,20 @@ class Parser(metaclass=_Parser):
         ) -> exp.Expression:
             if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
                 concat_exprs = [
-                    self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                    self.expression(
+                        exp.Concat,
+                        expressions=node.expressions,
+                        safe=True,
+                        coalesce=self.dialect.CONCAT_COALESCE,
+                    )
                 ]
                 node.set("expressions", concat_exprs)
                 return node
             if len(exprs) == 1:
                 return exprs[0]
-            return self.expression(exp.Concat, expressions=args, safe=True)
+            return self.expression(
+                exp.Concat, expressions=args, safe=True, coalesce=self.dialect.CONCAT_COALESCE
+            )
 
         args = self._parse_csv(self._parse_lambda)
 

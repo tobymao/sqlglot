@@ -451,10 +451,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
             expr_type = expression.type
             if expr_type and (
-                (left_type and left_type.args.get("nonnull") is not True)
-                or (right_type and right_type.args.get("nonnull") is not True)
+                (left_type and left_type.args.get("nonnull") is True)
+                and (right_type and right_type.args.get("nonnull") is True)
             ):
-                expr_type.set("nonnull", False)
+                expr_type.set("nonnull", True)
         elif (left_type_this, right_type_this) in self.binary_coercions:
             self._set_type(
                 expression, self.binary_coercions[(left_type_this, right_type_this)](left, right)
@@ -471,6 +471,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         else:
             self._set_type(expression, expression.this.type)
+
+        if (this_type := expression.this.type) and (expr_type := expression.type):
+            nonnull = this_type.args.get("nonnull")
+            expr_type.set("nonnull", nonnull)
 
         return expression
 

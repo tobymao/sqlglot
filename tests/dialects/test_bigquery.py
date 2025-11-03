@@ -854,7 +854,11 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "LOWER('HELLO')", write={"bigquery": "LOWER('HELLO')", "duckdb": "LOWER('HELLO')"}
+            "LOWER('HELLO')",
+            write={
+                "bigquery": "LOWER('HELLO')",
+                "duckdb": "LOWER('HELLO')",
+            },
         )
         self.validate_all(
             "LOWER(TO_HEX(x))",

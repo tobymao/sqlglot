@@ -5854,7 +5854,9 @@ class Parser(metaclass=_Parser):
                     expressions.append(exp.Literal.string(self._prev.text))
 
                 if len(expressions) > 1:
-                    return self.expression(exp.Concat, expressions=expressions, coalesce=self.dialect.CONCAT_COALESCE)
+                    return self.expression(
+                        exp.Concat, expressions=expressions, coalesce=self.dialect.CONCAT_COALESCE
+                    )
 
             return primary
 

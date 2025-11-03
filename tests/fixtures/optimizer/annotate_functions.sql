@@ -1664,6 +1664,22 @@ BITNOT(tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+BIT_NOT(5);
+INT;
+
+# dialect: snowflake
+BITAND(2, 4);
+INT;
+
+# dialect: snowflake
+BITAND(tbl.bin_col, tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
+BIT_AND(2, 4);
+INT;
+
+# dialect: snowflake
 BITOR(2, 4);
 INT;
 

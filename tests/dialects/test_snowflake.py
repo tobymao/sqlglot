@@ -1346,6 +1346,9 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("SELECT BITNOT(a)")
+        self.validate_identity("SELECT BIT_NOT(a)", "SELECT BITNOT(a)")
+        self.validate_identity("SELECT BITAND(a, b)")
+        self.validate_identity("SELECT BIT_AND(a, b)", "SELECT BITAND(a, b)")
         self.validate_identity("SELECT BITOR(a, b)")
         self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
         self.validate_identity("SELECT BITOR(a, b, 'LEFT')")

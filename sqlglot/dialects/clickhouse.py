@@ -162,7 +162,7 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
     datatype = exp.DataType.build(
         exp.DataType.Type.DATETIME64,
         expressions=[exp.DataTypeParam(this=exp.Literal.number(6)), *expressions],
-        nullable=False,
+        nonnull=True,
     )
 
     return self.sql(exp.cast(ts, datatype, dialect=self.dialect))
@@ -606,13 +606,13 @@ class ClickHouse(Dialect):
             dtype = super()._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
-            if isinstance(dtype, exp.DataType) and dtype.args.get("nullable") is not True:
+            if isinstance(dtype, exp.DataType) and dtype.args.get("nonnull") is not False:
                 # Mark every type as non-nullable which is ClickHouse's default, unless it's
                 # already marked as nullable. This marker helps us transpile types from other
                 # dialects to ClickHouse, so that we can e.g. produce `CAST(x AS Nullable(String))`
                 # from `CAST(x AS TEXT)`. If there is a `NULL` value in `x`, the former would
                 # fail in ClickHouse without the `Nullable` type constructor.
-                dtype.set("nullable", False)
+                dtype.set("nonnull", True)
 
             return dtype
 
@@ -1235,9 +1235,9 @@ class ClickHouse(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             dtype = expression.to
-            if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True):
+            if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=False):
                 # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
-                dtype.set("nullable", True)
+                dtype.set("nonnull", False)
 
             return super().cast_sql(expression)
 
@@ -1294,15 +1294,15 @@ class ClickHouse(Dialect):
             #   String or FixedString (possibly LowCardinality) or UUID or IPv6"
             # - It's not a composite type, e.g. `Nullable(Array(...))` is not a valid type
             parent = expression.parent
-            nullable = expression.args.get("nullable")
-            if nullable is True or (
-                nullable is None
+            nonnull = expression.args.get("nonnull")
+            if (
+                nonnull is not True
                 and not (
                     isinstance(parent, exp.DataType)
-                    and parent.is_type(exp.DataType.Type.MAP, check_nullable=True)
+                    and parent.is_type(exp.DataType.Type.MAP, check_nullable=False)
                     and expression.index in (None, 0)
                 )
-                and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True)
+                and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=False)
             ):
                 dtype = f"Nullable({dtype})"
 

@@ -214,9 +214,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(expr_type, exp.DataType):
             if isinstance(expression, exp.Null) or (
-                isinstance(expression, exp.Column) and expr_type.args.get("nullable") is None
+                isinstance(expression, exp.Column) and expr_type.args.get("nonnull") is not True
             ):
-                expr_type.set("nullable", True)
+                expr_type.set("nonnull", False)
 
         if (
             not self._supports_null_type
@@ -451,10 +451,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
             expr_type = expression.type
             if expr_type and (
-                (left_type and left_type.args.get("nullable"))
-                or (right_type and right_type.args.get("nullable"))
+                (left_type and left_type.args.get("nonnull") is not True)
+                or (right_type and right_type.args.get("nonnull") is not True)
             ):
-                expr_type.set("nullable", True)
+                expr_type.set("nonnull", False)
         elif (left_type_this, right_type_this) in self.binary_coercions:
             self._set_type(
                 expression, self.binary_coercions[(left_type_this, right_type_this)](left, right)

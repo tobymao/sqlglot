@@ -1209,6 +1209,31 @@ class DuckDB(Dialect):
 
             return self.func("STRUCT_INSERT", this, kv_sql)
 
+        def startswith_sql(self, expression: exp.StartsWith) -> str:
+            this = expression.this
+            expr = expression.expression
+
+            if not this.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                this = annotate_types(this, dialect=self.dialect)
+
+            if not expr.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                expr = annotate_types(expr, dialect=self.dialect)
+
+            # DuckDB's starts_with only accepts VARCHAR, not BLOB
+            if this.is_type(exp.DataType.Type.BINARY):
+                expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
+
+            if expr.is_type(exp.DataType.Type.BINARY):
+                expression.expression.replace(
+                    exp.cast(expression.expression, exp.DataType.Type.VARCHAR)
+                )
+
+            return self.func("STARTS_WITH", expression.this, expression.expression)
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")
             if explode_array:

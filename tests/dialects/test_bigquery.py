@@ -1205,6 +1205,21 @@ LANGUAGE js AS
                 "spark": "CAST(a AS BINARY)",
             },
         )
+        # Test STARTS_WITH with BYTES/BLOB handling from BigQuery to DuckDB
+        self.validate_all(
+            "STARTS_WITH(CAST('foo' AS BYTES), CAST('f' AS BYTES))",
+            write={
+                "bigquery": "STARTS_WITH(CAST('foo' AS BYTES), CAST('f' AS BYTES))",
+                "duckdb": "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), CAST(CAST('f' AS BLOB) AS TEXT))",
+            },
+        )
+        self.validate_all(
+            "STARTS_WITH(CAST('foo' AS BYTES), b'f')",
+            write={
+                "bigquery": "STARTS_WITH(CAST('foo' AS BYTES), b'f')",
+                "duckdb": "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), e'f')",
+            },
+        )
         self.validate_all(
             "CAST(a AS NUMERIC)",
             write={

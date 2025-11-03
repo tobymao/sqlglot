@@ -635,6 +635,7 @@ class Snowflake(Dialect):
                 step=seq_get(args, 2),
             ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
+            "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BITXOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BIT_XOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
             "BITOR": _build_bitwise(exp.BitwiseOr, "BITOR"),

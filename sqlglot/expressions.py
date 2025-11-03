@@ -4908,15 +4908,15 @@ class DataType(Expression):
 
             if (
                 other_type.expressions
-                or (check_nullable and (self_nonnull is not None or other_nonnull is not None))
                 or self.this == DataType.Type.USERDEFINED
                 or other_type.this == DataType.Type.USERDEFINED
             ):
                 matches = self == other_type
-                if matches and check_nullable:
-                    matches = self_nonnull == other_nonnull
             else:
                 matches = self.this == other_type.this
+
+            if matches and check_nullable:
+                matches = self_nonnull == other_nonnull
 
             if matches:
                 return True

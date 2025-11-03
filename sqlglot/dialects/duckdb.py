@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
     Version,
-    annotate_with_type_lambda,
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -288,22 +287,6 @@ class DuckDB(Dialect):
         "DAYOFWEEKISO": "ISODOW",
     }
     DATE_PART_MAPPING.pop("WEEKDAY")
-
-    TYPE_TO_EXPRESSIONS = {
-        **Dialect.TYPE_TO_EXPRESSIONS,
-        exp.DataType.Type.BINARY: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BINARY],
-            exp.ByteString,
-        },
-    }
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
-        },
-    }
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
@@ -1191,10 +1174,16 @@ class DuckDB(Dialect):
 
             if not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
-                if expression.is_type(exp.DataType.Type.BINARY):
-                    return self.sql(exp.cast(expression, exp.DataType.Type.BINARY))
 
-            return self.func("LOWER", expression.this)
+            lower_sql = self.func("LOWER", expression.this)
+            is_binary = expression.is_type(exp.DataType.Type.BINARY) or arg.is_type(
+                exp.DataType.Type.BINARY
+            )
+            if is_binary:
+                blob = exp.DataType.build("BLOB", dialect="duckdb")
+                lower_sql = self.sql(exp.Cast(this=lower_sql, to=blob))
+
+            return lower_sql
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this

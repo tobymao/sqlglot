@@ -3124,3 +3124,12 @@ OPTIONS (
                 "snowflake": """SELECT TO_JSON(OBJECT_CONSTRUCT('name', 'Alice')) AS json_data""",
             },
         )
+
+    def test_concat(self):
+        self.validate_all(
+            "SELECT CONCAT('T.P.', ' ', 'Bar') AS author",
+            write={
+                "bigquery": "SELECT CONCAT('T.P.', ' ', 'Bar') AS author",
+                "duckdb": "SELECT 'T.P.' || ' ' || 'Bar' AS author",
+            },
+        )

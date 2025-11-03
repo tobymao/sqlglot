@@ -440,7 +440,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "mysql": "CONCAT(a, b)",
-                "postgres": "CONCAT(a, b)",
+                "postgres": "a || b",
             },
         )
         self.validate_all(

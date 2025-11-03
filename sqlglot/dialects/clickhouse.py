@@ -1235,7 +1235,7 @@ class ClickHouse(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             dtype = expression.to
-            if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=False):
+            if not dtype.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True):
                 # Casting x into Nullable(T) appears to behave similarly to TRY_CAST(x AS T)
                 dtype.set("nonnull", False)
 
@@ -1299,10 +1299,10 @@ class ClickHouse(Dialect):
                 nonnull is not True
                 and not (
                     isinstance(parent, exp.DataType)
-                    and parent.is_type(exp.DataType.Type.MAP, check_nullable=False)
+                    and parent.is_type(exp.DataType.Type.MAP, check_nullable=True)
                     and expression.index in (None, 0)
                 )
-                and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=False)
+                and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True)
             ):
                 dtype = f"Nullable({dtype})"
 

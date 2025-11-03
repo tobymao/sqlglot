@@ -847,10 +847,10 @@ LANGUAGE js AS
         )
 
         self.validate_all(
-            "LOWER(b'\x41\x42\x43')",
+            "LOWER(CAST('HELLO' AS BYTES))",
             write={
-                "bigquery": "LOWER(b'\x41\x42\x43')",
-                "duckdb": "CAST(LOWER(CAST(e'\x41\x42\x43' AS TEXT)) AS BLOB)",
+                "bigquery": "LOWER(CAST('HELLO' AS BYTES))",
+                "duckdb": "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)",
             },
         )
         self.validate_all(
@@ -1747,7 +1747,7 @@ WHERE
                 "spark": "CONTAINS(LOWER(a), LOWER(b))",
                 "databricks": "CONTAINS(LOWER(a), LOWER(b))",
                 "snowflake": "CONTAINS(LOWER(a), LOWER(b))",
-                "duckdb": "CONTAINS(LOWER(a), LOWER(b))",
+                "duckdb": "CONTAINS(LOWER(CAST(a AS TEXT)), LOWER(CAST(b AS TEXT)))",
                 "oracle": "CONTAINS(LOWER(a), LOWER(b))",
                 "bigquery": "CONTAINS_SUBSTR(a, b)",
             },

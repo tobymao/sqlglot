@@ -1345,6 +1345,7 @@ class TestSnowflake(Validator):
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },
         )
+        self.validate_identity("SELECT BITNOT(a)")
         self.validate_identity("SELECT BITOR(a, b)")
         self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
         self.validate_identity("SELECT BITOR(a, b, 'LEFT')")

@@ -145,6 +145,9 @@ def _get_inherited_struct_field_names(
     if not ancestor_array or not ancestor_array.expressions:
         return None
 
+    if expression.parent is not ancestor_array:
+        return None
+
     # Check if the first item in the array is a STRUCT with field names
     first_item = ancestor_array.expressions[0]
     if not isinstance(first_item, exp.Struct):

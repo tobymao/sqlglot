@@ -2358,6 +2358,12 @@ OPTIONS (
                 "duckdb": "SELECT ARG_MIN(product, price) FROM table1",
             },
         )
+        self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)])",
+            write={
+                "duckdb": "SELECT * FROM (SELECT UNNEST([{'name': 'Alice', 'scores': {'math': 85, 'english': 90}}, {'name': 'Bob', 'scores': {'math': 92, 'english': 88}}], max_depth => 2))",
+            },
+        )
 
     def test_convert(self):
         for value, expected in [

@@ -139,7 +139,7 @@ def csv(*args: str, sep: str = ", ") -> str:
 def subclasses(
     module_name: str,
     classes: t.Type | t.Tuple[t.Type, ...],
-    exclude: t.Type | t.Tuple[t.Type, ...] = (),
+    exclude: t.Set[t.Type] = set(),
 ) -> t.List[t.Type]:
     """
     Returns all subclasses for a collection of classes, possibly excluding some of them.
@@ -147,7 +147,7 @@ def subclasses(
     Args:
         module_name: The name of the module to search for subclasses in.
         classes: Class(es) we want to find the subclasses of.
-        exclude: Class(es) we want to exclude from the returned list.
+        exclude: Classes we want to exclude from the returned list.
 
     Returns:
         The target subclasses.

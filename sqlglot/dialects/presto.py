@@ -39,6 +39,7 @@ from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
+from sqlglot.typing.presto import EXPRESSION_SPEC
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
@@ -267,20 +268,7 @@ class Presto(Dialect):
     # https://github.com/prestodb/presto/issues/2863
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
-    # The result of certain math functions in Presto/Trino is of type
-    # equal to the input type e.g: FLOOR(5.5/2) -> DECIMAL, FLOOR(5/2) -> BIGINT
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        exp.Floor: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Ceil: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Mod: lambda self, e: self._annotate_by_args(e, "this", "expression"),
-        exp.Round: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Rand: lambda self, e: self._annotate_by_args(e, "this")
-        if e.this
-        else self._set_type(e, exp.DataType.Type.DOUBLE),
-    }
+    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
 
     SUPPORTED_SETTINGS = {
         *Dialect.SUPPORTED_SETTINGS,

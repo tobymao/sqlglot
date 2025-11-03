@@ -12,7 +12,6 @@ from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    annotate_with_type_lambda,
     arg_max_or_min_no_count,
     binary_from_function,
     date_add_interval_sql,
@@ -34,9 +33,10 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     groupconcat_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
-from sqlglot.generator import unsupported_args
+from sqlglot.typing.bigquery import EXPRESSION_SPEC
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
@@ -290,59 +290,6 @@ def _str_to_datetime_sql(
     return self.func(f"PARSE_{dtype}", fmt, this, expression.args.get("zone"))
 
 
-def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
-    """
-    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
-    +---------+---------+---------+------------+---------+
-    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    """
-    self._annotate_args(expression)
-
-    this: exp.Expression = expression.this
-
-    self._set_type(
-        expression,
-        exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
-    )
-    return expression
-
-
-def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: E) -> E:
-    """
-    +------------+------------+------------+-------------+---------+
-    | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    +------------+------------+------------+-------------+---------+
-    | INT64      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    | NUMERIC    | NUMERIC    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
-    | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
-    +------------+------------+------------+-------------+---------+
-    """
-    self._annotate_args(expression)
-
-    self._set_type(expression, self._maybe_coerce(expression.this.type, expression.expression.type))
-    return expression
-
-
-def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
-    self._annotate_args(expression)
-
-    struct_type = exp.DataType(
-        this=exp.DataType.Type.STRUCT,
-        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
-        nested=True,
-    )
-    self._set_type(
-        expression,
-        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
-    )
-
-    return expression
-
-
 @unsupported_args("ins_cost", "del_cost", "sub_cost")
 def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> str:
     max_dist = expression.args.get("max_dist")
@@ -396,44 +343,6 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
         self._quote_json_path_key_using_brackets = True
 
     return sql
-
-
-def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
-    annotated = self._annotate_by_args(expression, "expressions")
-
-    # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
-    # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
-    if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
-        annotated.type = exp.DataType.Type.VARCHAR
-
-    return annotated
-
-
-def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
-    array_args = expression.expressions
-
-    # BigQuery behaves as follows:
-    #
-    # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
-    # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    if (
-        len(array_args) == 1
-        and isinstance(select := array_args[0].unnest(), exp.Select)
-        and (query_type := select.meta.get("query_type")) is not None
-        and query_type.is_type(exp.DataType.Type.STRUCT)
-        and len(query_type.expressions) == 1
-        and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-        and (projection_type := col_def.kind) is not None
-        and not projection_type.is_type(exp.DataType.Type.UNKNOWN)
-    ):
-        array_type = exp.DataType(
-            this=exp.DataType.Type.ARRAY,
-            expressions=[projection_type.copy()],
-            nested=True,
-        )
-        return self._annotate_with_type(expression, array_type)
-
-    return self._annotate_by_args(expression, "expressions", array=True)
 
 
 class BigQuery(Dialect):
@@ -493,198 +402,7 @@ class BigQuery(Dialect):
     COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
     COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
 
-    # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
-    TYPE_TO_EXPRESSIONS = {
-        **Dialect.TYPE_TO_EXPRESSIONS,
-        exp.DataType.Type.BIGINT: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BIGINT],
-            exp.Ascii,
-            exp.BitwiseAndAgg,
-            exp.BitwiseOrAgg,
-            exp.BitwiseXorAgg,
-            exp.BitwiseCount,
-            exp.ByteLength,
-            exp.DenseRank,
-            exp.FarmFingerprint,
-            exp.Grouping,
-            exp.LaxInt64,
-            exp.Length,
-            exp.Ntile,
-            exp.Rank,
-            exp.RangeBucket,
-            exp.RegexpInstr,
-            exp.RowNumber,
-            exp.Unicode,
-        },
-        exp.DataType.Type.BINARY: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BINARY],
-            exp.ByteString,
-            exp.CodePointsToBytes,
-            exp.MD5Digest,
-            exp.SHA,
-            exp.SHA2,
-            exp.Unhex,
-        },
-        exp.DataType.Type.BOOLEAN: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.BOOLEAN],
-            exp.IsInf,
-            exp.IsNan,
-            exp.JSONBool,
-            exp.LaxBool,
-        },
-        exp.DataType.Type.DATE: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATE],
-            exp.DateFromUnixDate,
-        },
-        exp.DataType.Type.DATETIME: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DATETIME],
-            exp.ParseDatetime,
-            exp.TimestampFromParts,
-        },
-        exp.DataType.Type.DECIMAL: {
-            exp.ParseNumeric,
-        },
-        exp.DataType.Type.BIGDECIMAL: {
-            exp.ParseBignumeric,
-        },
-        exp.DataType.Type.DOUBLE: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.DOUBLE],
-            exp.Acos,
-            exp.Acosh,
-            exp.Asin,
-            exp.Asinh,
-            exp.Atan,
-            exp.Atanh,
-            exp.Atan2,
-            exp.Cbrt,
-            exp.Corr,
-            exp.Cot,
-            exp.CosineDistance,
-            exp.Coth,
-            exp.CovarPop,
-            exp.CovarSamp,
-            exp.Csc,
-            exp.Csch,
-            exp.CumeDist,
-            exp.EuclideanDistance,
-            exp.Float64,
-            exp.LaxFloat64,
-            exp.PercentRank,
-            exp.Rand,
-            exp.Sec,
-            exp.Sech,
-            exp.Sin,
-            exp.Sinh,
-        },
-        exp.DataType.Type.JSON: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.JSON],
-            exp.JSONArray,
-            exp.JSONArrayAppend,
-            exp.JSONArrayInsert,
-            exp.JSONObject,
-            exp.JSONRemove,
-            exp.JSONSet,
-            exp.JSONStripNulls,
-        },
-        exp.DataType.Type.TIME: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIME],
-            exp.ParseTime,
-            exp.TimeFromParts,
-            exp.TimeTrunc,
-            exp.TsOrDsToTime,
-        },
-        exp.DataType.Type.VARCHAR: {
-            *Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.VARCHAR],
-            exp.CodePointsToString,
-            exp.Format,
-            exp.JSONExtractScalar,
-            exp.JSONType,
-            exp.LaxString,
-            exp.LowerHex,
-            exp.Normalize,
-            exp.SafeConvertBytesToString,
-            exp.Soundex,
-            exp.Uuid,
-        },
-        exp.DataType.Type.TIMESTAMPTZ: Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIMESTAMP],
-    }
-    TYPE_TO_EXPRESSIONS.pop(exp.DataType.Type.TIMESTAMP)
-
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
-        },
-        **{
-            expr_type: lambda self, e: _annotate_math_functions(self, e)
-            for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)
-        },
-        **{
-            expr_type: lambda self, e: self._annotate_by_args(e, "this")
-            for expr_type in (
-                exp.Abs,
-                exp.ArgMax,
-                exp.ArgMin,
-                exp.DateTrunc,
-                exp.DatetimeTrunc,
-                exp.FirstValue,
-                exp.GroupConcat,
-                exp.IgnoreNulls,
-                exp.JSONExtract,
-                exp.Lead,
-                exp.Left,
-                exp.Lower,
-                exp.NthValue,
-                exp.Pad,
-                exp.PercentileDisc,
-                exp.RegexpExtract,
-                exp.RegexpReplace,
-                exp.Repeat,
-                exp.Replace,
-                exp.RespectNulls,
-                exp.Reverse,
-                exp.Right,
-                exp.SafeNegate,
-                exp.Sign,
-                exp.Substring,
-                exp.TimestampTrunc,
-                exp.Translate,
-                exp.Trim,
-                exp.Upper,
-            )
-        },
-        exp.ApproxTopSum: lambda self, e: _annotate_by_args_approx_top(self, e),
-        exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
-        exp.ApproxQuantiles: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.Array: _annotate_array,
-        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Concat: _annotate_concat,
-        exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
-        ),
-        exp.JSONExtractArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.JSONFormat: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
-        ),
-        exp.JSONKeysAtDepth: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
-        ),
-        exp.JSONValueArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
-        ),
-        exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
-        exp.PercentileCont: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.SafeAdd: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.SafeMultiply: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.SafeSubtract: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.ToCodePoints: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
-        ),
-    }
+    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
 
     def normalize_identifier(self, expression: E) -> E:
         if (

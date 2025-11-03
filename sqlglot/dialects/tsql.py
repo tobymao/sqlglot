@@ -25,6 +25,7 @@ from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
+from sqlglot.typing.tsql import EXPRESSION_SPEC
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -412,10 +413,7 @@ class TSQL(Dialect):
 
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        exp.Radians: lambda self, e: self._annotate_by_args(e, "this"),
-    }
+    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
 
     TIME_MAPPING = {
         "year": "%Y",

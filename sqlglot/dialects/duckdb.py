@@ -1191,7 +1191,7 @@ class DuckDB(Dialect):
 
             if not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
-                if arg.is_type(exp.DataType.Type.BINARY):
+                if expression.is_type(exp.DataType.Type.BINARY):
                     return self.sql(exp.cast(expression, exp.DataType.Type.BINARY))
 
             return self.func("LOWER", expression.this)

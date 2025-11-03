@@ -35,7 +35,7 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, is_float, is_int, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
-from sqlglot.typing.snowflake import EXPRESSION_SPEC
+from sqlglot.typing.snowflake import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, B
@@ -554,7 +554,7 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
 
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     TIME_MAPPING = {
         "YYYY": "%Y",

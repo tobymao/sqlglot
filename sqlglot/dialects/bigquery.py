@@ -36,7 +36,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
-from sqlglot.typing.bigquery import EXPRESSION_SPEC
+from sqlglot.typing.bigquery import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
@@ -402,7 +402,7 @@ class BigQuery(Dialect):
     COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
     COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
 
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     def normalize_identifier(self, expression: E) -> E:
         if (

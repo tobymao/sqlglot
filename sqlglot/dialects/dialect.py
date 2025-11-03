@@ -25,7 +25,7 @@ from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
-from sqlglot.typing import EXPRESSION_SPEC
+from sqlglot.typing import EXPRESSION_METADATA
 
 DATE_ADD_OR_DIFF = t.Union[
     exp.DateAdd,
@@ -673,7 +673,7 @@ class Dialect(metaclass=_Dialect):
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
 
     # Specifies type inference & validation rules for expressions
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # Determines the supported Dialect instance settings
     SUPPORTED_SETTINGS = {

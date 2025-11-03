@@ -3,7 +3,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.helper import subclasses
 
-ExpressionSpecType = t.Dict[type[exp.Expression], t.Dict[str, t.Any]]
+ExpressionMetadataType = t.Dict[type[exp.Expression], t.Dict[str, t.Any]]
 
 TIMESTAMP_EXPRESSIONS = {
     exp.CurrentTimestamp,
@@ -14,7 +14,7 @@ TIMESTAMP_EXPRESSIONS = {
     exp.UnixToTime,
 }
 
-EXPRESSION_SPEC: ExpressionSpecType = {
+EXPRESSION_METADATA: ExpressionMetadataType = {
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_binary(e)}
         for expr_type in subclasses(exp.__name__, exp.Binary)

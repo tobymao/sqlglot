@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_SPEC, TIMESTAMP_EXPRESSIONS
+from sqlglot.typing import EXPRESSION_METADATA, TIMESTAMP_EXPRESSIONS
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -102,8 +102,8 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     return self._annotate_by_args(expression, "expressions", array=True)
 
 
-EXPRESSION_SPEC = {
-    **EXPRESSION_SPEC,
+EXPRESSION_METADATA = {
+    **EXPRESSION_METADATA,
     **{
         expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
         for expr_type in {

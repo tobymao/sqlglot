@@ -21,7 +21,7 @@ from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
     move_schema_columns_to_partitioned_by,
 )
-from sqlglot.typing.spark2 import EXPRESSION_SPEC
+from sqlglot.typing.spark2 import EXPRESSION_METADATA
 
 
 def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
@@ -117,7 +117,7 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
 
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'"), ("x'", "'")]

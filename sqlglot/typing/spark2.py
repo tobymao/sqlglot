@@ -4,12 +4,12 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import ensure_list
-from sqlglot.typing.hive import EXPRESSION_SPEC as HIVE_EXPRESSION_SPEC
+from sqlglot.typing.hive import EXPRESSION_METADATA as HIVE_EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.optimizer.annotate_types import TypeAnnotator
-    from sqlglot.typing import ExpressionSpecType
+    from sqlglot.typing import ExpressionMetadataType
 
 
 def _annotate_by_similar_args(
@@ -44,8 +44,8 @@ def _annotate_by_similar_args(
     return expression
 
 
-EXPRESSION_SPEC: ExpressionSpecType = {
-    **HIVE_EXPRESSION_SPEC,
+EXPRESSION_METADATA: ExpressionMetadataType = {
+    **HIVE_EXPRESSION_METADATA,
     exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(

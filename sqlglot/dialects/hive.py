@@ -46,7 +46,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 from sqlglot.optimizer.annotate_types import TypeAnnotator
-from sqlglot.typing.hive import EXPRESSION_SPEC
+from sqlglot.typing.hive import EXPRESSION_METADATA
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -217,7 +217,7 @@ class Hive(Dialect):
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))

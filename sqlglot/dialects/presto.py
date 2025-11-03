@@ -39,7 +39,7 @@ from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
-from sqlglot.typing.presto import EXPRESSION_SPEC
+from sqlglot.typing.presto import EXPRESSION_METADATA
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
@@ -268,7 +268,7 @@ class Presto(Dialect):
     # https://github.com/prestodb/presto/issues/2863
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
-    EXPRESSION_SPEC = EXPRESSION_SPEC.copy()
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     SUPPORTED_SETTINGS = {
         *Dialect.SUPPORTED_SETTINGS,

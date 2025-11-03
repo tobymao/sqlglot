@@ -26,7 +26,7 @@ if t.TYPE_CHECKING:
     ]
 
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.typing import ExpressionSpecType
+    from sqlglot.typing import ExpressionMetadataType
 
 logger = logging.getLogger("sqlglot")
 
@@ -34,7 +34,7 @@ logger = logging.getLogger("sqlglot")
 def annotate_types(
     expression: E,
     schema: t.Optional[t.Dict | Schema] = None,
-    expression_spec: t.Optional[ExpressionSpecType] = None,
+    expression_metadata: t.Optional[ExpressionMetadataType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
     dialect: DialectType = None,
 ) -> E:
@@ -61,7 +61,7 @@ def annotate_types(
 
     schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, expression_spec, coerces_to).annotate(expression)
+    return TypeAnnotator(schema, expression_metadata, coerces_to).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -175,13 +175,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def __init__(
         self,
         schema: Schema,
-        expression_spec: t.Optional[ExpressionSpecType] = None,
+        expression_metadata: t.Optional[ExpressionMetadataType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
     ) -> None:
         self.schema = schema
-        self.expression_spec = (
-            expression_spec or Dialect.get_or_raise(schema.dialect).EXPRESSION_SPEC
+        self.expression_metadata = (
+            expression_metadata or Dialect.get_or_raise(schema.dialect).EXPRESSION_METADATA
         )
         self.coerces_to = (
             coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
@@ -373,7 +373,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if id(expression) in self._visited:
             return expression  # We've already inferred the expression's type
 
-        spec = self.expression_spec.get(expression.__class__)
+        spec = self.expression_metadata.get(expression.__class__)
 
         if spec and (annotator := spec.get("annotator")):
             return annotator(self, expression)

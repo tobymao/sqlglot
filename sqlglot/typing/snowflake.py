@@ -190,6 +190,7 @@ EXPRESSION_METADATA = {
             exp.BitLength,
             exp.ByteLength,
             exp.Getbit,
+            exp.Grouping,
             exp.Hour,
             exp.JarowinklerSimilarity,
             exp.Length,

@@ -2200,6 +2200,14 @@ GETBIT(11, 3);
 INT;
 
 # dialect: snowflake
+GROUPING(tbl.str_col);
+INT;
+
+# dialect: snowflake
+GROUPING(tbl.bigint_col);
+INT;
+
+# dialect: snowflake
 GREATEST(tbl.bigint_col, tbl.bigint_col);
 BIGINT;
 

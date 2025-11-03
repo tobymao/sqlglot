@@ -18,7 +18,9 @@ import numbers
 import re
 import textwrap
 import typing as t
+from abc import ABCMeta
 from collections import deque
+from collections.abc import MutableMapping
 from copy import deepcopy
 from decimal import Decimal
 from enum import auto
@@ -47,8 +49,18 @@ if t.TYPE_CHECKING:
     S = t.TypeVar("S", bound="SetOperation")
 
 
+class _Args(ABCMeta):
+    def __new__(cls, clsname, bases, attrs):
+        attrs["__slots__"] = tuple(attrs.get("__annotations__", {}))
+        return super().__new__(cls, clsname, bases, attrs)
+
+
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
+        if bases:
+            # Ensure args are inherited from (first) superclass, if missing
+            attrs.setdefault("Args", bases[0].Args)
+
         klass = super().__new__(cls, clsname, bases, attrs)
 
         # When an Expression class is created, its key is automatically set
@@ -57,6 +69,12 @@ class _Expression(type):
 
         # This is so that docstrings are not inherited in pdoc
         klass.__doc__ = klass.__doc__ or ""
+
+        # Automatically create child -> is_optional mapping for every Expression
+        klass.arg_types = {
+            key: t.get_origin(hint) != t.Union or type(None) not in t.get_args(hint)
+            for key, hint in t.get_type_hints(klass.Args).items()
+        }
 
         return klass
 
@@ -101,11 +119,39 @@ class Expression(metaclass=_Expression):
     """
 
     key = "expression"
-    arg_types = {"this": True}
+    arg_types: t.Dict[str, bool]
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
 
+    class Args(MutableMapping, metaclass=_Args):
+        this: t.Any
+
+        def __init__(self, **kwargs: t.Dict[str, t.Any]):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+        def __getitem__(self, key: str) -> t.Any:
+            try:
+                return getattr(self, key)
+            except AttributeError:
+                raise KeyError(key)
+
+        def __setitem__(self, key: str, value: t.Any) -> None:
+            setattr(self, key, value)
+
+        def __delitem__(self, key):
+            try:
+                delattr(self, key)
+            except AttributeError:
+                raise KeyError(key)
+
+        def __iter__(self):
+            return iter(self.__slots__)  # type: ignore
+
+        def __len__(self):
+            return len(self.__slots__)  # type: ignore
+
     def __init__(self, **args: t.Any):
-        self.args: t.Dict[str, t.Any] = args
+        self.args = self.Args(**args)
         self.parent: t.Optional[Expression] = None
         self.arg_key: t.Optional[str] = None
         self.index: t.Optional[int] = None
@@ -449,13 +495,17 @@ class Expression(metaclass=_Expression):
 
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
-        for vs in reversed(self.args.values()) if reverse else self.args.values():  # type: ignore
-            if type(vs) is list:
-                for v in reversed(vs) if reverse else vs:  # type: ignore
-                    if hasattr(v, "parent"):
-                        yield v
-            elif hasattr(vs, "parent"):
-                yield vs
+        for slot_name in reversed(self.args.__slots__) if reverse else self.args.__slots__:  # type: ignore
+            value = getattr(self, slot_name, None)
+            if value is None:
+                continue
+
+            if type(value) is list:
+                for item in reversed(value) if reverse else value:
+                    if hasattr(item, "parent"):
+                        yield item
+            elif hasattr(value, "parent"):
+                yield value
 
     def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
         """

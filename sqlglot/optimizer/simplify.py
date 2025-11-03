@@ -402,8 +402,7 @@ def remove_complements(expression, root=True):
         ops = set(expression.flatten())
         for op in ops:
             if isinstance(op, exp.Not) and op.this in ops:
-                operand = op.this
-                if isinstance(operand, exp.Literal):
+                if (expr_type := expression.type) and (expr_type.args.get("nonnull")):
                     return exp.false() if isinstance(expression, exp.And) else exp.true()
 
     return expression

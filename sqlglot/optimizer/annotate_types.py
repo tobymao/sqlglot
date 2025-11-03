@@ -472,9 +472,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, expression.this.type)
 
-        if (this_type := expression.this.type) and (expr_type := expression.type):
+        if this_type := expression.this.type:
             nonnull = this_type.args.get("nonnull")
-            expr_type.set("nonnull", nonnull)
+            if nonnull and (expr_type := expression.type):
+                expr_type.set("nonnull", nonnull)
 
         return expression
 
@@ -485,6 +486,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.INT)
         else:
             self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+        if not isinstance(expression.parent, (exp.Alias, exp.ColumnDef, exp.PropertyEQ)) and (
+            expr_type := expression.type
+        ):
+            expr_type.set("nonnull", True)
 
         return expression
 

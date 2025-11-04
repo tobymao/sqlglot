@@ -377,7 +377,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, foo)")
         self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
         self.assertEqual(exp.func("bloo").sql(), "BLOO()")
-        self.assertEqual(exp.func("concat", exp.convert("a")).sql("duckdb"), "CONCAT('a')")
+        self.assertEqual(
+            exp.func("concat", exp.convert("a"), dialect="duckdb").sql("duckdb"), "CONCAT('a')"
+        )
         self.assertEqual(
             exp.func("locate", "'x'", "'xo'", dialect="hive").sql("hive"), "LOCATE('x', 'xo')"
         )

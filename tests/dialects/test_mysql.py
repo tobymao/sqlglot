@@ -803,7 +803,7 @@ class TestMySQL(Validator):
             },
             write={
                 "mysql": "SELECT CONCAT('11', '22')",
-                "postgres": "SELECT CONCAT('11', '22')",
+                "postgres": "SELECT '11' || '22'",
             },
         )
         self.validate_all(
@@ -982,8 +982,8 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(CONCAT(a, b, c) SEPARATOR ',')",
                 "sqlite": "GROUP_CONCAT(a || b || c, ',')",
-                "tsql": "STRING_AGG(CONCAT(a, b, c), ',')",
-                "postgres": "STRING_AGG(CONCAT(a, b, c), ',')",
+                "tsql": "STRING_AGG(a + b + c, ',')",
+                "postgres": "STRING_AGG(a || b || c, ',')",
                 "databricks": "LISTAGG(CONCAT(a, b, c), ',')",
                 "presto": "ARRAY_JOIN(ARRAY_AGG(CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR), CAST(c AS VARCHAR))), ',')",
             },
@@ -993,9 +993,9 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(CONCAT(a, b, c) SEPARATOR '')",
                 "sqlite": "GROUP_CONCAT(a || b || c, '')",
-                "tsql": "STRING_AGG(CONCAT(a, b, c), '')",
+                "tsql": "STRING_AGG(a + b + c, '')",
                 "databricks": "LISTAGG(CONCAT(a, b, c), '')",
-                "postgres": "STRING_AGG(CONCAT(a, b, c), '')",
+                "postgres": "STRING_AGG(a || b || c, '')",
             },
         )
         self.validate_all(
@@ -1003,9 +1003,9 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) SEPARATOR '')",
                 "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
-                "tsql": "STRING_AGG(CONCAT(a, b, c), '')",
+                "tsql": "STRING_AGG(a + b + c, '')",
                 "databricks": "LISTAGG(DISTINCT CONCAT(a, b, c), '')",
-                "postgres": "STRING_AGG(DISTINCT CONCAT(a, b, c), '')",
+                "postgres": "STRING_AGG(DISTINCT a || b || c, '')",
             },
         )
         self.validate_all(
@@ -1013,9 +1013,9 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
                 "sqlite": "GROUP_CONCAT(a || b || c, '')",
-                "tsql": "STRING_AGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
+                "tsql": "STRING_AGG(a + b + c, '') WITHIN GROUP (ORDER BY d)",
                 "databricks": "LISTAGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
-                "postgres": "STRING_AGG(CONCAT(a, b, c), '' ORDER BY d NULLS FIRST)",
+                "postgres": "STRING_AGG(a || b || c, '' ORDER BY d NULLS FIRST)",
             },
         )
         self.validate_all(
@@ -1023,9 +1023,9 @@ class TestMySQL(Validator):
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
                 "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
-                "tsql": "STRING_AGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
+                "tsql": "STRING_AGG(a + b + c, '') WITHIN GROUP (ORDER BY d)",
                 "databricks": "LISTAGG(DISTINCT CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
-                "postgres": "STRING_AGG(DISTINCT CONCAT(a, b, c), '' ORDER BY d NULLS FIRST)",
+                "postgres": "STRING_AGG(DISTINCT a || b || c, '' ORDER BY d NULLS FIRST)",
             },
         )
         self.validate_identity(

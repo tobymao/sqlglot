@@ -1728,6 +1728,22 @@ BIT_ANDAGG(tbl.int_col);
 NUMBER(38, 0);
 
 # dialect: snowflake
+BITORAGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BITOR_AGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BIT_OR_AGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BIT_ORAGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 

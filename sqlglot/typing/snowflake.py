@@ -157,9 +157,10 @@ EXPRESSION_METADATA = {
             )
         }
         for expr_type in (
+            exp.BitwiseAndAgg,
+            exp.BitwiseOrAgg,
             exp.RegexpCount,
             exp.RegexpInstr,
-            exp.BitwiseAndAgg,
         )
     },
     **{

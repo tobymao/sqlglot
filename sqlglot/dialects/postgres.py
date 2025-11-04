@@ -881,3 +881,10 @@ class Postgres(Dialect):
             )
 
             return self.sql(case_expr)
+
+        def bytestring_sql(self, expression: exp.ByteString) -> str:
+            if expression.type and expression.is_type(exp.DataType.Type.BINARY):
+                return self.sql(
+                    exp.cast(exp.Literal.string(expression.this), exp.DataType.Type.BINARY)
+                )
+            return super().bytestring_sql(expression)

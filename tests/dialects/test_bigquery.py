@@ -1895,9 +1895,11 @@ WHERE
 
         annotated = annotate_types(self.parse_one("SELECT b'\x61'"), dialect="bigquery")
         self.assertEqual(annotated.sql("duckdb"), "SELECT CAST('\x61' AS BLOB)")
+        self.assertEqual(annotated.sql("postgres"), "SELECT CAST('\x61' AS BYTEA)")
 
         annotated = annotate_types(self.parse_one("SELECT b'a'"), dialect="bigquery")
         self.assertEqual(annotated.sql("duckdb"), "SELECT CAST('a' AS BLOB)")
+        self.assertEqual(annotated.sql("postgres"), "SELECT CAST('a' AS BYTEA)")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

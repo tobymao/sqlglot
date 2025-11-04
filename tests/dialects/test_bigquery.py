@@ -1893,6 +1893,12 @@ WHERE
             },
         )
 
+        annotated = annotate_types(self.parse_one("SELECT b'\x61'"), dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT CAST('\x61' AS BLOB)")
+
+        annotated = annotate_types(self.parse_one("SELECT b'a'"), dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT CAST('a' AS BLOB)")
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

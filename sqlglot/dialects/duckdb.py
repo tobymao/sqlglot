@@ -1376,3 +1376,8 @@ class DuckDB(Dialect):
             to_hex = exp.cast(self.func("TO_HEX", from_hex), exp.DataType.Type.BLOB)
 
             return self.sql(to_hex)
+
+        def bytestring_sql(self, expression: exp.ByteString) -> str:
+            if expression.type and expression.is_type(exp.DataType.Type.BINARY):
+                return self.sql(exp.cast(exp.Literal.string(expression.this), exp.DataType.Type.BINARY))
+            return super().bytestring_sql(expression)

@@ -1719,7 +1719,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         )
 
         for connector in ("AND", "OR"):
-            for predicate in (">", "<", ">=", "<=", "=", "!=", "<>"):
+            for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
                 for operand, nonnull in (("1", True), ("foo.id", False)):
                     sql_predicate = f"{operand} {predicate} {operand}"
                     with self.subTest(

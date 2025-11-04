@@ -1712,6 +1712,22 @@ BITXOR(tbl.bin_col, tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+BITANDAGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BITAND_AGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BIT_AND_AGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
+BIT_ANDAGG(tbl.int_col);
+NUMBER(38, 0);
+
+# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 

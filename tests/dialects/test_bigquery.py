@@ -845,6 +845,20 @@ LANGUAGE js AS
                 "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '2' HOUR",
             },
         )
+
+        sql = "LOWER(CAST('HELLO' AS BYTES))"
+        expr = self.parse_one(sql)
+        qualified = qualify(expr, dialect="bigquery")
+        annotated = annotate_types(qualified, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)"
+        )
+
+        sql = "LOWER('HELLO')"
+        expr = self.parse_one(sql)
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "LOWER('HELLO')")
+
         self.validate_all(
             "LOWER(TO_HEX(x))",
             write={

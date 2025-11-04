@@ -1750,7 +1750,7 @@ WHERE
                 "spark": "CONTAINS(LOWER(a), LOWER(b))",
                 "databricks": "CONTAINS(LOWER(a), LOWER(b))",
                 "snowflake": "CONTAINS(LOWER(a), LOWER(b))",
-                "duckdb": "CONTAINS(LOWER(CAST(a AS TEXT)), LOWER(CAST(b AS TEXT)))",
+                "duckdb": "CONTAINS(LOWER(a), LOWER(b))",
                 "oracle": "CONTAINS(LOWER(a), LOWER(b))",
                 "bigquery": "CONTAINS_SUBSTR(a, b)",
             },

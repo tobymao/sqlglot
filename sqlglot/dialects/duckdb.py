@@ -1167,8 +1167,7 @@ class DuckDB(Dialect):
 
         def lower_sql(self, expression: exp.Lower) -> str:
             arg = expression.this
-
-            if not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+            if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
 
             lower_sql = self.func("LOWER", expression.this)

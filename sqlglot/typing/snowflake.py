@@ -267,4 +267,6 @@ EXPRESSION_METADATA = {
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},
+    exp.ArgMax: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.ArgMin: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

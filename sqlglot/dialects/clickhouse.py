@@ -322,6 +322,7 @@ class ClickHouse(Dialect):
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
+            "HAS": exp.ArrayContains.from_arg_list,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),

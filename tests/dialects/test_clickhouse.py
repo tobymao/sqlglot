@@ -332,6 +332,8 @@ class TestClickhouse(Validator):
                 "postgres": "any(array[1]) <> x",
             },
         )
+        self.validate_identity("has([1], x)").assert_is(exp.ArrayContains)
+        self.validate_all("has([1], x)", write={"presto": "CONTAINS(ARRAY[1], x)"})
         self.validate_all(
             "SELECT CAST('2020-01-01' AS Nullable(DateTime)) + INTERVAL '500' MICROSECOND",
             read={

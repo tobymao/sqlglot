@@ -1699,3 +1699,44 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.assertEqual(
             annotated.selects[0].type.sql("snowflake"), 'OBJECT("foo" VARCHAR, "a b" VARCHAR)'
         )
+
+    def test_nonnull_annotation(self):
+        for literal_sql, literal_type in (("1", "INT"), ("'foo'", "VARCHAR"), ("2.5", "DOUBLE")):
+            with self.subTest(f"Test NULL annotation for literal: {literal_sql}"):
+                sql = f"SELECT {literal_sql}"
+                query = parse_one(sql)
+                annotated = annotate_types(query)
+                assert annotated.selects[0].type == exp.DataType.build(literal_type, nonnull=True)
+
+        schema = {"foo": {"id": "INT"}}
+        sql = "SELECT foo.id FROM foo"
+        query = parse_one(sql)
+        annotated = annotate_types(query, schema=schema)
+        self.assertTrue(
+            annotated.selects[0].type.is_type(
+                exp.DataType.build("INT", nonnull=False), check_nullable=True
+            )
+        )
+
+        for connector in ("AND", "OR"):
+            for predicate in (">", "<", ">=", "<=", "=", "!=", "<>"):
+                for operand, nonnull in (("1", True), ("foo.id", False)):
+                    sql_predicate = f"{operand} {predicate} {operand}"
+                    with self.subTest(
+                        f"Test NULL propagation for connector: {connector} with predicate: {sql_predicate}"
+                    ):
+                        sql = f"SELECT {sql_predicate} FROM foo"
+                        query = parse_one(sql)
+                        annotated = annotate_types(query)
+                        assert annotated.selects[0].type == exp.DataType.build(
+                            "BOOLEAN", nonnull=nonnull
+                        )
+            for predicate in ("IS NULL", "IS NOT NULL"):
+                sql_predicate = f"foo.id {predicate}"
+                with self.subTest(
+                    f"Test NULL propagation for connector: {connector} with predicate: {sql_predicate}"
+                ):
+                    sql = f"SELECT {sql_predicate} FROM foo"
+                    query = parse_one(sql)
+                    annotated = annotate_types(query)
+                    assert annotated.selects[0].type == exp.DataType.build("BOOLEAN", nonnull=True)

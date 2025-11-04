@@ -21,11 +21,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     },
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_unary(e)}
-        for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias), {exp.Not})
-    },
-    **{
-        expr_type: {"returns": exp.DataType.Type.BOOLEAN}
-        for expr_type in subclasses(exp.__name__, (exp.Connector, exp.Predicate))
+        for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
     },
     **{
         expr_type: {"returns": exp.DataType.Type.BIGINT}
@@ -58,7 +54,6 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.In,
             exp.LogicalAnd,
             exp.LogicalOr,
-            exp.Not,
             exp.RegexpLike,
             exp.StartsWith,
         }

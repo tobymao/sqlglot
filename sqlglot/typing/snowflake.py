@@ -249,6 +249,11 @@ EXPRESSION_METADATA = {
             exp.Uuid,
         }
     },
+    exp.BitwiseAndAgg: {
+        "annotator": lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("NUMBER(38, 0)", dialect="snowflake")
+        )
+    },
     exp.ConcatWs: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.ConvertTimezone: {
         "annotator": lambda self, e: self._annotate_with_type(

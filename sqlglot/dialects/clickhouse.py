@@ -322,6 +322,7 @@ class ClickHouse(Dialect):
             "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
+            "HAS": exp.ArrayContains.from_arg_list,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
@@ -1087,6 +1088,7 @@ class ClickHouse(Dialect):
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
             exp.ArrayConcat: rename_func("arrayConcat"),
+            exp.ArrayContains: rename_func("has"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArrayReverse: rename_func("arrayReverse"),

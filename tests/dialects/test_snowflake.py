@@ -3409,6 +3409,13 @@ SINGLE = TRUE""",
             self.assertEqual(len(node.this.expressions), 1)
             self.assertIsInstance(node.expression, exp.Column)
 
+        # Test 3-argument case (returns array)
+        max_by_3 = self.validate_identity("MAX_BY(selected_col, filtered_col, 5)")
+        min_by_3 = self.validate_identity("MIN_BY(selected_col, filtered_col, 3)")
+
+        for node in (max_by_3, min_by_3):
+            self.assertIsNotNone(node.args.get("count"))
+
     def test_create_view_copy_grants(self):
         # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
         self.validate_identity(

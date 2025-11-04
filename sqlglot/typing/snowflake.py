@@ -81,6 +81,22 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
+def _annotate_arg_max_min(
+    self: TypeAnnotator, expression: exp.ArgMax | exp.ArgMin
+) -> exp.ArgMax | exp.ArgMin:
+    """Annotate ArgMax/ArgMin with type based on argument count.
+
+    When count argument is provided (3 arguments), returns ARRAY of the first argument's type.
+    When count is not provided (2 arguments), returns the first argument's type.
+    """
+    if expression.args.get("count"):
+        # 3 arguments: return ARRAY of first argument's type
+        return self._annotate_by_args(expression, "this", array=True)
+    else:
+        # 2 arguments: return first argument's type
+        return self._annotate_by_args(expression, "this")
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -267,6 +283,6 @@ EXPRESSION_METADATA = {
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},
-    exp.ArgMax: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
-    exp.ArgMin: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.ArgMax: {"annotator": _annotate_arg_max_min},
+    exp.ArgMin: {"annotator": _annotate_arg_max_min},
 }

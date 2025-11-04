@@ -155,11 +155,7 @@ EXPRESSION_METADATA = {
                 e, exp.DataType.build("NUMBER", dialect="snowflake")
             )
         }
-        for expr_type in (
-            exp.RegexpCount,
-            exp.RegexpInstr,
-            exp.BitwiseAndAgg,
-        )
+        for expr_type in (exp.RegexpCount, exp.RegexpInstr, exp.BitwiseAndAgg, exp.BitwiseOrAgg)
     },
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}

@@ -477,10 +477,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, expression.this.type)
 
-        if this_type := expression.this.type:
-            nonnull = this_type.args.get("nonnull")
-            if nonnull and (expr_type := expression.type):
-                expr_type.set("nonnull", nonnull)
+        if (
+            (this_type := expression.this.type)
+            and this_type.args.get("nonnull")
+            and (expr_type := expression.type)
+        ):
+            expr_type.set("nonnull", True)
 
         return expression
 

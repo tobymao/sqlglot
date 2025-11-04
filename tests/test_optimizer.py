@@ -1718,28 +1718,39 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             )
         )
 
+        for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
+            for operand, nonnull in (("1", True), ("foo.id", False)):
+                sql_predicate = f"{operand} {predicate} {operand}"
+                with self.subTest(f"Test NULL propagation for predicate: {predicate}"):
+                    sql = f"SELECT {sql_predicate} FROM foo"
+                    query = parse_one(sql)
+                    annotated = annotate_types(query, schema=schema)
+                    assert annotated.selects[0].type == exp.DataType.build(
+                        "BOOLEAN", nonnull=nonnull
+                    )
+
+        for predicate in ("IS NULL", "IS NOT NULL"):
+            sql_predicate = f"foo.id {predicate}"
+            with self.subTest(f"Test NULL propagation for predicate: {predicate}"):
+                sql = f"SELECT {sql_predicate} FROM foo"
+                query = parse_one(sql)
+                annotated = annotate_types(query, schema=schema)
+                assert annotated.selects[0].type == exp.DataType.build("BOOLEAN", nonnull=True)
+
         for connector in ("AND", "OR"):
             for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
                 for operand, nonnull in (("1", True), ("foo.id", False)):
-                    sql_predicate = f"{operand} {predicate} {operand}"
+                    sql_predicate = f"({operand} {predicate} {operand})"
+                    sql_connector = f"{sql_predicate} {connector} {sql_predicate}"
                     with self.subTest(
-                        f"Test NULL propagation for connector: {connector} with predicate: {sql_predicate}"
+                        f"Test NULL propagation for connector: {connector} with predicates: {predicate}"
                     ):
-                        sql = f"SELECT {sql_predicate} FROM foo"
+                        sql = f"SELECT {sql_connector} FROM foo"
                         query = parse_one(sql)
                         annotated = annotate_types(query, schema=schema)
                         assert annotated.selects[0].type == exp.DataType.build(
                             "BOOLEAN", nonnull=nonnull
                         )
-            for predicate in ("IS NULL", "IS NOT NULL"):
-                sql_predicate = f"foo.id {predicate}"
-                with self.subTest(
-                    f"Test NULL propagation for connector: {connector} with predicate: {sql_predicate}"
-                ):
-                    sql = f"SELECT {sql_predicate} FROM foo"
-                    query = parse_one(sql)
-                    annotated = annotate_types(query, schema=schema)
-                    assert annotated.selects[0].type == exp.DataType.build("BOOLEAN", nonnull=True)
 
         for unary, unary_type in (("NOT", "BOOLEAN"), ("-", "INT")):
             for value, nonnull in (("1", True), ("foo.id", False)):

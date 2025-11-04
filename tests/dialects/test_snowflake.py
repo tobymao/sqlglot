@@ -99,8 +99,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RANDOM()")
         self.validate_identity("SELECT RANDOM(123)")
         self.validate_identity(
-            "SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP(a, b)",
-            "SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)",
+            "SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)"
         )
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")

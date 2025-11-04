@@ -161,6 +161,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseOrAgg,
             exp.RegexpCount,
             exp.RegexpInstr,
+            exp.BitwiseXorAgg,
         )
     },
     **{

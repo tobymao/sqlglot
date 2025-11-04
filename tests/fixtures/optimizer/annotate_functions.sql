@@ -2240,6 +2240,14 @@ GROUPING(tbl.bigint_col);
 INT;
 
 # dialect: snowflake
+GROUPING_ID(tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+GROUPING_ID(tbl.bigint_col, tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
 GREATEST(tbl.bigint_col, tbl.bigint_col);
 BIGINT;
 

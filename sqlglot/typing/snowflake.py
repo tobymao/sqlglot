@@ -112,6 +112,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
             exp.Factorial,
+            exp.GroupingId,
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
             exp.Rand,
@@ -155,7 +156,12 @@ EXPRESSION_METADATA = {
                 e, exp.DataType.build("NUMBER", dialect="snowflake")
             )
         }
-        for expr_type in (exp.RegexpCount, exp.RegexpInstr, exp.BitwiseAndAgg, exp.BitwiseOrAgg)
+        for expr_type in (
+            exp.BitwiseAndAgg
+            exp.BitwiseOrAgg,
+            exp.RegexpCount,
+            exp.RegexpInstr,
+        )
     },
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}

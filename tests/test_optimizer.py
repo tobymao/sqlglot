@@ -1727,7 +1727,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                     ):
                         sql = f"SELECT {sql_predicate} FROM foo"
                         query = parse_one(sql)
-                        annotated = annotate_types(query)
+                        annotated = annotate_types(query, schema=schema)
                         assert annotated.selects[0].type == exp.DataType.build(
                             "BOOLEAN", nonnull=nonnull
                         )
@@ -1738,5 +1738,15 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 ):
                     sql = f"SELECT {sql_predicate} FROM foo"
                     query = parse_one(sql)
-                    annotated = annotate_types(query)
+                    annotated = annotate_types(query, schema=schema)
                     assert annotated.selects[0].type == exp.DataType.build("BOOLEAN", nonnull=True)
+
+        for unary, unary_type in (("NOT", "BOOLEAN"), ("-", "INT")):
+            for value, nonnull in (("1", True), ("foo.id", False)):
+                with self.subTest(f"Test NULL propagation for unary: {unary} with value: {value}"):
+                    sql = f"SELECT {unary} {value} FROM foo"
+                    query = parse_one(sql)
+                    annotated = annotate_types(query, schema=schema)
+                    assert annotated.selects[0].type == exp.DataType.build(
+                        unary_type, nonnull=nonnull
+                    )

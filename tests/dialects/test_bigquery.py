@@ -846,20 +846,19 @@ LANGUAGE js AS
             },
         )
 
-        self.validate_all(
-            "LOWER(CAST('HELLO' AS BYTES))",
-            write={
-                "bigquery": "LOWER(CAST('HELLO' AS BYTES))",
-                "duckdb": "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)",
-            },
+        sql = "LOWER(CAST('HELLO' AS BYTES))"
+        expr = self.parse_one(sql)
+        qualified = qualify(expr, dialect="bigquery")
+        annotated = annotate_types(qualified, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)"
         )
-        self.validate_all(
-            "LOWER('HELLO')",
-            write={
-                "bigquery": "LOWER('HELLO')",
-                "duckdb": "LOWER('HELLO')",
-            },
-        )
+
+        sql = "LOWER('HELLO')"
+        expr = self.parse_one(sql)
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "LOWER('HELLO')")
+
         self.validate_all(
             "LOWER(TO_HEX(x))",
             write={
@@ -1751,7 +1750,7 @@ WHERE
                 "spark": "CONTAINS(LOWER(a), LOWER(b))",
                 "databricks": "CONTAINS(LOWER(a), LOWER(b))",
                 "snowflake": "CONTAINS(LOWER(a), LOWER(b))",
-                "duckdb": "CONTAINS(LOWER(a), LOWER(b))",
+                "duckdb": "CONTAINS(LOWER(CAST(a AS TEXT)), LOWER(CAST(b AS TEXT)))",
                 "oracle": "CONTAINS(LOWER(a), LOWER(b))",
                 "bigquery": "CONTAINS_SUBSTR(a, b)",
             },

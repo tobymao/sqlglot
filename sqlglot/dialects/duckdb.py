@@ -1167,18 +1167,13 @@ class DuckDB(Dialect):
 
         def lower_sql(self, expression: exp.Lower) -> str:
             arg = expression.this
-            if not arg.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
-                arg = annotate_types(arg, dialect=self.dialect)
 
             if not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
 
             lower_sql = self.func("LOWER", expression.this)
-            is_binary = expression.is_type(exp.DataType.Type.BINARY) or arg.is_type(
-                exp.DataType.Type.BINARY
-            )
+
+            is_binary = expression.is_type(exp.DataType.Type.BINARY)
             if is_binary:
                 blob = exp.DataType.build("BLOB", dialect="duckdb")
                 lower_sql = self.sql(exp.Cast(this=lower_sql, to=blob))

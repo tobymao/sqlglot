@@ -1163,7 +1163,9 @@ class TestDuckDB(Validator):
 
         self.validate_identity("FORMAT('foo')")
         self.validate_identity("FORMAT('foo', 'foo2', 'foo3')")
-        self.validate_identity("LOWER('HELLO')")
+        self.assertEqual(
+            annotate_types(self.parse_one("LOWER('HELLO')")).sql("duckdb"), "LOWER('HELLO')"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

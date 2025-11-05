@@ -3525,6 +3525,11 @@ FROM SEMANTIC_VIEW(
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
 
+    def test_object_agg(self):
+        self.validate_identity("OBJECT_AGG(key, value)")
+        self.validate_identity("SELECT OBJECT_AGG(key, value) FROM tbl")
+        self.validate_identity("SELECT OBJECT_AGG(k, v) FROM table GROUP BY g")
+
     def test_md5_functions(self):
         self.validate_identity("MD5_HEX(col)", "MD5(col)")
         self.validate_identity("MD5(col)")

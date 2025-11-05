@@ -901,7 +901,11 @@ class Parser(metaclass=_Parser):
 
     NUMERIC_PARSERS = {
         TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
-        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
+        TokenType.BYTE_STRING: lambda self, token: self.expression(
+            exp.ByteString,
+            this=token.text,
+            is_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE or None,
+        ),
         TokenType.HEX_STRING: lambda self, token: self.expression(
             exp.HexString,
             this=token.text,

@@ -537,6 +537,11 @@ class Dialect(metaclass=_Dialect):
     # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
 
+    BYTE_STRING_IS_BYTES_TYPE: bool = False
+    """
+    Whether byte string literals (ex: BigQuery's b'...') are typed as BYTES/BINARY
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

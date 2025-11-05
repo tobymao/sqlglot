@@ -1394,6 +1394,11 @@ class Generator(metaclass=_Generator):
                 delimiter=self.dialect.BYTE_END,
                 escaped_delimiter=self._escaped_byte_quote_end,
             )
+            is_bytes = expression.args.get("is_bytes")
+            if is_bytes and is_bytes != self.dialect.BYTE_STRING_IS_BYTES_TYPE:
+                return self.sql(
+                    exp.cast(exp.Literal.string(escaped_byte_string), exp.DataType.Type.BINARY)
+                )
             return f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
         return this
 

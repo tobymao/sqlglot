@@ -1751,7 +1751,7 @@ class HexString(Condition):
 
 
 class ByteString(Condition):
-    pass
+    arg_types = {"this": True, "is_bytes": False}
 
 
 class RawString(Condition):

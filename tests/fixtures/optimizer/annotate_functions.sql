@@ -1785,6 +1785,7 @@ BOOLEAN;
 
 # dialect: snowflake
 BOOLAND_AGG(tbl.bool_col);
+BOOLEAN;
 
 # dialect: snowflake
 BOOLOR_AGG(tbl.bool_col);

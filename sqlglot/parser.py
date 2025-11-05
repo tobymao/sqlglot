@@ -3375,12 +3375,6 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Summarize, this=this, table=table)
         elif self._match(TokenType.DESCRIBE):
             this = self._parse_describe()
-        elif self._match_text_seq("STREAM"):
-            this = self._parse_function()
-            if this:
-                this = self.expression(exp.Stream, this=this)
-            else:
-                self._retreat(self._index - 1)
         else:
             this = None
 
@@ -3812,6 +3806,16 @@ class Parser(metaclass=_Parser):
             ordinality=ordinality,
         )
 
+    def _parse_stream(self) -> t.Optional[exp.Stream]:
+        index = self._index
+        if self._match_text_seq("STREAM"):
+            this = self._try_parse(self._parse_table)
+            if this:
+                return self.expression(exp.Stream, this=this)
+
+        self._retreat(index)
+        return None
+
     def _parse_join_parts(
         self,
     ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
@@ -4104,6 +4108,10 @@ class Parser(metaclass=_Parser):
         parse_partition: bool = False,
         consume_pipe: bool = False,
     ) -> t.Optional[exp.Expression]:
+        stream = self._parse_stream()
+        if stream:
+            return stream
+
         lateral = self._parse_lateral()
         if lateral:
             return lateral

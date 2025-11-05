@@ -7873,7 +7873,7 @@ class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
 
 
-class Skew(AggFunc):
+class Skewness(AggFunc):
     pass
 
 

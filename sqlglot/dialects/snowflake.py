@@ -741,6 +741,7 @@ class Snowflake(Dialect):
             "LIKE": build_like(exp.Like),
             "ILIKE": build_like(exp.ILike),
             "SEARCH": _build_search,
+            "SKEW": exp.Skewness.from_arg_list,
             "WEEKISO": exp.WeekOfYear.from_arg_list,
             "WEEKOFYEAR": exp.Week.from_arg_list,
         }
@@ -1416,6 +1417,7 @@ class Snowflake(Dialect):
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),
             exp.SortArray: rename_func("ARRAY_SORT"),
+            exp.Skewness: rename_func("SKEW"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.EndsWith: rename_func("ENDSWITH"),

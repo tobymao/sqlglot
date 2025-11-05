@@ -96,7 +96,20 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RADIANS(180)")
         self.validate_identity("SELECT REGR_VALX(y, x)")
         self.validate_identity("SELECT REGR_VALY(y, x)")
-        self.validate_identity("SELECT SKEW(a)")
+        self.validate_all(
+            "SELECT SKEW(a)",
+            write={
+                "snowflake": "SELECT SKEW(a)",
+                "duckdb": "SELECT SKEWNESS(a)",
+                "spark": "SELECT SKEWNESS(a)",
+                "trino": "SELECT SKEWNESS(a)",
+            },
+            read={
+                "duckdb": "SELECT SKEWNESS(a)",
+                "spark": "SELECT SKEWNESS(a)",
+                "trino": "SELECT SKEWNESS(a)",
+            },
+        )
         self.validate_identity("SELECT RANDOM()")
         self.validate_identity("SELECT RANDOM(123)")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")

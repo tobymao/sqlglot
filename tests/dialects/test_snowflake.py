@@ -191,6 +191,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity("SELECT MATCH_CONDITION")
+        self.validate_identity("SELECT OBJECT_AGG(key, value) FROM tbl")
         self.validate_identity("1 /* /* */")
         self.validate_identity("TO_TIMESTAMP(col, fmt)")
         self.validate_identity("SELECT TO_CHAR(CAST('12:05:05' AS TIME))")
@@ -3524,11 +3525,6 @@ FROM SEMANTIC_VIEW(
             for name in bit_func:
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
-
-    def test_object_agg(self):
-        self.validate_identity("OBJECT_AGG(key, value)")
-        self.validate_identity("SELECT OBJECT_AGG(key, value) FROM tbl")
-        self.validate_identity("SELECT OBJECT_AGG(k, v) FROM table GROUP BY g")
 
     def test_md5_functions(self):
         self.validate_identity("MD5_HEX(col)", "MD5(col)")

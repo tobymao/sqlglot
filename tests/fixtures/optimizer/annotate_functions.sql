@@ -1780,6 +1780,10 @@ BOOLXOR(2, 0);
 BOOLEAN;
 
 # dialect: snowflake
+BOOLAND_AGG(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

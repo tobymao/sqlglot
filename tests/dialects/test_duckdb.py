@@ -1166,6 +1166,9 @@ class TestDuckDB(Validator):
         self.assertEqual(
             annotate_types(self.parse_one("LOWER('HELLO')")).sql("duckdb"), "LOWER('HELLO')"
         )
+        self.assertEqual(
+            annotate_types(self.parse_one("UPPER('hello')")).sql("duckdb"), "UPPER('hello')"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

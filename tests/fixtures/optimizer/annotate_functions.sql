@@ -1792,6 +1792,26 @@ BOOLOR_AGG(tbl.bool_col);
 BOOLEAN;
 
 # dialect: snowflake
+ARRAY_AGG(tbl.bin_col);
+ARRAY<BINARY>;
+
+# dialect: snowflake
+ARRAY_AGG(tbl.bool_col);
+ARRAY<BOOLEAN>;
+
+# dialect: snowflake
+ARRAY_AGG(tbl.date_col);
+ARRAY<DATE>;
+
+# dialect: snowflake
+ARRAY_AGG(tbl.double_col);
+ARRAY<DOUBLE>;
+
+# dialect: snowflake
+ARRAY_AGG(tbl.str_col);
+ARRAY<VARCHAR>;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

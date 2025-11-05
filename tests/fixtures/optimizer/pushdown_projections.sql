@@ -110,5 +110,8 @@ WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS 
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
 SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _q_0, t2 AS t2);
 
-SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 5 b, 6 c, 7 d, 8 a, 9 e)
-SELECT a, d FROM (SELECT 1 a, 3 d, UNION ALL BY NAME SELECT 7 d, 8 a)
+SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 6 c, 7 d, 8 a, 9 e);
+SELECT _q_0.a AS a, _q_0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT 7 AS d, 8 AS a) AS _q_0;
+
+SELECT a, b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) (SELECT a, b, c FROM cte1));
+SELECT _q_0.a AS a, _q_0.b AS b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b) SELECT cte1.a AS a, cte1.b AS b FROM cte1 AS cte1) AS _q_0;

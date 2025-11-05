@@ -3285,6 +3285,9 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Failed to parse any statement following CTE")
                 return cte
 
+            while isinstance(this, exp.Subquery) and this.is_wrapper:
+                this = this.this
+
             if "with" in this.arg_types:
                 this.set("with", cte)
             else:

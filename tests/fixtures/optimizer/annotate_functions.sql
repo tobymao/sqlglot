@@ -3364,6 +3364,10 @@ ILIKE(tbl.str_col, 'pattern');
 BOOLEAN;
 
 # dialect: snowflake
+OBJECT_AGG(tbl.str_col, tbl.variant_col);
+OBJECT;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 

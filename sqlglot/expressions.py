@@ -6016,6 +6016,10 @@ class NthValue(AggFunc):
     arg_types = {"this": True, "offset": True}
 
 
+class ObjectAgg(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
 class Case(Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 

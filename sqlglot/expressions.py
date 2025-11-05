@@ -5614,6 +5614,10 @@ class BitwiseXorAgg(AggFunc):
     pass
 
 
+class BoolxorAgg(AggFunc):
+    pass
+
+
 class BitwiseCount(Func):
     pass
 

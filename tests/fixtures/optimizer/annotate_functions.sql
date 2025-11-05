@@ -1760,6 +1760,10 @@ BIT_XORAGG(tbl.int_col);
 NUMBER(38, 0);
 
 # dialect: snowflake
+BOOLXOR_AGG(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
 BOOLNOT(tbl.int_col);
 BOOLEAN;
 
@@ -1781,6 +1785,9 @@ BOOLEAN;
 
 # dialect: snowflake
 BOOLAND_AGG(tbl.bool_col);
+
+# dialect: snowflake
+BOOLOR_AGG(tbl.bool_col);
 BOOLEAN;
 
 # dialect: snowflake

@@ -1892,6 +1892,22 @@ WHERE
                 "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
             },
         )
+        self.validate_all(
+            "SELECT b'\x61'",
+            write={
+                "bigquery": "SELECT b'\x61'",
+                "duckdb": "SELECT CAST(e'\x61' AS BLOB)",
+                "postgres": "SELECT CAST(e'\x61' AS BYTEA)",
+            },
+        )
+        self.validate_all(
+            "SELECT b'a'",
+            write={
+                "bigquery": "SELECT b'a'",
+                "duckdb": "SELECT CAST(e'a' AS BLOB)",
+                "postgres": "SELECT CAST(e'a' AS BYTEA)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

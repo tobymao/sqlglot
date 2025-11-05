@@ -1040,6 +1040,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT e'Hello\nworld'",
+                "bigquery": "SELECT CAST(b'Hello\\nworld' AS STRING)",
             },
         )
 

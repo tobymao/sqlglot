@@ -89,12 +89,7 @@ def _annotate_arg_max_min(
     When count argument is provided (3 arguments), returns ARRAY of the first argument's type.
     When count is not provided (2 arguments), returns the first argument's type.
     """
-    if expression.args.get("count"):
-        # 3 arguments: return ARRAY of first argument's type
-        return self._annotate_by_args(expression, "this", array=True)
-    else:
-        # 2 arguments: return first argument's type
-        return self._annotate_by_args(expression, "this")
+    return self._annotate_by_args(expression, "this", array=bool(expression.args.get("count")))
 
 
 EXPRESSION_METADATA = {

@@ -444,6 +444,41 @@ export class Select extends Expression {
     if (this.offset) children.push(this.offset);
     return children;
   }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpressions = this.expressions.map(e => e.transform(fn));
+    const newFrom = this.from ? this.from.transform(fn) as From : undefined;
+    const newWhere = this.where ? this.where.transform(fn) as Where : undefined;
+    const newGroupBy = this.groupBy ? this.groupBy.transform(fn) as GroupBy : undefined;
+    const newHaving = this.having ? this.having.transform(fn) as Having : undefined;
+    const newOrderBy = this.orderBy ? this.orderBy.transform(fn) as OrderBy : undefined;
+    const newLimit = this.limit ? this.limit.transform(fn) as Limit : undefined;
+    const newOffset = this.offset ? this.offset.transform(fn) as Offset : undefined;
+
+    if (
+      newExpressions.some((e, i) => e !== this.expressions[i]) ||
+      newFrom !== this.from ||
+      newWhere !== this.where ||
+      newGroupBy !== this.groupBy ||
+      newHaving !== this.having ||
+      newOrderBy !== this.orderBy ||
+      newLimit !== this.limit ||
+      newOffset !== this.offset
+    ) {
+      return new Select(
+        newExpressions,
+        newFrom,
+        newWhere,
+        newGroupBy,
+        newHaving,
+        newOrderBy,
+        newLimit,
+        newOffset,
+        this.distinct
+      );
+    }
+    return this;
+  }
 }
 
 export class From extends Expression {
@@ -457,6 +492,14 @@ export class From extends Expression {
 
   protected children(): Expression[] {
     return this.expressions;
+  }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpressions = this.expressions.map(e => e.transform(fn));
+    if (newExpressions.some((e, i) => e !== this.expressions[i])) {
+      return new From(newExpressions);
+    }
+    return this;
   }
 }
 
@@ -472,6 +515,14 @@ export class Where extends Expression {
   protected children(): Expression[] {
     return [this.expression];
   }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpr = this.expression.transform(fn);
+    if (newExpr !== this.expression) {
+      return new Where(newExpr);
+    }
+    return this;
+  }
 }
 
 export class GroupBy extends Expression {
@@ -485,6 +536,14 @@ export class GroupBy extends Expression {
 
   protected children(): Expression[] {
     return this.expressions;
+  }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpressions = this.expressions.map(e => e.transform(fn));
+    if (newExpressions.some((e, i) => e !== this.expressions[i])) {
+      return new GroupBy(newExpressions);
+    }
+    return this;
   }
 }
 
@@ -500,6 +559,14 @@ export class Having extends Expression {
   protected children(): Expression[] {
     return [this.expression];
   }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpr = this.expression.transform(fn);
+    if (newExpr !== this.expression) {
+      return new Having(newExpr);
+    }
+    return this;
+  }
 }
 
 export class OrderBy extends Expression {
@@ -513,6 +580,14 @@ export class OrderBy extends Expression {
 
   protected children(): Expression[] {
     return this.expressions;
+  }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpressions = this.expressions.map(e => e.transform(fn));
+    if (newExpressions.some((e, i) => e !== this.expressions[i])) {
+      return new OrderBy(newExpressions);
+    }
+    return this;
   }
 }
 
@@ -531,6 +606,14 @@ export class Ordered extends Expression {
   protected children(): Expression[] {
     return [this.expression];
   }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpr = this.expression.transform(fn);
+    if (newExpr !== this.expression) {
+      return new Ordered(newExpr, this.desc);
+    }
+    return this;
+  }
 }
 
 export class Limit extends Expression {
@@ -545,6 +628,14 @@ export class Limit extends Expression {
   protected children(): Expression[] {
     return [this.expression];
   }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpr = this.expression.transform(fn);
+    if (newExpr !== this.expression) {
+      return new Limit(newExpr);
+    }
+    return this;
+  }
 }
 
 export class Offset extends Expression {
@@ -558,6 +649,14 @@ export class Offset extends Expression {
 
   protected children(): Expression[] {
     return [this.expression];
+  }
+
+  protected transformChildren(fn: (node: Expression) => Expression): Expression {
+    const newExpr = this.expression.transform(fn);
+    if (newExpr !== this.expression) {
+      return new Offset(newExpr);
+    }
+    return this;
   }
 }
 

@@ -90,7 +90,13 @@ export class Parser {
   private expressionList(): exp.Expression[] {
     const expressions: exp.Expression[] = [];
     do {
-      expressions.push(this.expression());
+      let expr = this.expression();
+      // Handle AS alias in SELECT list
+      if (this.match(TokenType.AS)) {
+        const alias = this.identifier();
+        expr = new exp.Alias(expr, alias);
+      }
+      expressions.push(expr);
     } while (this.match(TokenType.COMMA));
     return expressions;
   }
@@ -314,14 +320,32 @@ export class Parser {
           const right = this.addition();
           expr = new exp.EQ(expr, right);
         }
+      } else if (this.match(TokenType.IN)) {
+        // Parse IN (subquery or list)
+        this.consume(TokenType.L_PAREN, "Expected '(' after IN");
+        if (this.check(TokenType.SELECT)) {
+          const subquery = this.selectStatement();
+          this.consume(TokenType.R_PAREN, "Expected ')'");
+          // For now, just represent IN as a function call
+          expr = new exp.FunctionCall(
+            new exp.Identifier('IN', false),
+            [expr, new exp.Paren(subquery)]
+          );
+        } else {
+          // Parse list of values
+          const values: exp.Expression[] = [];
+          do {
+            values.push(this.addition());
+          } while (this.match(TokenType.COMMA));
+          this.consume(TokenType.R_PAREN, "Expected ')'");
+          expr = new exp.FunctionCall(
+            new exp.Identifier('IN', false),
+            [expr, ...values]
+          );
+        }
       } else {
         break;
       }
-    }
-
-    if (this.match(TokenType.AS)) {
-      const alias = this.identifier();
-      expr = new exp.Alias(expr, alias);
     }
 
     return expr;

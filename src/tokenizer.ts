@@ -315,7 +315,7 @@ export class Tokenizer {
         this.col = 0;
       }
       if (this.peek() === '\\' && this.peekNext() === quote) {
-        // Escaped quote
+        // Backslash-escaped quote
         this.advance();
         this.advance();
       } else {
@@ -331,6 +331,14 @@ export class Tokenizer {
 
     // Closing quote
     this.advance();
+
+    // Check for doubled quote (SQL standard escape)
+    if (this.peek() === quote) {
+      // This is an escaped quote, continue parsing the string
+      this.advance();
+      this.string(quote);
+      return;
+    }
 
     const value = this.sql.substring(this.start + 1, this.current - 1);
     this.addToken(TokenType.STRING, value);

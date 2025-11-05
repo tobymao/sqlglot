@@ -190,8 +190,8 @@ def _coerce_two_parameterized_types(
 
 
 def _coerce_parameterized_numeric_types(
-    self: TypeAnnotator, types: t.List[t.Optional[exp.DataType]]
-) -> t.Optional[t.Union[exp.DataType, exp.DataType.Type]]:
+    types: t.List[t.Optional[exp.DataType]],
+) -> t.Optional[exp.DataType]:
     """
     Generalized function to coerce multiple parameterized numeric types.
     Applies Snowflake's coercion logic pairwise across all types.
@@ -239,7 +239,7 @@ def _apply_numeric_coercion(
 
     if any(_is_parameterized_numeric(e.type) for e in expressions_to_coerce):
         normalized_types = [_get_normalized_type(e) for e in expressions_to_coerce]
-        result_type = _coerce_parameterized_numeric_types(self, normalized_types)
+        result_type = _coerce_parameterized_numeric_types(normalized_types)
         if result_type:
             self._set_type(expression, result_type)
             return expression

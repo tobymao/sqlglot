@@ -102,6 +102,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.ToDouble,
             exp.Variance,
             exp.VariancePop,
+            exp.Skewness,
         }
     },
     **{

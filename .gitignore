@@ -143,5 +143,8 @@ spark_warehouse
 sqlglot/_version.py
 
 # Emacs files
-*~node_modules/
+*~
+
+# Node.js
+node_modules/
 package-lock.json

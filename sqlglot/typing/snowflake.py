@@ -82,8 +82,9 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
-def _extract_type_precision_scale(data_type: exp.DataType) -> t.Tuple[t.Optional[int], t.Optional[int]]:
-    """Extract precision and scale from a parameterized numeric type."""
+def _extract_type_precision_scale(
+    data_type: exp.DataType,
+) -> t.Tuple[t.Optional[int], t.Optional[int]]:
     expressions = data_type.expressions
     if not expressions:
         return None, None
@@ -118,27 +119,26 @@ def _extract_literal_precision_scale(num_str: str) -> t.Tuple[int, int]:
     return precision, scale
 
 
-def _is_float(type_: t.Union[exp.DataType, exp.DataType.Type, None]) -> bool:
-    return isinstance(type_, exp.DataType) and type_.is_type(exp.DataType.Type.FLOAT)
+def _is_float(type_: t.Optional[exp.DataType]) -> bool:
+    return type_ is not None and type_.is_type(exp.DataType.Type.FLOAT)
 
 
-def _is_parameterized_numeric(type_: t.Union[exp.DataType, exp.DataType.Type, None]) -> bool:
-    return ( 
-        isinstance(type_, exp.DataType)
-        and type_.is_type(*exp.DataType.NUMERIC_TYPES)
-        and bool(type_.expressions)
+def _is_parameterized_numeric(type_: t.Optional[exp.DataType]) -> bool:
+    return (
+        type_ is not None and type_.is_type(*exp.DataType.NUMERIC_TYPES) and bool(type_.expressions)
     )
 
 
-def _get_normalized_type(
-    expression: exp.Expression,
-) -> t.Union[exp.DataType, exp.DataType.Type, None]:
+def _get_normalized_type(expression: exp.Expression) -> t.Optional[exp.DataType]:
     """
     Normalizes numeric expressions to their parameterized representation.
     For literal numbers, return the parameterized representation.
     For integer types, return NUMBER(38, 0).
     """
-    if isinstance(expression, exp.Literal) and expression.is_number:
+    if expression.type is None:
+        return None
+
+    if expression.is_number:
         precision, scale = _extract_literal_precision_scale(expression.this)
         return exp.DataType(
             this=exp.DataType.Type.DECIMAL,
@@ -171,7 +171,6 @@ def _coerce_two_parameterized_types(
     - If p2 >= p1 AND s2 >= s1: return type2
     - Otherwise: return NUMBER(min(38, max(p1, p2) + |s2 - s1|), max(s1, s2))
     """
-
     if p1 >= p2 and s1 >= s2:
         return type1.copy()
 
@@ -191,7 +190,7 @@ def _coerce_two_parameterized_types(
 
 
 def _coerce_parameterized_numeric_types(
-    self: TypeAnnotator, types: t.List[t.Union[exp.DataType, exp.DataType.Type, None]]
+    self: TypeAnnotator, types: t.List[t.Optional[exp.DataType]]
 ) -> t.Optional[t.Union[exp.DataType, exp.DataType.Type]]:
     """
     Generalized function to coerce multiple parameterized numeric types.
@@ -226,11 +225,14 @@ def _coerce_parameterized_numeric_types(
     return result_type
 
 
+T = t.TypeVar("T", bound=exp.Expression)
+
+
 def _apply_numeric_coercion(
     self: TypeAnnotator,
-    expression: exp.Expression,
+    expression: T,
     expressions_to_coerce: t.List[exp.Expression],
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[T]:
     if any(_is_float(e.type) for e in expressions_to_coerce):
         self._set_type(expression, exp.DataType.Type.FLOAT)
         return expression

@@ -209,18 +209,18 @@ def _coerce_parameterized_numeric_types(
             result_type = current_type
             continue
 
-        if _is_parameterized_numeric(result_type) and _is_parameterized_numeric(current_type):
-            p1, s1 = _extract_type_precision_scale(result_type)
-            p2, s2 = _extract_type_precision_scale(current_type)
+        if not _is_parameterized_numeric(result_type) or not _is_parameterized_numeric(
+            current_type
+        ):
+            return None
 
-            if p1 is not None and s1 is not None and p2 is not None and s2 is not None:
-                result_type = _coerce_two_parameterized_types(
-                    result_type, p1, s1, current_type, p2, s2
-                )
-            else:
-                result_type = self._maybe_coerce(result_type, current_type)
-        else:
-            result_type = self._maybe_coerce(result_type, current_type)
+        p1, s1 = _extract_type_precision_scale(result_type)
+        p2, s2 = _extract_type_precision_scale(current_type)
+
+        if p1 is None or s1 is None or p2 is None or s2 is None:
+            return None
+
+        result_type = _coerce_two_parameterized_types(result_type, p1, s1, current_type, p2, s2)
 
     return result_type
 

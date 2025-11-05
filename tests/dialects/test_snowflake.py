@@ -3414,7 +3414,8 @@ SINGLE = TRUE""",
         min_by_3 = self.validate_identity("MIN_BY(selected_col, filtered_col, 3)")
 
         for node in (max_by_3, min_by_3):
-            self.assertIsNotNone(node.args.get("count"))
+            with self.subTest(f"Checking  count arg of {node.sql('snowflake')}"):
+                self.assertIsNotNone(node.args.get("count"))
 
     def test_create_view_copy_grants(self):
         # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax

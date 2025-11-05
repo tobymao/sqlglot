@@ -1394,12 +1394,20 @@ class Generator(metaclass=_Generator):
                 delimiter=self.dialect.BYTE_END,
                 escaped_delimiter=self._escaped_byte_quote_end,
             )
-            is_bytes = expression.args.get("is_bytes")
-            if is_bytes and is_bytes != self.dialect.BYTE_STRING_IS_BYTES_TYPE:
+            is_bytes = expression.args.get("is_bytes", False)
+            delimited_byte_string = (
+                f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
+            )
+            if is_bytes and not self.dialect.BYTE_STRING_IS_BYTES_TYPE:
                 return self.sql(
-                    exp.cast(exp.Literal.string(escaped_byte_string), exp.DataType.Type.BINARY)
+                    exp.cast(delimited_byte_string, exp.DataType.Type.BINARY, dialect=self.dialect)
                 )
-            return f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
+            if not is_bytes and self.dialect.BYTE_STRING_IS_BYTES_TYPE:
+                return self.sql(
+                    exp.cast(delimited_byte_string, exp.DataType.Type.VARCHAR, dialect=self.dialect)
+                )
+
+            return delimited_byte_string
         return this
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:

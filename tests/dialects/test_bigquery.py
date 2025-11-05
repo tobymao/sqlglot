@@ -1896,16 +1896,16 @@ WHERE
             "SELECT b'\x61'",
             write={
                 "bigquery": "SELECT b'\x61'",
-                "duckdb": "SELECT CAST('\x61' AS BLOB)",
-                "postgres": "SELECT CAST('\x61' AS BYTEA)",
+                "duckdb": "SELECT CAST(e'\x61' AS BLOB)",
+                "postgres": "SELECT CAST(e'\x61' AS BYTEA)",
             },
         )
         self.validate_all(
             "SELECT b'a'",
             write={
                 "bigquery": "SELECT b'a'",
-                "duckdb": "SELECT CAST('a' AS BLOB)",
-                "postgres": "SELECT CAST('a' AS BYTEA)",
+                "duckdb": "SELECT CAST(e'a' AS BLOB)",
+                "postgres": "SELECT CAST(e'a' AS BYTEA)",
             },
         )
 

@@ -195,7 +195,6 @@ EXPRESSION_METADATA = {
             exp.RegrValy,
             exp.Sin,
             exp.Sinh,
-            exp.Skewness,
             exp.Tan,
             exp.Tanh,
         }

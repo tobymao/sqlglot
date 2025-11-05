@@ -227,7 +227,8 @@ def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression
                         exp.not_(condition.left, copy=False),
                         exp.not_(condition.right, copy=False),
                         copy=False,
-                    )
+                    ),
+                    copy=False,
                 )
             if isinstance(condition, exp.Or):
                 return exp.paren(
@@ -235,7 +236,8 @@ def simplify_not(expression: exp.Expression, dialect: Dialect) -> exp.Expression
                         exp.not_(condition.left, copy=False),
                         exp.not_(condition.right, copy=False),
                         copy=False,
-                    )
+                    ),
+                    copy=False,
                 )
             if is_null(condition):
                 return exp.null()

@@ -1,0 +1,20 @@
+{
+  "name": "sqlglot-js",
+  "version": "0.1.0",
+  "description": "A no-dependency SQL parser, transpiler, and formatter for JavaScript/TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/test.js"
+  },
+  "keywords": [
+    "sql",
+    "parser",
+    "transpiler",
+    "formatter",
+    "ast"
+  ],
+  "author": "",
+  "license": "MIT"
+}

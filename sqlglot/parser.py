@@ -3814,6 +3814,7 @@ class Parser(metaclass=_Parser):
                 return self.expression(exp.Stream, this=this)
 
         self._retreat(index)
+        return None
 
     def _parse_join_parts(
         self,

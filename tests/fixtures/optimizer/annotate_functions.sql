@@ -1784,6 +1784,10 @@ BOOLXOR(2, 0);
 BOOLEAN;
 
 # dialect: snowflake
+BOOLOR_AGG(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

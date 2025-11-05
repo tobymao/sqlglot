@@ -541,7 +541,7 @@ class TestBuild(unittest.TestCase):
             ),
             (
                 lambda: parse_one("WITH t AS (SELECT 1) (SELECT 1)").limit(1),
-                "WITH t AS (SELECT 1) (SELECT 1) LIMIT 1",
+                "WITH t AS (SELECT 1) SELECT 1 LIMIT 1",
             ),
             (
                 lambda: parse_one("(SELECT 1 LIMIT 2)").limit(1),

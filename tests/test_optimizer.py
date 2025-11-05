@@ -416,10 +416,10 @@ class TestOptimizer(unittest.TestCase):
         qualified = optimizer.qualify.qualify(
             parse_one("WITH t AS (SELECT 1 AS c) (SELECT c FROM t)")
         )
-        self.assertIs(qualified.selects[0].parent, qualified.this)
+        self.assertIs(qualified.selects[0].parent, qualified)
         self.assertEqual(
             qualified.sql(),
-            'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
+            'WITH "t" AS (SELECT 1 AS "c") SELECT "t"."c" AS "c" FROM "t" AS "t"',
         )
 
         # can't coalesce USING columns because they don't exist in every already-joined table

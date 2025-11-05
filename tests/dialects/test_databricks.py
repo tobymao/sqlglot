@@ -17,6 +17,7 @@ class TestDatabricks(Validator):
         self.validate_identity("SELECT CAST(NULL AS VOID)")
         self.validate_identity("SELECT void FROM t")
         self.validate_identity("SELECT * FROM stream")
+        self.validate_identity("SELECT * FROM STREAM t")
         self.validate_identity("SELECT t.current_time FROM t")
         self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")
         self.validate_identity("DESCRIBE HISTORY a.b")

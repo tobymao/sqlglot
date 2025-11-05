@@ -7873,6 +7873,10 @@ class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
 
 
+class Skewness(AggFunc):
+    pass
+
+
 class WidthBucket(Func):
     arg_types = {"this": True, "min_value": True, "max_value": True, "num_buckets": True}
 

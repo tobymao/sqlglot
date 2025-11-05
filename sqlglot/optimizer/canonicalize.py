@@ -22,7 +22,7 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
     dialect = Dialect.get_or_raise(dialect)
 
     def _canonicalize(expression: exp.Expression) -> exp.Expression:
-        expression = add_text_to_concat(expression, dialect=dialect)
+        expression = add_text_to_concat(expression)
         expression = replace_date_funcs(expression, dialect=dialect)
         expression = coerce_type(expression, dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
         expression = remove_redundant_casts(expression)
@@ -33,7 +33,7 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
     return exp.replace_tree(expression, _canonicalize)
 
 
-def add_text_to_concat(node: exp.Expression, dialect: Dialect) -> exp.Expression:
+def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
         node = exp.Concat(
             expressions=[node.left, node.right],

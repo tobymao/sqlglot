@@ -1166,18 +1166,26 @@ class DuckDB(Dialect):
             return self.sql(case)
 
         def lower_sql(self, expression: exp.Lower) -> str:
+            return self._case_conversion_sql(expression, "LOWER")
+
+        def upper_sql(self, expression: exp.Upper) -> str:
+            return self._case_conversion_sql(expression, "UPPER")
+
+        def _case_conversion_sql(
+            self, expression: t.Union[exp.Lower, exp.Upper], func_name: str
+        ) -> str:
             arg = expression.this
             if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
 
-            lower_sql = self.func("LOWER", expression.this)
+            result_sql = self.func(func_name, expression.this)
 
             is_binary = expression.is_type(exp.DataType.Type.BINARY)
             if is_binary:
                 blob = exp.DataType.build("BLOB", dialect="duckdb")
-                lower_sql = self.sql(exp.Cast(this=lower_sql, to=blob))
+                result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
 
-            return lower_sql
+            return result_sql
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this

@@ -1784,6 +1784,9 @@ BOOLXOR(2, 0);
 BOOLEAN;
 
 # dialect: snowflake
+BOOLAND_AGG(tbl.bool_col);
+
+# dialect: snowflake
 BOOLOR_AGG(tbl.bool_col);
 BOOLEAN;
 

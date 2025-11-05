@@ -747,6 +747,14 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         )
         self.check_file("canonicalize", optimize, schema=self.schema)
 
+        # In T-SQL and Redshift, SELECT a + b can produce a NULL, so we can't transpile it
+        # into a CONCAT in Postgres, because that coalesces NULL values with empty strings
+        ast = optimize("SELECT CAST(a AS TEXT) + CAST(b AS TEXT) FROM t", dialect="tsql")
+        self.assertEqual(
+            ast.sql("postgres"),
+            'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
+        )
+
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
 

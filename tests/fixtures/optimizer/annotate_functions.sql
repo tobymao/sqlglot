@@ -3016,6 +3016,10 @@ SIGN(tbl.double_col);
 INT;
 
 # dialect: snowflake
+SKEW(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 SOUNDEX(tbl.str_col);
 VARCHAR;
 

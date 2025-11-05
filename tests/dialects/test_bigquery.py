@@ -846,10 +846,8 @@ LANGUAGE js AS
             },
         )
 
-        sql = "LOWER(CAST('HELLO' AS BYTES))"
-        expr = self.parse_one(sql)
-        qualified = qualify(expr, dialect="bigquery")
-        annotated = annotate_types(qualified, dialect="bigquery")
+        expr = self.parse_one("LOWER(CAST('HELLO' AS BYTES))")
+        annotated = annotate_types(expr, dialect="bigquery")
         self.assertEqual(
             annotated.sql("duckdb"), "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)"
         )

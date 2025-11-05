@@ -3331,6 +3331,22 @@ BOOLEAN;
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 
+# dialect: snowflake
+MAX_BY('foo', tbl.bigint_col);
+VARCHAR;
+
+# dialect: snowflake
+MAX_BY('foo', tbl.bigint_col, 3);
+ARRAY<VARCHAR>;
+
+# dialect: snowflake
+MIN_BY('foo', tbl.bigint_col);
+VARCHAR;
+
+# dialect: snowflake
+MIN_BY('foo', tbl.bigint_col, 3);
+ARRAY<VARCHAR>;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

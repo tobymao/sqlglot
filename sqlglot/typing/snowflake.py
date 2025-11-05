@@ -149,6 +149,7 @@ EXPRESSION_METADATA = {
             exp.Booland,
             exp.Boolnot,
             exp.Boolor,
+            exp.BoolxorAgg,
             exp.EqualNull,
             exp.IsNullValue,
             exp.Search,

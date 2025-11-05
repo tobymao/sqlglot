@@ -1784,6 +1784,22 @@ COALESCE(TRUE, FALSE);
 BOOLEAN;
 
 # dialect: snowflake
+COALESCE(1::FLOAT, 2::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+COALESCE(1::DECIMAL(4, 3), 2::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+COALESCE(2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+COALESCE(1::INT, 2::DECIMAL(10, 2));
+DECIMAL(38, 2);
+
+# dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
 BINARY;
 
@@ -2196,6 +2212,22 @@ GREATEST(tbl.bigint_col, tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+GREATEST(1::FLOAT, 2::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+GREATEST(1::DECIMAL(4, 3), 2::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+GREATEST(2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+GREATEST(1::INT, 2::DECIMAL(10, 2));
+DECIMAL(38, 2);
+
+# dialect: snowflake
 ENDSWITH('hello world', 'world');
 BOOLEAN;
 
@@ -2300,6 +2332,22 @@ IFF(TRUE, CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+IFF(TRUE, 1::FLOAT, 2::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+IFF(TRUE, 1::DECIMAL(4, 3), 2::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+IFF(TRUE, 2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+IFF(TRUE, 1::INT, 2::DECIMAL(10, 2));
+DECIMAL(38, 2);
+
+# dialect: snowflake
 IFNULL('hello', 'world');
 VARCHAR;
 
@@ -2322,6 +2370,22 @@ DATE;
 # dialect: snowflake
 IFNULL(5::BIGINT, 2.71::FLOAT);
 FLOAT;
+
+# dialect: snowflake
+IFNULL(1::FLOAT, 2::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+IFNULL(1::DECIMAL(4, 3), 2::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+IFNULL(2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+IFNULL(1::INT, 2::DECIMAL(10, 2));
+DECIMAL(38, 2);
 
 # dialect: snowflake
 IS_NULL_VALUE(payload:field);
@@ -2350,6 +2414,22 @@ BINARY;
 # dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
+
+# dialect: snowflake
+LEAST(1::FLOAT, 2::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+LEAST(1::DECIMAL(4, 3), 2::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+LEAST(2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+LEAST(1::INT, 2::DECIMAL(10, 2));
+DECIMAL(38, 2);
 
 # dialect: snowflake
 LEFT('hello world', 5);
@@ -2570,6 +2650,18 @@ DECIMAL(13, 3);
 # dialect: snowflake
 NULLIF(1::DECIMAL(10, 3), 2::DECIMAL(12, 2));
 DECIMAL(13, 3);
+
+# dialect: snowflake
+NULLIF(2.123, 1::DECIMAL(10, 2));
+DECIMAL(11, 3);
+
+# dialect: snowflake
+NULLIF(2.123::FLOAT, 1::DECIMAL(10, 2));
+FLOAT;
+
+# dialect: snowflake
+NULLIF(2::INT, 1::DECIMAL(10, 2));
+DECIMAL(38, 2);
 
 # dialect: snowflake
 NULLIFZERO(5);

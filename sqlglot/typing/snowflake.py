@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+from decimal import Decimal
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA
 
@@ -81,7 +82,7 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
-def _extract_precision_scale(data_type: exp.DataType) -> t.Tuple[t.Optional[int], t.Optional[int]]:
+def _extract_type_precision_scale(data_type: exp.DataType) -> t.Tuple[t.Optional[int], t.Optional[int]]:
     """Extract precision and scale from a parameterized numeric type."""
     expressions = data_type.expressions
     if not expressions:
@@ -103,35 +104,85 @@ def _extract_precision_scale(data_type: exp.DataType) -> t.Tuple[t.Optional[int]
     return precision, scale
 
 
-def _compute_nullif_result_type(
-    base_type: exp.DataType, p1: int, s1: int, p2: int, s2: int
+def _extract_literal_precision_scale(num_str: str) -> t.Tuple[int, int]:
+    d = Decimal(num_str).normalize()
+    s = format(d, "f").lstrip("-")
+
+    if "." in s:
+        int_part, frac_part = s.split(".", 1)
+        precision = len(int_part + frac_part)
+        scale = len(frac_part.rstrip("0"))
+    else:
+        precision = len(s)
+        scale = 0
+    return precision, scale
+
+
+def _is_float(type_: t.Union[exp.DataType, exp.DataType.Type, None]) -> bool:
+    return isinstance(type_, exp.DataType) and type_.is_type(exp.DataType.Type.FLOAT)
+
+
+def _is_parameterized_numeric(type_: t.Union[exp.DataType, exp.DataType.Type, None]) -> bool:
+    return ( 
+        isinstance(type_, exp.DataType)
+        and type_.is_type(*exp.DataType.NUMERIC_TYPES)
+        and bool(type_.expressions)
+    )
+
+
+def _get_normalized_type(
+    expression: exp.Expression,
+) -> t.Union[exp.DataType, exp.DataType.Type, None]:
+    """
+    Normalizes numeric expressions to their parameterized representation.
+    For literal numbers, return the parameterized representation.
+    For integer types, return NUMBER(38, 0).
+    """
+    if isinstance(expression, exp.Literal) and expression.is_number:
+        precision, scale = _extract_literal_precision_scale(expression.this)
+        return exp.DataType(
+            this=exp.DataType.Type.DECIMAL,
+            expressions=[
+                exp.DataTypeParam(this=exp.Literal.number(precision)),
+                exp.DataTypeParam(this=exp.Literal.number(scale)),
+            ],
+        )
+
+    if expression.type.is_type(*exp.DataType.INTEGER_TYPES) and not expression.type.expressions:
+        return exp.DataType(
+            this=exp.DataType.Type.DECIMAL,
+            expressions=[
+                exp.DataTypeParam(this=exp.Literal.number(38)),
+                exp.DataTypeParam(this=exp.Literal.number(0)),
+            ],
+        )
+
+    return expression.type
+
+
+def _coerce_two_parameterized_types(
+    type1: exp.DataType, p1: int, s1: int, type2: exp.DataType, p2: int, s2: int
 ) -> t.Optional[exp.DataType]:
     """
-    Compute result type for NULLIF with two parameterized numeric types.
+    Coerce two parameterized numeric types using Snowflake's type coercion rules.
 
     Rules:
     - If p1 >= p2 AND s1 >= s2: return type1
     - If p2 >= p1 AND s2 >= s1: return type2
-    - Otherwise: return DECIMAL(max(p1, p2) + |s2 - s1|, max(s1, s2))
+    - Otherwise: return NUMBER(min(38, max(p1, p2) + |s2 - s1|), max(s1, s2))
     """
 
     if p1 >= p2 and s1 >= s2:
-        return base_type.copy()
+        return type1.copy()
 
     if p2 >= p1 and s2 >= s1:
-        return exp.DataType(
-            this=base_type.this,
-            expressions=[
-                exp.DataTypeParam(this=exp.Literal.number(p2)),
-                exp.DataTypeParam(this=exp.Literal.number(s2)),
-            ],
-        )
+        return type2.copy()
 
     result_scale = max(s1, s2)
-    result_precision = max(p1, p2) + abs(s2 - s1)
+    result_precision = min(38, max(p1, p2) + abs(s2 - s1))
 
     return exp.DataType(
-        this=base_type.this,
+        this=type1.this,
         expressions=[
             exp.DataTypeParam(this=exp.Literal.number(result_precision)),
             exp.DataTypeParam(this=exp.Literal.number(result_scale)),
@@ -139,42 +190,118 @@ def _compute_nullif_result_type(
     )
 
 
+def _coerce_parameterized_numeric_types(
+    self: TypeAnnotator, types: t.List[t.Union[exp.DataType, exp.DataType.Type, None]]
+) -> t.Optional[t.Union[exp.DataType, exp.DataType.Type]]:
+    """
+    Generalized function to coerce multiple parameterized numeric types.
+    Applies Snowflake's coercion logic pairwise across all types.
+    """
+    if not types:
+        return None
+
+    result_type = None
+
+    for current_type in types:
+        if not current_type:
+            continue
+
+        if result_type is None:
+            result_type = current_type
+            continue
+
+        if _is_parameterized_numeric(result_type) and _is_parameterized_numeric(current_type):
+            p1, s1 = _extract_type_precision_scale(result_type)
+            p2, s2 = _extract_type_precision_scale(current_type)
+
+            if p1 is not None and s1 is not None and p2 is not None and s2 is not None:
+                result_type = _coerce_two_parameterized_types(
+                    result_type, p1, s1, current_type, p2, s2
+                )
+            else:
+                result_type = self._maybe_coerce(result_type, current_type)
+        else:
+            result_type = self._maybe_coerce(result_type, current_type)
+
+    return result_type
+
+
+def _apply_numeric_coercion(
+    self: TypeAnnotator,
+    expression: exp.Expression,
+    expressions_to_coerce: t.List[exp.Expression],
+) -> t.Optional[exp.Expression]:
+    if any(_is_float(e.type) for e in expressions_to_coerce):
+        self._set_type(expression, exp.DataType.Type.FLOAT)
+        return expression
+
+    if any(_is_parameterized_numeric(e.type) for e in expressions_to_coerce):
+        normalized_types = [_get_normalized_type(e) for e in expressions_to_coerce]
+        result_type = _coerce_parameterized_numeric_types(self, normalized_types)
+        if result_type:
+            self._set_type(expression, result_type)
+            return expression
+
+    return None
+
+
 def _annotate_nullif(self: TypeAnnotator, expression: exp.Nullif) -> exp.Nullif:
-    """
-    Annotate NULLIF with Snowflake-specific type coercion rules for parameterized numeric types.
-
-    When both arguments are parameterized numeric types (e.g., DECIMAL(p, s)):
-    - If one type dominates (p1 >= p2 AND s1 >= s2), use that type
-    - Otherwise, compute new type with:
-        - scale = max(s1, s2)
-        - precision = max(p1, p2) + |s2 - s1|
-    """
-
     self._annotate_args(expression)
 
-    this_type = expression.this.type
-    expr_type = expression.expression.type
+    expressions_to_coerce = []
+    if expression.this:
+        expressions_to_coerce.append(expression.this)
+    if expression.expression:
+        expressions_to_coerce.append(expression.expression)
 
-    if not this_type or not expr_type:
+    coerced_result = _apply_numeric_coercion(self, expression, expressions_to_coerce)
+    if coerced_result is None:
         return self._annotate_by_args(expression, "this", "expression")
 
-    # Snowflake specific type coercion for NULLIF with parameterized numeric types
-    if (
-        this_type.is_type(*exp.DataType.NUMERIC_TYPES)
-        and expr_type.is_type(*exp.DataType.NUMERIC_TYPES)
-        and this_type.expressions
-        and expr_type.expressions
-    ):
-        p1, s1 = _extract_precision_scale(this_type)
-        p2, s2 = _extract_precision_scale(expr_type)
+    return coerced_result
 
-        if p1 is not None and s1 is not None and p2 is not None and s2 is not None:
-            result_type = _compute_nullif_result_type(this_type, p1, s1, p2, s2)
-            if result_type:
-                self._set_type(expression, result_type)
-                return expression
 
-    return self._annotate_by_args(expression, "this", "expression")
+def _annotate_iff(self: TypeAnnotator, expression: exp.If) -> exp.If:
+    self._annotate_args(expression)
+
+    expressions_to_coerce = []
+    true_expr = expression.args.get("true")
+    false_expr = expression.args.get("false")
+
+    if true_expr:
+        expressions_to_coerce.append(true_expr)
+    if false_expr:
+        expressions_to_coerce.append(false_expr)
+
+    coerced_result = _apply_numeric_coercion(self, expression, expressions_to_coerce)
+    if coerced_result is None:
+        return self._annotate_by_args(expression, "true", "false")
+
+    return coerced_result
+
+
+def _annotate_with_numeric_coercion(
+    self: TypeAnnotator, expression: exp.Expression
+) -> exp.Expression:
+    """
+    Generic annotator for functions that return one of their numeric arguments.
+
+    These functions all have the same structure: 'this' + 'expressions' arguments,
+    and they all need to coerce all argument types to find a common result type.
+    """
+    self._annotate_args(expression)
+
+    expressions_to_coerce = []
+    if expression.this:
+        expressions_to_coerce.append(expression.this)
+    if expression.expressions:
+        expressions_to_coerce.extend(expression.expressions)
+
+    coerced_result = _apply_numeric_coercion(self, expression, expressions_to_coerce)
+    if coerced_result is None:
+        return self._annotate_by_args(expression, "this", "expressions")
+
+    return coerced_result
 
 
 EXPRESSION_METADATA = {
@@ -344,6 +471,7 @@ EXPRESSION_METADATA = {
             exp.Uuid,
         }
     },
+    exp.Coalesce: {"annotator": _annotate_with_numeric_coercion},
     exp.ConcatWs: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.ConvertTimezone: {
         "annotator": lambda self, e: self._annotate_with_type(
@@ -355,9 +483,12 @@ EXPRESSION_METADATA = {
     },
     exp.DateAdd: {"annotator": _annotate_date_or_time_add},
     exp.DecodeCase: {"annotator": _annotate_decode_case},
+    exp.Greatest: {"annotator": _annotate_with_numeric_coercion},
     exp.GreatestIgnoreNulls: {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
     },
+    exp.If: {"annotator": _annotate_iff},
+    exp.Least: {"annotator": _annotate_with_numeric_coercion},
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Nullif: {"annotator": _annotate_nullif},
     exp.Reverse: {"annotator": _annotate_reverse},

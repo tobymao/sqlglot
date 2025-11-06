@@ -444,14 +444,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
-            if isinstance(expression, exp.Is) or (
-                left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
-            ):
-                expression.meta["nonnull"] = True
         elif (left_type, right_type) in self.binary_coercions:
             self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
+
+        if isinstance(expression, exp.Is) or (
+            left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
+        ):
+            expression.meta["nonnull"] = True
 
         return expression
 

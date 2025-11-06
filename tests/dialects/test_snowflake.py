@@ -47,6 +47,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT FACTORIAL(5)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
+        self.validate_identity(
+            "SELECT BITMAP_COUNT(TO_BITMAP(ARRAY_CONSTRUCT(1, 2, 3, 5)))",
+            "SELECT BITMAP_COUNT(TO_BITMAP([1, 2, 3, 5]))",
+        )
         self.validate_identity("SELECT BOOLNOT(0)")
         self.validate_identity("SELECT BOOLNOT(-3.79)")
         self.validate_identity("SELECT BOOLAND(1, -2)")

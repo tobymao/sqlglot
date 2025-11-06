@@ -5622,6 +5622,10 @@ class BitwiseCount(Func):
     pass
 
 
+class BitmapCount(Func):
+    pass
+
+
 class ByteLength(Func):
     pass
 

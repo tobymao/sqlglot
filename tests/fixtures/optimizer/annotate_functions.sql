@@ -1648,6 +1648,10 @@ BIT_LENGTH('abc');
 INT;
 
 # dialect: snowflake
+BITMAP_COUNT(TO_BITMAP(ARRAY_CONSTRUCT(1, 2, 3)));
+BIGINT;
+
+# dialect: snowflake
 BIT_LENGTH(tbl.str_col);
 INT;
 

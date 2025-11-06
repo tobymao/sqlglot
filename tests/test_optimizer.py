@@ -1754,3 +1754,10 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                     query = parse_one(sql)
                     annotated = annotate_types(query, schema=schema)
                     assert annotated.selects[0].meta.get("nonnull") is nonnull
+
+        ch_query = parse_one("select c1, c2 from t")
+        ch_schema = {"t": {"c1": "Int32", "c2": "Nullable(Int32)"}}
+        qualified_query = qualify_columns(ch_query, schema=ch_schema, dialect="clickhouse")
+        annotated = annotate_types(qualified_query, schema=ch_schema, dialect="clickhouse")
+        assert annotated.selects[0].meta.get("nonnull") is True
+        assert annotated.selects[1].meta.get("nonnull") is None

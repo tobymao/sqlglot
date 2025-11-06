@@ -96,6 +96,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RADIANS(180)")
         self.validate_identity("SELECT REGR_VALX(y, x)")
         self.validate_identity("SELECT REGR_VALY(y, x)")
+        self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",

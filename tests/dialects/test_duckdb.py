@@ -971,7 +971,7 @@ class TestDuckDB(Validator):
             "DATE_TRUNC('DAY', x)",
             write={
                 "duckdb": "DATE_TRUNC('DAY', x)",
-                "clickhouse": "DATE_TRUNC('DAY', x)",
+                "clickhouse": "dateTrunc('DAY', x)",
             },
         )
         self.validate_identity("EDITDIST3(col1, col2)", "LEVENSHTEIN(col1, col2)")

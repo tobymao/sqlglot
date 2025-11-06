@@ -977,12 +977,12 @@ ORDER BY tuple()""",
   sum_hits UInt64
 )
 ENGINE=MergeTree
-PRIMARY KEY (id, toStartOfDay(timestamp), timestamp)
+PRIMARY KEY (id, dateTrunc('DAY', timestamp), timestamp)
 TTL
   timestamp + INTERVAL '1' DAY
 GROUP BY
   id,
-  toStartOfDay(timestamp)
+  dateTrunc('DAY', timestamp)
 SET
   max_hits = max(max_hits),
   sum_hits = sum(sum_hits)""",
@@ -1517,3 +1517,27 @@ LIFETIME(MIN 0 MAX 0)""",
                     "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
+
+    def test_to_start_of(self):
+        for unit in ("SECOND", "DAY", "YEAR"):
+            self.validate_all(
+                f"toStartOf{unit}(x)",
+                write={
+                    "databricks": f"DATE_TRUNC('{unit}', x)",
+                    "duckdb": f"DATE_TRUNC('{unit}', x)",
+                    "doris": f"DATE_TRUNC(x, '{unit}')",
+                    "presto": f"DATE_TRUNC('{unit}', x)",
+                    "spark": f"DATE_TRUNC('{unit}', x)",
+                },
+            )
+
+        self.validate_all(
+            "toMonday(x)",
+            write={
+                "databricks": "DATE_TRUNC('WEEK', x)",
+                "duckdb": "DATE_TRUNC('WEEK', x)",
+                "doris": "DATE_TRUNC(x, 'WEEK')",
+                "presto": "DATE_TRUNC('WEEK', x)",
+                "spark": "DATE_TRUNC('WEEK', x)",
+            },
+        )

@@ -188,6 +188,27 @@ def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> st
     return f"{{{csv_args}}}"
 
 
+def _build_timestamp_trunc(unit: str) -> t.Callable[[t.List], exp.TimestampTrunc]:
+    return lambda args: exp.TimestampTrunc(
+        this=seq_get(args, 0), unit=exp.var(unit), zone=seq_get(args, 1)
+    )
+
+
+# Skip the 'week' unit since ClickHouse's toStartOfWeek
+# uses an extra mode argument to specify the first day of the week
+TIMESTAMP_TRUNC_UNITS = {
+    "MICROSECOND",
+    "MILLISECOND",
+    "SECOND",
+    "MINUTE",
+    "HOUR",
+    "DAY",
+    "MONTH",
+    "QUARTER",
+    "YEAR",
+}
+
+
 class ClickHouse(Dialect):
     INDEX_OFFSET = 1
     NORMALIZE_FUNCTIONS: bool | str = False
@@ -308,6 +329,10 @@ class ClickHouse(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            **{
+                f"TOSTARTOF{unit}": _build_timestamp_trunc(unit=unit)
+                for unit in TIMESTAMP_TRUNC_UNITS
+            },
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
@@ -337,6 +362,7 @@ class ClickHouse(Dialect):
             "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
             "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
+            "TOMONDAY": _build_timestamp_trunc("WEEK"),
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
@@ -1152,7 +1178,7 @@ class ClickHouse(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
             exp.UnixToTime: _unix_to_time_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+            exp.TimestampTrunc: timestamptrunc_sql(func="dateTrunc", zone=True),
             exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),

@@ -314,6 +314,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
+            if col.type and col.type.args.get("nullable") is False:
+                col.meta["nonnull"] = True
+
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)

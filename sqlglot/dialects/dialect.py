@@ -1746,11 +1746,28 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     else:
         target_type = None
 
-    if start and end and target_type and target_type.is_type("date", "timestamp"):
-        if isinstance(start, exp.Cast) and target_type is start.to:
-            end = exp.cast(end, target_type)
-        else:
-            start = exp.cast(start, target_type)
+    if start and end:
+        if target_type and target_type.is_type("date", "timestamp"):
+            if isinstance(start, exp.Cast) and target_type is start.to:
+                end = exp.cast(end, target_type)
+            else:
+                start = exp.cast(start, target_type)
+
+        if expression.args.get("is_end_exclusive"):
+            step_value = step or exp.Literal.number(1)
+            end = exp.paren(exp.Sub(this=end, expression=step_value), copy=False)
+
+            sequence_call = exp.Anonymous(
+                this="SEQUENCE", expressions=[e for e in (start, end, step) if e]
+            )
+            if_start_gte_end_then_empty_else_sequence = exp.If(
+                this=exp.GTE(this=start.copy(), expression=end.copy()),
+                true=exp.Array(expressions=[]),
+                false=sequence_call,
+            )
+            return self.sql(
+                self._simplify_unless_literal(if_start_gte_end_then_empty_else_sequence)
+            )
 
     return self.func("SEQUENCE", start, end, step)
 

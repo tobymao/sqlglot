@@ -441,10 +441,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
-            if (
-                isinstance(expression, exp.Is)
-                or left.meta.get("nullable") is False
-                or right.meta.get("nullable") is False
+            if isinstance(expression, exp.Is) or (
+                left.meta.get("nullable") is False and right.meta.get("nullable") is False
             ):
                 expression.meta["nullable"] = False
         elif (left_type, right_type) in self.binary_coercions:

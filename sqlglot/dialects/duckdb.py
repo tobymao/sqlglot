@@ -323,6 +323,7 @@ class DuckDB(Dialect):
             "DETACH": TokenType.DETACH,
             "FORCE": TokenType.FORCE,
             "INSTALL": TokenType.INSTALL,
+            "INT8": TokenType.BIGINT,
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,

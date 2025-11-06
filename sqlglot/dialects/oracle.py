@@ -72,7 +72,7 @@ class Oracle(Dialect):
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
-    PSEUDOCOLUMNS = {"ROWNUM", "ROWID", "OBJECT_ID", "OBJECT_VALUE"}
+    PSEUDOCOLUMNS = {"ROWNUM", "ROWID", "OBJECT_ID", "OBJECT_VALUE", "LEVEL"}
 
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # Disable quoting for pseudocolumns as it may break queries e.g

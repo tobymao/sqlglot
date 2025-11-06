@@ -395,8 +395,8 @@ def remove_complements(expression, root=True):
     """
     Removing complements.
 
-    A AND NOT A -> FALSE (only for non-NULL literals)
-    A OR NOT A -> TRUE (only for non-NULL literals)
+    A AND NOT A -> FALSE (only for non-NULL A)
+    A OR NOT A -> TRUE (only for non-NULL A)
     """
     if isinstance(expression, AND_OR) and (root or not expression.same_parent):
         ops = set(expression.flatten())

@@ -205,10 +205,24 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT RANGE(1, 5, 2)",
+            write={
+                "duckdb": "SELECT RANGE(1, 5, 2)",
+                "spark": "SELECT SEQUENCE(1, 3, 2)",
+            },
+        )
+        self.validate_all(
             "SELECT RANGE(1, 1)",
             write={
                 "duckdb": "SELECT RANGE(1, 1)",
                 "spark": "SELECT ARRAY()",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 5 AS c) SELECT RANGE(1, c) FROM t",
+            write={
+                "duckdb": "WITH t AS (SELECT 5 AS c) SELECT RANGE(1, c) FROM t",
+                "spark": "WITH t AS (SELECT 5 AS c) SELECT IF((c - 1) <= 1, ARRAY(), SEQUENCE(1, (c - 1))) FROM t",
             },
         )
         self.validate_all(

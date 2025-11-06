@@ -2708,6 +2708,10 @@ MONTHS_BETWEEN(tbl.timestamp_col, CAST('2019-02-15 01:00:00' AS TIMESTAMP));
 DOUBLE;
 
 # dialect: snowflake
+REGR_AVGY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 REGR_VALX(1.0, 2.0);
 DOUBLE;
 

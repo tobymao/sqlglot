@@ -7457,6 +7457,10 @@ class RegrValy(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class RegrAvgy(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Repeat(Func):
     arg_types = {"this": True, "times": True}
 

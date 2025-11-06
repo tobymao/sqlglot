@@ -1241,7 +1241,7 @@ class TestDialect(Validator):
                 "postgres": "DATE_TRUNC('DAY', x, 'UTC')",
                 "snowflake": "DATE_TRUNC('DAY', x)",
                 "databricks": "DATE_TRUNC('DAY', x)",
-                "clickhouse": "DATE_TRUNC('DAY', x, 'UTC')",
+                "clickhouse": "dateTrunc('DAY', x, 'UTC')",
             },
         )
 

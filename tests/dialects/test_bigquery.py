@@ -2617,6 +2617,42 @@ OPTIONS (
             },
         )
 
+        # Position = 1
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 2
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(SUBSTRING(abc, 2), 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 1, occurrence = 1
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 2, occurrence = 3
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(SUBSTRING(abc, 2), 'pattern(group)', 1), 3) FROM "table"''',
+            },
+        )
+
         # The pattern does not capture a group (entire regular expression is extracted)
         self.validate_all(
             "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",

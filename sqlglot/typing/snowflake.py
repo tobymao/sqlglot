@@ -191,6 +191,7 @@ EXPRESSION_METADATA = {
             exp.Degrees,
             exp.Exp,
             exp.MonthsBetween,
+            exp.RegrAvgx,
             exp.RegrAvgy,
             exp.RegrValx,
             exp.RegrValy,

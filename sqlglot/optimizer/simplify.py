@@ -402,7 +402,7 @@ def remove_complements(expression, root=True):
         ops = set(expression.flatten())
         for op in ops:
             if isinstance(op, exp.Not) and op.this in ops:
-                if expression.meta.get("nullable") is False:
+                if expression.meta.get("nonnull") is True:
                     return exp.false() if isinstance(expression, exp.And) else exp.true()
 
     return expression

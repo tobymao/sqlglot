@@ -1803,6 +1803,10 @@ class Column(Condition):
         return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
+class Pseudocolumn(Column):
+    pass
+
+
 class ColumnPosition(Expression):
     arg_types = {"this": False, "position": True}
 

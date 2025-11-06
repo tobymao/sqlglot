@@ -72,6 +72,18 @@ class Oracle(Dialect):
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
+    PSEUDOCOLUMNS = {"ROWNUM", "ROWID", "OBJECT_ID", "OBJECT_VALUE"}
+
+    def quote_identifier(self, expression: E, identify: bool = True) -> E:
+        # Disable quoting for pseudocolumns as it may break queries e.g
+        # `WHERE "ROWNUM" = ...` does not work but `WHERE ROWNUM = ...` does
+        if isinstance(expression, exp.Identifier) and isinstance(
+            expression.parent, exp.Pseudocolumn
+        ):
+            return expression
+
+        return super().quote_identifier(expression, identify=identify)
+
     class Tokenizer(tokens.Tokenizer):
         VAR_SINGLE_TOKENS = {"@", "$", "#"}
 

@@ -85,7 +85,12 @@ def qualify_columns(
             )
 
         _convert_columns_to_dots(scope, resolver)
-        _qualify_columns(scope, resolver, allow_partial_qualification=allow_partial_qualification)
+        _qualify_columns(
+            scope,
+            resolver,
+            allow_partial_qualification=allow_partial_qualification,
+            pseudocolumns=pseudocolumns,
+        )
 
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
@@ -527,11 +532,20 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualification: bool) -> None:
+def _qualify_columns(
+    scope: Scope,
+    resolver: Resolver,
+    allow_partial_qualification: bool,
+    pseudocolumns: t.Optional[t.Set[str]] = None,
+) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
         column_table = column.table
         column_name = column.name
+
+        if pseudocolumns and not column.table and column_name.upper() in pseudocolumns:
+            column.replace(exp.Pseudocolumn(**column.args))
+            continue
 
         if column_table and column_table in scope.sources:
             source_columns = resolver.get_source_columns(column_table)

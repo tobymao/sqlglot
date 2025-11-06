@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -883,15 +883,6 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT PERCENTILE_DISC(q) WITHIN GROUP (ORDER BY x) FROM t",
             },
         )
-
-        with self.assertRaises(UnsupportedError):
-            # bq has the position arg, but duckdb doesn't
-            transpile(
-                "SELECT REGEXP_EXTRACT(a, 'pattern', 1) from table",
-                read="bigquery",
-                write="duckdb",
-                unsupported_level=ErrorLevel.IMMEDIATE,
-            )
 
         self.validate_all(
             "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",

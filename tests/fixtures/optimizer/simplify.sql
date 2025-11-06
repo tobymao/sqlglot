@@ -8,10 +8,10 @@ y OR y;
 y;
 
 x AND NOT x;
-FALSE;
+NOT x AND x;
 
 x OR NOT x;
-TRUE;
+NOT x OR x;
 
 1 AND TRUE;
 TRUE;
@@ -299,7 +299,7 @@ A XOR D XOR B XOR E XOR F XOR G XOR C;
 A XOR B XOR C XOR D XOR E XOR F XOR G;
 
 A AND NOT B AND C AND B;
-FALSE;
+A AND B AND C AND NOT B;
 
 (a AND b AND c AND d) AND (d AND c AND b AND a);
 a AND b AND c AND d;
@@ -892,7 +892,7 @@ COALESCE(x, 1) = 1;
 x = 1 OR x IS NULL;
 
 COALESCE(x, 1) IS NULL;
-FALSE;
+NOT x IS NULL AND x IS NULL;
 
 COALESCE(ROW() OVER (), 1) = 1;
 ROW() OVER () = 1 OR ROW() OVER () IS NULL;
@@ -1344,3 +1344,30 @@ WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0
 # dialect: sqlite
 WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT (NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
 WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;
+
+--------------------------------------
+-- Simplify complements
+--------------------------------------
+TRUE OR NOT TRUE;
+TRUE;
+
+TRUE AND NOT TRUE;
+FALSE;
+
+'a' OR NOT 'a';
+TRUE;
+
+'a' AND NOT 'a';
+FALSE;
+
+100 OR NOT 100;
+TRUE;
+
+100 AND NOT 100;
+FALSE;
+
+NULL OR NOT NULL;
+NULL;
+
+NULL AND NOT NULL;
+NULL;

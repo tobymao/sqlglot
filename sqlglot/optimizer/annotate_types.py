@@ -314,6 +314,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
+            if col.type and col.type.args.get("nullable") is False:
+                col.meta["nonnull"] = True
+
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
@@ -446,6 +449,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
+        if isinstance(expression, exp.Is) or (
+            left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
+        ):
+            expression.meta["nonnull"] = True
+
         return expression
 
     def _annotate_unary(self, expression: E) -> E:
@@ -456,6 +464,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, expression.this.type)
 
+        if expression.this.meta.get("nonnull") is True:
+            expression.meta["nonnull"] = True
+
         return expression
 
     def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
@@ -465,6 +476,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.INT)
         else:
             self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+        expression.meta["nonnull"] = True
 
         return expression
 

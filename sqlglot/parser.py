@@ -5472,7 +5472,7 @@ class Parser(metaclass=_Parser):
                 )
                 if type_token == TokenType.NULLABLE and len(expressions) == 1:
                     this = expressions[0]
-                    this.set("nonnull", False)
+                    this.set("nullable", True)
                     self._match_r_paren()
                     return this
             elif type_token in self.ENUM_TYPE_TOKENS:

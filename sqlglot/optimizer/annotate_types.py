@@ -208,15 +208,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         prev_type = expression.type
         expression_id = id(expression)
 
-        expr_type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
-        expression.type = expr_type
+        expression.type = target_type or exp.DataType.Type.UNKNOWN  # type: ignore
         self._visited.add(expression_id)
-
-        if isinstance(expr_type, exp.DataType):
-            if isinstance(expression, exp.Null) or (
-                isinstance(expression, exp.Column) and expr_type.args.get("nonnull") is not True
-            ):
-                expr_type.set("nonnull", False)
 
         if (
             not self._supports_null_type
@@ -444,28 +437,20 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, None)
             return expression
 
-        left_type, right_type = left.type, right.type
-        left_type_this, right_type_this = left_type.this, right_type.this  # type: ignore
+        left_type, right_type = left.type.this, right.type.this  # type: ignore
 
         if isinstance(expression, (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
-            expr_type = expression.type
-            if expr_type and (
+            if (
                 isinstance(expression, exp.Is)
-                or (
-                    left_type
-                    and (left_type.args.get("nonnull") is True)
-                    and right_type
-                    and (right_type.args.get("nonnull") is True)
-                )
+                or left.meta.get("nullable") is False
+                or right.meta.get("nullable") is False
             ):
-                expr_type.set("nonnull", True)
-        elif (left_type_this, right_type_this) in self.binary_coercions:
-            self._set_type(
-                expression, self.binary_coercions[(left_type_this, right_type_this)](left, right)
-            )
+                expression.meta["nullable"] = False
+        elif (left_type, right_type) in self.binary_coercions:
+            self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
         else:
-            self._set_type(expression, self._maybe_coerce(left_type_this, right_type_this))
+            self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
         return expression
 
@@ -477,12 +462,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, expression.this.type)
 
-        if (
-            (this_type := expression.this.type)
-            and this_type.args.get("nonnull")
-            and (expr_type := expression.type)
-        ):
-            expr_type.set("nonnull", True)
+        if expression.this.meta.get("nullable") is False:
+            expression.meta["nullable"] = False
 
         return expression
 
@@ -494,10 +475,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, exp.DataType.Type.DOUBLE)
 
-        if not isinstance(expression.parent, (exp.Alias, exp.ColumnDef, exp.PropertyEQ)) and (
-            expr_type := expression.type
-        ):
-            expr_type.set("nonnull", True)
+        expression.meta["nullable"] = False
 
         return expression
 

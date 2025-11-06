@@ -1700,34 +1700,24 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             annotated.selects[0].type.sql("snowflake"), 'OBJECT("foo" VARCHAR, "a b" VARCHAR)'
         )
 
-    def test_nonnull_annotation(self):
-        for literal_sql, literal_type in (("1", "INT"), ("'foo'", "VARCHAR"), ("2.5", "DOUBLE")):
+    def test_nullable_annotation(self):
+        for literal_sql in ("1", "'foo'", "2.5"):
             with self.subTest(f"Test NULL annotation for literal: {literal_sql}"):
                 sql = f"SELECT {literal_sql}"
                 query = parse_one(sql)
                 annotated = annotate_types(query)
-                assert annotated.selects[0].type == exp.DataType.build(literal_type, nonnull=True)
+                assert annotated.selects[0].meta.get("nullable") is False
 
         schema = {"foo": {"id": "INT"}}
-        sql = "SELECT foo.id FROM foo"
-        query = parse_one(sql)
-        annotated = annotate_types(query, schema=schema)
-        self.assertTrue(
-            annotated.selects[0].type.is_type(
-                exp.DataType.build("INT", nonnull=False), check_nullable=True
-            )
-        )
 
         for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
-            for operand, nonnull in (("1", True), ("foo.id", False)):
+            for operand, nullable in (("1", False), ("foo.id", None)):
                 sql_predicate = f"{operand} {predicate} {operand}"
                 with self.subTest(f"Test NULL propagation for predicate: {predicate}"):
                     sql = f"SELECT {sql_predicate} FROM foo"
                     query = parse_one(sql)
                     annotated = annotate_types(query, schema=schema)
-                    assert annotated.selects[0].type == exp.DataType.build(
-                        "BOOLEAN", nonnull=nonnull
-                    )
+                    assert annotated.selects[0].meta.get("nullable") is nullable
 
         for predicate in ("IS NULL", "IS NOT NULL"):
             sql_predicate = f"foo.id {predicate}"
@@ -1735,11 +1725,11 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 sql = f"SELECT {sql_predicate} FROM foo"
                 query = parse_one(sql)
                 annotated = annotate_types(query, schema=schema)
-                assert annotated.selects[0].type == exp.DataType.build("BOOLEAN", nonnull=True)
+                assert annotated.selects[0].meta.get("nullable") is False
 
         for connector in ("AND", "OR"):
             for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
-                for operand, nonnull in (("1", True), ("foo.id", False)):
+                for operand, nullable in (("1", False), ("foo.id", None)):
                     sql_predicate = f"({operand} {predicate} {operand})"
                     sql_connector = f"{sql_predicate} {connector} {sql_predicate}"
                     with self.subTest(
@@ -1748,16 +1738,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                         sql = f"SELECT {sql_connector} FROM foo"
                         query = parse_one(sql)
                         annotated = annotate_types(query, schema=schema)
-                        assert annotated.selects[0].type == exp.DataType.build(
-                            "BOOLEAN", nonnull=nonnull
-                        )
+                        assert annotated.selects[0].meta.get("nullable") is nullable
 
-        for unary, unary_type in (("NOT", "BOOLEAN"), ("-", "INT")):
-            for value, nonnull in (("1", True), ("foo.id", False)):
+        for unary in ("NOT", "-"):
+            for value, nullable in (("1", False), ("foo.id", None)):
                 with self.subTest(f"Test NULL propagation for unary: {unary} with value: {value}"):
                     sql = f"SELECT {unary} {value} FROM foo"
                     query = parse_one(sql)
                     annotated = annotate_types(query, schema=schema)
-                    assert annotated.selects[0].type == exp.DataType.build(
-                        unary_type, nonnull=nonnull
-                    )
+                    assert annotated.selects[0].meta.get("nullable") is nullable

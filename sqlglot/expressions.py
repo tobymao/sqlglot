@@ -4607,8 +4607,8 @@ class DataTypeParam(Expression):
         return self.this.name
 
 
-# The `nonnull` arg is helpful when transpiling types from other dialects to ClickHouse, which
-# assumes non-nullable types by default. Values `None` and `False` mean the type is nullable.
+# The `nullable` arg is helpful when transpiling types from other dialects to ClickHouse, which
+# assumes non-nullable types by default. Values `None` and `True` mean the type is nullable.
 class DataType(Expression):
     arg_types = {
         "this": True,
@@ -4617,7 +4617,7 @@ class DataType(Expression):
         "values": False,
         "prefix": False,
         "kind": False,
-        "nonnull": False,
+        "nullable": False,
     }
 
     class Type(AutoName):
@@ -4901,22 +4901,19 @@ class DataType(Expression):
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
-        self_nonnull = self.args.get("nonnull")
+        self_is_nullable = self.args.get("nullable")
         for dtype in dtypes:
             other_type = DataType.build(dtype, copy=False, udt=True)
-            other_nonnull = other_type.args.get("nonnull")
-
+            other_is_nullable = other_type.args.get("nullable")
             if (
                 other_type.expressions
+                or (check_nullable and (self_is_nullable or other_is_nullable))
                 or self.this == DataType.Type.USERDEFINED
                 or other_type.this == DataType.Type.USERDEFINED
             ):
                 matches = self == other_type
             else:
                 matches = self.this == other_type.this
-
-            if matches and check_nullable:
-                matches = self_nonnull == other_nonnull
 
             if matches:
                 return True

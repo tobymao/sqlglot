@@ -196,6 +196,21 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("""SELECT '{"duck": [1, 2, 3]}' -> '$.duck[#-1]'""")
+
+        self.validate_all(
+            "SELECT RANGE(1, 5)",
+            write={
+                "duckdb": "SELECT RANGE(1, 5)",
+                "spark": "SELECT SEQUENCE(1, 4)",
+            },
+        )
+        self.validate_all(
+            "SELECT RANGE(1, 1)",
+            write={
+                "duckdb": "SELECT RANGE(1, 1)",
+                "spark": "SELECT ARRAY()",
+            },
+        )
         self.validate_all(
             """SELECT JSON_EXTRACT('{"duck": [1, 2, 3]}', '/duck/0')""",
             write={

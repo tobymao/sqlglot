@@ -1433,6 +1433,7 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS INT64)", "CAST(x AS BIGINT)")
         self.validate_identity("CAST(x AS INT32)", "CAST(x AS INT)")
         self.validate_identity("CAST(x AS INT16)", "CAST(x AS SMALLINT)")
+        self.validate_identity("CAST(x AS INT8)", "CAST(x AS BIGINT)")
         self.validate_identity("CAST(x AS NUMERIC(1, 2))", "CAST(x AS DECIMAL(1, 2))")
         self.validate_identity("CAST(x AS HUGEINT)", "CAST(x AS INT128)")
         self.validate_identity("CAST(x AS UHUGEINT)", "CAST(x AS UINT128)")

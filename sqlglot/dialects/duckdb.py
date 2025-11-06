@@ -1258,10 +1258,14 @@ class DuckDB(Dialect):
 
             return self.func("ARRAY_TO_STRING", this, expression.expression)
 
-        @unsupported_args("position", "occurrence")
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
+            this = expression.this
             group = expression.args.get("group")
             params = expression.args.get("parameters")
+            position = expression.args.get("position")
+            occurrence = expression.args.get("occurrence")
+            if position and (not position.is_int or position.to_py() > 1):
+                this = exp.Substring(this=this, start=position)
 
             # Do not render group if there is no following argument,
             # and it's the default value for this dialect
@@ -1271,9 +1275,15 @@ class DuckDB(Dialect):
                 and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
             ):
                 group = None
-            return self.func(
-                "REGEXP_EXTRACT", expression.this, expression.expression, group, params
-            )
+
+            if occurrence and (not occurrence.is_int or occurrence.to_py() > 1):
+                return self.func(
+                    "ARRAY_EXTRACT",
+                    self.func("REGEXP_EXTRACT_ALL", this, expression.expression, group, params),
+                    exp.Literal.number(occurrence),
+                )
+
+            return self.func("REGEXP_EXTRACT", this, expression.expression, group, params)
 
         @unsupported_args("culture")
         def numbertostr_sql(self, expression: exp.NumberToStr) -> str:

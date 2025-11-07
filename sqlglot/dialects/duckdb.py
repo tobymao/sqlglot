@@ -1223,14 +1223,10 @@ class DuckDB(Dialect):
 
                 expr = annotate_types(expr, dialect=self.dialect)
 
-            if this.type and not this.is_type(
-                exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN
-            ):
+            if this.type and not this.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
 
-            if expr.type and not expr.is_type(
-                exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN
-            ):
+            if expr.type and not expr.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 expression.expression.replace(
                     exp.cast(expression.expression, exp.DataType.Type.VARCHAR)
                 )

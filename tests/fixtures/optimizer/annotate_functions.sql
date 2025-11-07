@@ -3432,6 +3432,38 @@ DOUBLE;
 APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
 DOUBLE;
 
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(*);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(DISTINCT tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col) OVER (PARTITION BY 1);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

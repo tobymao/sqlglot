@@ -1541,3 +1541,30 @@ LIFETIME(MIN 0 MAX 0)""",
                 "spark": "DATE_TRUNC('WEEK', x)",
             },
         )
+
+    def test_string_split(self):
+        self.validate_all(
+            "splitByString('s', x)",
+            read={
+                "bigquery": "SPLIT(x, 's')",
+                "duckdb": "STRING_SPLIT(x, 's')",
+            },
+            write={
+                "clickhouse": "splitByString('s', x)",
+                "doris": "SPLIT_BY_STRING(x, 's')",
+                "duckdb": "STR_SPLIT(x, 's')",
+                "hive": r"SPLIT(x, CONCAT('\\Q', 's', '\\E'))",
+            },
+        )
+        self.validate_all(
+            r"splitByRegexp('\\d+', x)",
+            read={
+                "duckdb": r"STRING_SPLIT_REGEX(x, '\d+')",
+                "hive": r"SPLIT(x, '\\d+')",
+            },
+            write={
+                "clickhouse": r"splitByRegexp('\\d+', x)",
+                "duckdb": r"STR_SPLIT_REGEX(x, '\d+')",
+                "hive": r"SPLIT(x, '\\d+')",
+            },
+        )

@@ -831,15 +831,15 @@ class Simplifier:
         """
         Removing complements.
 
-    A AND NOT A -> FALSE (only for non-NULL A)
-    A OR NOT A -> TRUE (only for non-NULL A)
-    """
-    if isinstance(expression, AND_OR) and (root or not expression.same_parent):
-        ops = set(expression.flatten())
-        for op in ops:
-            if isinstance(op, exp.Not) and op.this in ops:
-                if expression.meta.get("nonnull") is True:
-                    return exp.false() if isinstance(expression, exp.And) else exp.true()
+        A AND NOT A -> FALSE (only for non-NULL A)
+        A OR NOT A -> TRUE (only for non-NULL A)
+        """
+        if isinstance(expression, self.AND_OR) and (root or not expression.same_parent):
+            ops = set(expression.flatten())
+            for op in ops:
+                if isinstance(op, exp.Not) and op.this in ops:
+                    if expression.meta.get("nonnull") is True:
+                        return exp.false() if isinstance(expression, exp.And) else exp.true()
 
         return expression
 

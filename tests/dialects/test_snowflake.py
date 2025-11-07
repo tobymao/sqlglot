@@ -1259,6 +1259,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT ANY_VALUE(1)",
+            read={
+                "snowflake": "SELECT ANY_VALUE(1)",
+            },
+            write={
+                "bigquery": "SELECT ANY_VALUE(1)",
+                "duckdb": "SELECT ANY_VALUE(1)",
+                "presto": "SELECT ARBITRARY(1)",
+                "trino": "SELECT ARBITRARY(1)",
+                "postgres": "SELECT ANY_VALUE(1)",
+                "mysql": "SELECT ANY_VALUE(1)",
+                "oracle": "SELECT ANY_VALUE(1)",
+                "redshift": "SELECT ANY_VALUE(1)",
+                "spark": "SELECT ANY_VALUE(1)",
+                "snowflake": "SELECT ANY_VALUE(1)",
+            },
+        )
+        self.validate_all(
             "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
             read={
                 "trino": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",

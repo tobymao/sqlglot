@@ -58,6 +58,15 @@ BINARY;
 FROM_BASE64(tbl.str_col);
 BINARY;
 
+ANY_VALUE(tbl.bool_col);
+BOOLEAN;
+
+ANY_VALUE(tbl.bigint_col);
+BIGINT;
+
+ANY_VALUE(tbl.date_col);
+DATE;
+
 ANY_VALUE(tbl.str_col);
 STRING;
 

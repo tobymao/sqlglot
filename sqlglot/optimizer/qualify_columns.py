@@ -139,6 +139,9 @@ def validate_qualify_columns(expression: E) -> E:
 
 
 def _separate_pseudocolumns(scope: Scope, pseudocolumns: t.Set[str]) -> None:
+    if not pseudocolumns:
+        return
+
     has_pseudocolumns = False
     scope_expression = scope.expression
 

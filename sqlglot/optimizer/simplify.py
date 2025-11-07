@@ -767,9 +767,9 @@ class Simplifier:
             #
             # A AND (((B)))
             #          ~ this is safe to keep because it will eventually be part of another connector
-            if not isinstance(expression, self.SAFE_CONNECTOR_ELIMINATION_RESULT) and not expression.is_type(
-                exp.DataType.Type.BOOLEAN
-            ):
+            if not isinstance(
+                expression, self.SAFE_CONNECTOR_ELIMINATION_RESULT
+            ) and not expression.is_type(exp.DataType.Type.BOOLEAN):
                 while True:
                     if isinstance(original_parent, exp.Connector):
                         break

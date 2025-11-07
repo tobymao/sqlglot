@@ -999,3 +999,70 @@ def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
             _inline_inherited_window(window)
 
     return expression
+
+
+def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
+    """
+    Inherit struct field names from the first struct in an array to subsequent unnamed structs.
+
+    BigQuery (and some other dialects) allow shorthand where the first STRUCT in an array
+    defines field names and subsequent STRUCTs inherit them:
+
+    Example:
+        ARRAY[
+          STRUCT('Alice' AS name, 85 AS score),  -- defines names
+          STRUCT('Bob', 92),                      -- inherits names
+          STRUCT('Diana', 95)                     -- inherits names
+        ]
+
+    This transform makes the field names explicit on all structs by adding PropertyEQ nodes.
+
+    Args:
+        expression: The expression tree to transform
+
+    Returns:
+        The modified expression with field names inherited in all structs
+    """
+    for array in expression.find_all(exp.Array):
+        if not array.expressions:
+            continue
+
+        # Check if first element is a Struct with field names
+        first_item = array.expressions[0]
+        if not isinstance(first_item, exp.Struct):
+            continue
+
+        # Get field names from first struct (PropertyEQ nodes)
+        property_eqs = [e for e in first_item.expressions if isinstance(e, exp.PropertyEQ)]
+        if not property_eqs:
+            continue
+
+        field_names = [pe.name for pe in property_eqs]
+
+        # Apply field names to subsequent structs that don't have them
+        for struct in array.expressions[1:]:
+            if not isinstance(struct, exp.Struct):
+                continue
+
+            # Skip if struct already has field names
+            if struct.find(exp.PropertyEQ):
+                continue
+
+            # Skip if struct has different number of fields
+            if len(struct.expressions) != len(field_names):
+                continue
+
+            # Convert unnamed expressions to PropertyEQ with inherited names
+            new_expressions = []
+            for i, expr in enumerate(struct.expressions):
+                if not isinstance(expr, exp.PropertyEQ):
+                    # Create PropertyEQ: field_name := value
+                    new_expressions.append(
+                        exp.PropertyEQ(this=exp.Identifier(this=field_names[i]), expression=expr)
+                    )
+                else:
+                    new_expressions.append(expr)
+
+            struct.set("expressions", new_expressions)
+
+    return expression

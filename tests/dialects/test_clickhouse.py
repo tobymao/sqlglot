@@ -1568,3 +1568,4 @@ LIFETIME(MIN 0 MAX 0)""",
                 "hive": r"SPLIT(x, '\\d+')",
             },
         )
+        self.validate_identity("splitByChar('', x)")

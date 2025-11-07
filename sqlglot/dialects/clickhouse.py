@@ -194,6 +194,16 @@ def _build_timestamp_trunc(unit: str) -> t.Callable[[t.List], exp.TimestampTrunc
     )
 
 
+def _build_split_by_char(args: t.List) -> exp.Split | exp.Anonymous:
+    sep = seq_get(args, 0)
+    if isinstance(sep, exp.Literal):
+        sep_value = sep.to_py()
+        if isinstance(sep_value, str) and len(sep_value.encode("utf-8")) == 1:
+            return _build_split(exp.Split)(args)
+
+    return exp.Anonymous(this="splitByChar", expressions=args)
+
+
 def _build_split(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
@@ -374,7 +384,7 @@ class ClickHouse(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
-            "SPLITBYCHAR": _build_split(exp.Split),
+            "SPLITBYCHAR": _build_split_by_char,
             "SPLITBYREGEXP": _build_split(exp.RegexpSplit),
             "SPLITBYSTRING": _build_split(exp.Split),
             "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,

@@ -3420,6 +3420,18 @@ DOUBLE;
 APPROX_PERCENTILE(tbl.int_col, 0.9);
 DOUBLE;
 
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.bigint_col, 0.5) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.double_col, 0.5) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
+DOUBLE;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

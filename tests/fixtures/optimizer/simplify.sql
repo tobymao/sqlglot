@@ -199,7 +199,10 @@ A AND B;
 A AND B;
 
 A OR (NOT A AND B);
-A OR (B AND TRUE);
+A OR B;
+
+A OR ((((NOT A AND B))));
+A OR B;
 
 (A OR C) AND ((A OR C) OR B);
 A OR C;

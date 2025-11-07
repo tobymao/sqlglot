@@ -538,8 +538,11 @@ class Simplifier:
         exp.EQ: _datetrunc_eq,
         exp.NEQ: _datetrunc_neq,
     }
+
     DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
     DATETRUNCS = (exp.DateTrunc, exp.TimestampTrunc)
+
+    SAFE_CONNECTOR_ELIMINATION_RESULT = (exp.Connector, exp.Boolean, exp.Null)
 
     # CROSS joins result in an empty table if the right table is empty.
     # So we can only simplify certain types of joins to CROSS.
@@ -755,11 +758,27 @@ class Simplifier:
                 return self._simplify_comparison(expression, left, right, or_=True)
 
         if isinstance(expression, exp.Connector):
+            original_parent = expression.parent
             expression = self._flat_simplify(expression, _simplify_connectors, root)
-            if not isinstance(
-                expression, (exp.Connector, exp.Boolean, exp.Null)
-            ) and not expression.is_type(exp.DataType.Type.BOOLEAN):
-                expression = expression.and_(exp.true(), copy=False)
+
+            # If we reduced a connector to, e.g., a column (t1 AND ... AND tn -> Tk), then we need
+            # to ensure that the resulting type is boolean. We know this is true only for connectors,
+            # boolean values and columns that are essentially operands to a connector:
+            #
+            # A AND (((B)))
+            #          ~ this is safe to keep because it will eventually be part of another connector
+            if not isinstance(expression, self.SAFE_CONNECTOR_ELIMINATION_RESULT) and not expression.is_type(
+                exp.DataType.Type.BOOLEAN
+            ):
+                while True:
+                    if isinstance(original_parent, exp.Connector):
+                        break
+                    if not isinstance(original_parent, exp.Paren):
+                        expression = expression.and_(exp.true(), copy=False)
+                        break
+
+                    original_parent = original_parent.parent
+
         return expression
 
     @annotate_types_on_change

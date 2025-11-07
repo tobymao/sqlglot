@@ -226,6 +226,9 @@ class Parser(metaclass=_Parser):
             end=seq_get(args, 1),
             step=seq_get(args, 2) or exp.Interval(this=exp.Literal.string(1), unit=exp.var("DAY")),
         ),
+        "GENERATE_UUID": lambda args, dialect: exp.Uuid(
+            is_string=dialect.UUID_IS_STRING_TYPE or None
+        ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
@@ -265,6 +268,7 @@ class Parser(metaclass=_Parser):
         ),
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
+        "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
         "VAR_MAP": build_var_map,
     }
 

@@ -1908,6 +1908,18 @@ WHERE
                 "postgres": "SELECT CAST(e'a' AS BYTEA)",
             },
         )
+        self.validate_all(
+            "SELECT GENERATE_UUID()",
+            write={
+                "bigquery": "SELECT GENERATE_UUID()",
+                "duckdb": "SELECT CAST(UUID() AS TEXT)",
+                "spark2": "SELECT CAST(UUID() AS STRING)",
+                "spark": "SELECT CAST(UUID() AS STRING)",
+                "presto": "SELECT CAST(UUID() AS VARCHAR)",
+                "trino": "SELECT CAST(UUID() AS VARCHAR)",
+                "snowflake": "SELECT UUID_STRING()",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):

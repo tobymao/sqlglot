@@ -1170,6 +1170,13 @@ class TestDuckDB(Validator):
         self.assertEqual(
             annotate_types(self.parse_one("UPPER('hello')")).sql("duckdb"), "UPPER('hello')"
         )
+        self.validate_all(
+            "SELECT UUID()",
+            write={
+                "duckdb": "SELECT UUID()",
+                "bigquery": "SELECT GENERATE_UUID()",
+            },
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -217,7 +217,6 @@ class Generator(metaclass=_Generator):
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.UsingTemplateProperty: lambda self, e: f"USING TEMPLATE {self.sql(e, 'this')}",
         exp.UsingData: lambda self, e: f"USING DATA {self.sql(e, 'this')}",
-        exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.UtcDate: lambda self, e: self.sql(exp.CurrentDate(this=exp.Literal.string("UTC"))),
         exp.UtcTime: lambda self, e: self.sql(exp.CurrentTime(this=exp.Literal.string("UTC"))),
@@ -5392,3 +5391,14 @@ class Generator(metaclass=_Generator):
 
     def directorystage_sql(self, expression: exp.DirectoryStage) -> str:
         return self.func("DIRECTORY", expression.this)
+
+    def uuid_sql(self, expression: exp.Uuid) -> str:
+        is_string = expression.args.get("is_string", False)
+        uuid_func_sql = self.function_fallback_sql(expression)
+
+        if is_string and not self.dialect.UUID_IS_STRING_TYPE:
+            return self.sql(
+                exp.cast(uuid_func_sql, exp.DataType.Type.VARCHAR, dialect=self.dialect)
+            )
+
+        return "UUID()"

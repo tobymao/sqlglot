@@ -81,6 +81,22 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
+def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
+    self._annotate_args(expression)
+
+    struct_type = exp.DataType(
+        this=exp.DataType.Type.STRUCT,
+        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
+        nested=True,
+    )
+    self._set_type(
+        expression,
+        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
+    )
+
+    return expression
+
+
 def _annotate_arg_max_min(
     self: TypeAnnotator, expression: exp.ArgMax | exp.ArgMin
 ) -> exp.ArgMax | exp.ArgMin:
@@ -293,6 +309,7 @@ EXPRESSION_METADATA = {
             exp.Uuid,
         }
     },
+    exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ArgMax: {"annotator": _annotate_arg_max_min},
     exp.ArgMin: {"annotator": _annotate_arg_max_min},
     exp.ConcatWs: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},

@@ -3492,6 +3492,30 @@ BIGINT;
 APPROX_COUNT_DISTINCT(tbl.double_col) OVER (PARTITION BY 1);
 BIGINT;
 
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col);
+ARRAY<STRUCT<VARCHAR, BIGINT>>;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.bigint_col);
+ARRAY<STRUCT<BIGINT, BIGINT>>;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col, 5);
+ARRAY<STRUCT<VARCHAR, BIGINT>>;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.bigint_col, 10);
+ARRAY<STRUCT<BIGINT, BIGINT>>;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col, 5, 1000);
+ARRAY<STRUCT<VARCHAR, BIGINT>>;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.double_col, 3, 500);
+ARRAY<STRUCT<DOUBLE, BIGINT>>;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

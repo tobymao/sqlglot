@@ -1,5 +1,6 @@
 from sqlglot import exp, UnsupportedError, ParseError, parse_one
 from tests.dialects.test_dialect import Validator
+from sqlglot.optimizer.qualify import qualify
 
 
 class TestOracle(Validator):
@@ -790,4 +791,18 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.assertEqual(
             merge_stmt.sql("oracle"),
             "MERGE INTO my_table USING (SELECT * FROM something) source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
+        )
+
+    def test_pseudocolumns(self):
+        ast = self.validate_identity(
+            "WITH t AS (SELECT 1 AS COL) SELECT col, ROWID FROM t WHERE ROWNUM = 1"
+        )
+        self.assertIsNone(ast.find(exp.Pseudocolumn))
+
+        qualified = qualify(ast, dialect="oracle")
+        self.assertIsNotNone(qualified.find(exp.Pseudocolumn))
+
+        self.assertEqual(
+            qualified.sql(dialect="oracle"),
+            'WITH "T" AS (SELECT 1 AS "COL") SELECT "T"."COL" AS "COL", ROWID AS "ROWID" FROM "T" "T" WHERE ROWNUM = 1',
         )

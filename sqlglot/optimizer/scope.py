@@ -137,7 +137,7 @@ class Scope:
 
             if isinstance(node, exp.Dot) and node.is_star:
                 self._stars.append(node)
-            elif isinstance(node, exp.Column):
+            elif isinstance(node, exp.Column) and not isinstance(node, exp.Pseudocolumn):
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
                 else:

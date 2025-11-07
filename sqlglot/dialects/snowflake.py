@@ -588,6 +588,8 @@ class Snowflake(Dialect):
         "ISOWEEK": "WEEKISO",
     }
 
+    PSEUDOCOLUMNS = {"LEVEL"}
+
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table

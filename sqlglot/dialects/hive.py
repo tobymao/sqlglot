@@ -571,6 +571,7 @@ class Hive(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+            exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
             exp.ArraySort: _array_sort_sql,

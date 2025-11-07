@@ -22,7 +22,6 @@ from sqlglot.dialects.dialect import (
     no_datetime_sql,
     encode_decode_sql,
     build_formatted_time,
-    inline_array_unless_query,
     no_comment_column_constraint_sql,
     no_time_sql,
     no_timestamp_sql,
@@ -39,6 +38,7 @@ from sqlglot.dialects.dialect import (
     explode_to_unnest_sql,
     no_make_interval_sql,
     groupconcat_sql,
+    inline_array_unless_query,
     regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
@@ -683,10 +683,15 @@ class DuckDB(Dialect):
         SUPPORTS_LIKE_QUANTIFIERS = False
         SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
+        def _array_sql_with_struct_inheritance(self, expression: exp.Array) -> str:
+            """Generate DuckDB array SQL with struct field name inheritance preprocessing."""
+            transformed = transforms.inherit_struct_field_names(expression)
+            return inline_array_unless_query(self, t.cast(exp.Array, transformed))
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: inline_array_unless_query,
+            exp.Array: lambda self, e: self._array_sql_with_struct_inheritance(e),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

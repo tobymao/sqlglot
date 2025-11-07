@@ -414,13 +414,18 @@ class Presto(Dialect):
             exp.DataType.Type.TIMETZ: "TIME",
         }
 
+        def _array_sql_with_struct_inheritance(self, expression: exp.Array) -> str:
+            """Generate ARRAY[...] SQL with struct field name inheritance preprocessing."""
+            transformed = transforms.inherit_struct_field_names(expression)
+            return f"ARRAY[{self.expressions(transformed, flat=True)}]"
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            exp.Array: lambda self, e: self._array_sql_with_struct_inheritance(e),
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),

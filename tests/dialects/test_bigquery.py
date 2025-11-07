@@ -1217,7 +1217,7 @@ LANGUAGE js AS
             "STARTS_WITH(CAST('foo' AS BYTES), b'f')",
             write={
                 "bigquery": "STARTS_WITH(CAST('foo' AS BYTES), b'f')",
-                "duckdb": "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), e'f')",
+                "duckdb": "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), 'f')",
             },
         )
         self.validate_all(

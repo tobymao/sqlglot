@@ -2247,19 +2247,9 @@ class Parser(metaclass=_Parser):
             return self._parse_sortkey(compound=True)
 
         if self._match_text_seq("SQL", "SECURITY"):
-            if self._match_text_seq("DEFINER"):
-                return self.expression(
-                    exp.SqlSecurityProperty,
-                    definer=True,
-                )
+            this = self._match_texts(("DEFINER", "INVOKER")) and self._prev.text.upper()
 
-            if self._match_text_seq("INVOKER"):
-                return self.expression(
-                    exp.SqlSecurityProperty,
-                    invoker=True,
-                )
-
-            return self.expression(exp.SqlSecurityProperty)
+            return self.expression(exp.SqlSecurityProperty, this=this)
 
         index = self._index
 

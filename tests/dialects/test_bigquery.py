@@ -3252,3 +3252,22 @@ OPTIONS (
                 "duckdb": "SELECT 'T.P.' || ' ' || 'Bar' AS author",
             },
         )
+
+    def test_pseudocolumns(self):
+        schema = {
+            "t": {
+                "col": "INT",
+                "a": "TIMESTAMP",
+                "b": "TIMESTAMP",
+            }
+        }
+
+        ast = self.validate_identity("SELECT col FROM t WHERE _PARTITIONTIME BETWEEN a AND b")
+        self.assertIsNone(ast.find(exp.Pseudocolumn))
+
+        qualified = qualify(ast, schema=schema, dialect="bigquery")
+        self.assertIsNotNone(qualified.find(exp.Pseudocolumn))
+        self.assertEqual(
+            qualified.sql(dialect="bigquery"),
+            "SELECT `t`.`col` AS `col` FROM `t` AS `t` WHERE `_partitiontime` BETWEEN `t`.`a` AND `t`.`b`",
+        )

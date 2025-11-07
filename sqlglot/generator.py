@@ -1030,6 +1030,9 @@ class Generator(metaclass=_Generator):
 
         return f"{self.column_parts(expression)}{join_mark}"
 
+    def pseudocolumn_sql(self, expression: exp.Pseudocolumn) -> str:
+        return self.column_sql(expression)
+
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""

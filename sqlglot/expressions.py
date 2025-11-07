@@ -3228,7 +3228,7 @@ class SqlReadWriteProperty(Property):
 
 
 class SqlSecurityProperty(Property):
-    arg_types = {"definer": False, "invoker": False}
+    arg_types = {"this": True}
 
 
 class StabilityProperty(Property):

@@ -592,3 +592,30 @@ class TestExasol(Validator):
         self.validate_identity(
             "SELECT name, age, IF age < 18 THEN 'underaged' ELSE 'adult' ENDIF AS LEGALITY FROM persons"
         )
+
+    def test_local_prefix_for_alias(self):
+        test_cases = [
+            {
+                "name": "GROUP BY alias",
+                "sql": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY LOCAL.a_year",
+                "exasol": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY LOCAL.a_year",
+                "databricks": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY a_year",
+            },
+            {
+                "name": "HAVING alias",
+                "sql": "SELECT SUM(amount) AS total FROM my_table HAVING LOCAL.total > 10000",
+                "exasol": "SELECT SUM(amount) AS total FROM my_table HAVING LOCAL.total > 10000",
+                "databricks": "SELECT SUM(amount) AS total FROM my_table HAVING total > 10000",
+            },
+            {
+                "name": "WHERE alias",
+                "sql": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE LOCAL.a_year > 2020",
+                "exasol": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE LOCAL.a_year > 2020",
+                "databricks": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE a_year > 2020",
+            },
+        ]
+        for case in test_cases:
+            with self.subTest(clause=case["name"]):
+                self.validate_all(
+                    case["sql"], write={"exasol": case["exasol"], "databricks": case["databricks"]}
+                )

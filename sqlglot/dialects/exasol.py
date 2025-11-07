@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -69,6 +69,26 @@ def _build_zeroifnull(args: t.List) -> exp.If:
 def _build_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
+# https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
+def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        aliases = {s.alias: s.this for s in expression.selects if isinstance(s, exp.Alias)}
+
+        def prefix_local(node):
+            if isinstance(node, exp.Column) and node.name in aliases and not node.table:
+                return exp.Column(
+                    this=exp.to_identifier(node.name), table=exp.to_identifier("LOCAL")
+                )
+            return node
+
+        for key in ("where", "group", "having"):
+            arg = expression.args.get(key)
+            if arg:
+                expression.set(key, arg.transform(prefix_local))
+
+    return expression
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -198,6 +218,15 @@ class Exasol(Dialect):
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
         }
 
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+
+            if isinstance(column, exp.Column):
+                table = column.args.get("table")
+                if table and table.name.upper() == "LOCAL":
+                    column.set("table", None)
+            return column
+
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
@@ -308,6 +337,9 @@ class Exasol(Dialect):
             exp.MD5Digest: rename_func("HASHTYPE_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_semi_and_anti_joins, _add_local_prefix_for_aliases]
+            ),
             exp.WeekOfYear: rename_func("WEEK"),
         }
 

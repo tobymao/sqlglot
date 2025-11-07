@@ -199,7 +199,7 @@ class Generator(metaclass=_Generator):
         exp.SharingProperty: lambda self, e: f"SHARING={self.sql(e, 'this')}",
         exp.SqlReadWriteProperty: lambda _, e: e.name,
         exp.SqlSecurityProperty: lambda _,
-        e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        e: f"SQL SECURITY {'INVOKER' if e.args.get('invoker') else 'DEFINER'}",
         exp.StabilityProperty: lambda _, e: e.name,
         exp.Stream: lambda self, e: f"STREAM {self.sql(e, 'this')}",
         exp.StreamingTableProperty: lambda *_: "STREAMING",

@@ -1760,14 +1760,24 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
             sequence_call = exp.Anonymous(
                 this="SEQUENCE", expressions=[e for e in (start, end, step) if e]
             )
-            if_start_gte_end_then_empty_else_sequence = exp.If(
-                this=exp.GTE(this=start.copy(), expression=end.copy()),
+            zero = exp.Literal.number(0)
+            should_return_empty = exp.or_(
+                exp.EQ(this=step_value.copy(), expression=zero.copy()),
+                exp.and_(
+                    exp.GT(this=step_value.copy(), expression=zero.copy()),
+                    exp.GTE(this=start.copy(), expression=end.copy()),
+                ),
+                exp.and_(
+                    exp.LT(this=step_value.copy(), expression=zero.copy()),
+                    exp.LTE(this=start.copy(), expression=end.copy()),
+                ),
+            )
+            empty_array_or_sequence = exp.If(
+                this=should_return_empty,
                 true=exp.Array(expressions=[]),
                 false=sequence_call,
             )
-            return self.sql(
-                self._simplify_unless_literal(if_start_gte_end_then_empty_else_sequence)
-            )
+            return self.sql(self._simplify_unless_literal(empty_array_or_sequence))
 
     return self.func("SEQUENCE", start, end, step)
 

@@ -3408,6 +3408,18 @@ VARCHAR;
 MIN_BY('foo', tbl.bigint_col, 3);
 ARRAY<VARCHAR>;
 
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.bigint_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.double_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.int_col, 0.9);
+DOUBLE;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

@@ -1231,10 +1231,14 @@ class Snowflake(Dialect):
             while self._curr and not self._match(TokenType.R_PAREN, advance=False):
                 if self._match_text_seq("DIMENSIONS"):
                     kwargs["dimensions"] = self._parse_csv(self._parse_disjunction)
-                if self._match_text_seq("METRICS"):
+                elif self._match_text_seq("METRICS"):
                     kwargs["metrics"] = self._parse_csv(self._parse_disjunction)
-                if self._match_text_seq("WHERE"):
+                elif self._match_text_seq("FACTS"):
+                    kwargs["facts"] = self._parse_csv(self._parse_disjunction)
+                elif self._match_text_seq("WHERE"):
                     kwargs["where"] = self._parse_expression()
+                else:
+                    self.raise_error("Expecting ) or encountered unexpected keyword")
 
             return self.expression(exp.SemanticView, **kwargs)
 

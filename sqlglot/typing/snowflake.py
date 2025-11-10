@@ -100,14 +100,14 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     """
     self._annotate_args(expression)
 
-    if isinstance(expression.this, exp.PercentileDisc):
-        order_expr = expression.expression
-        if order_expr and isinstance(order_expr, exp.Order) and order_expr.expressions:
-            ordered_expr = order_expr.expressions[0]
-            if isinstance(ordered_expr, exp.Ordered) and len(order_expr.expressions) == 1:
-                ordered_col = order_expr.expressions[0].this
-                if ordered_col:
-                    self._set_type(expression, ordered_col.type)
+    if (
+        isinstance(expression.this, exp.PercentileDisc)
+        and isinstance(order_expr := expression.expression, exp.Order)
+        and len(order_expr.expressions) == 1
+        and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
+    ):
+        self._set_type(expression, ordered_expr.this.type)
+
     return expression
 
 

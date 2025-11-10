@@ -92,6 +92,25 @@ def _annotate_arg_max_min(
     return self._annotate_by_args(expression, "this", array=bool(expression.args.get("count")))
 
 
+def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> exp.WithinGroup:
+    """Annotate WithinGroup with correct type based on the inner function.
+
+    1) Annotate args first
+    2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
+    """
+    self._annotate_args(expression)
+
+    if isinstance(expression.this, exp.PercentileDisc):
+        order_expr = expression.expression
+        if order_expr and isinstance(order_expr, exp.Order) and order_expr.expressions:
+            ordered_expr = order_expr.expressions[0]
+            if isinstance(ordered_expr, exp.Ordered) and len(order_expr.expressions) == 1:
+                ordered_col = order_expr.expressions[0].this
+                if ordered_col:
+                    self._set_type(expression, ordered_col.type)
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -293,4 +312,5 @@ EXPRESSION_METADATA = {
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},
+    exp.WithinGroup: {"annotator": _annotate_within_group},
 }

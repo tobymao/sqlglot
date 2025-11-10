@@ -923,6 +923,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",
+                "int_col": "INT",
                 "bool_col": "BOOLEAN",
                 "bytes_col": "BYTES",
                 "interval_col": "INTERVAL",

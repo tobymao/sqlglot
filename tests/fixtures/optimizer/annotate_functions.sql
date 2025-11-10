@@ -1661,6 +1661,10 @@ BITMAP_BIT_POSITION(tbl.int_col);
 BIGINT;
 
 # dialect: snowflake
+BITMAP_BUCKET_NUMBER(tbl.int_col);
+BIGINT;
+
+# dialect: snowflake
 BITMAP_CONSTRUCT_AGG(tbl.int_col);
 BINARY;
 

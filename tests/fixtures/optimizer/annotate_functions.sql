@@ -1657,6 +1657,10 @@ BIT_LENGTH('abc');
 INT;
 
 # dialect: snowflake
+BITMAP_CONSTRUCT_AGG(tbl.int_col);
+BINARY;
+
+# dialect: snowflake
 BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(tbl.int_col));
 BIGINT;
 

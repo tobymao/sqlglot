@@ -134,6 +134,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.BINARY}
         for expr_type in {
             exp.Base64DecodeBinary,
+            exp.BitmapConstructAgg,
             exp.Compress,
             exp.DecompressBinary,
             exp.MD5Digest,

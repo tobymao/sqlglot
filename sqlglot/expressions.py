@@ -5636,6 +5636,10 @@ class BitmapCount(Func):
     pass
 
 
+class BitmapConstructAgg(AggFunc):
+    pass
+
+
 class ByteLength(Func):
     pass
 

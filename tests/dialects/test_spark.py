@@ -274,6 +274,7 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("ALTER TABLE foo ADD PARTITION(event = 'click')")
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS PARTITION(event = 'click')")
         self.validate_identity("IF(cond, foo AS bar, bla AS baz)")

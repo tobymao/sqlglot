@@ -17,6 +17,7 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("DBMS_RANDOM.NORMAL")
         self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
         self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)

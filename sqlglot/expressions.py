@@ -5640,6 +5640,10 @@ class BitmapConstructAgg(AggFunc):
     pass
 
 
+class BitmapOrAgg(AggFunc):
+    pass
+
+
 class ByteLength(Func):
     pass
 

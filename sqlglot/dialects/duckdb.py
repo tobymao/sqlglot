@@ -1215,6 +1215,12 @@ class DuckDB(Dialect):
             ByteString literals are converted to regular string literals to avoid
             BLOB casting by the generator. Non-VARCHAR types are cast to VARCHAR.
             """
+            # Annotate types if needed for type-based casting
+            if not arg.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                annotate_types(arg, dialect=self.dialect)
+
             # Convert ByteString to String literal before generation
             # ByteStrings get typed as UNKNOWN and would be wrapped in CAST(...AS BLOB) by generator
             if isinstance(arg, exp.ByteString):
@@ -1224,18 +1230,7 @@ class DuckDB(Dialect):
                 arg.replace(exp.cast(arg, exp.DataType.Type.VARCHAR))
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
-            # Annotate types if needed for type-based casting
-            if not expression.this.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
-                annotate_types(expression.this, dialect=self.dialect)
-
-            if not expression.expression.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
-                annotate_types(expression.expression, dialect=self.dialect)
-
-            # Prepare both arguments for STARTS_WITH
+            # Prepare both arguments for STARTS_WITH (annotates types and converts to VARCHAR)
             self._prepare_startswith_arg(expression.this)
             self._prepare_startswith_arg(expression.expression)
 

@@ -3468,10 +3468,10 @@ SINGLE = TRUE""",
             (None, None, None, "a.a"),
             ("DATE_PART('year', a.b)", None, None, None),
             (None, "a.b, a.c", None, None),
-            (None, "a.b, a.c", None, "a.d, a.e"),
+            (None, None, None, "a.d, a.e"),
             ("a.b, a.c", "a.b, a.c", None, None),
             ("a.b", "a.b, a.c", "a.c > 5", None),
-            ("a.b", "a.b, a.c", "a.c > 5", "a.d"),
+            ("a.b", None, "a.c > 5", "a.d"),
         ]:
             with self.subTest(
                 f"Testing Snowflake's SEMANTIC_VIEW command statement: {dimensions}, {metrics}, {facts} {where}"
@@ -3490,14 +3490,13 @@ SINGLE = TRUE""",
                 )
 
         self.validate_identity(
-            "SELECT * FROM SEMANTIC_VIEW(foo FACTS a.d METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
+            "SELECT * FROM SEMANTIC_VIEW(foo METRICS a.b, a.c DIMENSIONS a.b, a.c WHERE a.b > '1995-01-01')",
             """SELECT
   *
 FROM SEMANTIC_VIEW(
   foo
   METRICS a.b, a.c
   DIMENSIONS a.b, a.c
-  FACTS a.d
   WHERE a.b > '1995-01-01'
 )""",
             pretty=True,

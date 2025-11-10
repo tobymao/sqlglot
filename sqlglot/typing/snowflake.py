@@ -136,6 +136,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Base64DecodeBinary,
             exp.BitmapConstructAgg,
+            exp.BitmapOrAgg,
             exp.Compress,
             exp.DecompressBinary,
             exp.MD5Digest,

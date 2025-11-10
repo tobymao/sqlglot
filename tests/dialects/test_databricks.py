@@ -93,6 +93,7 @@ class TestDatabricks(Validator):
         )
 
         self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
         self.validate_all(
             "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",

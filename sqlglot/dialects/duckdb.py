@@ -1209,35 +1209,35 @@ class DuckDB(Dialect):
 
             return self.func("STRUCT_INSERT", this, kv_sql)
 
+        def _prepare_startswith_arg(self, arg: exp.Expression) -> None:
+            """Prepare argument for STARTS_WITH by converting to VARCHAR.
+
+            ByteString literals are converted to regular string literals to avoid
+            BLOB casting by the generator. Non-VARCHAR types are cast to VARCHAR.
+            """
+            # Convert ByteString to String literal before generation
+            # ByteStrings get typed as UNKNOWN and would be wrapped in CAST(...AS BLOB) by generator
+            if isinstance(arg, exp.ByteString):
+                arg.replace(exp.Literal.string(arg.this))
+            # Cast non-VARCHAR types to VARCHAR
+            elif arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+                arg.replace(exp.cast(arg, exp.DataType.Type.VARCHAR))
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
-            this = expression.this
-            expr = expression.expression
-
-            if not this.type:
+            # Annotate types if needed for type-based casting
+            if not expression.this.type:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                this = annotate_types(this, dialect=self.dialect)
+                annotate_types(expression.this, dialect=self.dialect)
 
-            if not expr.type:
+            if not expression.expression.type:
                 from sqlglot.optimizer.annotate_types import annotate_types
 
-                expr = annotate_types(expr, dialect=self.dialect)
+                annotate_types(expression.expression, dialect=self.dialect)
 
-            if isinstance(expression.this, exp.ByteString):
-                expression.this.replace(exp.Literal.string(expression.this.this))
-            elif this.type and not this.is_type(
-                exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN
-            ):
-                expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
-
-            if isinstance(expression.expression, exp.ByteString):
-                expression.expression.replace(exp.Literal.string(expression.expression.this))
-            elif expr.type and not expr.is_type(
-                exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN
-            ):
-                expression.expression.replace(
-                    exp.cast(expression.expression, exp.DataType.Type.VARCHAR)
-                )
+            # Prepare both arguments for STARTS_WITH
+            self._prepare_startswith_arg(expression.this)
+            self._prepare_startswith_arg(expression.expression)
 
             return self.func("STARTS_WITH", expression.this, expression.expression)
 

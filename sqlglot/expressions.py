@@ -5636,6 +5636,10 @@ class BitmapCount(Func):
     pass
 
 
+class BitmapBitPosition(Func):
+    pass
+
+
 class BitmapConstructAgg(AggFunc):
     pass
 

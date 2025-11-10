@@ -47,6 +47,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT FACTORIAL(5)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
         self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity(
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => ARRAY_CONSTRUCT(1, 2, 3, 5)))",

@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.errors import UnsupportedError
-from sqlglot.helper import find_new_name, name_sequence
+from sqlglot.helper import find_new_name, name_sequence, seq_get
 
 
 if t.TYPE_CHECKING:
@@ -14,6 +14,7 @@ if t.TYPE_CHECKING:
 
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
+    generator: t.Optional[t.Callable[[Generator, exp.Expression], str]] = None,
 ) -> t.Callable[[Generator, exp.Expression], str]:
     """
     Creates a new transform by chaining a sequence of transformations and converts the resulting
@@ -36,6 +37,9 @@ def preprocess(
                 expression = transform(expression)
         except UnsupportedError as unsupported_error:
             self.unsupported(str(unsupported_error))
+
+        if generator:
+            return generator(self, expression)
 
         _sql_handler = getattr(self, expression.key + "_sql", None)
         if _sql_handler:
@@ -1003,19 +1007,19 @@ def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
 
 def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
     """
-    Inherit struct field names from the first struct in an array to subsequent unnamed structs.
+    Inherit field names from the first struct in an array.
 
-    BigQuery (and some other dialects) allow shorthand where the first STRUCT in an array
-    defines field names and subsequent STRUCTs inherit them:
+    BigQuery supports implicitly inheriting names from the first STRUCT in an array:
 
     Example:
         ARRAY[
           STRUCT('Alice' AS name, 85 AS score),  -- defines names
-          STRUCT('Bob', 92),                      -- inherits names
-          STRUCT('Diana', 95)                     -- inherits names
+          STRUCT('Bob', 92),                     -- inherits names
+          STRUCT('Diana', 95)                    -- inherits names
         ]
 
-    This transform makes the field names explicit on all structs by adding PropertyEQ nodes.
+    This transformation makes the field names explicit on all structs by adding
+    PropertyEQ nodes, in order to facilitate transpilation to other dialects.
 
     Args:
         expression: The expression tree to transform
@@ -1023,33 +1027,17 @@ def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
     Returns:
         The modified expression with field names inherited in all structs
     """
-    for array in expression.find_all(exp.Array):
-        if not array.expressions:
-            continue
-
-        # Check if first element is a Struct with field names
-        first_item = array.expressions[0]
-        if not isinstance(first_item, exp.Struct):
-            continue
-
-        # Get field names from first struct (PropertyEQ nodes)
-        property_eqs = [e for e in first_item.expressions if isinstance(e, exp.PropertyEQ)]
-        if not property_eqs:
-            continue
-
-        field_names = [pe.name for pe in property_eqs]
+    if (
+        isinstance(expression, exp.Array)
+        and expression.args.get("struct_name_inheritance")
+        and isinstance(first_item := seq_get(expression.expressions, 0), exp.Struct)
+        and all(isinstance(fld, exp.PropertyEQ) for fld in first_item.expressions)
+    ):
+        field_names = [fld.this for fld in first_item.expressions]
 
         # Apply field names to subsequent structs that don't have them
-        for struct in array.expressions[1:]:
-            if not isinstance(struct, exp.Struct):
-                continue
-
-            # Skip if struct already has field names
-            if struct.find(exp.PropertyEQ):
-                continue
-
-            # Skip if struct has different number of fields
-            if len(struct.expressions) != len(field_names):
+        for struct in expression.expressions[1:]:
+            if not isinstance(struct, exp.Struct) or len(struct.expressions) != len(field_names):
                 continue
 
             # Convert unnamed expressions to PropertyEQ with inherited names
@@ -1058,7 +1046,9 @@ def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
                 if not isinstance(expr, exp.PropertyEQ):
                     # Create PropertyEQ: field_name := value
                     new_expressions.append(
-                        exp.PropertyEQ(this=exp.Identifier(this=field_names[i]), expression=expr)
+                        exp.PropertyEQ(
+                            this=exp.Identifier(this=field_names[i].copy()), expression=expr
+                        )
                     )
                 else:
                     new_expressions.append(expr)

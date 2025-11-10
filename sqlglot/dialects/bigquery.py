@@ -609,7 +609,11 @@ class BigQuery(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
+            "ARRAY": lambda self: self.expression(
+                exp.Array,
+                expressions=[self._parse_statement()],
+                struct_name_inheritance=True,
+            ),
             "JSON_ARRAY": lambda self: self.expression(
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
@@ -844,6 +848,9 @@ class BigQuery(Dialect):
             self, this: t.Optional[exp.Expression] = None
         ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
+
+            if isinstance(bracket, exp.Array):
+                bracket.set("struct_name_inheritance", True)
 
             if this is bracket:
                 return bracket

@@ -922,6 +922,7 @@ TBLPROPERTIES (
                 "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
             },
         )
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_bool_or(self):
         self.validate_all(

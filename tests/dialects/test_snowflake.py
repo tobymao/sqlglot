@@ -3553,6 +3553,9 @@ FROM SEMANTIC_VIEW(
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
 
+    def test_bitmap_or_agg(self):
+        self.validate_identity("BITMAP_OR_AGG(x)")
+
     def test_md5_functions(self):
         self.validate_identity("MD5_HEX(col)", "MD5(col)")
         self.validate_identity("MD5(col)")

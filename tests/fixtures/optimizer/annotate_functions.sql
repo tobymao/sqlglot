@@ -1781,6 +1781,10 @@ BIT_XORAGG(tbl.int_col);
 NUMBER(38, 0);
 
 # dialect: snowflake
+BITMAP_OR_AGG(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
 BOOLXOR_AGG(tbl.bool_col);
 BOOLEAN;
 

@@ -882,37 +882,33 @@ class Parser(metaclass=_Parser):
     }
 
     STRING_PARSERS = {
-        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
-            exp.RawString, this=token.text
-        ),
-        TokenType.NATIONAL_STRING: lambda self, token: self.expression(
-            exp.National, this=token.text
-        ),
-        TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
+        TokenType.HEREDOC_STRING: lambda self, token: self.expression(exp.RawString, token=token),
+        TokenType.NATIONAL_STRING: lambda self, token: self.expression(exp.National, token=token),
+        TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, token=token),
         TokenType.STRING: lambda self, token: self.expression(
-            exp.Literal, this=token.text, is_string=True
+            exp.Literal, token=token, is_string=True
         ),
         TokenType.UNICODE_STRING: lambda self, token: self.expression(
             exp.UnicodeString,
-            this=token.text,
+            token=token,
             escape=self._match_text_seq("UESCAPE") and self._parse_string(),
         ),
     }
 
     NUMERIC_PARSERS = {
-        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
+        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, token=token),
         TokenType.BYTE_STRING: lambda self, token: self.expression(
             exp.ByteString,
-            this=token.text,
+            token=token,
             is_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE or None,
         ),
         TokenType.HEX_STRING: lambda self, token: self.expression(
             exp.HexString,
-            this=token.text,
+            token=token,
             is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE or None,
         ),
         TokenType.NUMBER: lambda self, token: self.expression(
-            exp.Literal, this=token.text, is_string=False
+            exp.Literal, token=token, is_string=False
         ),
     }
 
@@ -1744,7 +1740,11 @@ class Parser(metaclass=_Parser):
         self.errors.append(error)
 
     def expression(
-        self, exp_class: t.Type[E], comments: t.Optional[t.List[str]] = None, **kwargs
+        self,
+        exp_class: t.Type[E],
+        token: t.Optional[Token] = None,
+        comments: t.Optional[t.List[str]] = None,
+        **kwargs,
     ) -> E:
         """
         Creates a new, validated Expression.
@@ -1757,7 +1757,11 @@ class Parser(metaclass=_Parser):
         Returns:
             The target expression.
         """
-        instance = exp_class(**kwargs)
+        if token:
+            instance = exp_class(this=token.text, **kwargs)
+            instance.update_positions(token)
+        else:
+            instance = exp_class(**kwargs)
         instance.add_comments(comments) if comments else self._add_comments(instance)
         return self.validate_expression(instance)
 
@@ -6090,7 +6094,7 @@ class Parser(metaclass=_Parser):
     def _parse_introducer(self, token: Token) -> exp.Introducer | exp.Identifier:
         literal = self._parse_primary()
         if literal:
-            return self.expression(exp.Introducer, this=token.text, expression=literal)
+            return self.expression(exp.Introducer, token=token, expression=literal)
 
         return self._identifier_expression(token)
 
@@ -8709,10 +8713,7 @@ class Parser(metaclass=_Parser):
     def _identifier_expression(
         self, token: t.Optional[Token] = None, **kwargs: t.Any
     ) -> exp.Identifier:
-        token = token or self._prev
-        expression = self.expression(exp.Identifier, this=token.text, **kwargs)
-        expression.update_positions(token)
-        return expression
+        return self.expression(exp.Identifier, token=token or self._prev, **kwargs)
 
     def _build_pipe_cte(
         self,

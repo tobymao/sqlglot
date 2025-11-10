@@ -46,7 +46,10 @@ def pushdown_projections(expression, **kwargs):
 
 
 def normalize(expression, **kwargs):
+    schema = kwargs.get("schema")
+
     expression = optimizer.normalize.normalize(expression, dnf=False)
+    expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(expression)
 
 
@@ -300,7 +303,7 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
-        self.check_file("normalize", normalize)
+        self.check_file("normalize", normalize, schema=self.schema)
 
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):

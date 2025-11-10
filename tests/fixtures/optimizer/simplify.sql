@@ -153,6 +153,18 @@ COALESCE(x, y) <> ALL (SELECT z FROM w);
 SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
 SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 
+SELECT t_bool.a AND TRUE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT TRUE AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a OR FALSE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT FALSE OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
 --------------------------------------
 -- Absorption
 --------------------------------------
@@ -160,7 +172,7 @@ SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 (A OR B) AND (C OR NOT A);
 
 A AND (A OR B);
-A;
+A AND TRUE;
 
 A AND D AND E AND (B OR A);
 A AND D AND E;
@@ -169,16 +181,16 @@ D AND A AND E AND (B OR A);
 A AND D AND E;
 
 (A OR B) AND A;
-A;
+A AND TRUE;
 
 C AND D AND (A OR B) AND E AND F AND A;
 A AND C AND D AND E AND F;
 
 A OR (A AND B);
-A;
+A AND TRUE;
 
 (A AND B) OR A;
-A;
+A AND TRUE;
 
 A AND (NOT A OR B);
 A AND B;
@@ -187,6 +199,9 @@ A AND B;
 A AND B;
 
 A OR (NOT A AND B);
+A OR B;
+
+A OR ((((NOT A AND B))));
 A OR B;
 
 (A OR C) AND ((A OR C) OR B);
@@ -199,7 +214,7 @@ A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
 A AND (A OR B) AND (A OR B OR C);
-A;
+A AND TRUE;
 
 (A OR B) AND (A OR C) AND (A OR B OR C);
 (A OR B) AND (A OR C);
@@ -892,7 +907,7 @@ COALESCE(x, 1) = 1;
 x = 1 OR x IS NULL;
 
 COALESCE(x, 1) IS NULL;
-NOT x IS NULL AND x IS NULL;
+FALSE;
 
 COALESCE(ROW() OVER (), 1) = 1;
 ROW() OVER () = 1 OR ROW() OVER () IS NULL;

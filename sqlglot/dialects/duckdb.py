@@ -684,15 +684,13 @@ class DuckDB(Dialect):
         SUPPORTS_LIKE_QUANTIFIERS = False
         SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
-        def _array_sql_with_struct_inheritance(self, expression: exp.Array) -> str:
-            """Generate DuckDB array SQL with struct field name inheritance preprocessing."""
-            transformed = transforms.inherit_struct_field_names(expression)
-            return inline_array_unless_query(self, t.cast(exp.Array, transformed))
-
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: self._array_sql_with_struct_inheritance(e),
+            exp.Array: transforms.preprocess(
+                [transforms.inherit_struct_field_names],
+                generator=inline_array_unless_query,
+            ),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

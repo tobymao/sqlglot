@@ -5340,9 +5340,11 @@ class Generator(metaclass=_Generator):
             expression, "metrics", dynamic=True, skip_first=True, skip_last=True
         )
         metrics = self.seg(f"METRICS {metrics}") if metrics else ""
+        facts = self.expressions(expression, "facts", dynamic=True, skip_first=True, skip_last=True)
+        facts = self.seg(f"FACTS {facts}") if facts else ""
         where = self.sql(expression, "where")
         where = self.seg(f"WHERE {where}") if where else ""
-        body = self.indent(this + metrics + dimensions + where, skip_first=True)
+        body = self.indent(this + metrics + dimensions + facts + where, skip_first=True)
         return f"SEMANTIC_VIEW({body}{self.seg(')', sep='')}"
 
     def getextract_sql(self, expression: exp.GetExtract) -> str:

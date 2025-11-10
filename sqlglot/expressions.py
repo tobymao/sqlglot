@@ -5632,6 +5632,10 @@ class BitwiseCount(Func):
     pass
 
 
+class BitmapBucketNumber(Func):
+    pass
+
+
 class BitmapCount(Func):
     pass
 

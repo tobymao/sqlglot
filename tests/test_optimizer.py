@@ -928,19 +928,6 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 "bytes_col": "BYTES",
                 "interval_col": "INTERVAL",
                 "array_col": "ARRAY<STRING>",
-                # Add uppercase versions for Python tokenizer compatibility
-                "BIN_COL": "BINARY",
-                "STR_COL": "STRING",
-                "BIGNUM_COL": "BIGNUMERIC",
-                "DATE_COL": "DATE",
-                "TIMESTAMP_COL": "TIMESTAMP",
-                "DOUBLE_COL": "DOUBLE",
-                "BIGINT_COL": "BIGINT",
-                "INT_COL": "INT",
-                "BOOL_COL": "BOOLEAN",
-                "BYTES_COL": "BYTES",
-                "INTERVAL_COL": "INTERVAL",
-                "ARRAY_COL": "ARRAY<STRING>",
             }
         }
 

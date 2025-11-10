@@ -325,6 +325,7 @@ class DuckDB(Dialect):
             "INSTALL": TokenType.INSTALL,
             "INT8": TokenType.BIGINT,
             "LOGICAL": TokenType.BOOLEAN,
+            "MACRO": TokenType.FUNCTION,
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,
             "POSITIONAL": TokenType.POSITIONAL,

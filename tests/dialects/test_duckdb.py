@@ -1994,3 +1994,13 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "WITH RECURSIVE tbl(a, b) USING KEY (a, b) AS (SELECT a, b FROM (VALUES (1, 3), (2, 4)) AS t(a, b) UNION SELECT a + 1, b FROM tbl WHERE a < 3) SELECT * FROM tbl"
         )
+
+    def test_udf(self):
+        for keyword in ("FUNCTION", "MACRO"):
+            with self.subTest(f"Testing DuckDB's UDF for keyword: {keyword}"):
+                self.validate_identity(f"SELECT {keyword}")
+
+                self.validate_identity(f"CREATE {keyword} add(a, b) AS a + b")
+                self.validate_identity(
+                    f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
+                )

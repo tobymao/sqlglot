@@ -5394,11 +5394,11 @@ class Generator(metaclass=_Generator):
 
     def uuid_sql(self, expression: exp.Uuid) -> str:
         is_string = expression.args.get("is_string", False)
-        uuid_func_sql = self.function_fallback_sql(expression)
+        uuid_func_sql = self.func("UUID")
 
         if is_string and not self.dialect.UUID_IS_STRING_TYPE:
             return self.sql(
                 exp.cast(uuid_func_sql, exp.DataType.Type.VARCHAR, dialect=self.dialect)
             )
 
-        return "UUID()"
+        return uuid_func_sql

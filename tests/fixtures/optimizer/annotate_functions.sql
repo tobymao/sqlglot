@@ -3393,6 +3393,14 @@ OBJECT_AGG(tbl.str_col, tbl.variant_col);
 OBJECT;
 
 # dialect: snowflake
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 

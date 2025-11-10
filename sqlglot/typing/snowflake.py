@@ -122,6 +122,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
+            exp.BitmapBitPosition,
             exp.BitmapCount,
             exp.Factorial,
             exp.GroupingId,

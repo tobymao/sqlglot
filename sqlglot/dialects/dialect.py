@@ -542,6 +542,11 @@ class Dialect(metaclass=_Dialect):
     Whether byte string literals (ex: BigQuery's b'...') are typed as BYTES/BINARY
     """
 
+    UUID_IS_STRING_TYPE: bool = False
+    """
+    Whether a UUID is considered a string or a UUID type.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

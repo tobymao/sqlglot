@@ -5764,7 +5764,11 @@ class Apply(Func):
 
 
 class Array(Func):
-    arg_types = {"expressions": False, "bracket_notation": False}
+    arg_types = {
+        "expressions": False,
+        "bracket_notation": False,
+        "struct_name_inheritance": False,
+    }
     is_var_len_args = True
 
 

@@ -962,11 +962,11 @@ def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> st
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
-def inline_array_sql(self: Generator, expression: exp.Array) -> str:
+def inline_array_sql(self: Generator, expression: exp.Expression) -> str:
     return f"[{self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)}]"
 
 
-def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
+def inline_array_unless_query(self: Generator, expression: exp.Expression) -> str:
     elem = seq_get(expression.expressions, 0)
     if isinstance(elem, exp.Expression) and elem.find(exp.Query):
         return self.func("ARRAY", elem)

@@ -17,7 +17,7 @@ class TestTransforms(unittest.TestCase):
     def validate(self, transform, sql, target, dialect=None):
         with self.subTest(f"{dialect} - {sql}"):
             self.assertEqual(
-                parse_one(sql, dialect=dialect).transform(transform).sql(dialect=dialect),
+                exp.maybe_parse(sql, dialect=dialect).transform(transform).sql(dialect=dialect),
                 target,
             )
 
@@ -292,72 +292,94 @@ class TestTransforms(unittest.TestCase):
         )
 
     def test_inherit_struct_field_names(self):
+        def _parse_and_set_struct_name_inheritance(sql: str) -> exp.Expression:
+            ast = exp.maybe_parse(sql)
+            for array in ast.find_all(exp.Array):
+                array.set("struct_name_inheritance", True)
+            return ast
+
         # Basic case: field names inherited from first struct
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Diana', 95))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Diana', 95))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Diana' AS name, 95 AS score))",
         )
 
         # Single struct in array: no inheritance needed
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score))",
         )
 
         # Empty array: no change
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY()",
+            _parse_and_set_struct_name_inheritance("SELECT ARRAY()"),
             "SELECT ARRAY()",
         )
 
         # First struct has no field names: no inheritance
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice', 85), STRUCT('Bob', 92))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice', 85), STRUCT('Bob', 92))"
+            ),
             "SELECT ARRAY(STRUCT('Alice', 85), STRUCT('Bob', 92))",
         )
 
         # Mismatched field counts: skip inheritance
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob'))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob'))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob'))",
         )
 
         # Struct already has field names: don't override
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS fullname, 92 AS points))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS fullname, 92 AS points))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS fullname, 92 AS points))",
         )
 
         # Mixed: some structs inherit, some already have names
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Carol' AS name, 88 AS score), STRUCT('Diana', 95))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Carol' AS name, 88 AS score), STRUCT('Diana', 95))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Carol' AS name, 88 AS score), STRUCT('Diana' AS name, 95 AS score))",
         )
 
         # Non-struct elements: no change
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(1, 2, 3)",
+            _parse_and_set_struct_name_inheritance("SELECT ARRAY(1, 2, 3)"),
             "SELECT ARRAY(1, 2, 3)",
         )
 
         # Multiple arrays: each processed independently
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92)), ARRAY(STRUCT('X' AS col), STRUCT('Y'))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92)), ARRAY(STRUCT('X' AS col), STRUCT('Y'))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score)), ARRAY(STRUCT('X' AS col), STRUCT('Y' AS col))",
         )
 
         # Partial field names in first struct: inherit only the named ones
         self.validate(
             inherit_struct_field_names,
-            "SELECT ARRAY(STRUCT('Alice' AS name, 85), STRUCT('Bob', 92))",
+            _parse_and_set_struct_name_inheritance(
+                "SELECT ARRAY(STRUCT('Alice' AS name, 85), STRUCT('Bob', 92))"
+            ),
             "SELECT ARRAY(STRUCT('Alice' AS name, 85), STRUCT('Bob', 92))",
         )

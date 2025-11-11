@@ -3457,6 +3457,10 @@ APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
 DOUBLE;
 
 # dialect: snowflake
+APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
+VARIANT;
+
+# dialect: snowflake
 APPROX_COUNT_DISTINCT(tbl.str_col);
 BIGINT;
 

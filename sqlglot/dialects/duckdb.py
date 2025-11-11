@@ -1210,27 +1210,13 @@ class DuckDB(Dialect):
             return self.func("STRUCT_INSERT", this, kv_sql)
 
         def _prepare_startswith_arg(self, arg: exp.Expression) -> None:
-            """Prepare argument for STARTS_WITH by converting to VARCHAR.
-
-            ByteString literals are converted to regular string literals to avoid
-            BLOB casting by the generator. Non-VARCHAR types are cast to VARCHAR.
-            """
-            # Annotate types if needed for type-based casting
-            if not arg.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
-                annotate_types(arg, dialect=self.dialect)
-
-            # Convert ByteString to String literal before generation
-            # ByteStrings get typed as UNKNOWN and would be wrapped in CAST(...AS BLOB) by generator
-            if isinstance(arg, exp.ByteString):
-                arg.replace(exp.Literal.string(arg.this))
-            # Cast non-VARCHAR types to VARCHAR
-            elif arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+            """Prepare argument for STARTS_WITH by converting to VARCHAR."""
+            # Cast non-VARCHAR types to VARCHAR (includes double-cast for BLOB types)
+            if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
                 arg.replace(exp.cast(arg, exp.DataType.Type.VARCHAR))
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
-            # Prepare both arguments for STARTS_WITH (annotates types and converts to VARCHAR)
+            # Prepare both arguments for STARTS_WITH (converts to VARCHAR)
             self._prepare_startswith_arg(expression.this)
             self._prepare_startswith_arg(expression.expression)
 

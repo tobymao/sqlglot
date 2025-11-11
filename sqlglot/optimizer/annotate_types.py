@@ -235,6 +235,22 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DataType.Type.NULL:
             self._null_expressions.pop(expression_id, None)
 
+        dialect = Dialect.get_or_raise(self.schema.dialect)
+
+        if (
+            dialect.JSON_DOT_ACCESS_IS_CASE_SENSITIVE
+            and isinstance(expression, exp.Column)
+            and expression.is_type(exp.DataType.Type.JSON)
+        ):
+            if dot_parts := expression.meta.get("dot_parts"):
+                i = iter(dot_parts)
+                parent = expression.parent
+                while isinstance(parent, exp.Dot):
+                    parent.set("expression", next(i))
+                    parent = parent.parent
+
+                expression.meta.pop("dot_parts")
+
     def annotate(self, expression: E, annotate_scope: bool = True) -> E:
         # This flag is used to avoid costly scope traversals when we only care about annotating
         # non-column expressions (partial type inference), e.g., when simplifying in the optimizer

@@ -547,6 +547,21 @@ class Dialect(metaclass=_Dialect):
     Whether a UUID is considered a string or a UUID type.
     """
 
+    JSON_DOT_ACCESS_IS_CASE_SENSITIVE: bool = False
+    """
+    Whether the JSON dot access is case sensitive. For instance, in BigQuery, the following queries are NOT equivalent:
+    
+    - CREATE TABLE t (col JSON) AS SELECT PARSE_JSON(PARSE_JSON('{"fOo": {"BaR": 1}}'))
+    
+    Query 1 (proper access): 
+        `SELECT t.col.fOo.BaR`
+        => 1
+        
+    Query 2 (improper access): 
+        `SELECT t.col.foo.bar`
+        => NULL
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

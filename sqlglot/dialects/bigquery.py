@@ -357,6 +357,7 @@ class BigQuery(Dialect):
     HEX_STRING_IS_INTEGER_TYPE = True
     BYTE_STRING_IS_BYTES_TYPE = True
     UUID_IS_STRING_TYPE = True
+    JSON_DOT_ACCESS_IS_CASE_SENSITIVE = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -432,6 +433,13 @@ class BigQuery(Dialect):
                 expression.set("this", expression.this.lower())
 
             return t.cast(E, expression)
+
+        if isinstance(expression, exp.Column):
+            parent = expression
+            while parent and isinstance(parent.parent, exp.Dot):
+                parent = parent.parent
+
+            expression.meta["dot_parts"] = [p.copy() for p in parent.parts]
 
         return super().normalize_identifier(expression)
 

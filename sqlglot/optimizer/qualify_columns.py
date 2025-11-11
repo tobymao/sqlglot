@@ -507,10 +507,10 @@ def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
 
 def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     """
-    Converts `Column` instances that represent struct field lookup into chained `Dots`.
+    Converts `Column` instances that represent STRUCT or JSON field lookup into chained `Dots`.
 
-    Struct field lookups look like columns (e.g. "struct"."field"), but they need to be
-    qualified separately and represented as Dot(Dot(...(<table>.<column>, field1), field2, ...)).
+    These lookups may be parsed as columns (e.g. "col"."field"."field2"), but they need to be
+    normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
     converted = False
     for column in itertools.chain(scope.columns, scope.stars):
@@ -533,12 +533,21 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                 # The struct is already qualified, but we still need to change the AST
                 column_table = root
                 root, *parts = parts
+                was_qualified = True
             else:
                 column_table = resolver.get_table(root.name)
+                was_qualified = False
 
             if column_table:
                 converted = True
-                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
+                new_column = exp.column(root, table=column_table)
+                if dot_parts := column.meta.get("dot_parts"):
+                    # Remove the actual column parts from the rest of dot parts
+                    new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
+
+                column.replace(exp.Dot.build([new_column, *parts]))
+            else:
+                column.meta.pop("dot_parts", None)
 
     if converted:
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in

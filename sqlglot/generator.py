@@ -3839,6 +3839,9 @@ class Generator(metaclass=_Generator):
     def ilike_sql(self, expression: exp.ILike) -> str:
         return self._like_sql(expression)
 
+    def match_sql(self, expression: exp.Match) -> str:
+        return self.binary(expression, "MATCH")
+
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
         return self.binary(expression, "SIMILAR TO")
 

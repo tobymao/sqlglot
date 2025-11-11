@@ -336,6 +336,7 @@ class TokenType(AutoName):
     LOAD = auto()
     LOCK = auto()
     MAP = auto()
+    MATCH = auto()
     MATCH_CONDITION = auto()
     MATCH_RECOGNIZE = auto()
     MEMBER_OF = auto()

@@ -537,6 +537,7 @@ class Parser(metaclass=_Parser):
         TokenType.LIMIT,
         TokenType.LOAD,
         TokenType.LOCK,
+        TokenType.MATCH,
         TokenType.MERGE,
         TokenType.NATURAL,
         TokenType.NEXT,

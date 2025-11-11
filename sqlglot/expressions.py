@@ -5233,6 +5233,10 @@ class Like(Binary, Predicate):
     pass
 
 
+class Match(Binary, Predicate):
+    pass
+
+
 class LT(Binary, Predicate):
     pass
 

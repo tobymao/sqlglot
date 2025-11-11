@@ -251,18 +251,13 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
+            exp.ApproxTopKAccumulate,
         }
     },
     **{
         expr_type: {"returns": exp.DataType.Type.TIME}
         for expr_type in {
             exp.TimeFromParts,
-        }
-    },
-    **{
-        expr_type: {"returns": exp.DataType.Type.VARIANT}
-        for expr_type in {
-            exp.ApproxTopKAccumulate,
         }
     },
     **{

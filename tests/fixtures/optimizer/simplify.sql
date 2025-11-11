@@ -2,10 +2,10 @@
 -- Conditions
 --------------------------------------
 x AND x;
-x;
+x AND TRUE;
 
 y OR y;
-y;
+y AND TRUE;
 
 x AND NOT x;
 NOT x AND x;
@@ -223,28 +223,28 @@ A AND TRUE;
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (NOT A AND B);
-B;
+B AND TRUE;
 
 (A AND NOT B) OR (A AND B);
-A;
+A AND TRUE;
 
 (NOT A AND B) OR (A AND B);
-B;
+B AND TRUE;
 
 (A OR B) AND (A OR NOT B);
-A;
+A AND TRUE;
 
 (A OR B) AND (NOT A OR B);
-B;
+B AND TRUE;
 
 (A OR NOT B) AND (A OR B);
-A;
+A AND TRUE;
 
 (NOT A OR B) AND (A OR B);
-B;
+B AND TRUE;
 
 (NOT A OR NOT B) AND (NOT A OR B);
 NOT A;
@@ -256,13 +256,25 @@ E OR (A AND B) OR C OR D OR (A AND NOT B);
 A OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
+
+SELECT t_bool.a OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT SUM(t.x OR t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
+
+SELECT SUM(t.x AND t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
 
 --------------------------------------
 -- Associativity

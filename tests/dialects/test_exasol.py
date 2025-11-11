@@ -594,28 +594,40 @@ class TestExasol(Validator):
         )
 
     def test_local_prefix_for_alias(self):
+        self.validate_identity(
+            'SELECT ID FROM local WHERE "LOCAL".ID IS NULL',
+            'SELECT ID FROM "LOCAL" WHERE "LOCAL".ID IS NULL',
+        )
+        self.validate_identity(
+            'SELECT YEAR(a_date) AS "a_year" FROM MY_SUMMARY_TABLE GROUP BY LOCAL."a_year"',
+        )
+        self.validate_identity('SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year')
+
         test_cases = [
-            {
-                "name": "GROUP BY alias",
-                "sql": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY LOCAL.a_year",
-                "exasol": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY LOCAL.a_year",
-                "databricks": "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY a_year",
-            },
-            {
-                "name": "HAVING alias",
-                "sql": "SELECT SUM(amount) AS total FROM my_table HAVING LOCAL.total > 10000",
-                "exasol": "SELECT SUM(amount) AS total FROM my_table HAVING LOCAL.total > 10000",
-                "databricks": "SELECT SUM(amount) AS total FROM my_table HAVING total > 10000",
-            },
-            {
-                "name": "WHERE alias",
-                "sql": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE LOCAL.a_year > 2020",
-                "exasol": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE LOCAL.a_year > 2020",
-                "databricks": "SELECT YEAR(a_date) AS a_year FROM my_table WHERE a_year > 2020",
-            },
+            (
+                "GROUP BY alias",
+                "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY LOCAL.a_year",
+                "SELECT YEAR(a_date) AS a_year FROM my_table GROUP BY a_year",
+            ),
+            (
+                "HAVING alias",
+                "SELECT SUM(amount) AS total FROM my_table HAVING LOCAL.total > 10000",
+                "SELECT SUM(amount) AS total FROM my_table HAVING total > 10000",
+            ),
+            (
+                "WHERE alias",
+                "SELECT YEAR(a_date) AS a_year FROM my_table WHERE LOCAL.a_year > 2020",
+                "SELECT YEAR(a_date) AS a_year FROM my_table WHERE a_year > 2020",
+            ),
+            (
+                "Multiple aliases",
+                "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE LOCAL.a_year > 2020 AND LOCAL.a_month < 6",
+                "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE a_year > 2020 AND a_month < 6",
+            ),
         ]
-        for case in test_cases:
-            with self.subTest(clause=case["name"]):
+        for title, exasol_sql, dbx_sql in test_cases:
+            with self.subTest(clause=title):
                 self.validate_all(
-                    case["sql"], write={"exasol": case["exasol"], "databricks": case["databricks"]}
+                    exasol_sql,
+                    write={"exasol": exasol_sql, "databricks": dbx_sql},
                 )

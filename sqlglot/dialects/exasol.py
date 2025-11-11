@@ -74,18 +74,42 @@ def _build_nullifzero(args: t.List) -> exp.If:
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
 def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
-        aliases = {s.alias: s.this for s in expression.selects if isinstance(s, exp.Alias)}
+        aliases = {}
+        for sel in expression.selects:
+            if isinstance(sel, exp.Alias):
+                alias = sel.args.get("alias")
+                if isinstance(alias, exp.Identifier):
+                    aliases[alias.name] = bool(alias.args.get("quoted"))
+                elif isinstance(alias, exp.Literal) and alias.is_string:
+                    aliases[alias.name] = True
+
+        table = expression.find(exp.Table)
+        if (
+            table
+            and isinstance(table.this, exp.Identifier)
+            and table.this.name.upper() == "LOCAL"
+            and not table.this.quoted
+        ):
+            table.set("this", exp.to_identifier(table.this.name.upper(), quoted=True))
 
         def prefix_local(node):
-            if isinstance(node, exp.Column) and node.name in aliases and not node.table:
-                return exp.Column(
-                    this=exp.to_identifier(node.name), table=exp.to_identifier("LOCAL")
+            if isinstance(node, exp.Column) and not node.table:
+                ident = node.args.get("this")
+
+                name = (
+                    ident.name
+                    if (isinstance(ident, exp.Identifier))
+                    else getattr(node, "name", None)
                 )
+                if name in aliases:
+                    return exp.Column(
+                        this=exp.to_identifier(name, quoted=aliases[name]),
+                        table=exp.to_identifier("LOCAL", quoted=False),
+                    )
             return node
 
         for key in ("where", "group", "having"):
-            arg = expression.args.get(key)
-            if arg:
+            if arg := expression.args.get(key):
                 expression.set(key, arg.transform(prefix_local))
 
     return expression
@@ -220,11 +244,15 @@ class Exasol(Dialect):
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
-
-            if isinstance(column, exp.Column):
-                table = column.args.get("table")
-                if table and table.name.upper() == "LOCAL":
-                    column.set("table", None)
+            if not isinstance(column, exp.Column):
+                return column
+            table_ident = column.args.get("table")
+            if (
+                isinstance(table_ident, exp.Identifier)
+                and table_ident.name.upper() == "LOCAL"
+                and not bool(table_ident.args.get("quoted"))
+            ):
+                column.set("table", None)
             return column
 
     class Generator(generator.Generator):
@@ -337,9 +365,7 @@ class Exasol(Dialect):
             exp.MD5Digest: rename_func("HASHTYPE_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
-            exp.Select: transforms.preprocess(
-                [transforms.eliminate_semi_and_anti_joins, _add_local_prefix_for_aliases]
-            ),
+            exp.Select: transforms.preprocess([_add_local_prefix_for_aliases]),
             exp.WeekOfYear: rename_func("WEEK"),
         }
 

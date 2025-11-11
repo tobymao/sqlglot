@@ -7,6 +7,8 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_sqlite(self):
+        self.validate_identity("SELECT match FROM t")
+        self.validate_identity("SELECT rowid FROM t1 WHERE t1 MATCH 'lorem'")
         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")

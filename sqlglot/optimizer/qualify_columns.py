@@ -82,7 +82,6 @@ def qualify_columns(
             scope,
             resolver,
             allow_partial_qualification=allow_partial_qualification,
-            pseudocolumns=pseudocolumns,
         )
 
         if not schema.empty and expand_alias_refs:
@@ -551,7 +550,6 @@ def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
     allow_partial_qualification: bool,
-    pseudocolumns: t.Set[str],
 ) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:

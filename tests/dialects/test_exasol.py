@@ -1,4 +1,5 @@
 from tests.dialects.test_dialect import Validator
+from sqlglot import exp
 
 
 class TestExasol(Validator):
@@ -592,3 +593,16 @@ class TestExasol(Validator):
         self.validate_identity(
             "SELECT name, age, IF age < 18 THEN 'underaged' ELSE 'adult' ENDIF AS LEGALITY FROM persons"
         )
+
+    def test_odbc_date_literals(self):
+        for read, write in [
+            ("{d'2024-01-01'}", "TO_DATE('2024-01-01')"),
+            ("{ts'2024-01-01 12:00:00'}", "TO_TIMESTAMP('2024-01-01 12:00:00')"),
+        ]:
+            with self.subTest(f"Testing ODBC date literal: {read}"):
+                read_sql = f"SELECT {read}"
+                write_sql = f"SELECT {write}"
+
+                expr = self.parse_one(read_sql)
+                self.assertIsInstance(expr, exp.Select)
+                self.validate_identity(read_sql, write_sql)

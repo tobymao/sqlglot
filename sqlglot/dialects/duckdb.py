@@ -290,6 +290,58 @@ def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     return self.function_fallback_sql(expression)
 
 
+def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
+    def build_capitalize_sql(
+        value_to_split: str, delimiters_sql: str, convert_delim_to_regex: bool = True
+    ) -> str:
+        # empty string delimiter --> treat value as one word, no need to split
+        if delimiters_sql == "''":
+            return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTR({value_to_split}, 2))"
+
+        delim_regex_sql = delimiters_sql
+        split_regex_sql = delimiters_sql
+        if convert_delim_to_regex:
+            delim_regex_sql = f"CONCAT('[', {delimiters_sql}, ']')"
+            split_regex_sql = f"CONCAT('([', {delimiters_sql}, ']+|[^', {delimiters_sql}, ']+)')"
+
+        # REGEXP_EXTRACT_ALL produces a list of string segments, alternating between delimiter and non-delimiter segments.
+        # We do not know whether the first segment is a delimiter or not, so we check the first character of the string
+        # with REGEXP_MATCHES. If the first char is a delimiter, we capitalize even list indexes, otherwise capitalize odd.
+        return self.func(
+            "ARRAY_TO_STRING",
+            exp.case()
+            .when(
+                f"REGEXP_MATCHES(LEFT({value_to_split}, 1), {delim_regex_sql})",
+                self.func(
+                    "LIST_TRANSFORM",
+                    self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
+                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+                ),
+            )
+            .else_(
+                self.func(
+                    "LIST_TRANSFORM",
+                    self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
+                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+                ),
+            ),
+            "''",
+        )
+
+    this_sql = self.sql(expression, "this")
+    delimiters = expression.args.get("expression")
+    delimiters_sql = self.sql(delimiters)
+
+    if delimiters and (isinstance(delimiters, exp.Literal) and delimiters.is_string):
+        return f"CASE WHEN {this_sql} IS NULL THEN NULL ELSE {build_capitalize_sql(this_sql, delimiters_sql)} END"
+
+    # delimiters arg is SQL expression or NULL
+    capitalize_sql = build_capitalize_sql(
+        this_sql, delimiters_sql, convert_delim_to_regex=not isinstance(delimiters, exp.Null)
+    )
+    return f"CASE WHEN {this_sql} IS NULL OR {delimiters_sql} IS NULL THEN NULL ELSE {capitalize_sql} END"
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -766,6 +818,7 @@ class DuckDB(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
+            exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",

@@ -10,8 +10,9 @@ from sqlglot import (
     exp,
     parse_one,
 )
-from sqlglot.dialects import BigQuery, Hive, Snowflake
+from sqlglot.dialects import BigQuery, Hive, Snowflake, Spark2
 from sqlglot.dialects.dialect import Version
+from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
 
 
@@ -4303,3 +4304,109 @@ FROM subquery2""",
             "WITH sub_query AS (SELECT a FROM table) ((((SELECT a FROM sub_query))))",
             "WITH sub_query AS (SELECT a FROM table) SELECT a FROM sub_query",
         )
+
+    def test_initcap(self):
+        delimiter_chars = {
+            "": Dialect.INITCAP_DEFAULT_DELIMITER_CHARS,
+            "bigquery": BigQuery.INITCAP_DEFAULT_DELIMITER_CHARS,
+            "snowflake": Snowflake.INITCAP_DEFAULT_DELIMITER_CHARS,
+            "spark": Spark2.INITCAP_DEFAULT_DELIMITER_CHARS,
+        }
+
+        # default delimiters not present in roundtrip
+        for dialect in delimiter_chars.keys():
+            with self.subTest(
+                f"Testing INITCAP roundtrips for {dialect or 'default'} dialect without default delimiters included"
+            ):
+                self.assertEqual(
+                    parse_one("INITCAP(col)", read=dialect).sql(dialect), "INITCAP(col)"
+                )
+
+        # default delimiters are present for BQ and Snowflake generators
+        for read_dialect in ("", "spark"):
+            for write_dialect in ("bigquery", "snowflake"):
+                with self.subTest(
+                    f"Testing INITCAP default delimiters from {read_dialect or 'default'} to {write_dialect}"
+                ):
+                    escaped_delimiter_chars = exp.Literal.string(delimiter_chars[read_dialect]).sql(
+                        write_dialect
+                    )
+                    assert (
+                        parse_one("INITCAP(col)", read=read_dialect).sql(write_dialect)
+                        == f"INITCAP(col, {escaped_delimiter_chars})"
+                    )
+
+        for dialect, default_delimiters in delimiter_chars.items():
+            with self.subTest(f"DuckDB rewrite for {dialect or 'default'} default delimiters"):
+                literal = exp.Literal.string(default_delimiters).sql()
+                expected = (
+                    "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {literal} || ']') "
+                    f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {literal} || ']+|[^' || {literal} || ']+)'), "
+                    f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {literal} || ']+|[^' || {literal} || ']+)'), "
+                    f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "END, '') END"
+                )
+                self.assertEqual(parse_one("INITCAP(col)", read=dialect).sql("duckdb"), expected)
+
+        # DuckDB generation for BQ/Snowflake calls with custom delimiters arg
+        for dialect in ("bigquery", "snowflake"):
+            query = "INITCAP(col, '')"
+            with self.subTest(f"Testing DuckDB generation for {query} from {dialect}"):
+                self.assertEqual(
+                    parse_one(query, read=dialect).sql("duckdb"),
+                    "CASE WHEN col IS NULL THEN NULL ELSE UPPER(LEFT(col, 1)) || LOWER(SUBSTR(col, 2)) END",
+                )
+
+            query = "INITCAP(col, NULL)"
+            with self.subTest(f"DuckDB generation for {query} from {dialect}"):
+                self.assertEqual(
+                    parse_one(query, read=dialect).sql("duckdb"),
+                    "CASE WHEN col IS NULL OR NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    "CASE WHEN REGEXP_MATCHES(LEFT(col, 1), NULL) "
+                    "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, NULL), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, NULL), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "END, '') END",
+                )
+
+            for custom_delimiter in (" ", "@", " _@"):
+                with self.subTest(
+                    f"DuckDB generation for INITCAP(col, {custom_delimiter}) from {dialect}"
+                ):
+                    self.assertEqual(
+                        parse_one(f"INITCAP(col, '{custom_delimiter}')", read=dialect).sql(
+                            "duckdb"
+                        ),
+                        "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                        f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || '{custom_delimiter}' || ']') "
+                        f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '{custom_delimiter}' || ']+|[^' || '{custom_delimiter}' || ']+)'), "
+                        f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                        f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '{custom_delimiter}' || ']+|[^' || '{custom_delimiter}' || ']+)'), "
+                        f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                        "END, '') END",
+                    )
+
+            with self.subTest(
+                f"DuckDB generation for INITCAP subquery as custom delimiter arg from {dialect}"
+            ):
+                self.assertEqual(
+                    parse_one(
+                        "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))", read=dialect
+                    ).sql("duckdb"),
+                    "CASE WHEN col IS NULL OR (SELECT delimiter FROM settings LIMIT 1) IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    + "CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || (SELECT delimiter FROM settings LIMIT 1) || ']') "
+                    "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (SELECT delimiter FROM settings LIMIT 1) || ']+|[^' || (SELECT delimiter FROM settings LIMIT 1) || ']+)'), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (SELECT delimiter FROM settings LIMIT 1) || ']+|[^' || (SELECT delimiter FROM settings LIMIT 1) || ']+)'), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "END, '') END",
+                )
+
+    def test_initcap_custom_delimiter_warning(self):
+        expression = parse_one("INITCAP(col, '_')", read="bigquery")
+        with self.assertLogs(generator_logger, level="WARNING") as cm:
+            expression.sql("postgres")
+        self.assertIn("INITCAP does not support custom delimiters", cm.output[0])

@@ -358,6 +358,10 @@ class BigQuery(Dialect):
     BYTE_STRING_IS_BYTES_TYPE = True
     UUID_IS_STRING_TYPE = True
 
+    # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
+    INITCAP_SUPPORTS_CUSTOM_DELIMITERS = True
+    INITCAP_DEFAULT_DELIMITER_CHARS = r' \t\n\r\f\v\[\](){}/|\<>!?@"^#$&~_,.:;*%+\-'
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 

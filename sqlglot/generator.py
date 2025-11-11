@@ -5415,3 +5415,30 @@ class Generator(metaclass=_Generator):
             )
 
         return uuid_func_sql
+
+    def initcap_sql(self, expression: exp.Initcap) -> str:
+        delimiters = expression.args.get("expression")
+        delimiters_sql = None
+
+        # do not generate delimiters arg if we are round-tripping from default delimiters
+        if (
+            delimiters
+            and isinstance(delimiters, exp.Literal)
+            and delimiters.is_string
+            and delimiters.this == self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS
+        ):
+            delimiters_sql = ""
+
+        if (
+            delimiters
+            and delimiters_sql is None
+            and not self.dialect.INITCAP_SUPPORTS_CUSTOM_DELIMITERS
+        ):
+            delimiters_sql = ""
+            self.unsupported("INITCAP does not support custom delimiters")
+
+        delimiters_sql = (
+            f", {self.sql(delimiters)}" if delimiters and delimiters_sql is None else delimiters_sql
+        )
+
+        return f"INITCAP({self.sql(expression, 'this')}{delimiters_sql})"

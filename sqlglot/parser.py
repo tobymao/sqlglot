@@ -1250,6 +1250,7 @@ class Parser(metaclass=_Parser):
         "EXTRACT": lambda self: self._parse_extract(),
         "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),
         "GAP_FILL": lambda self: self._parse_gap_fill(),
+        "INITCAP": lambda self: self._parse_initcap(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
@@ -8993,3 +8994,12 @@ class Parser(metaclass=_Parser):
         separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
 
         return self.expression(exp.GroupConcat, this=this, separator=separator)
+
+    def _parse_initcap(self) -> exp.Initcap:
+        expr = exp.Initcap.from_arg_list(self._parse_function_args())
+
+        # attach dialect's default delimiters
+        if expr.args.get("expression") is None:
+            expr.set("expression", exp.Literal.string(self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS))
+
+        return expr

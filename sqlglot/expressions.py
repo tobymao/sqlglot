@@ -5704,7 +5704,7 @@ class ApproxTopK(AggFunc):
 
 
 class ApproxTopKAccumulate(AggFunc):
-    arg_types = {"this": True, "k": False}
+    arg_types = {"this": True, "expression": False}
 
 
 class ApproxTopSum(AggFunc):

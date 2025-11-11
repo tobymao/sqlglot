@@ -892,7 +892,7 @@ class Simplifier:
                 # we didn't have to sort but maybe we need to dedup
                 if deduped and len(deduped) < len(flattened):
                     unique_operand = flattened[0]
-                    if len(deduped) == 1 and not unique_operand.is_type(exp.DataType.Type.BOOLEAN):
+                    if len(deduped) == 1:
                         expression = unique_operand.and_(exp.true(), copy=False)
                     else:
                         expression = result_func(*deduped.values(), copy=False)

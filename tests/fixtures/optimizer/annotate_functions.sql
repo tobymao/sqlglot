@@ -3458,7 +3458,7 @@ DOUBLE;
 
 # dialect: snowflake
 APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
-VARIANT;
+OBJECT;
 
 # dialect: snowflake
 APPROX_COUNT_DISTINCT(tbl.str_col);

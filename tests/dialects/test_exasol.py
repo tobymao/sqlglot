@@ -592,3 +592,9 @@ class TestExasol(Validator):
         self.validate_identity(
             "SELECT name, age, IF age < 18 THEN 'underaged' ELSE 'adult' ENDIF AS LEGALITY FROM persons"
         )
+
+    def test_odbc_date_literals(self):
+        self.validate_identity("SELECT {d'2024-01-01'}", "SELECT TO_DATE('2024-01-01')")
+        self.validate_identity(
+            "SELECT {ts'2024-01-01 12:00:00'}", "SELECT TO_TIMESTAMP('2024-01-01 12:00:00')"
+        )

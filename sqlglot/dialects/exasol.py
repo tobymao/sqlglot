@@ -74,36 +74,28 @@ def _build_nullifzero(args: t.List) -> exp.If:
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
 def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
-        aliases = {}
+        aliases: dict[str, bool] = {}
         for sel in expression.selects:
-            if isinstance(sel, exp.Alias):
-                alias = sel.args.get("alias")
-                if isinstance(alias, exp.Identifier):
-                    aliases[alias.name] = bool(alias.args.get("quoted"))
-                elif isinstance(alias, exp.Literal) and alias.is_string:
-                    aliases[alias.name] = True
+            alias = sel.args.get("alias")
+
+            if isinstance(sel, exp.Alias) and alias:
+                aliases[alias.name] = bool(alias.args.get("quoted"))
 
         table = expression.find(exp.Table)
+        table_ident = table.this if table else None
+
         if (
-            table
-            and isinstance(table.this, exp.Identifier)
-            and table.this.name.upper() == "LOCAL"
-            and not table.this.quoted
+            table_ident
+            and table_ident.name.upper() == "LOCAL"
+            and not bool(table_ident.args.get("quoted"))
         ):
-            table.set("this", exp.to_identifier(table.this.name.upper(), quoted=True))
+            table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
         def prefix_local(node):
             if isinstance(node, exp.Column) and not node.table:
-                ident = node.args.get("this")
-
-                name = (
-                    ident.name
-                    if (isinstance(ident, exp.Identifier))
-                    else getattr(node, "name", None)
-                )
-                if name in aliases:
+                if node.name in aliases:
                     return exp.Column(
-                        this=exp.to_identifier(name, quoted=aliases[name]),
+                        this=exp.to_identifier(node.name, quoted=aliases[node.name]),
                         table=exp.to_identifier("LOCAL", quoted=False),
                     )
             return node

@@ -268,6 +268,20 @@ def _json_extract_value_array_sql(
     return self.sql(exp.cast(json_extract, to=exp.DataType.build(data_type)))
 
 
+def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    if arg and arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+        return exp.cast(arg, exp.DataType.Type.VARCHAR)
+    return arg
+
+
+def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql: str) -> str:
+    is_binary = expression.is_type(exp.DataType.Type.BINARY)
+    if is_binary:
+        blob = exp.DataType.build("BLOB", dialect="duckdb")
+        result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
+    return result_sql
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1171,39 +1185,21 @@ class DuckDB(Dialect):
             return self.sql(case)
 
         def lower_sql(self, expression: exp.Lower) -> str:
-            return self._case_conversion(expression, "LOWER")
+            result_sql = self.func("LOWER", _cast_to_varchar(expression.this))
+            return _cast_to_blob(self, expression, result_sql)
 
         def upper_sql(self, expression: exp.Upper) -> str:
-            return self._case_conversion(expression, "UPPER")
-
-        def _cast_to_varchar(self, arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            if (
-                arg
-                and arg.type
-                and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN)
-            ):
-                return exp.cast(arg, exp.DataType.Type.VARCHAR)
-            return arg
-
-        def _case_conversion(
-            self, expression: t.Union[exp.Lower, exp.Upper], func_name: str
-        ) -> str:
-            result_sql = self.func(func_name, self._cast_to_varchar(expression.this))
-
-            is_binary = expression.is_type(exp.DataType.Type.BINARY)
-            if is_binary:
-                blob = exp.DataType.build("BLOB", dialect="duckdb")
-                result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
-
-            return result_sql
+            result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
+            return _cast_to_blob(self, expression, result_sql)
 
         def replace_sql(self, expression: exp.Replace) -> str:
-            return self.func(
+            result_sql = self.func(
                 "REPLACE",
-                self._cast_to_varchar(expression.this),
-                self._cast_to_varchar(expression.expression),
-                self._cast_to_varchar(expression.args.get("replacement")),
+                _cast_to_varchar(expression.this),
+                _cast_to_varchar(expression.expression),
+                _cast_to_varchar(expression.args.get("replacement")),
             )
+            return _cast_to_blob(self, expression, result_sql)
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this
@@ -1223,8 +1219,8 @@ class DuckDB(Dialect):
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",
-                self._cast_to_varchar(expression.this),
-                self._cast_to_varchar(expression.expression),
+                _cast_to_varchar(expression.this),
+                _cast_to_varchar(expression.expression),
             )
 
         def unnest_sql(self, expression: exp.Unnest) -> str:

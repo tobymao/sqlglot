@@ -1949,8 +1949,11 @@ WHERE
         annotated = annotate_types(expr, dialect="bigquery")
         self.assertEqual(
             annotated.sql("duckdb"),
-            "SELECT REPLACE(CAST(CAST('apple pie' AS BLOB) AS TEXT), CAST(CAST('pie' AS BLOB) AS TEXT), CAST(CAST('cobbler' AS BLOB) AS TEXT)) AS result",
+            "SELECT CAST(REPLACE(CAST(CAST('apple pie' AS BLOB) AS TEXT), CAST(CAST('pie' AS BLOB) AS TEXT), CAST(CAST('cobbler' AS BLOB) AS TEXT)) AS BLOB) AS result",
         )
+        expr = self.parse_one("REPLACE('apple pie', 'pie', 'cobbler')")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "REPLACE('apple pie', 'pie', 'cobbler')")
 
     def test_errors(self):
         with self.assertRaises(ParseError):

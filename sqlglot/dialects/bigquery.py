@@ -356,6 +356,7 @@ class BigQuery(Dialect):
     PRESERVE_ORIGINAL_NAMES = True
     HEX_STRING_IS_INTEGER_TYPE = True
     BYTE_STRING_IS_BYTES_TYPE = True
+    UUID_IS_STRING_TYPE = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -609,7 +610,11 @@ class BigQuery(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
+            "ARRAY": lambda self: self.expression(
+                exp.Array,
+                expressions=[self._parse_statement()],
+                struct_name_inheritance=True,
+            ),
             "JSON_ARRAY": lambda self: self.expression(
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
@@ -844,6 +849,9 @@ class BigQuery(Dialect):
             self, this: t.Optional[exp.Expression] = None
         ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
+
+            if isinstance(bracket, exp.Array):
+                bracket.set("struct_name_inheritance", True)
 
             if this is bracket:
                 return bracket

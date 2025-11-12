@@ -42,11 +42,19 @@ class TestSnowflake(Validator):
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
+        self.validate_identity(
+            "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => ARRAY_CONSTRUCT(1, 2, 3, 5)))",
+            "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => [1, 2, 3, 5]))",
+        )
         self.validate_identity("SELECT BOOLNOT(0)")
         self.validate_identity("SELECT BOOLNOT(-3.79)")
         self.validate_identity("SELECT BOOLAND(1, -2)")
@@ -96,6 +104,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RADIANS(180)")
         self.validate_identity("SELECT REGR_VALX(y, x)")
         self.validate_identity("SELECT REGR_VALY(y, x)")
+        self.validate_identity("SELECT REGR_AVGX(y, x)")
+        self.validate_identity("SELECT REGR_AVGY(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",
             write={
@@ -217,6 +227,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
+        self.validate_identity(
+            "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"
+        )
         self.validate_identity(
             "SELECT DATEADD(DAY, -7, DATEADD(t.m, 1, CAST('2023-01-03' AS DATE))) FROM (SELECT 'month' AS m) AS t"
         ).selects[0].this.unit.assert_is(exp.Column)
@@ -3457,26 +3470,30 @@ SINGLE = TRUE""",
         )
 
     def test_semantic_view(self):
-        for dimensions, metrics, where in [
-            (None, None, None),
-            ("DATE_PART('year', a.b)", None, None),
-            (None, "a.b, a.c", None),
-            ("a.b, a.c", "a.b, a.c", None),
-            ("a.b", "a.b, a.c", "a.c > 5"),
+        for dimensions, metrics, where, facts in [
+            (None, None, None, None),
+            (None, None, None, "a.a"),
+            ("DATE_PART('year', a.b)", None, None, None),
+            (None, "a.b, a.c", None, None),
+            (None, None, None, "a.d, a.e"),
+            ("a.b, a.c", "a.b, a.c", None, None),
+            ("a.b", "a.b, a.c", "a.c > 5", None),
+            ("a.b", None, "a.c > 5", "a.d"),
         ]:
             with self.subTest(
-                f"Testing Snowflake's SEMANTIC_VIEW command statement: {dimensions}, {metrics}, {where}"
+                f"Testing Snowflake's SEMANTIC_VIEW command statement: {dimensions}, {metrics}, {facts} {where}"
             ):
                 dimensions_str = f" DIMENSIONS {dimensions}" if dimensions else ""
                 metrics_str = f" METRICS {metrics}" if metrics else ""
+                fact_str = f" FACTS {facts}" if facts else ""
                 where_str = f" WHERE {where}" if where else ""
 
                 self.validate_identity(
-                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{where_str}) ORDER BY foo"
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{fact_str}{where_str}) ORDER BY foo"
                 )
                 self.validate_identity(
-                    f"SELECT * FROM SEMANTIC_VIEW(tbl{dimensions_str}{metrics_str}{where_str})",
-                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{where_str})",
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{dimensions_str}{fact_str}{metrics_str}{where_str})",
+                    f"SELECT * FROM SEMANTIC_VIEW(tbl{metrics_str}{dimensions_str}{fact_str}{where_str})",
                 )
 
         self.validate_identity(
@@ -3540,6 +3557,9 @@ FROM SEMANTIC_VIEW(
             for name in bit_func:
                 with self.subTest(f"Testing Snowflakes {name}"):
                     self.validate_identity(f"{name}(x)", f"{bit_func[0]}(x)")
+
+    def test_bitmap_or_agg(self):
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_md5_functions(self):
         self.validate_identity("MD5_HEX(col)", "MD5(col)")

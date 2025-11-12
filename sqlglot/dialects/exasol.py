@@ -246,6 +246,10 @@ class Exasol(Dialect):
             ):
                 column.set("table", None)
             return column
+        ODBC_DATETIME_LITERALS = {
+            "d": exp.Date,
+            "ts": exp.Timestamp,
+        }
 
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
@@ -359,6 +363,10 @@ class Exasol(Dialect):
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
             exp.Select: transforms.preprocess([_add_local_prefix_for_aliases]),
             exp.WeekOfYear: rename_func("WEEK"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
+            exp.Date: rename_func("TO_DATE"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
+            exp.Timestamp: rename_func("TO_TIMESTAMP"),
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

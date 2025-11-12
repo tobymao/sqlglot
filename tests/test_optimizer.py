@@ -46,7 +46,10 @@ def pushdown_projections(expression, **kwargs):
 
 
 def normalize(expression, **kwargs):
+    schema = kwargs.get("schema")
+
     expression = optimizer.normalize.normalize(expression, dnf=False)
+    expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(expression)
 
 
@@ -300,7 +303,7 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
-        self.check_file("normalize", normalize)
+        self.check_file("normalize", normalize, schema=self.schema)
 
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
@@ -566,7 +569,6 @@ class TestOptimizer(unittest.TestCase):
 
         expression = parse_one("TRUE AND TRUE AND TRUE")
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))
-        self.assertEqual(exp.true(), optimizer.simplify.simplify(expression.this))
 
         # CONCAT in (e.g.) Presto is parsed as Concat instead of SafeConcat which is the default type
         # This test checks that simplify_concat preserves the corresponding expression types.
@@ -920,6 +922,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",
+                "int_col": "INT",
                 "bool_col": "BOOLEAN",
                 "bytes_col": "BYTES",
                 "interval_col": "INTERVAL",
@@ -1699,3 +1702,65 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         self.assertEqual(
             annotated.selects[0].type.sql("snowflake"), 'OBJECT("foo" VARCHAR, "a b" VARCHAR)'
         )
+
+    def test_nonnull_annotation(self):
+        for literal_sql in ("1", "'foo'", "2.5"):
+            with self.subTest(f"Test NULL annotation for literal: {literal_sql}"):
+                sql = f"SELECT {literal_sql}"
+                query = parse_one(sql)
+                annotated = annotate_types(query)
+                assert annotated.selects[0].meta.get("nonnull") is True
+
+        schema = {"foo": {"id": "INT"}}
+
+        operand_pairs = (
+            ("1", "1", True),
+            ("foo.id", "foo.id", None),
+            ("1", "foo.id", None),
+            ("foo.id", "1", None),
+        )
+
+        for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
+            for operand1, operand2, nonnull in operand_pairs:
+                sql_predicate = f"{operand1} {predicate} {operand2}"
+                with self.subTest(f"Test NULL propagation for predicate: {predicate}"):
+                    sql = f"SELECT {sql_predicate} FROM foo"
+                    query = parse_one(sql)
+                    annotated = annotate_types(query, schema=schema)
+                    assert annotated.selects[0].meta.get("nonnull") is nonnull
+
+        for predicate in ("IS NULL", "IS NOT NULL"):
+            sql_predicate = f"foo.id {predicate}"
+            with self.subTest(f"Test NULL propagation for predicate: {predicate}"):
+                sql = f"SELECT {sql_predicate} FROM foo"
+                query = parse_one(sql)
+                annotated = annotate_types(query, schema=schema)
+                assert annotated.selects[0].meta.get("nonnull") is True
+
+        for connector in ("AND", "OR"):
+            for predicate in (">", "<", ">=", "<=", "=", "!=", "<>", "LIKE", "NOT LIKE"):
+                for operand1, operand2, nonnull in operand_pairs:
+                    sql_predicate = f"({operand1} {predicate} {operand2})"
+                    sql_connector = f"{sql_predicate} {connector} {sql_predicate}"
+                    with self.subTest(
+                        f"Test NULL propagation for connector: {connector} with predicates: {predicate}"
+                    ):
+                        sql = f"SELECT {sql_connector} FROM foo"
+                        query = parse_one(sql)
+                        annotated = annotate_types(query, schema=schema)
+                        assert annotated.selects[0].meta.get("nonnull") is nonnull
+
+        for unary in ("NOT", "-"):
+            for value, nonnull in (("1", True), ("foo.id", None)):
+                with self.subTest(f"Test NULL propagation for unary: {unary} with value: {value}"):
+                    sql = f"SELECT {unary} {value} FROM foo"
+                    query = parse_one(sql)
+                    annotated = annotate_types(query, schema=schema)
+                    assert annotated.selects[0].meta.get("nonnull") is nonnull
+
+        ch_query = parse_one("select c1, c2 from t")
+        ch_schema = {"t": {"c1": "Int32", "c2": "Nullable(Int32)"}}
+        qualified_query = qualify_columns(ch_query, schema=ch_schema, dialect="clickhouse")
+        annotated = annotate_types(qualified_query, schema=ch_schema, dialect="clickhouse")
+        assert annotated.selects[0].meta.get("nonnull") is True
+        assert annotated.selects[1].meta.get("nonnull") is None

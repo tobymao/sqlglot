@@ -12,6 +12,9 @@ class TestDatabricks(Validator):
         self.assertEqual(null_type.sql(), "NULL")
         self.assertEqual(null_type.sql("databricks"), "VOID")
 
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("REGEXP_LIKE(x, y)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")
@@ -91,6 +94,7 @@ class TestDatabricks(Validator):
         )
 
         self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
         self.validate_all(
             "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",

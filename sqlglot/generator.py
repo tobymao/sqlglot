@@ -198,8 +198,7 @@ class Generator(metaclass=_Generator):
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
         exp.SharingProperty: lambda self, e: f"SHARING={self.sql(e, 'this')}",
         exp.SqlReadWriteProperty: lambda _, e: e.name,
-        exp.SqlSecurityProperty: lambda _,
-        e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {self.sql(e, 'this')}",
         exp.StabilityProperty: lambda _, e: e.name,
         exp.Stream: lambda self, e: f"STREAM {self.sql(e, 'this')}",
         exp.StreamingTableProperty: lambda *_: "STREAMING",
@@ -217,7 +216,6 @@ class Generator(metaclass=_Generator):
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.UsingTemplateProperty: lambda self, e: f"USING TEMPLATE {self.sql(e, 'this')}",
         exp.UsingData: lambda self, e: f"USING DATA {self.sql(e, 'this')}",
-        exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.UtcDate: lambda self, e: self.sql(exp.CurrentDate(this=exp.Literal.string("UTC"))),
         exp.UtcTime: lambda self, e: self.sql(exp.CurrentTime(this=exp.Literal.string("UTC"))),
@@ -1030,6 +1028,9 @@ class Generator(metaclass=_Generator):
             self.unsupported("Outer join syntax using the (+) operator is not supported.")
 
         return f"{self.column_parts(expression)}{join_mark}"
+
+    def pseudocolumn_sql(self, expression: exp.Pseudocolumn) -> str:
+        return self.column_sql(expression)
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")
@@ -3838,6 +3839,9 @@ class Generator(metaclass=_Generator):
     def ilike_sql(self, expression: exp.ILike) -> str:
         return self._like_sql(expression)
 
+    def match_sql(self, expression: exp.Match) -> str:
+        return self.binary(expression, "MATCH")
+
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
         return self.binary(expression, "SIMILAR TO")
 
@@ -5338,9 +5342,11 @@ class Generator(metaclass=_Generator):
             expression, "metrics", dynamic=True, skip_first=True, skip_last=True
         )
         metrics = self.seg(f"METRICS {metrics}") if metrics else ""
+        facts = self.expressions(expression, "facts", dynamic=True, skip_first=True, skip_last=True)
+        facts = self.seg(f"FACTS {facts}") if facts else ""
         where = self.sql(expression, "where")
         where = self.seg(f"WHERE {where}") if where else ""
-        body = self.indent(this + metrics + dimensions + where, skip_first=True)
+        body = self.indent(this + metrics + dimensions + facts + where, skip_first=True)
         return f"SEMANTIC_VIEW({body}{self.seg(')', sep='')}"
 
     def getextract_sql(self, expression: exp.GetExtract) -> str:
@@ -5392,3 +5398,14 @@ class Generator(metaclass=_Generator):
 
     def directorystage_sql(self, expression: exp.DirectoryStage) -> str:
         return self.func("DIRECTORY", expression.this)
+
+    def uuid_sql(self, expression: exp.Uuid) -> str:
+        is_string = expression.args.get("is_string", False)
+        uuid_func_sql = self.func("UUID")
+
+        if is_string and not self.dialect.UUID_IS_STRING_TYPE:
+            return self.sql(
+                exp.cast(uuid_func_sql, exp.DataType.Type.VARCHAR, dialect=self.dialect)
+            )
+
+        return uuid_func_sql

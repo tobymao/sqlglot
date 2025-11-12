@@ -92,6 +92,25 @@ def _annotate_arg_max_min(
     return self._annotate_by_args(expression, "this", array=bool(expression.args.get("count")))
 
 
+def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> exp.WithinGroup:
+    """Annotate WithinGroup with correct type based on the inner function.
+
+    1) Annotate args first
+    2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
+    """
+    self._annotate_args(expression)
+
+    if (
+        isinstance(expression.this, exp.PercentileDisc)
+        and isinstance(order_expr := expression.expression, exp.Order)
+        and len(order_expr.expressions) == 1
+        and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
+    ):
+        self._set_type(expression, ordered_expr.this.type)
+
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -122,6 +141,9 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
+            exp.BitmapBitPosition,
+            exp.BitmapBucketNumber,
+            exp.BitmapCount,
             exp.Factorial,
             exp.GroupingId,
             exp.MD5NumberLower64,
@@ -133,6 +155,8 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.BINARY}
         for expr_type in {
             exp.Base64DecodeBinary,
+            exp.BitmapConstructAgg,
+            exp.BitmapOrAgg,
             exp.Compress,
             exp.DecompressBinary,
             exp.MD5Digest,
@@ -191,6 +215,8 @@ EXPRESSION_METADATA = {
             exp.Degrees,
             exp.Exp,
             exp.MonthsBetween,
+            exp.RegrAvgx,
+            exp.RegrAvgy,
             exp.RegrValx,
             exp.RegrValy,
             exp.Sin,
@@ -225,6 +251,7 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
+            exp.ApproxTopKAccumulate,
         }
     },
     **{
@@ -286,4 +313,5 @@ EXPRESSION_METADATA = {
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},
+    exp.WithinGroup: {"annotator": _annotate_within_group},
 }

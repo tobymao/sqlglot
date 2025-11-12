@@ -58,6 +58,15 @@ BINARY;
 FROM_BASE64(tbl.str_col);
 BINARY;
 
+ANY_VALUE(tbl.bool_col);
+BOOLEAN;
+
+ANY_VALUE(tbl.bigint_col);
+BIGINT;
+
+ANY_VALUE(tbl.date_col);
+DATE;
+
 ANY_VALUE(tbl.str_col);
 STRING;
 
@@ -1648,6 +1657,22 @@ BIT_LENGTH('abc');
 INT;
 
 # dialect: snowflake
+BITMAP_BIT_POSITION(tbl.int_col);
+BIGINT;
+
+# dialect: snowflake
+BITMAP_BUCKET_NUMBER(tbl.int_col);
+BIGINT;
+
+# dialect: snowflake
+BITMAP_CONSTRUCT_AGG(tbl.int_col);
+BINARY;
+
+# dialect: snowflake
+BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(tbl.int_col));
+BIGINT;
+
+# dialect: snowflake
 BIT_LENGTH(tbl.str_col);
 INT;
 
@@ -1758,6 +1783,10 @@ NUMBER(38, 0);
 # dialect: snowflake
 BIT_XORAGG(tbl.int_col);
 NUMBER(38, 0);
+
+# dialect: snowflake
+BITMAP_OR_AGG(tbl.bin_col);
+BINARY;
 
 # dialect: snowflake
 BOOLXOR_AGG(tbl.bool_col);
@@ -2708,6 +2737,14 @@ MONTHS_BETWEEN(tbl.timestamp_col, CAST('2019-02-15 01:00:00' AS TIMESTAMP));
 DOUBLE;
 
 # dialect: snowflake
+REGR_AVGX(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_AVGY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 REGR_VALX(1.0, 2.0);
 DOUBLE;
 
@@ -3368,6 +3405,14 @@ OBJECT_AGG(tbl.str_col, tbl.variant_col);
 OBJECT;
 
 # dialect: snowflake
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 
@@ -3386,6 +3431,66 @@ VARCHAR;
 # dialect: snowflake
 MIN_BY('foo', tbl.bigint_col, 3);
 ARRAY<VARCHAR>;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.bigint_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.double_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.int_col, 0.9);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.bigint_col, 0.5) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.double_col, 0.5) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
+OBJECT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(*);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(DISTINCT tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col) OVER (PARTITION BY 1);
+BIGINT;
 
 --------------------------------------
 -- T-SQL

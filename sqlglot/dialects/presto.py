@@ -420,7 +420,10 @@ class Presto(Dialect):
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            exp.Array: transforms.preprocess(
+                [transforms.inherit_struct_field_names],
+                generator=lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            ),
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),

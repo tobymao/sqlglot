@@ -37,6 +37,7 @@ def annotate_types(
     expression_metadata: t.Optional[ExpressionMetadataType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
     dialect: DialectType = None,
+    overwrite_types: bool = True,
 ) -> E:
     """
     Infers the types of an expression, annotating its AST accordingly.
@@ -52,8 +53,9 @@ def annotate_types(
     Args:
         expression: Expression to annotate.
         schema: Database schema.
-        annotators: Maps expression type to corresponding annotation function.
+        expression_metadata: Maps expression type to corresponding annotation function.
         coerces_to: Maps expression type to set of types that it can be coerced into.
+        overwrite_types: Re-annotate the existing AST types.
 
     Returns:
         The expression annotated with types.
@@ -61,7 +63,12 @@ def annotate_types(
 
     schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, expression_metadata, coerces_to).annotate(expression)
+    return TypeAnnotator(
+        schema=schema,
+        expression_metadata=expression_metadata,
+        coerces_to=coerces_to,
+        overwrite_types=overwrite_types,
+    ).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -178,6 +185,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         expression_metadata: t.Optional[ExpressionMetadataType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
+        overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
         self.expression_metadata = (
@@ -202,6 +210,14 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # would reprocess the entire subtree to coerce the types of its operands' projections
         self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType | exp.DataType.Type]] = {}
 
+        # When set to False, this enables partial annotation by skipping already-annotated nodes
+        self._overwrite_types = overwrite_types
+
+    def clear(self) -> None:
+        self._visited.clear()
+        self._null_expressions.clear()
+        self._setop_column_types.clear()
+
     def _set_type(
         self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
     ) -> None:
@@ -219,9 +235,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DataType.Type.NULL:
             self._null_expressions.pop(expression_id, None)
 
-    def annotate(self, expression: E) -> E:
-        for scope in traverse_scope(expression):
-            self.annotate_scope(scope)
+    def annotate(self, expression: E, annotate_scope: bool = True) -> E:
+        # This flag is used to avoid costly scope traversals when we only care about annotating
+        # non-column expressions (partial type inference), e.g., when simplifying in the optimizer
+        if annotate_scope:
+            for scope in traverse_scope(expression):
+                self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
         expression = self._maybe_annotate(expression)
@@ -314,6 +333,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 elif isinstance(source.expression, exp.Unnest):
                     self._set_type(col, source.expression.type)
 
+            if col.type and col.type.args.get("nullable") is False:
+                col.meta["nonnull"] = True
+
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
@@ -370,7 +392,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 scope.expression.meta["query_type"] = struct_type
 
     def _maybe_annotate(self, expression: E) -> E:
-        if id(expression) in self._visited:
+        if id(expression) in self._visited or (
+            not self._overwrite_types
+            and expression.type
+            and not expression.is_type(exp.DataType.Type.UNKNOWN)
+        ):
             return expression  # We've already inferred the expression's type
 
         spec = self.expression_metadata.get(expression.__class__)
@@ -446,6 +472,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
+        if isinstance(expression, exp.Is) or (
+            left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
+        ):
+            expression.meta["nonnull"] = True
+
         return expression
 
     def _annotate_unary(self, expression: E) -> E:
@@ -456,6 +487,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, expression.this.type)
 
+        if expression.this.meta.get("nonnull") is True:
+            expression.meta["nonnull"] = True
+
         return expression
 
     def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
@@ -465,6 +499,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.INT)
         else:
             self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+        expression.meta["nonnull"] = True
 
         return expression
 

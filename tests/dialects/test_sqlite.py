@@ -7,6 +7,8 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_sqlite(self):
+        self.validate_identity("SELECT match FROM t")
+        self.validate_identity("SELECT rowid FROM t1 WHERE t1 MATCH 'lorem'")
         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
@@ -139,6 +141,10 @@ class TestSQLite(Validator):
             "ATTACH 'foo' || '.foo2' AS schema_name",
         )
         self.validate_identity("DETACH DATABASE schema_name", "DETACH schema_name")
+        self.validate_identity("SELECT * FROM t WHERE NULL IS y")
+        self.validate_identity(
+            "SELECT * FROM t WHERE NULL IS NOT y", "SELECT * FROM t WHERE NOT NULL IS y"
+        )
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

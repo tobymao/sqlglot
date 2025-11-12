@@ -62,14 +62,7 @@ def qualify_columns(
         scope_expression = scope.expression
         is_select = isinstance(scope_expression, exp.Select)
 
-        if is_select and scope_expression.args.get("connect"):
-            # In Snowflake / Oracle queries that have a CONNECT BY clause, one can use the LEVEL
-            # pseudocolumn, which doesn't belong to a table, so we change it into an identifier
-            scope_expression.transform(
-                lambda n: n.this if isinstance(n, exp.Column) and n.name == "LEVEL" else n,
-                copy=False,
-            )
-            scope.clear_cache()
+        _separate_pseudocolumns(scope, pseudocolumns)
 
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
         _pop_table_column_aliases(scope.ctes)
@@ -85,7 +78,11 @@ def qualify_columns(
             )
 
         _convert_columns_to_dots(scope, resolver)
-        _qualify_columns(scope, resolver, allow_partial_qualification=allow_partial_qualification)
+        _qualify_columns(
+            scope,
+            resolver,
+            allow_partial_qualification=allow_partial_qualification,
+        )
 
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
@@ -138,6 +135,28 @@ def validate_qualify_columns(expression: E) -> E:
         raise OptimizeError(f"Ambiguous columns: {all_unqualified_columns}")
 
     return expression
+
+
+def _separate_pseudocolumns(scope: Scope, pseudocolumns: t.Set[str]) -> None:
+    if not pseudocolumns:
+        return
+
+    has_pseudocolumns = False
+    scope_expression = scope.expression
+
+    for column in scope.columns:
+        name = column.name.upper()
+        if name not in pseudocolumns:
+            continue
+
+        if name != "LEVEL" or (
+            isinstance(scope_expression, exp.Select) and scope_expression.args.get("connect")
+        ):
+            column.replace(exp.Pseudocolumn(**column.args))
+            has_pseudocolumns = True
+
+    if has_pseudocolumns:
+        scope.clear_cache()
 
 
 def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
@@ -527,7 +546,11 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualification: bool) -> None:
+def _qualify_columns(
+    scope: Scope,
+    resolver: Resolver,
+    allow_partial_qualification: bool,
+) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
         column_table = column.table
@@ -767,7 +790,7 @@ def _expand_stars(
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
 
-            if pseudocolumns:
+            if pseudocolumns and is_bigquery:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if not columns or "*" in columns:

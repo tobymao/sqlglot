@@ -2,16 +2,16 @@
 -- Conditions
 --------------------------------------
 x AND x;
-x;
+x AND TRUE;
 
 y OR y;
-y;
+y AND TRUE;
 
 x AND NOT x;
-FALSE;
+NOT x AND x;
 
 x OR NOT x;
-TRUE;
+NOT x OR x;
 
 1 AND TRUE;
 TRUE;
@@ -153,6 +153,18 @@ COALESCE(x, y) <> ALL (SELECT z FROM w);
 SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
 SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 
+SELECT t_bool.a AND TRUE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT TRUE AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a OR FALSE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT FALSE OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
 --------------------------------------
 -- Absorption
 --------------------------------------
@@ -160,7 +172,7 @@ SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 (A OR B) AND (C OR NOT A);
 
 A AND (A OR B);
-A;
+A AND TRUE;
 
 A AND D AND E AND (B OR A);
 A AND D AND E;
@@ -169,16 +181,16 @@ D AND A AND E AND (B OR A);
 A AND D AND E;
 
 (A OR B) AND A;
-A;
+A AND TRUE;
 
 C AND D AND (A OR B) AND E AND F AND A;
 A AND C AND D AND E AND F;
 
 A OR (A AND B);
-A;
+A AND TRUE;
 
 (A AND B) OR A;
-A;
+A AND TRUE;
 
 A AND (NOT A OR B);
 A AND B;
@@ -187,6 +199,9 @@ A AND B;
 A AND B;
 
 A OR (NOT A AND B);
+A OR B;
+
+A OR ((((NOT A AND B))));
 A OR B;
 
 (A OR C) AND ((A OR C) OR B);
@@ -199,7 +214,7 @@ A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
 A AND (A OR B) AND (A OR B OR C);
-A;
+A AND TRUE;
 
 (A OR B) AND (A OR C) AND (A OR B OR C);
 (A OR B) AND (A OR C);
@@ -208,28 +223,28 @@ A;
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (NOT A AND B);
-B;
+B AND TRUE;
 
 (A AND NOT B) OR (A AND B);
-A;
+A AND TRUE;
 
 (NOT A AND B) OR (A AND B);
-B;
+B AND TRUE;
 
 (A OR B) AND (A OR NOT B);
-A;
+A AND TRUE;
 
 (A OR B) AND (NOT A OR B);
-B;
+B AND TRUE;
 
 (A OR NOT B) AND (A OR B);
-A;
+A AND TRUE;
 
 (NOT A OR B) AND (A OR B);
-B;
+B AND TRUE;
 
 (NOT A OR NOT B) AND (NOT A OR B);
 NOT A;
@@ -241,13 +256,25 @@ E OR (A AND B) OR C OR D OR (A AND NOT B);
 A OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
+
+SELECT t_bool.a OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT SUM(t.x OR t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
+
+SELECT SUM(t.x AND t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
 
 --------------------------------------
 -- Associativity
@@ -299,7 +326,7 @@ A XOR D XOR B XOR E XOR F XOR G XOR C;
 A XOR B XOR C XOR D XOR E XOR F XOR G;
 
 A AND NOT B AND C AND B;
-FALSE;
+A AND B AND C AND NOT B;
 
 (a AND b AND c AND d) AND (d AND c AND b AND a);
 a AND b AND c AND d;
@@ -1344,3 +1371,30 @@ WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0
 # dialect: sqlite
 WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT (NOT(CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END)) AS res FROM t0;
 WITH t0 AS (SELECT 1 AS a, 'foo' AS p) SELECT NOT NOT CASE WHEN t0.a > 1 THEN t0.a ELSE t0.p END AS res FROM t0;
+
+--------------------------------------
+-- Simplify complements
+--------------------------------------
+TRUE OR NOT TRUE;
+TRUE;
+
+TRUE AND NOT TRUE;
+FALSE;
+
+'a' OR NOT 'a';
+TRUE;
+
+'a' AND NOT 'a';
+FALSE;
+
+100 OR NOT 100;
+TRUE;
+
+100 AND NOT 100;
+FALSE;
+
+NULL OR NOT NULL;
+NULL;
+
+NULL AND NOT NULL;
+NULL;

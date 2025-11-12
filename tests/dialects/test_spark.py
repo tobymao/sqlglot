@@ -274,6 +274,10 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("ALTER TABLE foo ADD PARTITION(event = 'click')")
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS PARTITION(event = 'click')")
         self.validate_identity("IF(cond, foo AS bar, bla AS baz)")
@@ -920,6 +924,7 @@ TBLPROPERTIES (
                 "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
             },
         )
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_bool_or(self):
         self.validate_all(

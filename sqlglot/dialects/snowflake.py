@@ -588,6 +588,8 @@ class Snowflake(Dialect):
         "ISOWEEK": "WEEKISO",
     }
 
+    PSEUDOCOLUMNS = {"LEVEL"}
+
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
@@ -659,6 +661,7 @@ class Snowflake(Dialect):
             "BITXOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
+            "BITMAP_OR_AGG": exp.BitmapOrAgg.from_arg_list,
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
@@ -1227,12 +1230,14 @@ class Snowflake(Dialect):
             kwargs: t.Dict[str, t.Any] = {"this": self._parse_table_parts()}
 
             while self._curr and not self._match(TokenType.R_PAREN, advance=False):
-                if self._match_text_seq("DIMENSIONS"):
-                    kwargs["dimensions"] = self._parse_csv(self._parse_disjunction)
-                if self._match_text_seq("METRICS"):
-                    kwargs["metrics"] = self._parse_csv(self._parse_disjunction)
-                if self._match_text_seq("WHERE"):
+                if self._match_texts(("DIMENSIONS", "METRICS", "FACTS")):
+                    keyword = self._prev.text.lower()
+                    kwargs[keyword] = self._parse_csv(self._parse_disjunction)
+                elif self._match_text_seq("WHERE"):
                     kwargs["where"] = self._parse_expression()
+                else:
+                    self.raise_error("Expecting ) or encountered unexpected keyword")
+                    break
 
             return self.expression(exp.SemanticView, **kwargs)
 
@@ -1320,6 +1325,7 @@ class Snowflake(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
+            exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",

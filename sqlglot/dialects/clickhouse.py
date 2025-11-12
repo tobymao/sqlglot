@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
     build_date_delta,
     build_formatted_time,
+    build_like,
     inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
@@ -188,6 +189,43 @@ def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> st
     return f"{{{csv_args}}}"
 
 
+def _build_timestamp_trunc(unit: str) -> t.Callable[[t.List], exp.TimestampTrunc]:
+    return lambda args: exp.TimestampTrunc(
+        this=seq_get(args, 0), unit=exp.var(unit), zone=seq_get(args, 1)
+    )
+
+
+def _build_split_by_char(args: t.List) -> exp.Split | exp.Anonymous:
+    sep = seq_get(args, 0)
+    if isinstance(sep, exp.Literal):
+        sep_value = sep.to_py()
+        if isinstance(sep_value, str) and len(sep_value.encode("utf-8")) == 1:
+            return _build_split(exp.Split)(args)
+
+    return exp.Anonymous(this="splitByChar", expressions=args)
+
+
+def _build_split(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
+    return lambda args: exp_class(
+        this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
+    )
+
+
+# Skip the 'week' unit since ClickHouse's toStartOfWeek
+# uses an extra mode argument to specify the first day of the week
+TIMESTAMP_TRUNC_UNITS = {
+    "MICROSECOND",
+    "MILLISECOND",
+    "SECOND",
+    "MINUTE",
+    "HOUR",
+    "DAY",
+    "MONTH",
+    "QUARTER",
+    "YEAR",
+}
+
+
 class ClickHouse(Dialect):
     INDEX_OFFSET = 1
     NORMALIZE_FUNCTIONS: bool | str = False
@@ -308,6 +346,10 @@ class ClickHouse(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            **{
+                f"TOSTARTOF{unit}": _build_timestamp_trunc(unit=unit)
+                for unit in TIMESTAMP_TRUNC_UNITS
+            },
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
@@ -323,13 +365,16 @@ class ClickHouse(Dialect):
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
             "HAS": exp.ArrayContains.from_arg_list,
+            "ILIKE": build_like(exp.ILike),
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LIKE": build_like(exp.Like),
             "L2Distance": exp.EuclideanDistance.from_arg_list,
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "NOTLIKE": build_like(exp.Like, not_like=True),
             "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "STR_TO_DATE": _build_str_to_date,
@@ -337,11 +382,15 @@ class ClickHouse(Dialect):
             "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
             "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
             "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
+            "TOMONDAY": _build_timestamp_trunc("WEEK"),
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "SPLITBYCHAR": _build_split_by_char,
+            "SPLITBYREGEXP": _build_split(exp.RegexpSplit),
+            "SPLITBYSTRING": _build_split(exp.Split),
             "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,
             "TOTYPENAME": exp.Typeof.from_arg_list,
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
@@ -1151,8 +1200,14 @@ class ClickHouse(Dialect):
             exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.Split: lambda self, e: self.func(
+                "splitByString", e.args.get("expression"), e.this, e.args.get("limit")
+            ),
+            exp.RegexpSplit: lambda self, e: self.func(
+                "splitByRegexp", e.args.get("expression"), e.this, e.args.get("limit")
+            ),
             exp.UnixToTime: _unix_to_time_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+            exp.TimestampTrunc: timestamptrunc_sql(func="dateTrunc", zone=True),
             exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),

@@ -1,5 +1,6 @@
 from sqlglot import exp, UnsupportedError, ParseError, parse_one
 from tests.dialects.test_dialect import Validator
+from sqlglot.optimizer.qualify import qualify
 
 
 class TestOracle(Validator):
@@ -16,6 +17,8 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("DBMS_RANDOM.NORMAL")
         self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
         self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)
@@ -361,6 +364,7 @@ class TestOracle(Validator):
             "SELECT PERCENT_RANK(15, 0.05) WITHIN GROUP (ORDER BY col1, col2) FROM t"
         )
         self.validate_identity("L2_DISTANCE(x, y)")
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
@@ -790,4 +794,18 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.assertEqual(
             merge_stmt.sql("oracle"),
             "MERGE INTO my_table USING (SELECT * FROM something) source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
+        )
+
+    def test_pseudocolumns(self):
+        ast = self.validate_identity(
+            "WITH t AS (SELECT 1 AS COL) SELECT col, ROWID FROM t WHERE ROWNUM = 1"
+        )
+        self.assertIsNone(ast.find(exp.Pseudocolumn))
+
+        qualified = qualify(ast, dialect="oracle")
+        self.assertIsNotNone(qualified.find(exp.Pseudocolumn))
+
+        self.assertEqual(
+            qualified.sql(dialect="oracle"),
+            'WITH "T" AS (SELECT 1 AS "COL") SELECT "T"."COL" AS "COL", ROWID AS "ROWID" FROM "T" "T" WHERE ROWNUM = 1',
         )

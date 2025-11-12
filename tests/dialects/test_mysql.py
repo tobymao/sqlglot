@@ -39,6 +39,12 @@ class TestMySQL(Validator):
             check_command_warning=True,
         )
         self.validate_identity(
+            "CREATE SQL SECURITY INVOKER VIEW id_test (id, foo) AS SELECT 0, foo FROM test"
+        )
+        self.validate_identity(
+            "CREATE SQL SECURITY DEFINER VIEW id_test (id, foo) AS SELECT 0, foo FROM test"
+        )
+        self.validate_identity(
             "ALTER SQL SECURITY = DEFINER VIEW v AS SELECT * FROM foo", check_command_warning=True
         )
         self.validate_identity(

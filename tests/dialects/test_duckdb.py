@@ -196,6 +196,49 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("""SELECT '{"duck": [1, 2, 3]}' -> '$.duck[#-1]'""")
+
+        self.validate_all(
+            "SELECT RANGE(1, 5)",
+            write={
+                "duckdb": "SELECT RANGE(1, 5)",
+                "spark": "SELECT SEQUENCE(1, 4)",
+            },
+        )
+        self.validate_all(
+            "SELECT RANGE(1, 5, 2)",
+            write={
+                "duckdb": "SELECT RANGE(1, 5, 2)",
+                "spark": "SELECT SEQUENCE(1, 3, 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT RANGE(1, 1)",
+            write={
+                "duckdb": "SELECT RANGE(1, 1)",
+                "spark": "SELECT ARRAY()",
+            },
+        )
+        self.validate_all(
+            "SELECT RANGE(5, 1, -1)",
+            write={
+                "duckdb": "SELECT RANGE(5, 1, -1)",
+                "spark": "SELECT SEQUENCE(5, 2, -1)",
+            },
+        )
+        self.validate_all(
+            "SELECT RANGE(5, 1, 0)",
+            write={
+                "duckdb": "SELECT RANGE(5, 1, 0)",
+                "spark": "SELECT ARRAY()",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 5 AS c) SELECT RANGE(1, c) FROM t",
+            write={
+                "duckdb": "WITH t AS (SELECT 5 AS c) SELECT RANGE(1, c) FROM t",
+                "spark": "WITH t AS (SELECT 5 AS c) SELECT IF((c - 1) <= 1, ARRAY(), SEQUENCE(1, (c - 1))) FROM t",
+            },
+        )
         self.validate_all(
             """SELECT JSON_EXTRACT('{"duck": [1, 2, 3]}', '/duck/0')""",
             write={
@@ -971,7 +1014,7 @@ class TestDuckDB(Validator):
             "DATE_TRUNC('DAY', x)",
             write={
                 "duckdb": "DATE_TRUNC('DAY', x)",
-                "clickhouse": "DATE_TRUNC('DAY', x)",
+                "clickhouse": "dateTrunc('DAY', x)",
             },
         )
         self.validate_identity("EDITDIST3(col1, col2)", "LEVENSHTEIN(col1, col2)")
@@ -1160,6 +1203,13 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotate_types(self.parse_one("UPPER('hello')")).sql("duckdb"), "UPPER('hello')"
+        )
+        self.validate_all(
+            "SELECT UUID()",
+            write={
+                "duckdb": "SELECT UUID()",
+                "bigquery": "SELECT GENERATE_UUID()",
+            },
         )
 
     def test_array_index(self):
@@ -1951,3 +2001,13 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "WITH RECURSIVE tbl(a, b) USING KEY (a, b) AS (SELECT a, b FROM (VALUES (1, 3), (2, 4)) AS t(a, b) UNION SELECT a + 1, b FROM tbl WHERE a < 3) SELECT * FROM tbl"
         )
+
+    def test_udf(self):
+        for keyword in ("FUNCTION", "MACRO"):
+            with self.subTest(f"Testing DuckDB's UDF for keyword: {keyword}"):
+                self.validate_identity(f"SELECT {keyword}")
+
+                self.validate_identity(f"CREATE {keyword} add(a, b) AS a + b")
+                self.validate_identity(
+                    f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
+                )

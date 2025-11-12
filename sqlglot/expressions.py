@@ -1803,6 +1803,10 @@ class Column(Condition):
         return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
+class Pseudocolumn(Column):
+    pass
+
+
 class ColumnPosition(Expression):
     arg_types = {"this": False, "position": True}
 
@@ -3196,7 +3200,13 @@ class SchemaCommentProperty(Property):
 
 
 class SemanticView(Expression):
-    arg_types = {"this": True, "metrics": False, "dimensions": False, "where": False}
+    arg_types = {
+        "this": True,
+        "metrics": False,
+        "dimensions": False,
+        "facts": False,
+        "where": False,
+    }
 
 
 class SerdeProperties(Property):
@@ -3228,7 +3238,7 @@ class SqlReadWriteProperty(Property):
 
 
 class SqlSecurityProperty(Property):
-    arg_types = {"definer": True}
+    arg_types = {"this": True}
 
 
 class StabilityProperty(Property):
@@ -5223,6 +5233,10 @@ class Like(Binary, Predicate):
     pass
 
 
+class Match(Binary, Predicate):
+    pass
+
+
 class LT(Binary, Predicate):
     pass
 
@@ -5622,6 +5636,26 @@ class BitwiseCount(Func):
     pass
 
 
+class BitmapBucketNumber(Func):
+    pass
+
+
+class BitmapCount(Func):
+    pass
+
+
+class BitmapBitPosition(Func):
+    pass
+
+
+class BitmapConstructAgg(AggFunc):
+    pass
+
+
+class BitmapOrAgg(AggFunc):
+    pass
+
+
 class ByteLength(Func):
     pass
 
@@ -5667,6 +5701,12 @@ class ArgMin(AggFunc):
 
 class ApproxTopK(AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/approx_top_k_accumulate
+# https://spark.apache.org/docs/preview/api/sql/index.html#approx_top_k_accumulate
+class ApproxTopKAccumulate(AggFunc):
+    arg_types = {"this": True, "expression": False}
 
 
 class ApproxTopSum(AggFunc):
@@ -5750,7 +5790,11 @@ class Apply(Func):
 
 
 class Array(Func):
-    arg_types = {"expressions": False, "bracket_notation": False}
+    arg_types = {
+        "expressions": False,
+        "bracket_notation": False,
+        "struct_name_inheritance": False,
+    }
     is_var_len_args = True
 
 
@@ -7457,6 +7501,14 @@ class RegrValy(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class RegrAvgy(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrAvgx(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Repeat(Func):
     arg_types = {"this": True, "times": True}
 
@@ -7817,7 +7869,7 @@ class UnixMillis(Func):
 class Uuid(Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
-    arg_types = {"this": False, "name": False}
+    arg_types = {"this": False, "name": False, "is_string": False}
 
 
 TIMESTAMP_PARTS = {

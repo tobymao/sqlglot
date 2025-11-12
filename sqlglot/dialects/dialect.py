@@ -542,6 +542,11 @@ class Dialect(metaclass=_Dialect):
     Whether byte string literals (ex: BigQuery's b'...') are typed as BYTES/BINARY
     """
 
+    UUID_IS_STRING_TYPE: bool = False
+    """
+    Whether a UUID is considered a string or a UUID type.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -962,11 +967,11 @@ def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> st
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
-def inline_array_sql(self: Generator, expression: exp.Array) -> str:
+def inline_array_sql(self: Generator, expression: exp.Expression) -> str:
     return f"[{self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)}]"
 
 
-def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
+def inline_array_unless_query(self: Generator, expression: exp.Expression) -> str:
     elem = seq_get(expression.expressions, 0)
     if isinstance(elem, exp.Expression) and elem.find(exp.Query):
         return self.func("ARRAY", elem)
@@ -1189,12 +1194,14 @@ def date_add_interval_sql(
     return func
 
 
-def timestamptrunc_sql(zone: bool = False) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
+def timestamptrunc_sql(
+    func: str = "DATE_TRUNC", zone: bool = False
+) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
     def _timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
         args = [unit_to_str(expression), expression.this]
         if zone:
             args.append(expression.args.get("zone"))
-        return self.func("DATE_TRUNC", *args)
+        return self.func(func, *args)
 
     return _timestamptrunc_sql
 
@@ -1744,20 +1751,55 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     else:
         target_type = None
 
-    if start and end and target_type and target_type.is_type("date", "timestamp"):
-        if isinstance(start, exp.Cast) and target_type is start.to:
-            end = exp.cast(end, target_type)
-        else:
-            start = exp.cast(start, target_type)
+    if start and end:
+        if target_type and target_type.is_type("date", "timestamp"):
+            if isinstance(start, exp.Cast) and target_type is start.to:
+                end = exp.cast(end, target_type)
+            else:
+                start = exp.cast(start, target_type)
+
+        if expression.args.get("is_end_exclusive"):
+            step_value = step or exp.Literal.number(1)
+            end = exp.paren(exp.Sub(this=end, expression=step_value), copy=False)
+
+            sequence_call = exp.Anonymous(
+                this="SEQUENCE", expressions=[e for e in (start, end, step) if e]
+            )
+            zero = exp.Literal.number(0)
+            should_return_empty = exp.or_(
+                exp.EQ(this=step_value.copy(), expression=zero.copy()),
+                exp.and_(
+                    exp.GT(this=step_value.copy(), expression=zero.copy()),
+                    exp.GTE(this=start.copy(), expression=end.copy()),
+                ),
+                exp.and_(
+                    exp.LT(this=step_value.copy(), expression=zero.copy()),
+                    exp.LTE(this=start.copy(), expression=end.copy()),
+                ),
+            )
+            empty_array_or_sequence = exp.If(
+                this=should_return_empty,
+                true=exp.Array(expressions=[]),
+                false=sequence_call,
+            )
+            return self.sql(self._simplify_unless_literal(empty_array_or_sequence))
 
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_like(expr_type: t.Type[E]) -> t.Callable[[t.List], E | exp.Escape]:
-    def _builder(args: t.List) -> E | exp.Escape:
-        like_expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
-        escape = seq_get(args, 2)
-        return exp.Escape(this=like_expr, expression=escape) if escape else like_expr
+def build_like(
+    expr_type: t.Type[E], not_like: bool = False
+) -> t.Callable[[t.List], exp.Expression]:
+    def _builder(args: t.List) -> exp.Expression:
+        like_expr: exp.Expression = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+        if escape := seq_get(args, 2):
+            like_expr = exp.Escape(this=like_expr, expression=escape)
+
+        if not_like:
+            like_expr = exp.Not(this=like_expr)
+
+        return like_expr
 
     return _builder
 

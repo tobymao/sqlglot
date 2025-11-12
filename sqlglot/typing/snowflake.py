@@ -251,6 +251,7 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
+            exp.ApproxTopKAccumulate,
         }
     },
     **{

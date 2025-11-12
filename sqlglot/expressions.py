@@ -5703,6 +5703,8 @@ class ApproxTopK(AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_top_k_accumulate
+# https://spark.apache.org/docs/preview/api/sql/index.html#approx_top_k_accumulate
 class ApproxTopKAccumulate(AggFunc):
     arg_types = {"this": True, "expression": False}
 

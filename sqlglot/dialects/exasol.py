@@ -246,6 +246,7 @@ class Exasol(Dialect):
             ):
                 column.set("table", None)
             return column
+
         ODBC_DATETIME_LITERALS = {
             "d": exp.Date,
             "ts": exp.Timestamp,

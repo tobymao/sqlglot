@@ -1211,6 +1211,16 @@ class TestDuckDB(Validator):
                 "bigquery": "SELECT GENERATE_UUID()",
             },
         )
+        self.assertEqual(
+            annotate_types(
+                self.parse_one("SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result")
+            ).sql("duckdb"),
+            "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+        )
+        self.validate_identity("SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result")
+        self.validate_identity(
+            "SELECT REPLACE(CAST(CAST('apple pie' AS BLOB) AS TEXT), CAST(CAST('pie' AS BLOB) AS TEXT), CAST(CAST('cobbler' AS BLOB) AS TEXT)) AS result"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -1192,6 +1192,25 @@ class DuckDB(Dialect):
 
             return result_sql
 
+        def _cast_replace_sql(self, expression: t.Optional[exp.Expression] = None) -> None:
+            if (
+                expression
+                and expression.type
+                and not expression.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN)
+            ):
+                expression.replace(exp.cast(expression, exp.DataType.Type.VARCHAR))
+
+        def replace_sql(self, expression: exp.Replace) -> str:
+            self._cast_replace_sql(expression.this)
+            self._cast_replace_sql(expression.expression)
+            self._cast_replace_sql(expression.args.get("replacement"))
+            return self.func(
+                "REPLACE",
+                expression.this,
+                expression.expression,
+                expression.args.get("replacement"),
+            )
+
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this
             key = expression.args.get("key")

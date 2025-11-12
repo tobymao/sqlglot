@@ -1936,6 +1936,22 @@ WHERE
             },
         )
 
+        self.validate_all(
+            "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+            write={
+                "bigquery": "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+                "duckdb": "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+            },
+        )
+        expr = self.parse_one(
+            "SELECT REPLACE(CAST('apple pie' AS BYTES), CAST('pie' AS BYTES), CAST('cobbler' AS BYTES)) AS result"
+        )
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT REPLACE(CAST(CAST('apple pie' AS BLOB) AS TEXT), CAST(CAST('pie' AS BLOB) AS TEXT), CAST(CAST('cobbler' AS BLOB) AS TEXT)) AS result",
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")

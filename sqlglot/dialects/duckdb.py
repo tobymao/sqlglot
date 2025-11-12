@@ -1171,19 +1171,24 @@ class DuckDB(Dialect):
             return self.sql(case)
 
         def lower_sql(self, expression: exp.Lower) -> str:
-            return self._case_conversion_sql(expression, "LOWER")
+            return self._case_conversion(expression, "LOWER")
 
         def upper_sql(self, expression: exp.Upper) -> str:
-            return self._case_conversion_sql(expression, "UPPER")
+            return self._case_conversion(expression, "UPPER")
 
-        def _case_conversion_sql(
+        def _cast_to_varchar(self, arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            if (
+                arg
+                and arg.type
+                and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN)
+            ):
+                return exp.cast(arg, exp.DataType.Type.VARCHAR)
+            return arg
+
+        def _case_conversion(
             self, expression: t.Union[exp.Lower, exp.Upper], func_name: str
         ) -> str:
-            arg = expression.this
-            if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
-                expression.this.replace(exp.cast(expression.this, exp.DataType.Type.VARCHAR))
-
-            result_sql = self.func(func_name, expression.this)
+            result_sql = self.func(func_name, self._cast_to_varchar(expression.this))
 
             is_binary = expression.is_type(exp.DataType.Type.BINARY)
             if is_binary:
@@ -1192,23 +1197,12 @@ class DuckDB(Dialect):
 
             return result_sql
 
-        def _cast_replace_sql(self, expression: t.Optional[exp.Expression] = None) -> None:
-            if (
-                expression
-                and expression.type
-                and not expression.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN)
-            ):
-                expression.replace(exp.cast(expression, exp.DataType.Type.VARCHAR))
-
         def replace_sql(self, expression: exp.Replace) -> str:
-            self._cast_replace_sql(expression.this)
-            self._cast_replace_sql(expression.expression)
-            self._cast_replace_sql(expression.args.get("replacement"))
             return self.func(
                 "REPLACE",
-                expression.this,
-                expression.expression,
-                expression.args.get("replacement"),
+                self._cast_to_varchar(expression.this),
+                self._cast_to_varchar(expression.expression),
+                self._cast_to_varchar(expression.args.get("replacement")),
             )
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
@@ -1226,18 +1220,12 @@ class DuckDB(Dialect):
 
             return self.func("STRUCT_INSERT", this, kv_sql)
 
-        def _prepare_startswith_arg(self, arg: exp.Expression) -> None:
-            """Prepare argument for STARTS_WITH by converting to VARCHAR."""
-            # Cast non-VARCHAR types to VARCHAR (includes double-cast for BLOB types)
-            if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
-                arg.replace(exp.cast(arg, exp.DataType.Type.VARCHAR))
-
         def startswith_sql(self, expression: exp.StartsWith) -> str:
-            # Prepare both arguments for STARTS_WITH (converts to VARCHAR)
-            self._prepare_startswith_arg(expression.this)
-            self._prepare_startswith_arg(expression.expression)
-
-            return self.func("STARTS_WITH", expression.this, expression.expression)
+            return self.func(
+                "STARTS_WITH",
+                self._cast_to_varchar(expression.this),
+                self._cast_to_varchar(expression.expression),
+            )
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")

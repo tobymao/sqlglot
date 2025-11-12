@@ -1205,6 +1205,21 @@ LANGUAGE js AS
                 "spark": "CAST(a AS BINARY)",
             },
         )
+        # Test STARTS_WITH with BYTES/BLOB handling from BigQuery to DuckDB
+        # Requires type annotation for proper BLOB -> VARCHAR casting
+        expr = self.parse_one("STARTS_WITH(CAST('foo' AS BYTES), CAST('f' AS BYTES))")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), CAST(CAST('f' AS BLOB) AS TEXT))",
+        )
+
+        expr = self.parse_one("STARTS_WITH(CAST('foo' AS BYTES), b'f')")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), CAST(CAST(e'f' AS BLOB) AS TEXT))",
+        )
         self.validate_all(
             "CAST(a AS NUMERIC)",
             write={

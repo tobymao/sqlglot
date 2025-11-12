@@ -1207,6 +1207,19 @@ class DuckDB(Dialect):
 
             return self.func("STRUCT_INSERT", this, kv_sql)
 
+        def _prepare_startswith_arg(self, arg: exp.Expression) -> None:
+            """Prepare argument for STARTS_WITH by converting to VARCHAR."""
+            # Cast non-VARCHAR types to VARCHAR (includes double-cast for BLOB types)
+            if arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+                arg.replace(exp.cast(arg, exp.DataType.Type.VARCHAR))
+
+        def startswith_sql(self, expression: exp.StartsWith) -> str:
+            # Prepare both arguments for STARTS_WITH (converts to VARCHAR)
+            self._prepare_startswith_arg(expression.this)
+            self._prepare_startswith_arg(expression.expression)
+
+            return self.func("STARTS_WITH", expression.this, expression.expression)
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")
             if explode_array:

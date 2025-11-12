@@ -210,6 +210,14 @@ def _build_split(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
     )
 
 
+def _build_like(exp_class: t.Type[E], not_like: bool = False) -> t.Callable[[t.List], E | exp.Not]:
+    def _builder(args: t.List) -> E | exp.Not:
+        like_expr = exp_class(this=seq_get(args, 0), expression=seq_get(args, 1))
+        return exp.Not(this=like_expr) if not_like else like_expr
+
+    return _builder
+
+
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
 # uses an extra mode argument to specify the first day of the week
 TIMESTAMP_TRUNC_UNITS = {
@@ -364,13 +372,16 @@ class ClickHouse(Dialect):
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
             "HAS": exp.ArrayContains.from_arg_list,
+            "ILIKE": _build_like(exp.ILike),
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LIKE": _build_like(exp.Like),
             "L2Distance": exp.EuclideanDistance.from_arg_list,
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "NOTLIKE": _build_like(exp.Like, not_like=True),
             "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "STR_TO_DATE": _build_str_to_date,

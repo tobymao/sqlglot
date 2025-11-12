@@ -540,7 +540,7 @@ class Dialect(metaclass=_Dialect):
     # Whether the INITCAP function supports custom delimiter characters as the second argument
     # Default delimiter characters for INITCAP function: whitespace and non-alphanumeric characters
     INITCAP_SUPPORTS_CUSTOM_DELIMITERS = False
-    INITCAP_DEFAULT_DELIMITER_CHARS = r" \t\n\r\f\v!\"#$%&'()*+,\-./:;<=>?@\[\\]^_`{|}~"
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\v!\"#$%&'()*+,\\-./:;<=>?@\\[\\]^_`{|}~"
 
     BYTE_STRING_IS_BYTES_TYPE: bool = False
     """

@@ -1,6 +1,6 @@
 from tests.dialects.test_dialect import Validator
-
 from sqlglot import exp
+from sqlglot.dialects import Hive
 
 
 class TestHive(Validator):
@@ -685,11 +685,32 @@ class TestHive(Validator):
                 "spark": "LOCATE('a', x, 3)",
             },
         )
+
+        REGEX_LITERAL_ESCAPES = {
+            "\\": "\\\\",
+            "-": "\\-",
+            "^": "\\^",
+            "[": "\\[",
+            "]": "\\]",
+        }
+
+        def duckdb_regex_literal_sql(delimiters: str) -> str:
+            escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in delimiters)
+            return exp.Literal.string(escaped_literal).sql("duckdb")
+
+        hive_escaped_delimiters = duckdb_regex_literal_sql(Hive.INITCAP_DEFAULT_DELIMITER_CHARS)
         self.validate_all(
             "INITCAP('new york')",
             write={
-                "duckdb": r"CASE WHEN 'new york' IS NULL THEN NULL ELSE ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT('new york', 1), '[' || ' \t\n\r\f\v!\"#$%&''()*+,\-./:;<=>?@\[\\]^_`{|}~' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || ' \t\n\r\f\v!\"#$%&''()*+,\-./:;<=>?@\[\\]^_`{|}~' || ']+|[^' || ' \t\n\r\f\v!\"#$%&''()*+,\-./:;<=>?@\[\\]^_`{|}~' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || ' \t\n\r\f\v!\"#$%&''()*+,\-./:;<=>?@\[\\]^_`{|}~' || ']+|[^' || ' \t\n\r\f\v!\"#$%&''()*+,\-./:;<=>?@\[\\]^_`{|}~' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '') END",
-                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+                "duckdb": (
+                    "CASE WHEN 'new york' IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    f"CASE WHEN REGEXP_MATCHES(LEFT('new york', 1), '[' || {hive_escaped_delimiters} || ']') "
+                    f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || {hive_escaped_delimiters} || ']+|[^' || {hive_escaped_delimiters} || ']+)'), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || {hive_escaped_delimiters} || ']+|[^' || {hive_escaped_delimiters} || ']+)'), "
+                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
+                    "END, '') END"
+                ),
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },

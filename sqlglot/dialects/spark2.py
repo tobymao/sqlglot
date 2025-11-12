@@ -121,7 +121,7 @@ class Spark2(Hive):
 
     # https://spark.apache.org/docs/latest/api/sql/index.html#initcap
     # https://docs.databricks.com/aws/en/sql/language-manual/functions/initcap
-    INITCAP_DEFAULT_DELIMITER_CHARS = r" \t\n\r\f\v"
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\v"
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'"), ("x'", "'")]

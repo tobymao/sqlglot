@@ -4313,6 +4313,18 @@ FROM subquery2""",
             "spark": Spark2.INITCAP_DEFAULT_DELIMITER_CHARS,
         }
 
+        REGEX_LITERAL_ESCAPES = {
+            "\\": "\\\\",
+            "-": "\\-",
+            "^": "\\^",
+            "[": "\\[",
+            "]": "\\]",
+        }
+
+        def duckdb_regex_literal_sql(delimiters: str) -> str:
+            escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in delimiters)
+            return exp.Literal.string(escaped_literal).sql("duckdb")
+
         # default delimiters not present in roundtrip
         for dialect in delimiter_chars.keys():
             with self.subTest(
@@ -4338,13 +4350,13 @@ FROM subquery2""",
 
         for dialect, default_delimiters in delimiter_chars.items():
             with self.subTest(f"DuckDB rewrite for {dialect or 'default'} default delimiters"):
-                literal = exp.Literal.string(default_delimiters).sql()
+                escaped_literal = duckdb_regex_literal_sql(default_delimiters)
                 expected = (
                     "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
-                    f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {literal} || ']') "
-                    f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {literal} || ']+|[^' || {literal} || ']+)'), "
+                    f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_literal} || ']') "
+                    f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_literal} || ']+|[^' || {escaped_literal} || ']+)'), "
                     f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {literal} || ']+|[^' || {literal} || ']+)'), "
+                    f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_literal} || ']+|[^' || {escaped_literal} || ']+)'), "
                     f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                     "END, '') END"
                 )
@@ -4372,35 +4384,61 @@ FROM subquery2""",
                     "END, '') END",
                 )
 
-            for custom_delimiter in (" ", "@", " _@"):
+            for custom_delimiter in (" ", "@", " _@", r"\\"):
                 with self.subTest(
                     f"DuckDB generation for INITCAP(col, {custom_delimiter}) from {dialect}"
                 ):
+                    literal_sql = exp.Literal.string(custom_delimiter).sql(dialect)
+                    expression = parse_one(f"INITCAP(col, {literal_sql})", read=dialect)
+                    duckdb_sql = expression.sql("duckdb")
+                    escaped_custom_delimiter = duckdb_regex_literal_sql(custom_delimiter)
                     self.assertEqual(
-                        parse_one(f"INITCAP(col, '{custom_delimiter}')", read=dialect).sql(
-                            "duckdb"
-                        ),
+                        duckdb_sql,
                         "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
-                        f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || '{custom_delimiter}' || ']') "
-                        f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '{custom_delimiter}' || ']+|[^' || '{custom_delimiter}' || ']+)'), "
+                        f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_custom_delimiter} || ']') "
+                        f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_custom_delimiter} || ']+|[^' || {escaped_custom_delimiter} || ']+)'), "
                         f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                        f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '{custom_delimiter}' || ']+|[^' || '{custom_delimiter}' || ']+)'), "
+                        f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_custom_delimiter} || ']+|[^' || {escaped_custom_delimiter} || ']+)'), "
                         f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                         "END, '') END",
                     )
 
+            def escape_expression_sql(sql: str) -> str:
+                escaped_sql = sql
+                for raw, escaped in (
+                    ("\\", "\\\\"),
+                    ("-", r"\-"),
+                    ("^", r"\^"),
+                    ("[", r"\["),
+                    ("]", r"\]"),
+                ):
+                    raw_sql = exp.Literal.string(raw).sql()
+                    escaped_literal_sql = exp.Literal.string(escaped).sql()
+                    escaped_sql = f"REPLACE({escaped_sql}, {raw_sql}, {escaped_literal_sql})"
+
+                return escaped_sql
+
             with self.subTest(
                 f"DuckDB generation for INITCAP subquery as custom delimiter arg from {dialect}"
             ):
+                escaped_subquery = escape_expression_sql("(SELECT delimiter FROM settings LIMIT 1)")
                 self.assertEqual(
                     parse_one(
                         "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))", read=dialect
                     ).sql("duckdb"),
                     "CASE WHEN col IS NULL OR (SELECT delimiter FROM settings LIMIT 1) IS NULL THEN NULL ELSE ARRAY_TO_STRING("
-                    + "CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || (SELECT delimiter FROM settings LIMIT 1) || ']') "
-                    "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (SELECT delimiter FROM settings LIMIT 1) || ']+|[^' || (SELECT delimiter FROM settings LIMIT 1) || ']+)'), "
+                    + f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_subquery} || ']') "
+                    "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || "
+                    + escaped_subquery
+                    + " || ']+|[^' || "
+                    + escaped_subquery
+                    + " || ']+)'), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (SELECT delimiter FROM settings LIMIT 1) || ']+|[^' || (SELECT delimiter FROM settings LIMIT 1) || ']+)'), "
+                    "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || "
+                    + escaped_subquery
+                    + " || ']+|[^' || "
+                    + escaped_subquery
+                    + " || ']+)'), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                     "END, '') END",
                 )

@@ -290,54 +290,110 @@ def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     return self.function_fallback_sql(expression)
 
 
-def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
-    def build_capitalize_sql(
-        value_to_split: str, delimiters_sql: str, convert_delim_to_regex: bool = True
-    ) -> str:
-        # empty string delimiter --> treat value as one word, no need to split
-        if delimiters_sql == "''":
-            return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTR({value_to_split}, 2))"
+def _escape_regex_metachars(
+    self: DuckDB.Generator, delimiters: t.Optional[exp.Expression], delimiters_sql: str
+) -> str:
+    if not delimiters:
+        return delimiters_sql
 
-        delim_regex_sql = delimiters_sql
-        split_regex_sql = delimiters_sql
-        if convert_delim_to_regex:
-            delim_regex_sql = f"CONCAT('[', {delimiters_sql}, ']')"
-            split_regex_sql = f"CONCAT('([', {delimiters_sql}, ']+|[^', {delimiters_sql}, ']+)')"
+    REGEX_LITERAL_ESCAPES = {
+        "\\": "\\\\",  # literals need two slashes inside []
+        "-": "\\-",
+        "^": "\\^",
+        "[": "\\[",
+        "]": "\\]",
+    }
 
-        # REGEXP_EXTRACT_ALL produces a list of string segments, alternating between delimiter and non-delimiter segments.
-        # We do not know whether the first segment is a delimiter or not, so we check the first character of the string
-        # with REGEXP_MATCHES. If the first char is a delimiter, we capitalize even list indexes, otherwise capitalize odd.
-        return self.func(
-            "ARRAY_TO_STRING",
-            exp.case()
-            .when(
-                f"REGEXP_MATCHES(LEFT({value_to_split}, 1), {delim_regex_sql})",
-                self.func(
-                    "LIST_TRANSFORM",
-                    self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
-                ),
-            )
-            .else_(
-                self.func(
-                    "LIST_TRANSFORM",
-                    self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
-                ),
-            ),
-            "''",
+    if isinstance(delimiters, exp.Literal) and delimiters.is_string:
+        literal_value = delimiters.this
+        escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in literal_value)
+        return self.sql(exp.Literal.string(escaped_literal))
+
+    REGEX_ESCAPE_REPLACEMENTS = (
+        ("\\", "\\\\"),
+        ("-", r"\-"),
+        ("^", r"\^"),
+        ("[", r"\["),
+        ("]", r"\]"),
+    )
+
+    escaped_sql = delimiters_sql
+    for raw, escaped in REGEX_ESCAPE_REPLACEMENTS:
+        escaped_sql = self.func(
+            "REPLACE",
+            escaped_sql,
+            self.sql(exp.Literal.string(raw)),
+            self.sql(exp.Literal.string(escaped)),
         )
 
+    return escaped_sql
+
+
+def _build_capitalization_sql(
+    self: DuckDB.Generator,
+    value_to_split: str,
+    raw_delimiters_sql: str,
+    escaped_delimiters_sql: t.Optional[str] = None,
+    convert_delim_to_regex: bool = True,
+) -> str:
+    # empty string delimiter --> treat value as one word, no need to split
+    if raw_delimiters_sql == "''":
+        return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTR({value_to_split}, 2))"
+
+    regex_ready_sql = escaped_delimiters_sql or raw_delimiters_sql
+    delim_regex_sql = regex_ready_sql
+    split_regex_sql = regex_ready_sql
+    if convert_delim_to_regex:
+        delim_regex_sql = f"CONCAT('[', {regex_ready_sql}, ']')"
+        split_regex_sql = f"CONCAT('([', {regex_ready_sql}, ']+|[^', {regex_ready_sql}, ']+)')"
+
+    # REGEXP_EXTRACT_ALL produces a list of string segments, alternating between delimiter and non-delimiter segments.
+    # We do not know whether the first segment is a delimiter or not, so we check the first character of the string
+    # with REGEXP_MATCHES. If the first char is a delimiter, we capitalize even list indexes, otherwise capitalize odd.
+    return self.func(
+        "ARRAY_TO_STRING",
+        exp.case()
+        .when(
+            f"REGEXP_MATCHES(LEFT({value_to_split}, 1), {delim_regex_sql})",
+            self.func(
+                "LIST_TRANSFORM",
+                self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
+                "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+            ),
+        )
+        .else_(
+            self.func(
+                "LIST_TRANSFORM",
+                self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
+                "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+            ),
+        ),
+        "''",
+    )
+
+
+def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     this_sql = self.sql(expression, "this")
     delimiters = expression.args.get("expression")
     delimiters_sql = self.sql(delimiters)
+    escaped_delimiters_sql = (
+        _escape_regex_metachars(self, delimiters, delimiters_sql)
+        if not isinstance(delimiters, exp.Null)
+        else delimiters_sql
+    )
 
     if delimiters and (isinstance(delimiters, exp.Literal) and delimiters.is_string):
-        return f"CASE WHEN {this_sql} IS NULL THEN NULL ELSE {build_capitalize_sql(this_sql, delimiters_sql)} END"
+        return (
+            f"CASE WHEN {this_sql} IS NULL THEN NULL ELSE "
+            f"{_build_capitalization_sql(self, this_sql, delimiters_sql, escaped_delimiters_sql)} END"
+        )
 
-    # delimiters arg is SQL expression or NULL
-    capitalize_sql = build_capitalize_sql(
-        this_sql, delimiters_sql, convert_delim_to_regex=not isinstance(delimiters, exp.Null)
+    capitalize_sql = _build_capitalization_sql(
+        self,
+        this_sql,
+        delimiters_sql,
+        escaped_delimiters_sql,
+        convert_delim_to_regex=not isinstance(delimiters, exp.Null),
     )
     return f"CASE WHEN {this_sql} IS NULL OR {delimiters_sql} IS NULL THEN NULL ELSE {capitalize_sql} END"
 

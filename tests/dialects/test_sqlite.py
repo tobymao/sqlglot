@@ -141,6 +141,7 @@ class TestSQLite(Validator):
             "ATTACH 'foo' || '.foo2' AS schema_name",
         )
         self.validate_identity("DETACH DATABASE schema_name", "DETACH schema_name")
+        self.validate_identity("SELECT * FROM t WHERE NULL IS y")
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

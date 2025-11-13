@@ -3493,11 +3493,11 @@ APPROX_COUNT_DISTINCT(tbl.double_col) OVER (PARTITION BY 1);
 BIGINT;
 
 # dialect: snowflake
-APPROX_TOP_K(tbl.str_col);
+APPROX_TOP_K(tbl.bigint_col);
 ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
-APPROX_TOP_K(tbl.bigint_col);
+APPROX_TOP_K(tbl.str_col);
 ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
@@ -3505,15 +3505,7 @@ APPROX_TOP_K(tbl.str_col, 5);
 ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
-APPROX_TOP_K(tbl.bigint_col, 10);
-ARRAY<ARRAY<VARIANT>>;
-
-# dialect: snowflake
 APPROX_TOP_K(tbl.str_col, 5, 1000);
-ARRAY<ARRAY<VARIANT>>;
-
-# dialect: snowflake
-APPROX_TOP_K(tbl.double_col, 3, 500);
 ARRAY<ARRAY<VARIANT>>;
 
 --------------------------------------

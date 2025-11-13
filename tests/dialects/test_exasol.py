@@ -425,7 +425,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_identity(
-            "SELECT DAY_OF_WEEK('2023-01-01')", "SELECT TO_CHAR('2023-01-01', 'D')"
+            "SELECT DAY_OF_WEEK('2023-01-01')", "SELECT CAST(TO_CHAR('2023-01-01', 'D') AS INTEGER)"
         )
 
         from sqlglot.dialects.exasol import DATE_UNITS

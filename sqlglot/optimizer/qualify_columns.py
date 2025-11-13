@@ -518,6 +518,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             continue
 
         column_table: t.Optional[str | exp.Identifier] = column.table
+        dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
             and column_table not in scope.sources
@@ -541,13 +542,12 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             if column_table:
                 converted = True
                 new_column = exp.column(root, table=column_table)
-                if dot_parts := column.meta.get("dot_parts"):
+
+                if dot_parts:
                     # Remove the actual column parts from the rest of dot parts
                     new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
 
                 column.replace(exp.Dot.build([new_column, *parts]))
-            else:
-                column.meta.pop("dot_parts", None)
 
     if converted:
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in

@@ -434,13 +434,6 @@ class BigQuery(Dialect):
 
             return t.cast(E, expression)
 
-        if isinstance(expression, exp.Column):
-            parent = expression
-            while parent and isinstance(parent.parent, exp.Dot):
-                parent = parent.parent
-
-            expression.meta["dot_parts"] = [p.copy() for p in parent.parts]
-
         return super().normalize_identifier(expression)
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):

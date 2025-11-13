@@ -69,8 +69,13 @@ def qualify(
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
+    dialect = Dialect.get_or_raise(dialect)
 
-    expression = normalize_identifiers(expression, dialect=dialect)
+    expression = normalize_identifiers(
+        expression,
+        dialect=dialect,
+        store_original_column_identifiers=dialect.JSON_DOT_ACCESS_IS_CASE_SENSITIVE,
+    )
     expression = qualify_tables(
         expression,
         db=db,
@@ -82,7 +87,7 @@ def qualify(
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
 
-    if Dialect.get_or_raise(dialect).PREFER_CTE_ALIAS_COLUMN:
+    if dialect.PREFER_CTE_ALIAS_COLUMN:
         expression = pushdown_cte_alias_columns_func(expression)
 
     if qualify_columns:

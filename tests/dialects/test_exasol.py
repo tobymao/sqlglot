@@ -424,6 +424,9 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
             },
         )
+        self.validate_identity(
+            "SELECT DAY_OF_WEEK('2023-01-01')", "SELECT CAST(TO_CHAR('2023-01-01', 'D') AS INTEGER)"
+        )
 
         from sqlglot.dialects.exasol import DATE_UNITS
 

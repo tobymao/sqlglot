@@ -1780,13 +1780,18 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             return optimized.sql(dialect="bigquery")
 
         # Case 1: The JSON fields are not normalized
-        col_before = "col.fOo.BaR.BaZ"
-        col_normalized = "`t`.`col`.`fOo`.`BaR`.`BaZ`"
-        sql = _parse_and_optimize(f"SELECT JSON_VALUE({col_before}, '$') AS col FROM t")
-        assert sql == f"SELECT JSON_VALUE({col_normalized}, '$') AS `col` FROM `t` AS `t`"
+        for dot_access in ("col.fOo.BaR.BaZ", "t.col.fOo.BaR.BaZ"):
+            with self.subTest(f"Test case sensitive JSON dot access: {dot_access}"):
+                dot_access_normalized = "`t`.`col`.`fOo`.`BaR`.`BaZ`"
 
-        sql = _parse_and_optimize(f"SELECT {col_before} AS col FROM t")
-        assert sql == f"SELECT {col_normalized} AS `col` FROM `t` AS `t`"
+                sql = _parse_and_optimize(f"SELECT JSON_VALUE({dot_access}, '$') AS col FROM t")
+                assert (
+                    sql
+                    == f"SELECT JSON_VALUE({dot_access_normalized}, '$') AS `col` FROM `t` AS `t`"
+                )
+
+                sql = _parse_and_optimize(f"SELECT {dot_access} AS col FROM t")
+                assert sql == f"SELECT {dot_access_normalized} AS `col` FROM `t` AS `t`"
 
         # Case 2: Struct fields are still normalized
         sql = _parse_and_optimize("SELECT struct_col.FlD1.flD2.FLD3 AS col FROM t")

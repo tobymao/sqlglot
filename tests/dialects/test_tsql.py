@@ -1497,7 +1497,7 @@ WHERE
         )
         self.validate_identity(
             "DATEPART(YEAR, x)",
-            "FORMAT(CAST(x AS DATETIME2), 'yyyy')",
+            "DATEPART(YEAR, CAST(x AS DATETIME2))",
         )
         self.validate_identity(
             "DATEPART(HOUR, date_and_time)",
@@ -1505,19 +1505,22 @@ WHERE
         )
         self.validate_identity(
             "DATEPART(WEEKDAY, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
+            "DATEPART(WEEKDAY, CAST(date_and_time AS DATETIME2))",
+        )
+        self.validate_identity(
+            "DATEPART(tz, date_and_time)",
+            "DATEPART(TZOFFSET, CAST(date_and_time AS DATETIMEOFFSET))",
         )
         self.validate_identity(
             "DATEPART(DW, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
+            "DATEPART(WEEKDAY, CAST(date_and_time AS DATETIME2))",
         )
-
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
-                "postgres": "SELECT TO_CHAR(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST('1970-01-01' AS DATETIME2), 'MM')",
+                "postgres": "SELECT EXTRACT(month FROM CAST('1970-01-01' AS TIMESTAMP))",
+                "spark": "SELECT EXTRACT(month FROM CAST('1970-01-01' AS TIMESTAMP))",
+                "tsql": "SELECT DATEPART(month, CAST('1970-01-01' AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -1526,9 +1529,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('YEAR', '2017-01-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'YYYY')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'yyyy')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-01' AS DATE) AS DATETIME2), 'yyyy')",
+                "postgres": "SELECT EXTRACT(YEAR FROM CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP))",
+                "spark": "SELECT EXTRACT(YEAR FROM CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP))",
+                "tsql": "SELECT DATEPART(YEAR, CAST(CAST('2017-01-01' AS DATE) AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -1537,9 +1540,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-03-01' AS DATE) AS DATETIME2), 'MM')",
+                "postgres": "SELECT EXTRACT(month FROM CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP))",
+                "spark": "SELECT EXTRACT(month FROM CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP))",
+                "tsql": "SELECT DATEPART(month, CAST(CAST('2017-03-01' AS DATE) AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -1548,16 +1551,16 @@ WHERE
                 "postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'DD')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'dd')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-02' AS DATE) AS DATETIME2), 'dd')",
+                "postgres": "SELECT EXTRACT(day FROM CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP))",
+                "spark": "SELECT EXTRACT(day FROM CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP))",
+                "tsql": "SELECT DATEPART(day, CAST(CAST('2017-01-02' AS DATE) AS DATETIME2))",
             },
         )
 
         for fmt in ("WEEK", "WW", "WK"):
             self.validate_identity(
                 f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
+                "SELECT DATEPART(WEEK, CAST('2024-11-21' AS DATETIME2))",
             )
 
         for fmt in ("ISOWK", "ISOWW", "ISO_WEEK"):

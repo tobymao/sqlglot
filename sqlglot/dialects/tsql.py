@@ -20,6 +20,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     trim_sql,
+    map_date_part,
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
@@ -201,20 +202,12 @@ def _build_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
-DATEPART_ONLY_FORMATS = {"DW", "WK", "HOUR", "QUARTER", "ISO_WEEK"}
-
-
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = expression.args["format"]
 
     if not isinstance(expression, exp.NumberToStr):
         if fmt.is_string:
             mapped_fmt = format_time(fmt.name, TSQL.INVERSE_TIME_MAPPING)
-
-            name = (mapped_fmt or "").upper()
-            if name in DATEPART_ONLY_FORMATS:
-                return self.func("DATEPART", name, expression.this)
-
             fmt_sql = self.sql(exp.Literal.string(mapped_fmt))
         else:
             fmt_sql = self.format_time(expression) or self.sql(fmt)
@@ -222,6 +215,19 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
         fmt_sql = self.sql(fmt)
 
     return self.func("FORMAT", expression.this, fmt_sql, expression.args.get("culture"))
+
+
+def _build_datepart(self: TSQL.Generator, expression: exp.Extract) -> str:
+    DATE_PART_UNMAPPING = {
+        "WEEKISO": "ISO_WEEK",
+        "DAYOFWEEK": "WEEKDAY",
+        "TIMEZONE_MINUTE": "TZOFFSET",
+    }
+
+    part = expression.this
+    name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
+
+    return self.func("DATEPART", name, expression.expression)
 
 
 def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
@@ -418,6 +424,22 @@ class TSQL(Dialect):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    DATE_PART_MAPPING = {
+        **Dialect.DATE_PART_MAPPING,
+        "QQ": "QUARTER",
+        "M": "MONTH",
+        "Y": "DAYOFYEAR",
+        "WW": "WEEK",
+        "N": "MINUTE",
+        "SS": "SECOND",
+        "MCS": "MICROSECOND",
+        "TZOFFSET": "TIMEZONE_MINUTE",
+        "TZ": "TIMEZONE_MINUTE",
+        "ISO_WEEK": "WEEKISO",
+        "ISOWK": "WEEKISO",
+        "ISOWW": "WEEKISO",
+    }
+
     TIME_MAPPING = {
         "year": "%Y",
         "dayofyear": "%j",
@@ -604,7 +626,6 @@ class TSQL(Dialect):
                 exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL, big_int=True
             ),
             "DATENAME": _build_formatted_time(exp.TimeToStr, full_format_mapping=True),
-            "DATEPART": _build_formatted_time(exp.TimeToStr),
             "DATETIMEFROMPARTS": _build_datetimefromparts,
             "EOMONTH": _build_eomonth,
             "FORMAT": _build_format,
@@ -670,6 +691,7 @@ class TSQL(Dialect):
                 order=self._parse_order(),
                 null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
             ),
+            "DATEPART": lambda self: self._parse_datepart(),
         }
 
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
@@ -687,6 +709,18 @@ class TSQL(Dialect):
             "t": exp.Time,
             "ts": exp.Timestamp,
         }
+
+        def _parse_datepart(self) -> exp.Expression:
+            this = self._parse_var()
+            expression = self._match(TokenType.COMMA) and self._parse_bitwise()
+            name = map_date_part(this, self.dialect)
+            type_name = "TIMESTAMP"
+
+            if isinstance(name, exp.Expression) and name.name == "TIMEZONE_MINUTE":
+                type_name = "TIMESTAMPTZ"
+
+            expr = self.expression(exp.Cast, this=expression, to=exp.DataType.build(type_name))
+            return self.expression(exp.Extract, this=name, expression=expr)
 
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)
@@ -1044,7 +1078,7 @@ class TSQL(Dialect):
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.Extract: rename_func("DATEPART"),
+            exp.Extract: _build_datepart,
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),

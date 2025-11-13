@@ -309,6 +309,7 @@ class Exasol(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DayOfWeek: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, 'D')",
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="LISTAGG", within_group=True

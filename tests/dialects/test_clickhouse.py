@@ -1315,6 +1315,16 @@ LIFETIME(MIN 0 MAX 0)""",
             0
         ].assert_is(exp.ParameterizedAgg)
 
+        self.validate_identity("SELECT approx_top_k(column) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT approx_top_k(N)(column) FROM t").selects[0].assert_is(
+            exp.ParameterizedAgg
+        )
+        self.validate_identity("SELECT approx_top_k(N, reserved)(column) FROM t").selects[
+            0
+        ].assert_is(exp.ParameterizedAgg)
+
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

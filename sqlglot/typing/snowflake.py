@@ -84,10 +84,9 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
     self._annotate_args(expression)
 
-    variant_type = exp.DataType(this=exp.DataType.Type.VARIANT, nested=True)
     inner_array_type = exp.DataType(
         this=exp.DataType.Type.ARRAY,
-        expressions=[variant_type],
+        expressions=[expression.this.type],
         nested=True,
     )
     self._set_type(

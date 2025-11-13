@@ -3494,19 +3494,19 @@ BIGINT;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.bigint_col);
-ARRAY<ARRAY<VARIANT>>;
+ARRAY<ARRAY<BIGINT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col);
-ARRAY<ARRAY<VARIANT>>;
+ARRAY<ARRAY<VARCHAR>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col, 5);
-ARRAY<ARRAY<VARIANT>>;
+ARRAY<ARRAY<VARCHAR>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col, 5, 1000);
-ARRAY<ARRAY<VARIANT>>;
+ARRAY<ARRAY<VARCHAR>>;
 
 --------------------------------------
 -- T-SQL

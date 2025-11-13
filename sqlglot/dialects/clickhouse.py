@@ -398,6 +398,7 @@ class ClickHouse(Dialect):
         }
         FUNCTIONS.pop("TRANSFORM")
         FUNCTIONS.pop("APPROX_TOP_SUM")
+        FUNCTIONS.pop("APPROX_TOP_K")
 
         AGG_FUNCTIONS = {
             "count",
@@ -433,6 +434,7 @@ class ClickHouse(Dialect):
             "avgWeighted",
             "topK",
             "approx_top_sum",
+            "approx_top_k",
             "topKWeighted",
             "deltaSum",
             "deltaSumTimestamp",

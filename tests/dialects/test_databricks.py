@@ -217,6 +217,10 @@ class TestDatabricks(Validator):
         )
         self.validate_identity("NTILE() OVER (ORDER BY 1)")
 
+        self.validate_identity("APPROX_TOP_K(col)")
+        self.validate_identity("APPROX_TOP_K(col, 1)")
+        self.validate_identity("APPROX_TOP_K(col, 1, 200)")
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

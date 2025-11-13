@@ -244,7 +244,7 @@ def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
 
 
 def _build_date_delta(
-    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
+    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None, big_int: bool = False
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
         unit = seq_get(args, 0)
@@ -260,12 +260,15 @@ def _build_date_delta(
             else:
                 # We currently don't handle float values, i.e. they're not converted to equivalent DATETIMEs.
                 # This is not a problem when generating T-SQL code, it is when transpiling to other dialects.
-                return exp_class(this=seq_get(args, 2), expression=start_date, unit=unit)
+                return exp_class(
+                    this=seq_get(args, 2), expression=start_date, unit=unit, big_int=big_int
+                )
 
         return exp_class(
             this=exp.TimeStrToTime(this=seq_get(args, 2)),
             expression=exp.TimeStrToTime(this=start_date),
             unit=unit,
+            big_int=big_int,
         )
 
     return _builder
@@ -597,6 +600,9 @@ class TSQL(Dialect):
             ),
             "DATEADD": build_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": _build_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
+            "DATEDIFF_BIG": _build_date_delta(
+                exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL, big_int=True
+            ),
             "DATENAME": _build_formatted_time(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _build_formatted_time(exp.TimeToStr),
             "DATETIMEFROMPARTS": _build_datetimefromparts,
@@ -1033,7 +1039,6 @@ class TSQL(Dialect):
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.Chr: rename_func("CHAR"),
             exp.DateAdd: date_delta_sql("DATEADD"),
-            exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
@@ -1298,6 +1303,10 @@ class TSQL(Dialect):
         def count_sql(self, expression: exp.Count) -> str:
             func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"
             return rename_func(func_name)(self, expression)
+
+        def datediff_sql(self, expression: exp.DateDiff) -> str:
+            func_name = "DATEDIFF_BIG" if expression.args.get("big_int") else "DATEDIFF"
+            return date_delta_sql(func_name)(self, expression)
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"

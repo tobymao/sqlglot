@@ -111,7 +111,6 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Ascii,
             exp.Ceil,
             exp.DatetimeDiff,
-            exp.DateDiff,
             exp.TimestampDiff,
             exp.TimeDiff,
             exp.Unicode,
@@ -269,6 +268,11 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     exp.Bracket: {"annotator": lambda self, e: self._annotate_bracket(e)},
     exp.Case: {"annotator": lambda self, e: self._annotate_by_args(e, "default", "ifs")},
     exp.Count: {
+        "annotator": lambda self, e: self._annotate_with_type(
+            e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
+        )
+    },
+    exp.DateDiff: {
         "annotator": lambda self, e: self._annotate_with_type(
             e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
         )

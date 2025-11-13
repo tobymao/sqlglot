@@ -3494,27 +3494,27 @@ BIGINT;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col);
-ARRAY<STRUCT<VARCHAR, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.bigint_col);
-ARRAY<STRUCT<BIGINT, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col, 5);
-ARRAY<STRUCT<VARCHAR, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.bigint_col, 10);
-ARRAY<STRUCT<BIGINT, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.str_col, 5, 1000);
-ARRAY<STRUCT<VARCHAR, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 # dialect: snowflake
 APPROX_TOP_K(tbl.double_col, 3, 500);
-ARRAY<STRUCT<DOUBLE, BIGINT>>;
+ARRAY<ARRAY<VARIANT>>;
 
 --------------------------------------
 -- T-SQL

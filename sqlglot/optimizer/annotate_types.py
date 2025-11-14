@@ -188,6 +188,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
+        self.dialect = Dialect.get_or_raise(schema.dialect)
         self.expression_metadata = (
             expression_metadata or Dialect.get_or_raise(schema.dialect).EXPRESSION_METADATA
         )
@@ -234,6 +235,20 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._null_expressions[expression_id] = expression
         elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DataType.Type.NULL:
             self._null_expressions.pop(expression_id, None)
+
+        if (
+            isinstance(expression, exp.Column)
+            and expression.is_type(exp.DataType.Type.JSON)
+            and (dot_parts := expression.meta.get("dot_parts"))
+        ):
+            # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
+            i = iter(dot_parts)
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent.expression.set("this", exp.to_identifier(next(i), quoted=True))
+                parent = parent.parent
+
+            expression.meta.pop("dot_parts", None)
 
     def annotate(self, expression: E, annotate_scope: bool = True) -> E:
         # This flag is used to avoid costly scope traversals when we only care about annotating

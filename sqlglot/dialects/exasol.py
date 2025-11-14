@@ -386,7 +386,11 @@ class Exasol(Dialect):
             exp.MD5Digest: rename_func("HASHTYPE_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
-            exp.Select: transforms.preprocess([_add_local_prefix_for_aliases]),
+            exp.Select: transforms.preprocess(
+                [
+                    _add_local_prefix_for_aliases,
+                ]
+            ),
             exp.WeekOfYear: rename_func("WEEK"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.Date: rename_func("TO_DATE"),

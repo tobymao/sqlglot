@@ -1230,7 +1230,7 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.this),
                 _cast_to_varchar(expression.expression),
             )
-        
+
         def bytestring_sql(self, expression: exp.ByteString) -> str:
             this = self.sql(expression, "this")
 
@@ -1239,9 +1239,9 @@ class DuckDB(Dialect):
                 return self.func("ENCODE", exp.Literal.string(""))
 
             # one or more consecutive escape sequences
-            split_escape_pattern = re.compile(r'((?:\\x[0-9a-fA-F]{2})+)')
+            split_escape_pattern = re.compile(r"((?:\\x[0-9a-fA-F]{2})+)")
 
-            escape_pattern = re.compile(r'\\x[0-9a-fA-F]{2}')
+            escape_pattern = re.compile(r"\\x[0-9a-fA-F]{2}")
 
             segments = split_escape_pattern.split(this)
 

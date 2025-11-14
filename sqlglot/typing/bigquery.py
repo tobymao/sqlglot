@@ -70,7 +70,7 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
     # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
     if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
-        annotated.type = exp.DataType.Type.VARCHAR
+        self._set_type(annotated, exp.DataType.Type.VARCHAR)
 
     return annotated
 

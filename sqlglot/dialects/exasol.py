@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
     timestrtotime_sql,
-    unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
 )
@@ -105,6 +104,30 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
                 expression.set(key, arg.transform(prefix_local))
 
     return expression
+
+
+def _trunc_sql(self: Exasol.Generator, kind: str, expression: exp.DateTrunc) -> str:
+    unit = expression.text("unit")
+    expr_sql = (
+        self.sql(expression.this, "this")
+        if isinstance(expression.this, exp.Cast)
+        else self.sql(expression.this)
+    )
+
+    if expr_sql and expr_sql[0] == "'" and expr_sql[-1] == "'":
+        expr_sql = (
+            f"{kind} {expr_sql.replace('T', ' ')}" if kind == "TIMESTAMP" else f"DATE {expr_sql}"
+        )
+
+    return f"DATE_TRUNC('{unit}', {expr_sql})"
+
+
+def _date_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "DATE", expression)
+
+
+def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "TIMESTAMP", expression)
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -308,7 +331,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
             exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DateTrunc: _date_trunc_sql,
+            exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="LISTAGG", within_group=True
@@ -337,7 +361,7 @@ class Exasol(Dialect):
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(),
+            exp.TimestampTrunc: _timestamp_trunc_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(

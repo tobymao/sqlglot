@@ -245,10 +245,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             i = iter(dot_parts)
             parent = expression.parent
             while isinstance(parent, exp.Dot):
-                parent.set("expression", next(i))
+                parent.expression.set("this", exp.to_identifier(next(i), quoted=True))
                 parent = parent.parent
 
-            expression.meta.pop("dot_parts")
+            expression.meta.pop("dot_parts", None)
 
     def annotate(self, expression: E, annotate_scope: bool = True) -> E:
         # This flag is used to avoid costly scope traversals when we only care about annotating

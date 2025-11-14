@@ -1807,11 +1807,11 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
 
         # Clickhouse
         sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="clickhouse")
-        assert sql == 'SELECT "t"."col".A.a AS "a", "t"."col".a.A AS "A" FROM "t" AS "t"'
+        assert sql == 'SELECT "t"."col"."A"."a" AS "a", "t"."col"."a"."A" AS "A" FROM "t" AS "t"'
 
         # DuckDB
         sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="duckdb")
-        assert sql == 'SELECT "t"."col".A.a AS "a", "t"."col".a.A AS "a" FROM "t" AS "t"'
+        assert sql == 'SELECT "t"."col"."A"."a" AS "a", "t"."col"."a"."A" AS "a" FROM "t" AS "t"'
 
         # Snowflake
         sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="snowflake")

@@ -281,6 +281,15 @@ def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql
     return result_sql
 
 
+def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
+    # Transform ANY_VALUE(expr HAVING MAX/MIN having_expr) to ARG_MAX_NULL/ARG_MIN_NULL
+    having = expression.this
+    if isinstance(having, exp.HavingMax):
+        func_name = "ARG_MAX_NULL" if having.args.get("max") else "ARG_MIN_NULL"
+        return self.func(func_name, having.this, having.expression)
+    return self.function_fallback_sql(expression)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -699,6 +708,7 @@ class DuckDB(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.AnyValue: _anyvalue_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: transforms.preprocess(
                 [transforms.inherit_struct_field_names],

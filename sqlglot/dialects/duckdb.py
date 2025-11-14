@@ -1230,6 +1230,42 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.this),
                 _cast_to_varchar(expression.expression),
             )
+        
+        def bytestring_sql(self, expression: exp.ByteString) -> str:
+            this = self.sql(expression, "this")
+
+            # Handle empty string
+            if not this:
+                return self.func("ENCODE", exp.Literal.string(""))
+
+            # one or more consecutive escape sequences
+            split_escape_pattern = re.compile(r'((?:\\x[0-9a-fA-F]{2})+)')
+
+            escape_pattern = re.compile(r'\\x[0-9a-fA-F]{2}')
+
+            segments = split_escape_pattern.split(this)
+
+            transformed_segments = []
+
+            for segment in segments:
+                if not segment:  # Skip empty segments
+                    continue
+                elif escape_pattern.match(segment):
+                    # Handle consecutive escape sequences as a single hex literal
+                    transformed_segments.append(f"'{segment}'::BLOB")
+                else:
+                    # Handle text segment with ENCODE
+                    transformed_segments.append(self.func("ENCODE", exp.Literal.string(segment)))
+
+            # Handle case where no parts were created (empty string)
+            if not transformed_segments:
+                return self.func("ENCODE", exp.Literal.string(""))
+
+            # Concatenate all parts with ||
+            if len(transformed_segments) == 1:
+                return transformed_segments[0]
+            else:
+                return " || ".join(transformed_segments)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")

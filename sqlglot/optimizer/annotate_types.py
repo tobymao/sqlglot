@@ -237,11 +237,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._null_expressions.pop(expression_id, None)
 
         if (
-            self.dialect.JSON_DOT_ACCESS_IS_CASE_SENSITIVE
-            and isinstance(expression, exp.Column)
+            isinstance(expression, exp.Column)
             and expression.is_type(exp.DataType.Type.JSON)
             and (dot_parts := expression.meta.get("dot_parts"))
         ):
+            # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
             i = iter(dot_parts)
             parent = expression.parent
             while isinstance(parent, exp.Dot):

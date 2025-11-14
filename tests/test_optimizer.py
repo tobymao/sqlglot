@@ -1774,25 +1774,48 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             }
         }
 
-        def _parse_and_optimize(query: str) -> exp.Expression:
-            query = parse_one(query, dialect="bigquery")
-            optimized = optimizer.optimize(query, schema=schema, dialect="bigquery")
-            return optimized.sql(dialect="bigquery")
+        def _parse_and_optimize(query: str, dialect: str) -> exp.Expression:
+            query = parse_one(query, dialect=dialect)
+            optimized = optimizer.optimize(query, schema=schema, dialect=dialect)
+            return optimized.sql(dialect=dialect)
 
-        # Case 1: The JSON fields are not normalized
+        # BigQuery
         for dot_access in ("col.fOo.BaR.BaZ", "t.col.fOo.BaR.BaZ"):
-            with self.subTest(f"Test case sensitive JSON dot access: {dot_access}"):
+            with self.subTest(f"Test case sensitive JSON dot access for BigQuery: {dot_access}"):
                 dot_access_normalized = "`t`.`col`.`fOo`.`BaR`.`BaZ`"
 
-                sql = _parse_and_optimize(f"SELECT JSON_VALUE({dot_access}, '$') AS col FROM t")
+                sql = _parse_and_optimize(
+                    f"SELECT JSON_VALUE({dot_access}, '$') AS col FROM t", dialect="bigquery"
+                )
                 assert (
                     sql
                     == f"SELECT JSON_VALUE({dot_access_normalized}, '$') AS `col` FROM `t` AS `t`"
                 )
 
-                sql = _parse_and_optimize(f"SELECT {dot_access} AS col FROM t")
+                sql = _parse_and_optimize(f"SELECT {dot_access} AS col FROM t", dialect="bigquery")
                 assert sql == f"SELECT {dot_access_normalized} AS `col` FROM `t` AS `t`"
 
-        # Case 2: Struct fields are still normalized
-        sql = _parse_and_optimize("SELECT struct_col.FlD1.flD2.FLD3 AS col FROM t")
+        # BigQuery: STRUCT field accesses are still normalized
+        sql = _parse_and_optimize(
+            "SELECT struct_col.FlD1.flD2.FLD3 AS col FROM t", dialect="bigquery"
+        )
         assert sql == "SELECT `t`.`struct_col`.`fld1`.`fld2`.`fld3` AS `col` FROM `t` AS `t`"
+
+        # Databricks
+        sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="databricks")
+        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `A` FROM `t` AS `t`"
+
+        # Clickhouse
+        sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="clickhouse")
+        assert sql == 'SELECT "t"."col".A.a AS "a", "t"."col".a.A AS "A" FROM "t" AS "t"'
+
+        # DuckDB
+        sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="duckdb")
+        assert sql == 'SELECT "t"."col".A.a AS "a", "t"."col".a.A AS "a" FROM "t" AS "t"'
+
+        # Snowflake
+        sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="snowflake")
+        assert (
+            sql
+            == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
+        )

@@ -74,7 +74,7 @@ def qualify(
     expression = normalize_identifiers(
         expression,
         dialect=dialect,
-        store_original_column_identifiers=dialect.JSON_DOT_ACCESS_IS_CASE_SENSITIVE,
+        store_original_column_identifiers=True,
     )
     expression = qualify_tables(
         expression,

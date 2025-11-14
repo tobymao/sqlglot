@@ -542,7 +542,7 @@ class Simplifier:
     DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
     DATETRUNCS = (exp.DateTrunc, exp.TimestampTrunc)
 
-    SAFE_CONNECTOR_ELIMINATION_RESULT = (exp.Connector, exp.Boolean, exp.Null)
+    SAFE_CONNECTOR_ELIMINATION_RESULT = (exp.Connector, exp.Boolean)
 
     # CROSS joins result in an empty table if the right table is empty.
     # So we can only simplify certain types of joins to CROSS.
@@ -677,7 +677,7 @@ class Simplifier:
         if isinstance(expression, exp.Not):
             this = expression.this
             if is_null(this):
-                return exp.null()
+                return exp.and_(exp.null(), exp.true(), copy=False)
             if this.__class__ in self.COMPLEMENT_COMPARISONS:
                 right = this.expression
                 complement_subquery_predicate = self.COMPLEMENT_SUBQUERY_PREDICATES.get(
@@ -708,7 +708,7 @@ class Simplifier:
                         copy=False,
                     )
                 if is_null(condition):
-                    return exp.null()
+                    return exp.and_(exp.null(), exp.true(), copy=False)
             if always_true(this):
                 return exp.false()
             if is_false(this):
@@ -1080,7 +1080,7 @@ class Simplifier:
                     return exp.false() if not_ else exp.true()
         elif isinstance(expression, self.NULL_OK):
             return None
-        elif is_null(a) or is_null(b):
+        elif (is_null(a) or is_null(b)) and isinstance(expression.parent, exp.If):
             return exp.null()
 
         if a.is_number and b.is_number:

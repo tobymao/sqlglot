@@ -4325,6 +4325,11 @@ FROM subquery2""",
             escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in delimiters)
             return exp.Literal.string(escaped_literal).sql("duckdb")
 
+        # None delimiters arg doesn't error
+        with self.subTest("Testing INITCAP with None delimiters arg"):
+            self.assertEqual(exp.Initcap(this=exp.Literal.string("col")).sql(), "INITCAP('col')")
+            self.assertEqual(exp.Initcap(this=exp.column("col")).sql(), "INITCAP(col)")
+
         # default delimiters not present in roundtrip
         for dialect in delimiter_chars:
             with self.subTest(
@@ -4439,6 +4444,8 @@ FROM subquery2""",
 
     def test_initcap_custom_delimiter_warning(self):
         expression = parse_one("INITCAP(col, '_')", read="bigquery")
-        with self.assertLogs(generator_logger, level="WARNING") as cm:
-            expression.sql("postgres")
-        self.assertIn("INITCAP does not support custom delimiters", cm.output[0])
+        for dialect in ("postgres", "presto"):
+            with self.subTest(f"INITCAP unsupported custom delimiters warning for {dialect}"):
+                with self.assertLogs(generator_logger, level="WARNING") as cm:
+                    expression.sql(dialect)
+                self.assertIn("INITCAP does not support custom delimiters", cm.output[0])

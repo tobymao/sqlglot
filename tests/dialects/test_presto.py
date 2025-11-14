@@ -1367,3 +1367,11 @@ MATCH_RECOGNIZE (
                 "oracle": "BITWISE_XOR_AGG(x)",
             },
         )
+
+    def test_initcap(self):
+        self.validate_all(
+            "INITCAP(col)",
+            write={
+                "presto": "REGEXP_REPLACE(col, '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+            },
+        )

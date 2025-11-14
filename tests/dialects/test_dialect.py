@@ -4326,7 +4326,7 @@ FROM subquery2""",
             return exp.Literal.string(escaped_literal).sql("duckdb")
 
         # default delimiters not present in roundtrip
-        for dialect in delimiter_chars.keys():
+        for dialect in delimiter_chars:
             with self.subTest(
                 f"Testing INITCAP roundtrips for {dialect or 'default'} dialect without default delimiters included"
             ):

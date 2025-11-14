@@ -304,7 +304,7 @@ def _escape_regex_metachars(
         "]": "\\]",
     }
 
-    if isinstance(delimiters, exp.Literal) and delimiters.is_string:
+    if delimiters.is_string:
         literal_value = delimiters.this
         escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in literal_value)
         return self.sql(exp.Literal.string(escaped_literal))

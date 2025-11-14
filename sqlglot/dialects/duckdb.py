@@ -1412,6 +1412,10 @@ class DuckDB(Dialect):
             timestamp = expression.this
 
             if is_date_unit(unit) and zone:
+                # BigQuery's TIMESTAMP_TRUNC with timezone truncates in the target timezone and returns as UTC.
+                # Double AT TIME ZONE needed for BigQuery compatibility:
+                # 1. First AT TIME ZONE: ensures truncation happens in the target timezone
+                # 2. Second AT TIME ZONE: converts the DATE result back to TIMESTAMPTZ (preserving time component)
                 timestamp = exp.AtTimeZone(this=timestamp, zone=zone)
                 result_sql = self.func("DATE_TRUNC", unit, timestamp)
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))

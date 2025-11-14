@@ -115,21 +115,27 @@ class TestBigQuery(Validator):
             "SELECT ANY_VALUE(fruit HAVING MAX sold) FROM Store",
             write={
                 "bigquery": "SELECT ANY_VALUE(fruit HAVING MAX sold) FROM Store",
-                "duckdb": "SELECT ARG_MAX(fruit, sold) FROM Store",
+                "duckdb": "SELECT ARG_MAX_NULL(fruit, sold) FROM Store",
             },
         )
         self.validate_all(
             "SELECT ANY_VALUE(fruit HAVING MIN sold) FROM Store",
             write={
                 "bigquery": "SELECT ANY_VALUE(fruit HAVING MIN sold) FROM Store",
-                "duckdb": "SELECT ARG_MIN(fruit, sold) FROM Store",
+                "duckdb": "SELECT ARG_MIN_NULL(fruit, sold) FROM Store",
             },
         )
         self.validate_all(
             "SELECT category, ANY_VALUE(product HAVING MAX price), ANY_VALUE(product HAVING MIN cost), ANY_VALUE(supplier) FROM products GROUP BY category",
             write={
                 "bigquery": "SELECT category, ANY_VALUE(product HAVING MAX price), ANY_VALUE(product HAVING MIN cost), ANY_VALUE(supplier) FROM products GROUP BY category",
-                "duckdb": "SELECT category, ARG_MAX(product, price), ARG_MIN(product, cost), ANY_VALUE(supplier) FROM products GROUP BY category",
+                "duckdb": "SELECT category, ARG_MAX_NULL(product, price), ARG_MIN_NULL(product, cost), ANY_VALUE(supplier) FROM products GROUP BY category",
+            },
+        )
+        self.validate_all(
+            'WITH data AS (SELECT "A" AS fruit, 20 AS sold UNION ALL SELECT NULL AS fruit, 25 AS sold) SELECT ANY_VALUE(fruit HAVING MAX sold) FROM data',
+            write={
+                "duckdb": "WITH data AS (SELECT 'A' AS fruit, 20 AS sold UNION ALL SELECT NULL AS fruit, 25 AS sold) SELECT ARG_MAX_NULL(fruit, sold) FROM data",
             },
         )
         self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")

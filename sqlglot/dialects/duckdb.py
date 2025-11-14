@@ -282,10 +282,10 @@ def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql
 
 
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
-    # Transform ANY_VALUE(expr HAVING MAX/MIN having_expr) to ARG_MAX/ARG_MIN
+    # Transform ANY_VALUE(expr HAVING MAX/MIN having_expr) to ARG_MAX_NULL/ARG_MIN_NULL
     having = expression.this
     if isinstance(having, exp.HavingMax):
-        func_name = "ARG_MAX" if having.args.get("max") else "ARG_MIN"
+        func_name = "ARG_MAX_NULL" if having.args.get("max") else "ARG_MIN_NULL"
         return self.func(func_name, having.this, having.expression)
     return self.function_fallback_sql(expression)
 

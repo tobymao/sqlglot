@@ -53,8 +53,7 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         expression: The expression to transform.
         dialect: The dialect to use in order to decide how to normalize identifiers.
         store_original_column_identifiers: Whether to store the original column identifiers in
-                                           the meta data of the expression in case we want
-                                           to undo the normalization at a later point.
+            the meta data of the expression in case we want to undo the normalization at a later point.
 
     Returns:
         The transformed expression.

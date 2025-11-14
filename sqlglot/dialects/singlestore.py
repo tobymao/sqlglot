@@ -542,7 +542,7 @@ class SingleStore(MySQL):
                 "offset",
                 "starts_with",
                 "limit",
-                "from",
+                "from_",
                 "scope",
                 "scope_kind",
                 "mutex",
@@ -941,7 +941,7 @@ class SingleStore(MySQL):
             "euclidean_distance",
             "event",
             "events",
-            "except",
+            "except_",
             "exclude",
             "excluding",
             "exclusive",
@@ -981,7 +981,7 @@ class SingleStore(MySQL):
             "floor",
             "flush",
             "following",
-            "for",
+            "for_",
             "force",
             "force_compiled_mode",
             "force_interpreter_mode",
@@ -991,7 +991,7 @@ class SingleStore(MySQL):
             "forward",
             "found_rows",
             "freeze",
-            "from",
+            "from_",
             "from_base64",
             "from_days",
             "from_unixtime",
@@ -1030,7 +1030,7 @@ class SingleStore(MySQL):
             "geometry_within_distance",
             "geometry_x",
             "geometry_y",
-            "global",
+            "global_",
             "_global_version_timestamp",
             "grant",
             "granted",
@@ -1643,7 +1643,7 @@ class SingleStore(MySQL):
             "unpivot",
             "unsigned",
             "until",
-            "update",
+            "update_",
             "upgrade",
             "upper",
             "usage",
@@ -1660,7 +1660,7 @@ class SingleStore(MySQL):
             "validate",
             "validator",
             "value",
-            "values",
+            "values_",
             "varbinary",
             "varchar",
             "varcharacter",
@@ -1688,7 +1688,7 @@ class SingleStore(MySQL):
             "while",
             "whitespace",
             "window",
-            "with",
+            "with_",
             "without",
             "within",
             "_wm_heartbeat",
@@ -1751,7 +1751,7 @@ class SingleStore(MySQL):
                 self.func("TO_JSON", expression.this),
             )
 
-        @unsupported_args("kind", "nested", "values")
+        @unsupported_args("kind", "nested", "values_")
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`

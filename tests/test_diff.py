@@ -41,8 +41,8 @@ class TestDiff(unittest.TestCase):
             ),
             [
                 Update(
-                    source=exp.to_table("table_one", quoted=False),
-                    target=exp.to_table("table_two", quoted=False),
+                    source=exp.to_table("table_one"),
+                    target=exp.to_table("table_two"),
                 ),  # the Table node
             ],
         )

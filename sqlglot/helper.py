@@ -417,7 +417,7 @@ def dict_depth(d: t.Dict) -> int:
     try:
         return 1 + dict_depth(next(iter(d.values())))
     except AttributeError:
-        # d doesn't have attribute "values"
+        # d doesn't have attribute "values_"
         return 0
     except StopIteration:
         # d.values() returns an empty sequence

@@ -171,7 +171,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
 def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
-        return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
+        return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values_', flat=True)}]"
 
     # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
     if expression.is_type(
@@ -615,7 +615,7 @@ class DuckDB(Dialect):
                 return self.expression(exp.ToMap, this=self._parse_bracket())
 
             args = self._parse_wrapped_csv(self._parse_assignment)
-            return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
+            return self.expression(exp.Map, keys=seq_get(args, 0), values_=seq_get(args, 1))
 
         def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
             return self._parse_field_def()
@@ -664,7 +664,7 @@ class DuckDB(Dialect):
                 exp.Install,
                 **{  # type: ignore
                     "this": self._parse_id_var(),
-                    "from": self._parse_var_or_string() if self._match(TokenType.FROM) else None,
+                    "from_": self._parse_var_or_string() if self._match(TokenType.FROM) else None,
                     "force": force,
                 },
             )
@@ -899,16 +899,16 @@ class DuckDB(Dialect):
             "to",
             "else",
             "localtime",
-            "from",
+            "from_",
             "end_p",
             "select",
             "current_date",
             "foreign",
-            "with",
+            "with_",
             "grant",
             "session_user",
             "or",
-            "except",
+            "except_",
             "references",
             "fetch",
             "limit",
@@ -944,7 +944,7 @@ class DuckDB(Dialect):
             "case",
             "trailing",
             "variadic",
-            "for",
+            "for_",
             "on",
             "distinct",
             "false_p",
@@ -1008,7 +1008,7 @@ class DuckDB(Dialect):
         def install_sql(self, expression: exp.Install) -> str:
             force = "FORCE " if expression.args.get("force") else ""
             this = self.sql(expression, "this")
-            from_clause = expression.args.get("from")
+            from_clause = expression.args.get("from_")
             from_clause = f" FROM {from_clause}" if from_clause else ""
             return f"{force}INSTALL {this}{from_clause}"
 

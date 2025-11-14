@@ -18,7 +18,6 @@ import numbers
 import re
 import textwrap
 import typing as t
-from abc import ABCMeta
 from collections import deque
 from collections.abc import MutableMapping
 from copy import deepcopy
@@ -49,17 +48,87 @@ if t.TYPE_CHECKING:
     S = t.TypeVar("S", bound="SetOperation")
 
 
-class _Args(ABCMeta):
-    def __new__(cls, clsname, bases, attrs):
-        attrs["__slots__"] = tuple(attrs.get("__annotations__", {}))
-        return super().__new__(cls, clsname, bases, attrs)
+def create_args(clsname, arg_types: t.Dict[str, bool]) -> t.Type:
+    indent = " " * 8
+    slots = ", ".join(f"'{a}'" for a in arg_types)
+    slots = f"{slots}," if slots else ""
+
+    mandatory = []
+    optional = []
+    for k, v in arg_types.items():
+        if v:
+            mandatory.append(k)
+        else:
+            optional.append(k)
+    kwargs = ", ".join(f"{a}=None" for a in mandatory)
+    kwargs = f"{kwargs}, " if mandatory and optional else kwargs
+    kwargs = f"{kwargs}**kwargs" if optional else kwargs
+    kwargs = f"*, {kwargs}" if mandatory else kwargs
+    init = "\n".join(f"self.{a} = {a}" for a in mandatory)
+    iterator = "\n".join(f"if self.{a} is not None: yield '{a}'" for a in mandatory)
+
+    if optional:
+        init = f"{init}\n" if init else init
+        init = f"{init}for k, v in kwargs.items(): setattr(self, k, v)"
+
+        iterator = f"{iterator}\n" if iterator else iterator
+        optional_args = ', '.join(f"'{a}'" for a in optional)
+        iterator = f"{iterator}for a in ({optional_args},):"
+        iterator = f"{iterator}\n    if getattr(self, a, None) is not None: yield a"
+
+    init = textwrap.indent(init if init else "pass", indent)
+    iterator = textwrap.indent(iterator if iterator else "yield from ()", indent)
+
+    definition = f"""
+class {clsname}Args(MutableMapping):
+    __slots__ = ({slots})
+
+    def __init__(self, {kwargs}):
+{init}
+
+    def __getitem__(self, key):
+        v = getattr(self, key, None)
+        if v is None:
+            raise KeyError(key)
+        return v
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __delitem__(self, key):
+        try:
+            self[key] = None
+        except AttributeError:
+            raise KeyError(key)
+
+    def __iter__(self):
+{iterator}
+
+    def __reversed__(self):
+        return reversed(tuple(self))
+
+    def __len__(self):
+        return sum(1 for _ in self)
+    """.strip()
+
+    code = compile(
+        definition,
+        "expressions.py#create_args",
+        "exec",
+        optimize=2,
+    )
+    namespace = {"MutableMapping": MutableMapping}
+    exec(code, namespace)
+
+    return namespace[f"{clsname}Args"]
 
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
         if bases:
             # Ensure args are inherited from (first) superclass, if missing
-            attrs.setdefault("Args", bases[0].Args)
+            arg_types = attrs.get("arg_types", bases[0].arg_types)
+            attrs["Args"] = create_args(clsname, arg_types)
 
         klass = super().__new__(cls, clsname, bases, attrs)
 
@@ -69,12 +138,6 @@ class _Expression(type):
 
         # This is so that docstrings are not inherited in pdoc
         klass.__doc__ = klass.__doc__ or ""
-
-        # Automatically create child -> is_optional mapping for every Expression
-        klass.arg_types = {
-            key: t.get_origin(hint) != t.Union or type(None) not in t.get_args(hint)
-            for key, hint in t.get_type_hints(klass.Args).items()
-        }
 
         return klass
 
@@ -119,36 +182,9 @@ class Expression(metaclass=_Expression):
     """
 
     key = "expression"
-    arg_types: t.Dict[str, bool]
+    arg_types = {"this": True}
+    Args: t.Callable
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
-
-    class Args(MutableMapping, metaclass=_Args):
-        this: t.Any
-
-        def __init__(self, **kwargs: t.Dict[str, t.Any]):
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
-        def __getitem__(self, key: str) -> t.Any:
-            try:
-                return getattr(self, key)
-            except AttributeError:
-                raise KeyError(key)
-
-        def __setitem__(self, key: str, value: t.Any) -> None:
-            setattr(self, key, value)
-
-        def __delitem__(self, key):
-            try:
-                delattr(self, key)
-            except AttributeError:
-                raise KeyError(key)
-
-        def __iter__(self):
-            return iter(self.__slots__)  # type: ignore
-
-        def __len__(self):
-            return len(self.__slots__)  # type: ignore
 
     def __init__(self, **args: t.Any):
         self.args = self.Args(**args)
@@ -160,7 +196,7 @@ class Expression(metaclass=_Expression):
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
         self._hash: t.Optional[int] = None
 
-        for arg_key, value in self.args.items():
+        for arg_key, value in args.items():
             self._set_parent(arg_key, value)
 
     def __eq__(self, other) -> bool:
@@ -495,8 +531,9 @@ class Expression(metaclass=_Expression):
 
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
-        for slot_name in reversed(self.args.__slots__) if reverse else self.args.__slots__:  # type: ignore
-            value = getattr(self, slot_name, None)
+        for slot_name in reversed(self.args) if reverse else self.args:  # type: ignore
+            value = self.args[slot_name]
+
             if value is None:
                 continue
 
@@ -818,9 +855,6 @@ class Expression(metaclass=_Expression):
         """
         errors: t.List[str] = []
 
-        for k in self.args:
-            if k not in self.arg_types:
-                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
         for k, mandatory in self.arg_types.items():
             v = self.args.get(k)
             if mandatory and (v is None or (isinstance(v, list) and not v)):
@@ -1297,7 +1331,7 @@ class Query(Expression):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this query."""
-        with_ = self.args.get("with")
+        with_ = self.args.get("with_")
         return with_.expressions if with_ else []
 
     @property
@@ -1525,7 +1559,7 @@ class DDL(Expression):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this statement."""
-        with_ = self.args.get("with")
+        with_ = self.args.get("with_")
         return with_.expressions if with_ else []
 
     @property
@@ -1586,7 +1620,7 @@ class DML(Expression):
 
 class Create(DDL):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": True,
         "kind": True,
         "expression": False,
@@ -1665,7 +1699,7 @@ class Detach(Expression):
 
 # https://duckdb.org/docs/sql/statements/load_and_install.html
 class Install(Expression):
-    arg_types = {"this": True, "from": False, "force": False}
+    arg_types = {"this": True, "from_": False, "force": False}
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html
@@ -1703,12 +1737,12 @@ class SetItem(Expression):
         "expressions": False,
         "kind": False,
         "collate": False,  # MySQL SET NAMES statement
-        "global": False,
+        "global_": False,
     }
 
 
 class QueryBand(Expression):
-    arg_types = {"this": True, "scope": False, "update": False}
+    arg_types = {"this": True, "scope": False, "update_": False}
 
 
 class Show(Expression):
@@ -1720,7 +1754,7 @@ class Show(Expression):
         "offset": False,
         "starts_with": False,
         "limit": False,
-        "from": False,
+        "from_": False,
         "like": False,
         "where": False,
         "db": False,
@@ -1730,7 +1764,7 @@ class Show(Expression):
         "mutex": False,
         "query": False,
         "channel": False,
-        "global": False,
+        "global_": False,
         "log": False,
         "position": False,
         "types": False,
@@ -2170,7 +2204,7 @@ class Constraint(Expression):
 
 class Delete(DML):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": False,
         "using": False,
         "where": False,
@@ -2339,7 +2373,7 @@ class ForeignKey(Expression):
         "expressions": False,
         "reference": False,
         "delete": False,
-        "update": False,
+        "update_": False,
         "options": False,
     }
 
@@ -2387,7 +2421,7 @@ class JoinHint(Expression):
 
 
 class Identifier(Expression):
-    arg_types = {"this": True, "quoted": False, "global": False, "temporary": False}
+    arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
 
     @property
     def quoted(self) -> bool:
@@ -2430,7 +2464,7 @@ class IndexParameters(Expression):
 class Insert(DDL, DML):
     arg_types = {
         "hint": False,
-        "with": False,
+        "with_": False,
         "is_function": False,
         "this": False,
         "expression": False,
@@ -2657,7 +2691,7 @@ class Join(Expression):
         "kind": False,
         "using": False,
         "method": False,
-        "global": False,
+        "global_": False,
         "hint": False,
         "match_condition": False,  # Snowflake
         "expressions": False,
@@ -2836,7 +2870,7 @@ class Order(Expression):
 # https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
 class WithFill(Expression):
     arg_types = {
-        "from": False,
+        "from_": False,
         "to": False,
         "step": False,
         "interpolate": False,
@@ -2940,7 +2974,7 @@ class DataBlocksizeProperty(Property):
 
 
 class DataDeletionProperty(Property):
-    arg_types = {"on": True, "filter_col": False, "retention_period": False}
+    arg_types = {"on": True, "filter_column": False, "retention_period": False}
 
 
 class DefinerProperty(Property):
@@ -3260,7 +3294,7 @@ class SemanticView(Expression):
 
 
 class SerdeProperties(Property):
-    arg_types = {"expressions": True, "with": False}
+    arg_types = {"expressions": True, "with_": False}
 
 
 class SetProperty(Property):
@@ -3356,7 +3390,7 @@ class WithSystemVersioningProperty(Property):
         "this": False,
         "data_consistency": False,
         "retention_period": False,
-        "with": True,
+        "with_": True,
     }
 
 
@@ -3511,6 +3545,7 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
+    "for_": False,
 }
 
 
@@ -3624,7 +3659,7 @@ class Table(Expression):
 
 class SetOperation(Query):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": True,
         "expression": True,
         "distinct": False,
@@ -3693,10 +3728,10 @@ class Intersect(SetOperation):
 
 class Update(DML):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": False,
         "expressions": True,
-        "from": False,
+        "from_": False,
         "where": False,
         "returning": False,
         "order": False,
@@ -3844,7 +3879,7 @@ class Update(DML):
         return _apply_builder(
             expression=expression,
             instance=self,
-            arg="from",
+            arg="from_",
             into=From,
             prefix="FROM",
             dialect=dialect,
@@ -3935,18 +3970,18 @@ class Schema(Expression):
 # https://dev.mysql.com/doc/refman/8.0/en/select.html
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 class Lock(Expression):
-    arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
+    arg_types = {"update_": True, "expressions": False, "wait": False, "key": False}
 
 
 class Select(Query):
     arg_types = {
-        "with": False,
+        "with_": False,
         "kind": False,
         "expressions": False,
         "hint": False,
         "distinct": False,
         "into": False,
-        "from": False,
+        "from_": False,
         "operation_modifiers": False,
         **QUERY_MODIFIERS,
     }
@@ -3975,7 +4010,7 @@ class Select(Query):
         return _apply_builder(
             expression=expression,
             instance=self,
-            arg="from",
+            arg="from_",
             into=From,
             prefix="FROM",
             dialect=dialect,
@@ -4422,7 +4457,7 @@ class Select(Query):
             The modified expression.
         """
         inst = maybe_copy(self, copy)
-        inst.set("locks", [Lock(update=update)])
+        inst.set("locks", [Lock(update_=update)])
 
         return inst
 
@@ -4477,7 +4512,7 @@ class Subquery(DerivedTable, Query):
     arg_types = {
         "this": True,
         "alias": False,
-        "with": False,
+        "with_": False,
         **QUERY_MODIFIERS,
     }
 
@@ -4614,7 +4649,7 @@ class Where(Expression):
 
 
 class Star(Expression):
-    arg_types = {"except": False, "replace": False, "rename": False}
+    arg_types = {"except_": False, "replace": False, "rename": False}
 
     @property
     def name(self) -> str:
@@ -4674,7 +4709,7 @@ class DataType(Expression):
         "this": True,
         "expressions": False,
         "nested": False,
-        "values": False,
+        "values_": False,
         "prefix": False,
         "kind": False,
         "nullable": False,
@@ -5787,7 +5822,7 @@ class Transform(Func):
 
 
 class Translate(Func):
-    arg_types = {"this": True, "from": True, "to": True}
+    arg_types = {"this": True, "from_": True, "to": True}
 
 
 class Grouping(AggFunc):
@@ -5913,7 +5948,7 @@ class Columns(Func):
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
-    arg_types = {"this": True, "expression": True, "style": False}
+    arg_types = {"this": True, "expression": True, "style": False, "safe": False}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CONVERT.html
@@ -6821,7 +6856,7 @@ class IsNullValue(Func):
 
 # https://www.postgresql.org/docs/current/functions-json.html
 class JSON(Expression):
-    arg_types = {"this": False, "with": False, "unique": False}
+    arg_types = {"this": False, "with_": False, "unique": False}
 
 
 class JSONPath(Expression):
@@ -7235,7 +7270,7 @@ class Lower(Func):
 
 
 class Map(Func):
-    arg_types = {"keys": False, "values": False}
+    arg_types = {"keys": False, "values_": False}
 
     @property
     def keys(self) -> t.List[Expression]:
@@ -7244,7 +7279,7 @@ class Map(Func):
 
     @property
     def values(self) -> t.List[Expression]:
-        values = self.args.get("values")
+        values = self.args.get("values_")
         return values.expressions if values else []
 
 
@@ -7271,7 +7306,7 @@ class StarMap(Func):
 
 
 class VarMap(Func):
-    arg_types = {"keys": True, "values": True}
+    arg_types = {"keys": True, "values_": True}
     is_var_len_args = True
 
     @property
@@ -7280,7 +7315,7 @@ class VarMap(Func):
 
     @property
     def values(self) -> t.List[Expression]:
-        return self.args["values"].expressions
+        return self.args["values_"].expressions
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/fulltext-search.html
@@ -7346,7 +7381,7 @@ class Normalize(Func):
 
 
 class Overlay(Func):
-    arg_types = {"this": True, "expression": True, "from": True, "for": False}
+    arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
@@ -8046,7 +8081,7 @@ class Merge(DML):
         "on": False,
         "using_cond": False,
         "whens": True,
-        "with": False,
+        "with_": False,
         "returning": False,
     }
 
@@ -8367,7 +8402,7 @@ def _apply_cte_builder(
     return _apply_child_list_builder(
         cte,
         instance=instance,
-        arg="with",
+        arg="with_",
         append=append,
         copy=copy,
         into=With,
@@ -8600,7 +8635,7 @@ def update(
         )
     if from_:
         update_expr.set(
-            "from",
+            "from_",
             maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts),
         )
     if isinstance(where, Condition):
@@ -8616,7 +8651,7 @@ def update(
             for alias, qry in with_.items()
         ]
         update_expr.set(
-            "with",
+            "with_",
             With(expressions=cte_list),
         )
     return update_expr
@@ -9490,7 +9525,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
     if isinstance(value, dict):
         return Map(
             keys=Array(expressions=[convert(k, copy=copy) for k in value]),
-            values=Array(expressions=[convert(v, copy=copy) for v in value.values()]),
+            values_=Array(expressions=[convert(v, copy=copy) for v in value.values()]),
         )
     if hasattr(value, "__dict__"):
         return Struct(

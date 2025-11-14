@@ -693,7 +693,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._annotate_args(expression)
 
         keys = expression.args.get("keys")
-        values = expression.args.get("values")
+        values = expression.args.get("values_")
 
         map_type = exp.DataType(this=exp.DataType.Type.MAP)
         if isinstance(keys, exp.Array) and isinstance(values, exp.Array):

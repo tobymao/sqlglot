@@ -26,7 +26,7 @@ from sqlglot.typing.spark2 import EXPRESSION_METADATA
 
 def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
     keys = expression.args.get("keys")
-    values = expression.args.get("values")
+    values = expression.args.get("values_")
 
     if not keys or not values:
         return self.func("MAP")

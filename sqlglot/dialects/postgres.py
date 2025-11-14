@@ -799,7 +799,7 @@ class Postgres(Dialect):
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.is_type(exp.DataType.Type.ARRAY):
                 if expression.expressions:
-                    values = self.expressions(expression, key="values", flat=True)
+                    values = self.expressions(expression, key="values_", flat=True)
                     return f"{self.expressions(expression, flat=True)}[{values}]"
                 return "ARRAY"
 

@@ -671,7 +671,7 @@ class MySQL(Dialect):
                 for_role=for_role,
                 into_outfile=into_outfile,
                 json=json,
-                **{"global": global_},  # type: ignore
+                **{"global_": global_},  # type: ignore
             )
 
         def _parse_oldstyle_limit(
@@ -977,7 +977,7 @@ class MySQL(Dialect):
             "empty",
             "enclosed",
             "escaped",
-            "except",
+            "except_",
             "exists",
             "exit",
             "explain",
@@ -987,10 +987,10 @@ class MySQL(Dialect):
             "float",
             "float4",
             "float8",
-            "for",
+            "for_",
             "force",
             "foreign",
-            "from",
+            "from_",
             "fulltext",
             "function",
             "generated",
@@ -1151,14 +1151,14 @@ class MySQL(Dialect):
             "unique",
             "unlock",
             "unsigned",
-            "update",
+            "update_",
             "usage",
             "use",
             "using",
             "utc_date",
             "utc_time",
             "utc_timestamp",
-            "values",
+            "values_",
             "varbinary",
             "varchar",
             "varcharacter",
@@ -1168,7 +1168,7 @@ class MySQL(Dialect):
             "where",
             "while",
             "window",
-            "with",
+            "with_",
             "write",
             "xor",
             "year_month",
@@ -1229,7 +1229,7 @@ class MySQL(Dialect):
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
-            global_ = " GLOBAL" if expression.args.get("global") else ""
+            global_ = " GLOBAL" if expression.args.get("global_") else ""
 
             target = self.sql(expression, "target")
             target = f" {target}" if target else ""

@@ -215,7 +215,7 @@ class Teradata(Dialect):
                 exp.Update,
                 **{  # type: ignore
                     "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
-                    "from": self._parse_from(joins=True),
+                    "from_": self._parse_from(joins=True),
                     "expressions": self._match(TokenType.SET)
                     and self._parse_csv(self._parse_equality),
                     "where": self._parse_where(),
@@ -258,7 +258,7 @@ class Teradata(Dialect):
                 exp.QueryBand,
                 this=query_band_string,
                 scope=scope,
-                update=update,
+                update_=update,
             )
 
         def _parse_index_params(self) -> exp.IndexParameters:
@@ -387,7 +387,7 @@ class Teradata(Dialect):
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
         def update_sql(self, expression: exp.Update) -> str:
             this = self.sql(expression, "this")
-            from_sql = self.sql(expression, "from")
+            from_sql = self.sql(expression, "from_")
             set_sql = self.expressions(expression, flat=True)
             where_sql = self.sql(expression, "where")
             sql = f"UPDATE {this}{from_sql} SET {set_sql}{where_sql}"

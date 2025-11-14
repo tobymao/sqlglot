@@ -55,7 +55,8 @@ def dump(expression: exp.Expression) -> t.List[t.Dict[str, t.Any]]:
             if node._meta is not None:
                 payload[META] = node._meta
             if node.args:
-                for k, vs in reversed(node.args.items()):
+                for k in reversed(node.args):
+                    vs = node.args[k]
                     if type(vs) is list:
                         for v in reversed(vs):
                             stack.append((v, i, k, True))

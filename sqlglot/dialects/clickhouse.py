@@ -174,7 +174,7 @@ def _map_sql(self: ClickHouse.Generator, expression: exp.Map | exp.VarMap) -> st
         return _lower_func(var_map_sql(self, expression))
 
     keys = expression.args.get("keys")
-    values = expression.args.get("values")
+    values = expression.args.get("values_")
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")
@@ -726,13 +726,13 @@ class ClickHouse(Dialect):
             bracket = super()._parse_bracket(this)
 
             if l_brace and isinstance(bracket, exp.Struct):
-                varmap = exp.VarMap(keys=exp.Array(), values=exp.Array())
+                varmap = exp.VarMap(keys=exp.Array(), values_=exp.Array())
                 for expression in bracket.expressions:
                     if not isinstance(expression, exp.PropertyEQ):
                         break
 
                     varmap.args["keys"].append("expressions", exp.Literal.string(expression.name))
-                    varmap.args["values"].append("expressions", expression.expression)
+                    varmap.args["values_"].append("expressions", expression.expression)
 
                 return varmap
 
@@ -821,7 +821,7 @@ class ClickHouse(Dialect):
             if join:
                 method = join.args.get("method")
                 join.set("method", None)
-                join.set("global", method)
+                join.set("global_", method)
 
                 # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join

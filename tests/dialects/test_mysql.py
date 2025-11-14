@@ -1144,12 +1144,12 @@ COMMENT='客户账户表'"""
         self.assertIsInstance(show, exp.Show)
         self.assertEqual(show.name, "COLUMNS")
         self.assertEqual(show.text("target"), "tbl_name")
-        self.assertFalse(show.args["full"])
+        self.assertFalse(show.args.get("full"))
 
         show = self.validate_identity("SHOW FULL COLUMNS FROM tbl_name FROM db_name LIKE '%foo%'")
         self.assertIsInstance(show, exp.Show)
         self.assertEqual(show.text("target"), "tbl_name")
-        self.assertTrue(show.args["full"])
+        self.assertTrue(show.args.get("full"))
         self.assertEqual(show.text("db"), "db_name")
         self.assertIsInstance(show.args["like"], exp.Literal)
         self.assertEqual(show.text("like"), "%foo%")
@@ -1240,7 +1240,7 @@ COMMENT='客户账户表'"""
         show = self.validate_identity("SHOW PROCESSLIST")
         self.assertIsInstance(show, exp.Show)
         self.assertEqual(show.name, "PROCESSLIST")
-        self.assertFalse(show.args["full"])
+        self.assertFalse(show.args.get("full"))
 
         show = self.validate_identity("SHOW FULL PROCESSLIST")
         self.assertEqual(show.name, "PROCESSLIST")

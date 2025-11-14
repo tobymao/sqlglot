@@ -417,7 +417,13 @@ class Presto(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
-            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
+            exp.ApproxQuantile: lambda self, e: self.func(
+                "APPROX_PERCENTILE",
+                e.this,
+                e.args.get("weight"),
+                e.args.get("quantile"),
+                e.args.get("accuracy"),
+            ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: transforms.preprocess(
@@ -557,13 +563,13 @@ class Presto(Dialect):
             "else",
             "end",
             "escape",
-            "except",
+            "except_",
             "execute",
             "exists",
             "extract",
             "false",
-            "for",
-            "from",
+            "for_",
+            "from_",
             "full",
             "group",
             "having",
@@ -591,10 +597,10 @@ class Presto(Dialect):
             "true",
             "union",
             "using",
-            "values",
+            "values_",
             "when",
             "where",
-            "with",
+            "with_",
         }
 
         def jsonformat_sql(self, expression: exp.JSONFormat) -> str:

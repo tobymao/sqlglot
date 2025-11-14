@@ -44,7 +44,7 @@ def unnest(select, parent_select, next_alias_name):
     if (
         not predicate
         or parent_select is not predicate.parent_select
-        or not parent_select.args.get("from")
+        or not parent_select.args.get("from_")
     ):
         return
 

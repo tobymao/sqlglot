@@ -1256,7 +1256,6 @@ class Simplifier:
                     case.pop()
                     if not expression.args["ifs"]:
                         return expression.args.get("default") or exp.null()
-
         elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
             if always_true(expression.this):
                 return expression.args["true"]

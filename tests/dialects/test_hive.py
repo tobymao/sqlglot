@@ -703,13 +703,13 @@ class TestHive(Validator):
             "INITCAP('new york')",
             write={
                 "duckdb": (
-                    "CASE WHEN 'new york' IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    "ARRAY_TO_STRING("
                     f"CASE WHEN REGEXP_MATCHES(LEFT('new york', 1), '[' || {hive_escaped_delimiters} || ']') "
                     f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || {hive_escaped_delimiters} || ']+|[^' || {hive_escaped_delimiters} || ']+)'), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                     f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || {hive_escaped_delimiters} || ']+|[^' || {hive_escaped_delimiters} || ']+)'), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "END, '') END"
+                    "END, '')"
                 ),
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",

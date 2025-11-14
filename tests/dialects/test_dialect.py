@@ -4352,13 +4352,13 @@ FROM subquery2""",
             with self.subTest(f"DuckDB rewrite for {dialect or 'default'} default delimiters"):
                 escaped_literal = duckdb_regex_literal_sql(default_delimiters)
                 expected = (
-                    "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    "ARRAY_TO_STRING("
                     f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_literal} || ']') "
                     f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_literal} || ']+|[^' || {escaped_literal} || ']+)'), "
                     f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                     f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_literal} || ']+|[^' || {escaped_literal} || ']+)'), "
                     f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "END, '') END"
+                    "END, '')"
                 )
                 self.assertEqual(parse_one("INITCAP(col)", read=dialect).sql("duckdb"), expected)
 
@@ -4368,20 +4368,20 @@ FROM subquery2""",
             with self.subTest(f"Testing DuckDB generation for {query} from {dialect}"):
                 self.assertEqual(
                     parse_one(query, read=dialect).sql("duckdb"),
-                    "CASE WHEN col IS NULL THEN NULL ELSE UPPER(LEFT(col, 1)) || LOWER(SUBSTR(col, 2)) END",
+                    "UPPER(LEFT(col, 1)) || LOWER(SUBSTR(col, 2))",
                 )
 
             query = "INITCAP(col, NULL)"
             with self.subTest(f"DuckDB generation for {query} from {dialect}"):
                 self.assertEqual(
                     parse_one(query, read=dialect).sql("duckdb"),
-                    "CASE WHEN col IS NULL OR NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    "ARRAY_TO_STRING("
                     "CASE WHEN REGEXP_MATCHES(LEFT(col, 1), NULL) "
                     "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, NULL), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                     "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, NULL), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "END, '') END",
+                    "END, '')",
                 )
 
             for custom_delimiter in (" ", "@", " _@", r"\\"):
@@ -4394,24 +4394,18 @@ FROM subquery2""",
                     escaped_custom_delimiter = duckdb_regex_literal_sql(custom_delimiter)
                     self.assertEqual(
                         duckdb_sql,
-                        "CASE WHEN col IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                        "ARRAY_TO_STRING("
                         f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_custom_delimiter} || ']') "
                         f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_custom_delimiter} || ']+|[^' || {escaped_custom_delimiter} || ']+)'), "
                         f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
                         f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_custom_delimiter} || ']+|[^' || {escaped_custom_delimiter} || ']+)'), "
                         f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                        "END, '') END",
+                        "END, '')",
                     )
 
             def escape_expression_sql(sql: str) -> str:
                 escaped_sql = sql
-                for raw, escaped in (
-                    ("\\", "\\\\"),
-                    ("-", r"\-"),
-                    ("^", r"\^"),
-                    ("[", r"\["),
-                    ("]", r"\]"),
-                ):
+                for raw, escaped in REGEX_LITERAL_ESCAPES.items():
                     raw_sql = exp.Literal.string(raw).sql()
                     escaped_literal_sql = exp.Literal.string(escaped).sql()
                     escaped_sql = f"REPLACE({escaped_sql}, {raw_sql}, {escaped_literal_sql})"
@@ -4426,7 +4420,7 @@ FROM subquery2""",
                     parse_one(
                         "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))", read=dialect
                     ).sql("duckdb"),
-                    "CASE WHEN col IS NULL OR (SELECT delimiter FROM settings LIMIT 1) IS NULL THEN NULL ELSE ARRAY_TO_STRING("
+                    "ARRAY_TO_STRING("
                     + f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_subquery} || ']') "
                     "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || "
                     + escaped_subquery
@@ -4440,7 +4434,7 @@ FROM subquery2""",
                     + escaped_subquery
                     + " || ']+)'), "
                     "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "END, '') END",
+                    "END, '')",
                 )
 
     def test_initcap_custom_delimiter_warning(self):

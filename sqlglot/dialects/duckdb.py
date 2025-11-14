@@ -49,6 +49,15 @@ from sqlglot.parser import binary_range_parser
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
 
+# Characters that must be escaped when building regex expressions in INITCAP
+REGEX_ESCAPE_REPLACEMENTS = {
+    "\\": "\\\\",
+    "-": r"\-",
+    "^": r"\^",
+    "[": r"\[",
+    "]": r"\]",
+}
+
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -296,29 +305,13 @@ def _escape_regex_metachars(
     if not delimiters:
         return delimiters_sql
 
-    REGEX_LITERAL_ESCAPES = {
-        "\\": "\\\\",  # literals need two slashes inside []
-        "-": "\\-",
-        "^": "\\^",
-        "[": "\\[",
-        "]": "\\]",
-    }
-
     if delimiters.is_string:
         literal_value = delimiters.this
-        escaped_literal = "".join(REGEX_LITERAL_ESCAPES.get(ch, ch) for ch in literal_value)
+        escaped_literal = "".join(REGEX_ESCAPE_REPLACEMENTS.get(ch, ch) for ch in literal_value)
         return self.sql(exp.Literal.string(escaped_literal))
 
-    REGEX_ESCAPE_REPLACEMENTS = (
-        ("\\", "\\\\"),
-        ("-", r"\-"),
-        ("^", r"\^"),
-        ("[", r"\["),
-        ("]", r"\]"),
-    )
-
     escaped_sql = delimiters_sql
-    for raw, escaped in REGEX_ESCAPE_REPLACEMENTS:
+    for raw, escaped in REGEX_ESCAPE_REPLACEMENTS.items():
         escaped_sql = self.func(
             "REPLACE",
             escaped_sql,
@@ -382,20 +375,13 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
         else delimiters_sql
     )
 
-    if delimiters and (isinstance(delimiters, exp.Literal) and delimiters.is_string):
-        return (
-            f"CASE WHEN {this_sql} IS NULL THEN NULL ELSE "
-            f"{_build_capitalization_sql(self, this_sql, delimiters_sql, escaped_delimiters_sql)} END"
-        )
-
-    capitalize_sql = _build_capitalization_sql(
+    return _build_capitalization_sql(
         self,
         this_sql,
         delimiters_sql,
         escaped_delimiters_sql,
         convert_delim_to_regex=not isinstance(delimiters, exp.Null),
     )
-    return f"CASE WHEN {this_sql} IS NULL OR {delimiters_sql} IS NULL THEN NULL ELSE {capitalize_sql} END"
 
 
 class DuckDB(Dialect):

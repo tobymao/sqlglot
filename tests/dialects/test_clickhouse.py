@@ -716,8 +716,8 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
 
         query = parse_one("""WITH (SELECT 1) AS y SELECT * FROM y""", read="clickhouse")
-        self.assertIsInstance(query.args["with"].expressions[0].this, exp.Subquery)
-        self.assertEqual(query.args["with"].expressions[0].alias, "y")
+        self.assertIsInstance(query.args["with_"].expressions[0].this, exp.Subquery)
+        self.assertEqual(query.args["with_"].expressions[0].alias, "y")
 
         query = "WITH 1 AS var SELECT var"
         for error_level in [ErrorLevel.IGNORE, ErrorLevel.RAISE, ErrorLevel.IMMEDIATE]:

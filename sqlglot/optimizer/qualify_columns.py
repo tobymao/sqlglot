@@ -853,7 +853,7 @@ def _expand_stars(
 def _add_except_columns(
     expression: exp.Expression, tables, except_columns: t.Dict[int, t.Set[str]]
 ) -> None:
-    except_ = expression.args.get("except")
+    except_ = expression.args.get("except_")
 
     if not except_:
         return
@@ -1206,7 +1206,7 @@ class Resolver:
         args = self.scope.expression.args
 
         # Collect tables in order: FROM clause tables + joined tables up to current join
-        from_name = args["from"].alias_or_name
+        from_name = args["from_"].alias_or_name
         available_sources = {from_name: self.get_source_columns(from_name)}
 
         for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:

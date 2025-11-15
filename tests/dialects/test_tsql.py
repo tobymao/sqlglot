@@ -2025,11 +2025,11 @@ WHERE
             self.validate_identity("##x")
             .assert_is(exp.Column)
             .this.assert_is(exp.Identifier)
-            .args.get("global")
+            .args.get("global_")
         )
 
         self.validate_identity("@x").assert_is(exp.Parameter).this.assert_is(exp.Var)
-        self.validate_identity("SELECT * FROM @x").args["from"].this.assert_is(
+        self.validate_identity("SELECT * FROM @x").args["from_"].this.assert_is(
             exp.Table
         ).this.assert_is(exp.Parameter).this.assert_is(exp.Var)
 

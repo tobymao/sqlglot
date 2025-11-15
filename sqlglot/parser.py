@@ -7296,7 +7296,7 @@ class Parser(metaclass=_Parser):
             "value": (
                 (self._match_text_seq("UNBOUNDED") and "UNBOUNDED")
                 or (self._match_text_seq("CURRENT", "ROW") and "CURRENT ROW")
-                or self._parse_type()
+                or self._parse_bitwise()
             ),
             "side": self._match_texts(self.WINDOW_SIDES) and self._prev.text,
         }

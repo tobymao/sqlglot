@@ -2890,7 +2890,7 @@ class DataBlocksizeProperty(Property):
 
 
 class DataDeletionProperty(Property):
-    arg_types = {"on": True, "filter_col": False, "retention_period": False}
+    arg_types = {"on": True, "filter_column": False, "retention_period": False}
 
 
 class DefinerProperty(Property):
@@ -5863,7 +5863,7 @@ class Columns(Func):
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
-    arg_types = {"this": True, "expression": True, "style": False}
+    arg_types = {"this": True, "expression": True, "style": False, "safe": False}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CONVERT.html

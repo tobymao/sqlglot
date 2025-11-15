@@ -321,7 +321,7 @@ def unnest_to_explode(
             alias = unnest.args.get("alias")
             exprs = unnest.expressions
             has_multi_expr = len(exprs) > 1
-            this, *expressions = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
+            this, *_ = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
             columns = alias.columns if alias else []
             offset = unnest.args.get("offset")
@@ -332,10 +332,7 @@ def unnest_to_explode(
 
             unnest.replace(
                 exp.Table(
-                    this=_udtf_type(unnest, has_multi_expr)(
-                        this=this,
-                        expressions=expressions,
-                    ),
+                    this=_udtf_type(unnest, has_multi_expr)(this=this),
                     alias=exp.TableAlias(this=alias.this, columns=columns) if alias else None,
                 )
             )

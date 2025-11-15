@@ -960,7 +960,8 @@ def pushdown_cte_alias_columns(expression: exp.Expression) -> exp.Expression:
                 else:
                     projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)
-            cte.this.set("expressions", new_expressions)
+            if isinstance(cte.this, exp.Select):
+                cte.this.set("expressions", new_expressions)
 
     return expression
 

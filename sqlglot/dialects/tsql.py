@@ -825,7 +825,6 @@ class TSQL(Dialect):
             args = [this, *self._parse_csv(self._parse_assignment)]
             convert = exp.Convert.from_arg_list(args)
             convert.set("safe", safe)
-            convert.set("strict", strict)
             return convert
 
         def _parse_column_def(

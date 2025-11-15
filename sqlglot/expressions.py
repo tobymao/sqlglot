@@ -889,29 +889,39 @@ class Expression(metaclass=_Expression):
         return not_(self, copy=copy)
 
     def update_positions(
-        self: E, other: t.Optional[Token | Expression] = None, **kwargs: t.Any
+        self: E,
+        other: t.Optional[Token | Expression] = None,
+        line: t.Optional[int] = None,
+        col: t.Optional[int] = None,
+        start: t.Optional[int] = None,
+        end: t.Optional[int] = None,
     ) -> E:
         """
         Update this expression with positions from a token or other expression.
 
         Args:
             other: a token or expression to update this expression with.
+            line: the line number to use if other is None
+            col: column number
+            start: start char index
+            end:  end char index
 
         Returns:
             The updated expression.
         """
-        if isinstance(other, Expression):
-            self.meta.update({k: v for k, v in other.meta.items() if k in POSITION_META_KEYS})
-        elif other is not None:
-            self.meta.update(
-                {
-                    "line": other.line,
-                    "col": other.col,
-                    "start": other.start,
-                    "end": other.end,
-                }
-            )
-        self.meta.update({k: v for k, v in kwargs.items() if k in POSITION_META_KEYS})
+        if other is None:
+            self.meta["line"] = line
+            self.meta["col"] = col
+            self.meta["start"] = start
+            self.meta["end"] = end
+        elif hasattr(other, "meta"):
+            for k in POSITION_META_KEYS:
+                self.meta[k] = other.meta[k]
+        else:
+            self.meta["line"] = other.line
+            self.meta["col"] = other.col
+            self.meta["start"] = other.start
+            self.meta["end"] = other.end
         return self
 
     def as_(

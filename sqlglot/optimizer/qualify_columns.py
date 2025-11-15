@@ -59,6 +59,9 @@ def qualify_columns(
     bigquery = dialect == "bigquery"
 
     for scope in traverse_scope(expression):
+        if dialect.PREFER_CTE_ALIAS_COLUMN:
+            pushdown_cte_alias_columns(scope)
+
         scope_expression = scope.expression
         is_select = isinstance(scope_expression, exp.Select)
 
@@ -933,37 +936,25 @@ def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool
     )  # type: ignore
 
 
-def pushdown_cte_alias_columns(expression: exp.Expression) -> exp.Expression:
+def pushdown_cte_alias_columns(scope: Scope) -> None:
     """
     Pushes down the CTE alias columns into the projection,
 
     This step is useful in Snowflake where the CTE alias columns can be referenced in the HAVING.
 
-    Example:
-        >>> import sqlglot
-        >>> expression = sqlglot.parse_one("WITH y (c) AS (SELECT SUM(a) FROM ( SELECT 1 a ) AS x HAVING c > 0) SELECT c FROM y")
-        >>> pushdown_cte_alias_columns(expression).sql()
-        'WITH y(c) AS (SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0) SELECT c FROM y'
-
     Args:
-        expression: Expression to pushdown.
-
-    Returns:
-        The expression with the CTE aliases pushed down into the projection.
+        scope: Scope to find ctes to pushdown aliases.
     """
-    for cte in expression.find_all(exp.CTE):
-        if cte.alias_column_names:
+    for cte in scope.ctes:
+        if cte.alias_column_names and isinstance(cte.this, exp.Select):
             new_expressions = []
             for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", _alias)
+                    projection.set("alias", exp.to_identifier(_alias))
                 else:
                     projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)
-            if isinstance(cte.this, exp.Select):
-                cte.this.set("expressions", new_expressions)
-
-    return expression
+            cte.this.set("expressions", new_expressions)
 
 
 class Resolver:

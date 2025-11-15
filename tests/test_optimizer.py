@@ -63,6 +63,11 @@ def simplify(expression, **kwargs):
     )
 
 
+def pushdown_ctes(expression, **kwargs):
+    optimizer.qualify_columns.pushdown_cte_alias_columns(build_scope(expression))
+    return expression
+
+
 def annotate_functions(expression, **kwargs):
     dialect = kwargs.get("dialect")
     schema = kwargs.get("schema")
@@ -522,7 +527,7 @@ class TestOptimizer(unittest.TestCase):
     def test_pushdown_cte_alias_columns(self):
         self.check_file(
             "pushdown_cte_alias_columns",
-            optimizer.qualify_columns.pushdown_cte_alias_columns,
+            pushdown_ctes,
         )
 
     def test_qualify_columns__invalid(self):

@@ -16,6 +16,7 @@ import datetime
 import math
 import numbers
 import re
+import sys
 import textwrap
 import typing as t
 from collections import deque
@@ -54,6 +55,7 @@ class _Expression(type):
         # When an Expression class is created, its key is automatically set
         # to be the lowercase version of the class' name.
         klass.key = clsname.lower()
+        klass.required_args = {k for k, v in klass.arg_types.items() if v}
 
         # This is so that docstrings are not inherited in pdoc
         klass.__doc__ = klass.__doc__ or ""
@@ -66,6 +68,7 @@ SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
 POSITION_META_KEYS = ("line", "col", "start", "end")
+UNITTEST = "unittest" in sys.modules or "pytest" in sys.modules
 
 
 class Expression(metaclass=_Expression):
@@ -102,6 +105,7 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
+    required_args = {"this"}
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
 
     def __init__(self, **args: t.Any):
@@ -768,12 +772,14 @@ class Expression(metaclass=_Expression):
         """
         errors: t.List[str] = []
 
-        for k in self.args:
-            if k not in self.arg_types:
-                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
-        for k, mandatory in self.arg_types.items():
+        if UNITTEST:
+            for k in self.args:
+                if k not in self.arg_types:
+                    raise TypeError(f"Unexpected keyword: '{k}' for {self.__class__}")
+
+        for k in self.required_args:
             v = self.args.get(k)
-            if mandatory and (v is None or (isinstance(v, list) and not v)):
+            if v is None or (type(v) is list and not v):
                 errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
 
         if (

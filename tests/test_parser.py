@@ -253,19 +253,20 @@ class TestParser(unittest.TestCase):
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
-        self.assertIsInstance(ignore.expression(exp.Hint, expressions=[""]), exp.Hint)
+        self.assertIsInstance(ignore.expression(exp.Hint, expressions=[]), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint, y=""), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint), exp.Hint)
 
         default = Parser(error_level=ErrorLevel.RAISE)
-        self.assertIsInstance(default.expression(exp.Hint, expressions=[""]), exp.Hint)
-        default.expression(exp.Hint, y="")
+        with self.assertRaises(TypeError):
+            default.expression(exp.Hint, y="")
+        self.assertIsInstance(default.expression(exp.Hint, expressions=[]), exp.Hint)
         default.expression(exp.Hint)
-        self.assertEqual(len(default.errors), 3)
+        self.assertEqual(len(default.errors), 2)
 
         warn = Parser(error_level=ErrorLevel.WARN)
-        warn.expression(exp.Hint, y="")
-        self.assertEqual(len(warn.errors), 2)
+        warn.expression(exp.Hint)
+        self.assertEqual(len(warn.errors), 1)
 
     def test_parse_errors(self):
         with self.assertRaises(ParseError):

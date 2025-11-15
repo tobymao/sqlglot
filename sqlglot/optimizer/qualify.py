@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import (
-    pushdown_cte_alias_columns as pushdown_cte_alias_columns_func,
     qualify_columns as qualify_columns_func,
     quote_identifiers as quote_identifiers_func,
     validate_qualify_columns as validate_qualify_columns_func,
@@ -86,9 +85,6 @@ def qualify(
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
-
-    if dialect.PREFER_CTE_ALIAS_COLUMN:
-        expression = pushdown_cte_alias_columns_func(expression)
 
     if qualify_columns:
         expression = qualify_columns_func(

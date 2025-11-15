@@ -662,11 +662,9 @@ class DuckDB(Dialect):
         def _parse_install(self, force: bool = False) -> exp.Install:
             return self.expression(
                 exp.Install,
-                **{  # type: ignore
-                    "this": self._parse_id_var(),
-                    "from": self._parse_var_or_string() if self._match(TokenType.FROM) else None,
-                    "force": force,
-                },
+                this=self._parse_id_var(),
+                from_=self._parse_var_or_string() if self._match(TokenType.FROM) else None,
+                force=force,
             )
 
         def _parse_primary(self) -> t.Optional[exp.Expression]:
@@ -1008,7 +1006,7 @@ class DuckDB(Dialect):
         def install_sql(self, expression: exp.Install) -> str:
             force = "FORCE " if expression.args.get("force") else ""
             this = self.sql(expression, "this")
-            from_clause = expression.args.get("from")
+            from_clause = expression.args.get("from_")
             from_clause = f" FROM {from_clause}" if from_clause else ""
             return f"{force}INSTALL {this}{from_clause}"
 

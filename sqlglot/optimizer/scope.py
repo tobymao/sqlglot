@@ -308,7 +308,7 @@ class Scope:
                             or column.name not in named_selects
                         )
                     )
-                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except")
+                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except_")
                 ):
                     self._columns.append(column)
 
@@ -663,7 +663,7 @@ def _traverse_ctes(scope):
 
         # if the scope is a recursive cte, it must be in the form of base_case UNION recursive.
         # thus the recursive scope is the first section of the union.
-        with_ = scope.expression.args.get("with")
+        with_ = scope.expression.args.get("with_")
         if with_ and with_.recursive:
             union = cte.this
 
@@ -720,7 +720,7 @@ def _traverse_tables(scope):
 
     # Traverse FROMs, JOINs, and LATERALs in the order they are defined
     expressions = []
-    from_ = scope.expression.args.get("from")
+    from_ = scope.expression.args.get("from_")
     if from_:
         expressions.append(from_.this)
 

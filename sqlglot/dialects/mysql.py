@@ -671,7 +671,7 @@ class MySQL(Dialect):
                 for_role=for_role,
                 into_outfile=into_outfile,
                 json=json,
-                **{"global": global_},  # type: ignore
+                global_=global_,
             )
 
         def _parse_oldstyle_limit(
@@ -1229,7 +1229,7 @@ class MySQL(Dialect):
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
-            global_ = " GLOBAL" if expression.args.get("global") else ""
+            global_ = " GLOBAL" if expression.args.get("global_") else ""
 
             target = self.sql(expression, "target")
             target = f" {target}" if target else ""

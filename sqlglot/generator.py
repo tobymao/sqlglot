@@ -1306,7 +1306,7 @@ class Generator(metaclass=_Generator):
         return f"${tag}${self.sql(expression, 'this')}${tag}$"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
-        with_ = self.sql(expression, "with")
+        with_ = self.sql(expression, "with_")
         if with_:
             sql = f"{with_}{self.sep()}{sql}"
         return sql
@@ -1944,7 +1944,7 @@ class Generator(metaclass=_Generator):
 
         sql = f"SYSTEM_VERSIONING={on_sql}"
 
-        return f"WITH({sql})" if expression.args.get("with") else sql
+        return f"WITH({sql})" if expression.args.get("with_") else sql
 
     def insert_sql(self, expression: exp.Insert) -> str:
         hint = self.sql(expression, "hint")
@@ -2218,7 +2218,7 @@ class Generator(metaclass=_Generator):
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")
         set_sql = self.expressions(expression, flat=True)
-        from_sql = self.sql(expression, "from")
+        from_sql = self.sql(expression, "from_")
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")
@@ -2357,7 +2357,7 @@ class Generator(metaclass=_Generator):
             op
             for op in (
                 expression.method,
-                "GLOBAL" if expression.args.get("global") else None,
+                "GLOBAL" if expression.args.get("global_") else None,
                 side,
                 expression.kind,
                 expression.hint if self.JOIN_HINTS else None,
@@ -2472,7 +2472,7 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression)
         collate = self.sql(expression, "collate")
         collate = f" COLLATE {collate}" if collate else ""
-        global_ = "GLOBAL " if expression.args.get("global") else ""
+        global_ = "GLOBAL " if expression.args.get("global_") else ""
         return f"{global_}{kind}{this}{expressions}{collate}"
 
     def set_sql(self, expression: exp.Set) -> str:
@@ -2570,7 +2570,7 @@ class Generator(metaclass=_Generator):
         return self.op_expressions(f"{this}ORDER {siblings}BY", expression, flat=this or flat)  # type: ignore
 
     def withfill_sql(self, expression: exp.WithFill) -> str:
-        from_sql = self.sql(expression, "from")
+        from_sql = self.sql(expression, "from_")
         from_sql = f" FROM {from_sql}" if from_sql else ""
         to_sql = self.sql(expression, "to")
         to_sql = f" TO {to_sql}" if to_sql else ""
@@ -2731,7 +2731,7 @@ class Generator(metaclass=_Generator):
         return f" {options}" if options else ""
 
     def for_modifiers(self, expression: exp.Expression) -> str:
-        for_modifiers = self.expressions(expression, key="for")
+        for_modifiers = self.expressions(expression, key="for_")
         return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
@@ -2802,11 +2802,11 @@ class Generator(metaclass=_Generator):
             expression,
             f"SELECT{top_distinct}{operation_modifiers}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
-            self.sql(expression, "from", comment=False),
+            self.sql(expression, "from_", comment=False),
         )
 
         # If both the CTE and SELECT clauses have comments, generate the latter earlier
-        if expression.args.get("with"):
+        if expression.args.get("with_"):
             sql = self.maybe_comment(sql, expression)
             expression.pop_comments()
 
@@ -2834,7 +2834,7 @@ class Generator(metaclass=_Generator):
         return ""
 
     def star_sql(self, expression: exp.Star) -> str:
-        except_ = self.expressions(expression, key="except", flat=True)
+        except_ = self.expressions(expression, key="except_", flat=True)
         except_ = f"{self.seg(self.STAR_EXCEPT)} ({except_})" if except_ else ""
         replace = self.expressions(expression, key="replace", flat=True)
         replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
@@ -4832,7 +4832,7 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        _with = expression.args.get("with")
+        _with = expression.args.get("with_")
 
         if _with is None:
             with_sql = ""
@@ -5016,8 +5016,8 @@ class Generator(metaclass=_Generator):
     def overlay_sql(self, expression: exp.Overlay):
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
-        from_sql = self.sql(expression, "from")
-        for_sql = self.sql(expression, "for")
+        from_sql = self.sql(expression, "from_")
+        for_sql = self.sql(expression, "for_")
         for_sql = f" FOR {for_sql}" if for_sql else ""
 
         return f"OVERLAY({this} PLACING {expr} FROM {from_sql}{for_sql})"

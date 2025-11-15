@@ -114,10 +114,10 @@ def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -
             count += 1
 
         if recursive_ctes:
-            with_expression = expression.args.get("with") or exp.With()
+            with_expression = expression.args.get("with_") or exp.With()
             with_expression.set("recursive", True)
             with_expression.set("expressions", [*recursive_ctes, *with_expression.expressions])
-            expression.set("with", with_expression)
+            expression.set("with_", with_expression)
 
     return expression
 
@@ -314,14 +314,14 @@ def unnest_to_explode(
         return exp.Inline if has_multi_expr else exp.Explode
 
     if isinstance(expression, exp.Select):
-        from_ = expression.args.get("from")
+        from_ = expression.args.get("from_")
 
         if from_ and isinstance(from_.this, exp.Unnest):
             unnest = from_.this
             alias = unnest.args.get("alias")
             exprs = unnest.expressions
             has_multi_expr = len(exprs) > 1
-            this, *expressions = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
+            this, *_ = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
             columns = alias.columns if alias else []
             offset = unnest.args.get("offset")
@@ -332,10 +332,7 @@ def unnest_to_explode(
 
             unnest.replace(
                 exp.Table(
-                    this=_udtf_type(unnest, has_multi_expr)(
-                        this=this,
-                        expressions=expressions,
-                    ),
+                    this=_udtf_type(unnest, has_multi_expr)(this=this),
                     alias=exp.TableAlias(this=alias.this, columns=columns) if alias else None,
                 )
             )
@@ -498,7 +495,7 @@ def explode_projection_to_unnest(
                         expression.set("expressions", expressions)
 
                     if not arrays:
-                        if expression.args.get("from"):
+                        if expression.args.get("from_"):
                             expression.join(series, copy=False, join_type="CROSS")
                         else:
                             expression.from_(series, copy=False)
@@ -642,7 +639,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             expression.set("limit", None)
             index, full_outer_join = full_outer_joins[0]
 
-            tables = (expression.args["from"].alias_or_name, full_outer_join.alias_or_name)
+            tables = (expression.args["from_"].alias_or_name, full_outer_join.alias_or_name)
             join_conditions = full_outer_join.args.get("on") or exp.and_(
                 *[
                     exp.column(col, tables[0]).eq(exp.column(col, tables[1]))
@@ -651,10 +648,12 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             )
 
             full_outer_join.set("side", "left")
-            anti_join_clause = exp.select("1").from_(expression.args["from"]).where(join_conditions)
+            anti_join_clause = (
+                exp.select("1").from_(expression.args["from_"]).where(join_conditions)
+            )
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
-            expression_copy.set("with", None)  # remove CTEs from RIGHT side
+            expression_copy.set("with_", None)  # remove CTEs from RIGHT side
             expression.set("order", None)  # remove order by from LEFT side
 
             return exp.union(expression, expression_copy, copy=False, distinct=False)
@@ -674,14 +673,14 @@ def move_ctes_to_top_level(expression: E) -> E:
 
     TODO: handle name clashes whilst moving CTEs (it can get quite tricky & costly).
     """
-    top_level_with = expression.args.get("with")
+    top_level_with = expression.args.get("with_")
     for inner_with in expression.find_all(exp.With):
         if inner_with.parent is expression:
             continue
 
         if not top_level_with:
             top_level_with = inner_with.pop()
-            expression.set("with", top_level_with)
+            expression.set("with_", top_level_with)
         else:
             if inner_with.recursive:
                 top_level_with.set("recursive", True)
@@ -908,7 +907,7 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
         old_joins = {join.alias_or_name: join for join in joins}
         new_joins = {}
-        query_from = query.args["from"]
+        query_from = query.args["from_"]
 
         for table, predicates in joins_ons.items():
             join_what = old_joins.get(table, query_from).this.copy()
@@ -934,11 +933,11 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             ), "Cannot determine which table to use in the new FROM clause"
 
             new_from_name = list(only_old_joins)[0]
-            query.set("from", exp.From(this=old_joins[new_from_name].this))
+            query.set("from_", exp.From(this=old_joins[new_from_name].this))
 
         if new_joins:
             for n, j in old_joins.items():  # preserve any other joins
-                if n not in new_joins and n != query.args["from"].name:
+                if n not in new_joins and n != query.args["from_"].name:
                     if not j.kind:
                         j.set("kind", "CROSS")
                     new_joins[n] = j

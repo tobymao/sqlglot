@@ -542,7 +542,7 @@ class SingleStore(MySQL):
                 "offset",
                 "starts_with",
                 "limit",
-                "from",
+                "from_",
                 "scope",
                 "scope_kind",
                 "mutex",

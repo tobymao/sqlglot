@@ -3516,6 +3516,7 @@ class Table(Expression):
         "changes": False,
         "rows_from": False,
         "sample": False,
+        "indexed": False,
     }
 
     @property

@@ -312,6 +312,7 @@ class TokenType(AutoName):
     ILIKE = auto()
     IN = auto()
     INDEX = auto()
+    INDEXED_BY = auto()
     INNER = auto()
     INSERT = auto()
     INSTALL = auto()

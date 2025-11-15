@@ -30,6 +30,9 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
+            "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"
+        )
+        self.validate_identity(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
         )
         self.validate_identity(

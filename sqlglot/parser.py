@@ -4190,6 +4190,11 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
+        if self._match(TokenType.INDEXED_BY):
+            this.set("indexed", self._parse_table_parts())
+        elif self._match_text_seq("NOT", "INDEXED"):
+            this.set("indexed", False)
+
         if isinstance(this, exp.Table) and self._match_text_seq("AT"):
             return self.expression(
                 exp.AtIndex, this=this.to_column(copy=False), expression=self._parse_id_var()

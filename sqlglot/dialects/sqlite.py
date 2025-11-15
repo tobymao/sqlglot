@@ -102,6 +102,7 @@ class SQLite(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ATTACH": TokenType.ATTACH,
             "DETACH": TokenType.DETACH,
+            "INDEXED BY": TokenType.INDEXED_BY,
             "MATCH": TokenType.MATCH,
         }
 

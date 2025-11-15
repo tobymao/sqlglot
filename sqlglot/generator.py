@@ -2117,7 +2117,13 @@ class Generator(metaclass=_Generator):
         if rows_from:
             table = f"ROWS FROM {self.wrap(rows_from)}"
 
-        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
+        indexed = expression.args.get("indexed")
+        if indexed is not None:
+            indexed = f" INDEXED BY {self.sql(indexed)}" if indexed else " NOT INDEXED"
+        else:
+            indexed = ""
+
+        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{indexed}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
 
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)

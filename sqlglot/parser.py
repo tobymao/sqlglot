@@ -5048,7 +5048,7 @@ class Parser(metaclass=_Parser):
                 return this
 
             this = expression
-        elif self._match(TokenType.ISNULL):
+        elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
             this = self.expression(exp.Is, this=this, expression=exp.Null())
 
         # Postgres supports ISNULL and NOTNULL for conditions.

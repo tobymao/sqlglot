@@ -821,7 +821,7 @@ class ClickHouse(Dialect):
             if join:
                 method = join.args.get("method")
                 join.set("method", None)
-                join.set("global", method)
+                join.set("global_", method)
 
                 # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join

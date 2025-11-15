@@ -181,7 +181,7 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
 
         # a node can reference a CTE which should be pushed down
         if isinstance(node, exp.From) and not isinstance(source, exp.Table):
-            with_ = source.parent.expression.args.get("with")
+            with_ = source.parent.expression.args.get("with_")
             if with_ and with_.recursive:
                 return {}
             node = source.expression

@@ -1114,19 +1114,17 @@ class Snowflake(Dialect):
 
             return self.expression(
                 exp.Show,
-                **{
-                    "terse": terse,
-                    "this": this,
-                    "history": history,
-                    "like": like,
-                    "scope": scope,
-                    "scope_kind": scope_kind,
-                    "starts_with": self._match_text_seq("STARTS", "WITH") and self._parse_string(),
-                    "limit": self._parse_limit(),
-                    "from": self._parse_string() if self._match(TokenType.FROM) else None,
-                    "privileges": self._match_text_seq("WITH", "PRIVILEGES")
-                    and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
-                },
+                terse=terse,
+                this=this,
+                history=history,
+                like=like,
+                scope=scope,
+                scope_kind=scope_kind,
+                starts_with=self._match_text_seq("STARTS", "WITH") and self._parse_string(),
+                limit=self._parse_limit(),
+                from_=self._parse_string() if self._match(TokenType.FROM) else None,
+                privileges=self._match_text_seq("WITH", "PRIVILEGES")
+                and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
             )
 
         def _parse_put(self) -> exp.Put | exp.Command:
@@ -1652,7 +1650,7 @@ class Snowflake(Dialect):
 
             limit = self.sql(expression, "limit")
 
-            from_ = self.sql(expression, "from")
+            from_ = self.sql(expression, "from_")
             if from_:
                 from_ = f" FROM {from_}"
 

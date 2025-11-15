@@ -16,6 +16,7 @@ import datetime
 import math
 import numbers
 import re
+import sys
 import textwrap
 import typing as t
 from collections import deque
@@ -54,6 +55,7 @@ class _Expression(type):
         # When an Expression class is created, its key is automatically set
         # to be the lowercase version of the class' name.
         klass.key = clsname.lower()
+        klass.required_args = {k for k, v in klass.arg_types.items() if v}
 
         # This is so that docstrings are not inherited in pdoc
         klass.__doc__ = klass.__doc__ or ""
@@ -66,6 +68,7 @@ SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
 POSITION_META_KEYS = ("line", "col", "start", "end")
+UNITTEST = "unittest" in sys.modules or "pytest" in sys.modules
 
 
 class Expression(metaclass=_Expression):
@@ -102,6 +105,7 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
+    required_args = {"this"}
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
 
     def __init__(self, **args: t.Any):
@@ -768,12 +772,14 @@ class Expression(metaclass=_Expression):
         """
         errors: t.List[str] = []
 
-        for k in self.args:
-            if k not in self.arg_types:
-                errors.append(f"Unexpected keyword: '{k}' for {self.__class__}")
-        for k, mandatory in self.arg_types.items():
+        if UNITTEST:
+            for k in self.args:
+                if k not in self.arg_types:
+                    raise TypeError(f"Unexpected keyword: '{k}' for {self.__class__}")
+
+        for k in self.required_args:
             v = self.args.get(k)
-            if mandatory and (v is None or (isinstance(v, list) and not v)):
+            if v is None or (type(v) is list and not v):
                 errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
 
         if (
@@ -883,29 +889,39 @@ class Expression(metaclass=_Expression):
         return not_(self, copy=copy)
 
     def update_positions(
-        self: E, other: t.Optional[Token | Expression] = None, **kwargs: t.Any
+        self: E,
+        other: t.Optional[Token | Expression] = None,
+        line: t.Optional[int] = None,
+        col: t.Optional[int] = None,
+        start: t.Optional[int] = None,
+        end: t.Optional[int] = None,
     ) -> E:
         """
         Update this expression with positions from a token or other expression.
 
         Args:
             other: a token or expression to update this expression with.
+            line: the line number to use if other is None
+            col: column number
+            start: start char index
+            end:  end char index
 
         Returns:
             The updated expression.
         """
-        if isinstance(other, Expression):
-            self.meta.update({k: v for k, v in other.meta.items() if k in POSITION_META_KEYS})
-        elif other is not None:
-            self.meta.update(
-                {
-                    "line": other.line,
-                    "col": other.col,
-                    "start": other.start,
-                    "end": other.end,
-                }
-            )
-        self.meta.update({k: v for k, v in kwargs.items() if k in POSITION_META_KEYS})
+        if other is None:
+            self.meta["line"] = line
+            self.meta["col"] = col
+            self.meta["start"] = start
+            self.meta["end"] = end
+        elif hasattr(other, "meta"):
+            for k in POSITION_META_KEYS:
+                self.meta[k] = other.meta[k]
+        else:
+            self.meta["line"] = other.line
+            self.meta["col"] = other.col
+            self.meta["start"] = other.start
+            self.meta["end"] = other.end
         return self
 
     def as_(
@@ -1247,7 +1263,7 @@ class Query(Expression):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this query."""
-        with_ = self.args.get("with")
+        with_ = self.args.get("with_")
         return with_.expressions if with_ else []
 
     @property
@@ -1475,7 +1491,7 @@ class DDL(Expression):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this statement."""
-        with_ = self.args.get("with")
+        with_ = self.args.get("with_")
         return with_.expressions if with_ else []
 
     @property
@@ -1536,7 +1552,7 @@ class DML(Expression):
 
 class Create(DDL):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": True,
         "kind": True,
         "expression": False,
@@ -1615,7 +1631,7 @@ class Detach(Expression):
 
 # https://duckdb.org/docs/sql/statements/load_and_install.html
 class Install(Expression):
-    arg_types = {"this": True, "from": False, "force": False}
+    arg_types = {"this": True, "from_": False, "force": False}
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html
@@ -1653,7 +1669,7 @@ class SetItem(Expression):
         "expressions": False,
         "kind": False,
         "collate": False,  # MySQL SET NAMES statement
-        "global": False,
+        "global_": False,
     }
 
 
@@ -1670,7 +1686,7 @@ class Show(Expression):
         "offset": False,
         "starts_with": False,
         "limit": False,
-        "from": False,
+        "from_": False,
         "like": False,
         "where": False,
         "db": False,
@@ -1680,7 +1696,7 @@ class Show(Expression):
         "mutex": False,
         "query": False,
         "channel": False,
-        "global": False,
+        "global_": False,
         "log": False,
         "position": False,
         "types": False,
@@ -2120,7 +2136,7 @@ class Constraint(Expression):
 
 class Delete(DML):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": False,
         "using": False,
         "where": False,
@@ -2337,7 +2353,7 @@ class JoinHint(Expression):
 
 
 class Identifier(Expression):
-    arg_types = {"this": True, "quoted": False, "global": False, "temporary": False}
+    arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
 
     @property
     def quoted(self) -> bool:
@@ -2380,7 +2396,7 @@ class IndexParameters(Expression):
 class Insert(DDL, DML):
     arg_types = {
         "hint": False,
-        "with": False,
+        "with_": False,
         "is_function": False,
         "this": False,
         "expression": False,
@@ -2607,7 +2623,7 @@ class Join(Expression):
         "kind": False,
         "using": False,
         "method": False,
-        "global": False,
+        "global_": False,
         "hint": False,
         "match_condition": False,  # Snowflake
         "expressions": False,
@@ -2786,7 +2802,7 @@ class Order(Expression):
 # https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
 class WithFill(Expression):
     arg_types = {
-        "from": False,
+        "from_": False,
         "to": False,
         "step": False,
         "interpolate": False,
@@ -2890,7 +2906,7 @@ class DataBlocksizeProperty(Property):
 
 
 class DataDeletionProperty(Property):
-    arg_types = {"on": True, "filter_col": False, "retention_period": False}
+    arg_types = {"on": True, "filter_column": False, "retention_period": False}
 
 
 class DefinerProperty(Property):
@@ -3210,7 +3226,7 @@ class SemanticView(Expression):
 
 
 class SerdeProperties(Property):
-    arg_types = {"expressions": True, "with": False}
+    arg_types = {"expressions": True, "with_": False}
 
 
 class SetProperty(Property):
@@ -3306,7 +3322,7 @@ class WithSystemVersioningProperty(Property):
         "this": False,
         "data_consistency": False,
         "retention_period": False,
-        "with": True,
+        "with_": True,
     }
 
 
@@ -3575,7 +3591,7 @@ class Table(Expression):
 
 class SetOperation(Query):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": True,
         "expression": True,
         "distinct": False,
@@ -3644,10 +3660,10 @@ class Intersect(SetOperation):
 
 class Update(DML):
     arg_types = {
-        "with": False,
+        "with_": False,
         "this": False,
         "expressions": True,
-        "from": False,
+        "from_": False,
         "where": False,
         "returning": False,
         "order": False,
@@ -3795,7 +3811,7 @@ class Update(DML):
         return _apply_builder(
             expression=expression,
             instance=self,
-            arg="from",
+            arg="from_",
             into=From,
             prefix="FROM",
             dialect=dialect,
@@ -3891,13 +3907,13 @@ class Lock(Expression):
 
 class Select(Query):
     arg_types = {
-        "with": False,
+        "with_": False,
         "kind": False,
         "expressions": False,
         "hint": False,
         "distinct": False,
         "into": False,
-        "from": False,
+        "from_": False,
         "operation_modifiers": False,
         **QUERY_MODIFIERS,
     }
@@ -3926,7 +3942,7 @@ class Select(Query):
         return _apply_builder(
             expression=expression,
             instance=self,
-            arg="from",
+            arg="from_",
             into=From,
             prefix="FROM",
             dialect=dialect,
@@ -4428,7 +4444,7 @@ class Subquery(DerivedTable, Query):
     arg_types = {
         "this": True,
         "alias": False,
-        "with": False,
+        "with_": False,
         **QUERY_MODIFIERS,
     }
 
@@ -4565,7 +4581,7 @@ class Where(Expression):
 
 
 class Star(Expression):
-    arg_types = {"except": False, "replace": False, "rename": False}
+    arg_types = {"except_": False, "replace": False, "rename": False}
 
     @property
     def name(self) -> str:
@@ -5738,7 +5754,7 @@ class Transform(Func):
 
 
 class Translate(Func):
-    arg_types = {"this": True, "from": True, "to": True}
+    arg_types = {"this": True, "from_": True, "to": True}
 
 
 class Grouping(AggFunc):
@@ -5864,7 +5880,7 @@ class Columns(Func):
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
-    arg_types = {"this": True, "expression": True, "style": False}
+    arg_types = {"this": True, "expression": True, "style": False, "safe": False}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CONVERT.html
@@ -6772,7 +6788,7 @@ class IsNullValue(Func):
 
 # https://www.postgresql.org/docs/current/functions-json.html
 class JSON(Expression):
-    arg_types = {"this": False, "with": False, "unique": False}
+    arg_types = {"this": False, "with_": False, "unique": False}
 
 
 class JSONPath(Expression):
@@ -7297,7 +7313,7 @@ class Normalize(Func):
 
 
 class Overlay(Func):
-    arg_types = {"this": True, "expression": True, "from": True, "for": False}
+    arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
@@ -7997,7 +8013,7 @@ class Merge(DML):
         "on": False,
         "using_cond": False,
         "whens": True,
-        "with": False,
+        "with_": False,
         "returning": False,
     }
 
@@ -8318,7 +8334,7 @@ def _apply_cte_builder(
     return _apply_child_list_builder(
         cte,
         instance=instance,
-        arg="with",
+        arg="with_",
         append=append,
         copy=copy,
         into=With,
@@ -8551,7 +8567,7 @@ def update(
         )
     if from_:
         update_expr.set(
-            "from",
+            "from_",
             maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts),
         )
     if isinstance(where, Condition):
@@ -8567,7 +8583,7 @@ def update(
             for alias, qry in with_.items()
         ]
         update_expr.set(
-            "with",
+            "with_",
             With(expressions=cte_list),
         )
     return update_expr

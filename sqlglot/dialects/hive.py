@@ -834,7 +834,7 @@ class Hive(Dialect):
             return f"SET{serde}{exprs}{location}{file_format}{tags}"
 
         def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
-            prefix = "WITH " if expression.args.get("with") else ""
+            prefix = "WITH " if expression.args.get("with_") else ""
             exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"

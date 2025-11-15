@@ -575,7 +575,7 @@ class TSQL(Dialect):
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.OPTION: lambda self: ("options", self._parse_options()),
-            TokenType.FOR: lambda self: ("for", self._parse_for()),
+            TokenType.FOR: lambda self: ("for_", self._parse_for()),
         }
 
         # T-SQL does not allow BEGIN to be used as an identifier
@@ -825,7 +825,6 @@ class TSQL(Dialect):
             args = [this, *self._parse_csv(self._parse_assignment)]
             convert = exp.Convert.from_arg_list(args)
             convert.set("safe", safe)
-            convert.set("strict", strict)
             return convert
 
         def _parse_column_def(
@@ -882,7 +881,7 @@ class TSQL(Dialect):
             this = super()._parse_id_var(any_token=any_token, tokens=tokens)
             if this:
                 if is_global:
-                    this.set("global", True)
+                    this.set("global_", True)
                 elif is_temporary:
                     this.set("temporary", True)
 
@@ -1241,12 +1240,12 @@ class TSQL(Dialect):
 
             if kind == "VIEW":
                 expression.this.set("catalog", None)
-                with_ = expression.args.get("with")
+                with_ = expression.args.get("with_")
                 if ctas_expression and with_:
                     # We've already preprocessed the Create expression to bubble up any nested CTEs,
                     # but CREATE VIEW actually requires the WITH clause to come after it so we need
                     # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
-                    ctas_expression.set("with", with_.pop())
+                    ctas_expression.set("with_", with_.pop())
 
             table = expression.find(exp.Table)
 
@@ -1362,7 +1361,7 @@ class TSQL(Dialect):
         def identifier_sql(self, expression: exp.Identifier) -> str:
             identifier = super().identifier_sql(expression)
 
-            if expression.args.get("global"):
+            if expression.args.get("global_"):
                 identifier = f"##{identifier}"
             elif expression.args.get("temporary"):
                 identifier = f"#{identifier}"

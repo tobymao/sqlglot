@@ -94,7 +94,7 @@ class Step:
         """
         ctes = ctes or {}
         expression = expression.unnest()
-        with_ = expression.args.get("with")
+        with_ = expression.args.get("with_")
 
         # CTEs break the mold of scope and introduce themselves to all in the context.
         if with_:
@@ -104,7 +104,7 @@ class Step:
                 step.name = cte.alias
                 ctes[step.name] = step  # type: ignore
 
-        from_ = expression.args.get("from")
+        from_ = expression.args.get("from_")
 
         if isinstance(expression, exp.Select) and from_:
             step = Scan.from_expression(from_.this, ctes)

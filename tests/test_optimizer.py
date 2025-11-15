@@ -626,7 +626,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.simplify.gen(sql),
             """
-SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
+SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
         self.assertEqual(
@@ -1131,7 +1131,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             expression.expressions[0].type.this, exp.DataType.Type.FLOAT
         )  # a.cola AS cola
 
-        addition_alias = expression.args["from"].this.this.expressions[0]
+        addition_alias = expression.args["from_"].this.this.expressions[0]
         self.assertEqual(
             addition_alias.type.this, exp.DataType.Type.FLOAT
         )  # x.cola + y.cola AS cola
@@ -1177,7 +1177,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         # WHERE tbl.colc = True
         self.assertEqual(expression.args["where"].this.type.this, exp.DataType.Type.BOOLEAN)
 
-        cte_select = expression.args["with"].expressions[0].this
+        cte_select = expression.args["with_"].expressions[0].this
         self.assertEqual(
             cte_select.expressions[0].type.this, exp.DataType.Type.VARCHAR
         )  # x.cola + 'bla' AS cola

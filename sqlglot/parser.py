@@ -544,6 +544,7 @@ class Parser(metaclass=_Parser):
         TokenType.OFFSET,
         TokenType.OPERATOR,
         TokenType.ORDINALITY,
+        TokenType.OVER,
         TokenType.OVERLAPS,
         TokenType.OVERWRITE,
         TokenType.PARTITION,

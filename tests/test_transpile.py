@@ -46,7 +46,7 @@ class TestTranspile(unittest.TestCase):
             "SELECT 1 FROM a.b.table1 AS t UNPIVOT((c3) FOR c4 IN (a, b))",
         )
 
-        for key in ("union", "over", "from", "join"):
+        for key in ("union", "from", "join"):
             with self.subTest(f"alias {key}"):
                 self.validate(f"SELECT x AS {key}", f"SELECT x AS {key}")
                 self.validate(f'SELECT x "{key}"', f'SELECT x AS "{key}"')

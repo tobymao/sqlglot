@@ -420,11 +420,19 @@ class TestExasol(Validator):
                 )
 
                 self.validate_all(
-                    f"SELECT DATE_TRUNC('{unit}', TIMESTAMP '2006-12-31 23:59:59') DATE_TRUNC",
+                    f"SELECT DATE_TRUNC('{unit}', TIMESTAMP '2006-12-31T23:59:59') DATE_TRUNC",
                     write={
                         "exasol": f"SELECT DATE_TRUNC('{unit}', TIMESTAMP '2006-12-31 23:59:59') AS DATE_TRUNC",
-                        "presto": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
-                        "databricks": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                        "presto": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31T23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                        "databricks": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31T23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP) DATE_TRUNC",
+                    write={
+                        "exasol": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP()) AS DATE_TRUNC",
+                        "presto": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP) AS DATE_TRUNC",
+                        "databricks": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP()) AS DATE_TRUNC",
                     },
                 )
 

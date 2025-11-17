@@ -108,17 +108,14 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
 
 def _trunc_sql(self: Exasol.Generator, kind: str, expression: exp.DateTrunc) -> str:
     unit = expression.text("unit")
-    expr_sql = (
-        self.sql(expression.this, "this")
-        if isinstance(expression.this, exp.Cast)
-        else self.sql(expression.this)
-    )
-
-    if expr_sql and expr_sql[0] == "'" and expr_sql[-1] == "'":
+    node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
+    expr_sql = self.sql(node)
+    if isinstance(node, exp.Literal) and node.is_string:
         expr_sql = (
-            f"{kind} {expr_sql.replace('T', ' ')}" if kind == "TIMESTAMP" else f"DATE {expr_sql}"
+            f"{kind} '{node.this.replace('T', ' ')}'"
+            if kind == "TIMESTAMP"
+            else f"DATE '{node.this}'"
         )
-
     return f"DATE_TRUNC('{unit}', {expr_sql})"
 
 
@@ -396,6 +393,7 @@ class Exasol(Dialect):
             exp.Date: rename_func("TO_DATE"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
+            exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

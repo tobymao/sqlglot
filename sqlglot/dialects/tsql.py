@@ -58,6 +58,11 @@ DATE_DELTA_INTERVAL = {
     "d": "day",
 }
 
+DATE_PART_UNMAPPING = {
+    "WEEKISO": "ISO_WEEK",
+    "DAYOFWEEK": "WEEKDAY",
+    "TIMEZONE_MINUTE": "TZOFFSET",
+}
 
 DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
 
@@ -1187,11 +1192,7 @@ class TSQL(Dialect):
             )
 
         def extract_sql(self, expression: exp.Extract) -> str:
-            DATE_PART_UNMAPPING = {
-                "WEEKISO": "ISO_WEEK",
-                "DAYOFWEEK": "WEEKDAY",
-                "TIMEZONE_MINUTE": "TZOFFSET",
-            }
+            
 
             part = expression.this
             name = DATE_PART_UNMAPPING.get(part.name.upper()) or part

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import groupby
 import re
 import typing as t
 
@@ -314,22 +315,13 @@ def _literal_sql_with_ws_chr(self: DuckDB.Generator, literal: str) -> str:
         return self.sql(exp.Literal.string(literal))
 
     sql_segments: t.List[str] = []
-    literal_chars: t.List[str] = []
-
-    for ch in literal:
-        duckdb_char_code = WS_CONTROL_CHARS_TO_DUCK.get(ch)
-        if not duckdb_char_code:
-            literal_chars.append(ch)
-            continue
-
-        if literal_chars:
-            sql_segments.append(self.sql(exp.Literal.string("".join(literal_chars))))
-            literal_chars.clear()
-
-        sql_segments.append(self.func("CHR", exp.Literal.number(str(duckdb_char_code))))
-
-    if literal_chars:
-        sql_segments.append(self.sql(exp.Literal.string("".join(literal_chars))))
+    for is_ws_control, group in groupby(literal, key=lambda ch: ch in WS_CONTROL_CHARS_TO_DUCK):
+        if is_ws_control:
+            for ch in group:
+                duckdb_char_code = WS_CONTROL_CHARS_TO_DUCK[ch]
+                sql_segments.append(self.func("CHR", exp.Literal.number(str(duckdb_char_code))))
+        else:
+            sql_segments.append(self.sql(exp.Literal.string("".join(group))))
 
     sql = " || ".join(sql_segments)
     return sql if len(sql_segments) == 1 else f"({sql})"

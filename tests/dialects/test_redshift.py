@@ -7,6 +7,9 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity(
+            "ROUND(CAST(a AS DOUBLE PRECISION) / CAST(b AS DOUBLE PRECISION), 2)"
+        )
         self.validate_all(
             "SELECT SPLIT_TO_ARRAY('12,345,6789')",
             write={

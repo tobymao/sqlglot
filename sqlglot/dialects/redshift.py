@@ -231,6 +231,9 @@ class Redshift(Postgres):
         TRANSFORMS.pop(exp.LastDay)
         TRANSFORMS.pop(exp.SHA2)
 
+        # Postgres does not permit a double precision argument in ROUND; Redshift does
+        TRANSFORMS.pop(exp.Round)
+
         RESERVED_KEYWORDS = {
             "aes128",
             "aes256",

@@ -706,8 +706,13 @@ class TSQL(Dialect):
             this = self._parse_var()
             expression = self._match(TokenType.COMMA) and self._parse_bitwise()
             name = map_date_part(this, self.dialect)
+            type_name = "TIMESTAMP"
 
-            return self.expression(exp.Extract, this=name, expression=expression)
+            if isinstance(name, exp.Expression) and name.name == "TIMEZONE_MINUTE":
+                type_name = "TIMESTAMPTZ"
+
+            expr = self.expression(exp.Cast, this=expression, to=exp.DataType.build(type_name))
+            return self.expression(exp.Extract, this=name, expression=expr)
 
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)

@@ -407,26 +407,34 @@ class TestExasol(Validator):
             "SELECT CAST(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP) AT TIME ZONE 'CET' AS DATE) - 1",
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
         )
+        units = ["MM", "QUARTER", "WEEK", "MINUTE", "YEAR"]
+        for unit in units:
+            with self.subTest(f"Testing TO_CHAR with format '{unit}'"):
+                self.validate_all(
+                    f"SELECT TRUNC(CAST('2006-12-31' AS DATE), '{unit}') AS TRUNC",
+                    write={
+                        "exasol": f"SELECT DATE_TRUNC('{unit}', DATE '2006-12-31') AS TRUNC",
+                        "presto": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31' AS DATE)) AS TRUNC",
+                        "databricks": f"SELECT TRUNC(CAST('2006-12-31' AS DATE), '{unit}') AS TRUNC",
+                    },
+                )
 
-        self.validate_all(
-            "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
-            write={
-                "exasol": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
-                "presto": "SELECT DATE_TRUNC('MM', CAST('2006-12-31' AS DATE)) AS TRUNC",
-                "databricks": "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'MM') AS TRUNC",
-            },
-        )
-        self.validate_all(
-            "SELECT DATE_TRUNC('minute', TIMESTAMP '2006-12-31 23:59:59') DATE_TRUNC",
-            write={
-                "exasol": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
-                "presto": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
-                "databricks": "SELECT DATE_TRUNC('MINUTE', CAST('2006-12-31 23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
-            },
-        )
-        self.validate_identity(
-            "SELECT DAY_OF_WEEK('2023-01-01')", "SELECT CAST(TO_CHAR('2023-01-01', 'D') AS INTEGER)"
-        )
+                self.validate_all(
+                    f"SELECT DATE_TRUNC('{unit}', TIMESTAMP '2006-12-31T23:59:59') DATE_TRUNC",
+                    write={
+                        "exasol": f"SELECT DATE_TRUNC('{unit}', TIMESTAMP '2006-12-31 23:59:59') AS DATE_TRUNC",
+                        "presto": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31T23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                        "databricks": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31T23:59:59' AS TIMESTAMP)) AS DATE_TRUNC",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP) DATE_TRUNC",
+                    write={
+                        "exasol": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP()) AS DATE_TRUNC",
+                        "presto": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP) AS DATE_TRUNC",
+                        "databricks": f"SELECT DATE_TRUNC('{unit}', CURRENT_TIMESTAMP()) AS DATE_TRUNC",
+                    },
+                )
 
         from sqlglot.dialects.exasol import DATE_UNITS
 

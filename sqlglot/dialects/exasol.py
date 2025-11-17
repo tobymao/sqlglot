@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
     timestrtotime_sql,
-    unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
 )
@@ -105,6 +104,27 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
                 expression.set(key, arg.transform(prefix_local))
 
     return expression
+
+
+def _trunc_sql(self: Exasol.Generator, kind: str, expression: exp.DateTrunc) -> str:
+    unit = expression.text("unit")
+    node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
+    expr_sql = self.sql(node)
+    if isinstance(node, exp.Literal) and node.is_string:
+        expr_sql = (
+            f"{kind} '{node.this.replace('T', ' ')}'"
+            if kind == "TIMESTAMP"
+            else f"DATE '{node.this}'"
+        )
+    return f"DATE_TRUNC('{unit}', {expr_sql})"
+
+
+def _date_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "DATE", expression)
+
+
+def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "TIMESTAMP", expression)
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -308,7 +328,7 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
             exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DateTrunc: _date_trunc_sql,
             exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
@@ -338,7 +358,7 @@ class Exasol(Dialect):
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(),
+            exp.TimestampTrunc: _timestamp_trunc_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(
@@ -373,6 +393,7 @@ class Exasol(Dialect):
             exp.Date: rename_func("TO_DATE"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
+            exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

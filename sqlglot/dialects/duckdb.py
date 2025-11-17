@@ -58,6 +58,15 @@ REGEX_ESCAPE_REPLACEMENTS = {
     "]": r"\]",
 }
 
+# Whitespace control characters that DuckDB must process with `CHR({val})` calls
+WS_CONTROL_CHARS_TO_DUCK = {
+    "\u000b": 11,
+    "\u001c": 28,
+    "\u001d": 29,
+    "\u001e": 30,
+    "\u001f": 31,
+}
+
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -299,16 +308,48 @@ def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     return self.function_fallback_sql(expression)
 
 
+def _literal_sql_with_ws_chr(self: DuckDB.Generator, literal: str) -> str:
+    # DuckDB does not support \uXXXX escapes, so we must use CHR() instead of replacing them directly
+    if not any(ch in WS_CONTROL_CHARS_TO_DUCK for ch in literal):
+        return self.sql(exp.Literal.string(literal))
+
+    sql_segments: t.List[str] = []
+    literal_chars: t.List[str] = []
+
+    for ch in literal:
+        duckdb_char_code = WS_CONTROL_CHARS_TO_DUCK.get(ch)
+        if not duckdb_char_code:
+            literal_chars.append(ch)
+            continue
+
+        if literal_chars:
+            sql_segments.append(self.sql(exp.Literal.string("".join(literal_chars))))
+            literal_chars.clear()
+
+        sql_segments.append(self.func("CHR", exp.Literal.number(str(duckdb_char_code))))
+
+    if literal_chars:
+        sql_segments.append(self.sql(exp.Literal.string("".join(literal_chars))))
+
+    sql = " || ".join(sql_segments)
+    return sql if len(sql_segments) == 1 else f"({sql})"
+
+
 def _escape_regex_metachars(
     self: DuckDB.Generator, delimiters: t.Optional[exp.Expression], delimiters_sql: str
 ) -> str:
+    r"""
+    Escapes regex metacharacters \ - ^ [ ] for use in character classes regex expressions.
+
+    Literal strings are escaped at transpile time, expressions handled with REPLACE() calls.
+    """
     if not delimiters:
         return delimiters_sql
 
     if delimiters.is_string:
         literal_value = delimiters.this
         escaped_literal = "".join(REGEX_ESCAPE_REPLACEMENTS.get(ch, ch) for ch in literal_value)
-        return self.sql(exp.Literal.string(escaped_literal))
+        return _literal_sql_with_ws_chr(self, escaped_literal)
 
     escaped_sql = delimiters_sql
     for raw, escaped in REGEX_ESCAPE_REPLACEMENTS.items():
@@ -325,20 +366,14 @@ def _escape_regex_metachars(
 def _build_capitalization_sql(
     self: DuckDB.Generator,
     value_to_split: str,
-    raw_delimiters_sql: str,
-    escaped_delimiters_sql: t.Optional[str] = None,
-    convert_delim_to_regex: bool = True,
+    delimiters_sql: str,
 ) -> str:
     # empty string delimiter --> treat value as one word, no need to split
-    if raw_delimiters_sql == "''":
-        return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTR({value_to_split}, 2))"
+    if delimiters_sql == "''":
+        return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTRING({value_to_split}, 2))"
 
-    regex_ready_sql = escaped_delimiters_sql or raw_delimiters_sql
-    delim_regex_sql = regex_ready_sql
-    split_regex_sql = regex_ready_sql
-    if convert_delim_to_regex:
-        delim_regex_sql = f"CONCAT('[', {regex_ready_sql}, ']')"
-        split_regex_sql = f"CONCAT('([', {regex_ready_sql}, ']+|[^', {regex_ready_sql}, ']+)')"
+    delim_regex_sql = f"CONCAT('[', {delimiters_sql}, ']')"
+    split_regex_sql = f"CONCAT('([', {delimiters_sql}, ']+|[^', {delimiters_sql}, ']+)')"
 
     # REGEXP_EXTRACT_ALL produces a list of string segments, alternating between delimiter and non-delimiter segments.
     # We do not know whether the first segment is a delimiter or not, so we check the first character of the string
@@ -351,14 +386,14 @@ def _build_capitalization_sql(
             self.func(
                 "LIST_TRANSFORM",
                 self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+                "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
             ),
         )
         .else_(
             self.func(
                 "LIST_TRANSFORM",
                 self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTR(seg, 2)) ELSE seg END",
+                "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
             ),
         ),
         "''",
@@ -369,19 +404,10 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     this_sql = self.sql(expression, "this")
     delimiters = expression.args.get("expression")
     delimiters_sql = self.sql(delimiters)
-    escaped_delimiters_sql = (
-        _escape_regex_metachars(self, delimiters, delimiters_sql)
-        if not isinstance(delimiters, exp.Null)
-        else delimiters_sql
-    )
 
-    return _build_capitalization_sql(
-        self,
-        this_sql,
-        delimiters_sql,
-        escaped_delimiters_sql,
-        convert_delim_to_regex=not isinstance(delimiters, exp.Null),
-    )
+    escaped_delimiters_sql = _escape_regex_metachars(self, delimiters, delimiters_sql)
+
+    return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
 class DuckDB(Dialect):

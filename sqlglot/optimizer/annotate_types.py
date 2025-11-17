@@ -258,8 +258,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        for expr in reversed(list(expression.walk(bfs=False))):
-            self._maybe_annotate(expr)
+        self._annotate_expressions(expression)
 
         # Replace NULL type with UNKNOWN, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -381,9 +380,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
 
-        # Annotate by iterating through all the expressions of the current scope in post-order
-        for expr in reversed(list(scope.expression.walk(bfs=False))):
-            self._maybe_annotate(expr)
+        # Iterate through all the expressions of the current scope in post-order, and annotate
+        self._annotate_expressions(scope.expression)
 
         if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -409,13 +407,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 scope.expression.meta["query_type"] = struct_type
 
     def _maybe_annotate(self, expression: E) -> E:
-        if id(expression) in self._visited or (
-            not self._overwrite_types
-            and expression.type
-            and not expression.is_type(exp.DataType.Type.UNKNOWN)
-        ):
-            return expression  # We've already inferred the expression's type
-
         spec = self.expression_metadata.get(expression.__class__)
 
         if spec and (annotator := spec.get("annotator")):
@@ -427,6 +418,25 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             expr_type = exp.DataType.Type.UNKNOWN
 
         return self._annotate_with_type(expression, expr_type)
+
+    def _annotate_expressions(self, root: exp.Expression) -> None:
+        stack = [(root, False)]
+        while stack:
+            expr, children_processed = stack.pop()
+
+            if id(expr) in self._visited or (
+                not self._overwrite_types
+                and expr.type
+                and not expr.is_type(exp.DataType.Type.UNKNOWN)
+            ):
+                continue
+
+            if children_processed:
+                self._maybe_annotate(expr)
+            else:
+                stack.append((expr, True))
+                for child in expr.iter_expressions():
+                    stack.append((child, False))
 
     def _maybe_coerce(
         self,

@@ -419,24 +419,24 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return self._annotate_with_type(expression, expr_type)
 
-    def _annotate_expressions(self, root: exp.Expression) -> None:
-        stack = [(root, False)]
+    def _annotate_expressions(self, expression: exp.Expression) -> None:
+        stack = [(expression, False)]
         while stack:
-            expr, children_processed = stack.pop()
+            expr, children_annotated = stack.pop()
 
             if id(expr) in self._visited or (
                 not self._overwrite_types
                 and expr.type
                 and not expr.is_type(exp.DataType.Type.UNKNOWN)
             ):
-                continue
+                continue  # We've already inferred the expression's type
 
-            if children_processed:
+            if children_annotated:
                 self._maybe_annotate(expr)
             else:
                 stack.append((expr, True))
-                for child in expr.iter_expressions():
-                    stack.append((child, False))
+                for child_expr in expr.iter_expressions():
+                    stack.append((child_expr, False))
 
     def _maybe_coerce(
         self,

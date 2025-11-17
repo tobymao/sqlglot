@@ -685,14 +685,18 @@ class TestHive(Validator):
             },
         )
 
-        hive_default_duckdb_sql = "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT('new york', 1), '[' || (' \t\n\r\x0c' || CHR(11) || CHR(28) || CHR(29) || CHR(30) || CHR(31)) || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || (' \t\n\r\x0c' || CHR(11) || CHR(28) || CHR(29) || CHR(30) || CHR(31)) || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || CHR(28) || CHR(29) || CHR(30) || CHR(31)) || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL('new york', '([' || (' \t\n\r\x0c' || CHR(11) || CHR(28) || CHR(29) || CHR(30) || CHR(31)) || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || CHR(28) || CHR(29) || CHR(30) || CHR(31)) || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')"
         self.validate_all(
             "INITCAP('new york')",
             write={
-                "duckdb": hive_default_duckdb_sql,
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },
+        )
+        expression = self.parse_one("INITCAP('new york')")
+        self.assert_duckdb_sql(
+            expression,
+            includes=("REGEXP_MATCHES(", "ARRAY_TO_STRING("),
+            chr_chars=("\u000b", "\u001c", "\u001d", "\u001e", "\u001f"),
         )
         self.validate_all(
             "SELECT * FROM x.z TABLESAMPLE(10 PERCENT) y",

@@ -557,7 +557,6 @@ class Snowflake(Dialect):
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # https://docs.snowflake.com/en/en/sql-reference/functions/initcap
-    INITCAP_SUPPORTS_CUSTOM_DELIMITERS = True
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v!?@"^#$&~_,.:;+\\-*%/|\\[\\](){}<>'
 
     TIME_MAPPING = {

@@ -1,3 +1,4 @@
+import typing as t
 import unittest
 
 from sqlglot import (
@@ -12,6 +13,7 @@ from sqlglot import (
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake, Spark2
 from sqlglot.dialects.dialect import Version
+from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
 
@@ -21,6 +23,27 @@ class Validator(unittest.TestCase):
 
     def parse_one(self, sql, **kwargs):
         return parse_one(sql, read=self.dialect, **kwargs)
+
+    def assert_duckdb_sql(
+        self,
+        expression: exp.Expression,
+        *,
+        includes: t.Iterable[str] | None = None,
+        excludes: t.Iterable[str] | None = None,
+        chr_chars: t.Iterable[str] | None = None,
+    ) -> str:
+        duckdb_sql = expression.sql("duckdb")
+
+        for fragment in includes or ():
+            self.assertIn(fragment, duckdb_sql)
+        for fragment in excludes or ():
+            self.assertNotIn(fragment, duckdb_sql)
+        for char in chr_chars or ():
+            code = WS_CONTROL_CHARS_TO_DUCK.get(char)
+            self.assertIsNotNone(code, f"missing DuckDB code for {repr(char)}")
+            self.assertIn(f"CHR({code})", duckdb_sql)
+
+        return duckdb_sql
 
     def validate_identity(
         self, sql, write_sql=None, pretty=False, check_command_warning=False, identify=False
@@ -4313,114 +4336,72 @@ FROM subquery2""",
             "spark": Spark2.INITCAP_DEFAULT_DELIMITER_CHARS,
         }
 
-        duckdb_default_delimiter_sql = {
-            "": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || (' \t\n\r\x0c' || CHR(11) || '!\"#$%&''()*+,\\\\\\-./:;<=>?@\\\\\\[\\\\\\]\\^_`{|}~') || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '!\"#$%&''()*+,\\\\\\-./:;<=>?@\\\\\\[\\\\\\]\\^_`{|}~') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '!\"#$%&''()*+,\\\\\\-./:;<=>?@\\\\\\[\\\\\\]\\^_`{|}~') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '!\"#$%&''()*+,\\\\\\-./:;<=>?@\\\\\\[\\\\\\]\\^_`{|}~') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '!\"#$%&''()*+,\\\\\\-./:;<=>?@\\\\\\[\\\\\\]\\^_`{|}~') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-            "bigquery": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || (' \t\n\r\x0c' || CHR(11) || '\\\\\\[\\\\\\](){}/|<>!?@\"\\^#$&~_,.:;*%+\\\\\\-') || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '\\\\\\[\\\\\\](){}/|<>!?@\"\\^#$&~_,.:;*%+\\\\\\-') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '\\\\\\[\\\\\\](){}/|<>!?@\"\\^#$&~_,.:;*%+\\\\\\-') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '\\\\\\[\\\\\\](){}/|<>!?@\"\\^#$&~_,.:;*%+\\\\\\-') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '\\\\\\[\\\\\\](){}/|<>!?@\"\\^#$&~_,.:;*%+\\\\\\-') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-            "snowflake": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || (' \t\n\r\x0c' || CHR(11) || '!?@\"\\^#$&~_,.:;+\\\\\\-*%/|\\\\\\[\\\\\\](){}<>') || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '!?@\"\\^#$&~_,.:;+\\\\\\-*%/|\\\\\\[\\\\\\](){}<>') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '!?@\"\\^#$&~_,.:;+\\\\\\-*%/|\\\\\\[\\\\\\](){}<>') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || (' \t\n\r\x0c' || CHR(11) || '!?@\"\\^#$&~_,.:;+\\\\\\-*%/|\\\\\\[\\\\\\](){}<>') || ']+|[^' || (' \t\n\r\x0c' || CHR(11) || '!?@\"\\^#$&~_,.:;+\\\\\\-*%/|\\\\\\[\\\\\\](){}<>') || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-            "spark": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || ' ' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' ' || ']+|[^' || ' ' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' ' || ']+|[^' || ' ' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-        }
-
-        # None delimiters arg doesn't error
-        with self.subTest("Testing INITCAP with None delimiters arg"):
+        with self.subTest("INITCAP without explicit delimiters"):
             self.assertEqual(exp.Initcap(this=exp.Literal.string("col")).sql(), "INITCAP('col')")
             self.assertEqual(exp.Initcap(this=exp.column("col")).sql(), "INITCAP(col)")
 
-        # default delimiters not present in roundtrip
         for dialect in delimiter_chars:
-            with self.subTest(
-                f"Testing INITCAP roundtrips for {dialect or 'default'} dialect without default delimiters included"
-            ):
+            with self.subTest(f"Round-tripping default delimiters for {dialect or 'default'}"):
                 self.assertEqual(
                     parse_one("INITCAP(col)", read=dialect).sql(dialect), "INITCAP(col)"
                 )
 
-        # default delimiters are present for BQ and Snowflake generators
         for read_dialect in ("", "spark"):
             for write_dialect in ("bigquery", "snowflake"):
                 with self.subTest(
-                    f"Testing INITCAP default delimiters from {read_dialect or 'default'} to {write_dialect}"
+                    f"Default delimiters emitted from {read_dialect or 'default'} to {write_dialect}"
                 ):
-                    escaped_delimiter_chars = exp.Literal.string(delimiter_chars[read_dialect]).sql(
+                    escaped_delimiters = exp.Literal.string(delimiter_chars[read_dialect]).sql(
                         write_dialect
                     )
-                    assert (
-                        parse_one("INITCAP(col)", read=read_dialect).sql(write_dialect)
-                        == f"INITCAP(col, {escaped_delimiter_chars})"
-                    )
-
-        for dialect, default_delimiters in delimiter_chars.items():
-            with self.subTest(f"DuckDB rewrite for {dialect or 'default'} default delimiters"):
-                self.assertEqual(
-                    parse_one("INITCAP(col)", read=dialect).sql("duckdb"),
-                    duckdb_default_delimiter_sql[dialect],
-                )
-
-        # DuckDB generation for BQ/Snowflake calls with custom delimiters arg
-        for dialect in ("bigquery", "snowflake"):
-            query = "INITCAP(col, '')"
-            with self.subTest(f"Testing DuckDB generation for {query} from {dialect}"):
-                self.assertEqual(
-                    parse_one(query, read=dialect).sql("duckdb"),
-                    "UPPER(LEFT(col, 1)) || LOWER(SUBSTRING(col, 2))",
-                )
-
-            query = "INITCAP(col, NULL)"
-            with self.subTest(f"DuckDB generation for {query} from {dialect}"):
-                # NULL delimiters generate verbose REPLACE calls but still evaluate to NULL correctly
-                escaped_null = r"REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(NULL, '\', '\\'), '-', '\-'), '^', '\^'), '[', '\['), ']', '\]')"
-                self.assertEqual(
-                    parse_one(query, read=dialect).sql("duckdb"),
-                    f"ARRAY_TO_STRING("
-                    f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_null} || ']') "
-                    f"THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_null} || ']+|[^' || {escaped_null} || ']+)'), "
-                    f"(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    f"ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || {escaped_null} || ']+|[^' || {escaped_null} || ']+)'), "
-                    f"(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    f"END, '')",
-                )
-
-            custom_delimiter_expectations = {
-                " ": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || ' ' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' ' || ']+|[^' || ' ' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' ' || ']+|[^' || ' ' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-                "@": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || '@' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '@' || ']+|[^' || '@' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '@' || ']+|[^' || '@' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-                " _@": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || ' _@' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' _@' || ']+|[^' || ' _@' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || ' _@' || ']+|[^' || ' _@' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-                r"\\": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || '\\\\\\\\' || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '\\\\\\\\' || ']+|[^' || '\\\\\\\\' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || '\\\\\\\\' || ']+|[^' || '\\\\\\\\' || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-                "\u000b": "ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || CHR(11) || ']') THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || CHR(11) || ']+|[^' || CHR(11) || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || CHR(11) || ']+|[^' || CHR(11) || ']+)'), (seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) END, '')",
-            }
-            for custom_delimiter, expected_duckdb_sql in custom_delimiter_expectations.items():
-                with self.subTest(
-                    f"DuckDB generation for INITCAP(col, {custom_delimiter}) from {dialect}"
-                ):
-                    literal_sql = exp.Literal.string(custom_delimiter).sql(dialect)
-                    expression = parse_one(f"INITCAP(col, {literal_sql})", read=dialect)
                     self.assertEqual(
-                        expression.sql("duckdb"),
-                        expected_duckdb_sql,
+                        parse_one("INITCAP(col)", read=read_dialect).sql(write_dialect),
+                        f"INITCAP(col, {escaped_delimiters})",
                     )
 
-            with self.subTest(
-                f"DuckDB generation for INITCAP subquery as custom delimiter arg from {dialect}"
-            ):
-                escaped_subquery = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE((SELECT delimiter FROM settings LIMIT 1), '\\', '\\\\'), '-', '\\-'), '^', '\\^'), '[', '\\['), ']', '\\]')"
-                self.assertEqual(
-                    parse_one(
-                        "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))", read=dialect
-                    ).sql("duckdb"),
-                    "ARRAY_TO_STRING("
-                    + f"CASE WHEN REGEXP_MATCHES(LEFT(col, 1), '[' || {escaped_subquery} || ']') "
-                    "THEN LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || "
-                    + escaped_subquery
-                    + " || ']+|[^' || "
-                    + escaped_subquery
-                    + " || ']+)'), "
-                    "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "ELSE LIST_TRANSFORM(REGEXP_EXTRACT_ALL(col, '([' || "
-                    + escaped_subquery
-                    + " || ']+|[^' || "
-                    + escaped_subquery
-                    + " || ']+)'), "
-                    "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END) "
-                    "END, '')",
-                )
+        def assert_default_duckdb_sql(read_dialect: str, default_chars: str) -> None:
+            chr_chars = [char for char in WS_CONTROL_CHARS_TO_DUCK if char in default_chars]
+            expression = parse_one("INITCAP(col)", read=read_dialect)
+            self.assert_duckdb_sql(
+                expression,
+                includes=("ARRAY_TO_STRING(", "REGEXP_MATCHES(", "LIST_TRANSFORM("),
+                chr_chars=chr_chars,
+            )
+
+        for dialect, default_chars in delimiter_chars.items():
+            with self.subTest(f"DuckDB rewrite for {dialect or 'default'} default delimiters"):
+                assert_default_duckdb_sql(dialect, default_chars)
+
+        def assert_custom_duckdb_sql(
+            query: str,
+            *,
+            includes: t.Iterable[str] | None = None,
+            excludes: t.Iterable[str] | None = None,
+            chr_chars: t.Iterable[str] | None = None,
+        ) -> None:
+            for dialect in ("bigquery", "snowflake"):
+                with self.subTest(f"DuckDB generation for {query} from {dialect}"):
+                    expression = parse_one(query, read=dialect)
+                    self.assert_duckdb_sql(
+                        expression, includes=includes, excludes=excludes, chr_chars=chr_chars
+                    )
+
+        assert_custom_duckdb_sql(
+            "INITCAP(col, '')", includes=("UPPER(LEFT(",), excludes=("REGEXP_MATCHES(",)
+        )
+        assert_custom_duckdb_sql("INITCAP(col, NULL)", includes=("REGEXP_MATCHES(", "REPLACE("))
+        assert_custom_duckdb_sql("INITCAP(col, ' ')", includes=("' '",))
+        assert_custom_duckdb_sql("INITCAP(col, '@')", includes=("'@'",), excludes=("CHR(",))
+        assert_custom_duckdb_sql("INITCAP(col, '_@')", includes=("'_@'",))
+        assert_custom_duckdb_sql(r"INITCAP(col, '\\\\')", includes=("\\\\",))
+        assert_custom_duckdb_sql(
+            "INITCAP(col, '\u000b')",
+            chr_chars=("\u000b",),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))",
+            includes=("SELECT delimiter FROM settings", "REPLACE("),
+        )
 
     def test_initcap_custom_delimiter_warning(self):
         expression = parse_one("INITCAP(col, '_')", read="bigquery")

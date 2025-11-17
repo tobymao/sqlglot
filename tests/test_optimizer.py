@@ -1833,3 +1833,4 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         binary_sql = "SELECT " + "t.a + " * 2000 + "t.a FROM t"
         annotated = annotate_types(parse_one(binary_sql), schema={"t": {"a": "int"}})
         self.assertEqual(annotated.sql(), binary_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.INT)

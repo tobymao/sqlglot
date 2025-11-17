@@ -27,8 +27,6 @@ def _annotate_timestamp_from_parts(
     TIMESTAMP_FROM_PARTS with time_zone -> TIMESTAMPTZ
     TIMESTAMP_FROM_PARTS without time_zone -> TIMESTAMP (defaults to TIMESTAMP_NTZ)
     """
-    self._annotate_args(expression)
-
     if expression.args.get("zone"):
         self._set_type(expression, exp.DataType.Type.TIMESTAMPTZ)
     else:
@@ -38,8 +36,6 @@ def _annotate_timestamp_from_parts(
 
 
 def _annotate_date_or_time_add(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
-    self._annotate_args(expression)
-
     if (
         expression.this.is_type(exp.DataType.Type.DATE)
         and expression.text("unit").upper() not in DATE_PARTS
@@ -57,8 +53,6 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     We only look at the return values (ret1, ret2, ..., default) to determine the type,
     not the comparison values (val1, val2, ...) or the expression being compared.
     """
-    self._annotate_args(expression)
-
     expressions = expression.expressions
 
     # Return values are at indices 2, 4, 6, ... and the last element (if even length)
@@ -96,8 +90,6 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     1) Annotate args first
     2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
     """
-    self._annotate_args(expression)
-
     if (
         isinstance(expression.this, exp.PercentileDisc)
         and isinstance(order_expr := expression.expression, exp.Order)

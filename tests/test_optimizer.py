@@ -1823,3 +1823,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             sql
             == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
         )
+
+    def test_iter_annoate_types(self):
+        union_sql = "SELECT 1 UNION ALL " * 900 + "SELECT 1"
+        annotated = annotate_types(parse_one(union_sql))
+        self.assertEqual(annotated.sql(), union_sql)

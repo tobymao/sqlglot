@@ -20,8 +20,6 @@ def _annotate_by_similar_args(
     - If all args are of the same type OR any arg is of target_type, the expr is inferred as such
     - If any arg is of UNKNOWN type and none of target_type, the expr is inferred as UNKNOWN
     """
-    self._annotate_args(expression)
-
     expressions: t.List[exp.Expression] = []
     for arg in args:
         arg_expr = expression.args.get(arg)

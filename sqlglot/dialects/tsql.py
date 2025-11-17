@@ -1192,8 +1192,6 @@ class TSQL(Dialect):
             )
 
         def extract_sql(self, expression: exp.Extract) -> str:
-            
-
             part = expression.this
             name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
 

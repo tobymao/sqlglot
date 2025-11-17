@@ -217,19 +217,6 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
     return self.func("FORMAT", expression.this, fmt_sql, expression.args.get("culture"))
 
 
-def _build_datepart(self: TSQL.Generator, expression: exp.Extract) -> str:
-    DATE_PART_UNMAPPING = {
-        "WEEKISO": "ISO_WEEK",
-        "DAYOFWEEK": "WEEKDAY",
-        "TIMEZONE_MINUTE": "TZOFFSET",
-    }
-
-    part = expression.this
-    name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
-
-    return self.func("DATEPART", name, expression.expression)
-
-
 def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
     this = expression.this
     distinct = expression.find(exp.Distinct)
@@ -710,7 +697,7 @@ class TSQL(Dialect):
             "ts": exp.Timestamp,
         }
 
-        def _parse_datepart(self) -> exp.Expression:
+        def _parse_datepart(self) -> exp.Extract:
             this = self._parse_var()
             expression = self._match(TokenType.COMMA) and self._parse_bitwise()
             name = map_date_part(this, self.dialect)
@@ -1078,7 +1065,6 @@ class TSQL(Dialect):
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.Extract: _build_datepart,
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
@@ -1199,6 +1185,18 @@ class TSQL(Dialect):
             return self.func(
                 "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
             )
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            DATE_PART_UNMAPPING = {
+                "WEEKISO": "ISO_WEEK",
+                "DAYOFWEEK": "WEEKDAY",
+                "TIMEZONE_MINUTE": "TZOFFSET",
+            }
+
+            part = expression.this
+            name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
+
+            return self.func("DATEPART", name, expression.expression)
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

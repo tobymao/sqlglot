@@ -28,9 +28,9 @@ class Validator(unittest.TestCase):
         self,
         expression: exp.Expression,
         *,
-        includes: t.Iterable[str] | None = None,
-        excludes: t.Iterable[str] | None = None,
-        chr_chars: t.Iterable[str] | None = None,
+        includes: t.Optional[t.Iterable[str]] = None,
+        excludes: t.Optional[t.Iterable[str]] = None,
+        chr_chars: t.Optional[t.Iterable[str]] = None,
     ) -> str:
         duckdb_sql = expression.sql("duckdb")
 
@@ -4375,9 +4375,9 @@ FROM subquery2""",
         def assert_custom_duckdb_sql(
             query: str,
             *,
-            includes: t.Iterable[str] | None = None,
-            excludes: t.Iterable[str] | None = None,
-            chr_chars: t.Iterable[str] | None = None,
+            includes: t.Optional[t.Iterable[str]] = None,
+            excludes: t.Optional[t.Iterable[str]] = None,
+            chr_chars: t.Optional[t.Iterable[str]] = None,
         ) -> None:
             for dialect in ("bigquery", "snowflake"):
                 with self.subTest(f"DuckDB generation for {query} from {dialect}"):

@@ -45,6 +45,12 @@ DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
 
 def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
+    delimiters = expression.expression
+    if delimiters and not (
+        delimiters.is_string and delimiters.this == self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS
+    ):
+        self.unsupported("INITCAP does not support custom delimiters")
+
     regex = r"(\w)(\w*)"
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 

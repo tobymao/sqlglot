@@ -1,5 +1,4 @@
 from tests.dialects.test_dialect import Validator
-
 from sqlglot import exp
 
 
@@ -685,14 +684,19 @@ class TestHive(Validator):
                 "spark": "LOCATE('a', x, 3)",
             },
         )
+
         self.validate_all(
             "INITCAP('new york')",
             write={
-                "duckdb": "INITCAP('new york')",
-                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },
+        )
+        expression = self.parse_one("INITCAP('new york')")
+        self.assert_duckdb_sql(
+            expression,
+            includes=("REGEXP_MATCHES(", "ARRAY_TO_STRING("),
+            chr_chars=("\u000b", "\u001c", "\u001d", "\u001e", "\u001f"),
         )
         self.validate_all(
             "SELECT * FROM x.z TABLESAMPLE(10 PERCENT) y",

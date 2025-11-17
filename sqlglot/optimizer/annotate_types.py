@@ -258,7 +258,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        self._annotate_expressions(expression)
+        self._annotate_expression(expression)
 
         # Replace NULL type with UNKNOWN, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -381,7 +381,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     self._set_type(table_column, source.expression.meta["query_type"])
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expressions(scope.expression)
+        self._annotate_expression(scope.expression)
 
         if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -419,7 +419,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return self._annotate_with_type(expression, expr_type)
 
-    def _annotate_expressions(self, expression: exp.Expression) -> None:
+    def _annotate_expression(self, expression: exp.Expression) -> None:
         stack = [(expression, False)]
         while stack:
             expr, children_annotated = stack.pop()

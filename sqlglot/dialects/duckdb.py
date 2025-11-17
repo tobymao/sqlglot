@@ -403,6 +403,9 @@ def _build_capitalization_sql(
 def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     this_sql = self.sql(expression, "this")
     delimiters = expression.args.get("expression")
+    if delimiters is None:
+        # fallback for manually created exp.Initcap w/o delimiters arg
+        delimiters = exp.Literal.string(self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS)
     delimiters_sql = self.sql(delimiters)
 
     escaped_delimiters_sql = _escape_regex_metachars(self, delimiters, delimiters_sql)

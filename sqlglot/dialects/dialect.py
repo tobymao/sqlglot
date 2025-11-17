@@ -255,6 +255,9 @@ class _Dialect(type):
 
         klass.SUPPORTS_COLUMN_JOIN_MARKS = "(+)" in klass.tokenizer_class.KEYWORDS
 
+        if enum not in ("", "bigquery", "snowflake"):
+            klass.INITCAP_SUPPORTS_CUSTOM_DELIMITERS = False
+
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
@@ -536,6 +539,11 @@ class Dialect(metaclass=_Dialect):
     # Whether the double negation can be applied
     # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
+
+    # Whether the INITCAP function supports custom delimiter characters as the second argument
+    # Default delimiter characters for INITCAP function: whitespace and non-alphanumeric characters
+    INITCAP_SUPPORTS_CUSTOM_DELIMITERS = True
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\v!\"#$%&'()*+,\\-./:;<=>?@\\[\\]^_`{|}~"
 
     BYTE_STRING_IS_BYTES_TYPE: bool = False
     """

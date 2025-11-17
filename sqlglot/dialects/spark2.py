@@ -119,6 +119,11 @@ class Spark2(Hive):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # https://spark.apache.org/docs/latest/api/sql/index.html#initcap
+    # https://docs.databricks.com/aws/en/sql/language-manual/functions/initcap
+    # https://github.com/apache/spark/blob/master/common/unsafe/src/main/java/org/apache/spark/unsafe/types/UTF8String.java#L859-L905
+    INITCAP_DEFAULT_DELIMITER_CHARS = " "
+
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'"), ("x'", "'")]
 

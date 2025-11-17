@@ -219,6 +219,10 @@ class Hive(Dialect):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=27362046#LanguageManualUDF-StringFunctions
+    # https://github.com/apache/hive/blob/master/ql/src/java/org/apache/hadoop/hive/ql/exec/Utilities.java#L266-L269
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\u000b\u001c\u001d\u001e\u001f"
+
     # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for target_type in {

@@ -3619,7 +3619,10 @@ class SetOperation(Query):
 
     @property
     def named_selects(self) -> t.List[str]:
-        return self.this.unnest().named_selects
+        expression = self
+        while isinstance(expression, SetOperation):
+            expression = expression.this.unnest()
+        return expression.named_selects
 
     @property
     def is_star(self) -> bool:

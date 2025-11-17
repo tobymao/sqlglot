@@ -1825,6 +1825,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
     def test_iter_annoate_types(self):
-        union_sql = "SELECT 1 UNION ALL " * 900 + "SELECT 1"
+        union_sql = "SELECT 1 UNION ALL " * 3000 + "SELECT 1"
         annotated = annotate_types(parse_one(union_sql))
         self.assertEqual(annotated.sql(), union_sql)

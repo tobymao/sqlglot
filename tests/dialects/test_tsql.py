@@ -1491,71 +1491,43 @@ WHERE
         )
 
     def test_datepart(self):
-        for fmt in ("QUARTER", "qq", "q"):
-            self.validate_identity(
-                f"DATEPART({fmt}, x)",
-                "DATEPART(QUARTER, x)",
-            )
-        for fmt in ("YEAR", "yy", "yyyy"):
-            self.validate_identity(
-                f"DATEPART({fmt}, x)",
-                "DATEPART(YEAR, x)",
-            )
-        for fmt in ("HOUR", "hh"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(HOUR, date_and_time)",
-            )
-        for fmt in ("MINUTE", "mi", "n"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(MINUTE, date_and_time)",
-            )
-        for fmt in ("SECOND", "ss", "s"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(SECOND, date_and_time)",
-            )
-        for fmt in ("MILLISECOND", "ms"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(MILLISECOND, date_and_time)",
-            )
-        for fmt in ("MICROSECOND", "mcs"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(MICROSECOND, date_and_time)",
-            )
-        for fmt in ("NANOSECOND", "ns"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(NANOSECOND, date_and_time)",
-            )
-        for fmt in ("WEEKDAY", "dw"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(WEEKDAY, date_and_time)",
-            )
-        for fmt in ("TZOFFSET", "tz"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(TZOFFSET, date_and_time)",
-            )
-        for fmt in ("MONTH", "mm", "m"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(MONTH, date_and_time)",
-            )
-        for fmt in ("DAYOFYEAR", "dy", "y"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(DAYOFYEAR, date_and_time)",
-            )
-        for fmt in ("DAY", "dd", "d"):
-            self.validate_identity(
-                f"DATEPART({fmt}, date_and_time)",
-                "DATEPART(DAY, date_and_time)",
-            )
+        datepart_formats = (
+            (("QUARTER", "qq", "q"), "QUARTER"),
+            (("YEAR", "yy", "yyyy"), "YEAR"),
+            (("HOUR", "hh"), "HOUR"),
+            (("MINUTE", "mi", "n"), "MINUTE"),
+            (("SECOND", "ss", "s"), "SECOND"),
+            (("MILLISECOND", "ms"), "MILLISECOND"),
+            (("MICROSECOND", "mcs"), "MICROSECOND"),
+            (("NANOSECOND", "ns"), "NANOSECOND"),
+            (("WEEKDAY", "dw"), "WEEKDAY"),
+            (("TZOFFSET", "tz"), "TZOFFSET"),
+            (("MONTH", "mm", "m"), "MONTH"),
+            (("DAYOFYEAR", "dy", "y"), "DAYOFYEAR"),
+            (("DAY", "dd", "d"), "DAY"),
+        )
+
+        for formats, canonical in datepart_formats:
+            for fmt in formats:
+                with self.subTest(f"Testing DATEPART where part is: {fmt}"):
+                    self.validate_identity(
+                        f"DATEPART({fmt}, x)",
+                        f"DATEPART({canonical}, x)",
+                    )
+
+        select_datepart_formats = (
+            (("WEEK", "WW", "WK"), "WEEK"),
+            (("ISOWK", "ISOWW", "ISO_WEEK"), "ISO_WEEK"),
+        )
+
+        for formats, canonical in select_datepart_formats:
+            for fmt in formats:
+                with self.subTest(f"Testing DATEPART where part is: {fmt}"):
+                    self.validate_identity(
+                        f"SELECT DATEPART({fmt}, '2024-11-21')",
+                        f"SELECT DATEPART({canonical}, '2024-11-21')",
+                    )
+
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
@@ -1596,18 +1568,6 @@ WHERE
                 "tsql": "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
             },
         )
-
-        for fmt in ("WEEK", "WW", "WK"):
-            self.validate_identity(
-                f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(WEEK, '2024-11-21')",
-            )
-
-        for fmt in ("ISOWK", "ISOWW", "ISO_WEEK"):
-            self.validate_identity(
-                f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(ISO_WEEK, '2024-11-21')",
-            )
 
     def test_convert(self):
         self.validate_all(

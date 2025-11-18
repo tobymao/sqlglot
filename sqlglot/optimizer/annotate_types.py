@@ -424,18 +424,19 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         while stack:
             expr, children_annotated = stack.pop()
 
-            if id(expr) in self._visited or (
-                not self._overwrite_types
-                and expr.type
-                and not expr.is_type(exp.DataType.Type.UNKNOWN)
-            ):
-                continue  # We've already inferred the expression's type
-
             if children_annotated:
                 self._maybe_annotate(expr)
             else:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
+
+                    if id(child_expr) in self._visited or (
+                        not self._overwrite_types
+                        and child_expr.type
+                        and not child_expr.is_type(exp.DataType.Type.UNKNOWN)
+                    ):
+                        continue  # We've already inferred the expression's type
+
                     stack.append((child_expr, False))
 
     def _maybe_coerce(

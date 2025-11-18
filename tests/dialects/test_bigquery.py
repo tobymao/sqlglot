@@ -3454,32 +3454,94 @@ OPTIONS (
 
     def test_approx_quantiles(self):
         self.validate_identity("APPROX_QUANTILES(x, 2)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2)")
+        self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
+        self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
 
-        ast = self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2)")
-        self.assertIsInstance(ast.this, exp.Distinct)
-        self.assertEqual(len(ast.this.expressions), 1)
-        self.assertIsInstance(ast.this.expressions[0], exp.Column)
-        self.assertIsInstance(ast.expression, exp.Literal)
+    def test_approx_quantiles_to_duckdb(self):
+        self.validate_all(
+            "APPROX_QUANTILES(x, 1)",
+            write={"duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 1)]"},
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(x, 2)",
+            write={
+                "duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 1)]"
+            },
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(x, 4)",
+            write={
+                "duckdb": (
+                    "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.25), "
+                    "APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 0.75), APPROX_QUANTILE(x, 1)]"
+                )
+            },
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(DISTINCT x, 2)",
+            write={
+                "duckdb": (
+                    "[APPROX_QUANTILE(DISTINCT x, 0), APPROX_QUANTILE(DISTINCT x, 0.5), "
+                    "APPROX_QUANTILE(DISTINCT x, 1)]"
+                )
+            },
+        )
 
-        ast = self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
-        approx_expr = ast.find(exp.ApproxQuantiles)
-        respect_expr = ast.find(exp.RespectNulls)
-        self.assertIsNotNone(respect_expr)
-        self.assertEqual(respect_expr.this, approx_expr)
-        self.assertIsInstance(approx_expr.this, exp.Column)
-        self.assertIsInstance(approx_expr.expression, exp.Literal)
+        with self.subTest("APPROX_QUANTILES 100 buckets"):
+            result = self.parse_one("APPROX_QUANTILES(x, 100)").sql("duckdb")
+            self.assertEqual(result.count("APPROX_QUANTILE"), 101)
+            self.assertIn("APPROX_QUANTILE(x, 0.1)", result)
+            self.assertIn("APPROX_QUANTILE(x, 0.99)", result)
 
-        ast = self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
-        approx_expr = ast.find(exp.ApproxQuantiles)
-        ignore_expr = ast.find(exp.IgnoreNulls)
-        self.assertIsNotNone(ignore_expr)
-        self.assertEqual(ignore_expr.this, approx_expr)
+        for expr in ("x + y", "CASE WHEN x > 0 THEN x ELSE 0 END", "ABS(x)"):
+            with self.subTest(expr=expr):
+                self.validate_all(
+                    f"APPROX_QUANTILES({expr}, 2)",
+                    write={
+                        "duckdb": (
+                            f"[APPROX_QUANTILE({expr}, 0), "
+                            f"APPROX_QUANTILE({expr}, 0.5), APPROX_QUANTILE({expr}, 1)]"
+                        )
+                    },
+                )
 
-        ast = self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
-        approx_expr = ast.find(exp.ApproxQuantiles)
-        respect_expr = ast.find(exp.RespectNulls)
-        self.assertIsNotNone(respect_expr)
-        self.assertEqual(respect_expr.this, approx_expr)
-        self.assertIsInstance(approx_expr.this, exp.Distinct)
-        self.assertEqual(len(approx_expr.this.expressions), 1)
-        self.assertIsInstance(approx_expr.expression, exp.Literal)
+        with self.subTest("non-literal bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, bucket_count)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("non-integer bucket count"):
+            for value in ("0", "-1", "2.5"):
+                with self.subTest(value=value):
+                    with self.assertRaises(UnsupportedError):
+                        self.parse_one(f"APPROX_QUANTILES(x, {value})").sql(
+                            "duckdb", unsupported_level=ErrorLevel.RAISE
+                        )
+
+        with self.subTest("NULL bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, NULL)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("APPROX_QUANTILES IGNORE NULLS"):
+            # No warning: IGNORE NULLS is the default behavior in DuckDB
+            from sqlglot.generator import logger as generator_logger
+
+            with mock.patch.object(generator_logger, "warning") as mock_warning:
+                self.validate_all(
+                    "APPROX_QUANTILES(x, 2 IGNORE NULLS)",
+                    write={
+                        "duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 1)]"
+                    },
+                )
+                mock_warning.assert_not_called()
+
+        with self.subTest("APPROX_QUANTILES RESPECT NULLS"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, 2 RESPECT NULLS)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )

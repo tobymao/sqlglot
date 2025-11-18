@@ -410,36 +410,38 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             ):
                 continue  # We've already inferred the expression's type
 
-            if children_annotated:
-                if isinstance(expr, exp.Column) and scope and expr.table:
-                    source = scope.sources.get(expr.table)
-                    if isinstance(source, exp.Table):
-                        self._set_type(expr, self.schema.get_column_type(source, expr))
-                    elif source:
-                        if expr.table in selects and expr.name in selects[expr.table]:
-                            self._set_type(expr, selects[expr.table][expr.name])
-                        elif isinstance(source.expression, exp.Unnest):
-                            self._set_type(expr, source.expression.type)
-                        else:
-                            self._set_type(expr, exp.DataType.Type.UNKNOWN)
-                    else:
-                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
-
-                    if expr.type and expr.type.args.get("nullable") is False:
-                        expr.meta["nonnull"] = True
-                else:
-                    spec = self.expression_metadata.get(expr.__class__)
-
-                    if spec and (annotator := spec.get("annotator")):
-                        annotator(self, expr)
-                    elif spec and (returns := spec.get("returns")):
-                        self._set_type(expr, t.cast(exp.DataType.Type, returns))
-                    else:
-                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
-            else:
+            if not children_annotated:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
                     stack.append((child_expr, False))
+                continue
+
+            if isinstance(expr, exp.Column) and scope and expr.table:
+                source = scope.sources.get(expr.table)
+                if isinstance(source, exp.Table):
+                    self._set_type(expr, self.schema.get_column_type(source, expr))
+                elif source:
+                    if expr.table in selects and expr.name in selects[expr.table]:
+                        self._set_type(expr, selects[expr.table][expr.name])
+                    elif isinstance(source.expression, exp.Unnest):
+                        self._set_type(expr, source.expression.type)
+                    else:
+                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
+                else:
+                    self._set_type(expr, exp.DataType.Type.UNKNOWN)
+
+                if expr.type and expr.type.args.get("nullable") is False:
+                    expr.meta["nonnull"] = True
+                continue
+
+            spec = self.expression_metadata.get(expr.__class__)
+
+            if spec and (annotator := spec.get("annotator")):
+                annotator(self, expr)
+            elif spec and (returns := spec.get("returns")):
+                self._set_type(expr, t.cast(exp.DataType.Type, returns))
+            else:
+                self._set_type(expr, exp.DataType.Type.UNKNOWN)
 
     def _maybe_coerce(
         self,

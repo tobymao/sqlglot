@@ -3422,7 +3422,7 @@ VARCHAR;
 
 # dialect: snowflake
 MAX_BY('foo', tbl.bigint_col, 3);
-ARRAY<VARCHAR>;
+ARRAY;
 
 # dialect: snowflake
 MIN_BY('foo', tbl.bigint_col);
@@ -3430,7 +3430,7 @@ VARCHAR;
 
 # dialect: snowflake
 MIN_BY('foo', tbl.bigint_col, 3);
-ARRAY<VARCHAR>;
+ARRAY;
 
 # dialect: snowflake
 APPROX_PERCENTILE(tbl.bigint_col, 0.5);

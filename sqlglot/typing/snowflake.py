@@ -82,7 +82,12 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 
 
 def _annotate_arg_max_min(self, expression):
-    return self._annotate_by_args(expression, "this", array=bool(expression.args.get("count")))
+    self._annotate_args(expression)
+    self._set_type(
+        expression,
+        exp.DataType.Type.ARRAY if expression.args.get("count") else expression.this.type,
+    )
+    return expression
 
 
 def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> exp.WithinGroup:

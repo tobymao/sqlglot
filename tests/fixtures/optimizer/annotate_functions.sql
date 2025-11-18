@@ -1822,23 +1822,23 @@ BOOLEAN;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.bin_col);
-ARRAY<BINARY>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.bool_col);
-ARRAY<BOOLEAN>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.date_col);
-ARRAY<DATE>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.double_col);
-ARRAY<DOUBLE>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.str_col);
-ARRAY<VARCHAR>;
+ARRAY;
 
 # dialect: snowflake
 CHARINDEX('world', 'hello world');

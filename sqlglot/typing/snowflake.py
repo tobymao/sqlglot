@@ -81,15 +81,13 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
     return expression
 
 
-def _annotate_arg_max_min(
-    self: TypeAnnotator, expression: exp.ArgMax | exp.ArgMin
-) -> exp.ArgMax | exp.ArgMin:
-    """Annotate ArgMax/ArgMin with type based on argument count.
-
-    When count argument is provided (3 arguments), returns ARRAY of the first argument's type.
-    When count is not provided (2 arguments), returns the first argument's type.
-    """
-    return self._annotate_by_args(expression, "this", array=bool(expression.args.get("count")))
+def _annotate_arg_max_min(self, expression):
+    self._annotate_args(expression)
+    self._set_type(
+        expression,
+        exp.DataType.Type.ARRAY if expression.args.get("count") else expression.this.type,
+    )
+    return expression
 
 
 def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> exp.WithinGroup:

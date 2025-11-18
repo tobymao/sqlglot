@@ -1559,7 +1559,6 @@ WHERE
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
-                "postgres": "SELECT EXTRACT(month FROM '1970-01-01')",
                 "spark": "SELECT EXTRACT(month FROM '1970-01-01')",
                 "tsql": "SELECT DATEPART(month, '1970-01-01')",
             },

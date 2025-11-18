@@ -76,7 +76,6 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 
 
 def _annotate_arg_max_min(self, expression):
-    self._annotate_args(expression)
     self._set_type(
         expression,
         exp.DataType.Type.ARRAY if expression.args.get("count") else expression.this.type,

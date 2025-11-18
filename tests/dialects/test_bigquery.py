@@ -3451,3 +3451,35 @@ OPTIONS (
                 "duckdb": "SELECT ROUND_EVEN(CAST('2.25' AS DECIMAL), 1) AS value",
             },
         )
+
+    def test_approx_quantiles(self):
+        self.validate_identity("APPROX_QUANTILES(x, 2)")
+
+        ast = self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2)")
+        self.assertIsInstance(ast.this, exp.Distinct)
+        self.assertEqual(len(ast.this.expressions), 1)
+        self.assertIsInstance(ast.this.expressions[0], exp.Column)
+        self.assertIsInstance(ast.expression, exp.Literal)
+
+        ast = self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
+        approx_expr = ast.find(exp.ApproxQuantiles)
+        respect_expr = ast.find(exp.RespectNulls)
+        self.assertIsNotNone(respect_expr)
+        self.assertEqual(respect_expr.this, approx_expr)
+        self.assertIsInstance(approx_expr.this, exp.Column)
+        self.assertIsInstance(approx_expr.expression, exp.Literal)
+
+        ast = self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
+        approx_expr = ast.find(exp.ApproxQuantiles)
+        ignore_expr = ast.find(exp.IgnoreNulls)
+        self.assertIsNotNone(ignore_expr)
+        self.assertEqual(ignore_expr.this, approx_expr)
+
+        ast = self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
+        approx_expr = ast.find(exp.ApproxQuantiles)
+        respect_expr = ast.find(exp.RespectNulls)
+        self.assertIsNotNone(respect_expr)
+        self.assertEqual(respect_expr.this, approx_expr)
+        self.assertIsInstance(approx_expr.this, exp.Distinct)
+        self.assertEqual(len(approx_expr.this.expressions), 1)
+        self.assertIsInstance(approx_expr.expression, exp.Literal)

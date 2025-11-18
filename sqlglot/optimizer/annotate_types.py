@@ -406,11 +406,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _is_annotated(self, expr: exp.Expression) -> bool:
-        return id(expr) in self._visited or (
+    def _is_annotated(self, expression: exp.Expression) -> bool:
+        return id(expression) in self._visited or (
             not self._overwrite_types
-            and expr.type is not None
-            and not expr.is_type(exp.DataType.Type.UNKNOWN)
+            and expression.type is not None
+            and not expression.is_type(exp.DataType.Type.UNKNOWN)
         )
 
     def _maybe_annotate(self, expression: E) -> E:

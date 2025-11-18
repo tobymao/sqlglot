@@ -429,7 +429,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
-
                     if id(child_expr) in self._visited or (
                         not self._overwrite_types
                         and child_expr.type

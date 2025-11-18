@@ -348,6 +348,12 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
         self.validate_identity(
+            "COPY test_staging_tbl FROM 's3://your/bucket/prefix/here' IAM_ROLE default FORMAT AS AVRO 'auto'"
+        )
+        self.validate_identity(
+            "COPY test_staging_tbl FROM 's3://your/bucket/prefix/here' IAM_ROLE default FORMAT AS JSON 's3://jsonpaths_file'"
+        )
+        self.validate_identity(
             "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid"
         )
         self.validate_identity(

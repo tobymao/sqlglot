@@ -1491,33 +1491,76 @@ WHERE
         )
 
     def test_datepart(self):
-        self.validate_identity(
-            "DATEPART(QUARTER, x)",
-            "DATEPART(QUARTER, CAST(x AS DATETIME2))",
-        )
-        self.validate_identity(
-            "DATEPART(YEAR, x)",
-            "FORMAT(CAST(x AS DATETIME2), 'yyyy')",
-        )
-        self.validate_identity(
-            "DATEPART(HOUR, date_and_time)",
-            "DATEPART(HOUR, CAST(date_and_time AS DATETIME2))",
-        )
-        self.validate_identity(
-            "DATEPART(WEEKDAY, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
-        )
-        self.validate_identity(
-            "DATEPART(DW, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
-        )
-
+        for fmt in ("QUARTER", "qq", "q"):
+            self.validate_identity(
+                f"DATEPART({fmt}, x)",
+                "DATEPART(QUARTER, x)",
+            )
+        for fmt in ("YEAR", "yy", "yyyy"):
+            self.validate_identity(
+                f"DATEPART({fmt}, x)",
+                "DATEPART(YEAR, x)",
+            )
+        for fmt in ("HOUR", "hh"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(HOUR, date_and_time)",
+            )
+        for fmt in ("MINUTE", "mi", "n"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(MINUTE, date_and_time)",
+            )
+        for fmt in ("SECOND", "ss", "s"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(SECOND, date_and_time)",
+            )
+        for fmt in ("MILLISECOND", "ms"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(MILLISECOND, date_and_time)",
+            )
+        for fmt in ("MICROSECOND", "mcs"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(MICROSECOND, date_and_time)",
+            )
+        for fmt in ("NANOSECOND", "ns"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(NANOSECOND, date_and_time)",
+            )
+        for fmt in ("WEEKDAY", "dw"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(WEEKDAY, date_and_time)",
+            )
+        for fmt in ("TZOFFSET", "tz"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(TZOFFSET, date_and_time)",
+            )
+        for fmt in ("MONTH", "mm", "m"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(MONTH, date_and_time)",
+            )
+        for fmt in ("DAYOFYEAR", "dy", "y"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(DAYOFYEAR, date_and_time)",
+            )
+        for fmt in ("DAY", "dd", "d"):
+            self.validate_identity(
+                f"DATEPART({fmt}, date_and_time)",
+                "DATEPART(DAY, date_and_time)",
+            )
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
-                "postgres": "SELECT TO_CHAR(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST('1970-01-01' AS DATETIME2), 'MM')",
+                "spark": "SELECT EXTRACT(month FROM '1970-01-01')",
+                "tsql": "SELECT DATEPART(month, '1970-01-01')",
             },
         )
         self.validate_all(
@@ -1526,9 +1569,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('YEAR', '2017-01-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'YYYY')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'yyyy')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-01' AS DATE) AS DATETIME2), 'yyyy')",
+                "postgres": "SELECT EXTRACT(YEAR FROM CAST('2017-01-01' AS DATE))",
+                "spark": "SELECT EXTRACT(YEAR FROM CAST('2017-01-01' AS DATE))",
+                "tsql": "SELECT DATEPART(YEAR, CAST('2017-01-01' AS DATE))",
             },
         )
         self.validate_all(
@@ -1537,9 +1580,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-03-01' AS DATE) AS DATETIME2), 'MM')",
+                "postgres": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
+                "spark": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
+                "tsql": "SELECT DATEPART(month, CAST('2017-03-01' AS DATE))",
             },
         )
         self.validate_all(
@@ -1548,22 +1591,22 @@ WHERE
                 "postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'DD')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'dd')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-02' AS DATE) AS DATETIME2), 'dd')",
+                "postgres": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
+                "spark": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
+                "tsql": "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
             },
         )
 
         for fmt in ("WEEK", "WW", "WK"):
             self.validate_identity(
                 f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
+                "SELECT DATEPART(WEEK, '2024-11-21')",
             )
 
         for fmt in ("ISOWK", "ISOWW", "ISO_WEEK"):
             self.validate_identity(
                 f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(ISO_WEEK, CAST('2024-11-21' AS DATETIME2))",
+                "SELECT DATEPART(ISO_WEEK, '2024-11-21')",
             )
 
     def test_convert(self):

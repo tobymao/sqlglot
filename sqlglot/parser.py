@@ -8486,6 +8486,13 @@ class Parser(metaclass=_Parser):
             elif prev == "FILE_FORMAT":
                 # T-SQL's external file format case
                 param.set("expression", self._parse_field())
+            elif (
+                prev == "FORMAT"
+                and self._prev.token_type == TokenType.ALIAS
+                and self._match_texts(("AVRO", "JSON"))
+            ):
+                param.set("this", exp.var(f"FORMAT AS {self._prev.text.upper()}"))
+                param.set("expression", self._parse_field())
             else:
                 param.set("expression", self._parse_unquoted_field() or self._parse_bracket())
 
@@ -8508,7 +8515,10 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("ENCRYPTION"):
             expr.set("encryption", self._parse_wrapped_options())
         if self._match_text_seq("IAM_ROLE"):
-            expr.set("iam_role", self._parse_field())
+            expr.set(
+                "iam_role",
+                exp.var(self._prev.text) if self._match(TokenType.DEFAULT) else self._parse_field(),
+            )
         if self._match_text_seq("REGION"):
             expr.set("region", self._parse_field())
 

@@ -220,8 +220,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._setop_column_types.clear()
 
     def _set_type(
-        self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
-    ) -> None:
+        self, expression: E, target_type: t.Optional[exp.DataType | exp.DataType.Type]
+    ) -> E:
         prev_type = expression.type
         expression_id = id(expression)
 
@@ -249,6 +249,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 parent = parent.parent
 
             expression.meta.pop("dot_parts", None)
+
+        return expression
 
     def annotate(self, expression: E, annotate_scope: bool = True) -> E:
         # This flag is used to avoid costly scope traversals when we only care about annotating
@@ -406,19 +408,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _maybe_annotate(self, expression: E) -> E:
-        spec = self.expression_metadata.get(expression.__class__)
-
-        if spec and (annotator := spec.get("annotator")):
-            return annotator(self, expression)
-
-        if spec and (returns := spec.get("returns")):
-            expr_type = t.cast(exp.DataType.Type, returns)
-        else:
-            expr_type = exp.DataType.Type.UNKNOWN
-
-        return self._annotate_with_type(expression, expr_type)
-
     def _annotate_expression(self, expression: exp.Expression) -> None:
         stack = [(expression, False)]
         while stack:
@@ -432,7 +421,14 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 continue  # We've already inferred the expression's type
 
             if children_annotated:
-                self._maybe_annotate(expr)
+                spec = self.expression_metadata.get(expr.__class__)
+
+                if spec and (annotator := spec.get("annotator")):
+                    annotator(self, expr)
+                elif spec and (returns := spec.get("returns")):
+                    self._set_type(expr, t.cast(exp.DataType.Type, returns))
+                else:
+                    self._set_type(expr, exp.DataType.Type.UNKNOWN)
             else:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
@@ -519,12 +515,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         expression.meta["nonnull"] = True
 
-        return expression
-
-    def _annotate_with_type(
-        self, expression: E, target_type: exp.DataType | exp.DataType.Type
-    ) -> E:
-        self._set_type(expression, target_type)
         return expression
 
     @t.no_type_check

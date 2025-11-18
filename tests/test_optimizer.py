@@ -1824,7 +1824,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
         )
 
-    def test_iterative_annoate_types(self):
+    def test_deep_ast_type_annotation(self):
         union_sql = "SELECT 1 UNION ALL " * 2000 + "SELECT 1"
         annotated = annotate_types(parse_one(union_sql))
         self.assertEqual(annotated.sql(), union_sql)

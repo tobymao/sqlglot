@@ -91,7 +91,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
             expressions=[projection_type.copy()],
             nested=True,
         )
-        return self._annotate_with_type(expression, array_type)
+        return self._set_type(expression, array_type)
 
     return self._annotate_by_args(expression, "expressions", array=True)
 
@@ -292,28 +292,28 @@ EXPRESSION_METADATA = {
     },
     exp.Concat: {"annotator": _annotate_concat},
     exp.GenerateTimestampArray: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         )
     },
     exp.JSONFormat: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
         )
     },
     exp.JSONKeysAtDepth: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
     exp.JSONValueArray: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
     exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
     exp.ToCodePoints: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
         )
     },

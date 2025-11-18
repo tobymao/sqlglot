@@ -179,7 +179,7 @@ EXPRESSION_METADATA = {
     },
     **{
         expr_type: {
-            "annotator": lambda self, e: self._annotate_with_type(
+            "annotator": lambda self, e: self._set_type(
                 e, exp.DataType.build("NUMBER", dialect="snowflake")
             )
         }
@@ -288,7 +288,7 @@ EXPRESSION_METADATA = {
     exp.ArgMin: {"annotator": _annotate_arg_max_min},
     exp.ConcatWs: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.ConvertTimezone: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e,
             exp.DataType.Type.TIMESTAMPNTZ
             if e.args.get("source_tz")

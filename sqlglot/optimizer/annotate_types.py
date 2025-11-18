@@ -406,17 +406,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _is_annotated(self, expression: exp.Expression) -> bool:
-        return id(expression) in self._visited or (
-            not self._overwrite_types
-            and expression.type is not None
-            and not expression.is_type(exp.DataType.Type.UNKNOWN)
-        )
-
     def _maybe_annotate(self, expression: E) -> E:
-        if self._is_annotated(expression):
-            return expression
-
         spec = self.expression_metadata.get(expression.__class__)
 
         if spec and (annotator := spec.get("annotator")):
@@ -434,14 +424,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         while stack:
             expr, children_annotated = stack.pop()
 
+            if id(expr) in self._visited or (
+                not self._overwrite_types
+                and expr.type
+                and not expr.is_type(exp.DataType.Type.UNKNOWN)
+            ):
+                continue  # We've already inferred the expression's type
+
             if children_annotated:
                 self._maybe_annotate(expr)
             else:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
-                    if self._is_annotated(child_expr):
-                        continue
-
                     stack.append((child_expr, False))
 
     def _maybe_coerce(

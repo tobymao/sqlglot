@@ -336,23 +336,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
-        # First annotate the current scope's column references
-        for col in scope.columns:
-            if not col.table:
-                continue
-
-            source = scope.sources.get(col.table)
-            if isinstance(source, exp.Table):
-                self._set_type(col, self.schema.get_column_type(source, col))
-            elif source:
-                if col.table in selects and col.name in selects[col.table]:
-                    self._set_type(col, selects[col.table][col.name])
-                elif isinstance(source.expression, exp.Unnest):
-                    self._set_type(col, source.expression.type)
-
-            if col.type and col.type.args.get("nullable") is False:
-                col.meta["nonnull"] = True
-
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
@@ -383,7 +366,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     self._set_type(table_column, source.expression.meta["query_type"])
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expression(scope.expression)
+        self._annotate_expression(scope.expression, scope, selects)
 
         if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -408,8 +391,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _annotate_expression(self, expression: exp.Expression) -> None:
+    def _annotate_expression(
+        self,
+        expression: exp.Expression,
+        scope: t.Optional[Scope] = None,
+        selects: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
+    ) -> None:
         stack = [(expression, False)]
+        selects = selects or {}
+
         while stack:
             expr, children_annotated = stack.pop()
 
@@ -421,14 +411,31 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 continue  # We've already inferred the expression's type
 
             if children_annotated:
-                spec = self.expression_metadata.get(expr.__class__)
+                if isinstance(expr, exp.Column) and scope and expr.table:
+                    source = scope.sources.get(expr.table)
+                    if isinstance(source, exp.Table):
+                        self._set_type(expr, self.schema.get_column_type(source, expr))
+                    elif source:
+                        if expr.table in selects and expr.name in selects[expr.table]:
+                            self._set_type(expr, selects[expr.table][expr.name])
+                        elif isinstance(source.expression, exp.Unnest):
+                            self._set_type(expr, source.expression.type)
+                        else:
+                            self._set_type(expr, exp.DataType.Type.UNKNOWN)
+                    else:
+                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
 
-                if spec and (annotator := spec.get("annotator")):
-                    annotator(self, expr)
-                elif spec and (returns := spec.get("returns")):
-                    self._set_type(expr, t.cast(exp.DataType.Type, returns))
+                    if expr.type and expr.type.args.get("nullable") is False:
+                        expr.meta["nonnull"] = True
                 else:
-                    self._set_type(expr, exp.DataType.Type.UNKNOWN)
+                    spec = self.expression_metadata.get(expr.__class__)
+
+                    if spec and (annotator := spec.get("annotator")):
+                        annotator(self, expr)
+                    elif spec and (returns := spec.get("returns")):
+                        self._set_type(expr, t.cast(exp.DataType.Type, returns))
+                    else:
+                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
             else:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():

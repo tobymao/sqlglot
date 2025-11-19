@@ -416,13 +416,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     stack.append((child_expr, False))
                 continue
 
-            if isinstance(expr, exp.Column) and scope and expr.table:
-                source = scope.sources.get(expr.table)
+            if scope and isinstance(expr, exp.Column) and (table := expr.table):
+                source = scope.sources.get(table)
                 if isinstance(source, exp.Table):
                     self._set_type(expr, self.schema.get_column_type(source, expr))
                 elif source:
-                    if expr.table in selects and expr.name in selects[expr.table]:
-                        self._set_type(expr, selects[expr.table][expr.name])
+                    if table in selects and expr.name in selects[table]:
+                        self._set_type(expr, selects[table][expr.name])
                     elif isinstance(source.expression, exp.Unnest):
                         self._set_type(expr, source.expression.type)
                     else:

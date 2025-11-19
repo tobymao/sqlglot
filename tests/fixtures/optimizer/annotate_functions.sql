@@ -3521,6 +3521,10 @@ MINHASH(5, *);
 VARIANT;
 
 # dialect: snowflake
+MINHASH_COMBINE(tbl.variant_col);
+VARIANT;
+
+# dialect: snowflake
 APPROXIMATE_SIMILARITY(tbl.variant_col);
 DOUBLE;
 

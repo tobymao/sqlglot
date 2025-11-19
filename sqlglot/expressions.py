@@ -5748,7 +5748,6 @@ class Minhash(AggFunc):
 
 # https://docs.snowflake.com/en/sql-reference/functions/approximate_similarity
 class ApproximateSimilarity(AggFunc):
-    arg_types = {"this": True}
     _sql_names = ["APPROXIMATE_SIMILARITY", "APPROXIMATE_JACCARD_INDEX"]
 
 

@@ -144,15 +144,10 @@ def qualify_tables(
                         for i in dialect.generate_values_aliases(udtf)
                     ]
                     table_alias.set("columns", column_aliases)
-            else:
-                for node in scope.walk():
-                    if (
-                        isinstance(node, exp.Table)
-                        and not node.alias
-                        and isinstance(node.parent, (exp.From, exp.Join))
-                    ):
-                        # Mutates the table by attaching an alias to it
-                        exp.alias_(node, node.name, copy=False, table=True)
+
+        for table in scope.tables:
+            if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):
+                exp.alias_(table, table.name, copy=False, table=True)
 
         for column in scope.columns:
             if column.db:

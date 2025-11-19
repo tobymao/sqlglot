@@ -4099,16 +4099,15 @@ class Generator(metaclass=_Generator):
             then = self.sql(then_expression, "expression")
             then = f"{this} VALUES {then}" if then else this
         elif isinstance(then_expression, exp.Update):
-            then = self.when_matched_update_sql(then_expression)
+            if isinstance(then_expression.args.get("expressions"), exp.Star):
+                then = f"UPDATE {self.sql(then_expression, 'expressions')}"
+            else:
+                expressions_sql = self.expressions(then_expression)
+                then = f"UPDATE SET{self.sep()}{expressions_sql}" if expressions_sql else "UPDATE"
+
         else:
             then = self.sql(then_expression)
         return f"WHEN {matched}{source}{condition} THEN {then}"
-
-    def when_matched_update_sql(self, expression: exp.Update) -> str:
-        if isinstance(expression.args.get("expressions"), exp.Star):
-            return f"UPDATE {self.sql(expression, 'expressions')}"
-        else:
-            return f"UPDATE SET{self.sep()}{self.expressions(expression)}"
 
     def whens_sql(self, expression: exp.Whens) -> str:
         return self.expressions(expression, sep=" ", indent=False)

@@ -3520,6 +3520,14 @@ VARIANT;
 MINHASH(5, *);
 VARIANT;
 
+# dialect: snowflake
+APPROXIMATE_SIMILARITY(tbl.variant_col);
+DOUBLE;
+
+# dialect: snowflake
+APPROXIMATE_JACCARD_INDEX(tbl.variant_col);
+DOUBLE;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

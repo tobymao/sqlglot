@@ -162,7 +162,9 @@ def build_coalesce(
 
 def build_greatest(args: t.List, return_null_if_any_null: bool = False) -> exp.Greatest:
     """Build GREATEST with optional return_null_if_any_null flag for dialect-specific behavior."""
-    return exp.Greatest(this=seq_get(args, 0), expressions=args[1:], return_null_if_any_null=return_null_if_any_null)
+    return exp.Greatest(
+        this=seq_get(args, 0), expressions=args[1:], return_null_if_any_null=return_null_if_any_null
+    )
 
 
 def build_locate_strposition(args: t.List):

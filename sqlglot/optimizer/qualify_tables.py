@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import typing as t
 
-from sqlglot import alias, exp
+from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
@@ -86,9 +86,9 @@ def qualify_tables(
                     derived_table.this.set("joins", joins)
 
             if not derived_table.args.get("alias"):
-                alias_ = next_alias_name()
-                derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
-                scope.rename_source(None, alias_)
+                alias = next_alias_name()
+                derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias)))
+                scope.rename_source(None, alias)
 
             pivots = derived_table.args.get("pivots")
             if pivots and not pivots[0].alias:
@@ -108,7 +108,7 @@ def qualify_tables(
                     normalized_alias = normalize_identifiers(
                         name or source.name or alias_sequence(), dialect=dialect
                     )
-                    alias(source, normalized_alias, copy=False, table=True)
+                    exp.alias_(source, normalized_alias, copy=False, table=True)
 
                 table_aliases[".".join(p.name for p in source.parts)] = exp.to_identifier(
                     source.alias
@@ -154,7 +154,7 @@ def qualify_tables(
                         and isinstance(node.parent, (exp.From, exp.Join))
                     ):
                         # Mutates the table by attaching an alias to it
-                        alias(node, node.name, copy=False, table=True)
+                        exp.alias_(node, node.name, copy=False, table=True)
 
         for column in scope.columns:
             if column.db:

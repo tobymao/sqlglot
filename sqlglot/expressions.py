@@ -3668,7 +3668,7 @@ class Update(DML):
     arg_types = {
         "with_": False,
         "this": False,
-        "expressions": True,
+        "expressions": False,
         "from_": False,
         "where": False,
         "returning": False,

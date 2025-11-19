@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 
 from sqlglot import exp
@@ -76,14 +75,13 @@ def qualify_tables(
                 _qualify(node)
 
     for scope in traverse_scope(expression):
-        for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
-            if isinstance(derived_table, exp.Subquery):
-                unnested = derived_table.unnest()
-                if isinstance(unnested, exp.Table):
-                    joins = unnested.args.get("joins")
-                    unnested.set("joins", None)
-                    derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-                    derived_table.this.set("joins", joins)
+        for derived_table in scope.derived_tables:
+            unnested = derived_table.unnest()
+            if isinstance(unnested, exp.Table):
+                joins = unnested.args.get("joins")
+                unnested.set("joins", None)
+                derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+                derived_table.this.set("joins", joins)
 
             if not derived_table.args.get("alias"):
                 alias = next_alias_name()

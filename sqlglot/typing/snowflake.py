@@ -289,6 +289,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.VARIANT}
         for expr_type in {
             exp.Minhash,
+            exp.MinhashCombine,
         }
     },
     exp.ArgMax: {"annotator": _annotate_arg_max_min},

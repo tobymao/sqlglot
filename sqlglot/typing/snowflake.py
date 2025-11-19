@@ -248,6 +248,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.OBJECT}
         for expr_type in {
+            exp.Minhash,
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,

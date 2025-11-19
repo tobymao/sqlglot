@@ -5734,6 +5734,12 @@ class ApproxQuantiles(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/minhash
+class Minhash(AggFunc):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 class FarmFingerprint(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

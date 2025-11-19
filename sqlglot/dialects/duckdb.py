@@ -1545,3 +1545,11 @@ class DuckDB(Dialect):
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
 
             return self.func("DATE_TRUNC", unit, timestamp)
+
+        def trim_sql(self, expression: exp.Trim) -> str:
+            result_sql = self.func(
+                "TRIM",
+                _cast_to_varchar(expression.this),
+                _cast_to_varchar(expression.expression),
+            )
+            return _cast_to_blob(self, expression, result_sql)

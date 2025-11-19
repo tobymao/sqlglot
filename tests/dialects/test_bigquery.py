@@ -778,6 +778,17 @@ LANGUAGE js AS
                 "spark": "TRIM('*' FROM item)",
             },
         )
+        expr = self.parse_one(
+            "SELECT TRIM(CAST('***apple***' AS BYTES), CAST('*' AS BYTES)) AS result"
+        )
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(TRIM(CAST(CAST('***apple***' AS BLOB) AS TEXT), CAST(CAST('*' AS BLOB) AS TEXT)) AS BLOB) AS result",
+        )
+        expr = self.parse_one("SELECT TRIM('***apple***', '*') AS result")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT TRIM('***apple***', '*') AS result")
         self.validate_all(
             "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             write={

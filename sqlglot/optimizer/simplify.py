@@ -27,6 +27,18 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 
+# Final means that an expression should not be simplified
+FINAL = "final"
+
+SIMPLIFIABLE = (
+    exp.Binary,
+    exp.Func,
+    exp.Lambda,
+    exp.Predicate,
+    exp.Unary,
+)
+
+
 def simplify(
     expression: exp.Expression,
     constant_propagation: bool = False,
@@ -468,9 +480,6 @@ class Simplifier:
             schema=ensure_schema(None, dialect=self.dialect), overwrite_types=False
         )
 
-    # Final means that an expression should not be simplified
-    FINAL = "final"
-
     # Value ranges for byte-sized signed/unsigned integers
     TINYINT_MIN = -128
     TINYINT_MAX = 127
@@ -560,92 +569,134 @@ class Simplifier:
         constant_propagation: bool = False,
         coalesce_simplification: bool = False,
     ):
-        def _simplify(expression):
-            pre_transformation_stack = [expression]
-            post_transformation_stack = []
+        wheres = []
+        joins = []
 
-            while pre_transformation_stack:
-                node = pre_transformation_stack.pop()
+        for node in expression.walk(
+            prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta.get(FINAL))
+        ):
+            if node.meta.get(FINAL):
+                continue
 
-                if node.meta.get(self.FINAL):
-                    continue
+            # group by expressions cannot be simplified, for example
+            # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+            # the projection must exactly match the group by key
+            group = node.args.get("group")
 
-                # group by expressions cannot be simplified, for example
-                # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
-                # the projection must exactly match the group by key
-                group = node.args.get("group")
+            if group and hasattr(node, "selects"):
+                groups = set(group.expressions)
+                group.meta[FINAL] = True
 
-                if group and hasattr(node, "selects"):
-                    groups = set(group.expressions)
-                    group.meta[self.FINAL] = True
+                for s in node.selects:
+                    for n in s.walk(FINAL):
+                        if n in groups:
+                            s.meta[FINAL] = True
+                            break
 
-                    for s in node.selects:
-                        for n in s.walk():
-                            if n in groups:
-                                s.meta[self.FINAL] = True
-                                break
+                having = node.args.get("having")
 
-                    having = node.args.get("having")
-                    if having:
-                        for n in having.walk():
-                            if n in groups:
-                                having.meta[self.FINAL] = True
-                                break
+                if having:
+                    for n in having.walk():
+                        if n in groups:
+                            having.meta[FINAL] = True
+                            break
 
-                parent = node.parent
-                root = node is expression
-
-                new_node = self.rewrite_between(node)
-                new_node = self.uniq_sort(new_node, root)
-                new_node = self.absorb_and_eliminate(new_node, root)
-                new_node = self.simplify_concat(new_node)
-                new_node = self.simplify_conditionals(new_node)
-
-                if constant_propagation:
-                    new_node = propagate_constants(new_node, root)
-
-                if new_node is not node:
-                    node.replace(new_node)
-
-                pre_transformation_stack.extend(
-                    n for n in new_node.iter_expressions(reverse=True) if not n.meta.get(self.FINAL)
+            if isinstance(node, exp.Condition):
+                simplified = while_changing(
+                    node, lambda e: self._simplify(e, constant_propagation, coalesce_simplification)
                 )
-                post_transformation_stack.append((new_node, parent))
 
-            while post_transformation_stack:
-                node, parent = post_transformation_stack.pop()
-                root = node is expression
+                if node is expression:
+                    expression = simplified
+            elif isinstance(node, exp.Where):
+                wheres.append(node)
+            elif isinstance(node, exp.Join):
+                joins.append(node)
 
-                # Resets parent, arg_key, index pointers– this is needed because some of the
-                # previous transformations mutate the AST, leading to an inconsistent state
-                for k, v in tuple(node.args.items()):
-                    node.set(k, v)
+        for where in wheres:
+            if always_true(where.this):
+                where.pop()
+        for join in joins:
+            if (
+                always_true(join.args.get("on"))
+                and not join.args.get("using")
+                and not join.args.get("method")
+                and (join.side, join.kind) in self.JOINS
+            ):
+                join.args["on"].pop()
+                join.set("side", None)
+                join.set("kind", "CROSS")
 
-                # Post-order transformations
-                new_node = self.simplify_not(node)
-                new_node = flatten(new_node)
-                new_node = self.simplify_connectors(new_node, root)
-                new_node = self.remove_complements(new_node, root)
-
-                if coalesce_simplification:
-                    new_node = self.simplify_coalesce(new_node)
-                new_node.parent = parent
-
-                new_node = self.simplify_literals(new_node, root)
-                new_node = self.simplify_equality(new_node)
-                new_node = simplify_parens(new_node, dialect=self.dialect)
-                new_node = self.simplify_datetrunc(new_node)
-                new_node = self.sort_comparison(new_node)
-                new_node = self.simplify_startswith(new_node)
-
-                if new_node is not node:
-                    node.replace(new_node)
-
-            return new_node
-
-        expression = while_changing(expression, _simplify)
-        self.remove_where_true(expression)
         return expression
+
+    def _simplify(
+        self, expression: exp.Expression, constant_propagation: bool, coalesce_simplification: bool
+    ):
+        pre_transformation_stack = [expression]
+        post_transformation_stack = []
+
+        while pre_transformation_stack:
+            original = pre_transformation_stack.pop()
+            node = original
+
+            if not isinstance(node, SIMPLIFIABLE):
+                if isinstance(node, exp.Query):
+                    self.simplify(node, constant_propagation, coalesce_simplification)
+                continue
+
+            parent = node.parent
+            root = node is expression
+
+            node = self.rewrite_between(node)
+            node = self.uniq_sort(node, root)
+            node = self.absorb_and_eliminate(node, root)
+            node = self.simplify_concat(node)
+            node = self.simplify_conditionals(node)
+
+            if constant_propagation:
+                node = propagate_constants(node, root)
+
+            if node is not original:
+                original.replace(node)
+
+            for n in node.iter_expressions(reverse=True):
+                if n.meta.get(FINAL):
+                    raise
+            pre_transformation_stack.extend(
+                n for n in node.iter_expressions(reverse=True) if not n.meta.get(FINAL)
+            )
+            post_transformation_stack.append((node, parent))
+
+        while post_transformation_stack:
+            original, parent = post_transformation_stack.pop()
+            root = original is expression
+
+            # Resets parent, arg_key, index pointers– this is needed because some of the
+            # previous transformations mutate the AST, leading to an inconsistent state
+            for k, v in tuple(original.args.items()):
+                original.set(k, v)
+
+            # Post-order transformations
+            node = self.simplify_not(original)
+            node = flatten(node)
+            node = self.simplify_connectors(node, root)
+            node = self.remove_complements(node, root)
+
+            if coalesce_simplification:
+                node = self.simplify_coalesce(node)
+            node.parent = parent
+
+            node = self.simplify_literals(node, root)
+            node = self.simplify_equality(node)
+            node = simplify_parens(node, dialect=self.dialect)
+            node = self.simplify_datetrunc(node)
+            node = self.sort_comparison(node)
+            node = self.simplify_startswith(node)
+
+            if node is not original:
+                original.replace(node)
+
+        return node
 
     @annotate_types_on_change
     def rewrite_between(self, expression: exp.Expression) -> exp.Expression:
@@ -1375,21 +1426,6 @@ class Simplifier:
                     this=r, expression=l
                 )
         return expression
-
-    def remove_where_true(self, expression):
-        for where in expression.find_all(exp.Where):
-            if always_true(where.this):
-                where.pop()
-        for join in expression.find_all(exp.Join):
-            if (
-                always_true(join.args.get("on"))
-                and not join.args.get("using")
-                and not join.args.get("method")
-                and (join.side, join.kind) in self.JOINS
-            ):
-                join.args["on"].pop()
-                join.set("side", None)
-                join.set("kind", "CROSS")
 
     def _flat_simplify(self, expression, simplifier, root=True):
         if root or not expression.same_parent:

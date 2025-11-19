@@ -284,6 +284,12 @@ EXPRESSION_METADATA = {
             exp.Uuid,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.VARIANT}
+        for expr_type in {
+            exp.Minhash,
+        }
+    },
     exp.ArgMax: {"annotator": _annotate_arg_max_min},
     exp.ArgMin: {"annotator": _annotate_arg_max_min},
     exp.ConcatWs: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},

@@ -648,6 +648,26 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_nested(self):
+        sql = """
+        SELECT x, 1 + 1
+        FROM foo
+        WHERE x > (((select x + 1 + 1, sum(y + 1 + 1) FROM bar GROUP BY x + 1 + 1)))
+        """
+
+        self.assertEqual(
+            parse_one("""
+            SELECT x, 2
+            FROM foo
+            WHERE x > (((
+                select x + 1 + 1, sum(y + 2)
+                FROM bar
+                GROUP BY x + 1 + 1
+            )))
+            """).sql(pretty=True),
+            optimizer.simplify.simplify(parse_one(sql)).sql(pretty=True),
+        )
+
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 

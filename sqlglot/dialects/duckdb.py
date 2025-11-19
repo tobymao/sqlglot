@@ -1553,3 +1553,20 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.expression),
             )
             return _cast_to_blob(self, expression, result_sql)
+
+        def round_sql(self, expression: exp.Round) -> str:
+            this = expression.this
+            decimals = expression.args.get("decimals")
+            truncate = expression.args.get("truncate")
+
+            func = "ROUND"
+            if truncate:
+                # BigQuery uses ROUND_HALF_EVEN; Snowflake uses HALF_TO_EVEN
+                if truncate.this in ("ROUND_HALF_EVEN", "HALF_TO_EVEN"):
+                    func = "ROUND_EVEN"
+                    truncate = None
+                # BigQuery uses ROUND_HALF_AWAY_FROM_ZERO; Snowflake uses HALF_AWAY_FROM_ZERO
+                elif truncate.this in ("ROUND_HALF_AWAY_FROM_ZERO", "HALF_AWAY_FROM_ZERO"):
+                    truncate = None
+
+            return self.func(func, this, decimals, truncate)

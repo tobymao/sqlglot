@@ -1372,6 +1372,6 @@ MATCH_RECOGNIZE (
         self.validate_all(
             "INITCAP(col)",
             write={
-                "presto": "REGEXP_REPLACE(col, '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+                "presto": "REGEXP_REPLACE(col, '(\\w)(\\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
             },
         )

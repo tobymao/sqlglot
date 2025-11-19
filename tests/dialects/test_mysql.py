@@ -886,6 +886,19 @@ class TestMySQL(Validator):
         )
 
         self.validate_all(
+            "SELECT DATABASE()",
+            write={
+                "mysql": "SELECT SCHEMA()",
+            },
+        )
+        self.validate_all(
+            "SELECT SCHEMA()",
+            write={
+                "mysql": "SELECT SCHEMA()",
+            },
+        )
+
+        self.validate_all(
             "SELECT * FROM test LIMIT 0 + 1, 0 + 1",
             write={
                 "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",

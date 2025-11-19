@@ -758,6 +758,7 @@ class MySQL(Dialect):
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.CurrentDate: no_paren_current_date_sql,
+            exp.CurrentSchema: rename_func("SCHEMA"),
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
             ),
@@ -1329,7 +1330,3 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
-
-        @unsupported_args("this")
-        def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
-            return self.func("SCHEMA")

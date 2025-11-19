@@ -8,6 +8,7 @@ import typing as t
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
+from sqlglot.parser import build_greatest
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -166,9 +167,7 @@ def _build_timestamp(args: t.List) -> exp.Timestamp:
 
 def _build_greatest(args: t.List) -> exp.Greatest:
     """Build GREATEST with BigQuery's null-if-any-null behavior."""
-    greatest = exp.Greatest.from_arg_list(args)
-    greatest.null_if_any_null = True
-    return greatest
+    return build_greatest(args, return_null_if_any_null=True)
 
 
 def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:

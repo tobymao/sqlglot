@@ -409,14 +409,14 @@ def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
     """
     Handle GREATEST function with dialect-aware NULL behavior.
 
-    - If null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
-    - If null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
+    - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
+    - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
     """
     all_args = [expression.this] + expression.expressions
     greatest_expr = self.func("GREATEST", *all_args)
 
     # Check if this GREATEST should return NULL if any arg is NULL (BigQuery behavior)
-    if getattr(expression, 'null_if_any_null', False):
+    if expression.args.get('return_null_if_any_null'):
         # BigQuery behavior: NULL if any argument is NULL
         null_checks = []
         for arg in all_args:

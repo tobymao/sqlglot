@@ -520,6 +520,15 @@ class TestOptimizer(unittest.TestCase):
         )
         self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
+    def test_validate_columns(self):
+        with self.assertRaisesRegex(
+            OptimizeError, """Column '"foo"' could not be resolved. Line: 1, Col: 10"""
+        ):
+            optimizer.qualify.qualify(
+                parse_one("select foo from x"),
+                schema={"foo": {"y": "int"}},
+            )
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

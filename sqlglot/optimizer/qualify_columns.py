@@ -123,7 +123,11 @@ def validate_qualify_columns(expression: E) -> E:
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
                 column = scope.external_columns[0]
                 for_table = f" for table: '{column.table}'" if column.table else ""
-                raise OptimizeError(f"Column '{column}' could not be resolved{for_table}")
+                line = column.this.meta.get("line")
+                col = column.this.meta.get("col")
+                raise OptimizeError(
+                    f"Column '{column}' could not be resolved{for_table}. Line: {line}, Col: {col}"
+                )
 
             if unqualified_columns and scope.pivots and scope.pivots[0].unpivot:
                 # New columns produced by the UNPIVOT can't be qualified, but there may be columns

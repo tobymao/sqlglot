@@ -3588,3 +3588,36 @@ FROM SEMANTIC_VIEW(
         set_item = expr.find(exp.SetItem)
         self.assertIsNotNone(set_item)
         self.assertEqual(set_item.args.get("kind"), "VARIABLE")
+
+    def test_round(self):
+        self.validate_all(
+            "SELECT ROUND(2.25) AS value",
+            write={
+                "snowflake": "SELECT ROUND(2.25) AS value",
+                "duckdb": "SELECT ROUND(2.25) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.25, 1) AS value",
+            write={
+                "snowflake": "SELECT ROUND(2.25, 1) AS value",
+                "duckdb": "SELECT ROUND(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.25, 1, 'HALF_AWAY_FROM_ZERO') AS value",
+            write={
+                "snowflake": """SELECT ROUND(2.25, 1, 'HALF_AWAY_FROM_ZERO') AS value""",
+                "duckdb": "SELECT ROUND(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.25, 1, 'HALF_TO_EVEN') AS value",
+            write={
+                "snowflake": """SELECT ROUND(2.25, 1, 'HALF_TO_EVEN') AS value""",
+                "duckdb": "SELECT ROUND_EVEN(2.25, 1) AS value",
+            },
+        )

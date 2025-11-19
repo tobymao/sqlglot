@@ -5746,6 +5746,12 @@ class Minhash(AggFunc):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approximate_similarity
+class ApproximateSimilarity(AggFunc):
+    arg_types = {"this": True}
+    _sql_names = ["APPROXIMATE_SIMILARITY", "APPROXIMATE_JACCARD_INDEX"]
+
+
 class FarmFingerprint(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

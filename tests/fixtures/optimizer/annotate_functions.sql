@@ -3508,6 +3508,18 @@ ARRAY;
 APPROX_TOP_K(tbl.str_col, 5, 1000);
 ARRAY;
 
+# dialect: snowflake
+MINHASH(5, tbl.int_col);
+VARIANT;
+
+# dialect: snowflake
+MINHASH(5, tbl.int_col, tbl.str_col);
+VARIANT;
+
+# dialect: snowflake
+MINHASH(5, *);
+VARIANT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

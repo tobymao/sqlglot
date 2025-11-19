@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     no_datetime_sql,
     encode_decode_sql,
+    extract_week_unit_info,
     build_formatted_time,
     no_comment_column_constraint_sql,
     no_time_sql,
@@ -250,9 +251,77 @@ def _implicit_datetime_cast(
     return arg
 
 
+def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> exp.Expression:
+    """
+    Build DATE_TRUNC expression for week boundaries with custom start day.
+
+    Args:
+        date_expr: The date expression to truncate
+        start_dow: ISO 8601 day-of-week number (Monday=1, ..., Sunday=7)
+
+    DuckDB's DATE_TRUNC('WEEK', ...) aligns weeks to Monday (ISO standard).
+    To align to a different start day, we shift the date before truncating.
+
+    Shift formula: Sunday (7) gets +1, others get (1 - start_dow)
+    Examples:
+        Monday (1): shift = 0 (no shift needed)
+        Tuesday (2): shift = -1 (shift back 1 day) ...
+        Sunday (7): shift = +1 (shift forward 1 day, wraps to next Monday-based week)
+    """
+    # Calculate shift: Sunday is special case, others use formula
+    shift_days = 1 if start_dow == 7 else 1 - start_dow
+
+    if shift_days == 0:
+        # No shift needed for Monday-based weeks
+        return exp.DateTrunc(unit=exp.var("WEEK"), this=date_expr)
+
+    # Shift date to align week boundaries with the desired start day
+    shifted_date = exp.DateAdd(
+        this=date_expr,
+        expression=exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY")),
+    )
+
+    return exp.DateTrunc(unit=exp.var("WEEK"), this=shifted_date)
+
+
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    """
+    Generate DATE_DIFF SQL for DuckDB using DATE_TRUNC-based week alignment.
+
+    DuckDB's DATE_DIFF doesn't support WEEK(day) units. We transpile these to
+    DATE_TRUNC-based calculations when the day is a compile-time constant.
+
+    Non-literal week units (e.g., columns, placeholders) cannot be transpiled safely
+    and are passed through as-is, following the pattern used elsewhere in sqlglot
+
+    """
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
+    unit = expression.args.get("unit")
+
+    # Extract week start day; returns None if day is dynamic (column/placeholder)
+    week_start = extract_week_unit_info(unit)
+    if week_start and this and expr:
+        _, start_dow = week_start
+
+        # For Monday-based weeks (ISO standard), use DuckDB's native WEEK unit
+        if start_dow == 1:
+            return self.sql(
+                exp.DateDiff(this=this, expression=expr, unit=exp.Literal.string("WEEK"))
+            )
+
+        # For other week start days, use DATE_TRUNC-based calculation
+        # Build truncated week boundary expressions
+        truncated_this = _build_week_trunc_expression(this, start_dow)
+        truncated_expr = _build_week_trunc_expression(expr, start_dow)
+
+        # Calculate week difference
+        day_diff = exp.DateDiff(
+            this=truncated_this, expression=truncated_expr, unit=exp.Literal.string("DAY")
+        )
+        result = exp.IntDiv(this=day_diff, expression=exp.Literal.number(7))
+
+        return self.sql(result)
 
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 

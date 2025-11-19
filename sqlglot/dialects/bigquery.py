@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     build_formatted_time,
+    extract_week_unit_info,
     filter_array_using_unnest,
     if_sql,
     inline_array_unless_query,
@@ -209,6 +210,40 @@ def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> 
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
+def _generate_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.Expression) -> str:
+    """
+    Generate unit for *_DIFF functions, converting Week expressions to BigQuery syntax.
+
+    Canonical form -> BigQuery syntax:
+    - Week(SUNDAY) -> WEEK (BigQuery's default)
+    - Week(MONDAY) -> WEEK(MONDAY) (preserved during round-trip)
+    - Var(ISOWEEK) -> ISOWEEK (preserved as-is)
+
+    """
+    unit = expression.args.get("unit")
+
+    # Preserve ISOWEEK/WEEKISO as-is.
+    # Handle ISOWEEK/WEEKISO Var expressions
+    if isinstance(unit, exp.Var) and unit.name.upper() in ("ISOWEEK", "WEEKISO"):
+        return self.sql(unit)
+
+    week_info = extract_week_unit_info(unit)
+
+    if week_info:
+        day_name, _ = week_info
+        if day_name == "SUNDAY":
+            return "WEEK"
+
+        if isinstance(unit, exp.WeekStart):
+            # Preserve WeekStart expressions as-is
+            return self.sql(unit)
+
+        # Convert to WEEK(day) for all other cases
+        return self.sql(exp.Week(this=exp.var(day_name)))
+
+    return self.sql(unit_to_var(expression))
+
+
 def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
@@ -240,6 +275,44 @@ def _build_datetime(args: t.List) -> exp.Func:
     if len(args) == 2:
         return exp.Datetime.from_arg_list(args)
     return exp.TimestampFromParts.from_arg_list(args)
+
+
+def _normalize_week_unit(unit: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    """
+    In BigQuery, plain WEEK defaults to Sunday-start weeks.
+    Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST for correct cross-dialect transpilation.
+    """
+    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+        return exp.Week(this=exp.var("SUNDAY"))
+
+    # This branch is necessary for the WEEK keyword in DATE_DIFF(..., WEEK) to be normalized.
+    if isinstance(unit, exp.Column) and not unit.table and isinstance(unit.this, exp.Identifier):
+        if unit.name.upper() == "WEEK":
+            return exp.Week(this=exp.var("SUNDAY"))
+
+    return unit
+
+
+def build_date_time_diff_with_week_normalization(
+    exp_class: t.Type[E],
+) -> t.Callable[[t.List], E]:
+    """
+    Factory for *_DIFF functions that normalizes plain WEEK units to WEEK(SUNDAY).
+
+    These functions have signature: FUNC(expr1, expr2, date_part)
+    where date_part is at argument index 2.
+
+    Supports: DATE_DIFF, DATETIME_DIFF, TIME_DIFF, TIMESTAMP_DIFF
+    """
+
+    def _builder(args: t.List) -> E:
+        return exp_class(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            unit=_normalize_week_unit(seq_get(args, 2)),
+        )
+
+    return _builder
 
 
 def _build_regexp_extract(
@@ -551,6 +624,7 @@ class BigQuery(Dialect):
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
+            "DATE_DIFF": build_date_time_diff_with_week_normalization(exp.DateDiff),
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1),
@@ -1092,7 +1166,7 @@ class BigQuery(Dialect):
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", e.this, e.expression, unit_to_var(e)
+                "DATE_DIFF", e.this, e.expression, _generate_bq_datetime_diff_unit(self, e)
             ),
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,

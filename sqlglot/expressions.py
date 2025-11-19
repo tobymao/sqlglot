@@ -5746,6 +5746,11 @@ class Minhash(AggFunc):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/minhash_combine
+class MinhashCombine(AggFunc):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/approximate_similarity
 class ApproximateSimilarity(AggFunc):
     _sql_names = ["APPROXIMATE_SIMILARITY", "APPROXIMATE_JACCARD_INDEX"]

@@ -405,6 +405,37 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
+    """
+    Handle GREATEST function with dialect-aware NULL behavior.
+
+    - If null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
+    - If null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
+    """
+    all_args = [expression.this] + expression.expressions
+    greatest_expr = self.func("GREATEST", *all_args)
+
+    # Check if this GREATEST should return NULL if any arg is NULL (BigQuery behavior)
+    if getattr(expression, 'null_if_any_null', False):
+        # BigQuery behavior: NULL if any argument is NULL
+        null_checks = []
+        for arg in all_args:
+            null_checks.append(exp.Is(this=arg, expression=exp.Null()))
+
+        is_any_null_expr: exp.Expression = null_checks[0]
+        for null_check in null_checks[1:]:
+            is_any_null_expr = exp.Or(this=is_any_null_expr, expression=null_check)
+
+        # Create CASE expression
+        case_expr = exp.Case(
+            ifs=[exp.If(this=is_any_null_expr, true=exp.Null())], default=greatest_expr
+        )
+        return self.sql(case_expr)
+    else:
+        # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
+        return self.sql(greatest_expr)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -866,6 +897,7 @@ class DuckDB(Dialect):
             exp.EuclideanDistance: rename_func("LIST_DISTANCE"),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
+            exp.Greatest: _greatest_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),

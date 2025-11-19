@@ -164,6 +164,13 @@ def _build_timestamp(args: t.List) -> exp.Timestamp:
     return timestamp
 
 
+def _build_greatest(args: t.List) -> exp.Greatest:
+    """Build GREATEST with BigQuery's null-if-any-null behavior."""
+    greatest = exp.Greatest.from_arg_list(args)
+    greatest.null_if_any_null = True
+    return greatest
+
+
 def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
     expr_type = exp.DateFromParts if len(args) == 3 else exp.Date
     return expr_type.from_arg_list(args)
@@ -545,6 +552,7 @@ class BigQuery(Dialect):
             "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
+            "GREATEST": _build_greatest,
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_EXTRACT_STRING_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),

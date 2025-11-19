@@ -248,7 +248,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.OBJECT}
         for expr_type in {
-            exp.Minhash,
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
@@ -292,6 +291,12 @@ EXPRESSION_METADATA = {
             exp.TryBase64DecodeString,
             exp.TryHexDecodeString,
             exp.Uuid,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DataType.Type.VARIANT}
+        for expr_type in {
+            exp.Minhash,
         }
     },
     exp.ArgMax: {"annotator": _annotate_arg_max_min},

@@ -3510,15 +3510,15 @@ ARRAY;
 
 # dialect: snowflake
 MINHASH(5, tbl.int_col);
-OBJECT;
+VARIANT;
 
 # dialect: snowflake
 MINHASH(5, tbl.int_col, tbl.str_col);
-OBJECT;
+VARIANT;
 
 # dialect: snowflake
 MINHASH(5, *);
-OBJECT;
+VARIANT;
 
 --------------------------------------
 -- T-SQL

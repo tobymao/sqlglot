@@ -43,6 +43,8 @@ class TestSnowflake(Validator):
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
         self.validate_identity("SELECT MINHASH(5, col)")
+        self.validate_identity("SELECT MINHASH(5, col1, col2)")
+        self.validate_identity("SELECT MINHASH(5, *)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")

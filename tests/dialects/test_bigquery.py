@@ -3240,6 +3240,56 @@ OPTIONS (
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
 
+        # BigQuery → DuckDB transpilation tests for DATE_DIFF with week units
+        # Test WEEK(MONDAY) - Monday-based week (normalized to ISOWEEK)
+        self.validate_all(
+            "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(MONDAY))",
+            write={
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+            },
+        )
+        # Test WEEK(SUNDAY) - Sunday-based week (normalized to WEEK)
+        self.validate_all(
+            "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SUNDAY))",
+            write={
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
+            },
+        )
+        # Test WEEK(SATURDAY) - Saturday-based week calculation
+        self.validate_all(
+            "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SATURDAY))",
+            write={
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SATURDAY))",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '-5' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '-5' DAY)) // 7",
+            },
+        )
+        # Test WEEK - Default Sunday-based week calculation
+        self.validate_all(
+            "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
+            write={
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
+            },
+        )
+        # Test ISOWEEK - ISO 8601 Monday-based week calculation
+        self.validate_all(
+            "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+            write={
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+            },
+        )
+        # Test with DATE literal - Explicit DATE casting
+        self.validate_all(
+            "DATE_DIFF(DATE '2024-01-15', DATE '2024-01-08', WEEK(MONDAY))",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2024-01-15' AS DATE), CAST('2024-01-08' AS DATE), ISOWEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+            },
+        )
+
     def test_approx_qunatiles(self):
         self.validate_identity("APPROX_QUANTILES(foo, 2)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")

@@ -69,6 +69,17 @@ WS_CONTROL_CHARS_TO_DUCK = {
     "\u001f": 31,
 }
 
+# DuckDB's EXTRACT(DAYOFWEEK) returns: 0=Sunday, 1=Monday, ..., 6=Saturday
+_WEEK_START_DAY_TO_DOW = {
+    "MONDAY": 1,
+    "TUESDAY": 2,
+    "WEDNESDAY": 3,
+    "THURSDAY": 4,
+    "FRIDAY": 5,
+    "SATURDAY": 6,
+    "SUNDAY": 0,
+}
+
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -250,9 +261,68 @@ def _implicit_datetime_cast(
     return arg
 
 
+def _extract_week_start_day(unit: t.Optional[exp.Expression]) -> t.Optional[t.Tuple[str, int]]:
+    """
+    Extract week start day name and DOW number from a Week or WeekStart expression.
+    """
+    if not isinstance(unit, (exp.Week, exp.WeekStart)):
+        return None
+
+    day_var = unit.this
+    if not isinstance(day_var, exp.Var):
+        return None
+
+    start_day = day_var.this.upper() if isinstance(day_var.this, str) else str(day_var.this)
+    start_dow = _WEEK_START_DAY_TO_DOW.get(start_day)
+
+    if start_dow is None:
+        return None
+
+    return (start_day, start_dow)
+
+
+def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> exp.Expression:
+    """
+    Build DATE_TRUNC expression for week boundaries with custom start day.
+    Formula: shift = 1 - start_dow, then DATE_TRUNC('week', date + INTERVAL shift DAY)
+    """
+    if start_dow == 1:
+        # No shift needed for Monday-based weeks (ISO standard)
+        return exp.Anonymous(this="DATE_TRUNC", expressions=[exp.Literal.string("week"), date_expr])
+
+    # Shift date to align week boundaries with ISO Monday
+    shift_days = 1 - start_dow
+    shifted_date = exp.DateAdd(
+        this=date_expr,
+        expression=exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY")),
+    )
+
+    return exp.Anonymous(this="DATE_TRUNC", expressions=[exp.Literal.string("week"), shifted_date])
+
+
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    """
+    Generate DATE_DIFF SQL for DuckDB using DATE_TRUNC-based week alignment.
+    """
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
+    unit = expression.args.get("unit")
+
+    week_start = _extract_week_start_day(unit)
+    if week_start and this and expr:
+        _, start_dow = week_start
+
+        # Build truncated week boundary expressions
+        truncated_this = _build_week_trunc_expression(this, start_dow)
+        truncated_expr = _build_week_trunc_expression(expr, start_dow)
+
+        # Calculate week difference
+        day_diff = exp.DateDiff(
+            this=truncated_this, expression=truncated_expr, unit=exp.Literal.string("day")
+        )
+        result = exp.IntDiv(this=day_diff, expression=exp.Literal.number(7))
+
+        return self.sql(result)
 
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 

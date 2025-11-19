@@ -45,6 +45,11 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MINHASH(5, col)")
         self.validate_identity("SELECT MINHASH(5, col1, col2)")
         self.validate_identity("SELECT MINHASH(5, *)")
+        self.validate_identity("SELECT APPROXIMATE_SIMILARITY(minhash_col)")
+        self.validate_identity(
+            "SELECT APPROXIMATE_JACCARD_INDEX(minhash_col)",
+            "SELECT APPROXIMATE_SIMILARITY(minhash_col)",
+        )
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")

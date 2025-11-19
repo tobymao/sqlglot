@@ -27,7 +27,6 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     timestrtotime_sql,
 )
-from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 

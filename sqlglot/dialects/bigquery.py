@@ -242,6 +242,42 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def _normalize_week_unit(expression: E) -> E:
+    """
+    In BigQuery, plain WEEK defaults to Sunday-start weeks.
+    Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST for correct cross-dialect transpilation.
+    """
+    unit = expression.args.get("unit")
+
+    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+        expression.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+
+    return expression
+
+
+def build_date_time_diff(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
+    """
+    Factory for *_DIFF functions that normalizes plain WEEK units to WEEK(SUNDAY).
+
+    These functions have signature: FUNC(expr1, expr2, date_part)
+    where date_part is at argument index 2.
+
+    Supports: DATE_DIFF, DATETIME_DIFF, TIME_DIFF, TIMESTAMP_DIFF
+    """
+
+    def _builder(args: t.List) -> E:
+        expr = exp_class(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            unit=seq_get(args, 2),
+            date_part_boundary=True,
+        )
+
+        return _normalize_week_unit(expr)
+
+    return _builder
+
+
 def _build_regexp_extract(
     expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
 ) -> t.Callable[[t.List, BigQuery], E]:
@@ -564,6 +600,7 @@ class BigQuery(Dialect):
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
+            "DATE_DIFF": build_date_time_diff(exp.DateDiff),
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1),

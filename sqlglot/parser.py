@@ -2958,10 +2958,7 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             is_function = self._match(TokenType.FUNCTION)
 
-            if is_function:
-                this = self._parse_function()
-            else:
-                this = self._parse_insert_alias()
+            this = self._parse_function() if is_function else self._parse_insert_table()
 
         returning = self._parse_returning()  # TSQL allows RETURNING before source
 
@@ -2987,7 +2984,7 @@ class Parser(metaclass=_Parser):
             source=self._match(TokenType.TABLE) and self._parse_table(),
         )
 
-    def _parse_insert_alias(self) -> exp.Expression | None:
+    def _parse_insert_table(self) -> t.Optional[exp.Expression]:
         this = self._parse_table(schema=True, parse_partition=True)
         if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
             this.set("alias", self._parse_table_alias())

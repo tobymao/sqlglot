@@ -75,6 +75,11 @@ def qualify_tables(
                 _qualify(node)
 
     for scope in traverse_scope(expression):
+        for query in scope.subqueries:
+            subquery = query.parent
+            if isinstance(subquery, exp.Subquery):
+                subquery.unwrap().replace(subquery)
+
         for derived_table in scope.derived_tables:
             unnested = derived_table.unnest()
             if isinstance(unnested, exp.Table):

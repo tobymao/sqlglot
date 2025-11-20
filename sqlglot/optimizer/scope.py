@@ -156,7 +156,7 @@ class Scope:
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(node)
-            elif isinstance(node, exp.UNWRAPPED_QUERIES):
+            elif isinstance(node, exp.UNWRAPPED_QUERIES) and not _is_from_or_join(node):
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
@@ -821,7 +821,7 @@ def _traverse_udtfs(scope):
 
     sources = {}
     for expression in expressions:
-        if _is_derived_table(expression):
+        if isinstance(expression, exp.Subquery):
             top = None
             for child_scope in _traverse_scope(
                 scope.branch(
@@ -870,10 +870,7 @@ def walk_in_scope(expression, bfs=True, prune=None):
 
         if (
             isinstance(node, exp.CTE)
-            or (
-                isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
-                and _is_derived_table(node)
-            )
+            or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
             or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):

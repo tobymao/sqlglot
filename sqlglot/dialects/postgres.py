@@ -298,6 +298,7 @@ class Postgres(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    SUPPORTS_TABLES_REFERENCED_AS_COLUMNS = True
 
     TIME_MAPPING = {
         "d": "%u",  # 1-based day of week

@@ -84,6 +84,7 @@ def qualify_columns(
         _qualify_columns(
             scope,
             resolver,
+            dialect,
             allow_partial_qualification=allow_partial_qualification,
         )
 
@@ -568,6 +569,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
+    dialect: Dialect,
     allow_partial_qualification: bool,
 ) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
@@ -598,12 +600,12 @@ def _qualify_columns(
             if column_table:
                 column.set("table", column_table)
             elif (
-                resolver.schema.dialect in ("bigquery", "postgres")
+                dialect.SUPPORTS_TABLES_REFERENCED_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
                 # BigQuery allows tables to be referenced as columns, treating them as structs
-                # Postgres allows tables as projections, marking them as 'record' type
+                # Postgres allows tables to be referenced as columns, treating them as records
                 scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:

@@ -335,6 +335,9 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_COLUMN_JOIN_MARKS = False
     """Whether the old-style outer join (+) syntax is supported."""
 
+    SUPPORTS_TABLES_REFERENCED_AS_COLUMNS = False
+    """Whether tables can be referenced as columns in a projection list"""
+
     COPY_PARAMS_ARE_CSV = True
     """Separator of COPY statement parameters."""
 

@@ -19,16 +19,27 @@ jobs:
     steps:
       - name: Print debugging info
         run: |
-          echo "Github event name: ${{ github.event_name }}"
-          echo 'Github event ${{ toJSON(github.event) }}'
-          echo "Github event comment body: ${{ github.event.comment.body  }}"
-          echo "Github event pr body: ${{ github.event.pull_request.body }}"       
-          echo "Generic Number: ${{ github.event.number }}"
-          echo "PR number: ${{ github.event.pull_request.number }}"          
-          echo "Issue number: ${{ github.event.issue.number }}"
-          echo "SHA: ${{ github.sha }}"
-          echo "Head Ref ${{ github.head_ref }}"
-          echo "Ref Name: ${{ github.ref_name }}"
+          cat <<EOF
+            Github event name: ${{ github.event_name }}
+
+            Github event ${{ toJSON(github.event) }}
+
+            Github event comment body: ${{ github.event.comment.body }}
+
+            Github event pr body: ${{ github.event.pull_request.body }}
+
+            Generic Number: ${{ github.event.number }}
+
+            PR number: ${{ github.event.pull_request.number }}
+
+            Issue number: ${{ github.event.issue.number }}
+
+            SHA: ${{ github.sha }}
+
+            Head Ref ${{ github.head_ref }}
+
+            Ref Name: ${{ github.ref_name }}            
+          EOF
       - name: Acquire credentials
         id: app-token
         uses: actions/create-github-app-token@v2

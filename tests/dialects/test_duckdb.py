@@ -1493,6 +1493,8 @@ class TestDuckDB(Validator):
         self.validate_identity("ARRAY((SELECT id FROM t))")
 
     def test_cast(self):
+        self.validate_identity("CAST(x AS BIGNUM)")
+        self.validate_identity("CAST(x AS TIME_NS)")
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
         self.validate_identity("CAST(x AS REAL)")
         self.validate_identity("CAST(x AS UINTEGER)")

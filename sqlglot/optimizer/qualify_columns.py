@@ -598,7 +598,7 @@ def _qualify_columns(
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
-                # BigQuery allows tables to be referenced as columns, treating them as structs
+                # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
                 scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:

@@ -2958,15 +2958,12 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             is_function = self._match(TokenType.FUNCTION)
 
-            this = (
-                self._parse_table(schema=True, parse_partition=True)
-                if not is_function
-                else self._parse_function()
-            )
-            if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
-                this.set("alias", self._parse_table_alias())
+            if is_function:
+                this = self._parse_function()
+            else:
+                this = self._parse_insert_alias()
 
-        returning = self._parse_returning()
+        returning = self._parse_returning()  # TSQL allows RETURNING before source
 
         return self.expression(
             exp.Insert,
@@ -2989,6 +2986,12 @@ class Parser(metaclass=_Parser):
             ignore=ignore,
             source=self._match(TokenType.TABLE) and self._parse_table(),
         )
+
+    def _parse_insert_alias(self) -> exp.Expression | None:
+        this = self._parse_table(schema=True, parse_partition=True)
+        if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
+            this.set("alias", self._parse_table_alias())
+        return this
 
     def _parse_kill(self) -> exp.Kill:
         kind = exp.var(self._prev.text) if self._match_texts(("CONNECTION", "QUERY")) else None

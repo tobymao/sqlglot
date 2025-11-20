@@ -927,7 +927,7 @@ class BigQuery(Dialect):
                 this = self.expression(exp.Distinct, expressions=[this])
 
             self._match(TokenType.COMMA)
-            expression = self._parse_disjunction()
+            expression = self._parse_bitwise()
             if not expression:
                 self.raise_error("Expected number of quantiles argument in APPROX_QUANTILES")
 

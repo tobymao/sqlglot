@@ -8,7 +8,6 @@ import typing as t
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
-from sqlglot.parser import build_greatest
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -163,11 +162,6 @@ def _build_timestamp(args: t.List) -> exp.Timestamp:
     timestamp = exp.Timestamp.from_arg_list(args)
     timestamp.set("with_tz", True)
     return timestamp
-
-
-def _build_greatest(args: t.List) -> exp.Greatest:
-    """Build GREATEST with BigQuery's null-if-any-null behavior."""
-    return build_greatest(args, return_null_if_any_null=True)
 
 
 def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
@@ -551,7 +545,9 @@ class BigQuery(Dialect):
             "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
-            "GREATEST": _build_greatest,
+            "GREATEST": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], return_null_if_any_null=True
+            ),
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_EXTRACT_STRING_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),

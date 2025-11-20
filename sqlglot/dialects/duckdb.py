@@ -413,27 +413,21 @@ def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
     - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
     """
     all_args = [expression.this] + expression.expressions
-    greatest_expr = self.func("GREATEST", *all_args)
+    greatest_sql = self.func("GREATEST", *all_args)
 
     # Check if this GREATEST should return NULL if any arg is NULL (BigQuery behavior)
     if expression.args.get("return_null_if_any_null"):
         # BigQuery behavior: NULL if any argument is NULL
-        null_checks = []
-        for arg in all_args:
-            null_checks.append(exp.Is(this=arg, expression=exp.Null()))
-
-        is_any_null_expr: exp.Expression = null_checks[0]
-        for null_check in null_checks[1:]:
-            is_any_null_expr = exp.Or(this=is_any_null_expr, expression=null_check)
-
-        # Create CASE expression
-        case_expr = exp.Case(
-            ifs=[exp.If(this=is_any_null_expr, true=exp.Null())], default=greatest_expr
+        case_expr = exp.case().when(
+            exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
+            exp.null(),
+            copy=False
         )
+        case_expr.set("default", greatest_sql)
         return self.sql(case_expr)
     else:
         # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
-        return self.sql(greatest_expr)
+        return self.sql(greatest_sql)
 
 
 class DuckDB(Dialect):

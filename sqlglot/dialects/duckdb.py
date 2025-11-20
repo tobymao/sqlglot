@@ -94,6 +94,28 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
+# DuckDB STRFTIME handler that converts %x to explicit US format
+def _timetostr_sql(self: DuckDB.Generator, expression: exp.TimeToStr) -> str:
+    format_expr = expression.args.get("format")
+
+    # Check if format is %x and convert to US format %m/%d/%y
+    # DuckDB's STRFTIME doesn't properly handle locale-dependent %x format
+    format_str = None
+    if format_expr:
+        if format_expr.is_string:
+            format_str = format_expr.this
+        elif isinstance(format_expr, exp.Column):
+            # Format might be parsed as a Column (identifier) if quoted
+            format_str = format_expr.name
+
+    if format_str == "%x":
+        # Replace %x with explicit US date format
+        us_format = exp.Literal.string("%m/%d/%y")
+        expression = expression.copy()
+        expression.set("format", us_format)
+
+    return self.func("STRFTIME", expression.this, self.format_time(expression))
+
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
@@ -934,7 +956,7 @@ class DuckDB(Dialect):
             exp.TimeStrToUnix: lambda self, e: self.func(
                 "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
             ),
-            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
+            exp.TimeToStr: _timetostr_sql,
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",

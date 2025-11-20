@@ -7474,10 +7474,10 @@ class RegexpExtractAll(Func):
     arg_types = {
         "this": True,
         "expression": True,
+        "group": False,
+        "parameters": False,
         "position": False,
         "occurrence": False,
-        "parameters": False,
-        "group": False,
     }
 
 

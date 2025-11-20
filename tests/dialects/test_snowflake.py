@@ -2693,8 +2693,8 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
         self.validate_identity(
-            "REGEXP_SUBSTR_ALL(subject, pattern)",
-            "REGEXP_EXTRACT_ALL(subject, pattern)",
+            "REGEXP_SUBSTR_ALL(subject, pattern, pos, occ, param, group)",
+            "REGEXP_EXTRACT_ALL(subject, pattern, pos, occ, param, group)",
         )
 
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")

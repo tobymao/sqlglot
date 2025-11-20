@@ -9,6 +9,7 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("REGEXP_EXTRACT_ALL(str, pat, group, opt)")
         self.validate_identity("SELECT COSH(1.5)")
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")

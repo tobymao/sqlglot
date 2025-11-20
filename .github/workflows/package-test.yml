@@ -11,9 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        # python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        # TODO: revert
-        python-version: ["3.9"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
@@ -29,84 +27,7 @@ jobs:
         source ./.venv/bin/activate
         python -m pip install --upgrade pip
         make install-dev
-    - name: Run unit tests and linter checks
+    - name: Run tests and linter checks
       run: |
         source ./.venv/bin/activate
         make check
-
-  run-integration-tests:
-    runs-on: ubuntu-latest
-    needs: run-checks
-    steps:
-      - name: Acquire credentials
-        id: app-token
-        uses: actions/create-github-app-token@v2        
-        with:
-          app-id: ${{ vars.INTEGRATION_TEST_CLIENT_ID }}
-          private-key: ${{ secrets.INTEGRATION_TEST_PRIVATE_KEY }}
-          owner: fivetran
-          repositories: sqlglot-integration-tests
-
-      - name: Run integration tests
-        id: run-remote
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -e
-
-          gh workflow run run-tests.yml \
-            --repo fivetran/sqlglot-integration-tests \
-            --ref main \
-            -f sqlglot_ref=${{ github.sha }} \
-            -f sqlglot_pr_number=${{ github.event.number }} \
-            -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }}            
-          
-          echo "Triggered workflow"
-
-          # wait a bit for the run to start
-          sleep 10
-
-          # there is a bit of a race condition here. this just grabs the latest
-          # run and hopes it's the one we just triggered. 
-          # inexplicably, the `gh workflow run` API doesnt return the run id...
-          RUN_ID=$(gh run list \
-              --repo fivetran/sqlglot-integration-tests \
-              --workflow run-tests.yml \
-              --user sqlglot-integration-tests \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId')
-          
-          echo "Using Run ID: ${RUN_ID}"
-          echo "remote_run_id=$RUN_ID" >> $GITHUB_OUTPUT
-
-          echo "Waiting for completion"
-          gh run watch $RUN_ID \
-            --repo fivetran/sqlglot-integration-tests \
-            --interval 10 \
-            --compact \
-            --exit-status
-      
-      - name: Fetch outputs
-        uses: actions/download-artifact@v5        
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          repository: fivetran/sqlglot-integration-tests
-          run-id: ${{ steps.run-remote.outputs.remote_run_id }}          
-          name: summary
-
-      - name: Write summary as comment
-        uses: actions/github-script@v8
-        # only do this when on PR branches, main builds dont have anywhere to write comments
-        if: ${{ github.event_name == 'pull_request' }}        
-        with:
-          script: |
-            // summary.json is downloaded from the remote workflow in the previous step
-            const summary = require("./summary.json")            
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary.msg
-            })          

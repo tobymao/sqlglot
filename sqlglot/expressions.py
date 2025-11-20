@@ -5732,6 +5732,11 @@ class ApproxTopKAccumulate(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_top_k_combine
+class ApproxTopKCombine(AggFunc):
+    arg_types = {"this": True, "expression": False}
+
+
 class ApproxTopSum(AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 

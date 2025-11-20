@@ -3461,6 +3461,14 @@ APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
 OBJECT;
 
 # dialect: snowflake
+APPROX_TOP_K_COMBINE(tbl.state_col, 10);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K_COMBINE(tbl.state_col);
+ARRAY;
+
+# dialect: snowflake
 APPROX_COUNT_DISTINCT(tbl.str_col);
 BIGINT;
 

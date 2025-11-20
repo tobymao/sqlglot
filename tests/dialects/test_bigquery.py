@@ -3454,6 +3454,8 @@ OPTIONS (
 
     def test_approx_quantiles(self):
         self.validate_identity("APPROX_QUANTILES(x, 2)")
+        self.validate_identity("APPROX_QUANTILES(FALSE OR TRUE, 2)")
+        self.validate_identity("APPROX_QUANTILES((SELECT 1 AS val), CAST(2.1 AS INT64))")
         self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2)")
         self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
         self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")

@@ -922,16 +922,12 @@ class BigQuery(Dialect):
         def _parse_approx_quantiles(self) -> t.Optional[exp.Expression]:
             # APPROX_QUANTILES([DISTINCT] expression, number [{IGNORE | RESPECT} NULLS])
             distinct = self._match(TokenType.DISTINCT)
-            this = self._parse_assignment()
+            this = self._parse_disjunction()
             if distinct:
                 this = self.expression(exp.Distinct, expressions=[this])
 
-            if not self._match(TokenType.COMMA):
-                self.raise_error(
-                    "Expected comma between expression and number of quantiles in APPROX_QUANTILES"
-                )
-
-            expression = self._parse_assignment()
+            self._match(TokenType.COMMA)
+            expression = self._parse_disjunction()
             if not expression:
                 self.raise_error("Expected number of quantiles argument in APPROX_QUANTILES")
 

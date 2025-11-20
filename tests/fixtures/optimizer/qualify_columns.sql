@@ -337,7 +337,7 @@ SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM 
 
 # title: nested subqueries in union
 ((select a from x where a < 1)) UNION ((select a from x where a > 2));
-((SELECT x.a AS a FROM x AS x WHERE x.a < 1)) UNION ((SELECT x.a AS a FROM x AS x WHERE x.a > 2));
+(SELECT x.a AS a FROM x AS x WHERE x.a < 1) UNION (SELECT x.a AS a FROM x AS x WHERE x.a > 2);
 
 
 # dialect: bigquery
@@ -442,6 +442,10 @@ SELECT _q_1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_1 WHERE _q_1.a IN (S
 # execute: false
 SELECT * FROM table_a as A WHERE A.col1 IN (SELECT MAX(B.col2) FROM table_b as B UNION ALL SELECT MAX(C.col2) FROM table_b as C);
 SELECT * FROM table_a AS `A` WHERE `A`.col1 IN (SELECT MAX(`B`.col2) AS _col_0 FROM table_b AS `B` UNION ALL SELECT MAX(`C`.col2) AS _col_0 FROM table_b AS `C`);
+
+# Title: Unnest deep subquery
+select * from x where b in ((((select b from y))));
+SELECT x.a AS a, x.b AS b FROM x AS x WHERE x.b IN (SELECT y.b AS b FROM y AS y);
 
 --------------------------------------
 -- Correlated subqueries

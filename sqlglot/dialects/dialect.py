@@ -832,6 +832,23 @@ class Dialect(metaclass=_Dialect):
         "CENTURIES": "CENTURY",
     }
 
+    WEEK_UNIT_SEMANTICS = {
+        "WEEK": ("SUNDAY", 0),
+        "ISOWEEK": ("MONDAY", 1),
+        "WEEKISO": ("MONDAY", 1),
+    }
+
+    # Days of week to DOW numbers (ISO standard: Monday=1, Sunday=0)
+    WEEK_START_DAY_TO_DOW = {
+        "MONDAY": 1,
+        "TUESDAY": 2,
+        "WEDNESDAY": 3,
+        "THURSDAY": 4,
+        "FRIDAY": 5,
+        "SATURDAY": 6,
+        "SUNDAY": 0,
+    }
+
     # Specifies what types a given type can be coerced into
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
 
@@ -1703,6 +1720,52 @@ def map_date_part(part, dialect: DialectType = Dialect):
         return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
 
     return part
+
+
+def extract_week_unit_info(
+    unit: t.Optional[exp.Expression], include_dow: bool = False
+) -> t.Optional[t.Union[str, t.Tuple[str, int]]]:
+    """
+    Extract week unit information from AST node.
+
+    This helper provides a unified way to handle week units across dialects.
+
+    Args:
+        unit: The unit expression (Var, Week, or WeekStart)
+        include_dow: If True, return (day_name, dow_number) tuple for transformations
+                    If False, return just day_name string for serialization
+
+    Returns:
+        - If include_dow=False: day_name (e.g., "SUNDAY")
+        - If include_dow=True: (day_name, dow_number) (e.g., ("SUNDAY", 0))
+        - None if not a week unit
+
+    """
+    # Handle plain Var expressions for ISOWEEK/WEEKISO only
+    # NOTE: Plain Var('WEEK') is NOT handled to avoid breaking other dialects
+    if isinstance(unit, exp.Var):
+        unit_name = unit.this.upper() if isinstance(unit.this, str) else str(unit.this)
+        # Only handle ISOWEEK/WEEKISO variants, not plain WEEK
+        if unit_name in ("ISOWEEK", "WEEKISO"):
+            week_info = Dialect.WEEK_UNIT_SEMANTICS.get(unit_name)
+            if week_info:
+                day_name, dow = week_info
+                return (day_name, dow) if include_dow else day_name
+        return None
+
+    # Handle Week/WeekStart expressions with explicit day
+    if isinstance(unit, (exp.Week, exp.WeekStart)):
+        day_var = unit.this
+        if isinstance(day_var, exp.Var):
+            day_name = day_var.this.upper() if isinstance(day_var.this, str) else str(day_var.this)
+
+            if include_dow:
+                dow_value = Dialect.WEEK_START_DAY_TO_DOW.get(day_name)
+                return (day_name, dow_value) if dow_value is not None else None
+
+            return day_name
+
+    return None
 
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:

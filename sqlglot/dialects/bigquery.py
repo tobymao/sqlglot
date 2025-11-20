@@ -153,32 +153,6 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _normalize_week_units(expression: exp.Expression) -> exp.Expression:
-    """
-    Normalize WEEK and ISOWEEK units in DATE_DIFF to WeekStart expressions.
-
-    Transformations:
-    - WEEK -> WeekStart(this=Var('SUNDAY'))
-    - ISOWEEK -> WeekStart(this=Var('MONDAY'))
-
-    Note: WEEK(day) is already parsed as WeekStart by the parser.
-    """
-    if isinstance(expression, exp.DateDiff):
-        unit = expression.args.get("unit")
-
-        if isinstance(unit, exp.Var):
-            unit_name = unit.this.upper() if isinstance(unit.this, str) else str(unit.this)
-
-            if unit_name == "WEEK":
-                # BigQuery's WEEK uses Sunday as the start of the week
-                expression.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
-            elif unit_name == "ISOWEEK":
-                # ISOWEEK uses Monday as the start of the week
-                expression.set("unit", exp.WeekStart(this=exp.var("MONDAY")))
-
-    return expression
-
-
 def _build_parse_timestamp(args: t.List) -> exp.StrToTime:
     this = build_formatted_time(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
     this.set("zone", seq_get(args, 2))
@@ -235,6 +209,34 @@ def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> 
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
+def _serialize_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.Expression) -> str:
+    """
+    Serialize unit for *_DIFF functions, converting Week expressions to BigQuery syntax.
+
+    Canonical form -> BigQuery syntax:
+    - Week(SUNDAY) -> WEEK (BigQuery's default)
+    - Week(MONDAY) -> ISOWEEK
+    - Week(other day) -> WEEK(day)
+    - Other units -> use unit_to_var
+
+    """
+    from sqlglot.dialects.dialect import extract_week_unit_info
+
+    unit = expression.args.get("unit")
+    day_name = extract_week_unit_info(unit, include_dow=False)
+
+    if day_name and isinstance(day_name, str):
+        if day_name == "SUNDAY":
+            return self.sql(exp.var("WEEK"))
+        elif day_name == "MONDAY":
+            return self.sql(exp.var("ISOWEEK"))
+        else:
+            return self.sql(exp.Week(this=exp.var(day_name)))
+
+    unit_expr = unit_to_var(expression)
+    return self.sql(unit_expr) if unit_expr else "DAY"
+
+
 def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
@@ -266,6 +268,46 @@ def _build_datetime(args: t.List) -> exp.Func:
     if len(args) == 2:
         return exp.Datetime.from_arg_list(args)
     return exp.TimestampFromParts.from_arg_list(args)
+
+
+def _normalize_week_unit(unit: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    """
+    In BigQuery, plain WEEK defaults to Sunday-start weeks.
+     Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST for correct cross-dialect transpilation.
+    """
+    unit_name = None
+
+    if isinstance(unit, exp.Var):
+        unit_name = str(unit.this)
+    elif isinstance(unit, exp.Column) and isinstance(unit.this, exp.Identifier):
+        unit_name = str(unit.this.this)
+
+    if unit_name and unit_name.upper() == "WEEK":
+        return exp.Week(this=exp.var("SUNDAY"))
+
+    return unit
+
+
+def build_date_time_diff_with_week_normalization(
+    exp_class: t.Type[E],
+) -> t.Callable[[t.List], E]:
+    """
+    Factory for *_DIFF functions that normalizes plain WEEK units to WEEK(SUNDAY).
+
+    These functions have signature: FUNC(expr1, expr2, date_part)
+    where date_part is at argument index 2.
+
+    Supports: DATE_DIFF, DATETIME_DIFF, TIME_DIFF, TIMESTAMP_DIFF
+    """
+
+    def _builder(args: t.List) -> E:
+        return exp_class(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            unit=_normalize_week_unit(seq_get(args, 2)),
+        )
+
+    return _builder
 
 
 def _build_regexp_extract(
@@ -454,17 +496,6 @@ class BigQuery(Dialect):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
-    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
-        """Parse SQL and normalize BigQuery-specific constructs to canonical form."""
-        expressions = super().parse(sql, **opts)
-
-        # Normalize WEEK units in DATE_DIFF to canonical WeekStart expressions
-        for expression in expressions:
-            if expression:
-                expression.transform(_normalize_week_units, copy=False)
-
-        return expressions
-
     def normalize_identifier(self, expression: E) -> E:
         if (
             isinstance(expression, exp.Identifier)
@@ -588,6 +619,7 @@ class BigQuery(Dialect):
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
+            "DATE_DIFF": build_date_time_diff_with_week_normalization(exp.DateDiff),
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1),
@@ -1129,7 +1161,7 @@ class BigQuery(Dialect):
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", e.this, e.expression, self._date_diff_unit_sql(e)
+                "DATE_DIFF", e.this, e.expression, _serialize_bq_datetime_diff_unit(self, e)
             ),
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
@@ -1383,40 +1415,6 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
-
-        def _date_diff_unit_sql(self, expression: exp.DateDiff) -> str:
-            """
-            Convert canonical WeekStart expression back to BigQuery syntax.
-
-            Canonical form -> BigQuery syntax:
-            - WeekStart(SUNDAY) -> WEEK (BigQuery's default)
-            - WeekStart(MONDAY) -> ISOWEEK
-            - WeekStart(other day) -> WEEK(day)
-            - Other units -> use unit_to_var as normal
-            """
-            unit = expression.args.get("unit")
-
-            if isinstance(unit, exp.WeekStart):
-                # Extract the day from WeekStart
-                day_var = unit.this
-                if isinstance(day_var, exp.Var):
-                    day_name = (
-                        day_var.this.upper() if isinstance(day_var.this, str) else str(day_var.this)
-                    )
-
-                    if day_name == "SUNDAY":
-                        # BigQuery's default WEEK is Sunday-start
-                        return self.sql(exp.var("WEEK"))
-                    elif day_name == "MONDAY":
-                        # Use ISOWEEK for Monday-start
-                        return self.sql(exp.var("ISOWEEK"))
-                    else:
-                        # For other days, use WEEK(day) syntax
-                        return self.sql(exp.Week(this=day_var))
-
-            # For other units, use default behavior
-            unit_expr = unit_to_var(expression)
-            return self.sql(unit_expr) if unit_expr else "DAY"
 
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
             unit = expression.unit

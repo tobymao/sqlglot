@@ -69,17 +69,6 @@ WS_CONTROL_CHARS_TO_DUCK = {
     "\u001f": 31,
 }
 
-# DuckDB's EXTRACT(DAYOFWEEK) returns: 0=Sunday, 1=Monday, ..., 6=Saturday
-_WEEK_START_DAY_TO_DOW = {
-    "MONDAY": 1,
-    "TUESDAY": 2,
-    "WEDNESDAY": 3,
-    "THURSDAY": 4,
-    "FRIDAY": 5,
-    "SATURDAY": 6,
-    "SUNDAY": 0,
-}
-
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -263,22 +252,22 @@ def _implicit_datetime_cast(
 
 def _extract_week_start_day(unit: t.Optional[exp.Expression]) -> t.Optional[t.Tuple[str, int]]:
     """
-    Extract week start day name and DOW number from a Week or WeekStart expression.
+    Extract week start day name and DOW number from a Week, WeekStart, or plain Var expression.
+
+    Uses extract_week_unit_info(include_dow=True) for uniform week unit handling.
+
+    Handles:
+    - Var('WEEK') -> ('SUNDAY', 0)  # BigQuery default
+    - Var('ISOWEEK') -> ('MONDAY', 1)
+    - Week(Var('day')) -> ('day', dow)
+    - WeekStart(Var('day')) -> ('day', dow)
     """
-    if not isinstance(unit, (exp.Week, exp.WeekStart)):
-        return None
+    from sqlglot.dialects.dialect import extract_week_unit_info
 
-    day_var = unit.this
-    if not isinstance(day_var, exp.Var):
-        return None
-
-    start_day = day_var.this.upper() if isinstance(day_var.this, str) else str(day_var.this)
-    start_dow = _WEEK_START_DAY_TO_DOW.get(start_day)
-
-    if start_dow is None:
-        return None
-
-    return (start_day, start_dow)
+    # Use shared helper with include_dow=True to get (day_name, dow_number)
+    result = extract_week_unit_info(unit, include_dow=True)
+    # When include_dow=True, result is either None or Tuple[str, int]
+    return result if result is None or isinstance(result, tuple) else None
 
 
 def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> exp.Expression:

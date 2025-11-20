@@ -96,6 +96,19 @@ def qualify_tables(
 
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
+                if dialect == "postgres" and isinstance(source.this, exp.GenerateSeries):
+                    table_alias = source.args.get("alias")
+                    if not table_alias:
+                        table_alias = exp.TableAlias(
+                            this=exp.to_identifier(next_alias_name()),
+                            columns=[exp.to_identifier("generate_series")],
+                        )
+                        source.set("alias", table_alias)
+                    elif not table_alias.args.get("columns"):
+                        original_alias_name = table_alias.alias_or_name
+                        table_alias.set("this", exp.to_identifier(next_alias_name()))
+                        table_alias.set("columns", [exp.to_identifier(original_alias_name)])
+
                 pivots = source.args.get("pivots")
                 if not source.alias:
                     # Don't add the pivot's alias to the pivoted table, use the table's name instead

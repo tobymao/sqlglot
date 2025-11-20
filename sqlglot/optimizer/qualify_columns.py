@@ -598,11 +598,12 @@ def _qualify_columns(
             if column_table:
                 column.set("table", column_table)
             elif (
-                resolver.schema.dialect == "bigquery"
+                resolver.schema.dialect in ("bigquery", "postgres")
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
                 # BigQuery allows tables to be referenced as columns, treating them as structs
+                # Postgres allows tables as projections, marking them as 'record' type
                 scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:

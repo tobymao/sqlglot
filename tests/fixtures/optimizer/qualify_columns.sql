@@ -287,6 +287,11 @@ SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
 SELECT first, second FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
 SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK(2, 1, 2, 3) AS (first, second)) AS tbl;
 
+# execute: false
+# dialect: postgres
+WITH t AS (SELECT 1 AS c) SELECT t FROM t;
+WITH t AS (SELECT 1 AS c) SELECT t AS _col_0 FROM t AS t;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

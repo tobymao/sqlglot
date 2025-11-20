@@ -213,5 +213,15 @@ WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE t SET name = cte.name FROM ct
 WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte WHERE cte.c = 1;
 
 # title: avoid qualifying CTE with DELETE
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c;
+
+# title: Qualify GENERATE_SERIES with its default column generate_series
+# dialect: postgres
+SELECT generate_series FROM GENERATE_SERIES(1,2);
+SELECT generate_series FROM GENERATE_SERIES(1, 2) AS _q_0(generate_series);
+
+# title: Qualify GENERATE_SERIES with alias by wrapping it
+# dialect: postgres
+SELECT g FROM GENERATE_SERIES(1,2) AS g;
+SELECT g FROM GENERATE_SERIES(1, 2) AS _q_0(g);

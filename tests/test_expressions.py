@@ -1113,6 +1113,8 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
         self.assertEqual(exp.DataType.build("int[3]").sql(dialect="duckdb"), "INT[3]")
         self.assertEqual(exp.DataType.build("int[3][3]").sql(dialect="duckdb"), "INT[3][3]")
+        self.assertEqual(exp.DataType.build("time_ns", "duckdb").sql(), "TIME_NS")
+        self.assertEqual(exp.DataType.build("bignum", "duckdb").sql(), "BIGNUM")
         self.assertEqual(
             exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
         )

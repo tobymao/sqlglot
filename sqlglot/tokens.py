@@ -172,6 +172,7 @@ class TokenType(AutoName):
     TIMESTAMP_S = auto()
     TIMESTAMP_MS = auto()
     TIMESTAMP_NS = auto()
+    TIMETRUNCATE = auto()
     DATETIME = auto()
     DATETIME2 = auto()
     DATETIME64 = auto()

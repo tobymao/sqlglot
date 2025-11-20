@@ -94,6 +94,7 @@ DIALECTS = [
     "SQLite",
     "StarRocks",
     "Tableau",
+    "TDengine",
     "Teradata",
     "Trino",
     "TSQL",

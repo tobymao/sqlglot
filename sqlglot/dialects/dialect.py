@@ -99,6 +99,7 @@ class Dialects(str, Enum):
     SQLITE = "sqlite"
     STARROCKS = "starrocks"
     TABLEAU = "tableau"
+    TDENGINE = "tdengine"
     TERADATA = "teradata"
     TRINO = "trino"
     TSQL = "tsql"

@@ -6483,6 +6483,10 @@ class TimeTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
+class TimeTruncate(Func):
+    arg_types = {"this": True, "unit": True, "use_current_timezone": False}
+
+
 class DateFromParts(Func):
     _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
     arg_types = {"year": True, "month": True, "day": True}

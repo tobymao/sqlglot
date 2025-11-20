@@ -582,6 +582,7 @@ x + interval '1' month
 | StarRocks | Official |
 | Tableau | Official |
 | Teradata | Community |
+| TDengine | Community |
 | Trino | Official |
 | TSQL | Official |
 

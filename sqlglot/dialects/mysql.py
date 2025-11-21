@@ -1329,7 +1329,7 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
-        
+
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
             # https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
             self.unsupported("MySQL does not support IGNORE NULLS.")

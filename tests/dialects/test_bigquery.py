@@ -553,14 +553,13 @@ LANGUAGE js AS
             read={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
                 "duckdb": "SELECT SUM(x IGNORE NULLS) AS x",
-                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
                 "spark": "SELECT SUM(x) IGNORE NULLS AS x",
                 "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
             },
             write={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
                 "duckdb": "SELECT SUM(x) AS x",
-                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
+                "postgres": UnsupportedError,
                 "spark": "SELECT SUM(x) IGNORE NULLS AS x",
                 "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
             },
@@ -569,14 +568,13 @@ LANGUAGE js AS
             "SELECT SUM(x RESPECT NULLS) AS x",
             read={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
-                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
             },
             write={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
                 "duckdb": "SELECT SUM(x) AS x",
-                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
+                "postgres": UnsupportedError,
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
             },

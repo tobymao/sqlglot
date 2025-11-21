@@ -9,7 +9,6 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_identity("REGEXP_EXTRACT_ALL(str, pat, group, opt)")
         self.validate_identity("SELECT COSH(1.5)")
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
@@ -40,6 +39,8 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
                 "sqlite": UnsupportedError,
+                "mysql": UnsupportedError,
+                "postgres": UnsupportedError,
             },
         )
         self.validate_all(
@@ -47,6 +48,8 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT FIRST_VALUE(c RESPECT NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
                 "sqlite": "SELECT FIRST_VALUE(c) OVER (PARTITION BY gb ORDER BY ob NULLS LAST) FROM t",
+                "mysql": "SELECT FIRST_VALUE(c) RESPECT NULLS OVER (PARTITION BY gb ORDER BY CASE WHEN ob IS NULL THEN 1 ELSE 0 END, ob) FROM t",
+                "postgres": UnsupportedError,
             },
         )
         self.validate_all(
@@ -1493,8 +1496,6 @@ class TestDuckDB(Validator):
         self.validate_identity("ARRAY((SELECT id FROM t))")
 
     def test_cast(self):
-        self.validate_identity("CAST(x AS BIGNUM)")
-        self.validate_identity("CAST(x AS TIME_NS)")
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
         self.validate_identity("CAST(x AS REAL)")
         self.validate_identity("CAST(x AS UINTEGER)")

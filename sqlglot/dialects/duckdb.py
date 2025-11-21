@@ -421,7 +421,6 @@ def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
     all_args = [expression.this] + (expression.expressions or [])
     greatest_sql = self.func("GREATEST", *all_args)
 
-    # Check if this GREATEST should return NULL if any arg is NULL (BigQuery behavior)
     if expression.args.get("return_null_if_any_null"):
         # BigQuery behavior: NULL if any argument is NULL
         case_expr = exp.case().when(

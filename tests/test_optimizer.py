@@ -163,11 +163,14 @@ class TestOptimizer(unittest.TestCase):
                 title = meta.get("title") or f"{i}, {sql}"
                 if only and title != only:
                     continue
+
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
+                canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
 
-                func_kwargs = {**kwargs}
+                func_kwargs = kwargs.copy()
+
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
@@ -175,9 +178,10 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["validate_qualify_columns"] = string_to_bool(
                         validate_qualify_columns
                     )
-
                 if dialect:
                     func_kwargs["dialect"] = dialect
+                if canonicalize_table_aliases:
+                    func_kwargs["canonicalize_table_aliases"] = canonicalize_table_aliases
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -240,77 +244,6 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_tables(self):
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("SELECT * FROM t"),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'SELECT * FROM c.db.t AS "_0"',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("SELECT * FROM t1 JOIN t2 ON t1.id = t2.id"),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'SELECT * FROM c.db.t1 AS "_0" JOIN c.db.t2 AS "_1" ON _0.id = _1.id',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("SELECT * FROM db1.users JOIN db2.users ON db1.users.id = db2.users.id"),
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'SELECT * FROM c.db1.users AS "_0" JOIN c.db2.users AS "_1" ON _0.id = _1.id',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("WITH cte AS (SELECT * FROM t) SELECT * FROM cte"),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1"',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("SELECT * FROM (SELECT * FROM t)"),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'SELECT * FROM (SELECT * FROM c.db.t AS "_0") AS "_1"',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one("SELECT * FROM t1, (SELECT * FROM t2) AS sub, t3"),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'SELECT * FROM c.db.t1 AS "_2", (SELECT * FROM c.db.t2 AS "_0") AS "_1", c.db.t3 AS "_3"',
-        )
-
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(
-                parse_one(
-                    "WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'))"
-                ),
-                db="db",
-                catalog="c",
-                canonicalize_table_aliases=True,
-            ).sql(),
-            'WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1" PIVOT(SUM(c) FOR v IN (\'x\', \'y\')) AS "_2"',
-        )
-
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),

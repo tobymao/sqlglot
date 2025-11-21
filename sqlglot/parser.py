@@ -1452,6 +1452,8 @@ class Parser(metaclass=_Parser):
     # The style options for the DESCRIBE statement
     DESCRIBE_STYLES = {"ANALYZE", "EXTENDED", "FORMATTED", "HISTORY"}
 
+    SET_ASSIGNMENT_DELIMITERS = {"=", ":=", "TO"}
+
     # The style options for the ANALYZE statement
     ANALYZE_STYLES = {
         "BUFFER_USAGE_LIMIT",
@@ -8084,7 +8086,7 @@ class Parser(metaclass=_Parser):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
         left = self._parse_primary() or self._parse_column()
-        assignment_delimiter = self._match_texts(("=", "TO"))
+        assignment_delimiter = self._match_texts(self.SET_ASSIGNMENT_DELIMITERS)
 
         if not left or (self.SET_REQUIRES_ASSIGNMENT_DELIMITER and not assignment_delimiter):
             self._retreat(index)

@@ -179,11 +179,7 @@ def _approx_quantiles_sql(self: DuckDB.Generator, expression: exp.ApproxQuantile
         exp.Literal.number(Decimal(i) / Decimal(num_quantiles)) for i in range(num_quantiles + 1)
     ]
 
-    approx_calls = [
-        exp.ApproxQuantile(this=this.copy(), quantile=quantile) for quantile in quantiles
-    ]
-
-    return self.sql(exp.Array(expressions=approx_calls))
+    return self.sql(exp.ApproxQuantile(this=this, quantile=exp.Array(expressions=quantiles)))
 
 
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], exp.Show]:

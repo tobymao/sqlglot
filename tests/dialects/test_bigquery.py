@@ -3464,49 +3464,33 @@ OPTIONS (
     def test_approx_quantiles_to_duckdb(self):
         self.validate_all(
             "APPROX_QUANTILES(x, 1)",
-            write={"duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 1)]"},
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 1])"},
         )
         self.validate_all(
             "APPROX_QUANTILES(x, 2)",
-            write={
-                "duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 1)]"
-            },
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 0.5, 1])"},
         )
         self.validate_all(
             "APPROX_QUANTILES(x, 4)",
-            write={
-                "duckdb": (
-                    "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.25), "
-                    "APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 0.75), APPROX_QUANTILE(x, 1)]"
-                )
-            },
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 0.25, 0.5, 0.75, 1])"},
         )
         self.validate_all(
             "APPROX_QUANTILES(DISTINCT x, 2)",
-            write={
-                "duckdb": (
-                    "[APPROX_QUANTILE(DISTINCT x, 0), APPROX_QUANTILE(DISTINCT x, 0.5), "
-                    "APPROX_QUANTILE(DISTINCT x, 1)]"
-                )
-            },
+            write={"duckdb": "APPROX_QUANTILE(DISTINCT x, [0, 0.5, 1])"},
         )
 
         with self.subTest("APPROX_QUANTILES 100 buckets"):
             result = self.parse_one("APPROX_QUANTILES(x, 100)").sql("duckdb")
-            self.assertEqual(result.count("APPROX_QUANTILE"), 101)
-            self.assertIn("APPROX_QUANTILE(x, 0.1)", result)
-            self.assertIn("APPROX_QUANTILE(x, 0.99)", result)
+            self.assertEqual(result.count("APPROX_QUANTILE("), 1)
+            self.assertIn("0.01", result)
+            self.assertIn("0.99", result)
+            self.assertRegex(result, r"APPROX_QUANTILE\(x, \[.*\]\)")
 
         for expr in ("x + y", "CASE WHEN x > 0 THEN x ELSE 0 END", "ABS(x)"):
             with self.subTest(expr=expr):
                 self.validate_all(
                     f"APPROX_QUANTILES({expr}, 2)",
-                    write={
-                        "duckdb": (
-                            f"[APPROX_QUANTILE({expr}, 0), "
-                            f"APPROX_QUANTILE({expr}, 0.5), APPROX_QUANTILE({expr}, 1)]"
-                        )
-                    },
+                    write={"duckdb": f"APPROX_QUANTILE({expr}, [0, 0.5, 1])"},
                 )
 
         with self.subTest("non-literal bucket count"):
@@ -3536,9 +3520,7 @@ OPTIONS (
             with mock.patch.object(generator_logger, "warning") as mock_warning:
                 self.validate_all(
                     "APPROX_QUANTILES(x, 2 IGNORE NULLS)",
-                    write={
-                        "duckdb": "[APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 1)]"
-                    },
+                    write={"duckdb": "APPROX_QUANTILE(x, [0, 0.5, 1])"},
                 )
                 mock_warning.assert_not_called()
 

@@ -1238,6 +1238,7 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT CAST(TRIM(CAST(CAST('***apple***' AS BLOB) AS TEXT), CAST(CAST('*' AS BLOB) AS TEXT)) AS BLOB) AS result"
         )
+        self.validate_identity("SELECT GREATEST(1.0, 2.5, NULL, 3.7)")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

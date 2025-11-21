@@ -6694,7 +6694,7 @@ class Getbit(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "return_null_if_any_null": False}
     is_var_len_args = True
 
 

@@ -152,16 +152,19 @@ def _approx_quantiles_sql(self: DuckDB.Generator, expression: exp.ApproxQuantile
     BigQuery's APPROX_QUANTILES(expr, n) returns an array of n+1 approximate quantile values
     dividing the input distribution into n equal-sized buckets.
 
-    This is transpiled to DuckDB as an array of individual APPROX_QUANTILE calls for each
-    quantile value (0/n, 1/n, 2/n, ..., n/n):
-
-    APPROX_QUANTILES(x, 2) -> [APPROX_QUANTILE(x, 0), APPROX_QUANTILE(x, 0.5), APPROX_QUANTILE(x, 1)]
-
     Both BigQuery and DuckDB use approximate algorithms for quantile estimation, but BigQuery
-    does not document the specific algorithm used so results may differ.
+    does not document the specific algorithm used so results may differ. DuckDB does not
+    support RESPECT NULLS.
     """
     this = expression.this
-    num_quantiles_expr = expression.expression
+    if isinstance(this, exp.Distinct):
+        # APPROX_QUANTILES requires 2 args and DISTINCT node grabs both
+        if len(this.expressions) < 2:
+            self.unsupported("APPROX_QUANTILES requires a bucket count argument")
+            return self.function_fallback_sql(expression)
+        num_quantiles_expr = this.expressions.pop(1)
+    else:
+        num_quantiles_expr = expression.expression
 
     if isinstance(num_quantiles_expr, (exp.Cast, exp.TryCast)):
         num_quantiles_expr = num_quantiles_expr.this.unnest()

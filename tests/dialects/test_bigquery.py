@@ -3513,6 +3513,18 @@ OPTIONS (
                     "duckdb", unsupported_level=ErrorLevel.RAISE
                 )
 
+        with self.subTest("missing bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("missing bucket count with DISTINCT"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(DISTINCT x)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
         with self.subTest("APPROX_QUANTILES IGNORE NULLS"):
             # No warning: IGNORE NULLS is the default behavior in DuckDB
             from sqlglot.generator import logger as generator_logger

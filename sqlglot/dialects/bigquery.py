@@ -625,7 +625,6 @@ class BigQuery(Dialect):
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
             "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
-            "APPROX_QUANTILES": lambda self: self._parse_approx_quantiles(),
             "PREDICT": lambda self: self._parse_ml(exp.Predict),
             "TRANSLATE": lambda self: self._parse_translate(),
             "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
@@ -918,21 +917,6 @@ class BigQuery(Dialect):
                 self._match(TokenType.COMMA)
 
             return expr
-
-        def _parse_approx_quantiles(self) -> t.Optional[exp.Expression]:
-            # APPROX_QUANTILES([DISTINCT] expression, number [{IGNORE | RESPECT} NULLS])
-            distinct = self._match(TokenType.DISTINCT)
-            this = self._parse_disjunction()
-            if distinct:
-                this = self.expression(exp.Distinct, expressions=[this])
-
-            self._match(TokenType.COMMA)
-            expression = self._parse_bitwise()
-            if not expression:
-                self.raise_error("Expected number of quantiles argument in APPROX_QUANTILES")
-
-            func = self.expression(exp.ApproxQuantiles, this=this, expression=expression)
-            return self._parse_respect_or_ignore_nulls(func)
 
         def _parse_ml(self, expr_type: t.Type[E], **kwargs) -> E:
             self._match_text_seq("MODEL")

@@ -400,6 +400,10 @@ class TestOracle(Validator):
         )
         self.validate_identity("INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')")
         self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
+        self.validate_identity("INSERT /*+ APPEND(d) */ INTO dest d VALUES (i, 'Value')")
+        self.validate_identity(
+            "INSERT /*+ APPEND(d) */ INTO dest d (i, value) SELECT 1, 'value' FROM dual"
+        )
         self.validate_identity(
             "SELECT /*+ LEADING(departments employees) USE_NL(employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
             """SELECT /*+ LEADING(departments employees)

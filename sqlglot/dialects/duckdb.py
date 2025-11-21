@@ -116,7 +116,6 @@ def _timetostr_sql(self: DuckDB.Generator, expression: exp.TimeToStr) -> str:
 
     return self.func("STRFTIME", expression.this, self.format_time(expression))
 
-
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)

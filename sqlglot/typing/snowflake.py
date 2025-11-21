@@ -123,7 +123,6 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.ARRAY}
         for expr_type in (
             exp.ApproxTopK,
-            exp.ApproxTopKCombine,
             exp.ArrayAgg,
             exp.RegexpExtractAll,
             exp.Split,
@@ -245,6 +244,7 @@ EXPRESSION_METADATA = {
             exp.ParseIp,
             exp.ParseUrl,
             exp.ApproxTopKAccumulate,
+            exp.ApproxTopKCombine,
         }
     },
     **{

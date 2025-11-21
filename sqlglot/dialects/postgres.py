@@ -855,7 +855,7 @@ class Postgres(Dialect):
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             # https://www.postgresql.org/docs/current/functions-window.html
-            self.unsupported("PostgreSQL does not support explicit RESPECT NULLS.")
+            self.unsupported("PostgreSQL does not support RESPECT NULLS.")
             return self.sql(expression.this)
 
         @unsupported_args("this")

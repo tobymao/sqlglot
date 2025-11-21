@@ -837,15 +837,15 @@ class Postgres(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"
-        
+
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
             # https://www.postgresql.org/docs/current/functions-window.html
             self.unsupported("PostgreSQL does not support IGNORE NULLS.")
             return self.sql(expression.this)
-        
+
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
-                        # https://www.postgresql.org/docs/current/functions-window.html
-            self.unsupported("PostgreSQL does not support explicit RESPECT NULLS. Just use the expression directly.")
+            # https://www.postgresql.org/docs/current/functions-window.html
+            self.unsupported("PostgreSQL does not support RESPECT NULLS.")
             return self.sql(expression.this)
 
         @unsupported_args("this")

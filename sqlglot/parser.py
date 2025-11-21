@@ -230,6 +230,7 @@ class Parser(metaclass=_Parser):
             is_string=dialect.UUID_IS_STRING_TYPE or None
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "GREATEST": lambda args: exp.Greatest(this=seq_get(args, 0), expressions=args[1:]),
         "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),

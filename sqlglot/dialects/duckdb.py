@@ -141,11 +141,6 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
     )
 
 
-def _build_greatest(args: t.List) -> exp.Greatest:
-    """Build GREATEST with all arguments properly distributed."""
-    return exp.Greatest(this=seq_get(args, 0), expressions=args[1:])
-
-
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], exp.Show]:
     def _parse(self: DuckDB.Parser) -> exp.Show:
         return self._parse_show_duckdb(*args, **kwargs)
@@ -410,29 +405,6 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
-def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
-    """
-    Handle GREATEST function with dialect-aware NULL behavior.
-
-    - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
-    - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
-    """
-    # Get all arguments
-    all_args = [expression.this] + (expression.expressions or [])
-    greatest_sql = self.func("GREATEST", *all_args)
-
-    if expression.args.get("return_null_if_any_null"):
-        # BigQuery behavior: NULL if any argument is NULL
-        case_expr = exp.case().when(
-            exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False), exp.null(), copy=False
-        )
-        case_expr.set("default", greatest_sql)
-        return self.sql(case_expr)
-
-    # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
-    return self.sql(greatest_sql)
-
-
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -547,7 +519,6 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "GREATEST": _build_greatest,
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
@@ -895,7 +866,6 @@ class DuckDB(Dialect):
             exp.EuclideanDistance: rename_func("LIST_DISTANCE"),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
-            exp.Greatest: _greatest_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
@@ -1132,6 +1102,30 @@ class DuckDB(Dialect):
             exp.Lead,
             exp.NthValue,
         )
+
+        def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
+            """
+            Handle GREATEST function with dialect-aware NULL behavior.
+
+            - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
+            - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
+            """
+            # Get all arguments
+            all_args = [expression.this, *expression.expressions]
+            greatest_sql = self.function_fallback_sql(expression)
+
+            if expression.args.get("return_null_if_any_null"):
+                # BigQuery behavior: NULL if any argument is NULL
+                case_expr = exp.case().when(
+                    exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
+                    exp.null(),
+                    copy=False,
+                )
+                case_expr.set("default", greatest_sql)
+                return self.sql(case_expr)
+
+            # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
+            return self.sql(greatest_sql)
 
         def lambda_sql(
             self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True

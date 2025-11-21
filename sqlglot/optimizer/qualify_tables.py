@@ -84,17 +84,16 @@ def qualify_tables(
         alias = expression.args.get("alias") or exp.TableAlias()
 
         if canonicalize_table_aliases:
-            quoted: t.Optional[bool] = True
             new_alias_name = next_alias_name()
             canonical_aliases[alias.name or target_alias or ""] = new_alias_name
         elif not alias.name:
-            quoted = None if target_alias else True
             new_alias_name = target_alias or next_alias_name()
-            if normalize:
+            if normalize and target_alias:
                 new_alias_name = normalize_identifiers(new_alias_name, dialect=dialect).name
         else:
             return
 
+        quoted = True if canonicalize_table_aliases or not target_alias else None
         alias.set("this", exp.to_identifier(new_alias_name, quoted=quoted))
         expression.set("alias", alias)
 
@@ -123,7 +122,7 @@ def qualify_tables(
 
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
-                # When the name is empty, it means that we have a non-table source, e.g. a pivoted Cte
+                # When the name is empty, it means that we have a non-table source, e.g. a pivoted cte
                 is_real_table_source = bool(name)
 
                 if pivot := seq_get(source.args.get("pivots") or [], 0):

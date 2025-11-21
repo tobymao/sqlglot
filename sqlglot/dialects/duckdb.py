@@ -141,6 +141,11 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
     )
 
 
+def _build_greatest(args: t.List) -> exp.Greatest:
+    """Build GREATEST with all arguments properly distributed."""
+    return exp.Greatest(this=seq_get(args, 0), expressions=args[1:])
+
+
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], exp.Show]:
     def _parse(self: DuckDB.Parser) -> exp.Show:
         return self._parse_show_duckdb(*args, **kwargs)
@@ -412,7 +417,8 @@ def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
     - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
     - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
     """
-    all_args = [expression.this] + expression.expressions
+    # Get all arguments
+    all_args = [expression.this] + (expression.expressions or [])
     greatest_sql = self.func("GREATEST", *all_args)
 
     # Check if this GREATEST should return NULL if any arg is NULL (BigQuery behavior)
@@ -542,6 +548,7 @@ class DuckDB(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "GREATEST": _build_greatest,
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,

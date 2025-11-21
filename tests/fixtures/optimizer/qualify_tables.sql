@@ -213,5 +213,40 @@ WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE t SET name = cte.name FROM ct
 WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte WHERE cte.c = 1;
 
 # title: avoid qualifying CTE with DELETE
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c;
+
+# title: canonicalize single table alias
+# canonicalize_table_aliases: true
+SELECT * FROM t;
+SELECT * FROM c.db.t AS "_0";
+
+# title: canonicalize join table aliases
+# canonicalize_table_aliases: true
+SELECT * FROM t1 JOIN t2 ON t1.id = t2.id;
+SELECT * FROM c.db.t1 AS "_0" JOIN c.db.t2 AS "_1" ON "_0".id = "_1".id;
+
+# title: canonicalize join with different databases
+# canonicalize_table_aliases: true
+SELECT * FROM db1.users JOIN db2.users ON db1.users.id = db2.users.id;
+SELECT * FROM c.db1.users AS "_0" JOIN c.db2.users AS "_1" ON "_0".id = "_1".id;
+
+# title: canonicalize CTE alias
+# canonicalize_table_aliases: true
+WITH cte AS (SELECT * FROM t) SELECT * FROM cte;
+WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1";
+
+# title: canonicalize subquery alias
+# canonicalize_table_aliases: true
+SELECT * FROM (SELECT * FROM t);
+SELECT * FROM (SELECT * FROM c.db.t AS "_0") AS "_1";
+
+# title: canonicalize multiple tables with subquery
+# canonicalize_table_aliases: true
+SELECT * FROM t1, (SELECT * FROM t2) AS sub, t3;
+SELECT * FROM c.db.t1 AS "_2", (SELECT * FROM c.db.t2 AS "_0") AS "_1", c.db.t3 AS "_3";
+
+# title: canonicalize CTE with PIVOT
+# canonicalize_table_aliases: true
+WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'));
+WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1" PIVOT(SUM(c) FOR v IN ('x', 'y')) AS "_2";

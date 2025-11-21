@@ -131,7 +131,7 @@ def qualify_tables(
                 _set_alias(source, target_alias=name or source.name or None, normalize=True)
 
                 source_fqn = ".".join(p.name for p in source.parts)
-                table_aliases[source_fqn] = exp.to_identifier(source.alias)
+                table_aliases[source_fqn] = source.args["alias"].this.copy()
 
                 if pivot:
                     target_alias = source.alias if pivot.unpivot else None
@@ -179,6 +179,6 @@ def qualify_tables(
                 and (canonical_table := canonical_aliases.get(table, "")) != column.table
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
-                column.set("table", exp.to_identifier(canonical_table))
+                column.set("table", exp.to_identifier(canonical_table, quoted=True))
 
     return expression

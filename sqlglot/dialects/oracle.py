@@ -276,6 +276,24 @@ class Oracle(Dialect):
         def _parse_connect_with_prior(self):
             return self._parse_assignment()
 
+        def _parse_insert_table(self) -> t.Optional[exp.Expression]:
+            # Oracle does not use AS for INSERT INTO alias
+            # https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/INSERT.html
+            # Parse table parts without schema to avoid parsing the alias with its columns
+            this = self._parse_table_parts(schema=True)
+
+            if isinstance(this, exp.Table):
+                alias_name = self._parse_id_var(any_token=False)
+                if alias_name:
+                    this.set("alias", exp.TableAlias(this=alias_name))
+
+                this.set("partition", self._parse_partition())
+
+                # Now parse the schema (column list) if present
+                return self._parse_schema(this=this)
+
+            return this
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False

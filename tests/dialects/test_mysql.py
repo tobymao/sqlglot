@@ -307,6 +307,7 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("SELECT @var1, @var2 := @var1")
         self.validate_identity("SELECT @var1 := COUNT(*) FROM t1")
+        self.validate_identity("SET @var1 := 1", "SET @var1 = 1")
 
         self.validate_identity(
             "SELECT DISTINCTROW tbl.col FROM tbl", "SELECT DISTINCT tbl.col FROM tbl"

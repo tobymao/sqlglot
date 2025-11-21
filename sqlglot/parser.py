@@ -5303,7 +5303,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_factor(self) -> t.Optional[exp.Expression]:
         parse_method = self._parse_exponent if self.EXPONENT else self._parse_unary
-        this = parse_method()
+        this = self._parse_at_time_zone(parse_method())
 
         while self._match_set(self.FACTOR):
             klass = self.FACTOR[self._prev.token_type]
@@ -5328,7 +5328,7 @@ class Parser(metaclass=_Parser):
     def _parse_unary(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.UNARY_PARSERS):
             return self.UNARY_PARSERS[self._prev.token_type](self)
-        return self._parse_at_time_zone(self._parse_type())
+        return self._parse_type()
 
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
@@ -5696,7 +5696,9 @@ class Parser(metaclass=_Parser):
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("AT", "TIME", "ZONE"):
             return this
-        return self.expression(exp.AtTimeZone, this=this, zone=self._parse_unary())
+        return self._parse_at_time_zone(
+            self.expression(exp.AtTimeZone, this=this, zone=self._parse_unary())
+        )
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
         this = self._parse_column_reference()

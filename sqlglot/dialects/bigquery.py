@@ -215,7 +215,8 @@ def _serialize_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.E
 
     Canonical form -> BigQuery syntax:
     - Week(SUNDAY) -> WEEK (BigQuery's default)
-    - Week(MONDAY) -> ISOWEEK
+    - Week(MONDAY) -> WEEK(MONDAY) 
+    - ISOWEEK -> ISOWEEK 
     - Week(other day) -> WEEK(day)
     - Other units -> use unit_to_var
 
@@ -229,7 +230,11 @@ def _serialize_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.E
         if day_name == "SUNDAY":
             return self.sql(exp.var("WEEK"))
         elif day_name == "MONDAY":
-            return self.sql(exp.var("ISOWEEK"))
+            # Preserve the original form: WEEK(MONDAY) vs ISOWEEK
+            if isinstance(unit, exp.WeekStart):
+                return self.sql(unit)  
+            else:
+                return self.sql(exp.var("ISOWEEK")) 
         else:
             return self.sql(exp.Week(this=exp.var(day_name)))
 

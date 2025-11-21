@@ -3241,11 +3241,11 @@ OPTIONS (
         )
 
         # BigQuery → DuckDB transpilation tests for DATE_DIFF with week units
-        # Test WEEK(MONDAY) - Monday-based week (normalized to ISOWEEK)
+        # Test WEEK(MONDAY) - Monday-based week
         self.validate_all(
             "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(MONDAY))",
             write={
-                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+                "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(MONDAY))",
                 "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
             },
         )
@@ -3285,7 +3285,7 @@ OPTIONS (
         self.validate_all(
             "DATE_DIFF(DATE '2024-01-15', DATE '2024-01-08', WEEK(MONDAY))",
             write={
-                "bigquery": "DATE_DIFF(CAST('2024-01-15' AS DATE), CAST('2024-01-08' AS DATE), ISOWEEK)",
+                "bigquery": "DATE_DIFF(CAST('2024-01-15' AS DATE), CAST('2024-01-08' AS DATE), WEEK(MONDAY))",
                 "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
             },
         )

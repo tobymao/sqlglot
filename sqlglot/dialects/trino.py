@@ -16,6 +16,12 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
 
+    class Tokenizer(Presto.Tokenizer):
+        KEYWORDS = {
+            **Presto.Tokenizer.KEYWORDS,
+            "REFRESH": TokenType.REFRESH,
+        }
+
     class Parser(Presto.Parser):
         FUNCTION_PARSERS = {
             **Presto.Parser.FUNCTION_PARSERS,

@@ -181,6 +181,5 @@ def qualify_tables(
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
                 column.set("table", exp.to_identifier(canonical_table))
-                pass
 
     return expression

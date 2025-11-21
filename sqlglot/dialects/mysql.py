@@ -1335,6 +1335,11 @@ class MySQL(Dialect):
             self.unsupported("MySQL does not support IGNORE NULLS.")
             return self.sql(expression.this)
 
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            # https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+            self.unsupported("MySQL does not support IGNORE NULLS.")
+            return self.sql(expression.this)
+
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return self.func("SCHEMA")

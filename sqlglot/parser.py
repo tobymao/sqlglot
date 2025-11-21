@@ -7554,9 +7554,19 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Commit, chain=chain)
 
-    def _parse_refresh(self) -> exp.Refresh:
-        self._match(TokenType.TABLE)
-        return self.expression(exp.Refresh, this=self._parse_string() or self._parse_table())
+    def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        if self._match(TokenType.TABLE):
+            kind = "TABLE"
+        elif self._match_text_seq("MATERIALIZED", "VIEW"):
+            kind = "MATERIALIZED VIEW"
+        else:
+            kind = ""
+
+        this = self._parse_string() or self._parse_table()
+        if not kind and not isinstance(this, exp.Literal):
+            return self._parse_as_command(self._prev)
+
+        return self.expression(exp.Refresh, this=this, kind=kind)
 
     def _parse_column_def_with_exists(self):
         start = self._index

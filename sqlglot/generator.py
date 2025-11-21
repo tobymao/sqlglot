@@ -4375,8 +4375,8 @@ class Generator(metaclass=_Generator):
 
     def refresh_sql(self, expression: exp.Refresh) -> str:
         this = self.sql(expression, "this")
-        table = "" if isinstance(expression.this, exp.Literal) else "TABLE "
-        return f"REFRESH {table}{this}"
+        kind = "" if isinstance(expression.this, exp.Literal) else f"{expression.text('kind')} "
+        return f"REFRESH {kind}{this}"
 
     def toarray_sql(self, expression: exp.ToArray) -> str:
         arg = expression.this

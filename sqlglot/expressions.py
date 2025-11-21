@@ -1484,7 +1484,7 @@ class Uncache(Expression):
 
 
 class Refresh(Expression):
-    pass
+    arg_types = {"this": True, "kind": True}
 
 
 class DDL(Expression):

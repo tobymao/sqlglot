@@ -2141,6 +2141,7 @@ class Delete(DML):
         "using": False,
         "where": False,
         "returning": False,
+        "order": False,
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
         "cluster": False,  # Clickhouse

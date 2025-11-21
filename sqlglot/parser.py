@@ -3134,6 +3134,7 @@ class Parser(metaclass=_Parser):
             cluster=self._match(TokenType.ON) and self._parse_on_property(),
             where=self._parse_where(),
             returning=returning or self._parse_returning(),
+            order=self._parse_order(),
             limit=self._parse_limit(),
         )
 

@@ -4422,4 +4422,4 @@ FROM subquery2""",
             "SELECT CAST('2001-02-17 08:38:40' AS TIMESTAMP) AT TIME ZONE INTERVAL '3' HOURS AT TIME ZONE 'Asia/Tokyo'"
         ).expressions[0]
         self.assertEqual(parsed_expr.args.get("zone").sql("postgres"), "'Asia/Tokyo'")
-        self.assertEqual(parsed_expr.this.args.get("zone").sql("postgres"),"INTERVAL '3 HOURS'")
+        self.assertEqual(parsed_expr.this.args.get("zone").sql("postgres"), "INTERVAL '3 HOURS'")

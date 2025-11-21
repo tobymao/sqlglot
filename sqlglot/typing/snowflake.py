@@ -244,6 +244,7 @@ EXPRESSION_METADATA = {
             exp.ParseIp,
             exp.ParseUrl,
             exp.ApproxTopKAccumulate,
+            exp.ApproxTopKCombine,
         }
     },
     **{

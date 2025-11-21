@@ -245,9 +245,9 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("SELECT * FROM t"),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "SELECT * FROM c.db.t AS _0",
+            'SELECT * FROM c.db.t AS "_0"',
         )
 
         self.assertEqual(
@@ -255,18 +255,18 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("SELECT * FROM t1 JOIN t2 ON t1.id = t2.id"),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "SELECT * FROM c.db.t1 AS _0 JOIN c.db.t2 AS _1 ON _0.id = _1.id",
+            'SELECT * FROM c.db.t1 AS "_0" JOIN c.db.t2 AS "_1" ON _0.id = _1.id',
         )
 
         self.assertEqual(
             optimizer.qualify_tables.qualify_tables(
                 parse_one("SELECT * FROM db1.users JOIN db2.users ON db1.users.id = db2.users.id"),
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "SELECT * FROM c.db1.users AS _0 JOIN c.db2.users AS _1 ON _0.id = _1.id",
+            'SELECT * FROM c.db1.users AS "_0" JOIN c.db2.users AS "_1" ON _0.id = _1.id',
         )
 
         self.assertEqual(
@@ -274,9 +274,9 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("WITH cte AS (SELECT * FROM t) SELECT * FROM cte"),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "WITH cte AS (SELECT * FROM c.db.t AS _0) SELECT * FROM cte AS _1",
+            'WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1"',
         )
 
         self.assertEqual(
@@ -284,9 +284,9 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("SELECT * FROM (SELECT * FROM t)"),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "SELECT * FROM (SELECT * FROM c.db.t AS _0) AS _1",
+            'SELECT * FROM (SELECT * FROM c.db.t AS "_0") AS "_1"',
         )
 
         self.assertEqual(
@@ -294,9 +294,9 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("SELECT * FROM t1, (SELECT * FROM t2) AS sub, t3"),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "SELECT * FROM c.db.t1 AS _2, (SELECT * FROM c.db.t2 AS _0) AS _1, c.db.t3 AS _3",
+            'SELECT * FROM c.db.t1 AS "_2", (SELECT * FROM c.db.t2 AS "_0") AS "_1", c.db.t3 AS "_3"',
         )
 
         self.assertEqual(
@@ -306,9 +306,9 @@ class TestOptimizer(unittest.TestCase):
                 ),
                 db="db",
                 catalog="c",
-                canonicalize=True,
+                canonicalize_table_aliases=True,
             ).sql(),
-            "WITH cte AS (SELECT * FROM c.db.t AS _0) SELECT * FROM cte AS _1 PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _2",
+            'WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1" PIVOT(SUM(c) FOR v IN (\'x\', \'y\')) AS "_2"',
         )
 
         self.assertEqual(
@@ -330,7 +330,7 @@ class TestOptimizer(unittest.TestCase):
                 db="db",
                 catalog="catalog",
             ).sql(),
-            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _q_0",
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS \"_0\"",
         )
 
         self.assertEqual(
@@ -505,7 +505,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
+                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS `_0`",
                     dialect="bigquery",
                 ),
                 schema=MappingSchema(
@@ -517,7 +517,7 @@ class TestOptimizer(unittest.TestCase):
                     dialect="bigquery",
                 ),
             ).sql(dialect="bigquery"),
-            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
+            "SELECT `_0`.id AS id, `_0`.dt AS dt, `_0`.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS `_0`",
         )
 
         # Detection of correlation where columns are referenced in derived tables nested within subqueries

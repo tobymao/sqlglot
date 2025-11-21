@@ -18,7 +18,7 @@ def qualify_tables(
     catalog: t.Optional[str | exp.Identifier] = None,
     on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
     dialect: DialectType = None,
-    canonicalize: bool = False,
+    canonicalize_table_aliases: bool = False,
 ) -> E:
     """
     Rewrite sqlglot AST to have fully qualified tables. Join constructs such as
@@ -40,18 +40,14 @@ def qualify_tables(
         catalog: Catalog name
         on_qualify: Callback after a table has been qualified.
         dialect: The dialect to parse catalog and schema into.
-        canonicalize: Whether to use canonical aliases (_0, _1, ...) for all sources
+        canonicalize_table_aliases: Whether to use canonical aliases (_0, _1, ...) for all sources
             instead of preserving table names. Defaults to False.
 
     Returns:
         The qualified expression.
     """
     dialect = Dialect.get_or_raise(dialect)
-
-    alias_sequence = name_sequence("_" if canonicalize else "_q_")
-
-    def next_alias_name() -> str:
-        return normalize_identifiers(alias_sequence(), dialect=dialect).name
+    next_alias_name = name_sequence("_")
 
     if db := db or None:
         db = exp.parse_identifier(db, dialect=dialect)
@@ -87,17 +83,19 @@ def qualify_tables(
     ) -> None:
         alias = expression.args.get("alias") or exp.TableAlias()
 
-        if canonicalize:
+        if canonicalize_table_aliases:
+            quoted: t.Optional[bool] = True
             new_alias_name = next_alias_name()
             canonical_aliases[alias.name or target_alias or ""] = new_alias_name
         elif not alias.name:
+            quoted = None if target_alias else True
             new_alias_name = target_alias or next_alias_name()
             if normalize:
                 new_alias_name = normalize_identifiers(new_alias_name, dialect=dialect).name
         else:
             return
 
-        alias.set("this", exp.to_identifier(new_alias_name))
+        alias.set("this", exp.to_identifier(new_alias_name, quoted=quoted))
         expression.set("alias", alias)
 
         if scope:

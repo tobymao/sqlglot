@@ -84,7 +84,7 @@ def qualify(
         catalog=catalog,
         dialect=dialect,
         on_qualify=on_qualify,
-        canonicalize=canonicalize_table_aliases,
+        canonicalize_table_aliases=canonicalize_table_aliases,
     )
 
     if isolate_tables:

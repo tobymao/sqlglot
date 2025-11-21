@@ -12,7 +12,7 @@ CREATE TABLE foo AS SELECT tbl.a AS a FROM tbl AS tbl;
 
 # title: Create with complex CTE with derived table
 WITH cte AS (SELECT a FROM (SELECT a FROM x)) CREATE TABLE s AS SELECT * FROM cte;
-WITH cte AS (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0) CREATE TABLE s AS SELECT cte.a AS a FROM cte AS cte;
+WITH cte AS (SELECT _0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _0) CREATE TABLE s AS SELECT cte.a AS a FROM cte AS cte;
 
 # title: Create wtih multiple CTEs
 WITH cte1 AS (SELECT b FROM y), cte2 AS (SELECT b FROM cte1) CREATE TABLE s AS SELECT * FROM cte2;
@@ -24,11 +24,11 @@ WITH cte1 AS (SELECT y.b AS b FROM y AS y), cte2 AS (SELECT cte1.b AS b FROM cte
 
 # title: Create with multiple derived tables
 CREATE TABLE s AS SELECT * FROM (SELECT b FROM (SELECT b FROM y));
-CREATE TABLE s AS SELECT _q_1.b AS b FROM (SELECT _q_0.b AS b FROM (SELECT y.b AS b FROM y AS y) AS _q_0) AS _q_1;
+CREATE TABLE s AS SELECT _1.b AS b FROM (SELECT _0.b AS b FROM (SELECT y.b AS b FROM y AS y) AS _0) AS _1;
 
 # title: Create with a CTE and a derived table
 WITH cte AS (SELECT b FROM y) CREATE TABLE s AS SELECT * FROM (SELECT b FROM (SELECT b FROM cte));
-WITH cte AS (SELECT y.b AS b FROM y AS y) CREATE TABLE s AS SELECT _q_1.b AS b FROM (SELECT _q_0.b AS b FROM (SELECT cte.b AS b FROM cte AS cte) AS _q_0) AS _q_1;
+WITH cte AS (SELECT y.b AS b FROM y AS y) CREATE TABLE s AS SELECT _1.b AS b FROM (SELECT _0.b AS b FROM (SELECT cte.b AS b FROM cte AS cte) AS _0) AS _1;
 
 # title: Insert with CTE
 # dialect: spark

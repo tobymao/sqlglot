@@ -876,7 +876,7 @@ FROM tbl1""",
             "SELECT GREATEST(1, 2, NULL, 3)",
             "SELECT CASE WHEN 1 IS NULL OR 2 IS NULL OR NULL IS NULL OR 3 IS NULL THEN NULL ELSE GREATEST(1, 2, NULL, 3) END",
             read="bigquery",
-            write="duckdb"
+            write="duckdb",
         )
 
     def test_command_identity(self):

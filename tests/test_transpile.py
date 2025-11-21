@@ -870,6 +870,15 @@ FROM tbl1""",
             with self.subTest(sql):
                 self.assertEqual(transpile(sql)[0], sql.strip())
 
+    def test_greatest(self):
+        # Test BigQuery to DuckDB transpilation (should add NULL wrapping)
+        self.validate(
+            "SELECT GREATEST(1, 2, NULL, 3)",
+            "SELECT CASE WHEN 1 IS NULL OR 2 IS NULL OR NULL IS NULL OR 3 IS NULL THEN NULL ELSE GREATEST(1, 2, NULL, 3) END",
+            read="bigquery",
+            write="duckdb"
+        )
+
     def test_command_identity(self):
         for sql in (
             "ALTER AGGREGATE bla(foo) OWNER TO CURRENT_USER",

@@ -429,9 +429,9 @@ def _greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
         )
         case_expr.set("default", greatest_sql)
         return self.sql(case_expr)
-    else:
-        # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
-        return self.sql(greatest_sql)
+    
+    # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
+    return self.sql(greatest_sql)
 
 
 class DuckDB(Dialect):

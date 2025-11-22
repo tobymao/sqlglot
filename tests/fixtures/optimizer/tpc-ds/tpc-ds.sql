@@ -2539,7 +2539,7 @@ WITH "item_2" AS (
     "item"."i_class_id" AS "i_class_id",
     "item"."i_category_id" AS "i_category_id"
   FROM "item" AS "item"
-), "_q_0" AS (
+), "_0" AS (
   SELECT
     "iss"."i_brand_id" AS "brand_id",
     "iss"."i_class_id" AS "class_id",
@@ -2619,10 +2619,10 @@ WITH "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "ss_item_sk"
   FROM "item_2" AS "item"
-  JOIN "_q_0" AS "_q_0"
-    ON "_q_0"."brand_id" = "item"."i_brand_id"
-    AND "_q_0"."category_id" = "item"."i_category_id"
-    AND "_q_0"."class_id" = "item"."i_class_id"
+  JOIN "_0" AS "_0"
+    ON "_0"."brand_id" = "item"."i_brand_id"
+    AND "_0"."category_id" = "item"."i_category_id"
+    AND "_0"."class_id" = "item"."i_class_id"
   GROUP BY
     "item"."i_item_sk"
 ), "_u_1" AS (
@@ -3394,7 +3394,7 @@ WITH "frequent_ss_items" AS (
   SELECT
     "customer"."c_customer_sk" AS "c_customer_sk"
   FROM "customer" AS "customer"
-), "_q_0" AS (
+), "_0" AS (
   SELECT
     SUM("store_sales"."ss_quantity" * "store_sales"."ss_sales_price") AS "csales"
   FROM "store_sales" AS "store_sales"
@@ -3407,8 +3407,8 @@ WITH "frequent_ss_items" AS (
     "customer"."c_customer_sk"
 ), "max_store_sales" AS (
   SELECT
-    MAX("_q_0"."csales") AS "tpcds_cmax"
-  FROM "_q_0" AS "_q_0"
+    MAX("_0"."csales") AS "tpcds_cmax"
+  FROM "_0" AS "_0"
 ), "best_ss_customer" AS (
   SELECT
     "customer"."c_customer_sk" AS "c_customer_sk"
@@ -3440,7 +3440,7 @@ WITH "frequent_ss_items" AS (
   FROM "best_ss_customer" AS "best_ss_customer"
   GROUP BY
     "best_ss_customer"."c_customer_sk"
-), "_q_1" AS (
+), "_1" AS (
   SELECT
     "catalog_sales"."cs_quantity" * "catalog_sales"."cs_list_price" AS "sales"
   FROM "catalog_sales" AS "catalog_sales"
@@ -3466,8 +3466,8 @@ WITH "frequent_ss_items" AS (
     NOT "_u_3"."item_sk" IS NULL AND NOT "_u_4"."c_customer_sk" IS NULL
 )
 SELECT
-  SUM("_q_1"."sales") AS "_col_0"
-FROM "_q_1" AS "_q_1"
+  SUM("_1"."sales") AS "_col_0"
+FROM "_1" AS "_1"
 LIMIT 100;
 
 --------------------------------------

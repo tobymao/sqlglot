@@ -413,8 +413,8 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "a")
         self.assertEqual(len(node.downstream), 1)
         node = node.downstream[0]
-        self.assertEqual(node.name, "_q_0.a")
-        self.assertEqual(node.reference_node_name, "_q_0")
+        self.assertEqual(node.name, "_0.a")
+        self.assertEqual(node.reference_node_name, "_0")
 
     def test_lineage_cte_union(self) -> None:
         query = """
@@ -480,7 +480,7 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "x")
 
         downstream = node.downstream[0]
-        self.assertEqual(downstream.name, "_q_0.x")
+        self.assertEqual(downstream.name, "_0.x")
         self.assertEqual(downstream.source.sql(), "SELECT * FROM table_a AS table_a")
 
         downstream = downstream.downstream[0]
@@ -565,7 +565,7 @@ class TestLineage(unittest.TestCase):
         """
         node = lineage("other_a", sql)
 
-        self.assertEqual(node.downstream[0].name, "_q_0.value")
+        self.assertEqual(node.downstream[0].name, "_0.value")
         self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
 
     def test_pivot_with_alias(self) -> None:
@@ -705,7 +705,7 @@ class TestLineage(unittest.TestCase):
 
         node = lineage("product_type", sql, dialect="duckdb", schema=schema)
         self.assertEqual(node.downstream[0].name, "cte.product_type")
-        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.product_type")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_0.product_type")
         self.assertEqual(
             node.downstream[0].downstream[0].downstream[0].name,
             "loan_ledger.product_type",
@@ -713,7 +713,7 @@ class TestLineage(unittest.TestCase):
 
         node = lineage('"2024-10"', sql, dialect="duckdb", schema=schema)
         self.assertEqual(node.downstream[0].name, "cte.2024-10")
-        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.loan_id")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_0.loan_id")
         self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.loan_id")
 
     def test_copy_flag(self) -> None:

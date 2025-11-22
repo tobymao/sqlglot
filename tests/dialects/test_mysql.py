@@ -185,6 +185,19 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
 
+
+    def test_update_from_to_join(self):
+        self.validate_all(
+            "UPDATE foo JOIN bar ON TRUE SET a = bar.a WHERE foo.id = bar.id",
+            read={
+                "postgres": "UPDATE foo SET a = bar.a FROM bar WHERE foo.id = bar.id",
+            },
+            write={
+                "mysql": "UPDATE foo JOIN bar ON TRUE SET a = bar.a WHERE foo.id = bar.id",
+            },
+        )
+
+
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")
         self.validate_identity("SELECT CAST(COALESCE(`id`, 'NULL') AS CHAR CHARACTER SET binary)")

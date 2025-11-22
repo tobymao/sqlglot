@@ -1333,3 +1333,53 @@ class MySQL(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return self.func("SCHEMA")
+
+        def _update_join_clauses_sql(self, from_expression: exp.From) -> str:
+            def join_sql(node: exp.Expression) -> str:
+                if isinstance(node, exp.Join):
+                    join = node.copy()
+                    if not join.args.get("on") and not join.args.get("using"):
+                        join.set("on", exp.true())
+                    return self.sql(join)
+
+                table = node.copy()
+                nested_joins = list(table.args.get("joins") or [])
+                if nested_joins:
+                    table.set("joins", None)
+
+                sql = [self.sql(exp.Join(this=table, on=exp.true()))]
+
+                for nested in nested_joins:
+                    sql.append(join_sql(nested))
+
+                return "".join(sql)
+
+            joins: t.List[str] = []
+
+            if from_expression.this:
+                joins.append(join_sql(from_expression.this))
+
+            for extra in from_expression.expressions or []:
+                joins.append(join_sql(extra))
+
+            return "".join(joins)
+
+        def update_sql(self, expression: exp.Update) -> str:
+            this = self.sql(expression, "this")
+            set_sql = self.expressions(expression, flat=True)
+            from_expression = expression.args.get("from")
+            join_sql = self._update_join_clauses_sql(from_expression) if from_expression else ""
+            where_sql = self.sql(expression, "where")
+            returning = self.sql(expression, "returning")
+            order = self.sql(expression, "order")
+            limit = self.sql(expression, "limit")
+            options = self.expressions(expression, key="options")
+            options = f" OPTION({options})" if options else ""
+
+            if self.RETURNING_END:
+                post_set_sql = f"{where_sql}{returning}"
+            else:
+                post_set_sql = f"{returning}{where_sql}"
+
+            sql = f"UPDATE {this}{join_sql} SET {set_sql}{post_set_sql}{order}{limit}{options}"
+            return self.prepend_ctes(expression, sql)

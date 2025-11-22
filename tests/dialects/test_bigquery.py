@@ -2898,7 +2898,7 @@ OPTIONS (
             "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
             write={
                 "bigquery": "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
-                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%x')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%m/%d/%y')",
             },
         )
         self.validate_all(

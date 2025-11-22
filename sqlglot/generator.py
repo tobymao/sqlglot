@@ -1504,13 +1504,14 @@ class Generator(metaclass=_Generator):
         cluster = f" {cluster}" if cluster else ""
         where = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
+        order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         tables = self.expressions(expression, key="tables")
         tables = f" {tables}" if tables else ""
         if self.RETURNING_END:
-            expression_sql = f"{this}{using}{cluster}{where}{returning}{limit}"
+            expression_sql = f"{this}{using}{cluster}{where}{returning}{order}{limit}"
         else:
-            expression_sql = f"{returning}{this}{using}{cluster}{where}{limit}"
+            expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
         return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:

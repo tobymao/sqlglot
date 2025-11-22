@@ -22,6 +22,7 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+        self.validate_identity("DELETE FROM t FORCE INDEX (idx) WHERE a > 5 ORDER BY id")
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")

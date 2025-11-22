@@ -547,6 +547,22 @@ class MySQL(Dialect):
             self._match_r_paren()
             return self.expression(exp.ColumnPrefix, this=this, expression=expression)
 
+        def _parse_primary_key(
+            self, wrapped_optional: bool = False, in_props: bool = False
+        ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
+            if not in_props and self._match_set(
+                (TokenType.VAR, TokenType.STRING, TokenType.IDENTIFIER), advance=False
+            ):
+                index = self._index
+                self._advance()
+
+                has_paren = self._match(TokenType.L_PAREN, advance=False)
+
+                if not has_paren:
+                    self._retreat(index)
+
+            return super()._parse_primary_key(wrapped_optional=wrapped_optional, in_props=in_props)
+
         def _parse_index_constraint(
             self, kind: t.Optional[str] = None
         ) -> exp.IndexColumnConstraint:

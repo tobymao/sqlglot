@@ -96,6 +96,19 @@ class TestMySQL(Validator):
             "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
         )
         self.validate_identity(
+            "CREATE TABLE test (id INT, PRIMARY KEY pk_name (id))",
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))",
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity(
+            'CREATE TABLE test (id INT, PRIMARY KEY "pk_name" (id))',
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity("CREATE TABLE test (id INT, CONSTRAINT pk_name PRIMARY KEY (id))")
+        self.validate_identity(
             "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)"
         )
         self.validate_identity(

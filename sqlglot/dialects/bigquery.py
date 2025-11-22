@@ -357,6 +357,7 @@ class BigQuery(Dialect):
     HEX_STRING_IS_INTEGER_TYPE = True
     BYTE_STRING_IS_BYTES_TYPE = True
     UUID_IS_STRING_TYPE = True
+    SUPPORTS_TABLES_REFERENCED_AS_COLUMNS = True
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'

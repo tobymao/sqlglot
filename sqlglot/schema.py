@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
-    dialect: DialectType
+    dialect: Dialect
 
     @abc.abstractmethod
     def add_table(
@@ -222,7 +222,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: bool = True,
     ) -> None:
-        self.dialect = dialect
+        self.dialect = Dialect.get_or_raise(dialect)
         self.visible = {} if visible is None else visible
         self.normalize = normalize
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
@@ -239,6 +239,21 @@ class MappingSchema(AbstractMappingSchema, Schema):
             dialect=mapping_schema.dialect,
             normalize=mapping_schema.normalize,
         )
+
+    def __getstate__(self) -> t.Dict[str, t.Any]:
+        """Customize pickling to handle Dialect instances."""
+        state = self.__dict__.copy()
+        # Store dialect as its class for pickling
+        if isinstance(state["dialect"], Dialect):
+            state["dialect"] = type(state["dialect"])
+        return state
+
+    def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
+        """Customize unpickling to restore Dialect instances."""
+        # Restore dialect from its class
+        if "dialect" in state:
+            state["dialect"] = Dialect.get_or_raise(state["dialect"])
+        self.__dict__.update(state)
 
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
@@ -455,8 +470,8 @@ class MappingSchema(AbstractMappingSchema, Schema):
             The resulting expression type.
         """
         if schema_type not in self._type_mapping_cache:
-            dialect = dialect or self.dialect
-            udt = Dialect.get_or_raise(dialect).SUPPORTS_USER_DEFINED_TYPES
+            dialect = Dialect.get_or_raise(dialect) if dialect else self.dialect
+            udt = dialect.SUPPORTS_USER_DEFINED_TYPES
 
             try:
                 expression = exp.DataType.build(schema_type, dialect=dialect, udt=udt)

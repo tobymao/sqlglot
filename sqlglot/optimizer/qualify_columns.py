@@ -54,7 +54,7 @@ def qualify_columns(
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = Dialect.get_or_raise(schema.dialect)
+    dialect = schema.dialect
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
@@ -594,7 +594,7 @@ def _qualify_columns(
             if column_table:
                 column.set("table", column_table)
             elif (
-                Dialect.get_or_raise(resolver.schema.dialect).TABLES_REFERENCEABLE_AS_COLUMNS
+                resolver.schema.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
@@ -740,7 +740,7 @@ def _expand_stars(
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
 
     coalesced_columns = set()
-    dialect = Dialect.get_or_raise(resolver.schema.dialect)
+    dialect = resolver.schema.dialect
 
     pivot_output_columns = None
     pivot_exclude_columns: t.Set[str] = set()
@@ -1092,7 +1092,7 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if Dialect.get_or_raise(self.schema.dialect).SUPPORTS_STRUCT_STAR_EXPANSION:
+                if self.schema.dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)

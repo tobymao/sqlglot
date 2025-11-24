@@ -462,22 +462,23 @@ class Dialect(metaclass=_Dialect):
 
     DISABLES_ALIAS_REF_EXPANSION = False
     """
-    Whether alias reference expansion is completely disabled for this dialect.
+    Whether alias reference expansion is disabled for this dialect.
 
-    Some dialects like Oracle do NOT support referencing aliases in WHERE, GROUP BY, or HAVING clauses.
+    Some dialects like Oracle do NOT support referencing aliases in projections or WHERE clauses.
     The original expression must be repeated instead.
 
     For example, in Oracle:
-        SELECT col * 2 AS doubled FROM t WHERE doubled > 10  -- INVALID
-        SELECT col * 2 AS doubled FROM t WHERE col * 2 > 10  -- VALID
+        SELECT y.foo AS bar, bar * 2 AS baz FROM y  -- INVALID
+        SELECT y.foo AS bar, y.foo * 2 AS baz FROM y  -- VALID
     """
 
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = False
     """
     Whether alias references are allowed in JOIN ... ON clauses.
 
-    Most dialects do not support this, but some like Snowflake allow aliases defined in
-    the SELECT clause to be referenced in JOIN conditions.
+    Most dialects do not support this, but Snowflake allows alias expansion in the JOIN ... ON
+    clause (and almost everywhere else)
+    # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
 
     For example, in Snowflake:
         SELECT a.id AS user_id FROM a JOIN b ON user_id = b.id  -- VALID
@@ -522,19 +523,25 @@ class Dialect(metaclass=_Dialect):
 
     BigQuery allows struct fields to be expanded with the star operator:
         SELECT t.struct_col.* FROM table t
+    RisingWave also allows struct field expansion with the star operator using parentheses:
+        SELECT (t.struct_col).* FROM table t
 
     This expands to all fields within the struct.
     """
 
     QUERY_RESULTS_ARE_STRUCTS = False
     """
-    Whether query results have struct type metadata.
+    Whether query results have internal struct type representation for type inference.
 
-    In BigQuery, query results (subqueries) are treated as structs, which enables
-    struct field access on subquery results.
+    In BigQuery, subqueries used as data sources are internally represented as
+    structs, enabling advanced type inference. For example:
+    - ARRAY(SELECT 'foo') unwraps to ARRAY<STRING>, not ARRAY<STRUCT<STRING>>
+    - Column types propagate correctly through subqueries
 
-    For example, in BigQuery:
-        SELECT (SELECT 1 AS x, 2 AS y).x  -- Valid, accesses x field from struct result
+    This does NOT mean subquery results can be accessed with dot notation.
+    For field access, use SELECT AS STRUCT explicitly:
+        SELECT (SELECT AS STRUCT 1 AS x, 2 AS y).x  -- Valid
+        SELECT (SELECT 1 AS x, 2 AS y).x            -- Invalid
     """
 
     REQUIRES_PARENTHESIZED_STRUCT_ACCESS = False
@@ -543,6 +550,7 @@ class Dialect(metaclass=_Dialect):
 
     RisingWave requires parentheses for struct field access in certain contexts:
         SELECT (col.field).subfield FROM table  -- Parentheses required
+    # https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
 
     Without parentheses, the parser may not correctly interpret nested struct access.
     """
@@ -560,9 +568,9 @@ class Dialect(metaclass=_Dialect):
     """
     Whether COALESCE in comparisons has non-standard NULL semantics.
 
-    Redshift has special NULL handling where `COALESCE(x, 1) = 2` when x is NULL from a table
-    is not equivalent to `NOT x IS NULL AND x = 2`. This prevents certain COALESCE simplifications
-    in the optimizer.
+    We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
+    because they are not always equivalent. For example,  if `x` is `NULL` and it comes
+    from a table, then the result is `NULL`, despite `FALSE AND NULL` evaluating to `FALSE`.
 
     In standard SQL and most dialects, these expressions are equivalent, but Redshift treats
     table NULLs differently in this context.

@@ -402,8 +402,6 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
 
-    # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
-    # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
     if dialect.SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS:
         for join in expression.args.get("joins") or []:
             replace_columns(join)

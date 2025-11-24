@@ -524,7 +524,7 @@ impl<'a> TokenizerState<'a> {
 
                 while !self.peek_char.is_whitespace()
                     && !self.is_end
-                    && !self.settings.single_tokens.contains_key(&self.peek_char)
+                    && (self.peek_char == '-' || self.peek_char == '+' || !self.settings.single_tokens.contains_key(&self.peek_char))
                 {
                     literal.push(self.peek_char);
                     self.advance(1)?;
@@ -548,7 +548,7 @@ impl<'a> TokenizerState<'a> {
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
                 } else if self.dialect_settings.numbers_can_be_underscore_separated
-                    && self.is_numeric(&replaced)
+                    && self.is_float(&replaced)
                 {
                     self.add(self.token_types.number, Some(number_text + &replaced))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
@@ -721,8 +721,10 @@ impl<'a> TokenizerState<'a> {
         name.is_alphabetic() || name == '_'
     }
 
-    fn is_numeric(&self, s: &str) -> bool {
-        s.chars().all(|c| c.is_ascii_digit())
+    fn is_float(&self, s: &str) -> bool {
+        // Try to parse as f64 to check if it's a valid floating point number
+        // This handles scientific notation like "12E10" or "1.2e-5"
+        s.parse::<f64>().is_ok()
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

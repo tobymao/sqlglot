@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from itertools import groupby
 import re
 import typing as t
@@ -1402,7 +1403,7 @@ class DuckDB(Dialect):
             if isinstance(this, exp.First):
                 this = exp.AnyValue(this=this.this)
 
-            if not isinstance(this, exp.AnyValue):
+            if not isinstance(this, (exp.AnyValue, exp.ApproxQuantiles)):
                 self.unsupported("IGNORE NULLS is not supported for non-window functions.")
 
             return self.sql(this)
@@ -1594,3 +1595,40 @@ class DuckDB(Dialect):
                     truncate = None
 
             return self.func(func, this, decimals, truncate)
+
+        def approxquantiles_sql(self, expression: exp.ApproxQuantiles) -> str:
+            """
+            BigQuery's APPROX_QUANTILES(expr, n) returns an array of n+1 approximate quantile values
+            dividing the input distribution into n equal-sized buckets.
+
+            Both BigQuery and DuckDB use approximate algorithms for quantile estimation, but BigQuery
+            does not document the specific algorithm used so results may differ. DuckDB does not
+            support RESPECT NULLS.
+            """
+            this = expression.this
+            if isinstance(this, exp.Distinct):
+                # APPROX_QUANTILES requires 2 args and DISTINCT node grabs both
+                if len(this.expressions) < 2:
+                    self.unsupported("APPROX_QUANTILES requires a bucket count argument")
+                    return self.function_fallback_sql(expression)
+                num_quantiles_expr = this.expressions[1].pop()
+            else:
+                num_quantiles_expr = expression.expression
+
+            if not isinstance(num_quantiles_expr, exp.Literal) or not num_quantiles_expr.is_int:
+                self.unsupported("APPROX_QUANTILES bucket count must be a positive integer")
+                return self.function_fallback_sql(expression)
+
+            num_quantiles = t.cast(int, num_quantiles_expr.to_py())
+            if num_quantiles <= 0:
+                self.unsupported("APPROX_QUANTILES bucket count must be a positive integer")
+                return self.function_fallback_sql(expression)
+
+            quantiles = [
+                exp.Literal.number(Decimal(i) / Decimal(num_quantiles))
+                for i in range(num_quantiles + 1)
+            ]
+
+            return self.sql(
+                exp.ApproxQuantile(this=this, quantile=exp.Array(expressions=quantiles))
+            )

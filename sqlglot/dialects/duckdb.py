@@ -1596,7 +1596,7 @@ class DuckDB(Dialect):
 
             return self.func(func, this, decimals, truncate)
 
-        def approxquantiles_sql(self: DuckDB.Generator, expression: exp.ApproxQuantiles) -> str:
+        def approxquantiles_sql(self, expression: exp.ApproxQuantiles) -> str:
             """
             BigQuery's APPROX_QUANTILES(expr, n) returns an array of n+1 approximate quantile values
             dividing the input distribution into n equal-sized buckets.

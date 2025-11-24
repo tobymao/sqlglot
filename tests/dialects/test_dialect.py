@@ -4429,8 +4429,8 @@ FROM subquery2""",
             for notation in ("e", "E"):
                 for sign in ("", "-", "+"):
                     with self.subTest(f"Testing notation: {notation}, sign: {sign} for {dialect}"):
-                        sql = parse_one(f"1_2{notation}{sign}1_0", read=dialect).sql(dialect)
-                        self.assertEqual(sql, f"12{notation}{sign}10")
+                        number = f"1_2{notation}{sign}1_0"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
 
-                        sql = parse_one(f"12.3_4{notation}{sign}5_6_7", read=dialect).sql(dialect)
-                        self.assertEqual(sql, f"12.34{notation}{sign}567")
+                        number = f"12.3_4{notation}{sign}5_6_7"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)

@@ -5,7 +5,7 @@ import typing as t
 from enum import auto
 
 from sqlglot.errors import SqlglotError, TokenError
-from sqlglot.helper import AutoName, is_float
+from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -1346,13 +1346,13 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()
+            elif self._peek == "_" and self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED:
+                self._advance()
             elif self._peek.isidentifier():
                 number_text = self._text
                 literal = ""
 
-                while self._peek.strip() and (
-                    self._peek in ("-", "+") or self._peek not in self.SINGLE_TOKENS
-                ):
+                while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:
                     literal += self._peek
                     self._advance()
 
@@ -1362,12 +1362,8 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                else:
-                    replaced = literal.replace("_", "")
-                    if self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED and is_float(replaced):
-                        return self._add(TokenType.NUMBER, number_text + replaced)
-                    if self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
-                        return self._add(TokenType.VAR)
+                elif self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
+                    return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))
                 return self._add(TokenType.NUMBER, number_text)

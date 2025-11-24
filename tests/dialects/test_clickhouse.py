@@ -647,7 +647,7 @@ class TestClickhouse(Validator):
             "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
         )
 
-        self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
+        self.validate_identity("SELECT 1_2_3_4_5")
         self.validate_identity("SELECT 1_b", "SELECT 1_b")
         self.validate_identity(
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"

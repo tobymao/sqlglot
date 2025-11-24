@@ -3318,7 +3318,7 @@ class Parser(metaclass=_Parser):
 
         # duckdb supports leading with FROM x
         from_ = (
-            self._parse_from(consume_pipe=True)
+            self._parse_from(joins=True, consume_pipe=True)
             if self._match(TokenType.FROM, advance=False)
             else None
         )

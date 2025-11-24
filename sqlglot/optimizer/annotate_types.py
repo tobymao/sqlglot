@@ -14,7 +14,6 @@ from sqlglot.helper import (
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
-from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
@@ -189,12 +188,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     ) -> None:
         self.schema = schema
         self.dialect = schema.dialect
-        self.expression_metadata = (
-            expression_metadata or schema.dialect.EXPRESSION_METADATA
-        )
-        self.coerces_to = (
-            coerces_to or schema.dialect.COERCES_TO or self.COERCES_TO
-        )
+        self.expression_metadata = expression_metadata or schema.dialect.EXPRESSION_METADATA
+        self.coerces_to = coerces_to or schema.dialect.COERCES_TO or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once

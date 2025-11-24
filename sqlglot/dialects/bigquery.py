@@ -1080,7 +1080,7 @@ class BigQuery(Dialect):
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
-                self, e, func_name="STRING_AGG", within_group=False
+                self, e, func_name="STRING_AGG", within_group=False, sep=None
             ),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
             exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),

@@ -1863,12 +1863,14 @@ def groupconcat_sql(
     self: Generator,
     expression: exp.GroupConcat,
     func_name="LISTAGG",
-    sep: str = ",",
+    sep: t.Optional[str] = ",",
     within_group: bool = True,
     on_overflow: bool = False,
 ) -> str:
     this = expression.this
-    separator = self.sql(expression.args.get("separator") or exp.Literal.string(sep))
+    separator = self.sql(
+        expression.args.get("separator") or (exp.Literal.string(sep) if sep else None)
+    )
 
     on_overflow_sql = self.sql(expression, "on_overflow")
     on_overflow_sql = f" ON OVERFLOW {on_overflow_sql}" if (on_overflow and on_overflow_sql) else ""
@@ -1884,7 +1886,10 @@ def groupconcat_sql(
     if order and order.this:
         this = order.this.pop()
 
-    args = self.format_args(this, f"{separator}{on_overflow_sql}")
+    args = self.format_args(
+        this, f"{separator}{on_overflow_sql}" if separator or on_overflow_sql else None
+    )
+
     listagg: exp.Expression = exp.Anonymous(this=func_name, expressions=[args])
 
     modifiers = self.sql(limit)

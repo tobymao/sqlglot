@@ -474,7 +474,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if Dialect.get_or_raise(dialect).PROJECTION_ALIASES_SHADOW_SOURCE_NAMES: 
+                if Dialect.get_or_raise(dialect).PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to
@@ -765,7 +765,9 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
-    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(isinstance(col, exp.Dot) for col in scope.stars):
+    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+        isinstance(col, exp.Dot) for col in scope.stars
+    ):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
@@ -782,7 +784,10 @@ def _expand_stars(
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
-            elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
+            elif (
+                dialect.SUPPORTS_STRUCT_STAR_EXPANSION
+                and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
+            ):
                 struct_fields = _expand_struct_stars_bigquery(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)

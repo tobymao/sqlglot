@@ -368,7 +368,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope, selects)
 
-        if Dialect.get_or_raise(self.schema.dialect).QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
+        if Dialect.get_or_raise(self.schema.dialect).QUERY_RESULTS_ARE_STRUCTS and isinstance(
+            scope.expression, exp.Query
+        ):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[

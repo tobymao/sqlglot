@@ -1240,6 +1240,9 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("SELECT GREATEST(1.0, 2.5, NULL, 3.7)")
 
+        # TODO: This is incorrect AST, DATE_PART creates a STRUCT of values but it's stored in 'year' arg
+        self.validate_identity("SELECT MAKE_DATE(DATE_PART(['year', 'month', 'day'], TODAY()))")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

@@ -174,6 +174,7 @@ EXPRESSION_METADATA = {
             exp.MD5Digest,
             exp.SHA,
             exp.SHA2,
+            exp.SHA1Digest,
             exp.Unhex,
         }
     },

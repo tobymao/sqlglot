@@ -474,7 +474,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+                if Dialect.get_or_raise(dialect).PROJECTION_ALIASES_SHADOW_SOURCE_NAMES: 
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to

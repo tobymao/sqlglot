@@ -204,7 +204,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._null_expressions: t.Dict[int, exp.Expression] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
-        self._supports_null_type = schema.dialect in ("databricks", "spark")
+        self._supports_null_type = Dialect.get_or_raise(schema.dialect).SUPPORTS_NULL_TYPE
 
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
@@ -368,7 +368,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope, selects)
 
-        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
+        if Dialect.get_or_raise(self.schema.dialect).QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[

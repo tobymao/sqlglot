@@ -112,6 +112,7 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
 
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
+    SUPPORTS_NULL_TYPE = True
 
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False

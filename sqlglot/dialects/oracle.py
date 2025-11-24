@@ -45,6 +45,7 @@ class Oracle(Dialect):
     NULL_ORDERING = "nulls_are_large"
     ON_CONDITION_EMPTY_BEFORE_ERROR = False
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+    DISABLES_ALIAS_REF_EXPANSION = True
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE

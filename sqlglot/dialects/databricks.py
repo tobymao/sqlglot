@@ -27,6 +27,7 @@ def _jsonextract_sql(
 class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
+    SUPPORTS_NULL_TYPE = True
 
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:

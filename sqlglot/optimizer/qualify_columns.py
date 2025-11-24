@@ -56,7 +56,6 @@ def qualify_columns(
     infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = Dialect.get_or_raise(schema.dialect)
     pseudocolumns = dialect.PSEUDOCOLUMNS
-    bigquery = dialect == "bigquery"
 
     for scope in traverse_scope(expression):
         if dialect.PREFER_CTE_ALIAS_COLUMN:
@@ -77,7 +76,7 @@ def qualify_columns(
                 scope,
                 resolver,
                 dialect,
-                expand_only_groupby=bigquery,
+                expand_only_groupby=dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY,
             )
 
         _convert_columns_to_dots(scope, resolver)
@@ -107,7 +106,7 @@ def qualify_columns(
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
         _expand_order_by_and_distinct_on(scope, resolver)
 
-        if bigquery:
+        if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
             annotator.annotate_scope(scope)
 
     return expression
@@ -303,12 +302,11 @@ def _expand_alias_refs(
     """
     expression = scope.expression
 
-    if not isinstance(expression, exp.Select) or dialect == "oracle":
+    if not isinstance(expression, exp.Select) or dialect.DISABLES_ALIAS_REF_EXPANSION:
         return
 
     alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
-    is_bigquery = dialect == "bigquery"
     replaced = False
 
     def replace_columns(
@@ -346,12 +344,12 @@ def _expand_alias_refs(
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;
                 # If "HAVING x" is expanded to "HAVING max(x.b)", BQ would blindly replace the "x" reference with the projection MAX(x.b)
                 # i.e HAVING MAX(MAX(x.b).b), resulting in the error: "Aggregations of aggregations are not allowed"
-                if is_having and is_bigquery:
+                if is_having and dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     skip_replace = skip_replace or any(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif is_bigquery and (is_group_by or is_having):
+            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (is_group_by or is_having):
                 column_table = table.name if table else column.table
                 if column_table in projections:
                     # BigQuery's GROUP BY and HAVING clauses get confused if the column name
@@ -406,7 +404,7 @@ def _expand_alias_refs(
 
     # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
     # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
-    if dialect == "snowflake":
+    if dialect.SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS:
         for join in expression.args.get("joins") or []:
             replace_columns(join)
 
@@ -476,7 +474,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if dialect == "bigquery":
+                if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to
@@ -598,7 +596,7 @@ def _qualify_columns(
             if column_table:
                 column.set("table", column_table)
             elif (
-                resolver.schema.dialect == "bigquery"
+                Dialect.get_or_raise(resolver.schema.dialect).TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
@@ -744,7 +742,7 @@ def _expand_stars(
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
 
     coalesced_columns = set()
-    dialect = resolver.schema.dialect
+    dialect = Dialect.get_or_raise(resolver.schema.dialect)
 
     pivot_output_columns = None
     pivot_exclude_columns: t.Set[str] = set()
@@ -767,10 +765,7 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
-    is_bigquery = dialect == "bigquery"
-    is_risingwave = dialect == "risingwave"
-
-    if (is_bigquery or is_risingwave) and any(isinstance(col, exp.Dot) for col in scope.stars):
+    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(isinstance(col, exp.Dot) for col in scope.stars):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
@@ -787,12 +782,12 @@ def _expand_stars(
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
-            elif is_bigquery:
+            elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
                 struct_fields = _expand_struct_stars_bigquery(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue
-            elif is_risingwave:
+            elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
                 struct_fields = _expand_struct_stars_risingwave(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
@@ -809,7 +804,7 @@ def _expand_stars(
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
 
-            if pseudocolumns and is_bigquery:
+            if pseudocolumns and dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if not columns or "*" in columns:
@@ -1094,7 +1089,7 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.schema.dialect == "bigquery":
+                if Dialect.get_or_raise(self.schema.dialect).SUPPORTS_STRUCT_STAR_EXPANSION:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)

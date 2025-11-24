@@ -353,10 +353,15 @@ class BigQuery(Dialect):
     LOG_BASE_FIRST = False
     HEX_LOWERCASE = True
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
+    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = True
     PRESERVE_ORIGINAL_NAMES = True
     HEX_STRING_IS_INTEGER_TYPE = True
     BYTE_STRING_IS_BYTES_TYPE = True
     UUID_IS_STRING_TYPE = True
+    PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = True
+    TABLES_REFERENCEABLE_AS_COLUMNS = True
+    SUPPORTS_STRUCT_STAR_EXPANSION = True
+    QUERY_RESULTS_ARE_STRUCTS = True
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'

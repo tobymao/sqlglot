@@ -250,3 +250,13 @@ SELECT * FROM c.db.t1 AS "_2", (SELECT * FROM c.db.t2 AS "_0") AS "_1", c.db.t3 
 # canonicalize_table_aliases: true
 WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'));
 WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1" PIVOT(SUM(c) FOR v IN ('x', 'y')) AS "_2";
+
+# title: canonicalize sources that reference external columns
+# canonicalize_table_aliases: true
+SELECT * FROM x WHERE x.a = (SELECT SUM(y.c) AS c FROM y WHERE y.a = x.a LIMIT 10);
+SELECT * FROM c.db.x AS "_1" WHERE "_1".a = (SELECT SUM("_0".c) AS c FROM c.db.y AS "_0" WHERE "_0".a = "_1".a LIMIT 10);
+
+# title: canonicalize sources that have colliding aliases
+# canonicalize_table_aliases: true
+SELECT t.foo FROM t AS t, (SELECT t.bar FROM t AS t);
+SELECT "_2".foo FROM c.db.t AS "_2", (SELECT "_0".bar FROM c.db.t AS "_0") AS "_1";

@@ -73,10 +73,9 @@ def qualify_tables(
             if isinstance(node, exp.Table) and node.name not in cte_names:
                 _qualify(node)
 
-    canonical_aliases: t.Dict[str, str] = {}
-
     def _set_alias(
         expression: exp.Expression,
+        canonical_aliases: t.Dict[str, str],
         target_alias: t.Optional[str] = None,
         scope: t.Optional[Scope] = None,
         normalize: bool = False,
@@ -103,6 +102,9 @@ def qualify_tables(
             scope.rename_source(None, new_alias_name)
 
     for scope in traverse_scope(expression):
+        local_columns = scope.local_columns
+        canonical_aliases: t.Dict[str, str] = {}
+
         for query in scope.subqueries:
             subquery = query.parent
             if isinstance(subquery, exp.Subquery):
@@ -116,9 +118,9 @@ def qualify_tables(
                 derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
                 derived_table.this.set("joins", joins)
 
-            _set_alias(derived_table, scope=scope)
+            _set_alias(derived_table, canonical_aliases, scope=scope)
             if pivot := seq_get(derived_table.args.get("pivots") or [], 0):
-                _set_alias(pivot)
+                _set_alias(pivot, canonical_aliases)
 
         table_aliases = {}
 
@@ -130,14 +132,19 @@ def qualify_tables(
                 if pivot := seq_get(source.args.get("pivots") or [], 0):
                     name = source.name
 
-                _set_alias(source, target_alias=name or source.name or None, normalize=True)
+                _set_alias(
+                    source,
+                    canonical_aliases,
+                    target_alias=name or source.name or None,
+                    normalize=True,
+                )
 
                 source_fqn = ".".join(p.name for p in source.parts)
                 table_aliases[source_fqn] = source.args["alias"].this.copy()
 
                 if pivot:
                     target_alias = source.alias if pivot.unpivot else None
-                    _set_alias(pivot, target_alias=target_alias, normalize=True)
+                    _set_alias(pivot, canonical_aliases, target_alias=target_alias, normalize=True)
 
                     # This case corresponds to a pivoted CTE, we don't want to qualify that
                     if isinstance(scope.sources.get(source.alias_or_name), Scope):
@@ -149,7 +156,7 @@ def qualify_tables(
                     if on_qualify:
                         on_qualify(source)
             elif isinstance(source, Scope) and source.is_udtf:
-                _set_alias(udtf := source.expression)
+                _set_alias(udtf := source.expression, canonical_aliases)
 
                 table_alias = udtf.args["alias"]
 
@@ -162,9 +169,9 @@ def qualify_tables(
 
         for table in scope.tables:
             if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):
-                _set_alias(table, target_alias=table.name)
+                _set_alias(table, canonical_aliases, target_alias=table.name)
 
-        for column in scope.columns:
+        for column in local_columns:
             table = column.table
 
             if column.db:

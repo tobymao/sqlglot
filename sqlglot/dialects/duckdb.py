@@ -94,6 +94,26 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
+def _timetostr_sql(self: DuckDB.Generator, expression: exp.TimeToStr) -> str:
+    """Handle TimeToStr using TIME_MAPPING to convert formats like %x to %m/%d/%y."""
+    fmt = expression.args.get("format")
+    if fmt and fmt.is_string:
+        fmt_str = fmt.name
+        # Check if format needs to be converted using TIME_MAPPING
+        # (e.g., %x -> %m/%d/%y for DuckDB compatibility)
+        if fmt_str in self.dialect.TIME_MAPPING:
+            mapped_format = self.dialect.TIME_MAPPING[fmt_str]
+            return self.func("STRFTIME", expression.this, exp.Literal.string(mapped_format))
+        # If format is %m/%d/%y (converted from %x by TIME_MAPPING during parsing),
+        # format_time would convert it back to %x using INVERSE_TIME_MAPPING.
+        # We need to prevent this and keep %m/%d/%y for DuckDB.
+        if fmt_str == "%m/%d/%y" and fmt_str in self.dialect.INVERSE_TIME_MAPPING:
+            # Use the format directly without calling format_time to avoid conversion back to %x
+            return self.func("STRFTIME", expression.this, exp.Literal.string("%m/%d/%y"))
+    # For other formats, use format_time normally
+    return self.func("STRFTIME", expression.this, self.format_time(expression))
+
+
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
@@ -423,6 +443,11 @@ class DuckDB(Dialect):
         **Dialect.DATE_PART_MAPPING,
         "DAYOFWEEKISO": "ISODOW",
     }
+
+    TIME_MAPPING = {
+        "%D": "%m/%d/%y"
+    }
+    
     DATE_PART_MAPPING.pop("WEEKDAY")
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
@@ -934,7 +959,7 @@ class DuckDB(Dialect):
             exp.TimeStrToUnix: lambda self, e: self.func(
                 "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
             ),
-            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
+            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),#_timetostr_sql,
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",

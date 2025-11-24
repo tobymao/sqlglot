@@ -93,7 +93,9 @@ def qualify_tables(
         else:
             return
 
+        # Auto-generated aliases (_1, _2, ...) are quoted in order to be valid across all dialects
         quoted = True if canonicalize_table_aliases or not target_alias else None
+
         alias.set("this", exp.to_identifier(new_alias_name, quoted=quoted))
         expression.set("alias", alias)
 

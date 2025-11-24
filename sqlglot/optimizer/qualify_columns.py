@@ -76,7 +76,7 @@ def qualify_columns(
                 scope,
                 resolver,
                 dialect,
-                expand_only_groupby=dialect.EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY,
+                expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
             )
 
         _convert_columns_to_dots(scope, resolver)

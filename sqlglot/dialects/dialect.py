@@ -457,7 +457,7 @@ class Dialect(metaclass=_Dialect):
         to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
-    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
+    EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
     DISABLES_ALIAS_REF_EXPANSION = False

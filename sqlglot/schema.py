@@ -251,21 +251,6 @@ class MappingSchema(AbstractMappingSchema, Schema):
             normalize=mapping_schema.normalize,
         )
 
-    def __getstate__(self) -> t.Dict[str, t.Any]:
-        """Customize pickling to handle Dialect instances."""
-        state = self.__dict__.copy()
-        # Store dialect as its class for pickling
-        if isinstance(state["_dialect"], Dialect):
-            state["_dialect"] = type(state["_dialect"])
-        return state
-
-    def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
-        """Customize unpickling to restore Dialect instances."""
-        # Restore dialect from its class
-        if "_dialect" in state:
-            state["_dialect"] = Dialect.get_or_raise(state["_dialect"])
-        self.__dict__.update(state)
-
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
     ) -> t.Optional[t.Any]:

@@ -137,6 +137,24 @@ class Version(int):
 
         return super(Version, cls).__new__(cls, v)
 
+    def to_string(self) -> t.Optional[str]:
+        """
+        Convert the Version integer back to its string representation.
+
+        Returns:
+            The version string (e.g., "3.5.0"), or None if this is the max version.
+        """
+        if self == sys.maxsize:
+            return None
+
+        patch = self % 1000
+        minor = (self // 1000) % 1000
+        major = self // 1000000
+        return f"{major}.{minor}.{patch}"
+
+    def __reduce__(self):
+        return (type(self), (self.to_string(),))
+
 
 class _Dialect(type):
     _classes: t.Dict[str, t.Type[Dialect]] = {}
@@ -904,6 +922,28 @@ class Dialect(metaclass=_Dialect):
     def __hash__(self) -> int:
         # Does not currently take dialect state into account
         return hash(type(self))
+
+    def __getstate__(self) -> t.Dict[str, t.Any]:
+        return {
+            "dialect_class": type(self),
+            "version": self.version,
+            "normalization_strategy": self.normalization_strategy,
+            "settings": self.settings,
+        }
+
+    def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
+        dialect_class = state["dialect_class"]
+        version = state["version"]
+
+        # Convert Version object back to version string format
+        version_str = version.to_string() if isinstance(version, Version) else None
+
+        reconstructed = dialect_class(
+            version=version_str,
+            normalization_strategy=state["normalization_strategy"],
+            **state["settings"]
+        )
+        self.__dict__.update(reconstructed.__dict__)
 
     def normalize_identifier(self, expression: E) -> E:
         """

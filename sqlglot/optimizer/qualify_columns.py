@@ -54,7 +54,7 @@ def qualify_columns(
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = schema.dialect or Dialect.default()
+    dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
@@ -972,7 +972,7 @@ class Resolver:
     def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True):
         self.scope = scope
         self.schema = schema
-        self.dialect = schema.dialect or Dialect.default()
+        self.dialect = schema.dialect or Dialect()
         self._source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
         self._unambiguous_columns: t.Optional[t.Mapping[str, str]] = None
         self._all_columns: t.Optional[t.Set[str]] = None

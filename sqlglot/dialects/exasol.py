@@ -394,8 +394,6 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
-            exp.Rank: lambda *_: "RANK()",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
@@ -419,3 +417,9 @@ class Exasol(Dialect):
                 return self.function_fallback_sql(expression)
 
             return self.func(f"ADD_{unit}S", expression.this, expression.expression)
+
+        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
+        def rank_sql(self, expression: exp.Rank) -> str:
+            if expression.args.get("expressions"):
+                self.unsupported("Exasol does not support arguments in RANK")
+            return self.func("RANK")

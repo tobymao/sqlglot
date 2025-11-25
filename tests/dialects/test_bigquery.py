@@ -1011,6 +1011,7 @@ LANGUAGE js AS
         self.validate_all(
             "SHA1(x)",
             read={
+                "bigquery": "SHA1(x)",
                 "clickhouse": "SHA1(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
@@ -1018,16 +1019,8 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
-                "": "S_H_A1_DIGEST(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
-            },
-        )
-        self.validate_all(
-            "SHA1(x)",
-            write={
-                "bigquery": "SHA1(x)",
-                "": "S_H_A1_DIGEST(x)",
                 "duckdb": "UNHEX(SHA1(x))",
             },
         )
@@ -3367,7 +3360,7 @@ OPTIONS (
             "SELECT TO_HEX(SHA1('abc'))",
             write={
                 "bigquery": "SELECT TO_HEX(SHA1('abc'))",
-                "snowflake": "SELECT TO_CHAR(SHA1('abc'))",
+                "snowflake": "SELECT TO_CHAR(SHA1_BINARY('abc'))",
             },
         )
 

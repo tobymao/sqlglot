@@ -310,23 +310,15 @@ def _build_levenshtein(args: t.List) -> exp.Levenshtein:
 
 def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List], exp.TimeToStr]:
     def _builder(args: t.List) -> exp.TimeToStr:
-        return exp.TimeToStr(
-            this=expr_type(this=seq_get(args, 1)),
-            format=seq_get(args, 0),
-            zone=seq_get(args, 2),
+        # "bigquery")(expr_type(... -> "bigquery")([expr_type(...])
+        formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
+            [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
         )
-
-    return _builder
-
-def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List], exp.TimeToStr]:
-    def _builder(args: t.List) -> exp.TimeToStr:
-        #"bigquery")(expr_type(... -> "bigquery")([expr_type(...])
-        formatted_time = (build_formatted_time(exp.TimeToStr, "bigquery")
-                          ([expr_type(this=seq_get(args, 1)), seq_get(args, 0)]))
         formatted_time.set("zone", seq_get(args, 2))
         return formatted_time
 
     return _builder
+
 
 def _build_contains_substring(args: t.List) -> exp.Contains:
     # Lowercase the operands in case of transpilation, as exp.Contains

@@ -1092,7 +1092,7 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.schema.dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+                if self.schema.dialect.UNNEST_COLUMN_ONLY:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)

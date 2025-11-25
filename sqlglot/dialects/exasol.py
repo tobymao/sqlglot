@@ -394,6 +394,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
+            exp.Rank: lambda *_: "RANK()",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

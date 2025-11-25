@@ -6517,6 +6517,13 @@ class Parser(metaclass=_Parser):
             and self._prev.token_type == TokenType.DESC
         )
 
+        if (
+            self._curr.text.upper() not in self.CONSTRAINT_PARSERS
+            and self._next
+            and self._next.token_type == TokenType.L_PAREN
+        ):
+            self._parse_id_var()
+
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(
                 exp.PrimaryKeyColumnConstraint,

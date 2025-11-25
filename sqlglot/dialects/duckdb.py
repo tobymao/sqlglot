@@ -1111,14 +1111,14 @@ class DuckDB(Dialect):
             """
             Handle GREATEST/LEAST functions with dialect-aware NULL behavior.
 
-            - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
-            - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest/least non-NULL value
+            - If null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
+            - If null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest/least non-NULL value
             """
             # Get all arguments
             all_args = [expression.this, *expression.expressions]
             fallback_sql = self.function_fallback_sql(expression)
 
-            if expression.args.get("return_null_if_any_null"):
+            if expression.args.get("null_if_any_null"):
                 # BigQuery behavior: NULL if any argument is NULL
                 case_expr = exp.case().when(
                     exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),

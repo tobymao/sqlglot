@@ -471,7 +471,7 @@ class Exasol(Dialect):
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
-        
+
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
         def rank_sql(self, expression: exp.Rank) -> str:
             if expression.args.get("expressions"):

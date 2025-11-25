@@ -7614,7 +7614,7 @@ class SHA2(Func):
 
 # Represents the variant of the SHA1 function that returns a binary value
 class SHA1Digest(Func):
-    _sql_names = ["SHA"]
+    pass
 
 
 # Represents the variant of the SHA2 function that returns a binary value

@@ -1018,7 +1018,7 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
-                "": "SHA(x)",
+                "": "S_H_A1_DIGEST(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
             },
@@ -1027,7 +1027,8 @@ LANGUAGE js AS
             "SHA1(x)",
             write={
                 "bigquery": "SHA1(x)",
-                "": "SHA(x)",
+                "": "S_H_A1_DIGEST(x)",
+                "duckdb": "UNHEX(SHA1(x))",
             },
         )
         self.validate_all(

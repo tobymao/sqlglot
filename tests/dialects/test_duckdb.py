@@ -10,6 +10,9 @@ class TestDuckDB(Validator):
 
     def test_duckdb(self):
         self.validate_identity(
+            "SELECT INTERVAL '1 hour'::VARCHAR", "SELECT CAST(INTERVAL '1' HOUR AS TEXT)"
+        )
+        self.validate_identity(
             "PIVOT duckdb_functions() ON schema_name USING AVG(LENGTH(function_name))::INTEGER GROUP BY schema_name",
             "PIVOT DUCKDB_FUNCTIONS() ON schema_name USING CAST(AVG(LENGTH(function_name)) AS INT) GROUP BY schema_name",
         )

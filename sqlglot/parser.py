@@ -5345,7 +5345,7 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         interval = parse_interval and self._parse_interval()
         if interval:
-            return interval
+            return self._parse_column_ops(interval)
 
         index = self._index
         data_type = self._parse_types(check_func=True, allow_identifiers=False)

@@ -5644,7 +5644,9 @@ class Parser(metaclass=_Parser):
                 values
                 and not schema
                 and (
-                    not self.dialect.SUPPORTS_FIXED_SIZE_ARRAYS or datatype_token == TokenType.ARRAY
+                    not self.dialect.SUPPORTS_FIXED_SIZE_ARRAYS
+                    or datatype_token == TokenType.ARRAY
+                    or not self._match(TokenType.R_BRACKET, advance=False)
                 )
             ):
                 # Retreating here means that we should not parse the following values as part of the data type, e.g. in DuckDB

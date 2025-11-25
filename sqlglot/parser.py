@@ -4438,7 +4438,7 @@ class Parser(metaclass=_Parser):
         expressions = self._match(TokenType.ON) and self._parse_csv(_parse_on)
         into = self._parse_unpivot_columns()
         using = self._match(TokenType.USING) and self._parse_csv(
-            lambda: self._parse_alias(self._parse_function())
+            lambda: self._parse_alias(self._parse_column())
         )
         group = self._parse_group()
 

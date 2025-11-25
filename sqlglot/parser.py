@@ -6628,9 +6628,16 @@ class Parser(metaclass=_Parser):
         return self._parse_bracket(this)
 
     def _parse_slice(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.COLON):
-            return self.expression(exp.Slice, this=this, expression=self._parse_assignment())
-        return this
+        if not self._match(TokenType.COLON):
+            return this
+
+        if self._match_pair(TokenType.DASH, TokenType.COLON, advance=False):
+            self._advance()
+            end: t.Optional[exp.Expression] = exp.Literal.number("-1")
+        else:
+            end = self._parse_unary()
+        step = self._parse_unary() if self._match(TokenType.COLON) else None
+        return self.expression(exp.Slice, this=this, expression=end, step=step)
 
     def _parse_case(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.DOT, advance=False):

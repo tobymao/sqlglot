@@ -6517,6 +6517,7 @@ class Parser(metaclass=_Parser):
             and self._prev.token_type == TokenType.DESC
         )
 
+        # mysql allows a name for primary key but ignores it, the name is always PRIMARY
         if (
             self._curr.text.upper() not in self.CONSTRAINT_PARSERS
             and self._next

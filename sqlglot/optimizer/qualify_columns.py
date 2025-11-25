@@ -54,7 +54,7 @@ def qualify_columns(
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = schema.dialect
+    dialect = schema.dialect or Dialect.default()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
@@ -410,7 +410,7 @@ def _expand_alias_refs(
         scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: DialectType) -> None:
+def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
@@ -436,7 +436,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         for original, expanded in zip(
             modifier_expressions,
             _expand_positional_references(
-                scope, modifier_expressions, resolver.schema.dialect, alias=True
+                scope, modifier_expressions, resolver.dialect, alias=True
             ),
         ):
             for agg in original.find_all(exp.AggFunc):
@@ -458,7 +458,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: DialectType, alias: bool = False
+    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: Dialect, alias: bool = False
 ) -> t.List[exp.Expression]:
     new_nodes: t.List[exp.Expression] = []
     ambiguous_projections = None
@@ -472,7 +472,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if Dialect.get_or_raise(dialect).PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+                if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to
@@ -594,7 +594,7 @@ def _qualify_columns(
             if column_table:
                 column.set("table", column_table)
             elif (
-                resolver.schema.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
+                resolver.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
@@ -740,7 +740,7 @@ def _expand_stars(
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
 
     coalesced_columns = set()
-    dialect = resolver.schema.dialect
+    dialect = resolver.dialect
 
     pivot_output_columns = None
     pivot_exclude_columns: t.Set[str] = set()
@@ -972,6 +972,7 @@ class Resolver:
     def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True):
         self.scope = scope
         self.schema = schema
+        self.dialect = schema.dialect or Dialect.default()
         self._source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
         self._unambiguous_columns: t.Optional[t.Mapping[str, str]] = None
         self._all_columns: t.Optional[t.Set[str]] = None
@@ -1092,7 +1093,7 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.schema.dialect.UNNEST_COLUMN_ONLY:
+                if self.dialect.UNNEST_COLUMN_ONLY:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)

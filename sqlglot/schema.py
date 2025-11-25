@@ -18,7 +18,15 @@ if t.TYPE_CHECKING:
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
-    dialect: Dialect
+    @property
+    def dialect(self) -> t.Optional[Dialect]:
+        """
+        The dialect associated with this schema.
+
+        Returns None by default. Subclasses that require dialect-specific
+        behavior should override this property.
+        """
+        return None
 
     @abc.abstractmethod
     def add_table(
@@ -222,14 +230,19 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: bool = True,
     ) -> None:
-        self.dialect = Dialect.get_or_raise(dialect)
         self.visible = {} if visible is None else visible
         self.normalize = normalize
+        self._dialect = Dialect.get_or_raise(dialect)
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
         self._depth = 0
         schema = {} if schema is None else schema
 
         super().__init__(self._normalize(schema) if self.normalize else schema)
+
+    @property
+    def dialect(self) -> Dialect:
+        """Returns the dialect for this mapping schema."""
+        return self._dialect
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:
@@ -244,15 +257,15 @@ class MappingSchema(AbstractMappingSchema, Schema):
         """Customize pickling to handle Dialect instances."""
         state = self.__dict__.copy()
         # Store dialect as its class for pickling
-        if isinstance(state["dialect"], Dialect):
-            state["dialect"] = type(state["dialect"])
+        if isinstance(state["_dialect"], Dialect):
+            state["_dialect"] = type(state["_dialect"])
         return state
 
     def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
         """Customize unpickling to restore Dialect instances."""
         # Restore dialect from its class
-        if "dialect" in state:
-            state["dialect"] = Dialect.get_or_raise(state["dialect"])
+        if "_dialect" in state:
+            state["_dialect"] = Dialect.get_or_raise(state["_dialect"])
         self.__dict__.update(state)
 
     def find(

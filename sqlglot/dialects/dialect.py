@@ -812,6 +812,11 @@ class Dialect(metaclass=_Dialect):
     }
 
     @classmethod
+    def default(cls) -> Dialect:
+        """Returns the base/default Dialect instance."""
+        return cls()
+
+    @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
         """
         Look up a dialect in the global dialect registry and return it if it exists.
@@ -830,7 +835,7 @@ class Dialect(metaclass=_Dialect):
         """
 
         if not dialect:
-            return cls()
+            return cls.default()
         if isinstance(dialect, _Dialect):
             return dialect()
         if isinstance(dialect, Dialect):

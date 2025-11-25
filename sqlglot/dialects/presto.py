@@ -545,6 +545,7 @@ class Presto(Dialect):
             exp.Xor: bool_xor_sql,
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
         }
 

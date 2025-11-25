@@ -457,10 +457,6 @@ class TestDuckDB(Validator):
             "SELECT * FROM t PIVOT(FIRST(t) AS t FOR quarter IN ('Q1', 'Q2'))",
         )
         self.validate_identity(
-            "SELECT 20_000 AS literal",
-            "SELECT 20000 AS literal",
-        )
-        self.validate_identity(
             """SELECT JSON_EXTRACT_STRING('{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }', ['$.family', '$.species'])""",
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )
@@ -1239,6 +1235,14 @@ class TestDuckDB(Validator):
             "SELECT CAST(TRIM(CAST(CAST('***apple***' AS BLOB) AS TEXT), CAST(CAST('*' AS BLOB) AS TEXT)) AS BLOB) AS result"
         )
         self.validate_identity("SELECT GREATEST(1.0, 2.5, NULL, 3.7)")
+        self.validate_identity("FROM t1, t2 SELECT *", "SELECT * FROM t1, t2")
+
+        # TODO: This is incorrect AST, DATE_PART creates a STRUCT of values but it's stored in 'year' arg
+        self.validate_identity("SELECT MAKE_DATE(DATE_PART(['year', 'month', 'day'], TODAY()))")
+
+        self.validate_identity("SELECT * FROM t PIVOT(SUM(y) FOR foo IN y_enum)")
+        self.validate_identity("SELECT 20_000 AS literal")
+        self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(1_2E+1_0 AS REAL)")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

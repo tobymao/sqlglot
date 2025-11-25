@@ -518,6 +518,8 @@ impl<'a> TokenizerState<'a> {
             } else if self.peek_char.to_ascii_uppercase() == 'E' && scientific == 0 {
                 scientific += 1;
                 self.advance(1)?;
+            } else if self.peek_char == '_' && self.dialect_settings.numbers_can_be_underscore_separated {
+                self.advance(1)?;
             } else if self.is_alphabetic_or_underscore(self.peek_char) {
                 let number_text = self.text();
                 let mut literal = String::new();
@@ -541,16 +543,10 @@ impl<'a> TokenizerState<'a> {
                     )
                     .copied();
 
-                let replaced = literal.replace("_", "");
-
                 if let Some(unwrapped_token_type) = token_type {
                     self.add(self.token_types.number, Some(number_text))?;
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
-                } else if self.dialect_settings.numbers_can_be_underscore_separated
-                    && self.is_numeric(&replaced)
-                {
-                    self.add(self.token_types.number, Some(number_text + &replaced))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(self.token_types.var, None)?;
                 } else {
@@ -719,10 +715,6 @@ impl<'a> TokenizerState<'a> {
 
     fn is_alphabetic_or_underscore(&self, name: char) -> bool {
         name.is_alphabetic() || name == '_'
-    }
-
-    fn is_numeric(&self, s: &str) -> bool {
-        s.chars().all(|c| c.is_ascii_digit())
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

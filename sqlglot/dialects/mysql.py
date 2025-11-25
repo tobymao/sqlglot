@@ -464,6 +464,7 @@ class MySQL(Dialect):
             "INDEX": lambda self: self._parse_index_constraint(),
             "KEY": lambda self: self._parse_index_constraint(),
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
+            "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint),
         }
 
         ALTER_PARSERS = {

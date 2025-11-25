@@ -127,28 +127,16 @@ def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> s
     return _trunc_sql(self, "TIMESTAMP", expression)
 
 
+def is_case_insensitive(node: exp.Expression):
+    return isinstance(node, exp.Collate) and node.text("expression").upper() == "UTF8_LCASE"
+
+
 def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex) -> str:
-    def is_case_insensitive(node):
-        if not isinstance(node, exp.Collate):
-            return False
-
-        raw = node.text("expression") or node.text("collation"), ""
-        name = ("".join(map(str, raw)) if isinstance(raw, (tuple, list)) else str(raw)).upper()
-        return name == "UTF8_LCASE"
-
     def build_instr_operands(
         haystack_node: exp.Expression, delimiter_node: exp.Expression
     ) -> tuple[str, str, str, str]:
-        haystack_original = (
-            self.sql(haystack_node.this)
-            if isinstance(haystack_node, exp.Collate)
-            else self.sql(haystack_node)
-        )
-        delimiter_original = (
-            self.sql(delimiter_node.this)
-            if isinstance(delimiter_node, exp.Collate)
-            else self.sql(delimiter_node)
-        )
+        haystack_original = self.sql(haystack_node)
+        delimiter_original = self.sql(delimiter_node)
         haystack_for_instr = (
             f"LOWER({haystack_original})"
             if is_case_insensitive(haystack_node)
@@ -161,36 +149,32 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
         )
         return haystack_for_instr, delimiter_for_instr, haystack_original, delimiter_original
 
-    hay_node = t.cast(exp.Expression, expression.args.get("this"))
-    delim_node = t.cast(exp.Expression, expression.args["delimiter"])
+    hay_node = expression.this
+    delim_node = expression.args["delimiter"]
 
     haystack_for_instr, delimiter_for_instr, haystack_original, delimiter_original = (
         build_instr_operands(hay_node, delim_node)
     )
-    count_node = expression.args.get("count")
+    count_node = expression.args["count"]
     count_sql = self.sql(expression, "count")
+    num = count_node.to_py() if count_node.is_number else 0
 
-    is_zero = (
-        isinstance(count_node, exp.Literal)
-        and not count_node.is_string
-        and str(count_node.this) in {"0", "+0", "-0"}
-    )
-    is_negative = (isinstance(count_node, exp.Neg)) or (
-        isinstance(count_node, exp.Literal)
-        and not count_node.is_string
-        and int(count_node.this) < 0
-    )
-    if is_zero:
+    if num == 0:
         return f"SUBSTR({haystack_original}, 1, 0)"
 
-    if is_negative:
-        pos_from_right = f"INSTR({haystack_for_instr}, {delimiter_for_instr}, -1, ABS({count_sql}))"
-        start_index = f"NVL(NULLIF({pos_from_right}, 0) + LENGTH({delimiter_original}), 1)"
-        return f"SUBSTR({haystack_original}, {start_index})"
+    from_right = num < 0
+    direction = "-1" if from_right else "1"
+    occur = self.func("ABS", count_sql) if from_right else count_sql
 
-    pos_from_left = f"INSTR({haystack_for_instr}, {delimiter_for_instr}, 1, {count_sql})"
-    length_expr = f"NVL(NULLIF({pos_from_left}, 0) -1, LENGTH({haystack_original}))"
-    return f"SUBSTR({haystack_original}, 1, {length_expr})"
+    position = self.func("INSTR", haystack_for_instr, delimiter_for_instr, direction, occur)
+    nz = self.func("NULLIF", position, "0")
+
+    if from_right:
+        start = self.func("NVL", f"{nz} + {self.func('LENGTH', delimiter_original)}", direction)
+        return self.func("SUBSTR", haystack_original, start)
+
+    length = self.func("NVL", f"{nz} - 1", self.func("LENGTH", haystack_original))
+    return self.func("SUBSTR", haystack_original, direction, length)
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}

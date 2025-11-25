@@ -319,31 +319,26 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            "SELECT substring_index('www.apache.org', '.', 2)",
-            write={
-                "exasol": "SELECT SUBSTR('www.apache.org', 1, NVL(NULLIF(INSTR('www.apache.org', '.', 1, 2), 0) -1, LENGTH('www.apache.org')))",
-                "databricks": "SELECT SUBSTRING_INDEX('www.apache.org', '.', 2)",
+            "SELECT SUBSTR('www.apache.org', 1, NVL(NULLIF(INSTR('www.apache.org', '.', 1, 2), 0) - 1, LENGTH('www.apache.org')))",
+            read={"databricks": "SELECT substring_index('www.apache.org', '.', 2)"},
+        )
+
+        self.validate_all(
+            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR('555A66A777', 'a', 1, 2), 0) - 1, LENGTH('555A66A777')))",
+            read={
+                "databricks": "SELECT substring_index('555A66A777' COLLATE UTF8_BINARY, 'a', 2)",
             },
         )
         self.validate_all(
-            "SELECT substring_index('555A66A777' COLLATE UTF8_BINARY, 'a', 2)",
-            write={
-                "exasol": "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR('555A66A777', 'a', 1, 2), 0) -1, LENGTH('555A66A777')))",
-                "databricks": "SELECT SUBSTRING_INDEX('555A66A777' COLLATE UTF8_BINARY, 'a', 2)",
+            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR(LOWER('555A66A777'), 'a', 1, 2), 0) - 1, LENGTH('555A66A777')))",
+            read={
+                "databricks": "SELECT substring_index('555A66A777' COLLATE UTF8_LCASE, 'a', 2)",
             },
         )
         self.validate_all(
-            "SELECT substring_index('555A66A777' COLLATE UTF8_LCASE, 'a', 2)",
-            write={
-                "exasol": "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR(LOWER('555A66A777'), 'a', 1, 2), 0) -1, LENGTH('555A66A777')))",
-                "databricks": "SELECT SUBSTRING_INDEX('555A66A777' COLLATE UTF8_LCASE, 'a', 2)",
-            },
-        )
-        self.validate_all(
-            "SELECT substring_index('A|a|A' COLLATE UTF8_LCASE, 'A' COLLATE UTF8_LCASE, 2)",
-            write={
-                "exasol": "SELECT SUBSTR('A|a|A', 1, NVL(NULLIF(INSTR(LOWER('A|a|A'), LOWER('A'), 1, 2), 0) -1, LENGTH('A|a|A')))",
-                "databricks": "SELECT SUBSTRING_INDEX('A|a|A' COLLATE UTF8_LCASE, 'A' COLLATE UTF8_LCASE, 2)",
+            "SELECT SUBSTR('A|a|A', 1, NVL(NULLIF(INSTR(LOWER('A|a|A'), LOWER('A'), 1, 2), 0) - 1, LENGTH('A|a|A')))",
+            read={
+                "databricks": "SELECT substring_index('A|a|A' COLLATE UTF8_LCASE, 'A' COLLATE UTF8_LCASE, 2)",
             },
         )
 
@@ -642,7 +637,8 @@ class TestExasol(Validator):
     def test_odbc_date_literals(self):
         self.validate_identity("SELECT {d'2024-01-01'}", "SELECT TO_DATE('2024-01-01')")
         self.validate_identity(
-            "SELECT {ts'2024-01-01 12:00:00'}", "SELECT TO_TIMESTAMP('2024-01-01 12:00:00')"
+            "SELECT {ts'2024-01-01 12:00:00'}",
+            "SELECT TO_TIMESTAMP('2024-01-01 12:00:00')",
         )
 
     def test_local_prefix_for_alias(self):

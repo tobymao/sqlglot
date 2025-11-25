@@ -424,8 +424,6 @@ class DuckDB(Dialect):
         "DAYOFWEEKISO": "ISODOW",
     }
 
-    TIME_MAPPING = {"%D": "%m/%d/%y"}
-
     DATE_PART_MAPPING.pop("WEEKDAY")
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

@@ -188,7 +188,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
-        dialect = schema.dialect or Dialect.get_or_raise(None)
+        dialect = schema.dialect or Dialect.default()
         self.dialect = dialect
         self.expression_metadata = expression_metadata or dialect.EXPRESSION_METADATA
         self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO

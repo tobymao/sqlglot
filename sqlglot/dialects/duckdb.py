@@ -1634,7 +1634,7 @@ class DuckDB(Dialect):
             )
 
         def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
-            if expression.args.get("scalar_only") is True:
+            if expression.args.get("scalar_only"):
                 expression = exp.JSONExtractScalar(
                     this=rename_func("JSON_VALUE")(self, expression), expression="'$'"
                 )

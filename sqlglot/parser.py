@@ -97,6 +97,8 @@ def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
         )
         if len(args) > 2 and expr_type is exp.JSONExtract:
             expression.set("expressions", args[2:])
+        if expr_type is exp.JSONExtractScalar:
+            expression.set("scalar_only", dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY)
 
         return expression
 
@@ -789,6 +791,7 @@ class Parser(metaclass=_Parser):
             this=this,
             expression=self.dialect.to_json_path(path),
             only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+            scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,

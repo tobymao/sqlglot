@@ -875,7 +875,6 @@ class DuckDB(Dialect):
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,
-            exp.JSONExtractScalar: _arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
@@ -1633,3 +1632,10 @@ class DuckDB(Dialect):
             return self.sql(
                 exp.ApproxQuantile(this=this, quantile=exp.Array(expressions=quantiles))
             )
+
+        def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
+            if expression.args.get("scalar_only") is True:
+                expression = exp.JSONExtractScalar(
+                    this=rename_func("JSON_VALUE")(self, expression), expression="'$'"
+                )
+            return _arrow_json_extract_sql(self, expression)

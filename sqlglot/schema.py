@@ -21,8 +21,6 @@ class Schema(abc.ABC):
     @property
     def dialect(self) -> t.Optional[Dialect]:
         """
-        The dialect associated with this schema.
-
         Returns None by default. Subclasses that require dialect-specific
         behavior should override this property.
         """

@@ -555,6 +555,11 @@ class Dialect(metaclass=_Dialect):
     Whether a UUID is considered a string or a UUID type.
     """
 
+    JSON_EXTRACT_SCALAR_SCALAR_ONLY = False
+    """
+    Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

@@ -4434,3 +4434,9 @@ FROM subquery2""",
 
                         number = f"12.3_4{notation}{sign}5_6_7"
                         self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
+
+            with self.subTest(f"Testing underscore separated numbers for {dialect}"):
+                ast = parse_one("1_2_3_4_5", read=dialect)
+                self.assertTrue(ast.is_int)
+                self.assertEqual(ast.to_py(), 12345)
+                self.assertEqual(ast.sql(dialect), "1_2_3_4_5")

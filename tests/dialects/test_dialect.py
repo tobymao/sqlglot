@@ -4423,3 +4423,20 @@ FROM subquery2""",
         ).expressions[0]
         self.assertEqual(parsed_expr.args.get("zone").sql("postgres"), "'Asia/Tokyo'")
         self.assertEqual(parsed_expr.this.args.get("zone").sql("postgres"), "INTERVAL '3 HOURS'")
+
+    def test_underscore_scientific_notation(self):
+        for dialect in ("duckdb", "clickhouse"):
+            for notation in ("e", "E"):
+                for sign in ("", "-", "+"):
+                    with self.subTest(f"Testing notation: {notation}, sign: {sign} for {dialect}"):
+                        number = f"1_2{notation}{sign}1_0"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
+
+                        number = f"12.3_4{notation}{sign}5_6_7"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
+
+            with self.subTest(f"Testing underscore separated numbers for {dialect}"):
+                ast = parse_one("1_2_3_4_5", read=dialect)
+                self.assertTrue(ast.is_int)
+                self.assertEqual(ast.to_py(), 12345)
+                self.assertEqual(ast.sql(dialect), "1_2_3_4_5")

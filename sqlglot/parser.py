@@ -4467,16 +4467,18 @@ class Parser(metaclass=_Parser):
 
         value = self._parse_column()
 
-        if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
-            self.raise_error("Expecting IN (")
+        if not self._match(TokenType.IN):
+            self.raise_error("Expecting IN")
 
-        if self._match(TokenType.ANY):
-            exprs: t.List[exp.Expression] = ensure_list(exp.PivotAny(this=self._parse_order()))
-        else:
-            exprs = self._parse_csv(_parse_aliased_expression)
+        if self._match(TokenType.L_PAREN):
+            if self._match(TokenType.ANY):
+                exprs: t.List[exp.Expression] = ensure_list(exp.PivotAny(this=self._parse_order()))
+            else:
+                exprs = self._parse_csv(_parse_aliased_expression)
+            self._match_r_paren()
+            return self.expression(exp.In, this=value, expressions=exprs)
 
-        self._match_r_paren()
-        return self.expression(exp.In, this=value, expressions=exprs)
+        return self.expression(exp.In, this=value, field=self._parse_id_var())
 
     def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
         func = self._parse_function()

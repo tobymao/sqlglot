@@ -946,7 +946,7 @@ class Dialect(metaclass=_Dialect):
         reconstructed = dialect_class(
             version=version_str,
             normalization_strategy=state["normalization_strategy"],
-            **state["settings"]
+            **state["settings"],
         )
         self.__dict__.update(reconstructed.__dict__)
 

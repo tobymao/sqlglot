@@ -478,10 +478,11 @@ class Dialect(metaclass=_Dialect):
 
     Most dialects do not support this, but Snowflake allows alias expansion in the JOIN ... ON
     clause (and almost everywhere else)
-    # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
 
     For example, in Snowflake:
         SELECT a.id AS user_id FROM a JOIN b ON user_id = b.id  -- VALID
+
+    Reference: https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
     """
 
     SUPPORTS_ORDER_BY_ALL = False
@@ -531,17 +532,16 @@ class Dialect(metaclass=_Dialect):
 
     QUERY_RESULTS_ARE_STRUCTS = False
     """
-    Whether query results have internal struct type representation for type inference.
+    Whether query results are typed as structs in metadata for type inference.
 
-    In BigQuery, subqueries used as data sources are internally represented as
-    structs, enabling advanced type inference. For example:
-    - ARRAY(SELECT 'foo') unwraps to ARRAY<STRING>, not ARRAY<STRUCT<STRING>>
-    - Column types propagate correctly through subqueries
+    In BigQuery, subqueries store their column types as a STRUCT in metadata,
+    enabling special type inference for ARRAY(SELECT ...) expressions:
+        ARRAY(SELECT x, y FROM t) → ARRAY<STRUCT<...>>
 
-    This does NOT mean subquery results can be accessed with dot notation.
-    For field access, use SELECT AS STRUCT explicitly:
-        SELECT (SELECT AS STRUCT 1 AS x, 2 AS y).x  -- Valid
-        SELECT (SELECT 1 AS x, 2 AS y).x            -- Invalid
+    For single column subqueries, BigQuery unwraps the struct:
+        ARRAY(SELECT x FROM t) → ARRAY<type_of_x>
+
+    This is metadata-only for type inference.
     """
 
     REQUIRES_PARENTHESIZED_STRUCT_ACCESS = False

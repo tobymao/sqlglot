@@ -550,9 +550,10 @@ class Dialect(metaclass=_Dialect):
 
     RisingWave requires parentheses for struct field access in certain contexts:
         SELECT (col.field).subfield FROM table  -- Parentheses required
-    # https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
 
     Without parentheses, the parser may not correctly interpret nested struct access.
+
+    Reference: https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
     """
 
     SUPPORTS_NULL_TYPE = False

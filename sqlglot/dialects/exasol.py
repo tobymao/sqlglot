@@ -135,46 +135,44 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
     def build_instr_operands(
         haystack_node: exp.Expression, delimiter_node: exp.Expression
     ) -> tuple[str, str, str, str]:
-        haystack_original = self.sql(haystack_node)
-        delimiter_original = self.sql(delimiter_node)
-        haystack_for_instr = (
-            f"LOWER({haystack_original})"
-            if is_case_insensitive(haystack_node)
-            else haystack_original
+        haystack_sql = self.sql(haystack_node)
+        delimiter_sql = self.sql(delimiter_node)
+        haystack_search_expr = (
+            f"LOWER({haystack_sql})" if is_case_insensitive(haystack_node) else haystack_sql
         )
-        delimiter_for_instr = (
-            f"LOWER({delimiter_original})"
-            if is_case_insensitive(delimiter_node)
-            else delimiter_original
+        delimiter_search_expr = (
+            f"LOWER({delimiter_sql})" if is_case_insensitive(delimiter_node) else delimiter_sql
         )
-        return haystack_for_instr, delimiter_for_instr, haystack_original, delimiter_original
+        return haystack_search_expr, delimiter_search_expr, haystack_sql, delimiter_sql
 
     hay_node = expression.this
     delim_node = expression.args["delimiter"]
 
-    haystack_for_instr, delimiter_for_instr, haystack_original, delimiter_original = (
-        build_instr_operands(hay_node, delim_node)
+    haystack_search_expr, delimiter_search_expr, haystack_sql, delimiter_sql = build_instr_operands(
+        hay_node, delim_node
     )
     count_node = expression.args["count"]
     count_sql = self.sql(expression, "count")
     num = count_node.to_py() if count_node.is_number else 0
 
     if num == 0:
-        return f"SUBSTR({haystack_original}, 1, 0)"
+        return f"SUBSTR({haystack_sql}, 1, 0)"
 
     from_right = num < 0
     direction = "-1" if from_right else "1"
     occur = self.func("ABS", count_sql) if from_right else count_sql
 
-    position = self.func("INSTR", haystack_for_instr, delimiter_for_instr, direction, occur)
-    nz = self.func("NULLIF", position, "0")
+    position = self.func("INSTR", haystack_search_expr, delimiter_search_expr, direction, occur)
+    nullable_pos = self.func("NULLIF", position, "0")
 
     if from_right:
-        start = self.func("NVL", f"{nz} + {self.func('LENGTH', delimiter_original)}", direction)
-        return self.func("SUBSTR", haystack_original, start)
+        start = self.func(
+            "NVL", f"{nullable_pos} + {self.func('LENGTH', delimiter_sql)}", direction
+        )
+        return self.func("SUBSTR", haystack_sql, start)
 
-    length = self.func("NVL", f"{nz} - 1", self.func("LENGTH", haystack_original))
-    return self.func("SUBSTR", haystack_original, direction, length)
+    length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
+    return self.func("SUBSTR", haystack_sql, direction, length)
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}

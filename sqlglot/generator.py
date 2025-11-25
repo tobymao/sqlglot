@@ -5434,3 +5434,6 @@ class Generator(metaclass=_Generator):
                 delimiters = None
 
         return self.func("INITCAP", expression.this, delimiters)
+
+    def zerofillcolumnconstraint_sql(self, expression: exp.ZeroFillColumnConstraint) -> str:
+        return "ZEROFILL"

@@ -1972,6 +1972,10 @@ class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class ZeroFillColumnConstraint(ColumnConstraint):
+    arg_types = {}
+
+
 class PeriodForSystemTimeConstraint(ColumnConstraintKind):
     arg_types = {"this": True, "expression": True}
 

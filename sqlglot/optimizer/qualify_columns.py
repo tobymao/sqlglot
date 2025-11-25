@@ -609,7 +609,7 @@ def _qualify_columns(
                     column.set("table", column_table)
 
 
-def _expand_struct_stars_bigquery(
+def _expand_struct_stars_no_parens(
     expression: exp.Dot,
 ) -> t.List[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
@@ -663,7 +663,7 @@ def _expand_struct_stars_bigquery(
     return new_selections
 
 
-def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
+def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
     """[RisingWave] Expand/Flatten (<exp>.bar).*, where bar is a struct column"""
 
     # it is not (<sub_exp>).* pattern, which means we can't expand
@@ -786,12 +786,12 @@ def _expand_stars(
                 dialect.SUPPORTS_STRUCT_STAR_EXPANSION
                 and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
             ):
-                struct_fields = _expand_struct_stars_bigquery(expression)
+                struct_fields = _expand_struct_stars_no_parens(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue
             elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
-                struct_fields = _expand_struct_stars_risingwave(expression)
+                struct_fields = _expand_struct_stars_with_parens(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue

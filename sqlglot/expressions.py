@@ -1972,6 +1972,10 @@ class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class ZeroFillColumnConstraint(ColumnConstraint):
+    arg_types = {}
+
+
 class PeriodForSystemTimeConstraint(ColumnConstraintKind):
     arg_types = {"this": True, "expression": True}
 
@@ -6493,7 +6497,7 @@ class TimeTrunc(Func, TimeUnit):
 
 class DateFromParts(Func):
     _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
-    arg_types = {"year": True, "month": True, "day": True}
+    arg_types = {"year": True, "month": False, "day": False}
 
 
 class TimeFromParts(Func):
@@ -6700,7 +6704,7 @@ class Getbit(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": False, "return_null_if_any_null": False}
+    arg_types = {"this": True, "expressions": False, "null_if_any_null": False}
     is_var_len_args = True
 
 
@@ -7096,6 +7100,7 @@ class JSONExtractScalar(Binary, Func):
         "only_json_types": False,
         "expressions": False,
         "json_type": False,
+        "scalar_only": False,
     }
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True
@@ -7171,7 +7176,7 @@ class ParseDatetime(Func):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "null_if_any_null": False}
     is_var_len_args = True
 
 

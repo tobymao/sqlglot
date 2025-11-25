@@ -26,6 +26,7 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
+        self.validate_identity("CREATE TABLE foo (a INT UNSIGNED ZEROFILL)")
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
@@ -96,6 +97,19 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
         )
+        self.validate_identity(
+            "CREATE TABLE test (id INT, PRIMARY KEY pk_name (id))",
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))",
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity(
+            'CREATE TABLE test (id INT, PRIMARY KEY "pk_name" (id))',
+            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+        )
+        self.validate_identity("CREATE TABLE test (id INT, CONSTRAINT pk_name PRIMARY KEY (id))")
         self.validate_identity(
             "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)"
         )

@@ -184,6 +184,7 @@ class Generator(metaclass=_Generator):
         exp.PositionalColumn: lambda self, e: f"#{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",
+        exp.ZeroFillColumnConstraint: lambda self, e: "ZEROFILL",
         exp.Put: lambda self, e: self.get_put_sql(e),
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",

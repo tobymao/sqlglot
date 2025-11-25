@@ -1011,6 +1011,7 @@ LANGUAGE js AS
         self.validate_all(
             "SHA1(x)",
             read={
+                "bigquery": "SHA1(x)",
                 "clickhouse": "SHA1(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
@@ -1018,16 +1019,9 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
-                "": "SHA(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
-            },
-        )
-        self.validate_all(
-            "SHA1(x)",
-            write={
-                "bigquery": "SHA1(x)",
-                "": "SHA(x)",
+                "duckdb": "UNHEX(SHA1(x))",
             },
         )
         self.validate_all(
@@ -2056,6 +2050,14 @@ WHERE
             },
         )
 
+        self.validate_all(
+            "SELECT LEAST(1, NULL, 3)",
+            write={
+                "duckdb": "SELECT CASE WHEN 1 IS NULL OR NULL IS NULL OR 3 IS NULL THEN NULL ELSE LEAST(1, NULL, 3) END",
+                "bigquery": "SELECT LEAST(1, NULL, 3)",
+            },
+        )
+
     def test_errors(self):
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")
@@ -2688,7 +2690,7 @@ OPTIONS (
                     f"SELECT {func}('5')",
                     write={
                         "bigquery": f"SELECT {func}('5', '$')",
-                        "duckdb": """SELECT '5' ->> '$'""",
+                        "duckdb": """SELECT JSON_VALUE('5', '$') ->> '$'""",
                     },
                 )
 
@@ -2697,14 +2699,12 @@ OPTIONS (
                     sql,
                     write={
                         "bigquery": sql,
-                        "duckdb": """SELECT '{"name": "Jakob", "age": "6"}' ->> '$.age'""",
+                        "duckdb": """SELECT JSON_VALUE('{"name": "Jakob", "age": "6"}', '$.age') ->> '$'""",
                         "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
                     },
                 )
 
-                self.assertEqual(
-                    self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql
-                )
+        self.assertEqual(self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql)
 
         # Test double quote escaping
         for func in ("JSON_VALUE", "JSON_QUERY", "JSON_QUERY_ARRAY"):
@@ -3366,7 +3366,7 @@ OPTIONS (
             "SELECT TO_HEX(SHA1('abc'))",
             write={
                 "bigquery": "SELECT TO_HEX(SHA1('abc'))",
-                "snowflake": "SELECT TO_CHAR(SHA1('abc'))",
+                "snowflake": "SELECT TO_CHAR(SHA1_BINARY('abc'))",
             },
         )
 

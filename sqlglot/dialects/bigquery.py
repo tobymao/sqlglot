@@ -362,6 +362,7 @@ class BigQuery(Dialect):
     TABLES_REFERENCEABLE_AS_COLUMNS = True
     SUPPORTS_STRUCT_STAR_EXPANSION = True
     QUERY_RESULTS_ARE_STRUCTS = True
+    JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'
@@ -551,7 +552,10 @@ class BigQuery(Dialect):
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "GREATEST": lambda args: exp.Greatest(
-                this=seq_get(args, 0), expressions=args[1:], return_null_if_any_null=True
+                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
+            ),
+            "LEAST": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
             ),
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
@@ -564,6 +568,7 @@ class BigQuery(Dialect):
             "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
+            "SHA1": exp.SHA1Digest.from_arg_list,
             "NORMALIZE_AND_CASEFOLD": lambda args: exp.Normalize(
                 this=seq_get(args, 0), form=seq_get(args, 1), is_casefold=True
             ),
@@ -1144,6 +1149,7 @@ class BigQuery(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),

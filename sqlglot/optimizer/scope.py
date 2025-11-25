@@ -98,6 +98,7 @@ class Scope:
         self._selected_sources = None
         self._columns = None
         self._external_columns = None
+        self._local_columns = None
         self._join_hints = None
         self._pivots = None
         self._references = None
@@ -372,8 +373,7 @@ class Scope:
         Columns that appear to reference sources in outer scopes.
 
         Returns:
-            list[exp.Column]: Column instances that don't reference
-                sources in the current scope.
+            list[exp.Column]: Column instances that don't reference sources in the current scope.
         """
         if self._external_columns is None:
             if isinstance(self.expression, exp.SetOperation):
@@ -383,11 +383,24 @@ class Scope:
                 self._external_columns = [
                     c
                     for c in self.columns
-                    if c.table not in self.selected_sources
-                    and c.table not in self.semi_or_anti_join_tables
+                    if c.table not in self.sources and c.table not in self.semi_or_anti_join_tables
                 ]
 
         return self._external_columns
+
+    @property
+    def local_columns(self):
+        """
+        Columns in this scope that are not external.
+
+        Returns:
+            list[exp.Column]: Column instances that reference sources in the current scope.
+        """
+        if self._local_columns is None:
+            external_columns = set(self.external_columns)
+            self._local_columns = [c for c in self.columns if c not in external_columns]
+
+        return self._local_columns
 
     @property
     def unqualified_columns(self):

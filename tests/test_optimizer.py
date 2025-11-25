@@ -163,11 +163,14 @@ class TestOptimizer(unittest.TestCase):
                 title = meta.get("title") or f"{i}, {sql}"
                 if only and title != only:
                     continue
+
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
+                canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
 
-                func_kwargs = {**kwargs}
+                func_kwargs = kwargs.copy()
+
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
@@ -175,9 +178,10 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["validate_qualify_columns"] = string_to_bool(
                         validate_qualify_columns
                     )
-
                 if dialect:
                     func_kwargs["dialect"] = dialect
+                if canonicalize_table_aliases:
+                    func_kwargs["canonicalize_table_aliases"] = canonicalize_table_aliases
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -259,7 +263,7 @@ class TestOptimizer(unittest.TestCase):
                 db="db",
                 catalog="catalog",
             ).sql(),
-            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _q_0",
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS \"_0\"",
         )
 
         self.assertEqual(
@@ -434,7 +438,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
+                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS `_0`",
                     dialect="bigquery",
                 ),
                 schema=MappingSchema(
@@ -446,7 +450,7 @@ class TestOptimizer(unittest.TestCase):
                     dialect="bigquery",
                 ),
             ).sql(dialect="bigquery"),
-            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
+            "SELECT `_0`.id AS id, `_0`.dt AS dt, `_0`.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS `_0`",
         )
 
         # Detection of correlation where columns are referenced in derived tables nested within subqueries

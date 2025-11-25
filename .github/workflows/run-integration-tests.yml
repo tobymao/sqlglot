@@ -1,6 +1,9 @@
 name: Run Integration Tests
 
 on:
+  # note: the issue_comment event (PR's are issues) will only run the version of this workflow committed to 'main'
+  # this makes it impossible to properly test issue_comment triggers in a PR
+  # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#issue_comment
   issue_comment:
     types: [created, edited]
   pull_request:
@@ -38,7 +41,7 @@ jobs:
 
             Head Ref ${{ github.head_ref }}
 
-            Ref Name: ${{ github.ref_name }}            
+            Ref Name: ${{ github.ref_name }}
           EOF
       - name: Acquire credentials
         id: app-token
@@ -60,7 +63,7 @@ jobs:
             --repo fivetran/sqlglot-integration-tests \
             --ref main \
             -f sqlglot_ref=${{ github.sha }} \
-            -f sqlglot_pr_number=${{ github.event.number }} \
+            -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
             -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }}
 
           echo "Triggered workflow"
@@ -89,7 +92,11 @@ jobs:
             --compact \
             --exit-status
 
+          # Fail the workflow on this side if the remote workflow fails
+          exit $?
+
       - name: Fetch outputs
+        id: fetch-outputs
         uses: actions/download-artifact@v5
         with:
           github-token: ${{ steps.app-token.outputs.token }}
@@ -100,7 +107,7 @@ jobs:
       - name: Write summary as comment
         uses: actions/github-script@v8
         # only do this when on PR branches, main builds dont have anywhere to write comments
-        if: ${{ github.event_name == 'pull_request' }}
+        if: github.event_name == 'pull_request' || github.event.issue.pull_request
         with:
           script: |
             // summary.json is downloaded from the remote workflow in the previous step

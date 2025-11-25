@@ -1091,6 +1091,9 @@ class TSQL(Dialect):
             ),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
+            exp.SHA1Digest: lambda self, e: self.func(
+                "HASHBYTES", exp.Literal.string("SHA1"), e.this
+            ),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),

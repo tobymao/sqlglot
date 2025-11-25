@@ -97,6 +97,8 @@ def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
         )
         if len(args) > 2 and expr_type is exp.JSONExtract:
             expression.set("expressions", args[2:])
+        if expr_type is exp.JSONExtractScalar:
+            expression.set("scalar_only", dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY)
 
         return expression
 
@@ -231,6 +233,7 @@ class Parser(metaclass=_Parser):
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "GREATEST": lambda args: exp.Greatest(this=seq_get(args, 0), expressions=args[1:]),
+        "LEAST": lambda args: exp.Least(this=seq_get(args, 0), expressions=args[1:]),
         "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
@@ -789,6 +792,7 @@ class Parser(metaclass=_Parser):
             this=this,
             expression=self.dialect.to_json_path(path),
             only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+            scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,
@@ -3318,7 +3322,7 @@ class Parser(metaclass=_Parser):
 
         # duckdb supports leading with FROM x
         from_ = (
-            self._parse_from(consume_pipe=True)
+            self._parse_from(joins=True, consume_pipe=True)
             if self._match(TokenType.FROM, advance=False)
             else None
         )
@@ -4438,7 +4442,7 @@ class Parser(metaclass=_Parser):
         expressions = self._match(TokenType.ON) and self._parse_csv(_parse_on)
         into = self._parse_unpivot_columns()
         using = self._match(TokenType.USING) and self._parse_csv(
-            lambda: self._parse_alias(self._parse_function())
+            lambda: self._parse_alias(self._parse_column())
         )
         group = self._parse_group()
 
@@ -4467,16 +4471,18 @@ class Parser(metaclass=_Parser):
 
         value = self._parse_column()
 
-        if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
-            self.raise_error("Expecting IN (")
+        if not self._match(TokenType.IN):
+            self.raise_error("Expecting IN")
 
-        if self._match(TokenType.ANY):
-            exprs: t.List[exp.Expression] = ensure_list(exp.PivotAny(this=self._parse_order()))
-        else:
-            exprs = self._parse_csv(_parse_aliased_expression)
+        if self._match(TokenType.L_PAREN):
+            if self._match(TokenType.ANY):
+                exprs: t.List[exp.Expression] = ensure_list(exp.PivotAny(this=self._parse_order()))
+            else:
+                exprs = self._parse_csv(_parse_aliased_expression)
+            self._match_r_paren()
+            return self.expression(exp.In, this=value, expressions=exprs)
 
-        self._match_r_paren()
-        return self.expression(exp.In, this=value, expressions=exprs)
+        return self.expression(exp.In, this=value, field=self._parse_id_var())
 
     def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
         func = self._parse_function()
@@ -5642,7 +5648,9 @@ class Parser(metaclass=_Parser):
                 values
                 and not schema
                 and (
-                    not self.dialect.SUPPORTS_FIXED_SIZE_ARRAYS or datatype_token == TokenType.ARRAY
+                    not self.dialect.SUPPORTS_FIXED_SIZE_ARRAYS
+                    or datatype_token == TokenType.ARRAY
+                    or not self._match(TokenType.R_BRACKET, advance=False)
                 )
             ):
                 # Retreating here means that we should not parse the following values as part of the data type, e.g. in DuckDB
@@ -6512,6 +6520,14 @@ class Parser(metaclass=_Parser):
             self._match_set((TokenType.ASC, TokenType.DESC))
             and self._prev.token_type == TokenType.DESC
         )
+
+        # mysql allows a name for primary key but ignores it, the name is always PRIMARY
+        if (
+            self._curr.text.upper() not in self.CONSTRAINT_PARSERS
+            and self._next
+            and self._next.token_type == TokenType.L_PAREN
+        ):
+            self._parse_id_var()
 
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(

@@ -875,7 +875,6 @@ class DuckDB(Dialect):
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,
-            exp.JSONExtractScalar: _arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
@@ -884,6 +883,7 @@ class DuckDB(Dialect):
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
+            exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",
@@ -1104,29 +1104,37 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
-        def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
+        def _greatest_least_sql(
+            self: DuckDB.Generator, expression: exp.Greatest | exp.Least
+        ) -> str:
             """
-            Handle GREATEST function with dialect-aware NULL behavior.
+            Handle GREATEST/LEAST functions with dialect-aware NULL behavior.
 
-            - If return_null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
-            - If return_null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest non-NULL value
+            - If null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
+            - If null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest/least non-NULL value
             """
             # Get all arguments
             all_args = [expression.this, *expression.expressions]
-            greatest_sql = self.function_fallback_sql(expression)
+            fallback_sql = self.function_fallback_sql(expression)
 
-            if expression.args.get("return_null_if_any_null"):
+            if expression.args.get("null_if_any_null"):
                 # BigQuery behavior: NULL if any argument is NULL
                 case_expr = exp.case().when(
                     exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
                     exp.null(),
                     copy=False,
                 )
-                case_expr.set("default", greatest_sql)
+                case_expr.set("default", fallback_sql)
                 return self.sql(case_expr)
 
-            # DuckDB/PostgreSQL behavior: use native GREATEST (ignores NULLs)
-            return self.sql(greatest_sql)
+            # DuckDB/PostgreSQL behavior: use native GREATEST/LEAST (ignores NULLs)
+            return self.sql(fallback_sql)
+
+        def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
+            return self._greatest_least_sql(expression)
+
+        def least_sql(self: DuckDB.Generator, expression: exp.Least) -> str:
+            return self._greatest_least_sql(expression)
 
         def lambda_sql(
             self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True
@@ -1632,3 +1640,10 @@ class DuckDB(Dialect):
             return self.sql(
                 exp.ApproxQuantile(this=this, quantile=exp.Array(expressions=quantiles))
             )
+
+        def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
+            if expression.args.get("scalar_only"):
+                expression = exp.JSONExtractScalar(
+                    this=rename_func("JSON_VALUE")(self, expression), expression="'$'"
+                )
+            return _arrow_json_extract_sql(self, expression)

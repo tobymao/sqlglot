@@ -533,6 +533,19 @@ class TestOptimizer(unittest.TestCase):
                 schema={"foo": {"y": "int"}},
             )
 
+        # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
+        with self.assertRaisesRegex(
+            OptimizeError,
+            r"""Ambiguous columns: '"".a', '"".x', '"".y', '"".b' \(Line: 1, Col: 50\), '"".c' \(Line: 1, Col: 57\)""",
+        ):
+            expression = parse_one(
+                "SELECT * FROM (SELECT a, b, c FROM x) PIVOT (SUM(b) FOR c IN ('x', 'y'))"
+            )
+            qualified = optimizer.qualify_columns.qualify_columns(
+                expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
+            )
+            optimizer.qualify_columns.validate_qualify_columns(qualified)
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

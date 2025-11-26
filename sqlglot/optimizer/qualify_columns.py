@@ -141,7 +141,17 @@ def validate_qualify_columns(expression: E) -> E:
             all_unqualified_columns.extend(unqualified_columns)
 
     if all_unqualified_columns:
-        raise OptimizeError(f"Ambiguous columns: {all_unqualified_columns}")
+        error_details = []
+        for column in all_unqualified_columns:
+            line = column.this.meta.get("line")
+            col = column.this.meta.get("col")
+
+            detail = f"'{column}'"
+            if line and col:
+                detail += f" (Line: {line}, Col: {col})"
+            error_details.append(detail)
+
+        raise OptimizeError(f"Ambiguous columns: {', '.join(error_details)}")
 
     return expression
 

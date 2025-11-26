@@ -124,20 +124,6 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
-class Version(int):
-    def __new__(cls, version_str: t.Optional[str], *args, **kwargs):
-        if version_str:
-            parts = version_str.split(".")
-            parts.extend(["0"] * (3 - len(parts)))
-            v = int("".join([p.zfill(3) for p in parts]))
-        else:
-            # No version defined means we should support the latest engine semantics, so
-            # the comparison to any specific version should yield that latest is greater
-            v = sys.maxsize
-
-        return super(Version, cls).__new__(cls, v)
-
-
 class _Dialect(type):
     _classes: t.Dict[str, t.Type[Dialect]] = {}
 
@@ -777,7 +763,9 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        self.version = Version(kwargs.pop("version", None))
+        parts = str(kwargs.pop("version", sys.maxsize)).split(".")
+        parts.extend(["0"] * (3 - len(parts)))
+        self.version = tuple(int(p) for p in parts[:3])
 
         normalization_strategy = kwargs.pop("normalization_strategy", None)
         if normalization_strategy is None:

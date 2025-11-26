@@ -12,7 +12,6 @@ from sqlglot import (
     parse_one,
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake, Spark2
-from sqlglot.dialects.dialect import Version
 from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
@@ -159,7 +158,7 @@ class TestDialect(Validator):
             "oracle, normalization_strategy = lowercase, version = 19.5"
         )
         self.assertEqual(oracle_with_settings.normalization_strategy.value, "LOWERCASE")
-        self.assertEqual(oracle_with_settings.version, Version("19.5"))
+        self.assertEqual(oracle_with_settings.version, (19, 5, 0))
 
         class MyDialect(Dialect):
             SUPPORTED_SETTINGS = {"s1", "s2", "s3", "s4", "s5"}

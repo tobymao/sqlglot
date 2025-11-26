@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
-    Version,
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -720,7 +719,7 @@ class DuckDB(Dialect):
         ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
 
-            if self.dialect.version < Version("1.2.0") and isinstance(bracket, exp.Bracket):
+            if self.dialect.version < (1, 2) and isinstance(bracket, exp.Bracket):
                 # https://duckdb.org/2025/02/05/announcing-duckdb-120.html#breaking-changes
                 bracket.set("returns_list_for_maps", True)
 
@@ -1265,14 +1264,14 @@ class DuckDB(Dialect):
             return self.function_fallback_sql(expression)
 
         def countif_sql(self, expression: exp.CountIf) -> str:
-            if self.dialect.version >= Version("1.2"):
+            if self.dialect.version >= (1, 2):
                 return self.function_fallback_sql(expression)
 
             # https://github.com/tobymao/sqlglot/pull/4749
             return count_if_to_sum(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
-            if self.dialect.version >= Version("1.2"):
+            if self.dialect.version >= (1, 2):
                 return super().bracket_sql(expression)
 
             # https://duckdb.org/2025/02/05/announcing-duckdb-120.html#breaking-changes

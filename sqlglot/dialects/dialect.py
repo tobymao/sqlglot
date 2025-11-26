@@ -124,38 +124,6 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
-class Version(int):
-    def __new__(cls, version_str: t.Optional[str], *args, **kwargs):
-        if version_str:
-            parts = version_str.split(".")
-            parts.extend(["0"] * (3 - len(parts)))
-            v = int("".join([p.zfill(3) for p in parts]))
-        else:
-            # No version defined means we should support the latest engine semantics, so
-            # the comparison to any specific version should yield that latest is greater
-            v = sys.maxsize
-
-        return super(Version, cls).__new__(cls, v)
-
-    def to_string(self) -> t.Optional[str]:
-        """
-        Convert the Version integer back to its string representation.
-
-        Returns:
-            The version string (e.g., "3.5.0"), or None if this is the max version.
-        """
-        if self == sys.maxsize:
-            return None
-
-        patch = self % 1000
-        minor = (self // 1000) % 1000
-        major = self // 1000000
-        return f"{major}.{minor}.{patch}"
-
-    def __reduce__(self):
-        return (type(self), (self.to_string(),))
-
-
 class _Dialect(type):
     _classes: t.Dict[str, t.Type[Dialect]] = {}
 
@@ -907,7 +875,9 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        self.version = Version(kwargs.pop("version", None))
+        parts = str(kwargs.pop("version", sys.maxsize)).split(".")
+        parts.extend(["0"] * (3 - len(parts)))
+        self.version = tuple(int(p) for p in parts[:3])
 
         normalization_strategy = kwargs.pop("normalization_strategy", None)
         if normalization_strategy is None:
@@ -940,8 +910,8 @@ class Dialect(metaclass=_Dialect):
         dialect_class = state["dialect_class"]
         version = state["version"]
 
-        # Convert Version object back to version string format
-        version_str = version.to_string() if isinstance(version, Version) else None
+        # Convert version tuple back to version string format
+        version_str = ".".join(map(str, version)) if isinstance(version, tuple) else None
 
         reconstructed = dialect_class(
             version=version_str,

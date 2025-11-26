@@ -2176,14 +2176,15 @@ class Generator(metaclass=_Generator):
         if expression.this:
             this = self.sql(expression, "this")
             if not expressions:
-                return f"UNPIVOT {this}"
-
-            on = f"{self.seg('ON')} {expressions}"
-            into = self.sql(expression, "into")
-            into = f"{self.seg('INTO')} {into}" if into else ""
-            using = self.expressions(expression, key="using", flat=True)
-            using = f"{self.seg('USING')} {using}" if using else ""
-            return f"{direction} {this}{on}{into}{using}{group}"
+                sql = f"UNPIVOT {this}"
+            else:
+                on = f"{self.seg('ON')} {expressions}"
+                into = self.sql(expression, "into")
+                into = f"{self.seg('INTO')} {into}" if into else ""
+                using = self.expressions(expression, key="using", flat=True)
+                using = f"{self.seg('USING')} {using}" if using else ""
+                sql = f"{direction} {this}{on}{into}{using}{group}"
+            return self.prepend_ctes(expression, sql)
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
@@ -2206,7 +2207,8 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        sql = f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        return self.prepend_ctes(expression, sql)
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"
@@ -3874,9 +3876,6 @@ class Generator(metaclass=_Generator):
     def nullsafeneq_sql(self, expression: exp.NullSafeNEQ) -> str:
         return self.binary(expression, "IS DISTINCT FROM")
 
-    def slice_sql(self, expression: exp.Slice) -> str:
-        return self.binary(expression, ":")
-
     def sub_sql(self, expression: exp.Sub) -> str:
         return self.binary(expression, "-")
 
@@ -4945,6 +4944,14 @@ class Generator(metaclass=_Generator):
                     array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
 
         return array_agg
+
+    def slice_sql(self, expression: exp.Slice) -> str:
+        step = self.sql(expression, "step")
+        end = self.sql(expression.expression)
+        begin = self.sql(expression.this)
+
+        sql = f"{end}:{step}" if step else end
+        return f"{begin}:{sql}" if sql else f"{begin}:"
 
     def apply_sql(self, expression: exp.Apply) -> str:
         this = self.sql(expression, "this")

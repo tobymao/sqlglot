@@ -4543,6 +4543,7 @@ class Pivot(Expression):
         "include_nulls": False,
         "default_on_null": False,
         "into": False,
+        "with_": False,
     }
 
     @property
@@ -5294,10 +5295,6 @@ class Operator(Binary):
 
 class SimilarTo(Binary, Predicate):
     pass
-
-
-class Slice(Binary):
-    arg_types = {"this": False, "expression": False}
 
 
 class Sub(Binary):
@@ -7262,6 +7259,10 @@ class MapFromEntries(Func):
 # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql?view=sql-server-ver16
 class ScopeResolution(Expression):
     arg_types = {"this": False, "expression": True}
+
+
+class Slice(Expression):
+    arg_types = {"this": False, "expression": False, "step": False}
 
 
 class Stream(Expression):

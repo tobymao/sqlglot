@@ -109,6 +109,7 @@ EXPRESSION_METADATA = {
             exp.Ceil,
             exp.DateTrunc,
             exp.Floor,
+            exp.Max,
             exp.Left,
             exp.Pad,
             exp.Right,

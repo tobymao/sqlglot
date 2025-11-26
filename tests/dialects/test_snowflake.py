@@ -21,6 +21,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET(a, b)")
         self.validate_identity("SELECT GREATEST_IGNORE_NULLS(1, 2, 3, NULL)")
         self.validate_identity("SELECT LEAST_IGNORE_NULLS(5, NULL, 7, 3)")
+        self.validate_identity("SELECT MAX(x)")
+        self.validate_identity("SELECT MAX(DISTINCT x)")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT SINH(1.5)")

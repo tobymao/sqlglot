@@ -106,7 +106,7 @@ def qualify_columns(
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
         _expand_order_by_and_distinct_on(scope, resolver)
 
-        if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+        if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
 
     return expression
@@ -807,7 +807,7 @@ def _expand_stars(
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
 
-            if pseudocolumns and dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+            if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if not columns or "*" in columns:

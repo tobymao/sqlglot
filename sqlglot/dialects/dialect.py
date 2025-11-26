@@ -446,6 +446,9 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
+    ANNOTATE_ALL_SCOPES = False
+    """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
+
     DISABLES_ALIAS_REF_EXPANSION = False
     """
     Whether alias reference expansion is disabled for this dialect.
@@ -514,6 +517,16 @@ class Dialect(metaclass=_Dialect):
         SELECT (t.struct_col).* FROM table t
 
     This expands to all fields within the struct.
+    """
+
+    EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
+    """
+    Whether pseudocolumns should be excluded from star expansion (SELECT *).
+
+    Pseudocolumns are special dialect-specific columns (e.g., Oracle's ROWNUM, ROWID, LEVEL,
+    or BigQuery's _PARTITIONTIME, _PARTITIONDATE) that are implicitly available but not part
+    of the table schema. When this is True, SELECT * will not include these pseudocolumns;
+    they must be explicitly selected.
     """
 
     QUERY_RESULTS_ARE_STRUCTS = False

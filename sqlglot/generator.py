@@ -2176,14 +2176,15 @@ class Generator(metaclass=_Generator):
         if expression.this:
             this = self.sql(expression, "this")
             if not expressions:
-                return f"UNPIVOT {this}"
-
-            on = f"{self.seg('ON')} {expressions}"
-            into = self.sql(expression, "into")
-            into = f"{self.seg('INTO')} {into}" if into else ""
-            using = self.expressions(expression, key="using", flat=True)
-            using = f"{self.seg('USING')} {using}" if using else ""
-            return f"{direction} {this}{on}{into}{using}{group}"
+                sql = f"UNPIVOT {this}"
+            else:
+                on = f"{self.seg('ON')} {expressions}"
+                into = self.sql(expression, "into")
+                into = f"{self.seg('INTO')} {into}" if into else ""
+                using = self.expressions(expression, key="using", flat=True)
+                using = f"{self.seg('USING')} {using}" if using else ""
+                sql = f"{direction} {this}{on}{into}{using}{group}"
+            return self.prepend_ctes(expression, sql)
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
@@ -2206,7 +2207,8 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        sql = f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        return self.prepend_ctes(expression, sql)
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"

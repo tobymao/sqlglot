@@ -127,7 +127,7 @@ def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> s
     return _trunc_sql(self, "TIMESTAMP", expression)
 
 
-def is_case_insensitive(node: exp.Expression):
+def is_case_insensitive(node: exp.Expression) -> bool:
     return isinstance(node, exp.Collate) and node.text("expression").upper() == "UTF8_LCASE"
 
 
@@ -140,7 +140,7 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
     haystack_sql = self.sql(this)
     if num == 0:
-        return f"SUBSTR({haystack_sql}, 1, 0)"
+        return self.func("SUBSTR", haystack_sql, "1", "0")
 
     from_right = num < 0
     direction = "-1" if from_right else "1"

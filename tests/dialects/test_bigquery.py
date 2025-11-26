@@ -3290,6 +3290,47 @@ OPTIONS (
             },
         )
 
+        # Test Negative difference with WEEK(SUNDAY) - verifies argument order swapping
+        self.validate_all(
+            "DATE_DIFF(DATE '2024-01-01', DATE '2024-01-15', WEEK(SUNDAY))",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2024-01-01' AS DATE), CAST('2024-01-15' AS DATE), WEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-01' AS DATE) + INTERVAL '1' DAY)) // 7",
+            },
+        )
+        # Test Negative difference with ISOWEEK - verifies argument order swapping
+        self.validate_all(
+            "DATE_DIFF(DATE '2024-01-01', DATE '2024-01-15', ISOWEEK)",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2024-01-01' AS DATE), CAST('2024-01-15' AS DATE), ISOWEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-01' AS DATE))) // 7",
+            },
+        )
+        # Test Year boundary crossing (negative difference)
+        self.validate_all(
+            "DATE_DIFF(DATE '2023-12-25', DATE '2024-01-08', WEEK(SUNDAY))",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2023-12-25' AS DATE), CAST('2024-01-08' AS DATE), WEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2023-12-25' AS DATE) + INTERVAL '1' DAY)) // 7",
+            },
+        )
+        # Test Year boundary crossing (positive difference)
+        self.validate_all(
+            "DATE_DIFF(DATE '2024-01-08', DATE '2023-12-25', WEEK(SUNDAY))",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2024-01-08' AS DATE), CAST('2023-12-25' AS DATE), WEEK)",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2023-12-25' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY)) // 7",
+            },
+        )
+        # Test DAY unit with negative difference - verifies non-week argument swapping
+        self.validate_all(
+            "DATE_DIFF(DATE '2024-01-01', DATE '2024-01-15', DAY)",
+            write={
+                "bigquery": "DATE_DIFF(CAST('2024-01-01' AS DATE), CAST('2024-01-15' AS DATE), DAY)",
+                "duckdb": "DATE_DIFF('DAY', CAST('2024-01-15' AS DATE), CAST('2024-01-01' AS DATE))",
+            },
+        )
+
     def test_approx_qunatiles(self):
         self.validate_identity("APPROX_QUANTILES(foo, 2)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")

@@ -36,7 +36,6 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     count_if_to_sum,
     groupconcat_sql,
-    Version,
     regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
@@ -262,7 +261,7 @@ def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> s
 def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) -> str:
     # https://www.postgresql.org/docs/16/functions-aggregate.html
     # https://www.postgresql.org/about/featurematrix/
-    if self.dialect.version < Version("16.0"):
+    if self.dialect.version < (16,):
         return any_value_to_max_sql(self, expression)
 
     return rename_func("ANY_VALUE")(self, expression)

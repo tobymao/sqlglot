@@ -4,7 +4,6 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
-    Version,
     rename_func,
     build_like,
     unit_to_var,
@@ -100,7 +99,7 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
 
 
 def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
-    if self.dialect.version < Version("4.0.0"):
+    if self.dialect.version < (4,):
         expr = exp.ArrayToString(
             this=exp.ArrayAgg(this=expression.this),
             expression=expression.args.get("separator") or exp.Literal.string(""),

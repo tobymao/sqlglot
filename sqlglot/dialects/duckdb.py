@@ -40,6 +40,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     inline_array_unless_query,
     regexp_replace_global_modifier,
+    build_sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_date_unit, seq_get
@@ -884,6 +885,7 @@ class DuckDB(Dialect):
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
+            exp.SHA2Digest: lambda self, e: self.func("UNHEX", build_sha2_digest_sql(self, e)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",

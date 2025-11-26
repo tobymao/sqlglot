@@ -219,6 +219,7 @@ class Redshift(Postgres):
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.UnixToTime: lambda self, e: self._unix_to_time_sql(e),
+            exp.SHA2Digest: lambda self, e: self.func("SHA2", e.this, e.args.get("length") or exp.Literal.number(256)),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

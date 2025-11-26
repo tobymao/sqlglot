@@ -4543,6 +4543,7 @@ class Pivot(Expression):
         "include_nulls": False,
         "default_on_null": False,
         "into": False,
+        "with_": False,
     }
 
     @property

@@ -1831,6 +1831,9 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM (UNPIVOT monthly_sales ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales) AS unpivot_alias"
         )
+        self.validate_identity(
+            "WITH cities(country, name, year, population) AS (SELECT 'NL', 'Amsterdam', 2000, 1005 UNION ALL SELECT 'US', 'Seattle', 2020, 738) PIVOT cities ON year USING SUM(population)"
+        )
 
     def test_from_first_with_parentheses(self):
         self.validate_identity(

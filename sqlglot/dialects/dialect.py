@@ -911,28 +911,6 @@ class Dialect(metaclass=_Dialect):
         # Does not currently take dialect state into account
         return hash(type(self))
 
-    def __getstate__(self) -> t.Dict[str, t.Any]:
-        return {
-            "dialect_class": type(self),
-            "version": self.version,
-            "normalization_strategy": self.normalization_strategy,
-            "settings": self.settings,
-        }
-
-    def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
-        dialect_class = state["dialect_class"]
-        version = state["version"]
-
-        # Convert version tuple back to version string format
-        version_str = ".".join(map(str, version)) if isinstance(version, tuple) else None
-
-        reconstructed = dialect_class(
-            version=version_str,
-            normalization_strategy=state["normalization_strategy"],
-            **state["settings"],
-        )
-        self.__dict__.update(reconstructed.__dict__)
-
     def normalize_identifier(self, expression: E) -> E:
         """
         Transforms an identifier in a way that resembles how it'd be resolved by this dialect.

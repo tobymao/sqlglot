@@ -260,3 +260,24 @@ SELECT * FROM c.db.x AS "_1" WHERE "_1".a = (SELECT SUM("_0".c) AS c FROM c.db.y
 # canonicalize_table_aliases: true
 SELECT t.foo FROM t AS t, (SELECT t.bar FROM t AS t);
 SELECT "_2".foo FROM c.db.t AS "_2", (SELECT "_0".bar FROM c.db.t AS "_0") AS "_1";
+
+# title: Qualify GENERATE_SERIES with its default column generate_series
+# dialect: postgres
+SELECT generate_series FROM GENERATE_SERIES(1,2);
+SELECT generate_series FROM GENERATE_SERIES(1, 2) AS "_0"(generate_series);
+
+# title: Qualify GENERATE_SERIES with alias by wrapping it
+# dialect: postgres
+SELECT g FROM GENERATE_SERIES(1,2) AS g;
+SELECT g FROM GENERATE_SERIES(1, 2) AS "_0"(g);
+
+# title: Qualify GENERATE_SERIES with alias on table and columns
+# dialect: postgres
+SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
+
+# title: Qualify GENERATE_SERIES with explicit column and canonicalize_table_aliases
+# dialect: postgres
+# canonicalize_table_aliases: true
+SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+SELECT g FROM GENERATE_SERIES(1, 2) AS "_0"(g);

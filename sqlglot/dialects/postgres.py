@@ -297,6 +297,11 @@ class Postgres(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    TABLES_REFERENCEABLE_AS_COLUMNS = True
+
+    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
+        exp.ExplodingGenerateSeries: "generate_series",
+    }
 
     TIME_MAPPING = {
         "d": "%u",  # 1-based day of week

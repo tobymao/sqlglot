@@ -142,10 +142,8 @@ def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Exp
     if isinstance(parent, (exp.SubqueryPredicate, exp.Bracket)):
         return expression
 
-    # Handle risingwave struct columns
-    # see https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
     if (
-        dialect == "risingwave"
+        Dialect.get_or_raise(dialect).REQUIRES_PARENTHESIZED_STRUCT_ACCESS
         and isinstance(parent, exp.Dot)
         and (isinstance(parent.right, (exp.Identifier, exp.Star)))
     ):
@@ -1193,10 +1191,7 @@ class Simplifier:
         ):
             return expression.this
 
-        # We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
-        # because they are not always equivalent. For example,  if `x` is `NULL` and it comes
-        # from a table, then the result is `NULL`, despite `FALSE AND NULL` evaluating to `FALSE`
-        if self.dialect == "redshift":
+        if self.dialect.COALESCE_COMPARISON_NON_STANDARD:
             return expression
 
         if not isinstance(expression, self.COMPARISONS):

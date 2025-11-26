@@ -443,12 +443,137 @@ class Dialect(metaclass=_Dialect):
         to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
-    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
+    EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
+
+    ANNOTATE_ALL_SCOPES = False
+    """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
+
+    DISABLES_ALIAS_REF_EXPANSION = False
+    """
+    Whether alias reference expansion is disabled for this dialect.
+
+    Some dialects like Oracle do NOT support referencing aliases in projections or WHERE clauses.
+    The original expression must be repeated instead.
+
+    For example, in Oracle:
+        SELECT y.foo AS bar, bar * 2 AS baz FROM y  -- INVALID
+        SELECT y.foo AS bar, y.foo * 2 AS baz FROM y  -- VALID
+    """
+
+    SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = False
+    """
+    Whether alias references are allowed in JOIN ... ON clauses.
+
+    Most dialects do not support this, but Snowflake allows alias expansion in the JOIN ... ON
+    clause (and almost everywhere else)
+
+    For example, in Snowflake:
+        SELECT a.id AS user_id FROM a JOIN b ON user_id = b.id  -- VALID
+
+    Reference: https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
+    """
 
     SUPPORTS_ORDER_BY_ALL = False
     """
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
+    """
+
+    PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = False
+    """
+    Whether projection alias names can shadow table/source names in GROUP BY and HAVING clauses.
+
+    In BigQuery, when a projection alias has the same name as a source table, the alias takes
+    precedence in GROUP BY and HAVING clauses, and the table becomes inaccessible by that name.
+
+    For example, in BigQuery:
+        SELECT id, ARRAY_AGG(col) AS custom_fields
+        FROM custom_fields
+        GROUP BY id
+        HAVING id >= 1
+
+    The "custom_fields" source is shadowed by the projection alias, so we cannot qualify "id"
+    with "custom_fields" in GROUP BY/HAVING.
+    """
+
+    TABLES_REFERENCEABLE_AS_COLUMNS = False
+    """
+    Whether table names can be referenced as columns (treated as structs).
+
+    BigQuery allows tables to be referenced as columns in queries, automatically treating
+    them as struct values containing all the table's columns.
+
+    For example, in BigQuery:
+        SELECT t FROM my_table AS t  -- Returns entire row as a struct
+    """
+
+    SUPPORTS_STRUCT_STAR_EXPANSION = False
+    """
+    Whether the dialect supports expanding struct fields using star notation (e.g., struct_col.*).
+
+    BigQuery allows struct fields to be expanded with the star operator:
+        SELECT t.struct_col.* FROM table t
+    RisingWave also allows struct field expansion with the star operator using parentheses:
+        SELECT (t.struct_col).* FROM table t
+
+    This expands to all fields within the struct.
+    """
+
+    EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
+    """
+    Whether pseudocolumns should be excluded from star expansion (SELECT *).
+
+    Pseudocolumns are special dialect-specific columns (e.g., Oracle's ROWNUM, ROWID, LEVEL,
+    or BigQuery's _PARTITIONTIME, _PARTITIONDATE) that are implicitly available but not part
+    of the table schema. When this is True, SELECT * will not include these pseudocolumns;
+    they must be explicitly selected.
+    """
+
+    QUERY_RESULTS_ARE_STRUCTS = False
+    """
+    Whether query results are typed as structs in metadata for type inference.
+
+    In BigQuery, subqueries store their column types as a STRUCT in metadata,
+    enabling special type inference for ARRAY(SELECT ...) expressions:
+        ARRAY(SELECT x, y FROM t) → ARRAY<STRUCT<...>>
+
+    For single column subqueries, BigQuery unwraps the struct:
+        ARRAY(SELECT x FROM t) → ARRAY<type_of_x>
+
+    This is metadata-only for type inference.
+    """
+
+    REQUIRES_PARENTHESIZED_STRUCT_ACCESS = False
+    """
+    Whether struct field access requires parentheses around the expression.
+
+    RisingWave requires parentheses for struct field access in certain contexts:
+        SELECT (col.field).subfield FROM table  -- Parentheses required
+
+    Without parentheses, the parser may not correctly interpret nested struct access.
+
+    Reference: https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
+    """
+
+    SUPPORTS_NULL_TYPE = False
+    """
+    Whether NULL/VOID is supported as a valid data type (not just a value).
+
+    Databricks and Spark v3+ support NULL as an actual type, allowing expressions like:
+        SELECT NULL AS col  -- Has type NULL, not just value NULL
+        CAST(x AS VOID)     -- Valid type cast
+    """
+
+    COALESCE_COMPARISON_NON_STANDARD = False
+    """
+    Whether COALESCE in comparisons has non-standard NULL semantics.
+
+    We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
+    because they are not always equivalent. For example,  if `x` is `NULL` and it comes
+    from a table, then the result is `NULL`, despite `FALSE AND NULL` evaluating to `FALSE`.
+
+    In standard SQL and most dialects, these expressions are equivalent, but Redshift treats
+    table NULLs differently in this context.
     """
 
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = False

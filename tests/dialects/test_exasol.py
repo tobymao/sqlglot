@@ -327,6 +327,31 @@ class TestExasol(Validator):
                 "presto": r"SELECT REGEXP_EXTRACT('My mail address is my_mail@yahoo.com', '(?i)[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}') AS EMAIL",
             },
         )
+        self.validate_all(
+            "SELECT SUBSTR('www.apache.org', 1, NVL(NULLIF(INSTR('www.apache.org', '.', 1, 2), 0) - 1, LENGTH('www.apache.org')))",
+            read={
+                "databricks": "SELECT substring_index('www.apache.org', '.', 2)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR('555A66A777', 'a', 1, 2), 0) - 1, LENGTH('555A66A777')))",
+            read={
+                "databricks": "SELECT substring_index('555A66A777' COLLATE UTF8_BINARY, 'a', 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR(LOWER('555A66A777'), 'a', 1, 2), 0) - 1, LENGTH('555A66A777')))",
+            read={
+                "databricks": "SELECT substring_index('555A66A777' COLLATE UTF8_LCASE, 'a', 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT SUBSTR('A|a|A', 1, NVL(NULLIF(INSTR(LOWER('A|a|A'), LOWER('A'), 1, 2), 0) - 1, LENGTH('A|a|A')))",
+            read={
+                "databricks": "SELECT substring_index('A|a|A' COLLATE UTF8_LCASE, 'A' COLLATE UTF8_LCASE, 2)",
+            },
+        )
 
     def test_datetime_functions(self):
         formats = {
@@ -475,6 +500,13 @@ class TestExasol(Validator):
                         "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
                     },
                 )
+        self.validate_all(
+            "SELECT quarter('2016-08-31')",
+            write={
+                "exasol": "SELECT CEIL(MONTH(TO_DATE('2016-08-31'))/3)",
+                "databricks": "SELECT QUARTER('2016-08-31')",
+            },
+        )
 
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
@@ -616,7 +648,8 @@ class TestExasol(Validator):
     def test_odbc_date_literals(self):
         self.validate_identity("SELECT {d'2024-01-01'}", "SELECT TO_DATE('2024-01-01')")
         self.validate_identity(
-            "SELECT {ts'2024-01-01 12:00:00'}", "SELECT TO_TIMESTAMP('2024-01-01 12:00:00')"
+            "SELECT {ts'2024-01-01 12:00:00'}",
+            "SELECT TO_TIMESTAMP('2024-01-01 12:00:00')",
         )
 
     def test_local_prefix_for_alias(self):

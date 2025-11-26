@@ -127,6 +127,46 @@ def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> s
     return _trunc_sql(self, "TIMESTAMP", expression)
 
 
+def is_case_insensitive(node: exp.Expression):
+    return isinstance(node, exp.Collate) and node.text("expression").upper() == "UTF8_LCASE"
+
+
+def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex) -> str:
+    this = expression.this
+    delimiter = expression.args["delimiter"]
+    count_node = expression.args["count"]
+    count_sql = self.sql(expression, "count")
+    num = count_node.to_py() if count_node.is_number else 0
+
+    haystack_sql = self.sql(this)
+    if num == 0:
+        return f"SUBSTR({haystack_sql}, 1, 0)"
+
+    from_right = num < 0
+    direction = "-1" if from_right else "1"
+    occur = self.func("ABS", count_sql) if from_right else count_sql
+
+    delimiter_sql = self.sql(delimiter)
+
+    position = self.func(
+        "INSTR",
+        self.func("LOWER", haystack_sql) if is_case_insensitive(this) else haystack_sql,
+        self.func("LOWER", delimiter_sql) if is_case_insensitive(delimiter) else delimiter_sql,
+        direction,
+        occur,
+    )
+    nullable_pos = self.func("NULLIF", position, "0")
+
+    if from_right:
+        start = self.func(
+            "NVL", f"{nullable_pos} + {self.func('LENGTH', delimiter_sql)}", direction
+        )
+        return self.func("SUBSTR", haystack_sql, start)
+
+    length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
+    return self.func("SUBSTR", haystack_sql, direction, length)
+
+
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
@@ -388,6 +428,7 @@ class Exasol(Dialect):
                     _add_local_prefix_for_aliases,
                 ]
             ),
+            exp.SubstringIndex: _substring_index_sql,
             exp.WeekOfYear: rename_func("WEEK"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.Date: rename_func("TO_DATE"),
@@ -417,6 +458,9 @@ class Exasol(Dialect):
                 return self.function_fallback_sql(expression)
 
             return self.func(f"ADD_{unit}S", expression.this, expression.expression)
+
+        def collate_sql(self, expression: exp.Collate) -> str:
+            return self.sql(expression.this)
 
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
         def rank_sql(self, expression: exp.Rank) -> str:

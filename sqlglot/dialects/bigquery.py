@@ -594,7 +594,9 @@ class BigQuery(Dialect):
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(
                 exp.RegexpExtractAll, default_group=exp.Literal.number(0)
             ),
-            "SHA256": lambda args: exp.SHA2Digest(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA256": lambda args: exp.SHA2Digest(
+                this=seq_get(args, 0), length=exp.Literal.number(256)
+            ),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split

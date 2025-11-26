@@ -1872,8 +1872,10 @@ def build_timestamp_from_parts(args: t.List) -> exp.Func:
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
 
+
 def build_sha2_digest_sql(self: Generator, expression: exp.SHA2Digest) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
+
 
 def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateDateArray) -> str:
     start = expression.args.get("start")

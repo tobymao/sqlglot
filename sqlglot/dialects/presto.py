@@ -548,7 +548,7 @@ class Presto(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
-            exp.SHA2Digest: build_sha2_digest_sql 
+            exp.SHA2Digest: build_sha2_digest_sql,
         }
 
         RESERVED_KEYWORDS = {

@@ -282,7 +282,9 @@ class Spark2(Hive):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.SHA2Digest: lambda self, e: self.func("SHA2", e.this, e.args.get("length") or exp.Literal.number(256)),
+            exp.SHA2Digest: lambda self, e: self.func(
+                "SHA2", e.this, e.args.get("length") or exp.Literal.number(256)
+            ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

@@ -1985,24 +1985,6 @@ class TestDuckDB(Validator):
                 # All of these should remain as is, they don't have synonyms
                 self.validate_identity(f"EXTRACT({part} FROM foo)")
 
-    def test_date_diff_week(self):
-        # Test Monday-based week (ISO week) - no offset needed
-        self.validate_identity(
-            "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE))) // 7"
-        )
-        # Test Sunday-based week - shift by +1 day to align with ISO Monday
-        self.validate_identity(
-            "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7"
-        )
-        # Test Saturday-based week - shift by -5 days to align with ISO Monday
-        self.validate_identity(
-            "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '-5' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '-5' DAY)) // 7"
-        )
-        # Test zero weeks between dates in same week
-        self.validate_identity(
-            "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-01' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-01' AS DATE))) // 7"
-        )
-
     def test_set_item(self):
         self.validate_identity("SET memory_limit = '10GB'")
         self.validate_identity("SET SESSION default_collation = 'nocase'")

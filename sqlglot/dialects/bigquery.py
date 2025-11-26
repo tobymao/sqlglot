@@ -215,8 +215,9 @@ def _serialize_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.E
 
     Canonical form -> BigQuery syntax:
     - Week(SUNDAY) -> WEEK (BigQuery's default)
-    - Week(MONDAY) -> WEEK(MONDAY)
-    - ISOWEEK -> ISOWEEK
+    - Week(MONDAY) -> WEEK(MONDAY) (preserved during round-trip)
+    - Var(ISOWEEK) -> ISOWEEK (preserved as-is)
+    - WeekStart -> preserved as-is
     - Week(other day) -> WEEK(day)
     - Other units -> use unit_to_var
 
@@ -224,17 +225,24 @@ def _serialize_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.E
     from sqlglot.dialects.dialect import extract_week_unit_info
 
     unit = expression.args.get("unit")
-    day_name = extract_week_unit_info(unit, include_dow=False)
 
-    if day_name and isinstance(day_name, str):
+    # Preserve ISOWEEK/WEEKISO as-is (don't convert to WEEK(MONDAY))
+    if isinstance(unit, exp.Var):
+        unit_name = unit.this.upper() if isinstance(unit.this, str) else str(unit.this)
+        if unit_name in ("ISOWEEK", "WEEKISO"):
+            return self.sql(unit)
+
+    week_info = extract_week_unit_info(unit)
+
+    if week_info:
+        day_name, _ = week_info  # Extract day name, ignore DOW number
         if day_name == "SUNDAY":
             return self.sql(exp.var("WEEK"))
         elif day_name == "MONDAY":
-            # Preserve the original form: WEEK(MONDAY) vs ISOWEEK
             if isinstance(unit, exp.WeekStart):
                 return self.sql(unit)
             else:
-                return self.sql(exp.var("ISOWEEK"))
+                return self.sql(exp.Week(this=exp.var(day_name)))
         else:
             return self.sql(exp.Week(this=exp.var(day_name)))
 

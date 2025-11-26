@@ -3246,7 +3246,7 @@ OPTIONS (
             "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(MONDAY))",
             write={
                 "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(MONDAY))",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE))) // 7",
             },
         )
         # Test WEEK(SUNDAY) - Sunday-based week (normalized to WEEK)
@@ -3254,7 +3254,7 @@ OPTIONS (
             "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SUNDAY))",
             write={
                 "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
             },
         )
         # Test WEEK(SATURDAY) - Saturday-based week calculation
@@ -3262,7 +3262,7 @@ OPTIONS (
             "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SATURDAY))",
             write={
                 "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK(SATURDAY))",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '-5' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '-5' DAY)) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '-5' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '-5' DAY)) // 7",
             },
         )
         # Test WEEK - Default Sunday-based week calculation
@@ -3270,7 +3270,7 @@ OPTIONS (
             "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
             write={
                 "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('week', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY)) // 7",
             },
         )
         # Test ISOWEEK - ISO 8601 Monday-based week calculation
@@ -3278,7 +3278,7 @@ OPTIONS (
             "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
             write={
                 "bigquery": "DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE))) // 7",
             },
         )
         # Test with DATE literal - Explicit DATE casting
@@ -3286,7 +3286,7 @@ OPTIONS (
             "DATE_DIFF(DATE '2024-01-15', DATE '2024-01-08', WEEK(MONDAY))",
             write={
                 "bigquery": "DATE_DIFF(CAST('2024-01-15' AS DATE), CAST('2024-01-08' AS DATE), WEEK(MONDAY))",
-                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('week', CAST('2024-01-08' AS DATE)), DATE_TRUNC('week', CAST('2024-01-15' AS DATE))) // 7",
+                "duckdb": "DATE_DIFF('DAY', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE))) // 7",
             },
         )
 

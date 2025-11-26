@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     unit_to_var,
     strposition_sql,
     groupconcat_sql,
-    build_sha2_digest_sql,
+    sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get, split_num_words
@@ -1156,7 +1156,7 @@ class BigQuery(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
             exp.SHA1Digest: rename_func("SHA1"),
-            exp.SHA2Digest: build_sha2_digest_sql,
+            exp.SHA2Digest: sha2_digest_sql,
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),

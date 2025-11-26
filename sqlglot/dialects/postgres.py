@@ -37,7 +37,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     groupconcat_sql,
     regexp_replace_global_modifier,
-    build_sha2_digest_sql,
+    sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -699,7 +699,7 @@ class Postgres(Dialect):
                 ]
             ),
             exp.SHA2: sha256_sql,
-            exp.SHA2Digest: build_sha2_digest_sql,
+            exp.SHA2Digest: sha2_digest_sql,
             exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

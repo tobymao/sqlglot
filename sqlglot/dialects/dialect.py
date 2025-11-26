@@ -671,6 +671,14 @@ class Dialect(metaclass=_Dialect):
     Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
     """
 
+    DEFAULT_FUNCTIONS_COLUMN_NAMES: t.Dict[t.Type[exp.Func], t.Union[str, t.Tuple[str, ...]]] = {}
+    """
+    Maps function expressions to their default output column name(s).
+
+    For example, in Postgres, generate_series function outputs a column named "generate_series" by default,
+    so we map the ExplodingGenerateSeries expression to "generate_series" string.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

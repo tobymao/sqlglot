@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
-from sqlglot.helper import name_sequence, seq_get
+from sqlglot.helper import name_sequence, seq_get, ensure_list
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
@@ -79,6 +79,7 @@ def qualify_tables(
         target_alias: t.Optional[str] = None,
         scope: t.Optional[Scope] = None,
         normalize: bool = False,
+        columns: t.Optional[t.List[t.Union[str, exp.Identifier]]] = None,
     ) -> None:
         alias = expression.args.get("alias") or exp.TableAlias()
 
@@ -96,6 +97,10 @@ def qualify_tables(
         quoted = True if canonicalize_table_aliases or not target_alias else None
 
         alias.set("this", exp.to_identifier(new_alias_name, quoted=quoted))
+
+        if columns:
+            alias.set("columns", [exp.to_identifier(c) for c in columns])
+
         expression.set("alias", alias)
 
         if scope:
@@ -132,11 +137,27 @@ def qualify_tables(
                 if pivot := seq_get(source.args.get("pivots") or [], 0):
                     name = source.name
 
+                table_this = source.this
+                table_alias = source.args.get("alias")
+                function_columns: t.List[t.Union[str, exp.Identifier]] = []
+                if isinstance(table_this, exp.Func):
+                    if not table_alias:
+                        function_columns = ensure_list(
+                            dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(table_this))
+                        )
+                    elif columns := table_alias.columns:
+                        function_columns = columns
+                    elif type(table_this) in dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES:
+                        function_columns = ensure_list(source.alias_or_name)
+                        source.set("alias", None)
+                        name = None
+
                 _set_alias(
                     source,
                     canonical_aliases,
                     target_alias=name or source.name or None,
                     normalize=True,
+                    columns=function_columns,
                 )
 
                 source_fqn = ".".join(p.name for p in source.parts)

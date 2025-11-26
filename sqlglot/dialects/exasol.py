@@ -132,11 +132,13 @@ def is_case_insensitive(node: exp.Expression):
 
 
 def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex) -> str:
+    this = expression.this
+    delimiter = expression.args["delimiter"]
     count_node = expression.args["count"]
     count_sql = self.sql(expression, "count")
     num = count_node.to_py() if count_node.is_number else 0
 
-    haystack_sql = self.sql(expression.this)
+    haystack_sql = self.sql(this)
     if num == 0:
         return f"SUBSTR({haystack_sql}, 1, 0)"
 
@@ -144,17 +146,15 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
     direction = "-1" if from_right else "1"
     occur = self.func("ABS", count_sql) if from_right else count_sql
 
-    delimiter_sql = self.sql(expression.args["delimiter"])
+    delimiter_sql = self.sql(delimiter)
 
-    if is_case_insensitive(expression.this) or is_case_insensitive(expression.args["delimiter"]):
-        haystack_search_expr, delimiter_search_expr = (
-            self.func("LOWER", haystack_sql),
-            self.func("LOWER", delimiter_sql),
-        )
-    else:
-        haystack_search_expr, delimiter_search_expr = haystack_sql, delimiter_sql
-
-    position = self.func("INSTR", haystack_search_expr, delimiter_search_expr, direction, occur)
+    position = self.func(
+        "INSTR",
+        self.func("LOWER", haystack_sql) if is_case_insensitive(this) else haystack_sql,
+        self.func("LOWER", delimiter_sql) if is_case_insensitive(delimiter) else delimiter_sql,
+        direction,
+        occur,
+    )
     nullable_pos = self.func("NULLIF", position, "0")
 
     if from_right:

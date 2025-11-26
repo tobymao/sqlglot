@@ -341,7 +341,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR(LOWER('555A66A777'), LOWER('a'), 1, 2), 0) - 1, LENGTH('555A66A777')))",
+            "SELECT SUBSTR('555A66A777', 1, NVL(NULLIF(INSTR(LOWER('555A66A777'), 'a', 1, 2), 0) - 1, LENGTH('555A66A777')))",
             read={
                 "databricks": "SELECT substring_index('555A66A777' COLLATE UTF8_LCASE, 'a', 2)",
             },

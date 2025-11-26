@@ -3876,9 +3876,6 @@ class Generator(metaclass=_Generator):
     def nullsafeneq_sql(self, expression: exp.NullSafeNEQ) -> str:
         return self.binary(expression, "IS DISTINCT FROM")
 
-    def slice_sql(self, expression: exp.Slice) -> str:
-        return self.binary(expression, ":")
-
     def sub_sql(self, expression: exp.Sub) -> str:
         return self.binary(expression, "-")
 
@@ -4947,6 +4944,14 @@ class Generator(metaclass=_Generator):
                     array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
 
         return array_agg
+
+    def slice_sql(self, expression: exp.Slice) -> str:
+        step = self.sql(expression, "step")
+        end = self.sql(expression.expression)
+        begin = self.sql(expression.this)
+
+        sql = f"{end}:{step}" if step else end
+        return f"{begin}:{sql}" if sql else f"{begin}:"
 
     def apply_sql(self, expression: exp.Apply) -> str:
         this = self.sql(expression, "this")

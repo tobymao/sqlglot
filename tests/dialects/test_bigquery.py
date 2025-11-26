@@ -3538,3 +3538,23 @@ OPTIONS (
                 self.parse_one("APPROX_QUANTILES(x, 2 RESPECT NULLS)").sql(
                     "duckdb", unsupported_level=ErrorLevel.RAISE
                 )
+
+    def test_bignumeric(self):
+        # BIGDECIMAL is an alias of BIGNUMERIC
+        for type_ in ("BIGNUMERIC", "BIGDECIMAL"):
+            with self.subTest(f"Testing BigQuery's {type_}"):
+                self.validate_all(
+                    f"SELECT {type_} '1'",
+                    write={
+                        "bigquery": "SELECT CAST('1' AS BIGNUMERIC)",
+                        "duckdb": "SELECT CAST('1' AS DECIMAL(38, 5))",
+                    },
+                )
+
+                self.validate_all(
+                    f"SELECT CAST(1 AS {type_})",
+                    write={
+                        "bigquery": "SELECT CAST(1 AS BIGNUMERIC)",
+                        "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                    },
+                )

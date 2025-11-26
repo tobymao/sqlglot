@@ -6633,7 +6633,7 @@ class Parser(metaclass=_Parser):
 
         if self._match_pair(TokenType.DASH, TokenType.COLON, advance=False):
             self._advance()
-            end: t.Optional[exp.Expression] = exp.Literal.number("-1")
+            end: t.Optional[exp.Expression] = -exp.Literal.number("1")
         else:
             end = self._parse_unary()
         step = self._parse_unary() if self._match(TokenType.COLON) else None

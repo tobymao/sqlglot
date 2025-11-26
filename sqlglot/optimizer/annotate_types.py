@@ -5,6 +5,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
 from sqlglot.helper import (
     ensure_list,
     is_date_unit,
@@ -14,7 +15,6 @@ from sqlglot.helper import (
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
-from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
@@ -188,13 +188,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
-        self.dialect = Dialect.get_or_raise(schema.dialect)
-        self.expression_metadata = (
-            expression_metadata or Dialect.get_or_raise(schema.dialect).EXPRESSION_METADATA
-        )
-        self.coerces_to = (
-            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
-        )
+        dialect = schema.dialect or Dialect()
+        self.dialect = dialect
+        self.expression_metadata = expression_metadata or dialect.EXPRESSION_METADATA
+        self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -204,7 +201,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._null_expressions: t.Dict[int, exp.Expression] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
-        self._supports_null_type = schema.dialect in ("databricks", "spark")
+        self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
@@ -368,7 +365,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope, selects)
 
-        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
+        if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[
@@ -482,7 +479,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_binary(self, expression: B) -> B:
         left, right = expression.left, expression.right
         if not left or not right:
-            expression_sql = expression.sql(self.schema.dialect)
+            expression_sql = expression.sql(self.dialect)
             logger.warning(f"Failed to annotate badly formed binary expression: {expression_sql}")
             self._set_type(expression, None)
             return expression

@@ -3907,6 +3907,41 @@ FROM subquery2""",
             },
         )
 
+    def test_regr_slope(self):
+        self.validate_all(
+            "REGR_SLOPE(x, y)",
+            read={
+                "": "REGR_SLOPE(x, y)",
+                "bigquery": "REGR_SLOPE(x, y)",
+                "databricks": "REGR_SLOPE(x, y)",
+                "duckdb": "REGR_SLOPE(x, y)",
+                "exasol": "REGR_SLOPE(x, y)",
+                "oracle": "REGR_SLOPE(x, y)",
+                "postgres": "REGR_SLOPE(x, y)",
+                "presto": "REGR_SLOPE(x, y)",
+                "redshift": "REGR_SLOPE(x, y)",
+                "snowflake": "REGR_SLOPE(x, y)",
+                "spark": "REGR_SLOPE(x, y)",
+                "teradata": "REGR_SLOPE(x, y)",
+                "trino": "REGR_SLOPE(x, y)",
+            },
+            write={
+                "": "REGR_SLOPE(x, y)",
+                "bigquery": "REGR_SLOPE(x, y)",
+                "databricks": "REGR_SLOPE(x, y)",
+                "duckdb": "REGR_SLOPE(x, y)",
+                "exasol": "REGR_SLOPE(x, y)",
+                "oracle": "REGR_SLOPE(x, y)",
+                "postgres": "REGR_SLOPE(x, y)",
+                "presto": "REGR_SLOPE(x, y)",
+                "redshift": "REGR_SLOPE(x, y)",
+                "snowflake": "REGR_SLOPE(x, y)",
+                "spark": "REGR_SLOPE(x, y)",
+                "teradata": "REGR_SLOPE(x, y)",
+                "trino": "REGR_SLOPE(x, y)",
+            },
+        )
+
     def test_translate(self):
         self.validate_all(
             "TRANSLATE(x, y, z)",

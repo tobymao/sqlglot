@@ -7316,7 +7316,7 @@ class MD5NumberUpper64(Func):
 
 
 class Median(AggFunc):
-    pass
+    arg_types = {"this": True}
 
 
 class Min(AggFunc):

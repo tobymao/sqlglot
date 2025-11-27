@@ -117,6 +117,7 @@ EXPRESSION_METADATA = {
             exp.Substring,
             exp.TimeSlice,
             exp.TimestampTrunc,
+            exp.Median,
         }
     },
     **{

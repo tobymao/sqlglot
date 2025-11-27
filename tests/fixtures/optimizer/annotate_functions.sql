@@ -3564,6 +3564,22 @@ DOUBLE;
 APPROXIMATE_JACCARD_INDEX(tbl.variant_col);
 DOUBLE;
 
+# dialect: snowflake
+MIN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MIN(tbl.int_col);
+INT;
+
+# dialect: snowflake
+MIN(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+MIN(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(10, 2);
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

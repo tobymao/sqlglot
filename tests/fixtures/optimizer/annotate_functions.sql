@@ -2745,6 +2745,10 @@ REGR_AVGY(tbl.double_col, tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+REGR_SLOPE(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 REGR_VALX(1.0, 2.0);
 DOUBLE;
 
@@ -3422,7 +3426,7 @@ BIGINT;
 
 # dialect: snowflake
 MAX(tbl.int_col);
-INT;
+INT
 
 # dialect: snowflake
 MAX(tbl.double_col);

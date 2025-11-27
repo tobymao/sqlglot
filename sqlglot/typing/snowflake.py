@@ -209,6 +209,7 @@ EXPRESSION_METADATA = {
             exp.MonthsBetween,
             exp.RegrAvgx,
             exp.RegrAvgy,
+            exp.RegrSlope,
             exp.RegrValx,
             exp.RegrValy,
             exp.Sin,

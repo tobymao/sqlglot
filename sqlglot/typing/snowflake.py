@@ -100,7 +100,6 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     return expression
 
 
-
 def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     """Annotate MEDIAN function with correct return type.
 

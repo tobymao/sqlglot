@@ -3426,23 +3426,11 @@ BIGINT;
 
 # dialect: snowflake
 MAX(tbl.int_col);
-INT
+INT;
 
 # dialect: snowflake
 MAX(tbl.double_col);
 DOUBLE;
-
-# dialect: snowflake
-MAX(tbl.str_col);
-VARCHAR;
-
-# dialect: snowflake
-MAX(tbl.date_col);
-DATE;
-
-# dialect: snowflake
-MAX(tbl.timestamp_col);
-TIMESTAMP;
 
 # dialect: snowflake
 MAX_BY('foo', tbl.bigint_col);

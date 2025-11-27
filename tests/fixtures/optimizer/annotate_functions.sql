@@ -3417,6 +3417,30 @@ PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 
 # dialect: snowflake
+MAX(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+MAX(tbl.int_col);
+INT;
+
+# dialect: snowflake
+MAX(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MAX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+MAX(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MAX(tbl.timestamp_col);
+TIMESTAMP;
+
+# dialect: snowflake
 MAX_BY('foo', tbl.bigint_col);
 VARCHAR;
 

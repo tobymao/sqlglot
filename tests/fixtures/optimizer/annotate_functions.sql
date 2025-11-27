@@ -2745,10 +2745,6 @@ REGR_AVGY(tbl.double_col, tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
-REGR_SLOPE(tbl.double_col, tbl.double_col);
-DOUBLE;
-
-# dialect: snowflake
 REGR_VALX(1.0, 2.0);
 DOUBLE;
 
@@ -3431,6 +3427,18 @@ INT;
 # dialect: snowflake
 MAX(tbl.double_col);
 DOUBLE;
+
+# dialect: snowflake
+MAX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+MAX(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MAX(tbl.timestamp_col);
+TIMESTAMP;
 
 # dialect: snowflake
 MAX_BY('foo', tbl.bigint_col);

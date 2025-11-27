@@ -100,6 +100,32 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     return expression
 
 
+
+def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
+    """Annotate MEDIAN function with correct return type.
+
+    Based on Snowflake documentation: "Returns a FLOAT or DECIMAL (fixed-point) number, depending upon the input."
+
+    MEDIAN returns:
+    - DECIMAL types preserve their precision (DECIMAL(10,2) -> DECIMAL(10,2))
+    - Other numeric types return DOUBLE (INT, BIGINT, FLOAT -> DOUBLE)
+    """
+    # First annotate the argument to get its type
+    expression = self._annotate_by_args(expression, "this")
+
+    # Get the input type
+    input_type = expression.this.type
+
+    # If input is DECIMAL, preserve the precision per Snowflake behavior
+    if input_type and input_type.is_type(exp.DataType.Type.DECIMAL):
+        self._set_type(expression, input_type)
+    else:
+        # For all other types (INT, BIGINT, FLOAT, NULL, etc.), return DOUBLE
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -117,7 +143,6 @@ EXPRESSION_METADATA = {
             exp.Substring,
             exp.TimeSlice,
             exp.TimestampTrunc,
-            exp.Median,
         }
     },
     **{
@@ -311,6 +336,7 @@ EXPRESSION_METADATA = {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
     },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
+    exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},

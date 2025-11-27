@@ -2649,12 +2649,8 @@ MEDIAN(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
-MEDIAN(tbl.int_col);
-INT;
-
-# dialect: snowflake
-MEDIAN(tbl.bigint_col);
-BIGINT;
+MEDIAN(tbl.bigint_col) OVER (PARTITION BY 1);
+DOUBLE;
 
 # dialect: snowflake
 MEDIAN(CAST(100 AS DECIMAL(10,2)));

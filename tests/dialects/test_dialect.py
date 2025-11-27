@@ -858,7 +858,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TIME_TO_STR(x, '%Y-%m-%d')",
             write={
-                "bigquery": "FORMAT_DATE('%Y-%m-%d', x)",
+                "bigquery": "FORMAT_DATE('%F', x)",
                 "drill": "TO_CHAR(x, 'yyyy-MM-dd')",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",

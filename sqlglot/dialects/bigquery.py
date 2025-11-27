@@ -382,6 +382,9 @@ class BigQuery(Dialect):
         "%D": "%m/%d/%y",
         "%E6S": "%S.%f",
         "%e": "%-d",
+        "%F": "%Y-%m-%d",
+        "%T": "%H:%M:%S",
+        "%c": "%a %b %-d %H:%M:%S %Y",
     }
 
     FORMAT_MAPPING = {

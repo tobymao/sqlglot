@@ -3580,6 +3580,10 @@ BIGINT;
 MIN(CAST(100 AS DECIMAL(10,2)));
 DECIMAL(10, 2);
 
+# dialect: snowflake
+MIN(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

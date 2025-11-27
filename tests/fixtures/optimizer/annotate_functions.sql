@@ -2754,7 +2754,7 @@ DOUBLE;
 
 # dialect: snowflake
 REGR_SLOPE(tbl.int_col, tbl.int_col);
-DOUBLE;
+INT;
 
 # dialect: snowflake
 REGR_VALX(1.0, 2.0);

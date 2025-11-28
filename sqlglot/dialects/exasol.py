@@ -16,8 +16,9 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, find_new_name
 from sqlglot.tokens import TokenType
+from sqlglot.optimizer.scope import build_scope
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -165,6 +166,55 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
     length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
     return self.func("SUBSTR", haystack_sql, direction, length)
+
+
+def _qualify_unscoped_star(node: exp.Expression) -> exp.Expression:
+    """
+    Exasol doesn't support a bare * alongside other select items, so we rewrite it
+    Rewrite: SELECT *, <other> FROM <Table>
+    Into: SELECT T.*, <other> FROM <Table> AS T
+    """
+
+    if not isinstance(node, exp.Select):
+        return node
+    items = list(node.expressions or [])
+
+    has_bare_star = any(isinstance(x, exp.Star) and x.this is None for x in items)
+
+    if not has_bare_star or len(items) <= 1:
+        return node
+
+    from_ = node.args.get("from_")
+
+    if not from_ or not isinstance(from_.this, exp.Table):
+        return node
+
+    table = from_.this
+    alias_node = table.args.get("alias")
+    scope = build_scope(node)
+    if not scope:
+        return node
+
+    if alias_node and alias_node.name:
+        alias_name = alias_node.name
+
+    else:
+        taken_source_name = set(scope.sources)
+        alias_name = find_new_name(taken_source_name, "T")
+        table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_name, quoted=False)))
+
+    qualified_items: list[exp.Expression] = []
+
+    for it in items:
+        if isinstance(it, exp.Star) and it.this is None:
+            qualified_items.append(
+                exp.Column(this=exp.Star(), table=exp.to_identifier(alias_name, quoted=False))
+            )
+        else:
+            qualified_items.append(it)
+    node.set("expressions", qualified_items)
+
+    return node
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -425,6 +475,7 @@ class Exasol(Dialect):
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
             exp.Select: transforms.preprocess(
                 [
+                    _qualify_unscoped_star,
                     _add_local_prefix_for_aliases,
                 ]
             ),

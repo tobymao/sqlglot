@@ -10,6 +10,10 @@ class TestExasol(Validator):
             "SELECT 1 AS [x]",
             'SELECT 1 AS "x"',
         )
+        self.validate_identity(
+            "SELECT *, 1 FROM TEST",
+            "SELECT T.*, 1 FROM TEST AS T",
+        )
 
     def test_type_mappings(self):
         self.validate_identity("CAST(x AS BLOB)", "CAST(x AS VARCHAR)")

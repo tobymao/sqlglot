@@ -175,6 +175,7 @@ EXPRESSION_METADATA = {
             exp.SHA,
             exp.SHA2,
             exp.SHA1Digest,
+            exp.SHA2Digest,
             exp.Unhex,
         }
     },

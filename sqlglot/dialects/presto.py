@@ -31,6 +31,7 @@ from sqlglot.dialects.dialect import (
     sequence_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
+    sha2_digest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -547,6 +548,7 @@ class Presto(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA2Digest: sha2_digest_sql,
         }
 
         RESERVED_KEYWORDS = {

@@ -62,7 +62,7 @@ class TestBigQuery(Validator):
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x))")
         self.validate_identity("ARRAY_CONCAT_AGG(x)")
-        self.validate_identity("PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)")
+        self.validate_identity("PARSE_TIMESTAMP('%FT%H:%M:%E*S%z', x)")
         self.validate_identity("SELECT ARRAY_CONCAT([1])")
         self.validate_identity("SELECT * FROM READ_CSV('bla.csv')")
         self.validate_identity("CAST(x AS STRUCT<list ARRAY<INT64>>)")
@@ -199,7 +199,7 @@ class TestBigQuery(Validator):
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT JSON_EXTRACT(c, '$.x-y') FROM t"""
         ).selects[0].expression.assert_is(exp.JSONPath)
         self.validate_identity(
-            "SELECT FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', CURRENT_TIMESTAMP(), 'Europe/Berlin') AS ts"
+            "SELECT FORMAT_TIMESTAMP('%F %T', CURRENT_TIMESTAMP(), 'Europe/Berlin') AS ts"
         )
         self.validate_identity(
             "SELECT cars, apples FROM some_table PIVOT(SUM(total_counts) FOR products IN ('general.cars' AS cars, 'food.apples' AS apples))"
@@ -427,7 +427,7 @@ LANGUAGE js AS
         self.validate_all(
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
-                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "bigquery": "PARSE_TIMESTAMP('%FT%T.%f%z', x)",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
@@ -501,7 +501,7 @@ LANGUAGE js AS
         self.validate_all(
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
-                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "bigquery": "PARSE_TIMESTAMP('%FT%T.%f%z', x)",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
@@ -2890,7 +2890,7 @@ OPTIONS (
         self.validate_all(
             "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', DATETIME '2023-12-25 15:30:00')",
             write={
-                "bigquery": "SELECT FORMAT_DATETIME('%Y%m%d %H:%M:%S', CAST('2023-12-25 15:30:00' AS DATETIME))",
+                "bigquery": "SELECT FORMAT_DATETIME('%Y%m%d %T', CAST('2023-12-25 15:30:00' AS DATETIME))",
                 "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%Y%m%d %H:%M:%S')",
             },
         )
@@ -2899,6 +2899,20 @@ OPTIONS (
             write={
                 "bigquery": "SELECT FORMAT_DATETIME('%D', '2023-12-25 15:30:00')",
                 "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%m/%d/%y')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%F %T', DATETIME '2023-10-15 14:30:45')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%F %T', CAST('2023-10-15 14:30:45' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST('2023-10-15 14:30:45' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%c', DATETIME '2008-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%c', CAST('2008-12-25 15:30:00' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST('2008-12-25 15:30:00' AS TIMESTAMP), '%a %b %-d %H:%M:%S %Y')",
             },
         )
         self.validate_all(

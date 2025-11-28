@@ -210,6 +210,7 @@ EXPRESSION_METADATA = {
             exp.Normal,
             exp.RegrAvgx,
             exp.RegrAvgy,
+            exp.RegrSlope,
             exp.RegrValx,
             exp.RegrValy,
             exp.Sin,

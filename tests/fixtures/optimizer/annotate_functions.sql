@@ -3169,6 +3169,22 @@ SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND');
 BOOLEAN;
 
 # dialect: snowflake
+SEARCH_IP(col, '192.0.2.1');
+BOOLEAN;
+
+# dialect: snowflake
+SEARCH_IP(ipv4_target, '203.0.113.5');
+BOOLEAN;
+
+# dialect: snowflake
+SEARCH_IP(col, '192.0.2.1/24');
+BOOLEAN;
+
+# dialect: snowflake
+SEARCH_IP(col, '2001:db8:85a3::');
+BOOLEAN;
+
+# dialect: snowflake
 STRTOK_TO_ARRAY('a,b,c', ',');
 ARRAY;
 

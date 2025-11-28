@@ -33,6 +33,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 * [Documentation](#documentation)
 * [Run Tests and Lint](#run-tests-and-lint)
 * [Benchmarks](#benchmarks)
+* [Using as autoformatter in pre-commit](#using-as-autoformatter-in-pre-commit)
 * [Optional Dependencies](#optional-dependencies)
 * [Supported Dialects](#supported-dialects)
 
@@ -548,6 +549,16 @@ SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify litera
 
 ```sql
 x + interval '1' month
+```
+
+## Using as autoformatter in pre-commit
+
+Add to your `.pre-commit-config.yaml`:
+```
+  - repo: https://github.com/tobymao/sqlglot
+    rev: v28.0.0
+    hooks:
+      - id: sqlglotfmt
 ```
 
 ## Supported Dialects

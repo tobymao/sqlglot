@@ -5821,6 +5821,12 @@ class CombinedParameterizedAgg(ParameterizedAgg):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/hash_agg
+class HashAgg(AggFunc):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/hll
 # https://docs.aws.amazon.com/redshift/latest/dg/r_HLL_function.html
 class Hll(AggFunc):

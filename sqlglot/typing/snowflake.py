@@ -310,6 +310,11 @@ EXPRESSION_METADATA = {
     exp.GreatestIgnoreNulls: {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
     },
+    exp.HashAgg: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DataType.build("NUMBER(19, 0)", dialect="snowflake")
+        )
+    },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},

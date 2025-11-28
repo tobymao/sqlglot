@@ -7349,7 +7349,7 @@ class Normalize(Func):
 
 
 class Normal(Func):
-    arg_types = {"this": True, "expression": True, "gen": True}
+    arg_types = {"this": True, "stddev": True, "gen": True}
 
 
 class Overlay(Func):

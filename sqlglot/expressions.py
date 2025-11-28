@@ -2320,7 +2320,7 @@ class ColumnPrefix(Expression):
 
 
 class PrimaryKey(Expression):
-    arg_types = {"expressions": True, "options": False, "include": False}
+    arg_types = {"this": False, "expressions": True, "options": False, "include": False}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html

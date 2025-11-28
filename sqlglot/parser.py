@@ -1700,14 +1700,16 @@ class Parser(metaclass=_Parser):
             else:
                 chunks[-1].append(token)
 
-        expressions = []
+        expressions: t.List[t.Optional[exp.Expression]] = []
 
         for tokens in chunks:
             self._index = -1
             self._tokens = tokens
             self._advance()
 
-            expressions.append(parse_method(self))
+            stmt = parse_method(self)
+            if stmt:
+                expressions.append(stmt)
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")

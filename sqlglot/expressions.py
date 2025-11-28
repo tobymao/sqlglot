@@ -7348,6 +7348,10 @@ class Normalize(Func):
     arg_types = {"this": True, "form": False, "is_casefold": False}
 
 
+class Normal(Func):
+    arg_types = {"this": True, "stddev": True, "gen": True}
+
+
 class Overlay(Func):
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 

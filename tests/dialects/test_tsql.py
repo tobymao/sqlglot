@@ -2399,6 +2399,7 @@ FROM OPENJSON(@json) WITH (
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+
     def test_odbc_date_literals(self):
         for value, cls in [
             ("{d'2024-01-01'}", exp.Date),

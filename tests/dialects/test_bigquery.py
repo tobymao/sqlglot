@@ -3394,6 +3394,7 @@ OPTIONS (
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+
     def test_concat(self):
         self.validate_all(
             "SELECT CONCAT('T.P.', ' ', 'Bar') AS author",

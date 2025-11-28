@@ -3597,6 +3597,7 @@ FROM SEMANTIC_VIEW(
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Localtime)
+
     def test_set_item_kind_attribute(self):
         expr = parse_one("ALTER SESSION SET autocommit = FALSE", read="snowflake")
         set_item = expr.find(exp.SetItem)

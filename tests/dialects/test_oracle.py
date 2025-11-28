@@ -806,6 +806,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+
     def test_pseudocolumns(self):
         ast = self.validate_identity(
             "WITH t AS (SELECT 1 AS COL) SELECT col, ROWID FROM t WHERE ROWNUM = 1"

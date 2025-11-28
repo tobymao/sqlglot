@@ -1528,6 +1528,7 @@ LIFETIME(MIN 0 MAX 0)""",
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+
     def test_to_start_of(self):
         for unit in ("SECOND", "DAY", "YEAR"):
             self.validate_all(

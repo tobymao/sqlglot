@@ -1661,6 +1661,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Localtime)
+
     def test_interval_span(self):
         for time_str in ["1 01:", "1 01:00", "1.5 01:", "-0.25 01:"]:
             with self.subTest(f"Postgres INTERVAL span, omitted DAY TO MINUTE unit: {time_str}"):

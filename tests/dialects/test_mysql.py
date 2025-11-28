@@ -1518,6 +1518,7 @@ COMMENT='客户账户表'"""
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Localtime)
+
     def test_valid_interval_units(self):
         for unit in (
             "SECOND_MICROSECOND",

@@ -16,6 +16,9 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 
+[project.scripts]
+sqlglotfmt = "sqlglot.sqlglotfmt:main"
+
 [project.urls]
 Homepage = "https://sqlglot.com/"
 Documentation = "https://sqlglot.com/sqlglot.html"

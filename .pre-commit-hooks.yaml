@@ -1,0 +1,6 @@
+- id: sqlglotfmt
+  name: sqlglotfmt
+  description: Pretty-print SQL files
+  entry: sqlglotfmt
+  language: python
+  files: '\.sql$'

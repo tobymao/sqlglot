@@ -2738,6 +2738,19 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         search_mode = search_ast.args.get("search_mode")
         self.assertIsNotNone(search_mode)
 
+        # SEARCH_IP tests
+        self.validate_identity("SELECT SEARCH_IP(col, '192.0.2.1')")
+        self.validate_identity("SELECT SEARCH_IP(ipv4_target, '203.0.113.5')")
+        self.validate_identity("SELECT SEARCH_IP(col, '192.0.2.1/24')")
+        self.validate_identity("SELECT SEARCH_IP(col, '2001:db8:85a3::')")
+        self.validate_identity("SELECT * FROM ipt WHERE SEARCH_IP(ipv4_target, '203.0.113.5')")
+
+        # AST validation for SEARCH_IP
+        ast = self.validate_identity("SELECT SEARCH_IP(col, '192.0.2.1')")
+        search_ip_ast = ast.find(exp.SearchIp)
+        self.assertIsNotNone(search_ip_ast)
+        self.assertEqual(list(search_ip_ast.args), ["this", "expression"])
+
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l ')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")

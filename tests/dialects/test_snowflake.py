@@ -84,6 +84,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT NVL2(col1, col2, col3)")
         self.validate_identity("SELECT NVL(col1, col2)", "SELECT COALESCE(col1, col2)")
         self.validate_identity("SELECT CHR(8364)")
+        self.validate_identity('SELECT CHECK_JSON(\'{"key": "value"}\')')
+        self.validate_identity(
+            "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>')"
+        )
+        self.validate_identity(
+            "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>', TRUE)"
+        )
         self.validate_identity("SELECT COMPRESS('Hello World', 'ZLIB')")
         self.validate_identity("SELECT DECOMPRESS_BINARY('compressed_data', 'SNAPPY')")
         self.validate_identity("SELECT DECOMPRESS_STRING('compressed_data', 'ZSTD')")

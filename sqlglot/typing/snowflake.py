@@ -262,6 +262,8 @@ EXPRESSION_METADATA = {
             exp.AISummarizeAgg,
             exp.Base64DecodeString,
             exp.Base64Encode,
+            exp.CheckJson,
+            exp.CheckXml,
             exp.Chr,
             exp.Collate,
             exp.Collation,

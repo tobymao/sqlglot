@@ -1885,6 +1885,18 @@ CHR(8364);
 VARCHAR;
 
 # dialect: snowflake
+CHECK_JSON('{"key": "value", "array": [1, 2, 3]}');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>', TRUE);
+VARCHAR;
+
+# dialect: snowflake
 COLLATE('hello', 'utf8');
 VARCHAR;
 

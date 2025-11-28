@@ -6198,6 +6198,14 @@ class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
 
+class CheckJson(Func):
+    arg_types = {"this": True}
+
+
+class CheckXml(Func):
+    arg_types = {"this": True, "disable_auto_convert": False}
+
+
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/String-Operators-and-Functions/TRANSLATE/TRANSLATE-Function-Syntax
 class TranslateCharacters(Expression):
     arg_types = {"this": True, "expression": True, "with_error": False}

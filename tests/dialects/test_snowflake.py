@@ -1872,6 +1872,32 @@ class TestSnowflake(Validator):
                 "duckdb": UnsupportedError,
             },
         )
+        self.validate_all(
+            "TO_DECFLOAT(expr)",
+            write={
+                "snowflake": "TO_DECFLOAT(expr)",
+                "duckdb": "CAST(expr AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "TO_DECFLOAT(expr, fmt)",
+            write={
+                "snowflake": "TO_DECFLOAT(expr, fmt)",
+                "duckdb": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "TRY_TO_DECFLOAT(expr)",
+            write={
+                "snowflake": "TRY_TO_DECFLOAT(expr)",
+            },
+        )
+        self.validate_all(
+            "TRY_TO_DECFLOAT(expr, fmt)",
+            write={
+                "snowflake": "TRY_TO_DECFLOAT(expr, fmt)",
+            },
+        )
 
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
@@ -3147,6 +3173,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
     def test_decfloat(self):
         self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
+<<<<<<< HEAD
+=======
+        self.validate_identity("SELECT CAST(x AS DECFLOAT(34))")
+>>>>>>> 6310bc8d2 (Added DECFLOAT type implementation)
         self.validate_identity("CREATE TABLE t (x DECFLOAT)")
 
     def test_copy(self):

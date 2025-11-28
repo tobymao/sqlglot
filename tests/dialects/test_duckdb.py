@@ -1825,3 +1825,10 @@ class TestDuckDB(Validator):
         self.validate_identity("FORCE INSTALL httpfs FROM community")
         self.validate_identity("FORCE INSTALL httpfs FROM 'https://extensions.duckdb.org'")
         self.validate_identity("FORCE CHECKPOINT db", check_command_warning=True)
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)

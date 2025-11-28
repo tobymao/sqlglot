@@ -2377,3 +2377,10 @@ FROM OPENJSON(@json) WITH (
         self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
             exp.Alter
         ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)

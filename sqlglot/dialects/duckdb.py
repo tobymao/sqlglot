@@ -719,6 +719,7 @@ class DuckDB(Dialect):
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),

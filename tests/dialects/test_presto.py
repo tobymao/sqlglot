@@ -1360,3 +1360,10 @@ MATCH_RECOGNIZE (
                 "oracle": "BITWISE_XOR_AGG(x)",
             },
         )
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)

@@ -74,6 +74,7 @@ class Trino(Presto):
             e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LocationProperty: lambda self, e: self.property_sql(e),
             exp.Merge: merge_without_target_sql,
             exp.Select: transforms.preprocess(

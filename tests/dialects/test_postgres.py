@@ -1637,3 +1637,10 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     self.validate_identity(
                         f"BEGIN {keyword} {level}, {level}", f"BEGIN {level}, {level}"
                     ).assert_is(exp.Transaction)
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)

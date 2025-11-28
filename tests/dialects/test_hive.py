@@ -930,3 +930,10 @@ class TestHive(Validator):
                         "duckdb": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
                     },
                 )
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)

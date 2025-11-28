@@ -632,6 +632,7 @@ class Postgres(Dialect):
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.LastDay: no_last_day_sql,
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Max: max_or_greatest,

@@ -486,6 +486,7 @@ class Presto(Dialect):
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN_DISTANCE")
             ),
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,

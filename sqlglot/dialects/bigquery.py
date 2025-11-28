@@ -747,6 +747,7 @@ class BigQuery(Dialect):
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("LOCALTIME")
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True

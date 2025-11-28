@@ -6100,7 +6100,7 @@ class CurrentUser(Func):
     arg_types = {"this": False}
 
 
-class LocalTime(Func):
+class Localtime(Func):
     arg_types = {"this": False}
 
 

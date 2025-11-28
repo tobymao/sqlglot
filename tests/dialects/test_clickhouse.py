@@ -1500,3 +1500,10 @@ LIFETIME(MIN 0 MAX 0)""",
                     "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)

@@ -100,6 +100,8 @@ class Oracle(Dialect):
             "VARCHAR2": TokenType.VARCHAR,
         }
 
+        KEYWORDS.pop("LOCALTIME")
+
     class Parser(parser.Parser):
         WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
         VALUES_FOLLOWED_BY_PAREN = False

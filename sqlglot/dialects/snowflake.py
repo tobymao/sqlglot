@@ -1364,6 +1364,7 @@ class Snowflake(Dialect):
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost")(
                 rename_func("EDITDISTANCE")
             ),
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LocationProperty: lambda self, e: f"LOCATION={self.sql(e, 'this')}",
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),

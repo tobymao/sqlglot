@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -146,3 +147,10 @@ class TestTrino(Validator):
             self.validate_identity(
                 f"""SELECT JSON_VALUE({json_doc}, 'lax $.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
             )
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)

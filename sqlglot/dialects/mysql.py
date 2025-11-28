@@ -758,6 +758,7 @@ class MySQL(Dialect):
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.Length: length_or_char_length_sql,
+            exp.Localtime: lambda self, e: "LOCALTIME",
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Max: max_or_greatest,

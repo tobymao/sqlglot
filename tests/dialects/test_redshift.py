@@ -713,3 +713,10 @@ FROM (
                 "postgres": "SELECT * FROM t FETCH FIRST 1 ROWS ONLY",
             },
         )
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)

@@ -6289,6 +6289,10 @@ class CurrentUser(Func):
     arg_types = {"this": False}
 
 
+class Localtime(Func):
+    arg_types = {"this": False}
+
+
 class UtcDate(Func):
     arg_types = {}
 

@@ -308,3 +308,10 @@ class TestAthena(Validator):
         assert isinstance(parsed.this, exp.Schema)
         assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionedByBucket))
         assert next(n for n in parsed.this.expressions if isinstance(n, exp.PartitionByTruncate))
+
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)

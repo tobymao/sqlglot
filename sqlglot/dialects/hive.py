@@ -304,6 +304,8 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
+        KEYWORDS.pop("LOCALTIME")
+
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False

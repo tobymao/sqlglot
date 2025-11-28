@@ -2393,6 +2393,13 @@ FROM OPENJSON(@json) WITH (
             exp.Alter
         ).args.get("actions")[0].args.get("collate").this.assert_is(exp.Var)
 
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)
+
     def test_odbc_date_literals(self):
         for value, cls in [
             ("{d'2024-01-01'}", exp.Date),

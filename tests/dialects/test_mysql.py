@@ -1512,6 +1512,13 @@ COMMENT='客户账户表'"""
         self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
         self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)
 
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)
+
     def test_valid_interval_units(self):
         for unit in (
             "SECOND_MICROSECOND",

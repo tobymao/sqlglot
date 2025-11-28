@@ -800,6 +800,13 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "MERGE INTO my_table USING (SELECT * FROM something) source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
         )
 
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Column)
+
     def test_pseudocolumns(self):
         ast = self.validate_identity(
             "WITH t AS (SELECT 1 AS COL) SELECT col, ROWID FROM t WHERE ROWNUM = 1"

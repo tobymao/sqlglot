@@ -577,6 +577,7 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
         }
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("LOCALTIME")
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
 

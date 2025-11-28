@@ -1368,6 +1368,13 @@ MATCH_RECOGNIZE (
             },
         )
 
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)
+
     def test_initcap(self):
         self.validate_all(
             "INITCAP(col)",

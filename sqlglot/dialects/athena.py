@@ -285,4 +285,5 @@ class _TrinoGenerator(Trino.Generator):
         **Trino.Generator.TRANSFORMS,
         exp.PartitionedByProperty: _partitioned_by_property_sql,
         exp.LocationProperty: _location_property_sql,
+        exp.Localtime: lambda self, e: "LOCALTIME",
     }

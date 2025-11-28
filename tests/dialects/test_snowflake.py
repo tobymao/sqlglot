@@ -3592,6 +3592,13 @@ FROM SEMANTIC_VIEW(
             "SELECT * FROM TABLE(model_trained_with_labeled_data!DETECT_ANOMALIES(INPUT_DATA => TABLE(view_with_data_to_analyze), TIMESTAMP_COLNAME => 'date', TARGET_COLNAME => 'sales', CONFIG_OBJECT => OBJECT_CONSTRUCT('prediction_interval', 0.99)))"
         )
 
+    def test_localtime(self):
+        expr = self.validate_identity(
+            "SELECT LOCALTIME",
+            write_sql="SELECT LOCALTIME",
+        )
+        expr.expressions[0].assert_is(exp.Localtime)
+
     def test_set_item_kind_attribute(self):
         expr = parse_one("ALTER SESSION SET autocommit = FALSE", read="snowflake")
         set_item = expr.find(exp.SetItem)

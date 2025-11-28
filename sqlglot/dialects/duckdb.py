@@ -249,9 +249,54 @@ def _implicit_datetime_cast(
     return arg
 
 
+def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> exp.Expression:
+    """
+    Build DATE_TRUNC expression for week boundaries with custom start day.
+    Formula: shift = 1 - start_dow, then DATE_TRUNC('week', date + INTERVAL shift DAY)
+    """
+    if start_dow == 1:
+        # No shift needed for Monday-based weeks (ISO standard)
+        return exp.DateTrunc(unit=exp.var("week"), this=date_expr)
+
+    # Shift date to align week boundaries with ISO Monday
+    shift_days = 1 - start_dow
+    shifted_date = exp.DateAdd(
+        this=date_expr,
+        expression=exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY")),
+    )
+
+    return exp.DateTrunc(unit=exp.var("week"), this=shifted_date)
+
+
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    """
+    Generate DATE_DIFF SQL for DuckDB using DATE_TRUNC-based week alignment.
+
+    Note: When week start day is dynamic (from a column), week_start will be None
+    and we fall back to standard DATE_DIFF, since compile-time offsets are required.
+    """
+    from sqlglot.dialects.dialect import extract_week_unit_info
+
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
+    unit = expression.args.get("unit")
+
+    # Extract week start day; returns None if day is dynamic (column reference)
+    week_start = extract_week_unit_info(unit)
+    if week_start and this and expr:
+        _, start_dow = week_start
+
+        # Build truncated week boundary expressions
+        truncated_this = _build_week_trunc_expression(this, start_dow)
+        truncated_expr = _build_week_trunc_expression(expr, start_dow)
+
+        # Calculate week difference
+        day_diff = exp.DateDiff(
+            this=truncated_this, expression=truncated_expr, unit=exp.Literal.string("day")
+        )
+        result = exp.IntDiv(this=day_diff, expression=exp.Literal.number(7))
+
+        return self.sql(result)
 
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 

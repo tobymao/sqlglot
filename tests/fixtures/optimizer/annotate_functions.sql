@@ -1917,6 +1917,14 @@ COALESCE(TRUE, FALSE);
 BOOLEAN;
 
 # dialect: snowflake
+COUNT(*);
+BIGINT;
+
+# dialect: snowflake
+COUNT(DISTINCT tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
 BINARY;
 

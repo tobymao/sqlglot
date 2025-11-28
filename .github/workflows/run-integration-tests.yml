@@ -1,0 +1,121 @@
+name: Run Integration Tests
+
+on:
+  # note: the issue_comment event (PR's are issues) will only run the version of this workflow committed to 'main'
+  # this makes it impossible to properly test issue_comment triggers in a PR
+  # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#issue_comment
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issue_comment' &&
+       contains(github.event.comment.body, '/integration-test') &&
+       github.event.issue.pull_request) ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.body, '/integration-test'))
+    steps:
+      - name: Print debugging info
+        run: |
+          cat <<EOF
+            Github event name: ${{ github.event_name }}
+
+            Github event ${{ toJSON(github.event) }}
+
+            Github event comment body: ${{ github.event.comment.body }}
+
+            Github event pr body: ${{ github.event.pull_request.body }}
+
+            Generic Number: ${{ github.event.number }}
+
+            PR number: ${{ github.event.pull_request.number }}
+
+            Issue number: ${{ github.event.issue.number }}
+
+            SHA: ${{ github.sha }}
+
+            Head Ref ${{ github.head_ref }}
+
+            Ref Name: ${{ github.ref_name }}
+          EOF
+      - name: Acquire credentials
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.INTEGRATION_TEST_CLIENT_ID }}
+          private-key: ${{ secrets.INTEGRATION_TEST_PRIVATE_KEY }}
+          owner: fivetran
+          repositories: sqlglot-integration-tests
+
+      - name: Run integration tests
+        id: run-remote
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -e
+
+          gh workflow run run-tests.yml \
+            --repo fivetran/sqlglot-integration-tests \
+            --ref main \
+            -f sqlglot_ref=${{ github.sha }} \
+            -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
+            -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }}
+
+          echo "Triggered workflow"
+
+          # wait a bit for the run to start
+          sleep 10
+
+          # there is a bit of a race condition here. this just grabs the latest
+          # run and hopes it's the one we just triggered.
+          # inexplicably, the `gh workflow run` API doesnt return the run id...
+          RUN_ID=$(gh run list \
+              --repo fivetran/sqlglot-integration-tests \
+              --workflow run-tests.yml \
+              --user sqlglot-integration-tests \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId')
+
+          echo "Using Run ID: ${RUN_ID}"
+          echo "remote_run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+          echo "Waiting for completion"
+          gh run watch $RUN_ID \
+            --repo fivetran/sqlglot-integration-tests \
+            --interval 10 \
+            --compact \
+            --exit-status
+
+          # Fail the workflow on this side if the remote workflow fails
+          exit $?
+
+      - name: Fetch outputs
+        id: fetch-outputs
+        uses: actions/download-artifact@v5
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          repository: fivetran/sqlglot-integration-tests
+          run-id: ${{ steps.run-remote.outputs.remote_run_id }}
+          name: summary
+
+      - name: Write summary as comment
+        uses: actions/github-script@v8
+        # only do this when on PR branches, main builds dont have anywhere to write comments
+        if: github.event_name == 'pull_request' || github.event.issue.pull_request
+        with:
+          script: |
+            // summary.json is downloaded from the remote workflow in the previous step
+            const summary = require("./summary.json")
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary.msg
+            })

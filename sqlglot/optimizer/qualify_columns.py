@@ -54,22 +54,17 @@ def qualify_columns(
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = Dialect.get_or_raise(schema.dialect)
+    dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
-    bigquery = dialect == "bigquery"
 
     for scope in traverse_scope(expression):
+        if dialect.PREFER_CTE_ALIAS_COLUMN:
+            pushdown_cte_alias_columns(scope)
+
         scope_expression = scope.expression
         is_select = isinstance(scope_expression, exp.Select)
 
-        if is_select and scope_expression.args.get("connect"):
-            # In Snowflake / Oracle queries that have a CONNECT BY clause, one can use the LEVEL
-            # pseudocolumn, which doesn't belong to a table, so we change it into an identifier
-            scope_expression.transform(
-                lambda n: n.this if isinstance(n, exp.Column) and n.name == "LEVEL" else n,
-                copy=False,
-            )
-            scope.clear_cache()
+        _separate_pseudocolumns(scope, pseudocolumns)
 
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
         _pop_table_column_aliases(scope.ctes)
@@ -81,11 +76,15 @@ def qualify_columns(
                 scope,
                 resolver,
                 dialect,
-                expand_only_groupby=bigquery,
+                expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
             )
 
         _convert_columns_to_dots(scope, resolver)
-        _qualify_columns(scope, resolver, allow_partial_qualification=allow_partial_qualification)
+        _qualify_columns(
+            scope,
+            resolver,
+            allow_partial_qualification=allow_partial_qualification,
+        )
 
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
@@ -107,7 +106,7 @@ def qualify_columns(
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
         _expand_order_by_and_distinct_on(scope, resolver)
 
-        if bigquery:
+        if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
 
     return expression
@@ -123,7 +122,14 @@ def validate_qualify_columns(expression: E) -> E:
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
                 column = scope.external_columns[0]
                 for_table = f" for table: '{column.table}'" if column.table else ""
-                raise OptimizeError(f"Column '{column}' could not be resolved{for_table}")
+                line = column.this.meta.get("line")
+                col = column.this.meta.get("col")
+
+                error_msg = f"Column '{column}' could not be resolved{for_table}."
+                if line and col:
+                    error_msg += f" Line: {line}, Col: {col}"
+
+                raise OptimizeError(error_msg)
 
             if unqualified_columns and scope.pivots and scope.pivots[0].unpivot:
                 # New columns produced by the UNPIVOT can't be qualified, but there may be columns
@@ -138,6 +144,28 @@ def validate_qualify_columns(expression: E) -> E:
         raise OptimizeError(f"Ambiguous columns: {all_unqualified_columns}")
 
     return expression
+
+
+def _separate_pseudocolumns(scope: Scope, pseudocolumns: t.Set[str]) -> None:
+    if not pseudocolumns:
+        return
+
+    has_pseudocolumns = False
+    scope_expression = scope.expression
+
+    for column in scope.columns:
+        name = column.name.upper()
+        if name not in pseudocolumns:
+            continue
+
+        if name != "LEVEL" or (
+            isinstance(scope_expression, exp.Select) and scope_expression.args.get("connect")
+        ):
+            column.replace(exp.Pseudocolumn(**column.args))
+            has_pseudocolumns = True
+
+    if has_pseudocolumns:
+        scope.clear_cache()
 
 
 def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
@@ -162,7 +190,7 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
-            table_alias.args.pop("columns", None)
+            table_alias.set("columns", None)
 
 
 def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
@@ -239,7 +267,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
                 if join_table not in tables:
                     tables[join_table] = None
 
-        join.args.pop("using")
+        join.set("using", None)
         join.set("on", exp.and_(*conditions, copy=False))
 
     if column_tables:
@@ -274,16 +302,17 @@ def _expand_alias_refs(
     """
     expression = scope.expression
 
-    if not isinstance(expression, exp.Select) or dialect == "oracle":
+    if not isinstance(expression, exp.Select) or dialect.DISABLES_ALIAS_REF_EXPANSION:
         return
 
     alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
-    is_bigquery = dialect == "bigquery"
+    replaced = False
 
     def replace_columns(
         node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
     ) -> None:
+        nonlocal replaced
         is_group_by = isinstance(node, exp.Group)
         is_having = isinstance(node, exp.Having)
         if not node or (expand_only_groupby and not is_group_by):
@@ -315,12 +344,12 @@ def _expand_alias_refs(
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;
                 # If "HAVING x" is expanded to "HAVING max(x.b)", BQ would blindly replace the "x" reference with the projection MAX(x.b)
                 # i.e HAVING MAX(MAX(x.b).b), resulting in the error: "Aggregations of aggregations are not allowed"
-                if is_having and is_bigquery:
+                if is_having and dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     skip_replace = skip_replace or any(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif is_bigquery and (is_group_by or is_having):
+            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (is_group_by or is_having):
                 column_table = table.name if table else column.table
                 if column_table in projections:
                     # BigQuery's GROUP BY and HAVING clauses get confused if the column name
@@ -329,6 +358,7 @@ def _expand_alias_refs(
                     # We should not qualify "id" with "custom_fields" in either clause, since the aggregation shadows the actual table
                     # and we'd get the error: "Column custom_fields contains an aggregation function, which is not allowed in GROUP BY clause"
                     column.replace(exp.to_identifier(column.name))
+                    replaced = True
                     return
 
             if table and (not alias_expr or skip_replace):
@@ -339,7 +369,9 @@ def _expand_alias_refs(
                 ):
                     if literal_index:
                         column.replace(exp.Literal.number(i))
+                        replaced = True
                 else:
+                    replaced = True
                     column = column.replace(exp.paren(alias_expr))
                     simplified = simplify_parens(column, dialect)
                     if simplified is not column:
@@ -370,16 +402,15 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
 
-    # Snowflake allows alias expansion in the JOIN ... ON clause (and almost everywhere else)
-    # https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
-    if dialect == "snowflake":
+    if dialect.SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS:
         for join in expression.args.get("joins") or []:
             replace_columns(join)
 
-    scope.clear_cache()
+    if replaced:
+        scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: DialectType) -> None:
+def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
@@ -405,7 +436,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         for original, expanded in zip(
             modifier_expressions,
             _expand_positional_references(
-                scope, modifier_expressions, resolver.schema.dialect, alias=True
+                scope, modifier_expressions, resolver.dialect, alias=True
             ),
         ):
             for agg in original.find_all(exp.AggFunc):
@@ -427,7 +458,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: DialectType, alias: bool = False
+    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: Dialect, alias: bool = False
 ) -> t.List[exp.Expression]:
     new_nodes: t.List[exp.Expression] = []
     ambiguous_projections = None
@@ -441,7 +472,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if dialect == "bigquery":
+                if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to
@@ -482,10 +513,10 @@ def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
 
 def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     """
-    Converts `Column` instances that represent struct field lookup into chained `Dots`.
+    Converts `Column` instances that represent STRUCT or JSON field lookup into chained `Dots`.
 
-    Struct field lookups look like columns (e.g. "struct"."field"), but they need to be
-    qualified separately and represented as Dot(Dot(...(<table>.<column>, field1), field2, ...)).
+    These lookups may be parsed as columns (e.g. "col"."field"."field2"), but they need to be
+    normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
     converted = False
     for column in itertools.chain(scope.columns, scope.stars):
@@ -493,6 +524,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             continue
 
         column_table: t.Optional[str | exp.Identifier] = column.table
+        dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
             and column_table not in scope.sources
@@ -508,12 +540,20 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                 # The struct is already qualified, but we still need to change the AST
                 column_table = root
                 root, *parts = parts
+                was_qualified = True
             else:
                 column_table = resolver.get_table(root.name)
+                was_qualified = False
 
             if column_table:
                 converted = True
-                column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
+                new_column = exp.column(root, table=column_table)
+
+                if dot_parts:
+                    # Remove the actual column parts from the rest of dot parts
+                    new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
+
+                column.replace(exp.Dot.build([new_column, *parts]))
 
     if converted:
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in
@@ -521,7 +561,11 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualification: bool) -> None:
+def _qualify_columns(
+    scope: Scope,
+    resolver: Resolver,
+    allow_partial_qualification: bool,
+) -> None:
     """Disambiguate columns, ensuring each column specifies a source"""
     for column in scope.columns:
         column_table = column.table
@@ -545,15 +589,16 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
-            column_table = resolver.get_table(column_name)
+            column_table = resolver.get_table(column)
+
             if column_table:
                 column.set("table", column_table)
             elif (
-                resolver.schema.dialect == "bigquery"
+                resolver.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
             ):
-                # BigQuery allows tables to be referenced as columns, treating them as structs
+                # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
                 scope.replace(column, exp.TableColumn(this=column.this))
 
     for pivot in scope.pivots:
@@ -564,7 +609,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver, allow_partial_qualificati
                     column.set("table", column_table)
 
 
-def _expand_struct_stars_bigquery(
+def _expand_struct_stars_no_parens(
     expression: exp.Dot,
 ) -> t.List[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
@@ -618,7 +663,7 @@ def _expand_struct_stars_bigquery(
     return new_selections
 
 
-def _expand_struct_stars_risingwave(expression: exp.Dot) -> t.List[exp.Alias]:
+def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
     """[RisingWave] Expand/Flatten (<exp>.bar).*, where bar is a struct column"""
 
     # it is not (<sub_exp>).* pattern, which means we can't expand
@@ -695,7 +740,7 @@ def _expand_stars(
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
 
     coalesced_columns = set()
-    dialect = resolver.schema.dialect
+    dialect = resolver.dialect
 
     pivot_output_columns = None
     pivot_exclude_columns: t.Set[str] = set()
@@ -718,10 +763,9 @@ def _expand_stars(
             if not pivot_output_columns:
                 pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
-    is_bigquery = dialect == "bigquery"
-    is_risingwave = dialect == "risingwave"
-
-    if (is_bigquery or is_risingwave) and any(isinstance(col, exp.Dot) for col in scope.stars):
+    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+        isinstance(col, exp.Dot) for col in scope.stars
+    ):
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
@@ -738,13 +782,16 @@ def _expand_stars(
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
-            elif is_bigquery:
-                struct_fields = _expand_struct_stars_bigquery(expression)
+            elif (
+                dialect.SUPPORTS_STRUCT_STAR_EXPANSION
+                and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
+            ):
+                struct_fields = _expand_struct_stars_no_parens(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue
-            elif is_risingwave:
-                struct_fields = _expand_struct_stars_risingwave(expression)
+            elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
+                struct_fields = _expand_struct_stars_with_parens(expression)
                 if struct_fields:
                     new_selections.extend(struct_fields)
                     continue
@@ -760,7 +807,7 @@ def _expand_stars(
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
 
-            if pseudocolumns:
+            if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if not columns or "*" in columns:
@@ -814,7 +861,7 @@ def _expand_stars(
 def _add_except_columns(
     expression: exp.Expression, tables, except_columns: t.Dict[int, t.Set[str]]
 ) -> None:
-    except_ = expression.args.get("except")
+    except_ = expression.args.get("except_")
 
     if not except_:
         return
@@ -894,36 +941,25 @@ def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool
     )  # type: ignore
 
 
-def pushdown_cte_alias_columns(expression: exp.Expression) -> exp.Expression:
+def pushdown_cte_alias_columns(scope: Scope) -> None:
     """
     Pushes down the CTE alias columns into the projection,
 
     This step is useful in Snowflake where the CTE alias columns can be referenced in the HAVING.
 
-    Example:
-        >>> import sqlglot
-        >>> expression = sqlglot.parse_one("WITH y (c) AS (SELECT SUM(a) FROM ( SELECT 1 a ) AS x HAVING c > 0) SELECT c FROM y")
-        >>> pushdown_cte_alias_columns(expression).sql()
-        'WITH y(c) AS (SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0) SELECT c FROM y'
-
     Args:
-        expression: Expression to pushdown.
-
-    Returns:
-        The expression with the CTE aliases pushed down into the projection.
+        scope: Scope to find ctes to pushdown aliases.
     """
-    for cte in expression.find_all(exp.CTE):
-        if cte.alias_column_names:
+    for cte in scope.ctes:
+        if cte.alias_column_names and isinstance(cte.this, exp.Select):
             new_expressions = []
             for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", _alias)
+                    projection.set("alias", exp.to_identifier(_alias))
                 else:
                     projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)
             cte.this.set("expressions", new_expressions)
-
-    return expression
 
 
 class Resolver:
@@ -936,27 +972,36 @@ class Resolver:
     def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True):
         self.scope = scope
         self.schema = schema
+        self.dialect = schema.dialect or Dialect()
         self._source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
         self._unambiguous_columns: t.Optional[t.Mapping[str, str]] = None
         self._all_columns: t.Optional[t.Set[str]] = None
         self._infer_schema = infer_schema
         self._get_source_columns_cache: t.Dict[t.Tuple[str, bool], t.Sequence[str]] = {}
 
-    def get_table(self, column_name: str) -> t.Optional[exp.Identifier]:
+    def get_table(self, column: str | exp.Column) -> t.Optional[exp.Identifier]:
         """
         Get the table for a column name.
 
         Args:
-            column_name: The column name to find the table for.
+            column: The column expression (or column name) to find the table for.
         Returns:
             The table name if it can be found/inferred.
         """
-        if self._unambiguous_columns is None:
-            self._unambiguous_columns = self._get_unambiguous_columns(
-                self._get_all_source_columns()
-            )
+        column_name = column if isinstance(column, str) else column.name
 
-        table_name = self._unambiguous_columns.get(column_name)
+        table_name = self._get_table_name_from_sources(column_name)
+
+        if not table_name and isinstance(column, exp.Column):
+            # Fall-back case: If we couldn't find the `table_name` from ALL of the sources,
+            # attempt to disambiguate the column based on other characteristics e.g if this column is in a join condition,
+            # we may be able to disambiguate based on the source order.
+            if join_context := self._get_column_join_context(column):
+                # In this case, the return value will be the join that _may_ be able to disambiguate the column
+                # and we can use the source columns available at that join to get the table name
+                table_name = self._get_table_name_from_sources(
+                    column_name, self._get_available_source_columns(join_context)
+                )
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(
@@ -1048,7 +1093,7 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.schema.dialect == "bigquery":
+                if self.dialect.UNNEST_COLUMN_ONLY:
                     if source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)
@@ -1094,6 +1139,77 @@ class Resolver:
                 )
             }
         return self._source_columns
+
+    def _get_table_name_from_sources(
+        self, column_name: str, source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
+    ) -> t.Optional[str]:
+        if not source_columns:
+            # If not supplied, get all sources to calculate unambiguous columns
+            if self._unambiguous_columns is None:
+                self._unambiguous_columns = self._get_unambiguous_columns(
+                    self._get_all_source_columns()
+                )
+
+            unambiguous_columns = self._unambiguous_columns
+        else:
+            unambiguous_columns = self._get_unambiguous_columns(source_columns)
+
+        return unambiguous_columns.get(column_name)
+
+    def _get_column_join_context(self, column: exp.Column) -> t.Optional[exp.Join]:
+        """
+        Check if a column participating in a join can be qualified based on the source order.
+        """
+        args = self.scope.expression.args
+        joins = args.get("joins")
+
+        if not joins or args.get("laterals") or args.get("pivots"):
+            # Feature gap: We currently don't try to disambiguate columns if other sources
+            # (e.g laterals, pivots) exist alongside joins
+            return None
+
+        join_ancestor = column.find_ancestor(exp.Join, exp.Select)
+
+        if (
+            isinstance(join_ancestor, exp.Join)
+            and join_ancestor.alias_or_name in self.scope.selected_sources
+        ):
+            # Ensure that the found ancestor is a join that contains an actual source,
+            # e.g in Clickhouse `b` is an array expression in `a ARRAY JOIN b`
+            return join_ancestor
+
+        return None
+
+    def _get_available_source_columns(
+        self, join_ancestor: exp.Join
+    ) -> t.Dict[str, t.Sequence[str]]:
+        """
+        Get the source columns that are available at the point where a column is referenced.
+
+        For columns in JOIN conditions, this only includes tables that have been joined
+        up to that point. Example:
+
+        ```
+        SELECT * FROM t_1 INNER JOIN ... INNER JOIN t_n ON t_1.a = c INNER JOIN t_n+1 ON ...
+        ```                                                        ^
+                                                                   |
+                                +----------------------------------+
+                                |
+                                ⌄
+        The unqualified column `c` is not ambiguous if no other sources up until that
+        join i.e t_1, ..., t_n, contain a column named `c`.
+
+        """
+        args = self.scope.expression.args
+
+        # Collect tables in order: FROM clause tables + joined tables up to current join
+        from_name = args["from_"].alias_or_name
+        available_sources = {from_name: self.get_source_columns(from_name)}
+
+        for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
+            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+
+        return available_sources
 
     def _get_unambiguous_columns(
         self, source_columns: t.Dict[str, t.Sequence[str]]

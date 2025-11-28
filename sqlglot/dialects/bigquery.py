@@ -12,7 +12,6 @@ from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    annotate_with_type_lambda,
     arg_max_or_min_no_count,
     binary_from_function,
     date_add_interval_sql,
@@ -34,9 +33,10 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     groupconcat_sql,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
-from sqlglot.generator import unsupported_args
+from sqlglot.typing.bigquery import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
@@ -290,59 +290,6 @@ def _str_to_datetime_sql(
     return self.func(f"PARSE_{dtype}", fmt, this, expression.args.get("zone"))
 
 
-def _annotate_math_functions(self: TypeAnnotator, expression: E) -> E:
-    """
-    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
-    +---------+---------+---------+------------+---------+
-    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    """
-    self._annotate_args(expression)
-
-    this: exp.Expression = expression.this
-
-    self._set_type(
-        expression,
-        exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
-    )
-    return expression
-
-
-def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: E) -> E:
-    """
-    +------------+------------+------------+-------------+---------+
-    | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    +------------+------------+------------+-------------+---------+
-    | INT64      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    | NUMERIC    | NUMERIC    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
-    | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
-    | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
-    +------------+------------+------------+-------------+---------+
-    """
-    self._annotate_args(expression)
-
-    self._set_type(expression, self._maybe_coerce(expression.this.type, expression.expression.type))
-    return expression
-
-
-def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
-    self._annotate_args(expression)
-
-    struct_type = exp.DataType(
-        this=exp.DataType.Type.STRUCT,
-        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
-        nested=True,
-    )
-    self._set_type(
-        expression,
-        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
-    )
-
-    return expression
-
-
 @unsupported_args("ins_cost", "del_cost", "sub_cost")
 def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> str:
     max_dist = expression.args.get("max_dist")
@@ -363,11 +310,11 @@ def _build_levenshtein(args: t.List) -> exp.Levenshtein:
 
 def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List], exp.TimeToStr]:
     def _builder(args: t.List) -> exp.TimeToStr:
-        return exp.TimeToStr(
-            this=expr_type(this=seq_get(args, 1)),
-            format=seq_get(args, 0),
-            zone=seq_get(args, 2),
+        formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
+            [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
         )
+        formatted_time.set("zone", seq_get(args, 2))
+        return formatted_time
 
     return _builder
 
@@ -398,44 +345,6 @@ def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -
     return sql
 
 
-def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
-    annotated = self._annotate_by_args(expression, "expressions")
-
-    # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
-    # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
-    if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
-        annotated.type = exp.DataType.Type.VARCHAR
-
-    return annotated
-
-
-def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
-    array_args = expression.expressions
-
-    # BigQuery behaves as follows:
-    #
-    # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
-    # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    if (
-        len(array_args) == 1
-        and isinstance(select := array_args[0].unnest(), exp.Select)
-        and (query_type := select.meta.get("query_type")) is not None
-        and query_type.is_type(exp.DataType.Type.STRUCT)
-        and len(query_type.expressions) == 1
-        and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-        and (projection_type := col_def.kind) is not None
-        and not projection_type.is_type(exp.DataType.Type.UNKNOWN)
-    ):
-        array_type = exp.DataType(
-            this=exp.DataType.Type.ARRAY,
-            expressions=[projection_type.copy()],
-            nested=True,
-        )
-        return self._annotate_with_type(expression, array_type)
-
-    return self._annotate_by_args(expression, "expressions", array=True)
-
-
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -444,8 +353,21 @@ class BigQuery(Dialect):
     LOG_BASE_FIRST = False
     HEX_LOWERCASE = True
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
+    EXPAND_ONLY_GROUP_ALIAS_REF = True
     PRESERVE_ORIGINAL_NAMES = True
     HEX_STRING_IS_INTEGER_TYPE = True
+    BYTE_STRING_IS_BYTES_TYPE = True
+    UUID_IS_STRING_TYPE = True
+    ANNOTATE_ALL_SCOPES = True
+    PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = True
+    TABLES_REFERENCEABLE_AS_COLUMNS = True
+    SUPPORTS_STRUCT_STAR_EXPANSION = True
+    EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = True
+    QUERY_RESULTS_ARE_STRUCTS = True
+    JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
+
+    # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
+    INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -455,6 +377,7 @@ class BigQuery(Dialect):
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIME_MAPPING = {
+        "%x": "%m/%d/%y",
         "%D": "%m/%d/%y",
         "%E6S": "%S.%f",
         "%e": "%-d",
@@ -493,180 +416,7 @@ class BigQuery(Dialect):
     COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
     COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
 
-    # BigQuery maps Type.TIMESTAMP to DATETIME, so we need to amend the inferred types
-    TYPE_TO_EXPRESSIONS = {
-        **Dialect.TYPE_TO_EXPRESSIONS,
-        exp.DataType.Type.TIMESTAMPTZ: Dialect.TYPE_TO_EXPRESSIONS[exp.DataType.Type.TIMESTAMP],
-    }
-    TYPE_TO_EXPRESSIONS.pop(exp.DataType.Type.TIMESTAMP)
-
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
-        },
-        **{
-            expr_type: lambda self, e: _annotate_math_functions(self, e)
-            for expr_type in (exp.Floor, exp.Ceil, exp.Log, exp.Ln, exp.Sqrt, exp.Exp, exp.Round)
-        },
-        **{
-            expr_type: lambda self, e: self._annotate_by_args(e, "this")
-            for expr_type in (
-                exp.Abs,
-                exp.ArgMax,
-                exp.ArgMin,
-                exp.DateTrunc,
-                exp.DatetimeTrunc,
-                exp.FirstValue,
-                exp.GroupConcat,
-                exp.IgnoreNulls,
-                exp.JSONExtract,
-                exp.Lead,
-                exp.Left,
-                exp.Lower,
-                exp.NthValue,
-                exp.Pad,
-                exp.PercentileDisc,
-                exp.RegexpExtract,
-                exp.RegexpReplace,
-                exp.Repeat,
-                exp.Replace,
-                exp.RespectNulls,
-                exp.Reverse,
-                exp.Right,
-                exp.SafeNegate,
-                exp.Sign,
-                exp.Substring,
-                exp.TimestampTrunc,
-                exp.Translate,
-                exp.Trim,
-                exp.Upper,
-            )
-        },
-        exp.Acos: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Acosh: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Asin: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Asinh: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Atan: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Atanh: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Atan2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.ApproxTopSum: lambda self, e: _annotate_by_args_approx_top(self, e),
-        exp.ApproxTopK: lambda self, e: _annotate_by_args_approx_top(self, e),
-        exp.ApproxQuantiles: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.Array: _annotate_array,
-        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Ascii: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.BitwiseAndAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.BitwiseOrAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.BitwiseXorAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.BitwiseCountAgg: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.ByteLength: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.ByteString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.Cbrt: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.CodePointsToBytes: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.BINARY
-        ),
-        exp.CodePointsToString: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.VARCHAR
-        ),
-        exp.Concat: _annotate_concat,
-        exp.Corr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Cot: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.CosineDistance: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Coth: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.CovarPop: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.CovarSamp: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Csc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Csch: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.CumeDist: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.DateFromUnixDate: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATE),
-        exp.DenseRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.EuclideanDistance: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.DOUBLE
-        ),
-        exp.FarmFingerprint: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.Unhex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.Float64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Format: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
-        ),
-        exp.Grouping: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.IsInf: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
-        exp.IsNan: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
-        exp.JSONArray: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONArrayAppend: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONArrayInsert: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
-        exp.JSONExtractScalar: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.VARCHAR
-        ),
-        exp.JSONExtractArray: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.JSONFormat: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
-        ),
-        exp.JSONKeysAtDepth: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
-        ),
-        exp.JSONObject: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONRemove: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONSet: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONStripNulls: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.JSON),
-        exp.JSONType: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.JSONValueArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
-        ),
-        exp.Lag: lambda self, e: self._annotate_by_args(e, "this", "default"),
-        exp.LowerHex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.LaxBool: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BOOLEAN),
-        exp.LaxFloat64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.LaxInt64: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.LaxString: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.MD5Digest: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.Normalize: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.Ntile: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.ParseTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.ParseDatetime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DATETIME),
-        exp.ParseBignumeric: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.BIGDECIMAL
-        ),
-        exp.ParseNumeric: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DECIMAL),
-        exp.PercentileCont: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.PercentRank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Rank: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.RangeBucket: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.RegexpExtractAll: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.RegexpInstr: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.RowNumber: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.Rand: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.SafeConvertBytesToString: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.VARCHAR
-        ),
-        exp.SafeAdd: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.SafeMultiply: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.SafeSubtract: lambda self, e: _annotate_by_args_with_coerce(self, e),
-        exp.Sec: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Sech: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Soundex: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-        exp.SHA: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.SHA2: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BINARY),
-        exp.Sin: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Sinh: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.DOUBLE),
-        exp.Split: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.TimestampFromParts: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.DATETIME
-        ),
-        exp.TimeFromParts: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.TimeTrunc: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.ToCodePoints: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
-        ),
-        exp.TsOrDsToTime: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.TIME),
-        exp.Unicode: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.BIGINT),
-        exp.Uuid: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.VARCHAR),
-    }
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     def normalize_identifier(self, expression: E) -> E:
         if (
@@ -755,15 +505,31 @@ class BigQuery(Dialect):
         SUPPORTS_IMPLICIT_UNNEST = True
         JOINS_HAVE_EQUAL_PRECEDENCE = True
 
-        # BigQuery does not allow ASC/DESC to be used as an identifier
-        ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.ASC, TokenType.DESC}
-        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
-        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
-        COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {
-            TokenType.ASC,
-            TokenType.DESC,
-        }
-        UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.ASC, TokenType.DESC}
+        # BigQuery does not allow ASC/DESC to be used as an identifier, allows GRANT as an identifier
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.GRANT,
+        } - {TokenType.ASC, TokenType.DESC}
+
+        ALIAS_TOKENS = {
+            *parser.Parser.ALIAS_TOKENS,
+            TokenType.GRANT,
+        } - {TokenType.ASC, TokenType.DESC}
+
+        TABLE_ALIAS_TOKENS = {
+            *parser.Parser.TABLE_ALIAS_TOKENS,
+            TokenType.GRANT,
+        } - {TokenType.ASC, TokenType.DESC}
+
+        COMMENT_TABLE_ALIAS_TOKENS = {
+            *parser.Parser.COMMENT_TABLE_ALIAS_TOKENS,
+            TokenType.GRANT,
+        } - {TokenType.ASC, TokenType.DESC}
+
+        UPDATE_ALIAS_TOKENS = {
+            *parser.Parser.UPDATE_ALIAS_TOKENS,
+            TokenType.GRANT,
+        } - {TokenType.ASC, TokenType.DESC}
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -771,7 +537,7 @@ class BigQuery(Dialect):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
             "BOOL": exp.JSONBool.from_arg_list,
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
@@ -789,6 +555,12 @@ class BigQuery(Dialect):
             "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
+            "GREATEST": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
+            ),
+            "LEAST": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
+            ),
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_EXTRACT_STRING_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
@@ -800,6 +572,7 @@ class BigQuery(Dialect):
             "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "MD5": exp.MD5Digest.from_arg_list,
+            "SHA1": exp.SHA1Digest.from_arg_list,
             "NORMALIZE_AND_CASEFOLD": lambda args: exp.Normalize(
                 this=seq_get(args, 0), form=seq_get(args, 1), is_casefold=True
             ),
@@ -852,10 +625,16 @@ class BigQuery(Dialect):
             "FROM_HEX": exp.Unhex.from_arg_list,
             "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
         }
+        # Remove SEARCH to avoid parameter routing issues - let it fall back to Anonymous function
+        FUNCTIONS.pop("SEARCH")
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
+            "ARRAY": lambda self: self.expression(
+                exp.Array,
+                expressions=[self._parse_statement()],
+                struct_name_inheritance=True,
+            ),
             "JSON_ARRAY": lambda self: self.expression(
                 exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
             ),
@@ -1091,6 +870,9 @@ class BigQuery(Dialect):
         ) -> t.Optional[exp.Expression]:
             bracket = super()._parse_bracket(this)
 
+            if isinstance(bracket, exp.Array):
+                bracket.set("struct_name_inheritance", True)
+
             if this is bracket:
                 return bracket
 
@@ -1285,7 +1067,7 @@ class BigQuery(Dialect):
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
-            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.ByteLength: rename_func("BYTE_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (
@@ -1312,7 +1094,7 @@ class BigQuery(Dialect):
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
-                self, e, func_name="STRING_AGG", within_group=False
+                self, e, func_name="STRING_AGG", within_group=False, sep=None
             ),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
             exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),
@@ -1371,6 +1153,7 @@ class BigQuery(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.StabilityProperty: lambda self, e: (
                 "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),

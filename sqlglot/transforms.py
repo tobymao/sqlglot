@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.errors import UnsupportedError
-from sqlglot.helper import find_new_name, name_sequence
+from sqlglot.helper import find_new_name, name_sequence, seq_get
 
 
 if t.TYPE_CHECKING:
@@ -14,6 +14,7 @@ if t.TYPE_CHECKING:
 
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
+    generator: t.Optional[t.Callable[[Generator, exp.Expression], str]] = None,
 ) -> t.Callable[[Generator, exp.Expression], str]:
     """
     Creates a new transform by chaining a sequence of transformations and converts the resulting
@@ -36,6 +37,9 @@ def preprocess(
                 expression = transform(expression)
         except UnsupportedError as unsupported_error:
             self.unsupported(str(unsupported_error))
+
+        if generator:
+            return generator(self, expression)
 
         _sql_handler = getattr(self, expression.key + "_sql", None)
         if _sql_handler:
@@ -110,10 +114,10 @@ def unnest_generate_date_array_using_recursive_cte(expression: exp.Expression) -
             count += 1
 
         if recursive_ctes:
-            with_expression = expression.args.get("with") or exp.With()
+            with_expression = expression.args.get("with_") or exp.With()
             with_expression.set("recursive", True)
             with_expression.set("expressions", [*recursive_ctes, *with_expression.expressions])
-            expression.set("with", with_expression)
+            expression.set("with_", with_expression)
 
     return expression
 
@@ -127,39 +131,6 @@ def unnest_generate_series(expression: exp.Expression) -> exp.Expression:
             return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
 
         return unnest
-
-    return expression
-
-
-def unalias_group(expression: exp.Expression) -> exp.Expression:
-    """
-    Replace references to select aliases in GROUP BY clauses.
-
-    Example:
-        >>> import sqlglot
-        >>> sqlglot.parse_one("SELECT a AS b FROM x GROUP BY b").transform(unalias_group).sql()
-        'SELECT a AS b FROM x GROUP BY 1'
-
-    Args:
-        expression: the expression that will be transformed.
-
-    Returns:
-        The transformed expression.
-    """
-    if isinstance(expression, exp.Group) and isinstance(expression.parent, exp.Select):
-        aliased_selects = {
-            e.alias: i
-            for i, e in enumerate(expression.parent.expressions, start=1)
-            if isinstance(e, exp.Alias)
-        }
-
-        for group_by in expression.expressions:
-            if (
-                isinstance(group_by, exp.Column)
-                and not group_by.table
-                and group_by.name in aliased_selects
-            ):
-                group_by.replace(exp.Literal.number(aliased_selects.get(group_by.name)))
 
     return expression
 
@@ -343,14 +314,14 @@ def unnest_to_explode(
         return exp.Inline if has_multi_expr else exp.Explode
 
     if isinstance(expression, exp.Select):
-        from_ = expression.args.get("from")
+        from_ = expression.args.get("from_")
 
         if from_ and isinstance(from_.this, exp.Unnest):
             unnest = from_.this
             alias = unnest.args.get("alias")
             exprs = unnest.expressions
             has_multi_expr = len(exprs) > 1
-            this, *expressions = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
+            this, *_ = _unnest_zip_exprs(unnest, exprs, has_multi_expr)
 
             columns = alias.columns if alias else []
             offset = unnest.args.get("offset")
@@ -361,10 +332,7 @@ def unnest_to_explode(
 
             unnest.replace(
                 exp.Table(
-                    this=_udtf_type(unnest, has_multi_expr)(
-                        this=this,
-                        expressions=expressions,
-                    ),
+                    this=_udtf_type(unnest, has_multi_expr)(this=this),
                     alias=exp.TableAlias(this=alias.this, columns=columns) if alias else None,
                 )
             )
@@ -527,7 +495,7 @@ def explode_projection_to_unnest(
                         expression.set("expressions", expressions)
 
                     if not arrays:
-                        if expression.args.get("from"):
+                        if expression.args.get("from_"):
                             expression.join(series, copy=False, join_type="CROSS")
                         else:
                             expression.from_(series, copy=False)
@@ -671,7 +639,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             expression.set("limit", None)
             index, full_outer_join = full_outer_joins[0]
 
-            tables = (expression.args["from"].alias_or_name, full_outer_join.alias_or_name)
+            tables = (expression.args["from_"].alias_or_name, full_outer_join.alias_or_name)
             join_conditions = full_outer_join.args.get("on") or exp.and_(
                 *[
                     exp.column(col, tables[0]).eq(exp.column(col, tables[1]))
@@ -680,11 +648,13 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             )
 
             full_outer_join.set("side", "left")
-            anti_join_clause = exp.select("1").from_(expression.args["from"]).where(join_conditions)
+            anti_join_clause = (
+                exp.select("1").from_(expression.args["from_"]).where(join_conditions)
+            )
             expression_copy.args["joins"][index].set("side", "right")
             expression_copy = expression_copy.where(exp.Exists(this=anti_join_clause).not_())
-            expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
-            expression.args.pop("order", None)  # remove order by from LEFT side
+            expression_copy.set("with_", None)  # remove CTEs from RIGHT side
+            expression.set("order", None)  # remove order by from LEFT side
 
             return exp.union(expression, expression_copy, copy=False, distinct=False)
 
@@ -703,14 +673,14 @@ def move_ctes_to_top_level(expression: E) -> E:
 
     TODO: handle name clashes whilst moving CTEs (it can get quite tricky & costly).
     """
-    top_level_with = expression.args.get("with")
+    top_level_with = expression.args.get("with_")
     for inner_with in expression.find_all(exp.With):
         if inner_with.parent is expression:
             continue
 
         if not top_level_with:
             top_level_with = inner_with.pop()
-            expression.set("with", top_level_with)
+            expression.set("with_", top_level_with)
         else:
             if inner_with.recursive:
                 top_level_with.set("recursive", True)
@@ -937,7 +907,7 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
 
         old_joins = {join.alias_or_name: join for join in joins}
         new_joins = {}
-        query_from = query.args["from"]
+        query_from = query.args["from_"]
 
         for table, predicates in joins_ons.items():
             join_what = old_joins.get(table, query_from).this.copy()
@@ -963,11 +933,11 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
             ), "Cannot determine which table to use in the new FROM clause"
 
             new_from_name = list(only_old_joins)[0]
-            query.set("from", exp.From(this=old_joins[new_from_name].this))
+            query.set("from_", exp.From(this=old_joins[new_from_name].this))
 
         if new_joins:
             for n, j in old_joins.items():  # preserve any other joins
-                if n not in new_joins and n != query.args["from"].name:
+                if n not in new_joins and n != query.args["from_"].name:
                     if not j.kind:
                         j.set("kind", "CROSS")
                     new_joins[n] = j
@@ -1030,5 +1000,58 @@ def eliminate_window_clause(expression: exp.Expression) -> exp.Expression:
 
         for window in find_all_in_scope(expression, exp.Window):
             _inline_inherited_window(window)
+
+    return expression
+
+
+def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
+    """
+    Inherit field names from the first struct in an array.
+
+    BigQuery supports implicitly inheriting names from the first STRUCT in an array:
+
+    Example:
+        ARRAY[
+          STRUCT('Alice' AS name, 85 AS score),  -- defines names
+          STRUCT('Bob', 92),                     -- inherits names
+          STRUCT('Diana', 95)                    -- inherits names
+        ]
+
+    This transformation makes the field names explicit on all structs by adding
+    PropertyEQ nodes, in order to facilitate transpilation to other dialects.
+
+    Args:
+        expression: The expression tree to transform
+
+    Returns:
+        The modified expression with field names inherited in all structs
+    """
+    if (
+        isinstance(expression, exp.Array)
+        and expression.args.get("struct_name_inheritance")
+        and isinstance(first_item := seq_get(expression.expressions, 0), exp.Struct)
+        and all(isinstance(fld, exp.PropertyEQ) for fld in first_item.expressions)
+    ):
+        field_names = [fld.this for fld in first_item.expressions]
+
+        # Apply field names to subsequent structs that don't have them
+        for struct in expression.expressions[1:]:
+            if not isinstance(struct, exp.Struct) or len(struct.expressions) != len(field_names):
+                continue
+
+            # Convert unnamed expressions to PropertyEQ with inherited names
+            new_expressions = []
+            for i, expr in enumerate(struct.expressions):
+                if not isinstance(expr, exp.PropertyEQ):
+                    # Create PropertyEQ: field_name := value
+                    new_expressions.append(
+                        exp.PropertyEQ(
+                            this=exp.Identifier(this=field_names[i].copy()), expression=expr
+                        )
+                    )
+                else:
+                    new_expressions.append(expr)
+
+            struct.set("expressions", new_expressions)
 
     return expression

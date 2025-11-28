@@ -44,7 +44,7 @@ def unnest(select, parent_select, next_alias_name):
     if (
         not predicate
         or parent_select is not predicate.parent_select
-        or not parent_select.args.get("from")
+        or not parent_select.args.get("from_")
     ):
         return
 
@@ -71,8 +71,18 @@ def unnest(select, parent_select, next_alias_name):
         elif not isinstance(select.parent, exp.Subquery):
             return
 
+        join_type = "CROSS"
+        on_clause = None
+        if isinstance(predicate, exp.Exists):
+            # If a subquery returns no rows, cross-joining against it incorrectly eliminates all rows
+            # from the parent query. Therefore, we use a LEFT JOIN that always matches (ON TRUE), then
+            # check for non-NULL column values to determine whether the subquery contained rows.
+            column = column.is_(exp.null()).not_()
+            join_type = "LEFT"
+            on_clause = exp.true()
+
         _replace(select.parent, column)
-        parent_select.join(select, join_type="CROSS", join_alias=alias, copy=False)
+        parent_select.join(select, on=on_clause, join_type=join_type, join_alias=alias, copy=False)
         return
 
     if select.find(exp.Limit, exp.Offset):
@@ -189,7 +199,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     # exists queries should not have any selects as it only checks if there are any rows
     # all selects will be added by the optimizer and only used for join keys
     if isinstance(parent_predicate, exp.Exists):
-        select.args["expressions"] = []
+        select.set("expressions", [])
 
     for key, alias in key_aliases.items():
         if key in group_by:

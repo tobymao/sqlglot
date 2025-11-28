@@ -163,6 +163,7 @@ class MySQL(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     SAFE_DIVISION = True
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -177,6 +178,21 @@ class MySQL(Dialect):
         "%l": "%-I",
         "%T": "%H:%M:%S",
         "%W": "%A",
+    }
+
+    VALID_INTERVAL_UNITS = {
+        *Dialect.VALID_INTERVAL_UNITS,
+        "SECOND_MICROSECOND",
+        "MINUTE_MICROSECOND",
+        "MINUTE_SECOND",
+        "HOUR_MICROSECOND",
+        "HOUR_SECOND",
+        "HOUR_MINUTE",
+        "DAY_MICROSECOND",
+        "DAY_SECOND",
+        "DAY_MINUTE",
+        "DAY_HOUR",
+        "YEAR_MONTH",
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -310,7 +326,7 @@ class MySQL(Dialect):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),
@@ -448,6 +464,7 @@ class MySQL(Dialect):
             "INDEX": lambda self: self._parse_index_constraint(),
             "KEY": lambda self: self._parse_index_constraint(),
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
+            "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint),
         }
 
         ALTER_PARSERS = {
@@ -655,7 +672,7 @@ class MySQL(Dialect):
                 for_role=for_role,
                 into_outfile=into_outfile,
                 json=json,
-                **{"global": global_},  # type: ignore
+                global_=global_,
             )
 
         def _parse_oldstyle_limit(
@@ -740,7 +757,7 @@ class MySQL(Dialect):
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
-            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -1214,7 +1231,7 @@ class MySQL(Dialect):
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
-            global_ = " GLOBAL" if expression.args.get("global") else ""
+            global_ = " GLOBAL" if expression.args.get("global_") else ""
 
             target = self.sql(expression, "target")
             target = f" {target}" if target else ""
@@ -1314,6 +1331,11 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            # https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+            self.unsupported("MySQL does not support IGNORE NULLS.")
+            return self.sql(expression.this)
 
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:

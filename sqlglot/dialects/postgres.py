@@ -36,7 +36,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     count_if_to_sum,
     groupconcat_sql,
-    Version,
+    regexp_replace_global_modifier,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int, seq_get
@@ -67,7 +67,7 @@ def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB]
 
         e = self._simplify_unless_literal(expression.expression)
         if isinstance(e, exp.Literal):
-            e.args["is_string"] = True
+            e.set("is_string", True)
         elif e.is_number:
             e = exp.Literal.string(e.to_py())
         else:
@@ -203,6 +203,7 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     # Any one of `start`, `N` and `flags` can be column references, meaning that
     # unless we can statically see that the last argument is a non-integer string
     # (eg. not '0'), then it's not possible to construct the correct AST
+    regexp_replace = None
     if len(args) > 3:
         last = args[-1]
         if not is_int(last.name):
@@ -214,9 +215,10 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
             if last.is_type(*exp.DataType.TEXT_TYPES):
                 regexp_replace = exp.RegexpReplace.from_arg_list(args[:-1])
                 regexp_replace.set("modifiers", last)
-                return regexp_replace
 
-    return exp.RegexpReplace.from_arg_list(args)
+    regexp_replace = regexp_replace or exp.RegexpReplace.from_arg_list(args)
+    regexp_replace.set("single_replace", True)
+    return regexp_replace
 
 
 def _unix_to_time_sql(self: Postgres.Generator, expression: exp.UnixToTime) -> str:
@@ -259,10 +261,33 @@ def _levenshtein_sql(self: Postgres.Generator, expression: exp.Levenshtein) -> s
 def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) -> str:
     # https://www.postgresql.org/docs/16/functions-aggregate.html
     # https://www.postgresql.org/about/featurematrix/
-    if self.dialect.version < Version("16.0"):
+    if self.dialect.version < (16,):
         return any_value_to_max_sql(self, expression)
 
     return rename_func("ANY_VALUE")(self, expression)
+
+
+def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
+    this = self.sql(expression, "this")
+    decimals = self.sql(expression, "decimals")
+
+    if not decimals:
+        return self.func("ROUND", this)
+
+    if not expression.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        expression = annotate_types(expression, dialect=self.dialect)
+
+    # ROUND(double precision, integer) is not permitted in Postgres
+    # so it's necessary to cast to decimal before rounding.
+    if expression.this.is_type(exp.DataType.Type.DOUBLE):
+        decimal_type = exp.DataType.build(
+            exp.DataType.Type.DECIMAL, expressions=expression.expressions
+        )
+        this = self.sql(exp.Cast(this=this, to=decimal_type))
+
+    return self.func("ROUND", this, decimals)
 
 
 class Postgres(Dialect):
@@ -272,6 +297,11 @@ class Postgres(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    TABLES_REFERENCEABLE_AS_COLUMNS = True
+
+    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
+        exp.ExplodingGenerateSeries: "generate_series",
+    }
 
     TIME_MAPPING = {
         "d": "%u",  # 1-based day of week
@@ -375,6 +405,8 @@ class Postgres(Dialect):
         VAR_SINGLE_TOKENS = {"$"}
 
     class Parser(parser.Parser):
+        SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
@@ -426,7 +458,7 @@ class Postgres(Dialect):
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSON_AGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
-                this=self._parse_bitwise(),
+                this=self._parse_lambda(),
                 order=self._parse_order(),
             ),
             "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
@@ -650,6 +682,16 @@ class Postgres(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args.get("replacement"),
+                e.args.get("position"),
+                e.args.get("occurrence"),
+                regexp_replace_global_modifier(e),
+            ),
+            exp.Round: _round_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_semi_and_anti_joins,
@@ -696,28 +738,6 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
-
-        def round_sql(self, expression: exp.Round) -> str:
-            this = self.sql(expression, "this")
-            decimals = self.sql(expression, "decimals")
-
-            if not decimals:
-                return self.func("ROUND", this)
-
-            if not expression.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
-                expression = annotate_types(expression, dialect=self.dialect)
-
-            # ROUND(double precision, integer) is not permitted in Postgres
-            # so it's necessary to cast to decimal before rounding.
-            if expression.this.is_type(exp.DataType.Type.DOUBLE):
-                decimal_type = exp.DataType.build(
-                    exp.DataType.Type.DECIMAL, expressions=expression.expressions
-                )
-                this = self.sql(exp.Cast(this=this, to=decimal_type))
-
-            return self.func("ROUND", this, decimals)
 
         def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
             self.unsupported("Table comments are not supported in the CREATE statement")
@@ -822,6 +842,16 @@ class Postgres(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"({self.sql(expression.this)} ~ '^[[:ascii:]]*$')"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            # https://www.postgresql.org/docs/current/functions-window.html
+            self.unsupported("PostgreSQL does not support IGNORE NULLS.")
+            return self.sql(expression.this)
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            # https://www.postgresql.org/docs/current/functions-window.html
+            self.unsupported("PostgreSQL does not support RESPECT NULLS.")
+            return self.sql(expression.this)
 
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:

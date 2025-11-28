@@ -7,6 +7,13 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_sqlite(self):
+        self.validate_identity("SELECT * FROM t AS t INDEXED BY s.i")
+        self.validate_identity("SELECT * FROM t INDEXED BY s.i")
+        self.validate_identity("SELECT * FROM t INDEXED BY i")
+        self.validate_identity("SELECT * FROM t NOT INDEXED")
+        self.validate_identity("SELECT match FROM t")
+        self.validate_identity("SELECT rowid FROM t1 WHERE t1 MATCH 'lorem'")
+        self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
@@ -23,10 +30,21 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
+            "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"
+        )
+        self.validate_identity(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
         )
         self.validate_identity(
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
+        )
+        self.validate_identity(
+            "SELECT a FROM t1 WHERE a NOT NULL AND a NOT NULL ORDER BY a",
+            "SELECT a FROM t1 WHERE NOT a IS NULL AND NOT a IS NULL ORDER BY a",
+        )
+        self.validate_identity(
+            "SELECT a, b FROM t1 WHERE b + a NOT NULL ORDER BY 1",
+            "SELECT a, b FROM t1 WHERE NOT b + a IS NULL ORDER BY 1",
         )
         self.validate_identity(
             "SELECT * FROM t1, t2",
@@ -138,6 +156,10 @@ class TestSQLite(Validator):
             "ATTACH 'foo' || '.foo2' AS schema_name",
         )
         self.validate_identity("DETACH DATABASE schema_name", "DETACH schema_name")
+        self.validate_identity("SELECT * FROM t WHERE NULL IS y")
+        self.validate_identity(
+            "SELECT * FROM t WHERE NULL IS NOT y", "SELECT * FROM t WHERE NOT NULL IS y"
+        )
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
@@ -213,6 +235,7 @@ class TestSQLite(Validator):
             with self.subTest(f"ON CONFLICT {conflict_action}"):
                 self.validate_identity("CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT IGNORE)")
 
+        self.validate_identity("CREATE TABLE over (x, y)")
         self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR FAIL INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")

@@ -42,7 +42,7 @@ SELECT 1 FROM c.y.z AS z, z.a;
 # title: bigquery implicit unnest syntax, coordinates.position should be a column, not a table
 # dialect: bigquery
 SELECT results FROM Coordinates, coordinates.position AS results;
-SELECT results FROM c.db.Coordinates AS Coordinates CROSS JOIN UNNEST(coordinates.position) AS results;
+SELECT results FROM c.db.Coordinates AS coordinates CROSS JOIN UNNEST(coordinates.position) AS results;
 
 # title: bigquery implicit unnest syntax, table is already qualified
 # dialect: bigquery
@@ -68,7 +68,7 @@ SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;
 
 # title: pivoted table
 SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b'));
-SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS _q_0;
+SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS "_0";
 
 # title: pivoted table, pivot has alias
 SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b')) AS piv;
@@ -135,28 +135,28 @@ SELECT t.a FROM (tbl AS tbl) AS t;
 SELECT t.a FROM (SELECT * FROM c.db.tbl AS tbl) AS t;
 
 # title: wrapped aliased table with outer alias
-SELECT * FROM ((((tbl AS tbl)))) AS _q_0;
-SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
+SELECT * FROM ((((tbl AS tbl)))) AS "_0";
+SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS "_0";
 
 # title: join construct with three tables
-SELECT * FROM (tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3) AS _q_0;
-SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
+SELECT * FROM (tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3) AS "_0";
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS "_0";
 
 # title: join construct with three tables and redundant set of parentheses
-SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS _q_0;
-SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
+SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS "_0";
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS "_0";
 
 # title: join construct within join construct
-SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;
-SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;
+SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS "_0" ON id1 = id3) AS "_1";
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS "_0" ON id1 = id3) AS "_1";
 
 # title: wrapped subquery without alias
 SELECT * FROM ((SELECT * FROM t));
-SELECT * FROM ((SELECT * FROM c.db.t AS t) AS _q_0);
+SELECT * FROM ((SELECT * FROM c.db.t AS t) AS "_0");
 
 # title: wrapped subquery without alias joined with a table
 SELECT * FROM ((SELECT * FROM t1) INNER JOIN t2 ON a = b);
-SELECT * FROM ((SELECT * FROM c.db.t1 AS t1) AS _q_0 INNER JOIN c.db.t2 AS t2 ON a = b);
+SELECT * FROM ((SELECT * FROM c.db.t1 AS t1) AS "_0" INNER JOIN c.db.t2 AS t2 ON a = b);
 
 # title: lateral unnest with alias
 SELECT x FROM t, LATERAL UNNEST(t.xs) AS x;
@@ -164,7 +164,7 @@ SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS x;
 
 # title: lateral unnest without alias
 SELECT x FROM t, LATERAL UNNEST(t.xs);
-SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS _q_0;
+SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS "_0";
 
 # title: table with ordinality
 SELECT * FROM t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
@@ -213,5 +213,71 @@ WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE t SET name = cte.name FROM ct
 WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte WHERE cte.c = 1;
 
 # title: avoid qualifying CTE with DELETE
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c;
+
+# title: canonicalize single table alias
+# canonicalize_table_aliases: true
+SELECT * FROM t;
+SELECT * FROM c.db.t AS "_0";
+
+# title: canonicalize join table aliases
+# canonicalize_table_aliases: true
+SELECT * FROM t1 JOIN t2 ON t1.id = t2.id;
+SELECT * FROM c.db.t1 AS "_0" JOIN c.db.t2 AS "_1" ON "_0".id = "_1".id;
+
+# title: canonicalize join with different databases
+# canonicalize_table_aliases: true
+SELECT * FROM db1.users JOIN db2.users ON db1.users.id = db2.users.id;
+SELECT * FROM c.db1.users AS "_0" JOIN c.db2.users AS "_1" ON "_0".id = "_1".id;
+
+# title: canonicalize CTE alias
+# canonicalize_table_aliases: true
+WITH cte AS (SELECT * FROM t) SELECT * FROM cte;
+WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1";
+
+# title: canonicalize subquery alias
+# canonicalize_table_aliases: true
+SELECT * FROM (SELECT * FROM t);
+SELECT * FROM (SELECT * FROM c.db.t AS "_0") AS "_1";
+
+# title: canonicalize multiple tables with subquery
+# canonicalize_table_aliases: true
+SELECT * FROM t1, (SELECT * FROM t2) AS sub, t3;
+SELECT * FROM c.db.t1 AS "_2", (SELECT * FROM c.db.t2 AS "_0") AS "_1", c.db.t3 AS "_3";
+
+# title: canonicalize CTE with PIVOT
+# canonicalize_table_aliases: true
+WITH cte AS (SELECT * FROM t) SELECT * FROM cte PIVOT(SUM(c) FOR v IN ('x', 'y'));
+WITH cte AS (SELECT * FROM c.db.t AS "_0") SELECT * FROM cte AS "_1" PIVOT(SUM(c) FOR v IN ('x', 'y')) AS "_2";
+
+# title: canonicalize sources that reference external columns
+# canonicalize_table_aliases: true
+SELECT * FROM x WHERE x.a = (SELECT SUM(y.c) AS c FROM y WHERE y.a = x.a LIMIT 10);
+SELECT * FROM c.db.x AS "_1" WHERE "_1".a = (SELECT SUM("_0".c) AS c FROM c.db.y AS "_0" WHERE "_0".a = "_1".a LIMIT 10);
+
+# title: canonicalize sources that have colliding aliases
+# canonicalize_table_aliases: true
+SELECT t.foo FROM t AS t, (SELECT t.bar FROM t AS t);
+SELECT "_2".foo FROM c.db.t AS "_2", (SELECT "_0".bar FROM c.db.t AS "_0") AS "_1";
+
+# title: Qualify GENERATE_SERIES with its default column generate_series
+# dialect: postgres
+SELECT generate_series FROM GENERATE_SERIES(1,2);
+SELECT generate_series FROM GENERATE_SERIES(1, 2) AS "_0"(generate_series);
+
+# title: Qualify GENERATE_SERIES with alias by wrapping it
+# dialect: postgres
+SELECT g FROM GENERATE_SERIES(1,2) AS g;
+SELECT g FROM GENERATE_SERIES(1, 2) AS "_0"(g);
+
+# title: Qualify GENERATE_SERIES with alias on table and columns
+# dialect: postgres
+SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
+
+# title: Qualify GENERATE_SERIES with explicit column and canonicalize_table_aliases
+# dialect: postgres
+# canonicalize_table_aliases: true
+SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+SELECT g FROM GENERATE_SERIES(1, 2) AS "_0"(g);

@@ -98,6 +98,7 @@ class Scope:
         self._selected_sources = None
         self._columns = None
         self._external_columns = None
+        self._local_columns = None
         self._join_hints = None
         self._pivots = None
         self._references = None
@@ -137,7 +138,7 @@ class Scope:
 
             if isinstance(node, exp.Dot) and node.is_star:
                 self._stars.append(node)
-            elif isinstance(node, exp.Column):
+            elif isinstance(node, exp.Column) and not isinstance(node, exp.Pseudocolumn):
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
                 else:
@@ -156,7 +157,7 @@ class Scope:
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(node)
-            elif isinstance(node, exp.UNWRAPPED_QUERIES):
+            elif isinstance(node, exp.UNWRAPPED_QUERIES) and not _is_from_or_join(node):
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
@@ -308,7 +309,7 @@ class Scope:
                             or column.name not in named_selects
                         )
                     )
-                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except")
+                    or (isinstance(ancestor, exp.Star) and not column.arg_key == "except_")
                 ):
                     self._columns.append(column)
 
@@ -372,8 +373,7 @@ class Scope:
         Columns that appear to reference sources in outer scopes.
 
         Returns:
-            list[exp.Column]: Column instances that don't reference
-                sources in the current scope.
+            list[exp.Column]: Column instances that don't reference sources in the current scope.
         """
         if self._external_columns is None:
             if isinstance(self.expression, exp.SetOperation):
@@ -383,11 +383,24 @@ class Scope:
                 self._external_columns = [
                     c
                     for c in self.columns
-                    if c.table not in self.selected_sources
-                    and c.table not in self.semi_or_anti_join_tables
+                    if c.table not in self.sources and c.table not in self.semi_or_anti_join_tables
                 ]
 
         return self._external_columns
+
+    @property
+    def local_columns(self):
+        """
+        Columns in this scope that are not external.
+
+        Returns:
+            list[exp.Column]: Column instances that reference sources in the current scope.
+        """
+        if self._local_columns is None:
+            external_columns = set(self.external_columns)
+            self._local_columns = [c for c in self.columns if c not in external_columns]
+
+        return self._local_columns
 
     @property
     def unqualified_columns(self):
@@ -663,7 +676,7 @@ def _traverse_ctes(scope):
 
         # if the scope is a recursive cte, it must be in the form of base_case UNION recursive.
         # thus the recursive scope is the first section of the union.
-        with_ = scope.expression.args.get("with")
+        with_ = scope.expression.args.get("with_")
         if with_ and with_.recursive:
             union = cte.this
 
@@ -720,7 +733,7 @@ def _traverse_tables(scope):
 
     # Traverse FROMs, JOINs, and LATERALs in the order they are defined
     expressions = []
-    from_ = scope.expression.args.get("from")
+    from_ = scope.expression.args.get("from_")
     if from_:
         expressions.append(from_.this)
 
@@ -821,7 +834,7 @@ def _traverse_udtfs(scope):
 
     sources = {}
     for expression in expressions:
-        if _is_derived_table(expression):
+        if isinstance(expression, exp.Subquery):
             top = None
             for child_scope in _traverse_scope(
                 scope.branch(
@@ -870,10 +883,7 @@ def walk_in_scope(expression, bfs=True, prune=None):
 
         if (
             isinstance(node, exp.CTE)
-            or (
-                isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
-                and _is_derived_table(node)
-            )
+            or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
             or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):

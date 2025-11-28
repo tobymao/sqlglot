@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -12,7 +12,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
     timestrtotime_sql,
-    unit_to_str,
     timestamptrunc_sql,
     build_date_delta,
 )
@@ -71,6 +70,103 @@ def _build_nullifzero(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
 
+# https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
+def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        aliases: dict[str, bool] = {}
+        for sel in expression.selects:
+            alias = sel.args.get("alias")
+
+            if isinstance(sel, exp.Alias) and alias:
+                aliases[alias.name] = bool(alias.args.get("quoted"))
+
+        table = expression.find(exp.Table)
+        table_ident = table.this if table else None
+
+        if (
+            table_ident
+            and table_ident.name.upper() == "LOCAL"
+            and not bool(table_ident.args.get("quoted"))
+        ):
+            table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
+
+        def prefix_local(node):
+            if isinstance(node, exp.Column) and not node.table:
+                if node.name in aliases:
+                    return exp.Column(
+                        this=exp.to_identifier(node.name, quoted=aliases[node.name]),
+                        table=exp.to_identifier("LOCAL", quoted=False),
+                    )
+            return node
+
+        for key in ("where", "group", "having"):
+            if arg := expression.args.get(key):
+                expression.set(key, arg.transform(prefix_local))
+
+    return expression
+
+
+def _trunc_sql(self: Exasol.Generator, kind: str, expression: exp.DateTrunc) -> str:
+    unit = expression.text("unit")
+    node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
+    expr_sql = self.sql(node)
+    if isinstance(node, exp.Literal) and node.is_string:
+        expr_sql = (
+            f"{kind} '{node.this.replace('T', ' ')}'"
+            if kind == "TIMESTAMP"
+            else f"DATE '{node.this}'"
+        )
+    return f"DATE_TRUNC('{unit}', {expr_sql})"
+
+
+def _date_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "DATE", expression)
+
+
+def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> str:
+    return _trunc_sql(self, "TIMESTAMP", expression)
+
+
+def is_case_insensitive(node: exp.Expression) -> bool:
+    return isinstance(node, exp.Collate) and node.text("expression").upper() == "UTF8_LCASE"
+
+
+def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex) -> str:
+    this = expression.this
+    delimiter = expression.args["delimiter"]
+    count_node = expression.args["count"]
+    count_sql = self.sql(expression, "count")
+    num = count_node.to_py() if count_node.is_number else 0
+
+    haystack_sql = self.sql(this)
+    if num == 0:
+        return self.func("SUBSTR", haystack_sql, "1", "0")
+
+    from_right = num < 0
+    direction = "-1" if from_right else "1"
+    occur = self.func("ABS", count_sql) if from_right else count_sql
+
+    delimiter_sql = self.sql(delimiter)
+
+    position = self.func(
+        "INSTR",
+        self.func("LOWER", haystack_sql) if is_case_insensitive(this) else haystack_sql,
+        self.func("LOWER", delimiter_sql) if is_case_insensitive(delimiter) else delimiter_sql,
+        direction,
+        occur,
+    )
+    nullable_pos = self.func("NULLIF", position, "0")
+
+    if from_right:
+        start = self.func(
+            "NVL", f"{nullable_pos} + {self.func('LENGTH', delimiter_sql)}", direction
+        )
+        return self.func("SUBSTR", haystack_sql, start)
+
+    length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
+    return self.func("SUBSTR", haystack_sql, direction, length)
+
+
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
@@ -115,6 +211,7 @@ class Exasol(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
+        IDENTIFIERS = ['"', ("[", "]")]
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "USER": TokenType.CURRENT_USER,
@@ -197,6 +294,24 @@ class Exasol(Dialect):
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
         }
 
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+            if not isinstance(column, exp.Column):
+                return column
+            table_ident = column.args.get("table")
+            if (
+                isinstance(table_ident, exp.Identifier)
+                and table_ident.name.upper() == "LOCAL"
+                and not bool(table_ident.args.get("quoted"))
+            ):
+                column.set("table", None)
+            return column
+
+        ODBC_DATETIME_LITERALS = {
+            "d": exp.Date,
+            "ts": exp.Timestamp,
+        }
+
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
@@ -253,7 +368,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
             exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DateTrunc: _date_trunc_sql,
+            exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
             exp.DatetimeTrunc: timestamptrunc_sql(),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="LISTAGG", within_group=True
@@ -282,7 +398,7 @@ class Exasol(Dialect):
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(),
+            exp.TimestampTrunc: _timestamp_trunc_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.CurrentUser: lambda *_: "CURRENT_USER",
             exp.AtTimeZone: lambda self, e: self.func(
@@ -307,7 +423,18 @@ class Exasol(Dialect):
             exp.MD5Digest: rename_func("HASHTYPE_MD5"),
             # https://docs.exasol.com/db/latest/sql/create_view.htm
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
+            exp.Select: transforms.preprocess(
+                [
+                    _add_local_prefix_for_aliases,
+                ]
+            ),
+            exp.SubstringIndex: _substring_index_sql,
             exp.WeekOfYear: rename_func("WEEK"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
+            exp.Date: rename_func("TO_DATE"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
+            exp.Timestamp: rename_func("TO_TIMESTAMP"),
+            exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
@@ -331,3 +458,12 @@ class Exasol(Dialect):
                 return self.function_fallback_sql(expression)
 
             return self.func(f"ADD_{unit}S", expression.this, expression.expression)
+
+        def collate_sql(self, expression: exp.Collate) -> str:
+            return self.sql(expression.this)
+
+        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
+        def rank_sql(self, expression: exp.Rank) -> str:
+            if expression.args.get("expressions"):
+                self.unsupported("Exasol does not support arguments in RANK")
+            return self.func("RANK")

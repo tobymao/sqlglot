@@ -56,6 +56,7 @@ class TestBigQuery(Validator):
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")
@@ -79,6 +80,24 @@ class TestBigQuery(Validator):
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
         self.validate_identity("FOO(values)")
         self.validate_identity("STRUCT(values AS value)")
+
+        self.validate_identity("SELECT SEARCH(data_to_search, 'search_query')")
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', json_scope => 'JSON_KEYS_AND_VALUES')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer => 'PATTERN_ANALYZER')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer_options => 'analyzer_options_values')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', json_scope => 'JSON_VALUES', analyzer => 'LOG_ANALYZER')"
+        )
+        self.validate_identity(
+            "SELECT SEARCH(data_to_search, 'search_query', analyzer => 'PATTERN_ANALYZER', analyzer_options => 'options')"
+        )
+
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
@@ -92,6 +111,33 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
+        self.validate_all(
+            "SELECT ANY_VALUE(fruit HAVING MAX sold) FROM Store",
+            write={
+                "bigquery": "SELECT ANY_VALUE(fruit HAVING MAX sold) FROM Store",
+                "duckdb": "SELECT ARG_MAX_NULL(fruit, sold) FROM Store",
+            },
+        )
+        self.validate_all(
+            "SELECT ANY_VALUE(fruit HAVING MIN sold) FROM Store",
+            write={
+                "bigquery": "SELECT ANY_VALUE(fruit HAVING MIN sold) FROM Store",
+                "duckdb": "SELECT ARG_MIN_NULL(fruit, sold) FROM Store",
+            },
+        )
+        self.validate_all(
+            "SELECT category, ANY_VALUE(product HAVING MAX price), ANY_VALUE(product HAVING MIN cost), ANY_VALUE(supplier) FROM products GROUP BY category",
+            write={
+                "bigquery": "SELECT category, ANY_VALUE(product HAVING MAX price), ANY_VALUE(product HAVING MIN cost), ANY_VALUE(supplier) FROM products GROUP BY category",
+                "duckdb": "SELECT category, ARG_MAX_NULL(product, price), ARG_MIN_NULL(product, cost), ANY_VALUE(supplier) FROM products GROUP BY category",
+            },
+        )
+        self.validate_all(
+            'WITH data AS (SELECT "A" AS fruit, 20 AS sold UNION ALL SELECT NULL AS fruit, 25 AS sold) SELECT ANY_VALUE(fruit HAVING MAX sold) FROM data',
+            write={
+                "duckdb": "WITH data AS (SELECT 'A' AS fruit, 20 AS sold UNION ALL SELECT NULL AS fruit, 25 AS sold) SELECT ARG_MAX_NULL(fruit, sold) FROM data",
+            },
+        )
         self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
@@ -351,6 +397,13 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT DATE(2024, 1, 15)",
+            write={
+                "bigquery": "SELECT DATE(2024, 1, 15)",
+                "duckdb": "SELECT MAKE_DATE(2024, 1, 15)",
+            },
+        )
+        self.validate_all(
             "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
             write={
                 "bigquery": "EXTRACT(HOUR FROM DATETIME(2008, 12, 25, 15, 30, 00))",
@@ -500,14 +553,13 @@ LANGUAGE js AS
             read={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
                 "duckdb": "SELECT SUM(x IGNORE NULLS) AS x",
-                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
                 "spark": "SELECT SUM(x) IGNORE NULLS AS x",
                 "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
             },
             write={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
                 "duckdb": "SELECT SUM(x) AS x",
-                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
+                "postgres": UnsupportedError,
                 "spark": "SELECT SUM(x) IGNORE NULLS AS x",
                 "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
             },
@@ -516,14 +568,13 @@ LANGUAGE js AS
             "SELECT SUM(x RESPECT NULLS) AS x",
             read={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
-                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
             },
             write={
                 "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
                 "duckdb": "SELECT SUM(x) AS x",
-                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
+                "postgres": UnsupportedError,
                 "spark": "SELECT SUM(x) RESPECT NULLS AS x",
                 "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
             },
@@ -725,6 +776,17 @@ LANGUAGE js AS
                 "spark": "TRIM('*' FROM item)",
             },
         )
+        expr = self.parse_one(
+            "SELECT TRIM(CAST('***apple***' AS BYTES), CAST('*' AS BYTES)) AS result"
+        )
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(TRIM(CAST(CAST('***apple***' AS BLOB) AS TEXT), CAST(CAST('*' AS BLOB) AS TEXT)) AS BLOB) AS result",
+        )
+        expr = self.parse_one("SELECT TRIM('***apple***', '*') AS result")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT TRIM('***apple***', '*') AS result")
         self.validate_all(
             "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             write={
@@ -739,6 +801,7 @@ LANGUAGE js AS
                     "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
                     "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                     "snowflake": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+                    "duckdb": "SELECT DATE_DIFF('MILLISECOND', CAST('2023-01-01T05:00:00' AS TIMESTAMP), CAST('2023-01-01T00:00:00' AS TIMESTAMP))",
                 },
             ),
         )
@@ -781,6 +844,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
                 "databricks": "SELECT DATE_ADD(MINUTE, '10', CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "duckdb": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ) + INTERVAL '10' MINUTE",
                 "mysql": "SELECT DATE_ADD(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
                 "spark": "SELECT DATE_ADD(MINUTE, '10', CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10', CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
@@ -790,6 +854,7 @@ LANGUAGE js AS
             'SELECT TIMESTAMP_SUB(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
                 "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL '10' MINUTE)",
+                "duckdb": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ) - INTERVAL '10' MINUTE",
                 "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL '10' MINUTE)",
                 "snowflake": "SELECT TIMESTAMPADD(MINUTE, '10' * -1, CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
                 "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) - INTERVAL '10' MINUTE",
@@ -809,6 +874,25 @@ LANGUAGE js AS
                 "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
             },
         )
+        self.validate_all(
+            "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+            write={
+                "bigquery": "SELECT TIME_SUB(CAST('09:05:03' AS TIME), INTERVAL '2' HOUR)",
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) - INTERVAL '2' HOUR",
+            },
+        )
+
+        expr = self.parse_one("LOWER(CAST('HELLO' AS BYTES))")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CAST(LOWER(CAST(CAST('HELLO' AS BLOB) AS TEXT)) AS BLOB)"
+        )
+
+        sql = "LOWER('HELLO')"
+        expr = self.parse_one(sql)
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "LOWER('HELLO')")
+
         self.validate_all(
             "LOWER(TO_HEX(x))",
             write={
@@ -850,6 +934,19 @@ LANGUAGE js AS
                 "trino": "LOWER(TO_HEX(x))",
             },
         )
+
+        sql = "UPPER(CAST('hello' AS BYTES))"
+        expr = self.parse_one("UPPER(CAST('hello' AS BYTES))")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CAST(UPPER(CAST(CAST('hello' AS BLOB) AS TEXT)) AS BLOB)"
+        )
+
+        sql = "UPPER('hello')"
+        expr = self.parse_one(sql)
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "UPPER('hello')")
+
         self.validate_all(
             "UPPER(TO_HEX(x))",
             read={
@@ -914,6 +1011,7 @@ LANGUAGE js AS
         self.validate_all(
             "SHA1(x)",
             read={
+                "bigquery": "SHA1(x)",
                 "clickhouse": "SHA1(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
@@ -921,16 +1019,9 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
-                "": "SHA(x)",
                 "presto": "SHA1(x)",
                 "trino": "SHA1(x)",
-            },
-        )
-        self.validate_all(
-            "SHA1(x)",
-            write={
-                "bigquery": "SHA1(x)",
-                "": "SHA(x)",
+                "duckdb": "UNHEX(SHA1(x))",
             },
         )
         self.validate_all(
@@ -1143,6 +1234,21 @@ LANGUAGE js AS
                 "hive": "CAST(a AS BINARY)",
                 "spark": "CAST(a AS BINARY)",
             },
+        )
+        # Test STARTS_WITH with BYTES/BLOB handling from BigQuery to DuckDB
+        # Requires type annotation for proper BLOB -> VARCHAR casting
+        expr = self.parse_one("STARTS_WITH(CAST('foo' AS BYTES), CAST('f' AS BYTES))")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), CAST(CAST('f' AS BLOB) AS TEXT))",
+        )
+
+        expr = self.parse_one("STARTS_WITH(CAST('foo' AS BYTES), b'f')")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "STARTS_WITH(CAST(CAST('foo' AS BLOB) AS TEXT), CAST(CAST(e'f' AS BLOB) AS TEXT))",
         )
         self.validate_all(
             "CAST(a AS NUMERIC)",
@@ -1403,6 +1509,7 @@ LANGUAGE js AS
             "CURRENT_DATE('UTC')",
             write={
                 "bigquery": "CURRENT_DATE('UTC')",
+                "duckdb": "CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)",
                 "mysql": "CURRENT_DATE AT TIME ZONE 'UTC'",
                 "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
                 "snowflake": "CAST(CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()) AS DATE)",
@@ -1813,6 +1920,143 @@ WHERE
         self.validate_identity("TO_JSON(9999999999, stringify_wide_numbers => FALSE)")
         self.validate_identity("RANGE_BUCKET(20, [0, 10, 20, 30, 40])")
         self.validate_identity("SELECT TRANSLATE(MODEL, 'in', 't') FROM (SELECT 'input' AS MODEL)")
+        self.validate_identity("SELECT GRANT FROM (SELECT 'input' AS GRANT)")
+
+        self.validate_all(
+            "SELECT 0xA",
+            write={
+                "bigquery": "SELECT 0xA",
+                "duckdb": "SELECT 10",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(1)",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
+            },
+        )
+        self.validate_all(
+            "SELECT b'\x61'",
+            write={
+                "bigquery": "SELECT b'\x61'",
+                "duckdb": "SELECT CAST(e'\x61' AS BLOB)",
+                "postgres": "SELECT CAST(e'\x61' AS BYTEA)",
+            },
+        )
+        self.validate_all(
+            "SELECT b'a'",
+            write={
+                "bigquery": "SELECT b'a'",
+                "duckdb": "SELECT CAST(e'a' AS BLOB)",
+                "postgres": "SELECT CAST(e'a' AS BYTEA)",
+            },
+        )
+        self.validate_all(
+            "SELECT GENERATE_UUID()",
+            write={
+                "bigquery": "SELECT GENERATE_UUID()",
+                "duckdb": "SELECT CAST(UUID() AS TEXT)",
+                "spark2": "SELECT CAST(UUID() AS STRING)",
+                "spark": "SELECT CAST(UUID() AS STRING)",
+                "presto": "SELECT CAST(UUID() AS VARCHAR)",
+                "trino": "SELECT CAST(UUID() AS VARCHAR)",
+                "snowflake": "SELECT UUID_STRING()",
+            },
+        )
+
+        self.validate_all(
+            "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+            write={
+                "bigquery": "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+                "duckdb": "SELECT REPLACE('apple pie', 'pie', 'cobbler') AS result",
+            },
+        )
+        expr = self.parse_one(
+            "SELECT REPLACE(CAST('apple pie' AS BYTES), CAST('pie' AS BYTES), CAST('cobbler' AS BYTES)) AS result"
+        )
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(REPLACE(CAST(CAST('apple pie' AS BLOB) AS TEXT), CAST(CAST('pie' AS BLOB) AS TEXT), CAST(CAST('cobbler' AS BLOB) AS TEXT)) AS BLOB) AS result",
+        )
+        expr = self.parse_one("REPLACE('apple pie', 'pie', 'cobbler')")
+        annotated = annotate_types(expr, dialect="bigquery")
+        self.assertEqual(annotated.sql("duckdb"), "REPLACE('apple pie', 'pie', 'cobbler')")
+
+        self.validate_all(
+            "TIMESTAMP_TRUNC(TIMESTAMP '2024-03-15 14:35:47.123456', DAY, 'America/New_York')",
+            write={
+                "bigquery": "TIMESTAMP_TRUNC(CAST('2024-03-15 14:35:47.123456' AS TIMESTAMP), DAY, 'America/New_York')",
+                "duckdb": "DATE_TRUNC('DAY', CAST('2024-03-15 14:35:47.123456' AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York'",
+            },
+        )
+        self.validate_all(
+            "TIMESTAMP_TRUNC(TIMESTAMP '2024-03-15 14:35:00', MINUTE, 'America/New_York')",
+            write={
+                "bigquery": "TIMESTAMP_TRUNC(CAST('2024-03-15 14:35:00' AS TIMESTAMP), MINUTE, 'America/New_York')",
+                "duckdb": "DATE_TRUNC('MINUTE', CAST('2024-03-15 14:35:00' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "TIMESTAMP_TRUNC(TIMESTAMP '2024-03-15 14:35:47.123456', DAY)",
+            write={
+                "bigquery": "TIMESTAMP_TRUNC(CAST('2024-03-15 14:35:47.123456' AS TIMESTAMP), DAY)",
+                "duckdb": "DATE_TRUNC('DAY', CAST('2024-03-15 14:35:47.123456' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "TIMESTAMP_TRUNC(TIMESTAMP '2025-01-01 14:35:47.123456', MINUTE)",
+            write={
+                "bigquery": "TIMESTAMP_TRUNC(CAST('2025-01-01 14:35:47.123456' AS TIMESTAMP), MINUTE)",
+                "duckdb": "DATE_TRUNC('MINUTE', CAST('2025-01-01 14:35:47.123456' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "WITH sample AS (SELECT * FROM UNNEST([TIMESTAMP '2024-03-15 14:35:46', TIMESTAMP '2024-03-16 01:12:03']) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, DAY, 'America/New_York') AS truncated_ts FROM sample",
+            write={
+                "bigquery": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMP), CAST('2024-03-16 01:12:03' AS TIMESTAMP)]) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, DAY, 'America/New_York') AS truncated_ts FROM sample",
+                "duckdb": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMPTZ), CAST('2024-03-16 01:12:03' AS TIMESTAMPTZ)]) AS _t0(ts)) SELECT ts, DATE_TRUNC('DAY', ts AT TIME ZONE 'America/New_York') AT TIME ZONE 'America/New_York' AS truncated_ts FROM sample",
+            },
+        )
+        self.validate_all(
+            "WITH sample AS (SELECT ts FROM UNNEST([TIMESTAMP '2024-03-15 14:35:46', TIMESTAMP '2024-03-16 01:12:03']) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, DAY) AS truncated_ts FROM sample",
+            write={
+                "bigquery": "WITH sample AS (SELECT ts FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMP), CAST('2024-03-16 01:12:03' AS TIMESTAMP)]) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, DAY) AS truncated_ts FROM sample",
+                "duckdb": "WITH sample AS (SELECT ts FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMPTZ), CAST('2024-03-16 01:12:03' AS TIMESTAMPTZ)]) AS _t0(ts)) SELECT ts, DATE_TRUNC('DAY', ts) AS truncated_ts FROM sample",
+            },
+        )
+        self.validate_all(
+            "WITH sample AS (SELECT * FROM UNNEST([TIMESTAMP '2024-03-15 14:35:46', TIMESTAMP '2024-03-16 01:12:03']) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, MINUTE, 'America/New_York') AS truncated_ts FROM sample",
+            write={
+                "bigquery": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMP), CAST('2024-03-16 01:12:03' AS TIMESTAMP)]) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, MINUTE, 'America/New_York') AS truncated_ts FROM sample",
+                "duckdb": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMPTZ), CAST('2024-03-16 01:12:03' AS TIMESTAMPTZ)]) AS _t0(ts)) SELECT ts, DATE_TRUNC('MINUTE', ts) AS truncated_ts FROM sample",
+            },
+        )
+        self.validate_all(
+            "WITH sample AS (SELECT * FROM UNNEST([TIMESTAMP '2024-03-15 14:35:46', TIMESTAMP '2024-03-16 01:12:03']) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, MINUTE) AS truncated_ts FROM sample",
+            write={
+                "bigquery": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMP), CAST('2024-03-16 01:12:03' AS TIMESTAMP)]) AS ts) SELECT ts, TIMESTAMP_TRUNC(ts, MINUTE) AS truncated_ts FROM sample",
+                "duckdb": "WITH sample AS (SELECT * FROM UNNEST([CAST('2024-03-15 14:35:46' AS TIMESTAMPTZ), CAST('2024-03-16 01:12:03' AS TIMESTAMPTZ)]) AS _t0(ts)) SELECT ts, DATE_TRUNC('MINUTE', ts) AS truncated_ts FROM sample",
+            },
+        )
+
+        self.validate_all(
+            "SELECT GREATEST(1, NULL, 3)",
+            write={
+                "duckdb": "SELECT CASE WHEN 1 IS NULL OR NULL IS NULL OR 3 IS NULL THEN NULL ELSE GREATEST(1, NULL, 3) END",
+                "bigquery": "SELECT GREATEST(1, NULL, 3)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LEAST(1, NULL, 3)",
+            write={
+                "duckdb": "SELECT CASE WHEN 1 IS NULL OR NULL IS NULL OR 3 IS NULL THEN NULL ELSE LEAST(1, NULL, 3) END",
+                "bigquery": "SELECT LEAST(1, NULL, 3)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(ParseError):
@@ -2089,6 +2333,7 @@ OPTIONS (
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL mydataset.mymodel, (SELECT custom_label, column1, column2 FROM mydataset.mytable), STRUCT(0.55 AS threshold))"
         )
+        self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity(
             "SELECT * FROM ML.PREDICT(MODEL `my_project`.my_dataset.my_model, (SELECT * FROM input_data))"
         )
@@ -2283,6 +2528,20 @@ OPTIONS (
                 "duckdb": "SELECT CAST(ROW(1, ROW('c_str')) AS STRUCT(a BIGINT, b STRUCT(c TEXT)))",
             },
         )
+        self.validate_all(
+            "SELECT MAX_BY(name, score) FROM table1",
+            write={
+                "bigquery": "SELECT MAX_BY(name, score) FROM table1",
+                "duckdb": "SELECT ARG_MAX(name, score) FROM table1",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN_BY(product, price) FROM table1",
+            write={
+                "bigquery": "SELECT MIN_BY(product, price) FROM table1",
+                "duckdb": "SELECT ARG_MIN(product, price) FROM table1",
+            },
+        )
 
     def test_convert(self):
         for value, expected in [
@@ -2329,6 +2588,34 @@ OPTIONS (
             write={
                 "bigquery": "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps)]) AS participant",
                 "duckdb": "WITH Races AS (SELECT '800M' AS race) SELECT race, participant FROM Races AS r CROSS JOIN (SELECT UNNEST([{'name': 'Rudisha', 'laps': [23.4, 26.3, 26.4, 26.1]}], max_depth => 2)) AS participant",
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)])",
+            write={
+                "bigquery": "SELECT * FROM UNNEST([STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)])",
+                "duckdb": "SELECT * FROM (SELECT UNNEST([{'name': 'Alice', 'scores': {'math': 85, 'english': 90}}, {'name': 'Bob', 'scores': {'math': 92, 'english': 88}}], max_depth => 2))",
+                "snowflake": "SELECT * FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('name', 'Alice', 'scores', OBJECT_CONSTRUCT('math', 85, 'english', 90)), OBJECT_CONSTRUCT('name', 'Bob', 'scores', OBJECT_CONSTRUCT('math', 92, 'english', 88))])) AS _t0(seq, key, path, index, value, this)",
+                "presto": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', CAST(ROW(85, 90) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER))), CAST(ROW('Bob', CAST(ROW(92, 88) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER)))])",
+                "trino": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', CAST(ROW(85, 90) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER))), CAST(ROW('Bob', CAST(ROW(92, 88) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER)))])",
+                "spark2": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)))",
+                "databricks": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)))",
+                "hive": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice', STRUCT(85, 90)), STRUCT('Bob', STRUCT(92, 88))))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Diana', 95)])",
+            write={
+                "bigquery": "SELECT * FROM UNNEST([STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob', 92), STRUCT('Diana', 95)])",
+                "duckdb": "SELECT * FROM (SELECT UNNEST([{'name': 'Alice', 'score': 85}, {'name': 'Bob', 'score': 92}, {'name': 'Diana', 'score': 95}], max_depth => 2))",
+                "snowflake": "SELECT * FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('name', 'Alice', 'score', 85), OBJECT_CONSTRUCT('name', 'Bob', 'score', 92), OBJECT_CONSTRUCT('name', 'Diana', 'score', 95)])) AS _t0(seq, key, path, index, value, this)",
+                "presto": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', 85) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Bob', 92) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Diana', 95) AS ROW(name VARCHAR, score INTEGER))])",
+                "trino": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', 85) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Bob', 92) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Diana', 95) AS ROW(name VARCHAR, score INTEGER))])",
+                "spark2": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Diana' AS name, 95 AS score)))",
+                "databricks": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Diana' AS name, 95 AS score)))",
+                "hive": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice', 85), STRUCT('Bob', 92), STRUCT('Diana', 95)))",
             },
         )
 
@@ -2403,7 +2690,7 @@ OPTIONS (
                     f"SELECT {func}('5')",
                     write={
                         "bigquery": f"SELECT {func}('5', '$')",
-                        "duckdb": """SELECT '5' ->> '$'""",
+                        "duckdb": """SELECT JSON_VALUE('5', '$') ->> '$'""",
                     },
                 )
 
@@ -2412,14 +2699,12 @@ OPTIONS (
                     sql,
                     write={
                         "bigquery": sql,
-                        "duckdb": """SELECT '{"name": "Jakob", "age": "6"}' ->> '$.age'""",
+                        "duckdb": """SELECT JSON_VALUE('{"name": "Jakob", "age": "6"}', '$.age') ->> '$'""",
                         "snowflake": """SELECT JSON_EXTRACT_PATH_TEXT('{"name": "Jakob", "age": "6"}', 'age')""",
                     },
                 )
 
-                self.assertEqual(
-                    self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql
-                )
+        self.assertEqual(self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql)
 
         # Test double quote escaping
         for func in ("JSON_VALUE", "JSON_QUERY", "JSON_QUERY_ARRAY"):
@@ -2461,13 +2746,45 @@ OPTIONS (
             write={
                 "spark": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
                 "databricks": "SELECT UNIX_SECONDS('2008-12-25 15:30:00+00')",
-                "duckdb": "SELECT DATE_DIFF('SECONDS', CAST('1970-01-01 00:00:00+00' AS TIMESTAMPTZ), '2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT CAST(EPOCH(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ)) AS BIGINT)",
                 "snowflake": "SELECT TIMESTAMPDIFF(SECONDS, CAST('1970-01-01 00:00:00+00' AS TIMESTAMPTZ), '2008-12-25 15:30:00+00')",
             },
         )
 
         for dialect in ("bigquery", "spark", "databricks"):
             parse_one("UNIX_SECONDS(col)", dialect=dialect).assert_is(exp.UnixSeconds)
+
+    def test_unix_micros(self):
+        self.validate_all(
+            "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MICROS('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT EPOCH_US(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_MICROS(TIMESTAMP '2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MICROS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "duckdb": "SELECT EPOCH_US(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+
+    def test_unix_millis(self):
+        self.validate_all(
+            "SELECT UNIX_MILLIS('2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MILLIS('2008-12-25 15:30:00+00')",
+                "duckdb": "SELECT EPOCH_MS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_MILLIS(TIMESTAMP '2008-12-25 15:30:00+00')",
+            write={
+                "bigquery": "SELECT UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "duckdb": "SELECT EPOCH_MS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMPTZ))",
+            },
+        )
 
     def test_regexp_extract(self):
         self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
@@ -2486,6 +2803,42 @@ OPTIONS (
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
                 "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 1
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 2
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(SUBSTRING(abc, 2), 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 1, occurrence = 1
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
+                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+            },
+        )
+
+        # Position = 2, occurrence = 3
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
+            write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(SUBSTRING(abc, 2), 'pattern(group)', 1), 3) FROM "table"''',
             },
         )
 
@@ -2544,8 +2897,8 @@ OPTIONS (
         self.validate_all(
             "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
             write={
-                "bigquery": "SELECT FORMAT_DATETIME('%x', '2023-12-25 15:30:00')",
-                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%x')",
+                "bigquery": "SELECT FORMAT_DATETIME('%D', '2023-12-25 15:30:00')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25 15:30:00' AS TIMESTAMP), '%m/%d/%y')",
             },
         )
         self.validate_all(
@@ -2562,15 +2915,12 @@ OPTIONS (
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
         self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
         self.validate_identity("STRING_AGG(foo, b'|' ORDER BY bar)")
-        self.validate_identity("STRING_AGG(a)", "STRING_AGG(a, ',')")
+        self.validate_identity("STRING_AGG(a)")
         self.validate_identity("STRING_AGG(DISTINCT v, sep LIMIT 3)")
-        self.validate_identity(
-            "STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)",
-            "STRING_AGG(DISTINCT a, ',' ORDER BY b DESC, c DESC LIMIT 10)",
-        )
+        self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
         self.validate_identity(
             "SELECT a, GROUP_CONCAT(b) FROM table GROUP BY a",
-            "SELECT a, STRING_AGG(b, ',') FROM table GROUP BY a",
+            "SELECT a, STRING_AGG(b) FROM table GROUP BY a",
         )
 
     def test_annotate_timestamps(self):
@@ -2650,29 +3000,29 @@ OPTIONS (
             self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
 
         self.assertEqual(
-            ast.this.args["from"].this.args["this"].meta,
+            ast.this.args["from_"].this.args["this"].meta,
             {"line": 1, "col": 41, "start": 29, "end": 40},
         )
         self.assertEqual(
-            ast.this.args["from"].this.args["db"].meta,
+            ast.this.args["from_"].this.args["db"].meta,
             {"line": 1, "col": 28, "start": 17, "end": 27},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["this"].meta,
+            ast.expression.args["from_"].this.args["this"].meta,
             {"line": 1, "col": 106, "start": 94, "end": 105},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["db"].meta,
+            ast.expression.args["from_"].this.args["db"].meta,
             {"line": 1, "col": 93, "start": 82, "end": 92},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["catalog"].meta,
+            ast.expression.args["from_"].this.args["catalog"].meta,
             {"line": 1, "col": 81, "start": 69, "end": 80},
         )
 
         information_schema_sql = "SELECT a, b FROM region.INFORMATION_SCHEMA.COLUMNS"
         ast = parse_one(information_schema_sql, dialect="bigquery")
-        meta = ast.args["from"].this.this.meta
+        meta = ast.args["from_"].this.this.meta
         self.assertEqual(meta, {"line": 1, "col": 50, "start": 24, "end": 49})
         assert (
             information_schema_sql[meta["start"] : meta["end"] + 1] == "INFORMATION_SCHEMA.COLUMNS"
@@ -2681,14 +3031,14 @@ OPTIONS (
     def test_quoted_identifier_meta(self):
         sql = "SELECT `a` FROM `test_schema`.`test_table_a`"
         ast = parse_one(sql, dialect="bigquery")
-        db_meta = ast.args["from"].this.args["db"].meta
+        db_meta = ast.args["from_"].this.args["db"].meta
         self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], "`test_schema`")
-        table_meta = ast.args["from"].this.this.meta
+        table_meta = ast.args["from_"].this.this.meta
         self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], "`test_table_a`")
 
         information_schema_sql = "SELECT a, b FROM `region.INFORMATION_SCHEMA.COLUMNS`"
         ast = parse_one(information_schema_sql, dialect="bigquery")
-        table_meta = ast.args["from"].this.this.meta
+        table_meta = ast.args["from_"].this.this.meta
         assert (
             information_schema_sql[table_meta["start"] : table_meta["end"] + 1]
             == "`region.INFORMATION_SCHEMA.COLUMNS`"
@@ -3016,7 +3366,7 @@ OPTIONS (
             "SELECT TO_HEX(SHA1('abc'))",
             write={
                 "bigquery": "SELECT TO_HEX(SHA1('abc'))",
-                "snowflake": "SELECT TO_CHAR(SHA1('abc'))",
+                "snowflake": "SELECT TO_CHAR(SHA1_BINARY('abc'))",
             },
         )
 
@@ -3044,3 +3394,173 @@ OPTIONS (
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+    def test_concat(self):
+        self.validate_all(
+            "SELECT CONCAT('T.P.', ' ', 'Bar') AS author",
+            write={
+                "bigquery": "SELECT CONCAT('T.P.', ' ', 'Bar') AS author",
+                "duckdb": "SELECT 'T.P.' || ' ' || 'Bar' AS author",
+            },
+        )
+
+    def test_pseudocolumns(self):
+        schema = {
+            "t": {
+                "col": "INT",
+                "a": "TIMESTAMP",
+                "b": "TIMESTAMP",
+            }
+        }
+
+        ast = self.validate_identity("SELECT col FROM t WHERE _PARTITIONTIME BETWEEN a AND b")
+        self.assertIsNone(ast.find(exp.Pseudocolumn))
+
+        qualified = qualify(ast, schema=schema, dialect="bigquery")
+        self.assertIsNotNone(qualified.find(exp.Pseudocolumn))
+        self.assertEqual(
+            qualified.sql(dialect="bigquery"),
+            "SELECT `t`.`col` AS `col` FROM `t` AS `t` WHERE `_partitiontime` BETWEEN `t`.`a` AND `t`.`b`",
+        )
+
+    def test_round(self):
+        self.validate_all(
+            "SELECT ROUND(2.25) AS value",
+            write={
+                "bigquery": "SELECT ROUND(2.25) AS value",
+                "duckdb": "SELECT ROUND(2.25) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.25, 1) AS value",
+            write={
+                "bigquery": "SELECT ROUND(2.25, 1) AS value",
+                "duckdb": "SELECT ROUND(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(NUMERIC '2.25', 1, 'ROUND_HALF_AWAY_FROM_ZERO') AS value",
+            write={
+                "bigquery": """SELECT ROUND(CAST('2.25' AS NUMERIC), 1, 'ROUND_HALF_AWAY_FROM_ZERO') AS value""",
+                "duckdb": "SELECT ROUND(CAST('2.25' AS DECIMAL), 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(NUMERIC '2.25', 1, 'ROUND_HALF_EVEN') AS value",
+            write={
+                "bigquery": """SELECT ROUND(CAST('2.25' AS NUMERIC), 1, 'ROUND_HALF_EVEN') AS value""",
+                "duckdb": "SELECT ROUND_EVEN(CAST('2.25' AS DECIMAL), 1) AS value",
+            },
+        )
+
+    def test_approx_quantiles(self):
+        self.validate_identity("APPROX_QUANTILES(x, 2)")
+        self.validate_identity("APPROX_QUANTILES(FALSE OR TRUE, 2)")
+        self.validate_identity("APPROX_QUANTILES((SELECT 1 AS val), CAST(2.1 AS INT64))")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2)")
+        self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
+        self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
+        self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
+
+    def test_approx_quantiles_to_duckdb(self):
+        self.validate_all(
+            "APPROX_QUANTILES(x, 1)",
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 1])"},
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(x, 2)",
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 0.5, 1])"},
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(x, 4)",
+            write={"duckdb": "APPROX_QUANTILE(x, [0, 0.25, 0.5, 0.75, 1])"},
+        )
+        self.validate_all(
+            "APPROX_QUANTILES(DISTINCT x, 2)",
+            write={"duckdb": "APPROX_QUANTILE(DISTINCT x, [0, 0.5, 1])"},
+        )
+
+        with self.subTest("APPROX_QUANTILES 100 buckets"):
+            result = self.parse_one("APPROX_QUANTILES(x, 100)").sql("duckdb")
+            self.assertEqual(result.count("APPROX_QUANTILE("), 1)
+            self.assertIn("0.01", result)
+            self.assertIn("0.99", result)
+            self.assertRegex(result, r"APPROX_QUANTILE\(x, \[.*\]\)")
+
+        for expr in ("x + y", "CASE WHEN x > 0 THEN x ELSE 0 END", "ABS(x)"):
+            with self.subTest(expr=expr):
+                self.validate_all(
+                    f"APPROX_QUANTILES({expr}, 2)",
+                    write={"duckdb": f"APPROX_QUANTILE({expr}, [0, 0.5, 1])"},
+                )
+
+        with self.subTest("non-literal bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, bucket_count)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("non-integer bucket count"):
+            for value in ("0", "-1", "2.5"):
+                with self.subTest(value=value):
+                    with self.assertRaises(UnsupportedError):
+                        self.parse_one(f"APPROX_QUANTILES(x, {value})").sql(
+                            "duckdb", unsupported_level=ErrorLevel.RAISE
+                        )
+
+        with self.subTest("NULL bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, NULL)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("missing bucket count"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("missing bucket count with DISTINCT"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(DISTINCT x)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+        with self.subTest("APPROX_QUANTILES IGNORE NULLS"):
+            # No warning: IGNORE NULLS is the default behavior in DuckDB
+            from sqlglot.generator import logger as generator_logger
+
+            with mock.patch.object(generator_logger, "warning") as mock_warning:
+                self.validate_all(
+                    "APPROX_QUANTILES(x, 2 IGNORE NULLS)",
+                    write={"duckdb": "APPROX_QUANTILE(x, [0, 0.5, 1])"},
+                )
+                mock_warning.assert_not_called()
+
+        with self.subTest("APPROX_QUANTILES RESPECT NULLS"):
+            with self.assertRaises(UnsupportedError):
+                self.parse_one("APPROX_QUANTILES(x, 2 RESPECT NULLS)").sql(
+                    "duckdb", unsupported_level=ErrorLevel.RAISE
+                )
+
+    def test_bignumeric(self):
+        # BIGDECIMAL is an alias of BIGNUMERIC
+        for type_ in ("BIGNUMERIC", "BIGDECIMAL"):
+            with self.subTest(f"Testing BigQuery's {type_}"):
+                self.validate_all(
+                    f"SELECT {type_} '1'",
+                    write={
+                        "bigquery": "SELECT CAST('1' AS BIGNUMERIC)",
+                        "duckdb": "SELECT CAST('1' AS DECIMAL(38, 5))",
+                    },
+                )
+
+                self.validate_all(
+                    f"SELECT CAST(1 AS {type_})",
+                    write={
+                        "bigquery": "SELECT CAST(1 AS BIGNUMERIC)",
+                        "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                    },
+                )

@@ -81,6 +81,8 @@ def datetype_handler(args: t.List[exp.Expression], dialect: DialectType) -> exp.
         date_str = f"{int(year.this):04d}-{int(month.this):02d}-{int(day.this):02d}"
         return exp.Date(this=exp.Literal.string(date_str))
 
+    dialect = Dialect.get_or_raise(dialect)
+
     return exp.Cast(
         this=exp.Concat(
             expressions=[
@@ -89,7 +91,8 @@ def datetype_handler(args: t.List[exp.Expression], dialect: DialectType) -> exp.
                 month,
                 exp.Literal.string("-"),
                 day,
-            ]
+            ],
+            coalesce=dialect.CONCAT_COALESCE,
         ),
         to=exp.DataType.build("DATE"),
     )

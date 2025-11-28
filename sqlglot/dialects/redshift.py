@@ -47,6 +47,7 @@ class Redshift(Postgres):
     COPY_PARAMS_ARE_CSV = False
     HEX_LOWERCASE = True
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
+    COALESCE_COMPARISON_NON_STANDARD = True
 
     # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
@@ -231,6 +232,9 @@ class Redshift(Postgres):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.LastDay)
         TRANSFORMS.pop(exp.SHA2)
+
+        # Postgres does not permit a double precision argument in ROUND; Redshift does
+        TRANSFORMS.pop(exp.Round)
 
         RESERVED_KEYWORDS = {
             "aes128",

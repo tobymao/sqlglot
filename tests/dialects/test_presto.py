@@ -1117,6 +1117,13 @@ class TestPresto(Validator):
         self.validate_identity(
             "SELECT id, FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS first_is_deleted, NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted, LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS last_is_deleted FROM my_table"
         )
+        self.validate_all(
+            "SELECT NULLABLE FROM system.jdbc.types",
+            read={
+                "presto": "SELECT NULLABLE FROM system.jdbc.types",
+                "trino": "SELECT NULLABLE FROM system.jdbc.types",
+            },
+        )
 
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")
@@ -1367,3 +1374,10 @@ MATCH_RECOGNIZE (
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Localtime)
+    def test_initcap(self):
+        self.validate_all(
+            "INITCAP(col)",
+            write={
+                "presto": "REGEXP_REPLACE(col, '(\\w)(\\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
+            },
+        )

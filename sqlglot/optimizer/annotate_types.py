@@ -5,6 +5,7 @@ import logging
 import typing as t
 
 from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
 from sqlglot.helper import (
     ensure_list,
     is_date_unit,
@@ -14,7 +15,6 @@ from sqlglot.helper import (
 )
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
-from sqlglot.dialects.dialect import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
@@ -25,7 +25,8 @@ if t.TYPE_CHECKING:
         BinaryCoercionFunc,
     ]
 
-    from sqlglot.dialects.dialect import DialectType, AnnotatorsType
+    from sqlglot.dialects.dialect import DialectType
+    from sqlglot.typing import ExpressionMetadataType
 
 logger = logging.getLogger("sqlglot")
 
@@ -33,9 +34,10 @@ logger = logging.getLogger("sqlglot")
 def annotate_types(
     expression: E,
     schema: t.Optional[t.Dict | Schema] = None,
-    annotators: t.Optional[AnnotatorsType] = None,
+    expression_metadata: t.Optional[ExpressionMetadataType] = None,
     coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
     dialect: DialectType = None,
+    overwrite_types: bool = True,
 ) -> E:
     """
     Infers the types of an expression, annotating its AST accordingly.
@@ -51,8 +53,9 @@ def annotate_types(
     Args:
         expression: Expression to annotate.
         schema: Database schema.
-        annotators: Maps expression type to corresponding annotation function.
+        expression_metadata: Maps expression type to corresponding annotation function.
         coerces_to: Maps expression type to set of types that it can be coerced into.
+        overwrite_types: Re-annotate the existing AST types.
 
     Returns:
         The expression annotated with types.
@@ -60,7 +63,12 @@ def annotate_types(
 
     schema = ensure_schema(schema, dialect=dialect)
 
-    return TypeAnnotator(schema, annotators, coerces_to).annotate(expression)
+    return TypeAnnotator(
+        schema=schema,
+        expression_metadata=expression_metadata,
+        coerces_to=coerces_to,
+        overwrite_types=overwrite_types,
+    ).annotate(expression)
 
 
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
@@ -130,14 +138,6 @@ class _TypeAnnotator(type):
             for data_type in type_precedence:
                 klass.COERCES_TO[data_type] = coerces_to.copy()
                 coerces_to |= {data_type}
-
-        # NULL can be coerced to any type, so e.g. NULL + 1 will have type INT
-        klass.COERCES_TO[exp.DataType.Type.NULL] = {
-            *text_precedence,
-            *numeric_precedence,
-            *timelike_precedence,
-        }
-
         return klass
 
 
@@ -182,15 +182,16 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def __init__(
         self,
         schema: Schema,
-        annotators: t.Optional[AnnotatorsType] = None,
+        expression_metadata: t.Optional[ExpressionMetadataType] = None,
         coerces_to: t.Optional[t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
+        overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
-        self.annotators = annotators or Dialect.get_or_raise(schema.dialect).ANNOTATORS
-        self.coerces_to = (
-            coerces_to or Dialect.get_or_raise(schema.dialect).COERCES_TO or self.COERCES_TO
-        )
+        dialect = schema.dialect or Dialect()
+        self.dialect = dialect
+        self.expression_metadata = expression_metadata or dialect.EXPRESSION_METADATA
+        self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
@@ -200,16 +201,24 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._null_expressions: t.Dict[int, exp.Expression] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
-        self._supports_null_type = schema.dialect in ("databricks", "spark")
+        self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
         # would reprocess the entire subtree to coerce the types of its operands' projections
         self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType | exp.DataType.Type]] = {}
 
+        # When set to False, this enables partial annotation by skipping already-annotated nodes
+        self._overwrite_types = overwrite_types
+
+    def clear(self) -> None:
+        self._visited.clear()
+        self._null_expressions.clear()
+        self._setop_column_types.clear()
+
     def _set_type(
-        self, expression: exp.Expression, target_type: t.Optional[exp.DataType | exp.DataType.Type]
-    ) -> None:
+        self, expression: E, target_type: t.Optional[exp.DataType | exp.DataType.Type]
+    ) -> E:
         prev_type = expression.type
         expression_id = id(expression)
 
@@ -224,12 +233,31 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DataType.Type.NULL:
             self._null_expressions.pop(expression_id, None)
 
-    def annotate(self, expression: E) -> E:
-        for scope in traverse_scope(expression):
-            self.annotate_scope(scope)
+        if (
+            isinstance(expression, exp.Column)
+            and expression.is_type(exp.DataType.Type.JSON)
+            and (dot_parts := expression.meta.get("dot_parts"))
+        ):
+            # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
+            i = iter(dot_parts)
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent.expression.set("this", exp.to_identifier(next(i), quoted=True))
+                parent = parent.parent
+
+            expression.meta.pop("dot_parts", None)
+
+        return expression
+
+    def annotate(self, expression: E, annotate_scope: bool = True) -> E:
+        # This flag is used to avoid costly scope traversals when we only care about annotating
+        # non-column expressions (partial type inference), e.g., when simplifying in the optimizer
+        if annotate_scope:
+            for scope in traverse_scope(expression):
+                self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        expression = self._maybe_annotate(expression)
+        self._annotate_expression(expression)
 
         # Replace NULL type with UNKNOWN, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -305,20 +333,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
-        # First annotate the current scope's column references
-        for col in scope.columns:
-            if not col.table:
-                continue
-
-            source = scope.sources.get(col.table)
-            if isinstance(source, exp.Table):
-                self._set_type(col, self.schema.get_column_type(source, col))
-            elif source:
-                if col.table in selects and col.name in selects[col.table]:
-                    self._set_type(col, selects[col.table][col.name])
-                elif isinstance(source.expression, exp.Unnest):
-                    self._set_type(col, source.expression.type)
-
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
@@ -348,10 +362,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
 
-        # Then (possibly) annotate the remaining expressions in the scope
-        self._maybe_annotate(scope.expression)
+        # Iterate through all the expressions of the current scope in post-order, and annotate
+        self._annotate_expression(scope.expression, scope, selects)
 
-        if self.schema.dialect == "bigquery" and isinstance(scope.expression, exp.Query):
+        if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
                 this=exp.DataType.Type.STRUCT,
                 expressions=[
@@ -374,23 +388,57 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _maybe_annotate(self, expression: E) -> E:
-        if id(expression) in self._visited:
-            return expression  # We've already inferred the expression's type
+    def _annotate_expression(
+        self,
+        expression: exp.Expression,
+        scope: t.Optional[Scope] = None,
+        selects: t.Optional[t.Dict[str, t.Dict[str, t.Any]]] = None,
+    ) -> None:
+        stack = [(expression, False)]
+        selects = selects or {}
 
-        annotator = self.annotators.get(expression.__class__)
+        while stack:
+            expr, children_annotated = stack.pop()
 
-        return (
-            annotator(self, expression)
-            if annotator
-            else self._annotate_with_type(expression, exp.DataType.Type.UNKNOWN)
-        )
+            if id(expr) in self._visited or (
+                not self._overwrite_types
+                and expr.type
+                and not expr.is_type(exp.DataType.Type.UNKNOWN)
+            ):
+                continue  # We've already inferred the expression's type
 
-    def _annotate_args(self, expression: E) -> E:
-        for value in expression.iter_expressions():
-            self._maybe_annotate(value)
+            if not children_annotated:
+                stack.append((expr, True))
+                for child_expr in expr.iter_expressions():
+                    stack.append((child_expr, False))
+                continue
 
-        return expression
+            if scope and isinstance(expr, exp.Column) and expr.table:
+                source = scope.sources.get(expr.table)
+                if isinstance(source, exp.Table):
+                    self._set_type(expr, self.schema.get_column_type(source, expr))
+                elif source:
+                    if expr.table in selects and expr.name in selects[expr.table]:
+                        self._set_type(expr, selects[expr.table][expr.name])
+                    elif isinstance(source.expression, exp.Unnest):
+                        self._set_type(expr, source.expression.type)
+                    else:
+                        self._set_type(expr, exp.DataType.Type.UNKNOWN)
+                else:
+                    self._set_type(expr, exp.DataType.Type.UNKNOWN)
+
+                if expr.type and expr.type.args.get("nullable") is False:
+                    expr.meta["nonnull"] = True
+                continue
+
+            spec = self.expression_metadata.get(expr.__class__)
+
+            if spec and (annotator := spec.get("annotator")):
+                annotator(self, expr)
+            elif spec and (returns := spec.get("returns")):
+                self._set_type(expr, t.cast(exp.DataType.Type, returns))
+            else:
+                self._set_type(expr, exp.DataType.Type.UNKNOWN)
 
     def _maybe_coerce(
         self,
@@ -421,14 +469,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
+        if type1_value == exp.DataType.Type.NULL:
+            return type2_value
+        if type2_value == exp.DataType.Type.NULL:
+            return type1_value
+
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
     def _annotate_binary(self, expression: B) -> B:
-        self._annotate_args(expression)
-
         left, right = expression.left, expression.right
         if not left or not right:
-            expression_sql = expression.sql(self.schema.dialect)
+            expression_sql = expression.sql(self.dialect)
             logger.warning(f"Failed to annotate badly formed binary expression: {expression_sql}")
             self._set_type(expression, None)
             return expression
@@ -442,15 +493,21 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
+        if isinstance(expression, exp.Is) or (
+            left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
+        ):
+            expression.meta["nonnull"] = True
+
         return expression
 
     def _annotate_unary(self, expression: E) -> E:
-        self._annotate_args(expression)
-
         if isinstance(expression, exp.Not):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         else:
             self._set_type(expression, expression.this.type)
+
+        if expression.this.meta.get("nonnull") is True:
+            expression.meta["nonnull"] = True
 
         return expression
 
@@ -462,13 +519,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, exp.DataType.Type.DOUBLE)
 
-        return expression
+        expression.meta["nonnull"] = True
 
-    def _annotate_with_type(
-        self, expression: E, target_type: exp.DataType | exp.DataType.Type
-    ) -> E:
-        self._set_type(expression, target_type)
-        return self._annotate_args(expression)
+        return expression
 
     @t.no_type_check
     def _annotate_by_args(
@@ -478,8 +531,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         promote: bool = False,
         array: bool = False,
     ) -> E:
-        self._annotate_args(expression)
-
         expressions: t.List[exp.Expression] = []
         for arg in args:
             arg_expr = expression.args.get(arg)
@@ -497,7 +548,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                 last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
-        self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
+        self._set_type(expression, last_datatype)
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:
@@ -518,8 +569,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_timeunit(
         self, expression: exp.TimeUnit | exp.DateTrunc
     ) -> exp.TimeUnit | exp.DateTrunc:
-        self._annotate_args(expression)
-
         if expression.this.type.this in exp.DataType.TEXT_TYPES:
             datatype = _coerce_date_literal(expression.this, expression.unit)
         elif expression.this.type.this in exp.DataType.TEMPORAL_TYPES:
@@ -531,8 +580,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_bracket(self, expression: exp.Bracket) -> exp.Bracket:
-        self._annotate_args(expression)
-
         bracket_arg = expression.expressions[0]
         this = expression.this
 
@@ -550,8 +597,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_div(self, expression: exp.Div) -> exp.Div:
-        self._annotate_args(expression)
-
         left_type, right_type = expression.left.type.this, expression.right.type.this  # type: ignore
 
         if (
@@ -570,7 +615,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_dot(self, expression: exp.Dot) -> exp.Dot:
-        self._annotate_args(expression)
         self._set_type(expression, None)
         this_type = expression.this.type
 
@@ -583,12 +627,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_explode(self, expression: exp.Explode) -> exp.Explode:
-        self._annotate_args(expression)
         self._set_type(expression, seq_get(expression.this.type.expressions, 0))
         return expression
 
     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
-        self._annotate_args(expression)
         child = seq_get(expression.expressions, 0)
 
         if child and child.is_type(exp.DataType.Type.ARRAY):
@@ -617,7 +659,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression.type
 
     def _annotate_struct(self, expression: exp.Struct) -> exp.Struct:
-        self._annotate_args(expression)
         self._set_type(
             expression,
             exp.DataType(
@@ -635,8 +676,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_map(self, expression: exp.VarMap) -> exp.VarMap: ...
 
     def _annotate_map(self, expression):
-        self._annotate_args(expression)
-
         keys = expression.args.get("keys")
         values = expression.args.get("values")
 
@@ -653,8 +692,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_to_map(self, expression: exp.ToMap) -> exp.ToMap:
-        self._annotate_args(expression)
-
         map_type = exp.DataType(this=exp.DataType.Type.MAP)
         arg = expression.this
         if arg.is_type(exp.DataType.Type.STRUCT):
@@ -669,7 +706,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_extract(self, expression: exp.Extract) -> exp.Extract:
-        self._annotate_args(expression)
         part = expression.name
         if part == "TIME":
             self._set_type(expression, exp.DataType.Type.TIME)
@@ -680,8 +716,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_by_array_element(self, expression: exp.Expression) -> exp.Expression:
-        self._annotate_args(expression)
-
         array_arg = expression.this
         if array_arg.type.is_type(exp.DataType.Type.ARRAY):
             element_type = seq_get(array_arg.type.expressions, 0) or exp.DataType.Type.UNKNOWN

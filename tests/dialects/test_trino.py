@@ -6,6 +6,7 @@ class TestTrino(Validator):
     dialect = "trino"
 
     def test_trino(self):
+        self.validate_identity("REFRESH MATERIALIZED VIEW mynamespace.test_view")
         self.validate_identity("JSON_QUERY(m.properties, 'lax $.area' OMIT QUOTES NULL ON ERROR)")
         self.validate_identity("JSON_EXTRACT(content, json_path)")
         self.validate_identity("JSON_QUERY(content, 'lax $.HY.*')")
@@ -35,6 +36,18 @@ class TestTrino(Validator):
                 "duckdb": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMPTZ)",
                 "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP WITH TIME ZONE)",
             },
+        )
+        self.validate_all(
+            "SELECT FORMAT('%s', 123)",
+            write={
+                "duckdb": "SELECT FORMAT('{}', 123)",
+                "snowflake": "SELECT TO_CHAR(123)",
+                "trino": "SELECT FORMAT('%s', 123)",
+            },
+        )
+
+        self.validate_identity(
+            "SELECT * FROM tbl MATCH_RECOGNIZE (PARTITION BY id ORDER BY col MEASURES FIRST(col, 2) AS col1, LAST(col, 2) AS col2 PATTERN (B* A) DEFINE A AS col = 1)"
         )
 
     def test_listagg(self):

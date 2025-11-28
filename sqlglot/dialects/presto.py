@@ -39,11 +39,18 @@ from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
+from sqlglot.typing.presto import EXPRESSION_METADATA
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
 
 def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
+    delimiters = expression.expression
+    if delimiters and not (
+        delimiters.is_string and delimiters.this == self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS
+    ):
+        self.unsupported("INITCAP does not support custom delimiters")
+
     regex = r"(\w)(\w*)"
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
@@ -267,20 +274,7 @@ class Presto(Dialect):
     # https://github.com/prestodb/presto/issues/2863
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
-    # The result of certain math functions in Presto/Trino is of type
-    # equal to the input type e.g: FLOOR(5.5/2) -> DECIMAL, FLOOR(5/2) -> BIGINT
-    ANNOTATORS = {
-        **Dialect.ANNOTATORS,
-        exp.Floor: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Ceil: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Mod: lambda self, e: self._annotate_by_args(e, "this", "expression"),
-        exp.Round: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Sign: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Rand: lambda self, e: self._annotate_by_args(e, "this")
-        if e.this
-        else self._set_type(e, exp.DataType.Type.DOUBLE),
-    }
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     SUPPORTED_SETTINGS = {
         *Dialect.SUPPORTED_SETTINGS,
@@ -429,10 +423,19 @@ class Presto(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
-            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
+            exp.ApproxQuantile: lambda self, e: self.func(
+                "APPROX_PERCENTILE",
+                e.this,
+                e.args.get("weight"),
+                e.args.get("quantile"),
+                e.args.get("accuracy"),
+            ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            exp.Array: transforms.preprocess(
+                [transforms.inherit_struct_field_names],
+                generator=lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            ),
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
@@ -475,7 +478,6 @@ class Presto(Dialect):
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
-            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
@@ -544,6 +546,7 @@ class Presto(Dialect):
             exp.Xor: bool_xor_sql,
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
         }
 

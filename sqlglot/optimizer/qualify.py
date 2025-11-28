@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import (
-    pushdown_cte_alias_columns as pushdown_cte_alias_columns_func,
     qualify_columns as qualify_columns_func,
     quote_identifiers as quote_identifiers_func,
     validate_qualify_columns as validate_qualify_columns_func,
@@ -31,7 +30,8 @@ def qualify(
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
     identify: bool = True,
-    infer_csv_schemas: bool = False,
+    canonicalize_table_aliases: bool = False,
+    on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -63,27 +63,32 @@ def qualify(
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
         identify: If True, quote all identifiers, else only necessary ones.
-        infer_csv_schemas: Whether to scan READ_CSV calls in order to infer the CSVs' schemas.
+        canonicalize_table_aliases: Whether to use canonical aliases (_0, _1, ...) for all sources
+            instead of preserving table names.
+        on_qualify: Callback after a table has been qualified.
 
     Returns:
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
+    dialect = Dialect.get_or_raise(dialect)
+
+    expression = normalize_identifiers(
+        expression,
+        dialect=dialect,
+        store_original_column_identifiers=True,
+    )
     expression = qualify_tables(
         expression,
         db=db,
         catalog=catalog,
-        schema=schema,
         dialect=dialect,
-        infer_csv_schemas=infer_csv_schemas,
+        on_qualify=on_qualify,
+        canonicalize_table_aliases=canonicalize_table_aliases,
     )
-    expression = normalize_identifiers(expression, dialect=dialect)
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
-
-    if Dialect.get_or_raise(dialect).PREFER_CTE_ALIAS_COLUMN:
-        expression = pushdown_cte_alias_columns_func(expression)
 
     if qualify_columns:
         expression = qualify_columns_func(

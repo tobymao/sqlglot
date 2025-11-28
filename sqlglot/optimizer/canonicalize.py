@@ -35,7 +35,12 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
-        node = exp.Concat(expressions=[node.left, node.right])
+        node = exp.Concat(
+            expressions=[node.left, node.right],
+            # All known dialects, i.e. Redshift and T-SQL, that support
+            # concatenating strings with the + operator do not coalesce NULLs.
+            coalesce=False,
+        )
     return node
 
 
@@ -77,7 +82,7 @@ def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -
         _coerce_date(node.left, node.right, promote_to_inferred_datetime_type)
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"], promote_to_inferred_datetime_type)
-    elif isinstance(node, exp.Extract) and not node.expression.type.is_type(
+    elif isinstance(node, exp.Extract) and not node.expression.is_type(
         *exp.DataType.TEMPORAL_TYPES
     ):
         _replace_cast(node.expression, exp.DataType.Type.DATETIME)

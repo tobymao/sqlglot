@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
+from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -133,6 +134,27 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+            write={
+                "spark": "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+                "hive": "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            write={
+                "spark": "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
+                "hive": "ALTER TABLE db.example CHANGE COLUMN col_a col_a BIGINT",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE db.example RENAME COLUMN col_a TO col_b",
+            write={
+                "spark": "ALTER TABLE db.example RENAME COLUMN col_a TO col_b",
+                "hive": UnsupportedError,
+            },
+        )
+        self.validate_all(
             "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             write={
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
@@ -252,6 +274,10 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("ALTER TABLE foo ADD PARTITION(event = 'click')")
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS PARTITION(event = 'click')")
         self.validate_identity("IF(cond, foo AS bar, bla AS baz)")
@@ -322,6 +348,13 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
 
+        self.validate_all(
+            "SELECT * FROM parquet.`name.parquet`",
+            read={
+                "duckdb": "SELECT * FROM READ_PARQUET('name.parquet')",
+                "spark": "SELECT * FROM parquet.`name.parquet`",
+            },
+        )
         self.validate_all(
             "SELECT TO_JSON(STRUCT('blah' AS x)) AS y",
             write={
@@ -863,6 +896,35 @@ TBLPROPERTIES (
                 "spark": "LISTAGG(x, ', ')",
             },
         )
+        self.validate_all(
+            "LIKE(foo, 'pattern')",
+            write={
+                "spark": "foo LIKE 'pattern'",
+                "databricks": "foo LIKE 'pattern'",
+            },
+        )
+        self.validate_all(
+            "LIKE(foo, 'pattern', '!')",
+            write={
+                "spark": "foo LIKE 'pattern' ESCAPE '!'",
+                "databricks": "foo LIKE 'pattern' ESCAPE '!'",
+            },
+        )
+        self.validate_all(
+            "ILIKE(foo, 'pattern')",
+            write={
+                "spark": "foo ILIKE 'pattern'",
+                "databricks": "foo ILIKE 'pattern'",
+            },
+        )
+        self.validate_all(
+            "ILIKE(foo, 'pattern', '!')",
+            write={
+                "spark": "foo ILIKE 'pattern' ESCAPE '!'",
+                "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
+            },
+        )
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_bool_or(self):
         self.validate_all(

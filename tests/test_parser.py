@@ -40,6 +40,8 @@ class TestParser(unittest.TestCase):
             "Failed to parse 'SELECT * FROM tbl' into <class 'sqlglot.expressions.Table'>",
         )
 
+        self.assertIsInstance(parse_one("foo INT NOT NULL", into=exp.ColumnDef), exp.ColumnDef)
+
     def test_parse_into_error(self):
         expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>]"
         expected_errors = [
@@ -229,7 +231,7 @@ class TestParser(unittest.TestCase):
         assert expression.expressions[2].alias == "c"
         assert expression.expressions[3].alias == "D"
         assert expression.expressions[4].alias == "y|z'"
-        table = expression.args["from"].this
+        table = expression.args["from_"].this
         assert table.name == "z"
         assert table.args["db"].name == "y"
 
@@ -241,8 +243,8 @@ class TestParser(unittest.TestCase):
         )
 
         assert len(expressions) == 2
-        assert expressions[0].args["from"].name == "a"
-        assert expressions[1].args["from"].name == "b"
+        assert expressions[0].args["from_"].name == "a"
+        assert expressions[1].args["from_"].name == "b"
 
         expressions = parse("SELECT 1; ; SELECT 2")
 
@@ -251,19 +253,20 @@ class TestParser(unittest.TestCase):
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
-        self.assertIsInstance(ignore.expression(exp.Hint, expressions=[""]), exp.Hint)
+        self.assertIsInstance(ignore.expression(exp.Hint, expressions=[]), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint, y=""), exp.Hint)
         self.assertIsInstance(ignore.expression(exp.Hint), exp.Hint)
 
         default = Parser(error_level=ErrorLevel.RAISE)
-        self.assertIsInstance(default.expression(exp.Hint, expressions=[""]), exp.Hint)
-        default.expression(exp.Hint, y="")
+        with self.assertRaises(TypeError):
+            default.expression(exp.Hint, y="")
+        self.assertIsInstance(default.expression(exp.Hint, expressions=[]), exp.Hint)
         default.expression(exp.Hint)
-        self.assertEqual(len(default.errors), 3)
+        self.assertEqual(len(default.errors), 2)
 
         warn = Parser(error_level=ErrorLevel.WARN)
-        warn.expression(exp.Hint, y="")
-        self.assertEqual(len(warn.errors), 2)
+        warn.expression(exp.Hint)
+        self.assertEqual(len(warn.errors), 1)
 
     def test_parse_errors(self):
         with self.assertRaises(ParseError):
@@ -372,8 +375,8 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment2"])
-        self.assertEqual(expression.args.get("from").comments, ["comment3"])
-        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.args.get("from_").comments, ["comment3"])
+        self.assertEqual(expression.args.get("with_").comments, ["comment1.1", "comment1.2"])
 
     def test_comments_insert(self):
         expression = parse_one(
@@ -404,7 +407,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expression.comments, ["comment2"])
         self.assertEqual(expression.this.comments, ["comment3"])
-        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.args.get("with_").comments, ["comment1.1", "comment1.2"])
 
     def test_comments_update(self):
         expression = parse_one(
@@ -438,7 +441,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expression.comments, ["comment2"])
         self.assertEqual(expression.this.comments, ["comment3"])
-        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.args.get("with_").comments, ["comment1.1", "comment1.2"])
 
     def test_comments_delete(self):
         expression = parse_one(
@@ -470,7 +473,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expression.comments, ["comment2"])
         self.assertEqual(expression.this.comments, ["comment3"])
-        self.assertEqual(expression.args["with"].comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.args["with_"].comments, ["comment1.1", "comment1.2"])
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))
@@ -766,7 +769,7 @@ class TestParser(unittest.TestCase):
             for dialect, expected_columns in dialect_columns.items():
                 with self.subTest(f"Testing query '{query}' for dialect {dialect}"):
                     expr = parse_one(query, read=dialect)
-                    columns = expr.args["from"].this.args["pivots"][0].args["columns"]
+                    columns = expr.args["from_"].this.args["pivots"][0].args["columns"]
                     self.assertEqual(
                         expected_columns, [col.sql(dialect=dialect) for col in columns]
                     )
@@ -930,17 +933,6 @@ class TestParser(unittest.TestCase):
             self.assertIsInstance(collate_node, exp.Collate)
             self.assertIsInstance(collate_node.expression, collate_pair[1])
 
-    def test_odbc_date_literals(self):
-        for value, cls in [
-            ("{d'2024-01-01'}", exp.Date),
-            ("{t'12:00:00'}", exp.Time),
-            ("{ts'2024-01-01 12:00:00'}", exp.Timestamp),
-        ]:
-            sql = f"INSERT INTO tab(ds) VALUES ({value})"
-            expr = parse_one(sql)
-            self.assertIsInstance(expr, exp.Insert)
-            self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
-
     def test_drop_column(self):
         ast = parse_one("ALTER TABLE tbl DROP COLUMN col")
         self.assertEqual(len(list(ast.find_all(exp.Table))), 1)
@@ -966,23 +958,23 @@ class TestParser(unittest.TestCase):
             self.assertEqual(set(identifier.meta), {"line", "col", "start", "end"})
 
         self.assertEqual(
-            ast.this.args["from"].this.args["this"].meta,
+            ast.this.args["from_"].this.args["this"].meta,
             {"line": 1, "col": 41, "start": 29, "end": 40},
         )
         self.assertEqual(
-            ast.this.args["from"].this.args["db"].meta,
+            ast.this.args["from_"].this.args["db"].meta,
             {"line": 1, "col": 28, "start": 17, "end": 27},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["this"].meta,
+            ast.expression.args["from_"].this.args["this"].meta,
             {"line": 1, "col": 106, "start": 94, "end": 105},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["db"].meta,
+            ast.expression.args["from_"].this.args["db"].meta,
             {"line": 1, "col": 93, "start": 82, "end": 92},
         )
         self.assertEqual(
-            ast.expression.args["from"].this.args["catalog"].meta,
+            ast.expression.args["from_"].this.args["catalog"].meta,
             {"line": 1, "col": 81, "start": 69, "end": 80},
         )
 
@@ -995,14 +987,17 @@ class TestParser(unittest.TestCase):
         ast = parse_one("SELECT t.* FROM t")
         self.assertEqual(ast.find(exp.Star).meta, {"line": 1, "col": 10, "start": 9, "end": 9})
 
+        ast = parse_one("SELECT 1")
+        self.assertEqual(ast.find(exp.Literal).meta, {"line": 1, "col": 8, "start": 7, "end": 7})
+
     def test_quoted_identifier_meta(self):
         sql = 'SELECT "a" FROM "test_schema"."test_table_a"'
         ast = parse_one(sql)
 
-        db_meta = ast.args["from"].this.args["db"].meta
+        db_meta = ast.args["from_"].this.args["db"].meta
         self.assertEqual(sql[db_meta["start"] : db_meta["end"] + 1], '"test_schema"')
 
-        table_meta = ast.args["from"].this.this.meta
+        table_meta = ast.args["from_"].this.this.meta
         self.assertEqual(sql[table_meta["start"] : table_meta["end"] + 1], '"test_table_a"')
 
     def test_qualified_function(self):
@@ -1028,4 +1023,25 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             parse_one(sql, error_level=ErrorLevel.IGNORE).sql(),
             "SELECT * FROM a WHERE c = 'false'",
+        )
+
+    def test_parse_into_grant_principal(self):
+        self.assertIsInstance(parse_one("ROLE blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(parse_one("GROUP blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(parse_one("blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
+        self.assertIsInstance(
+            parse_one("ROLE `blah`", into=exp.GrantPrincipal, dialect="databricks"),
+            exp.GrantPrincipal,
+        )
+        self.assertEqual(
+            parse_one("ROLE `blah`", into=exp.GrantPrincipal, dialect="databricks").sql(
+                dialect="databricks"
+            ),
+            "ROLE `blah`",
+        )
+
+    def test_parse_into_grant_privilege(self):
+        self.assertIsInstance(parse_one("SELECT", into=exp.GrantPrivilege), exp.GrantPrivilege)
+        self.assertIsInstance(
+            parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
         )

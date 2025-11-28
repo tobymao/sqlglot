@@ -17,7 +17,6 @@ from sqlglot.helper import (
     flatten,
     is_int,
     seq_get,
-    subclasses,
     suggest_closest_match_and_fail,
     to_bool,
 )
@@ -26,6 +25,7 @@ from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
+from sqlglot.typing import EXPRESSION_METADATA
 
 DATE_ADD_OR_DIFF = t.Union[
     exp.DateAdd,
@@ -44,16 +44,14 @@ DATETIME_DELTA = t.Union[
     exp.DatetimeSub,
     exp.TimeAdd,
     exp.TimeSub,
+    exp.TimestampAdd,
     exp.TimestampSub,
     exp.TsOrDsAdd,
 ]
+DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd)
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
-
-    from sqlglot.optimizer.annotate_types import TypeAnnotator
-
-    AnnotatorsType = t.Dict[t.Type[E], t.Callable[[TypeAnnotator, E], E]]
 
 logger = logging.getLogger("sqlglot")
 
@@ -67,10 +65,6 @@ UNESCAPED_SEQUENCES = {
     "\\v": "\v",
     "\\\\": "\\",
 }
-
-
-def annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[TypeAnnotator, E], E]:
-    return lambda self, e: self._annotate_with_type(e, data_type)
 
 
 class Dialects(str, Enum):
@@ -99,6 +93,7 @@ class Dialects(str, Enum):
     REDSHIFT = "redshift"
     RISINGWAVE = "risingwave"
     SNOWFLAKE = "snowflake"
+    SOLR = "solr"
     SPARK = "spark"
     SPARK2 = "spark2"
     SQLITE = "sqlite"
@@ -127,20 +122,6 @@ class NormalizationStrategy(str, AutoName):
 
     CASE_INSENSITIVE_UPPERCASE = auto()
     """Always case-insensitive (uppercase), regardless of quotes."""
-
-
-class Version(int):
-    def __new__(cls, version_str: t.Optional[str], *args, **kwargs):
-        if version_str:
-            parts = version_str.split(".")
-            parts.extend(["0"] * (3 - len(parts)))
-            v = int("".join([p.zfill(3) for p in parts]))
-        else:
-            # No version defined means we should support the latest engine semantics, so
-            # the comparison to any specific version should yield that latest is greater
-            v = sys.maxsize
-
-        return super(Version, cls).__new__(cls, v)
 
 
 class _Dialect(type):
@@ -260,6 +241,9 @@ class _Dialect(type):
 
         klass.SUPPORTS_COLUMN_JOIN_MARKS = "(+)" in klass.tokenizer_class.KEYWORDS
 
+        if enum not in ("", "bigquery", "snowflake"):
+            klass.INITCAP_SUPPORTS_CUSTOM_DELIMITERS = False
+
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
@@ -290,6 +274,12 @@ class _Dialect(type):
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
+
+        klass.VALID_INTERVAL_UNITS = {
+            *klass.VALID_INTERVAL_UNITS,
+            *klass.DATE_PART_MAPPING.keys(),
+            *klass.DATE_PART_MAPPING.values(),
+        }
 
         return klass
 
@@ -453,12 +443,137 @@ class Dialect(metaclass=_Dialect):
         to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
-    EXPAND_ALIAS_REFS_EARLY_ONLY_IN_GROUP_BY = False
+    EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
+
+    ANNOTATE_ALL_SCOPES = False
+    """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
+
+    DISABLES_ALIAS_REF_EXPANSION = False
+    """
+    Whether alias reference expansion is disabled for this dialect.
+
+    Some dialects like Oracle do NOT support referencing aliases in projections or WHERE clauses.
+    The original expression must be repeated instead.
+
+    For example, in Oracle:
+        SELECT y.foo AS bar, bar * 2 AS baz FROM y  -- INVALID
+        SELECT y.foo AS bar, y.foo * 2 AS baz FROM y  -- VALID
+    """
+
+    SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = False
+    """
+    Whether alias references are allowed in JOIN ... ON clauses.
+
+    Most dialects do not support this, but Snowflake allows alias expansion in the JOIN ... ON
+    clause (and almost everywhere else)
+
+    For example, in Snowflake:
+        SELECT a.id AS user_id FROM a JOIN b ON user_id = b.id  -- VALID
+
+    Reference: https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
+    """
 
     SUPPORTS_ORDER_BY_ALL = False
     """
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
+    """
+
+    PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = False
+    """
+    Whether projection alias names can shadow table/source names in GROUP BY and HAVING clauses.
+
+    In BigQuery, when a projection alias has the same name as a source table, the alias takes
+    precedence in GROUP BY and HAVING clauses, and the table becomes inaccessible by that name.
+
+    For example, in BigQuery:
+        SELECT id, ARRAY_AGG(col) AS custom_fields
+        FROM custom_fields
+        GROUP BY id
+        HAVING id >= 1
+
+    The "custom_fields" source is shadowed by the projection alias, so we cannot qualify "id"
+    with "custom_fields" in GROUP BY/HAVING.
+    """
+
+    TABLES_REFERENCEABLE_AS_COLUMNS = False
+    """
+    Whether table names can be referenced as columns (treated as structs).
+
+    BigQuery allows tables to be referenced as columns in queries, automatically treating
+    them as struct values containing all the table's columns.
+
+    For example, in BigQuery:
+        SELECT t FROM my_table AS t  -- Returns entire row as a struct
+    """
+
+    SUPPORTS_STRUCT_STAR_EXPANSION = False
+    """
+    Whether the dialect supports expanding struct fields using star notation (e.g., struct_col.*).
+
+    BigQuery allows struct fields to be expanded with the star operator:
+        SELECT t.struct_col.* FROM table t
+    RisingWave also allows struct field expansion with the star operator using parentheses:
+        SELECT (t.struct_col).* FROM table t
+
+    This expands to all fields within the struct.
+    """
+
+    EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
+    """
+    Whether pseudocolumns should be excluded from star expansion (SELECT *).
+
+    Pseudocolumns are special dialect-specific columns (e.g., Oracle's ROWNUM, ROWID, LEVEL,
+    or BigQuery's _PARTITIONTIME, _PARTITIONDATE) that are implicitly available but not part
+    of the table schema. When this is True, SELECT * will not include these pseudocolumns;
+    they must be explicitly selected.
+    """
+
+    QUERY_RESULTS_ARE_STRUCTS = False
+    """
+    Whether query results are typed as structs in metadata for type inference.
+
+    In BigQuery, subqueries store their column types as a STRUCT in metadata,
+    enabling special type inference for ARRAY(SELECT ...) expressions:
+        ARRAY(SELECT x, y FROM t) → ARRAY<STRUCT<...>>
+
+    For single column subqueries, BigQuery unwraps the struct:
+        ARRAY(SELECT x FROM t) → ARRAY<type_of_x>
+
+    This is metadata-only for type inference.
+    """
+
+    REQUIRES_PARENTHESIZED_STRUCT_ACCESS = False
+    """
+    Whether struct field access requires parentheses around the expression.
+
+    RisingWave requires parentheses for struct field access in certain contexts:
+        SELECT (col.field).subfield FROM table  -- Parentheses required
+
+    Without parentheses, the parser may not correctly interpret nested struct access.
+
+    Reference: https://docs.risingwave.com/sql/data-types/struct#retrieve-data-in-a-struct
+    """
+
+    SUPPORTS_NULL_TYPE = False
+    """
+    Whether NULL/VOID is supported as a valid data type (not just a value).
+
+    Databricks and Spark v3+ support NULL as an actual type, allowing expressions like:
+        SELECT NULL AS col  -- Has type NULL, not just value NULL
+        CAST(x AS VOID)     -- Valid type cast
+    """
+
+    COALESCE_COMPARISON_NON_STANDARD = False
+    """
+    Whether COALESCE in comparisons has non-standard NULL semantics.
+
+    We can't convert `COALESCE(x, 1) = 2` into `NOT x IS NULL AND x = 2` for redshift,
+    because they are not always equivalent. For example,  if `x` is `NULL` and it comes
+    from a table, then the result is `NULL`, despite `FALSE AND NULL` evaluating to `FALSE`.
+
+    In standard SQL and most dialects, these expressions are equivalent, but Redshift treats
+    table NULLs differently in this context.
     """
 
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = False
@@ -518,12 +633,51 @@ class Dialect(metaclass=_Dialect):
     equivalent of CREATE SCHEMA is CREATE DATABASE.
     """
 
+    ALTER_TABLE_SUPPORTS_CASCADE = False
+    """
+    Hive by default does not update the schema of existing partitions when a column is changed.
+    the CASCADE clause is used to indicate that the change should be propagated to all existing partitions.
+    the Spark dialect, while derived from Hive, does not support the CASCADE clause.
+    """
+
     # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
     # Whether the value/LHS of the TRY_CAST(<value> AS <type>) should strictly be a
     # STRING type (Snowflake's case) or can be of any type
     TRY_CAST_REQUIRES_STRING: t.Optional[bool] = None
+
+    # Whether the double negation can be applied
+    # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
+
+    # Whether the INITCAP function supports custom delimiter characters as the second argument
+    # Default delimiter characters for INITCAP function: whitespace and non-alphanumeric characters
+    INITCAP_SUPPORTS_CUSTOM_DELIMITERS = True
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\v!\"#$%&'()*+,\\-./:;<=>?@\\[\\]^_`{|}~"
+
+    BYTE_STRING_IS_BYTES_TYPE: bool = False
+    """
+    Whether byte string literals (ex: BigQuery's b'...') are typed as BYTES/BINARY
+    """
+
+    UUID_IS_STRING_TYPE: bool = False
+    """
+    Whether a UUID is considered a string or a UUID type.
+    """
+
+    JSON_EXTRACT_SCALAR_SCALAR_ONLY = False
+    """
+    Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
+    """
+
+    DEFAULT_FUNCTIONS_COLUMN_NAMES: t.Dict[t.Type[exp.Func], t.Union[str, t.Tuple[str, ...]]] = {}
+    """
+    Maps function expressions to their default output column name(s).
+
+    For example, in Postgres, generate_series function outputs a column named "generate_series" by default,
+    so we map the ExplodingGenerateSeries expression to "generate_series" string.
+    """
 
     # --- Autofilled ---
 
@@ -550,6 +704,8 @@ class Dialect(metaclass=_Dialect):
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
+
+    VALID_INTERVAL_UNITS: t.Set[str] = set()
 
     # Delimiters for bit, hex, byte and unicode literals
     BIT_START: t.Optional[str] = None
@@ -646,229 +802,20 @@ class Dialect(metaclass=_Dialect):
         "DEC": "DECADE",
         "DECS": "DECADE",
         "DECADES": "DECADE",
-        "MIL": "MILLENIUM",
-        "MILS": "MILLENIUM",
-        "MILLENIA": "MILLENIUM",
+        "MIL": "MILLENNIUM",
+        "MILS": "MILLENNIUM",
+        "MILLENIA": "MILLENNIUM",
         "C": "CENTURY",
         "CENT": "CENTURY",
         "CENTS": "CENTURY",
         "CENTURIES": "CENTURY",
     }
 
-    TYPE_TO_EXPRESSIONS: t.Dict[exp.DataType.Type, t.Set[t.Type[exp.Expression]]] = {
-        exp.DataType.Type.BIGINT: {
-            exp.ApproxDistinct,
-            exp.ArraySize,
-            exp.CountIf,
-            exp.Int64,
-            exp.Length,
-            exp.UnixDate,
-            exp.UnixSeconds,
-            exp.UnixMicros,
-            exp.UnixMillis,
-        },
-        exp.DataType.Type.BINARY: {
-            exp.FromBase32,
-            exp.FromBase64,
-        },
-        exp.DataType.Type.BOOLEAN: {
-            exp.Between,
-            exp.Boolean,
-            exp.Contains,
-            exp.EndsWith,
-            exp.In,
-            exp.LogicalAnd,
-            exp.LogicalOr,
-            exp.RegexpLike,
-            exp.StartsWith,
-        },
-        exp.DataType.Type.DATE: {
-            exp.CurrentDate,
-            exp.Date,
-            exp.DateFromParts,
-            exp.DateStrToDate,
-            exp.DiToDate,
-            exp.LastDay,
-            exp.StrToDate,
-            exp.TimeStrToDate,
-            exp.TsOrDsToDate,
-        },
-        exp.DataType.Type.DATETIME: {
-            exp.CurrentDatetime,
-            exp.Datetime,
-            exp.DatetimeAdd,
-            exp.DatetimeSub,
-        },
-        exp.DataType.Type.DOUBLE: {
-            exp.ApproxQuantile,
-            exp.Avg,
-            exp.Exp,
-            exp.Ln,
-            exp.Log,
-            exp.Pow,
-            exp.Quantile,
-            exp.Round,
-            exp.SafeDivide,
-            exp.Sqrt,
-            exp.Stddev,
-            exp.StddevPop,
-            exp.StddevSamp,
-            exp.ToDouble,
-            exp.Variance,
-            exp.VariancePop,
-        },
-        exp.DataType.Type.INT: {
-            exp.Ascii,
-            exp.Ceil,
-            exp.DatetimeDiff,
-            exp.DateDiff,
-            exp.TimestampDiff,
-            exp.TimeDiff,
-            exp.Unicode,
-            exp.DateToDi,
-            exp.Levenshtein,
-            exp.Sign,
-            exp.StrPosition,
-            exp.TsOrDiToDi,
-        },
-        exp.DataType.Type.INTERVAL: {
-            exp.Interval,
-            exp.JustifyDays,
-            exp.JustifyHours,
-            exp.JustifyInterval,
-            exp.MakeInterval,
-        },
-        exp.DataType.Type.JSON: {
-            exp.ParseJSON,
-        },
-        exp.DataType.Type.TIME: {
-            exp.CurrentTime,
-            exp.Time,
-            exp.TimeAdd,
-            exp.TimeSub,
-        },
-        exp.DataType.Type.TIMESTAMPTZ: {
-            exp.CurrentTimestampLTZ,
-        },
-        exp.DataType.Type.TIMESTAMP: {
-            exp.CurrentTimestamp,
-            exp.StrToTime,
-            exp.TimeStrToTime,
-            exp.TimestampAdd,
-            exp.TimestampSub,
-            exp.UnixToTime,
-        },
-        exp.DataType.Type.TINYINT: {
-            exp.Day,
-            exp.Month,
-            exp.Week,
-            exp.Year,
-            exp.Quarter,
-        },
-        exp.DataType.Type.VARCHAR: {
-            exp.ArrayConcat,
-            exp.ArrayToString,
-            exp.Concat,
-            exp.ConcatWs,
-            exp.Chr,
-            exp.DateToDateStr,
-            exp.DPipe,
-            exp.GroupConcat,
-            exp.Initcap,
-            exp.Lower,
-            exp.Substring,
-            exp.String,
-            exp.TimeToStr,
-            exp.TimeToTimeStr,
-            exp.Trim,
-            exp.ToBase32,
-            exp.ToBase64,
-            exp.TsOrDsToDateStr,
-            exp.UnixToStr,
-            exp.UnixToTimeStr,
-            exp.Upper,
-        },
-    }
-
-    ANNOTATORS: AnnotatorsType = {
-        **{
-            expr_type: lambda self, e: self._annotate_unary(e)
-            for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
-        },
-        **{
-            expr_type: lambda self, e: self._annotate_binary(e)
-            for expr_type in subclasses(exp.__name__, exp.Binary)
-        },
-        **{
-            expr_type: annotate_with_type_lambda(data_type)
-            for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
-            for expr_type in expressions
-        },
-        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
-        exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
-        exp.AnyValue: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
-        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.ArrayConcatAgg: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArrayFirst: lambda self, e: self._annotate_by_array_element(e),
-        exp.ArrayLast: lambda self, e: self._annotate_by_array_element(e),
-        exp.ArrayReverse: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.ArraySlice: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Bracket: lambda self, e: self._annotate_bracket(e),
-        exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
-        exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
-        exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Count: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT
-        ),
-        exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
-        exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
-        exp.DateSub: lambda self, e: self._annotate_timeunit(e),
-        exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
-        exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
-        exp.Div: lambda self, e: self._annotate_div(e),
-        exp.Dot: lambda self, e: self._annotate_dot(e),
-        exp.Explode: lambda self, e: self._annotate_explode(e),
-        exp.Extract: lambda self, e: self._annotate_extract(e),
-        exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.GenerateSeries: lambda self, e: self._annotate_by_args(
-            e, "start", "end", "step", array=True
-        ),
-        exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<DATE>")
-        ),
-        exp.GenerateTimestampArray: lambda self, e: self._annotate_with_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>")
-        ),
-        exp.Greatest: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
-        exp.Least: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Literal: lambda self, e: self._annotate_literal(e),
-        exp.LastValue: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Map: lambda self, e: self._annotate_map(e),
-        exp.Max: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
-        exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
-        exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
-        exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
-        exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
-        exp.Struct: lambda self, e: self._annotate_struct(e),
-        exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
-        exp.SortArray: lambda self, e: self._annotate_by_args(e, "this"),
-        exp.Timestamp: lambda self, e: self._annotate_with_type(
-            e,
-            exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
-        ),
-        exp.ToMap: lambda self, e: self._annotate_to_map(e),
-        exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
-        exp.Unnest: lambda self, e: self._annotate_unnest(e),
-        exp.VarMap: lambda self, e: self._annotate_map(e),
-        exp.Window: lambda self, e: self._annotate_by_args(e, "this"),
-    }
-
     # Specifies what types a given type can be coerced into
     COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
+
+    # Specifies type inference & validation rules for expressions
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # Determines the supported Dialect instance settings
     SUPPORTED_SETTINGS = {
@@ -949,7 +896,9 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     def __init__(self, **kwargs) -> None:
-        self.version = Version(kwargs.pop("version", None))
+        parts = str(kwargs.pop("version", sys.maxsize)).split(".")
+        parts.extend(["0"] * (3 - len(parts)))
+        self.version = tuple(int(p) for p in parts[:3])
 
         normalization_strategy = kwargs.pop("normalization_strategy", None)
         if normalization_strategy is None:
@@ -1152,11 +1101,11 @@ def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> st
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
-def inline_array_sql(self: Generator, expression: exp.Array) -> str:
+def inline_array_sql(self: Generator, expression: exp.Expression) -> str:
     return f"[{self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)}]"
 
 
-def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
+def inline_array_unless_query(self: Generator, expression: exp.Expression) -> str:
     elem = seq_get(expression.expressions, 0)
     if isinstance(elem, exp.Expression) and elem.find(exp.Query):
         return self.func("ARRAY", elem)
@@ -1179,7 +1128,7 @@ def no_paren_current_date_sql(self: Generator, expression: exp.CurrentDate) -> s
 def no_recursive_cte_sql(self: Generator, expression: exp.With) -> str:
     if expression.args.get("recursive"):
         self.unsupported("Recursive CTEs are unsupported")
-        expression.args["recursive"] = False
+        expression.set("recursive", False)
     return self.with_sql(expression)
 
 
@@ -1379,12 +1328,14 @@ def date_add_interval_sql(
     return func
 
 
-def timestamptrunc_sql(zone: bool = False) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
+def timestamptrunc_sql(
+    func: str = "DATE_TRUNC", zone: bool = False
+) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
     def _timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
         args = [unit_to_str(expression), expression.this]
         if zone:
             args.append(expression.args.get("zone"))
-        return self.func("DATE_TRUNC", *args)
+        return self.func(func, *args)
 
     return _timestamptrunc_sql
 
@@ -1664,11 +1615,7 @@ def date_delta_to_binary_interval_op(
     def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
         this = expression.this
         unit = unit_to_var(expression)
-        op = (
-            "+"
-            if isinstance(expression, (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd))
-            else "-"
-        )
+        op = "+" if isinstance(expression, DATETIME_ADD) else "-"
 
         to_type: t.Optional[exp.DATA_TYPE] = None
         if cast:
@@ -1706,7 +1653,7 @@ def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart)):
+    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
         return unit
 
     value = unit.name if unit else default
@@ -1727,7 +1674,9 @@ def map_date_part(
 
 def map_date_part(part, dialect: DialectType = Dialect):
     mapped = (
-        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper()) if part else None
+        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper())
+        if part and not (isinstance(part, exp.Column) and len(part.parts) != 1)
+        else None
     )
     if mapped:
         return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
@@ -1936,13 +1885,57 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     else:
         target_type = None
 
-    if start and end and target_type and target_type.is_type("date", "timestamp"):
-        if isinstance(start, exp.Cast) and target_type is start.to:
-            end = exp.cast(end, target_type)
-        else:
-            start = exp.cast(start, target_type)
+    if start and end:
+        if target_type and target_type.is_type("date", "timestamp"):
+            if isinstance(start, exp.Cast) and target_type is start.to:
+                end = exp.cast(end, target_type)
+            else:
+                start = exp.cast(start, target_type)
+
+        if expression.args.get("is_end_exclusive"):
+            step_value = step or exp.Literal.number(1)
+            end = exp.paren(exp.Sub(this=end, expression=step_value), copy=False)
+
+            sequence_call = exp.Anonymous(
+                this="SEQUENCE", expressions=[e for e in (start, end, step) if e]
+            )
+            zero = exp.Literal.number(0)
+            should_return_empty = exp.or_(
+                exp.EQ(this=step_value.copy(), expression=zero.copy()),
+                exp.and_(
+                    exp.GT(this=step_value.copy(), expression=zero.copy()),
+                    exp.GTE(this=start.copy(), expression=end.copy()),
+                ),
+                exp.and_(
+                    exp.LT(this=step_value.copy(), expression=zero.copy()),
+                    exp.LTE(this=start.copy(), expression=end.copy()),
+                ),
+            )
+            empty_array_or_sequence = exp.If(
+                this=should_return_empty,
+                true=exp.Array(expressions=[]),
+                false=sequence_call,
+            )
+            return self.sql(self._simplify_unless_literal(empty_array_or_sequence))
 
     return self.func("SEQUENCE", start, end, step)
+
+
+def build_like(
+    expr_type: t.Type[E], not_like: bool = False
+) -> t.Callable[[t.List], exp.Expression]:
+    def _builder(args: t.List) -> exp.Expression:
+        like_expr: exp.Expression = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+        if escape := seq_get(args, 2):
+            like_expr = exp.Escape(this=like_expr, expression=escape)
+
+        if not_like:
+            like_expr = exp.Not(this=like_expr)
+
+        return like_expr
+
+    return _builder
 
 
 def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
@@ -1996,12 +1989,14 @@ def groupconcat_sql(
     self: Generator,
     expression: exp.GroupConcat,
     func_name="LISTAGG",
-    sep: str = ",",
+    sep: t.Optional[str] = ",",
     within_group: bool = True,
     on_overflow: bool = False,
 ) -> str:
     this = expression.this
-    separator = self.sql(expression.args.get("separator") or exp.Literal.string(sep))
+    separator = self.sql(
+        expression.args.get("separator") or (exp.Literal.string(sep) if sep else None)
+    )
 
     on_overflow_sql = self.sql(expression, "on_overflow")
     on_overflow_sql = f" ON OVERFLOW {on_overflow_sql}" if (on_overflow and on_overflow_sql) else ""
@@ -2017,7 +2012,10 @@ def groupconcat_sql(
     if order and order.this:
         this = order.this.pop()
 
-    args = self.format_args(this, f"{separator}{on_overflow_sql}")
+    args = self.format_args(
+        this, f"{separator}{on_overflow_sql}" if separator or on_overflow_sql else None
+    )
+
     listagg: exp.Expression = exp.Anonymous(this=func_name, expressions=[args])
 
     modifiers = self.sql(limit)
@@ -2055,3 +2053,19 @@ def build_replace_with_optional_replacement(args: t.List) -> exp.Replace:
         expression=seq_get(args, 1),
         replacement=seq_get(args, 2) or exp.Literal.string(""),
     )
+
+
+def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Expression | None:
+    modifiers = expression.args.get("modifiers")
+    single_replace = expression.args.get("single_replace")
+    occurrence = expression.args.get("occurrence")
+
+    if not single_replace and (not occurrence or (occurrence.is_int and occurrence.to_py() == 0)):
+        if not modifiers or modifiers.is_string:
+            # Append 'g' to the modifiers if they are not provided since
+            # the semantics of REGEXP_REPLACE from the input dialect
+            # is to replace all occurrences of the pattern.
+            value = "" if not modifiers else modifiers.name
+            modifiers = exp.Literal.string(value + "g")
+
+    return modifiers

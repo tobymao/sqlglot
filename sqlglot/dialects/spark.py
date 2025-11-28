@@ -4,8 +4,8 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
-    Version,
     rename_func,
+    build_like,
     unit_to_var,
     timestampdiff_sql,
     build_date_delta,
@@ -99,7 +99,7 @@ def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.Timestam
 
 
 def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
-    if self.dialect.version < Version("4.0.0"):
+    if self.dialect.version < (4,):
         expr = exp.ArrayToString(
             this=exp.ArrayAgg(this=expression.this),
             expression=expression.args.get("separator") or exp.Literal.string(""),
@@ -111,6 +111,7 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
 
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
+    SUPPORTS_NULL_TYPE = True
 
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
@@ -128,7 +129,7 @@ class Spark(Spark2):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-            "BIT_COUNT": exp.BitwiseCountAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
             "DATE_ADD": _build_dateadd,
             "DATEADD": _build_dateadd,
             "TIMESTAMPADD": _build_dateadd,
@@ -147,6 +148,8 @@ class Spark(Spark2):
                 offset=1,
                 safe=True,
             ),
+            "LIKE": build_like(exp.Like),
+            "ILIKE": build_like(exp.ILike),
         }
 
         PLACEHOLDER_PARSERS = {
@@ -196,7 +199,7 @@ class Spark(Spark2):
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
-            exp.BitwiseCountAgg: rename_func("BIT_COUNT"),
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.Create: preprocess(
                 [
                     remove_unique_constraints,
@@ -230,7 +233,6 @@ class Spark(Spark2):
         }
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
-        TRANSFORMS.pop(exp.Group)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):
@@ -259,3 +261,11 @@ class Spark(Spark2):
                 return super().placeholder_sql(expression)
 
             return f"{{{expression.name}}}"
+
+        def readparquet_sql(self, expression: exp.ReadParquet) -> str:
+            if len(expression.expressions) != 1:
+                self.unsupported("READ_PARQUET with multiple arguments is not supported")
+                return ""
+
+            parquet_file = expression.expressions[0]
+            return f"parquet.`{parquet_file.name}`"

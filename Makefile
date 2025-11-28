@@ -1,7 +1,13 @@
 .PHONY: install install-dev install-pre-commit test unit style check docs docs-serve
 
+ifdef UV
+    PIP := uv pip
+else
+    PIP := pip
+endif
+
 install:
-	pip install -e .
+	$(PIP) install -e .
 
 bench: install-dev-rs-release
 	python -m benchmarks.bench
@@ -17,7 +23,7 @@ install-dev-rs:
 	cd sqlglotrs/ && python -m maturin develop
 
 install-dev-core:
-	pip install -e ".[dev]"
+	$(PIP) install -e ".[dev]"
 
 install-dev: install-dev-core install-dev-rs
 

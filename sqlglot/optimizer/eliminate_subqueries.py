@@ -65,7 +65,7 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
     # Existing CTES in the root expression. We'll use this for deduplication.
     existing_ctes: ExistingCTEsMapping = {}
 
-    with_ = root.expression.args.get("with")
+    with_ = root.expression.args.get("with_")
     recursive = False
     if with_:
         recursive = with_.args.get("recursive")
@@ -97,7 +97,7 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
 
     if new_ctes:
         query = expression.expression if isinstance(expression, exp.DDL) else expression
-        query.set("with", exp.With(expressions=new_ctes, recursive=recursive))
+        query.set("with_", exp.With(expressions=new_ctes, recursive=recursive))
 
     return expression
 

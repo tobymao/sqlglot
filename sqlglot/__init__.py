@@ -29,6 +29,7 @@ from sqlglot.expressions import (
     condition as condition,
     delete as delete,
     except_ as except_,
+    find_tables as find_tables,
     from_ as from_,
     func as func,
     insert as insert,

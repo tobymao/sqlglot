@@ -1,5 +1,4 @@
 from tests.dialects.test_dialect import Validator
-
 from sqlglot import exp
 
 
@@ -175,6 +174,44 @@ class TestHive(Validator):
                 "databricks": "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
             },
         )
+
+        self.validate_identity("ALTER TABLE x PARTITION(y = z) ADD COLUMN a VARCHAR(10)")
+        self.validate_identity(
+            "ALTER TABLE x CHANGE a a VARCHAR(10)",
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10)",
+        )
+
+        self.validate_all(
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10)",
+            write={
+                "hive": "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10)",
+                "spark": "ALTER TABLE x ALTER COLUMN a TYPE VARCHAR(10)",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) COMMENT 'comment'",
+            write={
+                "hive": "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) COMMENT 'comment'",
+                "spark": "ALTER TABLE x ALTER COLUMN a COMMENT 'comment'",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE x CHANGE COLUMN a b VARCHAR(10)",
+            write={
+                "hive": "ALTER TABLE x CHANGE COLUMN a b VARCHAR(10)",
+                "spark": "ALTER TABLE x RENAME COLUMN a TO b",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) CASCADE",
+            write={
+                "hive": "ALTER TABLE x CHANGE COLUMN a a VARCHAR(10) CASCADE",
+                "spark": "ALTER TABLE x ALTER COLUMN a TYPE VARCHAR(10)",
+            },
+        )
+
+        self.validate_identity("ALTER TABLE X ADD COLUMNS (y INT, z STRING)")
+        self.validate_identity("ALTER TABLE X ADD COLUMNS (y INT, z STRING) CASCADE")
 
         self.validate_identity(
             """CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS TERMINATED BY '1' WITH SERDEPROPERTIES ('input.regex'='')""",
@@ -617,7 +654,7 @@ class TestHive(Validator):
                 "presto": "CONTAINS(x, 1)",
                 "hive": "ARRAY_CONTAINS(x, 1)",
                 "spark": "ARRAY_CONTAINS(x, 1)",
-                "snowflake": "ARRAY_CONTAINS(1, x)",
+                "snowflake": "ARRAY_CONTAINS(CAST(1 AS VARIANT), x)",
             },
         )
         self.validate_all(
@@ -647,14 +684,19 @@ class TestHive(Validator):
                 "spark": "LOCATE('a', x, 3)",
             },
         )
+
         self.validate_all(
             "INITCAP('new york')",
             write={
-                "duckdb": "INITCAP('new york')",
-                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },
+        )
+        expression = self.parse_one("INITCAP('new york')")
+        self.assert_duckdb_sql(
+            expression,
+            includes=("REGEXP_MATCHES(", "ARRAY_TO_STRING("),
+            chr_chars=("\u000b", "\u001c", "\u001d", "\u001e", "\u001f"),
         )
         self.validate_all(
             "SELECT * FROM x.z TABLESAMPLE(10 PERCENT) y",

@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -89,6 +90,7 @@ class SQLite(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     SAFE_DIVISION = True
+    SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -100,6 +102,8 @@ class SQLite(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ATTACH": TokenType.ATTACH,
             "DETACH": TokenType.DETACH,
+            "INDEXED BY": TokenType.INDEXED_BY,
+            "MATCH": TokenType.MATCH,
         }
 
         KEYWORDS.pop("/*+")
@@ -124,6 +128,12 @@ class SQLite(Dialect):
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.ATTACH: lambda self: self._parse_attach_detach(),
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            # https://www.sqlite.org/lang_expr.html
+            TokenType.MATCH: binary_range_parser(exp.Match),
         }
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
@@ -342,3 +352,12 @@ class SQLite(Dialect):
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             return self.sql(expression.this)
+
+        def windowspec_sql(self, expression: exp.WindowSpec) -> str:
+            if (
+                expression.text("kind").upper() == "RANGE"
+                and expression.text("start").upper() == "CURRENT ROW"
+            ):
+                return "RANGE CURRENT ROW"
+
+            return super().windowspec_sql(expression)

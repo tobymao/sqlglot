@@ -19,7 +19,9 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT SYSDATETIMEOFFSET()")
+        self.validate_identity("SELECT COMPRESS('Hello World')")
         self.validate_identity("GO").assert_is(exp.Command)
         self.validate_identity("SELECT go").selects[0].assert_is(exp.Column)
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
@@ -578,6 +580,7 @@ class TestTSQL(Validator):
             # "UPDATE Customers SET ContactName = 'Alfred Schmidt', City = 'Frankfurt' WHERE CustomerID = 1",
             "SELECT * FROM Table1",
             "SELECT * FROM Table1 WHERE id = 2",
+            "UPDATE t1 SET k = t2.k FROM t2",
         ]
 
         for statement in possible_statements:
@@ -1488,33 +1491,48 @@ WHERE
         )
 
     def test_datepart(self):
-        self.validate_identity(
-            "DATEPART(QUARTER, x)",
-            "DATEPART(QUARTER, CAST(x AS DATETIME2))",
+        datepart_formats = (
+            (("QUARTER", "qq", "q"), "QUARTER"),
+            (("YEAR", "yy", "yyyy"), "YEAR"),
+            (("HOUR", "hh"), "HOUR"),
+            (("MINUTE", "mi", "n"), "MINUTE"),
+            (("SECOND", "ss", "s"), "SECOND"),
+            (("MILLISECOND", "ms"), "MILLISECOND"),
+            (("MICROSECOND", "mcs"), "MICROSECOND"),
+            (("NANOSECOND", "ns"), "NANOSECOND"),
+            (("WEEKDAY", "dw"), "WEEKDAY"),
+            (("TZOFFSET", "tz"), "TZOFFSET"),
+            (("MONTH", "mm", "m"), "MONTH"),
+            (("DAYOFYEAR", "dy", "y"), "DAYOFYEAR"),
+            (("DAY", "dd", "d"), "DAY"),
         )
-        self.validate_identity(
-            "DATEPART(YEAR, x)",
-            "FORMAT(CAST(x AS DATETIME2), 'yyyy')",
+
+        for formats, canonical in datepart_formats:
+            for fmt in formats:
+                with self.subTest(f"Testing DATEPART where part is: {fmt}"):
+                    self.validate_identity(
+                        f"DATEPART({fmt}, x)",
+                        f"DATEPART({canonical}, x)",
+                    )
+
+        select_datepart_formats = (
+            (("WEEK", "WW", "WK"), "WEEK"),
+            (("ISOWK", "ISOWW", "ISO_WEEK"), "ISO_WEEK"),
         )
-        self.validate_identity(
-            "DATEPART(HOUR, date_and_time)",
-            "DATEPART(HOUR, CAST(date_and_time AS DATETIME2))",
-        )
-        self.validate_identity(
-            "DATEPART(WEEKDAY, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
-        )
-        self.validate_identity(
-            "DATEPART(DW, date_and_time)",
-            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
-        )
+
+        for formats, canonical in select_datepart_formats:
+            for fmt in formats:
+                with self.subTest(f"Testing DATEPART where part is: {fmt}"):
+                    self.validate_identity(
+                        f"SELECT DATEPART({fmt}, '2024-11-21')",
+                        f"SELECT DATEPART({canonical}, '2024-11-21')",
+                    )
 
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
-                "postgres": "SELECT TO_CHAR(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST('1970-01-01' AS DATETIME2), 'MM')",
+                "spark": "SELECT EXTRACT(month FROM '1970-01-01')",
+                "tsql": "SELECT DATEPART(month, '1970-01-01')",
             },
         )
         self.validate_all(
@@ -1523,9 +1541,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('YEAR', '2017-01-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'YYYY')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'yyyy')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-01' AS DATE) AS DATETIME2), 'yyyy')",
+                "postgres": "SELECT EXTRACT(YEAR FROM CAST('2017-01-01' AS DATE))",
+                "spark": "SELECT EXTRACT(YEAR FROM CAST('2017-01-01' AS DATE))",
+                "tsql": "SELECT DATEPART(YEAR, CAST('2017-01-01' AS DATE))",
             },
         )
         self.validate_all(
@@ -1534,9 +1552,9 @@ WHERE
                 "postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-03-01' AS DATE) AS TIMESTAMP), 'MM')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-03-01' AS DATE) AS DATETIME2), 'MM')",
+                "postgres": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
+                "spark": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
+                "tsql": "SELECT DATEPART(month, CAST('2017-03-01' AS DATE))",
             },
         )
         self.validate_all(
@@ -1545,17 +1563,11 @@ WHERE
                 "postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)",
             },
             write={
-                "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'DD')",
-                "spark": "SELECT DATE_FORMAT(CAST(CAST('2017-01-02' AS DATE) AS TIMESTAMP), 'dd')",
-                "tsql": "SELECT FORMAT(CAST(CAST('2017-01-02' AS DATE) AS DATETIME2), 'dd')",
+                "postgres": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
+                "spark": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
+                "tsql": "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
             },
         )
-
-        for fmt in ("WEEK", "WW", "WK"):
-            self.validate_identity(
-                f"SELECT DATEPART({fmt}, '2024-11-21')",
-                "SELECT DATEPART(WK, CAST('2024-11-21' AS DATETIME2))",
-            )
 
     def test_convert(self):
         self.validate_all(
@@ -1775,62 +1787,65 @@ WHERE
 
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(HOUR, 1.5, '2021-01-01')")
+        self.validate_identity("SELECT DATEDIFF_BIG(HOUR, 1.5, '2021-01-01')")
 
-        self.validate_all(
-            "SELECT DATEDIFF(quarter, 0, '2021-01-01')",
-            write={
-                "tsql": "SELECT DATEDIFF(QUARTER, CAST('1900-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(QUARTER, CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "duckdb": "SELECT DATE_DIFF('QUARTER', CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
-            "SELECT DATEDIFF(day, 1, '2021-01-01')",
-            write={
-                "tsql": "SELECT DATEDIFF(DAY, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(DAY, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "duckdb": "SELECT DATE_DIFF('DAY', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
-            "SELECT DATEDIFF(year, '2020-01-01', '2021-01-01')",
-            write={
-                "tsql": "SELECT DATEDIFF(YEAR, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(YEAR, CAST('2020-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('2021-01-01' AS TIMESTAMP), CAST('2020-01-01' AS TIMESTAMP)) / 12 AS INT)",
-            },
-        )
-        self.validate_all(
-            "SELECT DATEDIFF(mm, 'start', 'end')",
-            write={
-                "databricks": "SELECT DATEDIFF(MONTH, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
-                "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) AS INT)",
-                "tsql": "SELECT DATEDIFF(MONTH, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
-            },
-        )
-        self.validate_all(
-            "SELECT DATEDIFF(quarter, 'start', 'end')",
-            write={
-                "databricks": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
-                "spark": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
-                "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) / 3 AS INT)",
-                "tsql": "SELECT DATEDIFF(QUARTER, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
-            },
-        )
+        for fnc in ["DATEDIFF", "DATEDIFF_BIG"]:
+            with self.subTest(f"Transpiling T-SQL's {fnc}"):
+                self.validate_all(
+                    f"SELECT {fnc}(quarter, 0, '2021-01-01')",
+                    write={
+                        "tsql": f"SELECT {fnc}(QUARTER, CAST('1900-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                        "spark": "SELECT DATEDIFF(QUARTER, CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                        "duckdb": "SELECT DATE_DIFF('QUARTER', CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT {fnc}(day, 1, '2021-01-01')",
+                    write={
+                        "tsql": f"SELECT {fnc}(DAY, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                        "spark": "SELECT DATEDIFF(DAY, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                        "duckdb": "SELECT DATE_DIFF('DAY', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT {fnc}(year, '2020-01-01', '2021-01-01')",
+                    write={
+                        "tsql": f"SELECT {fnc}(YEAR, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                        "spark": "SELECT DATEDIFF(YEAR, CAST('2020-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                        "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('2021-01-01' AS TIMESTAMP), CAST('2020-01-01' AS TIMESTAMP)) / 12 AS INT)",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT {fnc}(mm, 'start', 'end')",
+                    write={
+                        "databricks": "SELECT DATEDIFF(MONTH, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                        "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) AS INT)",
+                        "tsql": f"SELECT {fnc}(MONTH, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT {fnc}(quarter, 'start', 'end')",
+                    write={
+                        "databricks": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                        "spark": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                        "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) / 3 AS INT)",
+                        "tsql": f"SELECT {fnc}(QUARTER, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
+                    },
+                )
 
-        # Check superfluous casts arent added. ref: https://github.com/TobikoData/sqlmesh/issues/2672
-        self.validate_all(
-            "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
-            write={
-                "tsql": "SELECT DATEDIFF(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
-                "clickhouse": "SELECT DATE_DIFF(DAY, CAST(CAST(a AS Nullable(DateTime)) AS DateTime64(6)), CAST(CAST(b AS Nullable(DateTime)) AS DateTime64(6))) AS x FROM foo",
-            },
-        )
+                # Check superfluous casts arent added. ref: https://github.com/TobikoData/sqlmesh/issues/2672
+                self.validate_all(
+                    f"SELECT {fnc}(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
+                    write={
+                        "tsql": f"SELECT {fnc}(DAY, CAST(a AS DATETIME2), CAST(b AS DATETIME2)) AS x FROM foo",
+                        "clickhouse": "SELECT DATE_DIFF(DAY, CAST(CAST(a AS Nullable(DateTime)) AS DateTime64(6)), CAST(CAST(b AS Nullable(DateTime)) AS DateTime64(6))) AS x FROM foo",
+                    },
+                )
 
-        self.validate_identity(
-            "SELECT DATEADD(DAY, DATEDIFF(DAY, -3, GETDATE()), '08:00:00')",
-            "SELECT DATEADD(DAY, DATEDIFF(DAY, CAST('1899-12-29' AS DATETIME2), CAST(GETDATE() AS DATETIME2)), '08:00:00')",
-        )
+                self.validate_identity(
+                    f"SELECT DATEADD(DAY, {fnc}(DAY, -3, GETDATE()), '08:00:00')",
+                    f"SELECT DATEADD(DAY, {fnc}(DAY, CAST('1899-12-29' AS DATETIME2), CAST(GETDATE() AS DATETIME2)), '08:00:00')",
+                )
 
     def test_lateral_subquery(self):
         self.validate_all(
@@ -2013,11 +2028,11 @@ WHERE
             self.validate_identity("##x")
             .assert_is(exp.Column)
             .this.assert_is(exp.Identifier)
-            .args.get("global")
+            .args.get("global_")
         )
 
         self.validate_identity("@x").assert_is(exp.Parameter).this.assert_is(exp.Var)
-        self.validate_identity("SELECT * FROM @x").args["from"].this.assert_is(
+        self.validate_identity("SELECT * FROM @x").args["from_"].this.assert_is(
             exp.Table
         ).this.assert_is(exp.Parameter).this.assert_is(exp.Var)
 
@@ -2384,3 +2399,14 @@ FROM OPENJSON(@json) WITH (
             write_sql="SELECT LOCALTIME",
         )
         expr.expressions[0].assert_is(exp.Column)
+    def test_odbc_date_literals(self):
+        for value, cls in [
+            ("{d'2024-01-01'}", exp.Date),
+            ("{t'12:00:00'}", exp.Time),
+            ("{ts'2024-01-01 12:00:00'}", exp.Timestamp),
+        ]:
+            with self.subTest(f"Testing ODBC date literal: {value}"):
+                sql = f"INSERT INTO tab(ds) VALUES ({value})"
+                expr = self.parse_one(sql)
+                self.assertIsInstance(expr, exp.Insert)
+                self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)

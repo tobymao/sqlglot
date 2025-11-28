@@ -61,7 +61,7 @@ class Node:
             }
 
             for d in node.downstream:
-                edges.append({"from": node_id, "to": id(d)})
+                edges.append({"from_": node_id, "to": id(d)})
         return GraphHTML(nodes, edges, **opts)
 
 
@@ -73,6 +73,7 @@ def lineage(
     dialect: DialectType = None,
     scope: t.Optional[Scope] = None,
     trim_selects: bool = True,
+    copy: bool = True,
     **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -84,21 +85,26 @@ def lineage(
         sources: A mapping of queries which will be used to continue building lineage.
         dialect: The dialect of input SQL.
         scope: A pre-created scope to use instead.
-        trim_selects: Whether or not to clean up selects by trimming to only relevant columns.
+        trim_selects: Whether to clean up selects by trimming to only relevant columns.
+        copy: Whether to copy the Expression arguments.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
         A lineage node.
     """
 
-    expression = maybe_parse(sql, dialect=dialect)
+    expression = maybe_parse(sql, copy=copy, dialect=dialect)
     column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
 
     if sources:
         expression = exp.expand(
             expression,
-            {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
+            {
+                k: t.cast(exp.Query, maybe_parse(v, copy=copy, dialect=dialect))
+                for k, v in sources.items()
+            },
             dialect=dialect,
+            copy=copy,
         )
 
     if not scope:
@@ -226,7 +232,7 @@ def to_node(
             )
 
     # if the select is a star add all scope sources as downstreams
-    if select.is_star:
+    if isinstance(select, exp.Star):
         for source in scope.sources.values():
             if isinstance(source, Scope):
                 source = source.expression

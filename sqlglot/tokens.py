@@ -131,6 +131,7 @@ class TokenType(AutoName):
     UINT = auto()
     BIGINT = auto()
     UBIGINT = auto()
+    BIGNUM = auto()  # unlimited precision int
     INT128 = auto()
     UINT128 = auto()
     INT256 = auto()
@@ -165,6 +166,7 @@ class TokenType(AutoName):
     JSONB = auto()
     TIME = auto()
     TIMETZ = auto()
+    TIME_NS = auto()
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
@@ -313,6 +315,7 @@ class TokenType(AutoName):
     ILIKE = auto()
     IN = auto()
     INDEX = auto()
+    INDEXED_BY = auto()
     INNER = auto()
     INSERT = auto()
     INSTALL = auto()
@@ -337,6 +340,7 @@ class TokenType(AutoName):
     LOAD = auto()
     LOCK = auto()
     MAP = auto()
+    MATCH = auto()
     MATCH_CONDITION = auto()
     MATCH_RECOGNIZE = auto()
     MEMBER_OF = auto()
@@ -912,6 +916,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DECIMAL256": TokenType.DECIMAL256,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
+        "BIGNUM": TokenType.BIGNUM,
         "LIST": TokenType.LIST,
         "MAP": TokenType.MAP,
         "NULLABLE": TokenType.NULLABLE,
@@ -953,6 +958,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VARBINARY": TokenType.VARBINARY,
         "TIME": TokenType.TIME,
         "TIMETZ": TokenType.TIMETZ,
+        "TIME_NS": TokenType.TIME_NS,
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
@@ -1342,6 +1348,8 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()
+            elif self._peek == "_" and self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED:
+                self._advance()
             elif self._peek.isidentifier():
                 number_text = self._text
                 literal = ""
@@ -1356,12 +1364,8 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                else:
-                    replaced = literal.replace("_", "")
-                    if self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED and replaced.isdigit():
-                        return self._add(TokenType.NUMBER, number_text + replaced)
-                    if self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
-                        return self._add(TokenType.VAR)
+                elif self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
+                    return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))
                 return self._add(TokenType.NUMBER, number_text)
@@ -1423,7 +1427,11 @@ class Tokenizer(metaclass=_Tokenizer):
                         raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
-                if tag and self.HEREDOC_TAG_IS_IDENTIFIER and (self._end or not tag.isidentifier()):
+                if (
+                    tag
+                    and self.HEREDOC_TAG_IS_IDENTIFIER
+                    and (self._end or tag.isdigit() or any(c.isspace() for c in tag))
+                ):
                     if not self._end:
                         self._advance(-1)
 

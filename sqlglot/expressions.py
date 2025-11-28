@@ -7445,6 +7445,10 @@ class Randn(Func):
     arg_types = {"this": False}
 
 
+class RandStr(Func):
+    arg_types = {"this": True, "generator": True}
+
+
 class RangeN(Func):
     arg_types = {"this": True, "expressions": True, "each": False}
 

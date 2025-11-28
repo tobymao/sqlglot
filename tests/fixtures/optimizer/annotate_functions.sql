@@ -2613,6 +2613,14 @@ RANDOM(123);
 BIGINT;
 
 # dialect: snowflake
+RANDSTR(123, 456);
+VARCHAR;
+
+# dialect: snowflake
+RANDSTR(123, RANDOM());
+VARCHAR;
+
+# dialect: snowflake
 RADIANS(tbl.double_col);
 DOUBLE;
 

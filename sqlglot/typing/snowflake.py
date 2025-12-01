@@ -125,6 +125,7 @@ EXPRESSION_METADATA = {
             exp.ApproxTopK,
             exp.ApproxTopKEstimate,
             exp.ArrayAgg,
+            exp.ArrayUnionAgg,
             exp.RegexpExtractAll,
             exp.Split,
             exp.StringToArray,

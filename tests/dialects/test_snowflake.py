@@ -58,6 +58,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state, 2)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")
+        self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column, 4)")
+        self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")

@@ -1743,6 +1743,7 @@ class Parser(metaclass=_Parser):
         formatted_sql, start_context, highlight, end_context = highlight_sql(
             sql=self.sql,
             positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
         )
         formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
 

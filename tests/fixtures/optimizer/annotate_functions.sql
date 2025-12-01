@@ -1841,6 +1841,10 @@ ARRAY_AGG(tbl.str_col);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_UNION_AGG(tbl.array_col);
+ARRAY;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 

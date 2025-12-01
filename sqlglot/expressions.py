@@ -7578,6 +7578,10 @@ class RegrAvgx(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class RegrSlope(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Repeat(Func):
     arg_types = {"this": True, "times": True}
 

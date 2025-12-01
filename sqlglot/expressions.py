@@ -7716,7 +7716,6 @@ class Search(Func):
 
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search_ip
 class SearchIp(Func):
-    _sql_names = ["SEARCH_IP"]
     arg_types = {
         "this": True,  # search_data
         "expression": True,  # search_string (IP address or CIDR range)

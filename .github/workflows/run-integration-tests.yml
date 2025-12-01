@@ -59,28 +59,43 @@ jobs:
         run: |
           set -e
 
+          CORRELATION_ID=$(python -c 'import uuid;print(uuid.uuid4())')
+          REMOTE_REPO="fivetran/sqlglot-integration-tests"
+
+          echo "Triggering remote workflow"
+
           gh workflow run run-tests.yml \
-            --repo fivetran/sqlglot-integration-tests \
+            --repo $REMOTE_REPO \
             --ref main \
             -f sqlglot_ref=${{ github.sha }} \
             -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
-            -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }}
+            -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }} \
+            -f correlation_id="$CORRELATION_ID"
 
-          echo "Triggered workflow"
+          echo "Triggered workflow using correlation id: $CORRELATION_ID"
 
-          # wait a bit for the run to start
-          sleep 10
+          # poll for run id
+          RUN_ID=""
+          ATTEMPTS=0
 
-          # there is a bit of a race condition here. this just grabs the latest
-          # run and hopes it's the one we just triggered.
-          # inexplicably, the `gh workflow run` API doesnt return the run id...
-          RUN_ID=$(gh run list \
-              --repo fivetran/sqlglot-integration-tests \
+          while [ "$RUN_ID" == "" ]; do
+            sleep 5
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ $ATTEMPTS -gt 10 ]; then
+              echo "Timed out waiting for matching run to start"
+              exit 1
+            fi
+
+            echo "Checking for run"
+            RUN_ID=$(gh run list \
+              --repo $REMOTE_REPO \
+              --event workflow_dispatch \
               --workflow run-tests.yml \
               --user sqlglot-integration-tests \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId')
+              --json displayTitle,databaseId \
+              --limit 20 \
+              -q '.[] | select(.displayTitle | contains("Correlation ID: '"$CORRELATION_ID"'")) | .databaseId')
+          done
 
           echo "Using Run ID: ${RUN_ID}"
           echo "remote_run_id=$RUN_ID" >> $GITHUB_OUTPUT

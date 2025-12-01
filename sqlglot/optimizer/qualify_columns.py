@@ -130,7 +130,7 @@ def validate_qualify_columns(expression: E, sql: t.Optional[str] = None) -> E:
                 start = column.this.meta.get("start")
                 end = column.this.meta.get("end")
 
-                error_msg = f"Column '{column}' could not be resolved{for_table}."
+                error_msg = f"Column '{column.name}' could not be resolved{for_table}."
                 if line and col:
                     error_msg += f" Line: {line}, Col: {col}"
                 if sql and start is not None and end is not None:
@@ -157,7 +157,7 @@ def validate_qualify_columns(expression: E, sql: t.Optional[str] = None) -> E:
             start = column.this.meta.get("start")
             end = column.this.meta.get("end")
 
-            detail = f"'{column}'"
+            detail = f"'{column.name}'"
             if line and col:
                 detail += f" (Line: {line}, Col: {col})"
             if sql and start is not None and end is not None:

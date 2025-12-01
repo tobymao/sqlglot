@@ -1744,7 +1744,7 @@ class Parser(metaclass=_Parser):
             sql=self.sql,
             positions=[(token.start, token.end)],
         )
-        formatted_message = f"{message}. Line: {token.line}, Col: {token.col}.\n  {formatted_sql}"
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
 
         error = ParseError.new(
             formatted_message,

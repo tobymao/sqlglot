@@ -5442,3 +5442,7 @@ class Generator(metaclass=_Generator):
                 delimiters = None
 
         return self.func("INITCAP", expression.this, delimiters)
+
+    def localtime_sql(self, expression: exp.LocalTime) -> str:
+        this = expression.this
+        return self.func("LOCALTIME", this) if this else "LOCALTIME"

@@ -4439,3 +4439,65 @@ FROM subquery2""",
                 self.assertTrue(ast.is_int)
                 self.assertEqual(ast.to_py(), 12345)
                 self.assertEqual(ast.sql(dialect), "1_2_3_4_5")
+
+    def test_localtime(self):
+        self.validate_all(
+            "SELECT LOCALTIME",
+            read={
+                "postgres": "SELECT LOCALTIME",
+                "duckdb": "SELECT LOCALTIME",
+                "redshift": "SELECT LOCALTIME",
+                "snowflake": "SELECT LOCALTIME",
+                "presto": "SELECT LOCALTIME",
+                "trino": "SELECT LOCALTIME",
+                "mysql": "SELECT LOCALTIME",
+            },
+            write={
+                "postgres": "SELECT LOCALTIME",
+                "duckdb": "SELECT LOCALTIME",
+                "redshift": "SELECT LOCALTIME",
+                "snowflake": "SELECT LOCALTIME",
+                "presto": "SELECT LOCALTIME",
+                "trino": "SELECT LOCALTIME",
+                "mysql": "SELECT LOCALTIME",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LOCALTIME(2)",
+            read={
+                "postgres": "SELECT LOCALTIME(2)",
+                "redshift": "SELECT LOCALTIME(2)",
+                "snowflake": "SELECT LOCALTIME(2)",
+                "presto": "SELECT LOCALTIME(2)",
+                "trino": "SELECT LOCALTIME(2)",
+            },
+            write={
+                "postgres": "SELECT LOCALTIME(2)",
+                "redshift": "SELECT LOCALTIME(2)",
+                "snowflake": "SELECT LOCALTIME(2)",
+                "presto": "SELECT LOCALTIME(2)",
+                "trino": "SELECT LOCALTIME(2)",
+            },
+        )
+
+        for localtime in ("LOCALTIME", "LOCALTIME(2)"):
+            with self.subTest("Testing out LOCALTIME function node: "):
+                self.validate_identity(f"SELECT {localtime}").selects[0].assert_is(exp.LocalTime)
+
+        for dialect in (
+            "tsql",
+            "oracle",
+            "sqlite",
+            "hive",
+            "spark2",
+            "spark",
+            "databricks",
+            "bigquery",
+        ):
+            with self.subTest(f"Testing out localtime identifier in {dialect}"):
+                sql = "SELECT localtime"
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.Column)
+
+                self.assertEqual(select.sql(dialect), sql)

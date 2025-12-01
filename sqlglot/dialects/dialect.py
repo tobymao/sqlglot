@@ -275,6 +275,20 @@ class _Dialect(type):
                 TokenType.SEMI,
             }
 
+        if enum not in (
+            "",
+            "postgres",
+            "duckdb",
+            "redshift",
+            "snowflake",
+            "presto",
+            "trino",
+            "mysql",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions.pop(TokenType.LOCALTIME, None)
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),

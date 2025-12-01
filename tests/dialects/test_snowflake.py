@@ -19,6 +19,7 @@ class TestSnowflake(Validator):
         self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
 
         self.validate_identity("SELECT GET(a, b)")
+        self.validate_identity("SELECT HASH_AGG(a, b, c, d)")
         self.validate_identity("SELECT GREATEST_IGNORE_NULLS(1, 2, 3, NULL)")
         self.validate_identity("SELECT LEAST_IGNORE_NULLS(5, NULL, 7, 3)")
         self.validate_identity("SELECT MAX(x)")

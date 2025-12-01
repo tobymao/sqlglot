@@ -2385,6 +2385,10 @@ GREATEST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
 DATE;
 
 # dialect: snowflake
+HASH_AGG(tbl.str_col);
+DECIMAL(19, 0);
+
+# dialect: snowflake
 LEAST_IGNORE_NULLS(1, 2, 3);
 INT;
 

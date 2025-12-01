@@ -6275,8 +6275,7 @@ class CurrentTime(Func):
 
 # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT
 # In Postgres, the difference between CURRENT_TIME vs LOCALTIME etc is that the latter does not have tz
-class LocalTime(Func):
-    _sql_names = ["LOCALTIME"]
+class Localtime(Func):
     arg_types = {"this": False}
 
 

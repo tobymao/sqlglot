@@ -4483,7 +4483,7 @@ FROM subquery2""",
 
         for localtime in ("LOCALTIME", "LOCALTIME(2)"):
             with self.subTest("Testing out LOCALTIME function node: "):
-                self.validate_identity(f"SELECT {localtime}").selects[0].assert_is(exp.LocalTime)
+                self.validate_identity(f"SELECT {localtime}").selects[0].assert_is(exp.Localtime)
 
         for dialect in (
             "tsql",

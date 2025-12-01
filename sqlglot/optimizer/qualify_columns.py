@@ -149,24 +149,17 @@ def validate_qualify_columns(expression: E, sql: t.Optional[str] = None) -> E:
             all_unqualified_columns.extend(unqualified_columns)
 
     if all_unqualified_columns:
-        error_details = []
-        highlights = []
-        for column in all_unqualified_columns:
-            line = column.this.meta.get("line")
-            col = column.this.meta.get("col")
-            start = column.this.meta.get("start")
-            end = column.this.meta.get("end")
+        first_column = all_unqualified_columns[0]
+        line = first_column.this.meta.get("line")
+        col = first_column.this.meta.get("col")
+        start = first_column.this.meta.get("start")
+        end = first_column.this.meta.get("end")
 
-            detail = f"'{column.name}'"
-            if line and col:
-                detail += f" (Line: {line}, Col: {col})"
-            if sql and start is not None and end is not None:
-                highlights.append((start, end))
-            error_details.append(detail)
-
-        error_msg = f"Ambiguous columns: {', '.join(error_details)}"
-        if highlights and sql:
-            formatted_sql = highlight_sql(sql, highlights, 50)[0]
+        error_msg = f"Ambiguous column '{first_column.name}'"
+        if line and col:
+            error_msg += f" (Line: {line}, Col: {col})"
+        if sql and start is not None and end is not None:
+            formatted_sql = highlight_sql(sql, [(start, end)])[0]
             error_msg += f"\n  {formatted_sql}"
 
         raise OptimizeError(error_msg)

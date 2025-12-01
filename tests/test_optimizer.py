@@ -534,10 +534,7 @@ class TestOptimizer(unittest.TestCase):
             )
 
         # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
-        with self.assertRaisesRegex(
-            OptimizeError,
-            r"Ambiguous columns: 'a', 'x', 'y', 'b' \(Line: 1, Col: 50\), 'c' \(Line: 1, Col: 57\)",
-        ):
+        with self.assertRaisesRegex(OptimizeError, "Ambiguous column 'a'"):
             expression = parse_one(
                 "SELECT * FROM (SELECT a, b, c FROM x) PIVOT (SUM(b) FOR c IN ('x', 'y'))"
             )

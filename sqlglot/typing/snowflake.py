@@ -105,7 +105,7 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
 
     Based on Snowflake documentation:
     - If the expr is FLOAT -> annotate as FLOAT
-    - If the expr is NUMBER(p, s) -> annotate as NUMBER(MAX(p+3, 38), MAX(s+3, 37))
+    - If the expr is NUMBER(p, s) -> annotate as NUMBER(min(p+3, 38), min(s+3, 37))
     """
     # First annotate the argument to get its type
     expression = self._annotate_by_args(expression, "this")

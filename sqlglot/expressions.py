@@ -5741,6 +5741,10 @@ class ApproxTopKCombine(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+class ApproxTopKEstimate(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class ApproxTopSum(AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 

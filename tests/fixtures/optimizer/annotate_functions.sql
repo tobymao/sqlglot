@@ -2645,16 +2645,16 @@ MINUTE(CAST('08:50:57' AS TIME));
 INT;
 
 # dialect: snowflake
-MEDIAN(tbl.double_col);
-DOUBLE;
+MEDIAN(2.71::FLOAT);
+FLOAT;
 
 # dialect: snowflake
 MEDIAN(tbl.bigint_col) OVER (PARTITION BY 1);
-DOUBLE;
+DECIMAL(38, 3);
 
 # dialect: snowflake
 MEDIAN(CAST(100 AS DECIMAL(10,2)));
-DECIMAL(10, 2);
+DECIMAL(13, 5);
 
 # dialect: snowflake
 MONTHNAME(CAST('2024-05-09' AS DATE));

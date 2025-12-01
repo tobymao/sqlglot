@@ -103,11 +103,9 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
 def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     """Annotate MEDIAN function with correct return type.
 
-    Based on Snowflake documentation: "Returns a FLOAT or DECIMAL (fixed-point) number, depending upon the input."
-
-    MEDIAN returns:
-    - DECIMAL types preserve their precision (DECIMAL(10,2) -> DECIMAL(10,2))
-    - Other numeric types return DOUBLE (INT, BIGINT, FLOAT -> DOUBLE)
+    Based on Snowflake documentation:
+    - If the expr is FLOAT -> annotate as FLOAT
+    - If the expr is NUMBER(p, s) -> annotate as NUMBER(MAX(p+3, 38), MAX(s+3, 37))
     """
     # First annotate the argument to get its type
     expression = self._annotate_by_args(expression, "this")
@@ -115,12 +113,32 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     # Get the input type
     input_type = expression.this.type
 
-    # If input is DECIMAL, preserve the precision per Snowflake behavior
-    if input_type and input_type.is_type(exp.DataType.Type.DECIMAL):
-        self._set_type(expression, input_type)
+    if input_type and input_type.is_type(exp.DataType.Type.FLOAT):
+        # If input is FLOAT, return FLOAT
+        self._set_type(expression, exp.DataType.Type.FLOAT)
     else:
-        # For all other types (INT, BIGINT, FLOAT, NULL, etc.), return DOUBLE
-        self._set_type(expression, exp.DataType.Type.DOUBLE)
+        # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
+        precision = input_type.expressions[0].this if input_type.expressions else 38
+        scale = input_type.expressions[1].this if len(input_type.expressions) > 1 else 0
+
+        if hasattr(precision, "this"):
+            precision = precision.this
+        if hasattr(scale, "this"):
+            scale = scale.this
+
+        try:
+            precision = int(precision) if precision is not None else 38
+            scale = int(scale) if scale is not None else 0
+        except (ValueError, TypeError):
+            precision = 38
+            scale = 0
+
+        new_precision = min(precision + 3, 38)
+        new_scale = min(scale + 3, 37)
+
+        # Build the new NUMBER type
+        new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")
+        self._set_type(expression, new_type)
 
     return expression
 

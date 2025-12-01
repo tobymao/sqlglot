@@ -5,7 +5,10 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
-from sqlglot.errors import OptimizeError
+from sqlglot.errors import (
+    OptimizeError,
+    highlight_sql,
+)
 from sqlglot.helper import seq_get, SingleValuedMapping
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
@@ -112,7 +115,7 @@ def qualify_columns(
     return expression
 
 
-def validate_qualify_columns(expression: E) -> E:
+def validate_qualify_columns(expression: E, sql: t.Optional[str] = None) -> E:
     """Raise an `OptimizeError` if any columns aren't qualified"""
     all_unqualified_columns = []
     for scope in traverse_scope(expression):
@@ -124,10 +127,15 @@ def validate_qualify_columns(expression: E) -> E:
                 for_table = f" for table: '{column.table}'" if column.table else ""
                 line = column.this.meta.get("line")
                 col = column.this.meta.get("col")
+                start = column.this.meta.get("start")
+                end = column.this.meta.get("end")
 
-                error_msg = f"Column '{column}' could not be resolved{for_table}."
+                error_msg = f"Column '{column.name}' could not be resolved{for_table}."
                 if line and col:
                     error_msg += f" Line: {line}, Col: {col}"
+                if sql and start is not None and end is not None:
+                    formatted_sql = highlight_sql(sql, [(start, end)])[0]
+                    error_msg += f"\n  {formatted_sql}"
 
                 raise OptimizeError(error_msg)
 
@@ -141,7 +149,20 @@ def validate_qualify_columns(expression: E) -> E:
             all_unqualified_columns.extend(unqualified_columns)
 
     if all_unqualified_columns:
-        raise OptimizeError(f"Ambiguous columns: {all_unqualified_columns}")
+        first_column = all_unqualified_columns[0]
+        line = first_column.this.meta.get("line")
+        col = first_column.this.meta.get("col")
+        start = first_column.this.meta.get("start")
+        end = first_column.this.meta.get("end")
+
+        error_msg = f"Ambiguous column '{first_column.name}'"
+        if line and col:
+            error_msg += f" (Line: {line}, Col: {col})"
+        if sql and start is not None and end is not None:
+            formatted_sql = highlight_sql(sql, [(start, end)])[0]
+            error_msg += f"\n  {formatted_sql}"
+
+        raise OptimizeError(error_msg)
 
     return expression
 

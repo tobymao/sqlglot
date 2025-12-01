@@ -7449,9 +7449,8 @@ class Randn(Func):
     arg_types = {"this": False}
 
 
-class RandStr(Func):
-    _sql_names = ["RANDSTR"]
-    arg_types = {"this": True, "generator": True}
+class Randstr(Func):
+    arg_types = {"this": True, "generator": False}
 
 
 class RangeN(Func):

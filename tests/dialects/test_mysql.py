@@ -97,17 +97,11 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
         )
-        self.validate_identity(
-            "CREATE TABLE test (id INT, PRIMARY KEY pk_name (id))",
-            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
-        )
-        self.validate_identity(
-            "CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))",
-            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
-        )
+        self.validate_identity("CREATE TABLE test (id INT, PRIMARY KEY pk_name (id))")
+        self.validate_identity("CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))")
         self.validate_identity(
             'CREATE TABLE test (id INT, PRIMARY KEY "pk_name" (id))',
-            "CREATE TABLE test (id INT, PRIMARY KEY (id))",
+            "CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))",
         )
         self.validate_identity("CREATE TABLE test (id INT, CONSTRAINT pk_name PRIMARY KEY (id))")
         self.validate_identity(

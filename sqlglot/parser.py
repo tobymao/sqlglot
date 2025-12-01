@@ -6530,13 +6530,13 @@ class Parser(metaclass=_Parser):
             and self._prev.token_type == TokenType.DESC
         )
 
-        # mysql allows a name for primary key but ignores it, the name is always PRIMARY
+        this = None
         if (
             self._curr.text.upper() not in self.CONSTRAINT_PARSERS
             and self._next
             and self._next.token_type == TokenType.L_PAREN
         ):
-            self._parse_id_var()
+            this = self._parse_id_var()
 
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(
@@ -6551,6 +6551,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.PrimaryKey,
+            this=this,
             expressions=expressions,
             include=self._parse_index_params(),
             options=self._parse_key_constraint_options(),

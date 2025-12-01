@@ -7,7 +7,14 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import exp
-from sqlglot.errors import ErrorLevel, ParseError, TokenError, concat_messages, merge_errors
+from sqlglot.errors import (
+    ErrorLevel,
+    ParseError,
+    TokenError,
+    concat_messages,
+    highlight_sql,
+    merge_errors,
+)
 from sqlglot.helper import apply_index_offset, ensure_list, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -1735,15 +1742,15 @@ class Parser(metaclass=_Parser):
         error level setting.
         """
         token = token or self._curr or self._prev or Token.string("")
-        start = token.start
-        end = token.end + 1
-        start_context = self.sql[max(start - self.error_message_context, 0) : start]
-        highlight = self.sql[start:end]
-        end_context = self.sql[end : end + self.error_message_context]
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
 
         error = ParseError.new(
-            f"{message}. Line {token.line}, Col: {token.col}.\n"
-            f"  {start_context}\033[4m{highlight}\033[0m{end_context}",
+            formatted_message,
             description=message,
             line=token.line,
             col=token.col,

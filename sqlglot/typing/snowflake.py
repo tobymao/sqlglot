@@ -161,25 +161,6 @@ def _annotate_math_with_float_decfloat(
     return expression
 
 
-<<<<<<< HEAD
-=======
-def _annotate_rounding_with_float_decfloat(
-    self: TypeAnnotator, expression: exp.Expression
-) -> exp.Expression:
-    """Annotate rounding functions (FLOOR, CEIL, ROUND) that preserve most input types.
-
-    In Snowflake, rounding functions preserve the input type:
-    - If input is FLOAT -> return FLOAT
-    - If input is DECFLOAT -> return DECFLOAT
-    - If input is INT, BIGINT, etc. -> return that integer type
-    - If input is DECIMAL/NUMBER -> return DECIMAL/NUMBER
-    """
-    # Just inherit the type from the input argument
-    expression = self._annotate_by_args(expression, "this")
-    return expression
-
-
->>>>>>> 6310bc8d2 (Added DECFLOAT type implementation)
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -293,11 +274,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-<<<<<<< HEAD
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
-=======
-        expr_type: {"annotator": _annotate_rounding_with_float_decfloat}
->>>>>>> 6310bc8d2 (Added DECFLOAT type implementation)
         for expr_type in {
             exp.Ceil,
             exp.Floor,

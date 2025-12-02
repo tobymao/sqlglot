@@ -3147,10 +3147,6 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
     def test_decfloat(self):
         self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
-<<<<<<< HEAD
-=======
-        self.validate_identity("SELECT CAST(x AS DECFLOAT(34))")
->>>>>>> 6310bc8d2 (Added DECFLOAT type implementation)
         self.validate_identity("CREATE TABLE t (x DECFLOAT)")
 
     def test_copy(self):

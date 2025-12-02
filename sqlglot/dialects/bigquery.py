@@ -384,7 +384,11 @@ class BigQuery(Dialect):
         "%e": "%-d",
         "%F": "%Y-%m-%d",
         "%T": "%H:%M:%S",
-        "%c": "%a %b %-d %H:%M:%S %Y",
+        "%c": "%a %b %e %H:%M:%S %Y",
+    }
+
+    INVERSE_TIME_MAPPING = {
+        "%H:%M:%S.%f": "%H:%M:%E6S",
     }
 
     FORMAT_MAPPING = {

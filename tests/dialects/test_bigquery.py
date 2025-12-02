@@ -427,7 +427,7 @@ LANGUAGE js AS
         self.validate_all(
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
-                "bigquery": "PARSE_TIMESTAMP('%FT%T.%f%z', x)",
+                "bigquery": "PARSE_TIMESTAMP('%FT%H:%M:%E6S%z', x)",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
@@ -501,7 +501,7 @@ LANGUAGE js AS
         self.validate_all(
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
-                "bigquery": "PARSE_TIMESTAMP('%FT%T.%f%z', x)",
+                "bigquery": "PARSE_TIMESTAMP('%FT%H:%M:%E6S%z', x)",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
@@ -2913,6 +2913,13 @@ OPTIONS (
             write={
                 "bigquery": "SELECT FORMAT_DATETIME('%c', CAST('2008-12-25 15:30:00' AS DATETIME))",
                 "duckdb": "SELECT STRFTIME(CAST('2008-12-25 15:30:00' AS TIMESTAMP), '%a %b %-d %H:%M:%S %Y')",
+            },
+        )
+        self.validate_all(
+            "SELECT FORMAT_DATETIME('%Y-%m-%e', DATETIME '2020-09-09 10:15:30')",
+            write={
+                "bigquery": "SELECT FORMAT_DATETIME('%Y-%m-%e', CAST('2020-09-09 10:15:30' AS DATETIME))",
+                "duckdb": "SELECT STRFTIME(CAST('2020-09-09 10:15:30' AS TIMESTAMP), '%Y-%m-%-d')",
             },
         )
         self.validate_all(

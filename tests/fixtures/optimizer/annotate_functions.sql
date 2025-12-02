@@ -3793,6 +3793,10 @@ APPROX_PERCENTILE_ACCUMULATE(tbl.int_col);
 OBJECT;
 
 # dialect: snowflake
+APPROX_PERCENTILE_ESTIMATE(tbl.state_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
 APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
 OBJECT;
 

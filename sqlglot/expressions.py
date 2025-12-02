@@ -7485,6 +7485,11 @@ class ApproxPercentileAccumulate(AggFunc):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_estimate
+class ApproxPercentileEstimate(Func):
+    arg_types = {"this": True, "percentile": True}
+
+
 class Quarter(Func):
     pass
 

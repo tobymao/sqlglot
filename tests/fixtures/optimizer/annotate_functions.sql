@@ -3769,6 +3769,18 @@ APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
 DOUBLE;
 
 # dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.bigint_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.double_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.int_col);
+OBJECT;
+
+# dialect: snowflake
 APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
 OBJECT;
 

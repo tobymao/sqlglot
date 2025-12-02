@@ -3,12 +3,17 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.helper import seq_get
 from sqlglot.typing import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
+
+MAX_PRECISION = 38
+
+MAX_SCALE = 37
 
 
 def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
@@ -96,6 +101,42 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
     ):
         self._set_type(expression, ordered_expr.this.type)
+
+    return expression
+
+
+def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
+    """Annotate MEDIAN function with correct return type.
+
+    Based on Snowflake documentation:
+    - If the expr is FLOAT -> annotate as FLOAT
+    - If the expr is NUMBER(p, s) -> annotate as NUMBER(min(p+3, 38), min(s+3, 37))
+    """
+    # First annotate the argument to get its type
+    expression = self._annotate_by_args(expression, "this")
+
+    # Get the input type
+    input_type = expression.this.type
+
+    if input_type.is_type(exp.DataType.Type.FLOAT):
+        # If input is FLOAT, return FLOAT
+        self._set_type(expression, exp.DataType.Type.FLOAT)
+    else:
+        # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
+        exprs = input_type.expressions
+
+        precision_expr = seq_get(exprs, 0)
+        precision = precision_expr.this.to_py() if precision_expr else MAX_PRECISION
+
+        scale_expr = seq_get(exprs, 1)
+        scale = scale_expr.this.to_py() if scale_expr else 0
+
+        new_precision = min(precision + 3, MAX_PRECISION)
+        new_scale = min(scale + 3, MAX_SCALE)
+
+        # Build the new NUMBER type
+        new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")
+        self._set_type(expression, new_type)
 
     return expression
 
@@ -322,6 +363,7 @@ EXPRESSION_METADATA = {
         )
     },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
+    exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},

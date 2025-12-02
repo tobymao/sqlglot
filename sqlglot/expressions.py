@@ -7480,6 +7480,11 @@ class ApproxQuantile(Quantile):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_accumulate
+class ApproxPercentileAccumulate(AggFunc):
+    arg_types = {"this": True}
+
+
 class Quarter(Func):
     pass
 

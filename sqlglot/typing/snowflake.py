@@ -141,19 +141,38 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     return expression
 
 
+def _annotate_math_with_float_decfloat(
+    self: TypeAnnotator, expression: exp.Expression
+) -> exp.Expression:
+    """Annotate math functions that preserve  DECFLOAT but return DOUBLE for others.
+
+    In Snowflake, trigonometric and exponential math functions:
+    - If input is DECFLOAT -> return DECFLOAT
+    - For integer types (INT, BIGINT, etc.) -> return DOUBLE
+    - For other numeric types (NUMBER, DECIMAL, DOUBLE) -> return DOUBLE
+    """
+    expression = self._annotate_by_args(expression, "this")
+
+    # If input is DECFLOAT, preserve
+    if expression.this.is_type(exp.DataType.Type.DECFLOAT):
+        self._set_type(expression, expression.this.type)
+    else:
+        # For all other types (integers, decimals, etc.), return DOUBLE
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.AddMonths,
-            exp.Ceil,
             exp.DateTrunc,
-            exp.Floor,
             exp.Left,
             exp.Pad,
             exp.Right,
-            exp.Round,
             exp.Stuff,
             exp.Substring,
             exp.TimeSlice,
@@ -239,17 +258,10 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
             exp.ApproximateSimilarity,
-            exp.Asin,
             exp.Asinh,
-            exp.Atan,
-            exp.Atan2,
             exp.Atanh,
             exp.Cbrt,
-            exp.Cos,
             exp.Cosh,
-            exp.Cot,
-            exp.Degrees,
-            exp.Exp,
             exp.MonthsBetween,
             exp.Normal,
             exp.RegrAvgx,
@@ -257,8 +269,41 @@ EXPRESSION_METADATA = {
             exp.RegrSlope,
             exp.RegrValx,
             exp.RegrValy,
-            exp.Sin,
             exp.Sinh,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DataType.Type.DECFLOAT}
+        for expr_type in {
+            exp.ToDecfloat,
+            exp.TryToDecfloat,
+        }
+    },
+    **{
+        expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
+            exp.Round,
+        }
+    },
+    **{
+        expr_type: {"annotator": _annotate_math_with_float_decfloat}
+        for expr_type in {
+            exp.Acos,
+            exp.Asin,
+            exp.Atan,
+            exp.Atan2,
+            exp.Cos,
+            exp.Cot,
+            exp.Degrees,
+            exp.Exp,
+            exp.Ln,
+            exp.Log,
+            exp.Pow,
+            exp.Radians,
+            exp.Sin,
+            exp.Sqrt,
             exp.Tan,
             exp.Tanh,
         }

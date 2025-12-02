@@ -2752,7 +2752,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         search_mode = search_ast.args.get("search_mode")
         self.assertIsNotNone(search_mode)
 
-        self.validate_identity("SELECT SEARCH_IP(col, '192.168.0.0')").find(exp.SearchIp).assert_is(
+        self.validate_identity("SELECT SEARCH_IP(col, '192.168.0.0')").selects[0].assert_is(
             exp.SearchIp
         )
 

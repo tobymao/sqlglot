@@ -5039,14 +5039,6 @@ class Generator(metaclass=_Generator):
     def todouble_sql(self, expression: exp.ToDouble) -> str:
         return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
 
-    @unsupported_args("format")
-    def todecfloat_sql(self, expression: exp.ToDecfloat) -> str:
-        return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
-
-    @unsupported_args("format")
-    def trytodecfloat_sql(self, expression: exp.TryToDecfloat) -> str:
-        return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
-
     def string_sql(self, expression: exp.String) -> str:
         this = expression.this
         zone = expression.args.get("zone")

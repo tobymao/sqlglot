@@ -181,9 +181,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.ARRAY}
         for expr_type in (
             exp.ApproxTopK,
-            exp.ApproxTopKEstimate,
             exp.ArrayAgg,
-            exp.ArrayUnionAgg,
             exp.RegexpExtractAll,
             exp.Split,
             exp.StringToArray,
@@ -258,14 +256,11 @@ EXPRESSION_METADATA = {
             exp.ApproximateSimilarity,
             exp.Asinh,
             exp.Atanh,
-            exp.Atan2,
             exp.Cbrt,
             exp.Cosh,
             exp.MonthsBetween,
-            exp.Normal,
             exp.RegrAvgx,
             exp.RegrAvgy,
-            exp.RegrSlope,
             exp.RegrValx,
             exp.RegrValy,
             exp.Sinh,
@@ -351,8 +346,6 @@ EXPRESSION_METADATA = {
             exp.AISummarizeAgg,
             exp.Base64DecodeString,
             exp.Base64Encode,
-            exp.CheckJson,
-            exp.CheckXml,
             exp.Chr,
             exp.Collate,
             exp.Collation,
@@ -401,11 +394,6 @@ EXPRESSION_METADATA = {
     exp.DecodeCase: {"annotator": _annotate_decode_case},
     exp.GreatestIgnoreNulls: {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
-    },
-    exp.HashAgg: {
-        "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("NUMBER(19, 0)", dialect="snowflake")
-        )
     },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Median: {"annotator": _annotate_median},

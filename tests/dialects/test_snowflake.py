@@ -1872,32 +1872,6 @@ class TestSnowflake(Validator):
                 "duckdb": UnsupportedError,
             },
         )
-        self.validate_all(
-            "TO_DECFLOAT(expr)",
-            write={
-                "snowflake": "TO_DECFLOAT(expr)",
-                "duckdb": "CAST(expr AS DOUBLE)",
-            },
-        )
-        self.validate_all(
-            "TO_DECFLOAT(expr, fmt)",
-            write={
-                "snowflake": "TO_DECFLOAT(expr, fmt)",
-                "duckdb": UnsupportedError,
-            },
-        )
-        self.validate_all(
-            "TRY_TO_DECFLOAT(expr)",
-            write={
-                "snowflake": "TRY_TO_DECFLOAT(expr)",
-            },
-        )
-        self.validate_all(
-            "TRY_TO_DECFLOAT(expr, fmt)",
-            write={
-                "snowflake": "TRY_TO_DECFLOAT(expr, fmt)",
-            },
-        )
 
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")

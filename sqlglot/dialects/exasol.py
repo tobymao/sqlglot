@@ -168,6 +168,7 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
     return self.func("SUBSTR", haystack_sql, direction, length)
 
 
+# https://docs.exasol.com/db/latest/sql/select.htm#:~:text=The%20select_list%20defines%20the%20columns%20of%20the%20result%20table.%20If%20*%20is%20used%2C%20all%20columns%20are%20listed.%20You%20can%20use%20an%20expression%20like%20t.*%20to%20list%20all%20columns%20of%20the%20table%20t%2C%20the%20view%20t%2C%20or%20the%20object%20with%20the%20table%20alias%20t.
 def _qualify_unscoped_star(node: exp.Expression) -> exp.Expression:
     """
     Exasol doesn't support a bare * alongside other select items, so we rewrite it
@@ -179,7 +180,9 @@ def _qualify_unscoped_star(node: exp.Expression) -> exp.Expression:
         return node
     select_expressions = list(node.expressions or [])
 
-    has_bare_star = any(isinstance(expr, exp.Star) and expr.this is None for expr in select_expressions)
+    has_bare_star = any(
+        isinstance(expr, exp.Star) and expr.this is None for expr in select_expressions
+    )
 
     if not has_bare_star or len(select_expressions) <= 1:
         return node

@@ -3880,6 +3880,14 @@ DECIMAL(10, 2);
 MIN(tbl.bigint_col) OVER (PARTITION BY 1);
 BIGINT;
 
+# dialect: snowflake
+ZIPF(1, 10, RANDOM());
+BIGINT;
+
+# dialect: snowflake
+ZIPF(2, 100, 1234);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

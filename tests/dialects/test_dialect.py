@@ -4482,6 +4482,7 @@ FROM subquery2""",
                     "presto": f"SELECT {func}",
                     "trino": f"SELECT {func}",
                     "mysql": f"SELECT {func}",
+                    "singlestore": f"SELECT {func}",
                 }
 
                 if func == "LOCALTIMESTAMP":
@@ -4496,10 +4497,13 @@ FROM subquery2""",
             with self.subTest(f"Testing {func} with precision"):
                 dialects = {
                     "postgres": f"SELECT {func}(2)",
+                    "duckdb": f"SELECT {func}(2)",
                     "redshift": f"SELECT {func}(2)",
                     "snowflake": f"SELECT {func}(2)",
                     "presto": f"SELECT {func}(2)",
                     "trino": f"SELECT {func}(2)",
+                    "mysql": f"SELECT {func}(2)",
+                    "singlestore": f"SELECT {func}(2)",
                 }
 
                 if func == "LOCALTIMESTAMP":
@@ -4519,6 +4523,7 @@ FROM subquery2""",
 
         for dialect in (
             "tsql",
+            "oracle",
             "sqlite",
             "hive",
             "spark2",

@@ -1262,7 +1262,6 @@ class Snowflake(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "BYTEINT": TokenType.INT,
-            "DECFLOAT": TokenType.DECFLOAT,
             "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,

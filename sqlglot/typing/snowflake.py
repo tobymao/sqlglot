@@ -3,12 +3,17 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.helper import seq_get
 from sqlglot.typing import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
+
+MAX_PRECISION = 38
+
+MAX_SCALE = 37
 
 
 def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
@@ -118,23 +123,16 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
         self._set_type(expression, exp.DataType.Type.FLOAT)
     else:
         # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
-        precision = input_type.expressions[0].this if input_type.expressions else 38
-        scale = input_type.expressions[1].this if len(input_type.expressions) > 1 else 0
+        exprs = input_type.expressions
 
-        if hasattr(precision, "this"):
-            precision = precision.this
-        if hasattr(scale, "this"):
-            scale = scale.this
+        precision_expr = seq_get(exprs, 0)
+        precision = precision_expr.this.to_py() if precision_expr else MAX_PRECISION
 
-        try:
-            precision = int(precision) if precision is not None else 38
-            scale = int(scale) if scale is not None else 0
-        except (ValueError, TypeError):
-            precision = 38
-            scale = 0
+        scale_expr = seq_get(exprs, 1)
+        scale = scale_expr.this.to_py() if scale_expr else 0
 
-        new_precision = min(precision + 3, 38)
-        new_scale = min(scale + 3, 37)
+        new_precision = min(precision + 3, MAX_PRECISION)
+        new_scale = min(scale + 3, MAX_SCALE)
 
         # Build the new NUMBER type
         new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")

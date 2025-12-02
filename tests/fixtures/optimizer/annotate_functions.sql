@@ -409,6 +409,18 @@ EXP(tbl.bignum_col);
 BIGDECIMAL;
 
 # dialect: bigquery
+AVG(1);
+FLOAT64;
+
+# dialect: bigquery
+AVG(5.5);
+FLOAT64;
+
+# dialect: bigquery
+AVG(tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 

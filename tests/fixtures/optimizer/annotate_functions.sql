@@ -421,6 +421,42 @@ AVG(tbl.bignum_col);
 BIGNUMERIC;
 
 # dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.int_col);
+INT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.int_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.int_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.bignum_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 

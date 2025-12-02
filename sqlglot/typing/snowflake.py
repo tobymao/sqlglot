@@ -141,18 +141,17 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
 def _annotate_math_with_float_decfloat(
     self: TypeAnnotator, expression: exp.Expression
 ) -> exp.Expression:
-    """Annotate math functions that preserve FLOAT and DECFLOAT but return DOUBLE for integers.
+    """Annotate math functions that preserve  DECFLOAT but return DOUBLE for others.
 
     In Snowflake, trigonometric and exponential math functions:
-    - If input is FLOAT -> return FLOAT
     - If input is DECFLOAT -> return DECFLOAT
     - For integer types (INT, BIGINT, etc.) -> return DOUBLE
     - For other numeric types (NUMBER, DECIMAL, DOUBLE) -> return DOUBLE
     """
     expression = self._annotate_by_args(expression, "this")
 
-    # If input is FLOAT or DECFLOAT, preserve that type
-    if expression.this.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DECFLOAT):
+    # If input is DECFLOAT, preserve
+    if expression.this.is_type(exp.DataType.Type.DECFLOAT):
         self._set_type(expression, expression.this.type)
     else:
         # For all other types (integers, decimals, etc.), return DOUBLE

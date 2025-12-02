@@ -3033,128 +3033,128 @@ SQRT(CAST(16 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-SQRT(CAST(16 AS FLOAT));
-FLOAT;
+SQRT(CAST(16 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 EXP(CAST(2 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-EXP(CAST(2 AS FLOAT));
-FLOAT;
+EXP(CAST(2 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 LN(CAST(10 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-LN(CAST(10 AS FLOAT));
-FLOAT;
+LN(CAST(10 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 LOG(CAST(100 AS DECFLOAT), 10);
 DECFLOAT;
 
 # dialect: snowflake
-LOG(CAST(100 AS FLOAT), 10);
-FLOAT;
+LOG(CAST(100 AS DOUBLE), 10);
+DOUBLE;
 
 # dialect: snowflake
 POW(CAST(2 AS DECFLOAT), 3);
 DECFLOAT;
 
 # dialect: snowflake
-POW(CAST(2 AS FLOAT), 3);
-FLOAT;
+POW(CAST(2 AS DOUBLE), 3);
+DOUBLE;
 
 # dialect: snowflake
 SIN(CAST(1.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-SIN(CAST(1.5 AS FLOAT));
-FLOAT;
+SIN(CAST(1.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 COS(CAST(1.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-COS(CAST(1.5 AS FLOAT));
-FLOAT;
+COS(CAST(1.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 TAN(CAST(1.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-TAN(CAST(1.5 AS FLOAT));
-FLOAT;
+TAN(CAST(1.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 COT(CAST(1.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-COT(CAST(1.5 AS FLOAT));
-FLOAT;
+COT(CAST(1.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 ASIN(CAST(0.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-ASIN(CAST(0.5 AS FLOAT));
-FLOAT;
+ASIN(CAST(0.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 ACOS(CAST(0.5 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-ACOS(CAST(0.5 AS FLOAT));
-FLOAT;
+ACOS(CAST(0.5 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 ATAN(CAST(1 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-ATAN(CAST(1 AS FLOAT));
-FLOAT;
+ATAN(CAST(1 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 ATAN2(CAST(1 AS DECFLOAT), 1);
 DECFLOAT;
 
 # dialect: snowflake
-ATAN2(CAST(1 AS FLOAT), 1);
-FLOAT;
+ATAN2(CAST(1 AS DOUBLE), 1);
+DOUBLE;
 
 # dialect: snowflake
 DEGREES(CAST(3.14159 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-DEGREES(CAST(3.14159 AS FLOAT));
-FLOAT;
+DEGREES(CAST(3.14159 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 RADIANS(CAST(180 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-RADIANS(CAST(180 AS FLOAT));
-FLOAT;
+RADIANS(CAST(180 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 TANH(CAST(1 AS DECFLOAT));
 DECFLOAT;
 
 # dialect: snowflake
-TANH(CAST(1 AS FLOAT));
-FLOAT;
+TANH(CAST(1 AS DOUBLE));
+DOUBLE;
 
 # dialect: snowflake
 TO_DECFLOAT('123.456');

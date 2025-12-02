@@ -5630,10 +5630,17 @@ class Cosh(Func):
 
 
 class CosineDistance(Func):
+    _sql_names = ["COSINE_DISTANCE", "VECTOR_COSINE_SIMILARITY"]
     arg_types = {"this": True, "expression": True}
 
 
 class EuclideanDistance(Func):
+    _sql_names = ["EUCLIDEAN_DISTANCE", "VECTOR_L2_DISTANCE"]
+    arg_types = {"this": True, "expression": True}
+
+
+class ManhattanDistance(Func):
+    _sql_names = ["VECTOR_L1_DISTANCE"]
     arg_types = {"this": True, "expression": True}
 
 

@@ -3892,6 +3892,18 @@ DECIMAL(10, 2);
 MIN(tbl.bigint_col) OVER (PARTITION BY 1);
 BIGINT;
 
+# dialect: snowflake
+VECTOR_COSINE_SIMILARITY([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L1_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L2_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

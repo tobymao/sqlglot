@@ -832,23 +832,24 @@ class Dialect(metaclass=_Dialect):
         "CENTURIES": "CENTURY",
     }
 
-    # Mapping of week unit names to (start_day, dow_number) tuples
-    # dow_number is the numeric day-of-week value (0=Sunday, 1=Monday, etc.)
+    # Mapping of week unit names to (start_day, iso_dow) tuples
+    # iso_dow follows ISO 8601 day-of-week numbering (Monday=1, ..., Sunday=7)
     WEEK_UNIT_SEMANTICS = {
-        "WEEK": ("SUNDAY", 0),
+        "WEEK": ("SUNDAY", 7),
         "ISOWEEK": ("MONDAY", 1),
         "WEEKISO": ("MONDAY", 1),
     }
 
-    # Days of week to DOW numbers (ISO standard: Sunday=0, Monday=1)
+    # Days of week to ISO 8601 day-of-week numbers
+    # ISO 8601 standard: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6, Sunday=7
     WEEK_START_DAY_TO_DOW = {
-        "SUNDAY": 0,
         "MONDAY": 1,
         "TUESDAY": 2,
         "WEDNESDAY": 3,
         "THURSDAY": 4,
         "FRIDAY": 5,
         "SATURDAY": 6,
+        "SUNDAY": 7,
     }
 
     # Specifies what types a given type can be coerced into
@@ -1725,7 +1726,7 @@ def map_date_part(part, dialect: DialectType = Dialect):
 
 
 def extract_week_unit_info(
-    unit: t.Optional[exp.Expression], dialect: DialectType = Dialect
+    unit: t.Optional[exp.Expression], dialect: DialectType = None
 ) -> t.Optional[t.Tuple[str, int]]:
     """
     Extract week unit information from AST node.
@@ -1733,21 +1734,24 @@ def extract_week_unit_info(
     This helper provides a unified way to handle week units across dialects.
 
     Args:
-        unit: The unit expression (Var, Week, or WeekStart)
-        dialect: Dialect class or instance for accessing WEEK_UNIT_SEMANTICS and WEEK_START_DAY_TO_DOW
+        unit: The unit expression (Var for ISOWEEK/WEEKISO, Week, or WeekStart)
+        dialect: Dialect used to access WEEK_UNIT_SEMANTICS and WEEK_START_DAY_TO_DOW mappings.
 
     Returns:
-        - (day_name, dow_number) tuple (e.g., ("SUNDAY", 0) or ("MONDAY", 1))
-        - None if not a week unit or if day is dynamic (not a constant)
+        Tuple of (day_name, iso_dow) where iso_dow is ISO 8601 day number (Monday=1, Sunday=7),
+        or None if not a week unit or if day is dynamic (not a constant).
+
+        Examples:
+            Week(Var('SUNDAY')) → ('SUNDAY', 7)
+            Var('ISOWEEK') → ('MONDAY', 1)
+            Column('week') → None (dynamic, not a constant)
 
     """
     dialect_instance = Dialect.get_or_raise(dialect)
 
     # Handle plain Var expressions for ISOWEEK/WEEKISO only
-    # NOTE: Plain Var('WEEK') is NOT handled to avoid breaking other dialects
     if isinstance(unit, exp.Var):
-        unit_name = unit.this.upper() if isinstance(unit.this, str) else str(unit.this)
-        # Only handle ISOWEEK/WEEKISO variants, not plain WEEK
+        unit_name = unit.name.upper()
         if unit_name in ("ISOWEEK", "WEEKISO"):
             week_info = dialect_instance.WEEK_UNIT_SEMANTICS.get(unit_name)
             if week_info:
@@ -1758,7 +1762,7 @@ def extract_week_unit_info(
     if isinstance(unit, (exp.Week, exp.WeekStart)):
         day_var = unit.this
         if isinstance(day_var, exp.Var):
-            day_name = day_var.this.upper() if isinstance(day_var.this, str) else str(day_var.this)
+            day_name = day_var.name.upper()
             dow_value = dialect_instance.WEEK_START_DAY_TO_DOW.get(day_name)
             return (day_name, dow_value) if dow_value is not None else None
 

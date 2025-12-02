@@ -388,6 +388,8 @@ class BigQuery(Dialect):
     }
 
     INVERSE_TIME_MAPPING = {
+        # Preserve %E6S instead of expanding to %T.%f - since both %E6S & %T.%f are semantically different in BigQuery
+        # %E6S is semantically different from %T.%f: %E6S works as a single atomic specifier for seconds with microseconds, while %T.%f expands incorrectly and fails to parse.
         "%H:%M:%S.%f": "%H:%M:%E6S",
     }
 

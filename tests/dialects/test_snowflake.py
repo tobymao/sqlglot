@@ -19,9 +19,11 @@ class TestSnowflake(Validator):
         self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
 
         self.validate_identity("SELECT GET(a, b)")
+        self.validate_identity("SELECT HASH_AGG(a, b, c, d)")
         self.validate_identity("SELECT GREATEST_IGNORE_NULLS(1, 2, 3, NULL)")
         self.validate_identity("SELECT LEAST_IGNORE_NULLS(5, NULL, 7, 3)")
         self.validate_identity("SELECT MAX(x)")
+        self.validate_identity("SELECT COUNT(x)")
         self.validate_identity("SELECT MIN(amount)")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
@@ -56,6 +58,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state, 2)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")
+        self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column, 4)")
+        self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")
@@ -84,6 +88,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT NVL2(col1, col2, col3)")
         self.validate_identity("SELECT NVL(col1, col2)", "SELECT COALESCE(col1, col2)")
         self.validate_identity("SELECT CHR(8364)")
+        self.validate_identity('SELECT CHECK_JSON(\'{"key": "value"}\')')
+        self.validate_identity(
+            "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>')"
+        )
+        self.validate_identity(
+            "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>', TRUE)"
+        )
         self.validate_identity("SELECT COMPRESS('Hello World', 'ZLIB')")
         self.validate_identity("SELECT DECOMPRESS_BINARY('compressed_data', 'SNAPPY')")
         self.validate_identity("SELECT DECOMPRESS_STRING('compressed_data', 'ZSTD')")
@@ -119,6 +130,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_VALY(y, x)")
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
+        self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",
             write={
@@ -135,6 +147,8 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT RANDOM()")
         self.validate_identity("SELECT RANDOM(123)")
+        self.validate_identity("SELECT RANDSTR(123, 456)")
+        self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")

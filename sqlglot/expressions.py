@@ -2320,7 +2320,7 @@ class ColumnPrefix(Expression):
 
 
 class PrimaryKey(Expression):
-    arg_types = {"expressions": True, "options": False, "include": False}
+    arg_types = {"this": False, "expressions": True, "options": False, "include": False}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html
@@ -5741,6 +5741,10 @@ class ApproxTopKCombine(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+class ApproxTopKEstimate(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class ApproxTopSum(AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 
@@ -5819,6 +5823,12 @@ class CombinedAggFunc(AnonymousAggFunc):
 
 class CombinedParameterizedAgg(ParameterizedAgg):
     arg_types = {"this": True, "expressions": True, "params": True}
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/hash_agg
+class HashAgg(AggFunc):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/hll
@@ -6198,6 +6208,14 @@ class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
 
+class CheckJson(Func):
+    arg_types = {"this": True}
+
+
+class CheckXml(Func):
+    arg_types = {"this": True, "disable_auto_convert": False}
+
+
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/String-Operators-and-Functions/TRANSLATE/TRANSLATE-Function-Syntax
 class TranslateCharacters(Expression):
     arg_types = {"this": True, "expression": True, "with_error": False}
@@ -6270,6 +6288,12 @@ class CurrentDatetime(Func):
 
 
 class CurrentTime(Func):
+    arg_types = {"this": False}
+
+
+# https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT
+# In Postgres, the difference between CURRENT_TIME vs LOCALTIME etc is that the latter does not have tz
+class Localtime(Func):
     arg_types = {"this": False}
 
 
@@ -7449,6 +7473,10 @@ class Randn(Func):
     arg_types = {"this": False}
 
 
+class Randstr(Func):
+    arg_types = {"this": True, "generator": False}
+
+
 class RangeN(Func):
     arg_types = {"this": True, "expressions": True, "each": False}
 
@@ -7563,6 +7591,10 @@ class RegrAvgy(Func):
 
 
 class RegrAvgx(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSlope(Func):
     arg_types = {"this": True, "expression": True}
 
 

@@ -1478,6 +1478,9 @@ class Snowflake(Dialect):
             exp.ArrayConcatAgg: lambda self, e: self.func(
                 "ARRAY_FLATTEN", exp.ArrayAgg(this=e.this)
             ),
+            exp.SHA2Digest: lambda self, e: self.func(
+                "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
+            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

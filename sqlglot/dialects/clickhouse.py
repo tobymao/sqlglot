@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     unit_to_var,
     trim_sql,
+    sha2_digest_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
@@ -1201,6 +1202,7 @@ class ClickHouse(Dialect):
             exp.SHA: rename_func("SHA1"),
             exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA2Digest: sha2_digest_sql,
             exp.Split: lambda self, e: self.func(
                 "splitByString", e.args.get("expression"), e.this, e.args.get("limit")
             ),

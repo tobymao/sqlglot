@@ -275,6 +275,20 @@ class _Dialect(type):
                 TokenType.SEMI,
             }
 
+        if enum not in (
+            "",
+            "postgres",
+            "duckdb",
+            "redshift",
+            "snowflake",
+            "presto",
+            "trino",
+            "mysql",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions.pop(TokenType.LOCALTIME, None)
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),
@@ -1870,6 +1884,10 @@ def build_timestamp_from_parts(args: t.List) -> exp.Func:
 
 
 def sha256_sql(self: Generator, expression: exp.SHA2) -> str:
+    return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
+
+
+def sha2_digest_sql(self: Generator, expression: exp.SHA2Digest) -> str:
     return self.func(f"SHA{expression.text('length') or '256'}", expression.this)
 
 

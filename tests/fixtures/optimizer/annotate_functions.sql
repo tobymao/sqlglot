@@ -1841,6 +1841,10 @@ ARRAY_AGG(tbl.str_col);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_UNION_AGG(tbl.array_col);
+ARRAY;
+
+# dialect: snowflake
 CHARINDEX('world', 'hello world');
 INT;
 
@@ -1885,6 +1889,18 @@ CHR(8364);
 VARCHAR;
 
 # dialect: snowflake
+CHECK_JSON('{"key": "value", "array": [1, 2, 3]}');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>', TRUE);
+VARCHAR;
+
+# dialect: snowflake
 COLLATE('hello', 'utf8');
 VARCHAR;
 
@@ -1915,6 +1931,14 @@ DATE;
 # dialect: snowflake
 COALESCE(TRUE, FALSE);
 BOOLEAN;
+
+# dialect: snowflake
+COUNT(*);
+BIGINT;
+
+# dialect: snowflake
+COUNT(DISTINCT tbl.str_col);
+BIGINT;
 
 # dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
@@ -2377,6 +2401,10 @@ GREATEST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
 DATE;
 
 # dialect: snowflake
+HASH_AGG(tbl.str_col);
+DECIMAL(19, 0);
+
+# dialect: snowflake
 LEAST_IGNORE_NULLS(1, 2, 3);
 INT;
 
@@ -2613,6 +2641,14 @@ RANDOM(123);
 BIGINT;
 
 # dialect: snowflake
+RANDSTR(123, 456);
+VARCHAR;
+
+# dialect: snowflake
+RANDSTR(123, RANDOM());
+VARCHAR;
+
+# dialect: snowflake
 RADIANS(tbl.double_col);
 DOUBLE;
 
@@ -2746,6 +2782,18 @@ DOUBLE;
 
 # dialect: snowflake
 REGR_AVGY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.int_col, tbl.int_col);
 DOUBLE;
 
 # dialect: snowflake
@@ -3499,6 +3547,14 @@ OBJECT;
 # dialect: snowflake
 APPROX_TOP_K_COMBINE(tbl.state_col);
 OBJECT;
+
+# dialect: snowflake
+APPROX_TOP_K_ESTIMATE(tbl.state_col, 4);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K_ESTIMATE(tbl.state_col);
+ARRAY;
 
 # dialect: snowflake
 APPROX_COUNT_DISTINCT(tbl.str_col);

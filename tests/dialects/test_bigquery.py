@@ -1041,8 +1041,8 @@ LANGUAGE js AS
                 "presto": "SHA256(x)",
                 "redshift": "SHA2(x, 256)",
                 "trino": "SHA256(x)",
-                "duckdb": "SHA256(x)",
-                "snowflake": "SHA2(x, 256)",
+                "duckdb": "UNHEX(SHA256(x))",
+                "snowflake": "SHA2_BINARY(x, 256)",
             },
         )
         self.validate_all(

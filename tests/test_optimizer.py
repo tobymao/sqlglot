@@ -8,7 +8,7 @@ from pandas.testing import assert_frame_equal
 
 import sqlglot
 from sqlglot import exp, optimizer, parse_one
-from sqlglot.errors import OptimizeError, SchemaError
+from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
@@ -526,12 +526,22 @@ class TestOptimizer(unittest.TestCase):
 
     def test_validate_columns(self):
         with self.assertRaisesRegex(
-            OptimizeError, """Column '"foo"' could not be resolved. Line: 1, Col: 10"""
+            OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"
         ):
             optimizer.qualify.qualify(
                 parse_one("select foo from x"),
                 schema={"foo": {"y": "int"}},
             )
+
+        # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
+        with self.assertRaisesRegex(OptimizeError, "Ambiguous column 'a'"):
+            expression = parse_one(
+                "SELECT * FROM (SELECT a, b, c FROM x) PIVOT (SUM(b) FOR c IN ('x', 'y'))"
+            )
+            qualified = optimizer.qualify_columns.qualify_columns(
+                expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
+            )
+            optimizer.qualify_columns.validate_qualify_columns(qualified)
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -551,6 +561,27 @@ class TestOptimizer(unittest.TestCase):
                         parse_one(sql), schema=self.schema
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
+
+    def test_optimize_error_highlighting(self):
+        # highlighting works with sql parameter
+        sql = "SELECT nonexistent FROM x"
+
+        with self.assertRaises(OptimizeError) as ctx:
+            optimizer.optimize(sql, schema=self.schema, sql=sql)
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Column 'nonexistent' could not be resolved", error_msg)
+        self.assertIn(f"{ANSI_UNDERLINE}nonexistent{ANSI_RESET}", error_msg)
+
+        # no highlighting when sql is None
+        sql = "SELECT nonexistent FROM x"
+
+        with self.assertRaises(OptimizeError) as ctx:
+            optimizer.optimize(sql, schema=self.schema, sql=None)
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Column 'nonexistent' could not be resolved", error_msg)
+        self.assertNotIn(f"{ANSI_UNDERLINE}nonexistent{ANSI_RESET}", error_msg)
 
     def test_normalize_identifiers(self):
         self.check_file(

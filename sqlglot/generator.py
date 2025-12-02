@@ -3137,11 +3137,13 @@ class Generator(metaclass=_Generator):
         return f"FOREIGN KEY{expressions}{reference}{delete}{update}{options}"
 
     def primarykey_sql(self, expression: exp.PrimaryKey) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         expressions = self.expressions(expression, flat=True)
         include = self.sql(expression, "include")
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"PRIMARY KEY ({expressions}){include}{options}"
+        return f"PRIMARY KEY{this} ({expressions}){include}{options}"
 
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
@@ -5442,3 +5444,7 @@ class Generator(metaclass=_Generator):
                 delimiters = None
 
         return self.func("INITCAP", expression.this, delimiters)
+
+    def localtime_sql(self, expression: exp.Localtime) -> str:
+        this = expression.this
+        return self.func("LOCALTIME", this) if this else "LOCALTIME"

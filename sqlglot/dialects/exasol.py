@@ -177,43 +177,56 @@ def _qualify_unscoped_star(node: exp.Expression) -> exp.Expression:
 
     if not isinstance(node, exp.Select):
         return node
-    items = list(node.expressions or [])
+    select_expressions = list(node.expressions or [])
 
-    has_bare_star = any(isinstance(x, exp.Star) and x.this is None for x in items)
+    has_bare_star = any(isinstance(expr, exp.Star) and expr.this is None for expr in select_expressions)
 
-    if not has_bare_star or len(items) <= 1:
+    if not has_bare_star or len(select_expressions) <= 1:
         return node
 
-    from_ = node.args.get("from_")
+    from_clause = node.args.get("from_")
 
-    if not from_ or not isinstance(from_.this, exp.Table):
+    base_source = from_clause.this if from_clause else None
+
+    if not base_source:
         return node
 
-    table = from_.this
-    alias_node = table.args.get("alias")
+    table_sources: list[exp.Expression] = [base_source]
+
+    table_sources.extend(
+        join.this
+        for join in (node.args.get("joins") or [])
+        if isinstance(join, exp.Join) and join.this
+    )
+
+    if not table_sources:
+        return node
+
     scope = build_scope(node)
-    if not scope:
-        return node
+    used_alias_names = set(scope.sources.keys()) if scope else set()
 
-    if alias_node and alias_node.name:
-        alias_name = alias_node.name
+    qualifiers: list[exp.Identifier] = []
 
-    else:
-        taken_source_name = set(scope.sources)
-        alias_name = find_new_name(taken_source_name, "T")
-        table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_name, quoted=False)))
-
-    qualified_items: list[exp.Expression] = []
-
-    for it in items:
-        if isinstance(it, exp.Star) and it.this is None:
-            qualified_items.append(
-                exp.Column(this=exp.Star(), table=exp.to_identifier(alias_name, quoted=False))
-            )
+    for src in table_sources:
+        alias = src.args.get("alias")
+        if isinstance(alias, (exp.TableAlias, exp.Alias)) and alias.name:
+            name = alias.name
         else:
-            qualified_items.append(it)
-    node.set("expressions", qualified_items)
+            name = find_new_name(used_alias_names, base="T")
+            src.set("alias", exp.TableAlias(this=exp.to_identifier(name, quoted=False)))
+            used_alias_names.add(name)
+        qualifiers.append(exp.to_identifier(name, quoted=False))
 
+    star_columns = [
+        exp.Column(this=exp.Star(), table=alias_identifier) for alias_identifier in qualifiers
+    ]
+
+    new_items: list[exp.Expression] = []
+    for select_expression in select_expressions:
+        new_items.extend(star_columns) if isinstance(
+            select_expression, exp.Star
+        ) and select_expression.this is None else new_items.append(select_expression)
+    node.set("expressions", new_items)
     return node
 
 

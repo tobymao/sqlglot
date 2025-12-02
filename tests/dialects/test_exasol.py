@@ -10,9 +10,23 @@ class TestExasol(Validator):
             "SELECT 1 AS [x]",
             'SELECT 1 AS "x"',
         )
+
+    def test_qualify_unscoped_star(self):
         self.validate_identity(
             "SELECT *, 1 FROM TEST",
             "SELECT T.*, 1 FROM TEST AS T",
+        )
+        self.validate_identity(
+            "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT *, 3 FROM t1, t2",
+            "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT T.*, T_2.*, 3 FROM t1 AS T, t2 AS T_2",
+        )
+        self.validate_identity(
+            'SELECT *, 3 FROM "A" JOIN "B" ON 1=1',
+            'SELECT T.*, T_2.*, 3 FROM "A" AS T JOIN "B" AS T_2 ON 1 = 1',
+        )
+        self.validate_identity(
+            "SELECT *, 7 FROM (SELECT 1 AS x) s CROSS JOIN (SELECT 2 AS y) q",
+            "SELECT s.*, q.*, 7 FROM (SELECT 1 AS x) AS s CROSS JOIN (SELECT 2 AS y) AS q",
         )
 
     def test_type_mappings(self):

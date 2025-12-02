@@ -4471,50 +4471,55 @@ FROM subquery2""",
                 self.assertEqual(ast.to_py(), 12345)
                 self.assertEqual(ast.sql(dialect), "1_2_3_4_5")
 
-    def test_localtime(self):
-        self.validate_all(
-            "SELECT LOCALTIME",
-            read={
-                "postgres": "SELECT LOCALTIME",
-                "duckdb": "SELECT LOCALTIME",
-                "redshift": "SELECT LOCALTIME",
-                "snowflake": "SELECT LOCALTIME",
-                "presto": "SELECT LOCALTIME",
-                "trino": "SELECT LOCALTIME",
-                "mysql": "SELECT LOCALTIME",
-            },
-            write={
-                "postgres": "SELECT LOCALTIME",
-                "duckdb": "SELECT LOCALTIME",
-                "redshift": "SELECT LOCALTIME",
-                "snowflake": "SELECT LOCALTIME",
-                "presto": "SELECT LOCALTIME",
-                "trino": "SELECT LOCALTIME",
-                "mysql": "SELECT LOCALTIME",
-            },
-        )
+    def test_localtime_and_localtimestamp(self):
+        for func in ("LOCALTIME", "LOCALTIMESTAMP"):
+            with self.subTest(f"Testing {func}"):
+                dialects = {
+                    "postgres": f"SELECT {func}",
+                    "duckdb": f"SELECT {func}",
+                    "redshift": f"SELECT {func}",
+                    "snowflake": f"SELECT {func}",
+                    "presto": f"SELECT {func}",
+                    "trino": f"SELECT {func}",
+                    "mysql": f"SELECT {func}",
+                    "singlestore": f"SELECT {func}",
+                }
 
-        self.validate_all(
-            "SELECT LOCALTIME(2)",
-            read={
-                "postgres": "SELECT LOCALTIME(2)",
-                "redshift": "SELECT LOCALTIME(2)",
-                "snowflake": "SELECT LOCALTIME(2)",
-                "presto": "SELECT LOCALTIME(2)",
-                "trino": "SELECT LOCALTIME(2)",
-            },
-            write={
-                "postgres": "SELECT LOCALTIME(2)",
-                "redshift": "SELECT LOCALTIME(2)",
-                "snowflake": "SELECT LOCALTIME(2)",
-                "presto": "SELECT LOCALTIME(2)",
-                "trino": "SELECT LOCALTIME(2)",
-            },
-        )
+                if func == "LOCALTIMESTAMP":
+                    dialects["oracle"] = f"SELECT {func}"
 
-        for localtime in ("LOCALTIME", "LOCALTIME(2)"):
-            with self.subTest("Testing out LOCALTIME function node: "):
-                self.validate_identity(f"SELECT {localtime}").selects[0].assert_is(exp.Localtime)
+                self.validate_all(
+                    f"SELECT {func}",
+                    read=dialects,
+                    write=dialects,
+                )
+
+            with self.subTest(f"Testing {func} with precision"):
+                dialects = {
+                    "postgres": f"SELECT {func}(2)",
+                    "duckdb": f"SELECT {func}(2)",
+                    "redshift": f"SELECT {func}(2)",
+                    "snowflake": f"SELECT {func}(2)",
+                    "presto": f"SELECT {func}(2)",
+                    "trino": f"SELECT {func}(2)",
+                    "mysql": f"SELECT {func}(2)",
+                    "singlestore": f"SELECT {func}(2)",
+                }
+
+                if func == "LOCALTIMESTAMP":
+                    dialects["oracle"] = f"SELECT {func}(2)"
+
+                self.validate_all(
+                    f"SELECT {func}(2)",
+                    read=dialects,
+                    write=dialects,
+                )
+
+            exp_type = exp.Localtime if func == "LOCALTIME" else exp.Localtimestamp
+
+            for func_variant in (func, f"{func}(2)"):
+                with self.subTest(f"Testing {func_variant} function node"):
+                    self.validate_identity(f"SELECT {func_variant}").selects[0].assert_is(exp_type)
 
         for dialect in (
             "tsql",
@@ -4526,9 +4531,13 @@ FROM subquery2""",
             "databricks",
             "bigquery",
         ):
-            with self.subTest(f"Testing out localtime identifier in {dialect}"):
-                sql = "SELECT localtime"
-                select = parse_one(sql, dialect=dialect)
-                select.selects[0].assert_is(exp.Column)
+            for func in ("localtime", "localtimestamp"):
+                # oracle supports localtimestamp but not localtime
+                if func == "localtimestamp" and dialect == "oracle":
+                    continue
 
-                self.assertEqual(select.sql(dialect), sql)
+                with self.subTest(f"Testing {func} identifier in {dialect}"):
+                    sql = f"SELECT {func}"
+                    select = parse_one(sql, dialect=dialect)
+                    select.selects[0].assert_is(exp.Column)
+                    self.assertEqual(select.sql(dialect), sql)

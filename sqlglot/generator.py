@@ -5448,3 +5448,7 @@ class Generator(metaclass=_Generator):
     def localtime_sql(self, expression: exp.Localtime) -> str:
         this = expression.this
         return self.func("LOCALTIME", this) if this else "LOCALTIME"
+
+    def localtimestamp_sql(self, expression: exp.Localtime) -> str:
+        this = expression.this
+        return self.func("LOCALTIMESTAMP", this) if this else "LOCALTIMESTAMP"

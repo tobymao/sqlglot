@@ -290,6 +290,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
         TokenType.CURRENT_USER: exp.CurrentUser,
         TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
     }
 
     STRUCT_TYPE_TOKENS = {
@@ -647,6 +648,7 @@ class Parser(metaclass=_Parser):
         TokenType.INSERT,
         TokenType.LIKE,
         TokenType.LOCALTIME,
+        TokenType.LOCALTIMESTAMP,
         TokenType.MERGE,
         TokenType.NEXT,
         TokenType.OFFSET,

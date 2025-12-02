@@ -7371,7 +7371,7 @@ class Median(AggFunc):
 
 
 class Mode(AggFunc):
-    pass
+    arg_types = {"this": False, "deterministic": False}
 
 
 class Min(AggFunc):

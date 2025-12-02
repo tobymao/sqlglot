@@ -57,6 +57,9 @@ class TestBigQuery(Validator):
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price) AS most_common FROM products")
+        self.validate_identity("SELECT MODE(status) OVER (PARTITION BY region) FROM orders")
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")

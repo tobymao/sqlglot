@@ -26,6 +26,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT COUNT(x)")
         self.validate_identity("SELECT MIN(amount)")
         self.validate_identity("SELECT MODE(x)")
+        self.validate_identity("SELECT MODE(category) FROM table1")
+        self.validate_identity("SELECT MODE(status) OVER (PARTITION BY region) FROM orders")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT SINH(1.5)")

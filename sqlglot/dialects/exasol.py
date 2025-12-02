@@ -99,6 +99,9 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
                     )
             return node
 
+        expression.set(
+            "expressions", [sel.transform(prefix_local) for sel in expression.expressions]
+        )
         for key in ("where", "group", "having"):
             if arg := expression.args.get(key):
                 expression.set(key, arg.transform(prefix_local))

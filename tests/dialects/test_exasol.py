@@ -660,7 +660,14 @@ class TestExasol(Validator):
         self.validate_identity(
             'SELECT YEAR(a_date) AS "a_year" FROM MY_SUMMARY_TABLE GROUP BY LOCAL."a_year"',
         )
-        self.validate_identity('SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year')
+        self.validate_identity(
+            'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
+            'SELECT LOCAL.a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
+        )
+        self.validate_identity(
+            "SELECT YEAR(current_date) AS current_year, current_year + 1 AS next_year",
+            "SELECT YEAR(CURRENT_DATE) AS current_year, LOCAL.current_year + 1 AS next_year",
+        )
 
         test_cases = [
             (

@@ -138,6 +138,9 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
         new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")
         self._set_type(expression, new_type)
 
+    return expression
+
+
 def _annotate_math_with_float_decfloat(
     self: TypeAnnotator, expression: exp.Expression
 ) -> exp.Expression:

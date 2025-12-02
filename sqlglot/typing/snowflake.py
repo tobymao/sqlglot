@@ -169,10 +169,13 @@ EXPRESSION_METADATA = {
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.AddMonths,
+            exp.Ceil,
             exp.DateTrunc,
+            exp.Floor,
             exp.Left,
             exp.Pad,
             exp.Right,
+            exp.Round,
             exp.Stuff,
             exp.Substring,
             exp.TimeSlice,
@@ -277,14 +280,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ToDecfloat,
             exp.TryToDecfloat,
-        }
-    },
-    **{
-        expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
-        for expr_type in {
-            exp.Ceil,
-            exp.Floor,
-            exp.Round,
         }
     },
     **{

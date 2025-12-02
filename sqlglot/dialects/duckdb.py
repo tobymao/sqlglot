@@ -427,6 +427,10 @@ class DuckDB(Dialect):
 
     DATE_PART_MAPPING.pop("WEEKDAY")
 
+    INVERSE_TIME_MAPPING = {
+        "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
+    }
+
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.

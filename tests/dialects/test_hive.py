@@ -417,7 +417,7 @@ class TestHive(Validator):
         self.validate_all(
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             write={
-                "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', CAST('2020-01-01' AS DATETIME))",
+                "bigquery": "FORMAT_DATE('%F %T', CAST('2020-01-01' AS DATETIME))",
                 "duckdb": "STRFTIME(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",

@@ -268,6 +268,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.PercentileCont,
             exp.SafeAdd,
+            exp.SafeDivide,
             exp.SafeMultiply,
             exp.SafeSubtract,
         }

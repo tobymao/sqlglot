@@ -258,6 +258,7 @@ EXPRESSION_METADATA = {
             exp.ApproximateSimilarity,
             exp.Asinh,
             exp.Atanh,
+            exp.Atan2,
             exp.Cbrt,
             exp.Cosh,
             exp.MonthsBetween,

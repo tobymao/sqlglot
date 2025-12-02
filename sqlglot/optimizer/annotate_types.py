@@ -117,6 +117,7 @@ class _TypeAnnotator(type):
             exp.DataType.Type.CHAR,
         )
         numeric_precedence = (
+            exp.DataType.Type.DECFLOAT,
             exp.DataType.Type.DOUBLE,
             exp.DataType.Type.FLOAT,
             exp.DataType.Type.DECIMAL,

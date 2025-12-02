@@ -3145,6 +3145,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                     expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS VARCHAR) FROM t"
                 )
 
+    def test_decfloat(self):
+        self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
+        self.validate_identity("CREATE TABLE t (x DECFLOAT)")
+
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")
         self.validate_identity(

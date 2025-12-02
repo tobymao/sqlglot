@@ -101,6 +101,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
         for expr_type in {
+            exp.Avg,
             exp.Ceil,
             exp.Exp,
             exp.Floor,

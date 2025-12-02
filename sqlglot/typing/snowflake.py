@@ -330,6 +330,7 @@ EXPRESSION_METADATA = {
             exp.ParseIp,
             exp.ParseUrl,
             exp.ApproxPercentileCombine,
+            exp.ApproxPercentileAccumulate,
             exp.ApproxTopKAccumulate,
             exp.ApproxTopKCombine,
         }

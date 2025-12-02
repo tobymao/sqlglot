@@ -120,6 +120,7 @@ class _TypeAnnotator(type):
             exp.DataType.Type.DECFLOAT,
             exp.DataType.Type.DOUBLE,
             exp.DataType.Type.FLOAT,
+            exp.DataType.Type.BIGDECIMAL,
             exp.DataType.Type.DECIMAL,
             exp.DataType.Type.BIGINT,
             exp.DataType.Type.INT,

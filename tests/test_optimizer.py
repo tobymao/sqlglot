@@ -1494,6 +1494,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_union_annotation(self):
         for left, right, expected_type in (
             ("SELECT 1::INT AS c", "SELECT 2::BIGINT AS c", "BIGINT"),
+            ("SELECT 1::INT AS c", "SELECT 2::BIGDECIMAL AS c", "BIGDECIMAL"),
             ("SELECT 1 AS c", "SELECT NULL AS c", "INT"),
             ("SELECT FOO() AS c", "SELECT 1 AS c", "UNKNOWN"),
             ("SELECT FOO() AS c", "SELECT BAR() AS c", "UNKNOWN"),

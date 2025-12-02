@@ -4586,7 +4586,9 @@ FROM subquery2""",
 
         for localtimestamp in ("LOCALTIMESTAMP", "LOCALTIMESTAMP(2)"):
             with self.subTest("Testing out LOCALTIMESTAMP function node: "):
-                self.validate_identity(f"SELECT {localtimestamp}").selects[0].assert_is(exp.Localtimestamp)
+                self.validate_identity(f"SELECT {localtimestamp}").selects[0].assert_is(
+                    exp.Localtimestamp
+                )
 
         for dialect in (
             "tsql",
@@ -4603,4 +4605,3 @@ FROM subquery2""",
                 select.selects[0].assert_is(exp.Column)
 
                 self.assertEqual(select.sql(dialect), sql)
-

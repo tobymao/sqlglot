@@ -4532,3 +4532,75 @@ FROM subquery2""",
                 select.selects[0].assert_is(exp.Column)
 
                 self.assertEqual(select.sql(dialect), sql)
+
+    def test_localtimestamp(self):
+        self.validate_all(
+            "SELECT LOCALTIMESTAMP",
+            read={
+                "postgres": "SELECT LOCALTIMESTAMP",
+                "duckdb": "SELECT LOCALTIMESTAMP",
+                "mysql": "SELECT LOCALTIMESTAMP",
+                "singlestore": "SELECT LOCALTIMESTAMP",
+                "oracle": "SELECT LOCALTIMESTAMP",
+                "snowflake": "SELECT LOCALTIMESTAMP",
+                "presto": "SELECT LOCALTIMESTAMP",
+                "trino": "SELECT LOCALTIMESTAMP",
+                "redshift": "SELECT LOCALTIMESTAMP",
+            },
+            write={
+                "postgres": "SELECT LOCALTIMESTAMP",
+                "duckdb": "SELECT LOCALTIMESTAMP",
+                "mysql": "SELECT LOCALTIMESTAMP",
+                "singlestore": "SELECT LOCALTIMESTAMP",
+                "oracle": "SELECT LOCALTIMESTAMP",
+                "snowflake": "SELECT LOCALTIMESTAMP",
+                "presto": "SELECT LOCALTIMESTAMP",
+                "trino": "SELECT LOCALTIMESTAMP",
+                "redshift": "SELECT LOCALTIMESTAMP",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LOCALTIMESTAMP(2)",
+            read={
+                "postgres": "SELECT LOCALTIMESTAMP(2)",
+                "snowflake": "SELECT LOCALTIMESTAMP(2)",
+                "presto": "SELECT LOCALTIMESTAMP(2)",
+                "trino": "SELECT LOCALTIMESTAMP(2)",
+                "mysql": "SELECT LOCALTIMESTAMP(2)",
+                "oracle": "SELECT LOCALTIMESTAMP(2)",
+                "singlestore": "SELECT LOCALTIMESTAMP(2)",
+                "redshift": "SELECT LOCALTIMESTAMP(2)",
+            },
+            write={
+                "postgres": "SELECT LOCALTIMESTAMP(2)",
+                "snowflake": "SELECT LOCALTIMESTAMP(2)",
+                "presto": "SELECT LOCALTIMESTAMP(2)",
+                "trino": "SELECT LOCALTIMESTAMP(2)",
+                "mysql": "SELECT LOCALTIMESTAMP(2)",
+                "oracle": "SELECT LOCALTIMESTAMP(2)",
+                "singlestore": "SELECT LOCALTIMESTAMP(2)",
+                "redshift": "SELECT LOCALTIMESTAMP(2)",
+            },
+        )
+
+        for localtimestamp in ("LOCALTIMESTAMP", "LOCALTIMESTAMP(2)"):
+            with self.subTest("Testing out LOCALTIMESTAMP function node: "):
+                self.validate_identity(f"SELECT {localtimestamp}").selects[0].assert_is(exp.Localtimestamp)
+
+        for dialect in (
+            "tsql",
+            "sqlite",
+            "hive",
+            "spark2",
+            "spark",
+            "databricks",
+            "bigquery",
+        ):
+            with self.subTest(f"Testing out localtimestamp identifier in {dialect}"):
+                sql = "SELECT localtimestamp"
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.Column)
+
+                self.assertEqual(select.sql(dialect), sql)
+

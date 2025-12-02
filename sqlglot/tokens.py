@@ -201,6 +201,7 @@ class TokenType(AutoName):
     RING = auto()
     LINESTRING = auto()
     LOCALTIME = auto()
+    LOCALTIMESTAMP = auto()
     MULTILINESTRING = auto()
     POLYGON = auto()
     MULTIPOLYGON = auto()
@@ -804,6 +805,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOAD": TokenType.LOAD,
         "LOCALTIME": TokenType.LOCALTIME,
+        "LOCALTIMESTAMP": TokenType.LOCALTIMESTAMP,
         "LOCK": TokenType.LOCK,
         "MERGE": TokenType.MERGE,
         "NAMESPACE": TokenType.NAMESPACE,

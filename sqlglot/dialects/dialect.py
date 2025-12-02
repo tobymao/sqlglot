@@ -279,6 +279,22 @@ class _Dialect(type):
             "",
             "postgres",
             "duckdb",
+            "mysql",
+            "singlestore",
+            "oracle",
+            "snowflake",
+            "presto",
+            "trino",
+            "redshift",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+
+        if enum not in (
+            "",
+            "postgres",
+            "duckdb",
             "redshift",
             "snowflake",
             "presto",

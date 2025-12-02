@@ -7750,6 +7750,11 @@ class Search(Func):
     }
 
 
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search_ip
+class SearchIp(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class StrToDate(Func):
     arg_types = {"this": True, "format": False, "safe": False}
 

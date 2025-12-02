@@ -211,6 +211,7 @@ EXPRESSION_METADATA = {
             exp.EqualNull,
             exp.IsNullValue,
             exp.Search,
+            exp.SearchIp,
         }
     },
     **{

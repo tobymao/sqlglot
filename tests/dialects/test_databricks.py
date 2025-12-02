@@ -43,6 +43,8 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity("SELECT PARSE_JSON('{}')")
+        self.validate_identity("SELECT RANDSTR(123)")
+        self.validate_identity("SELECT RANDSTR(123, 456)")
 
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'HOST')")

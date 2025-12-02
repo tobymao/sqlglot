@@ -276,6 +276,7 @@ EXPRESSION_METADATA = {
             exp.Initcap,
             exp.MD5,
             exp.Monthname,
+            exp.Randstr,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,

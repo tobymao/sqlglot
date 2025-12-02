@@ -118,7 +118,7 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     # Get the input type
     input_type = expression.this.type
 
-    if input_type and input_type.is_type(exp.DataType.Type.FLOAT):
+    if input_type.is_type(exp.DataType.Type.FLOAT):
         # If input is FLOAT, return FLOAT
         self._set_type(expression, exp.DataType.Type.FLOAT)
     else:

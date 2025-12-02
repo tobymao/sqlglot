@@ -1929,6 +1929,10 @@ COALESCE(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+CAST(1.5 AS DECFLOAT);
+DECFLOAT;
+
+# dialect: snowflake
 COALESCE(TRUE, FALSE);
 BOOLEAN;
 
@@ -2991,6 +2995,222 @@ BIGINT;
 # dialect: snowflake
 ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
 DOUBLE;
+
+# dialect: snowflake
+ROUND(CAST(3.14 AS FLOAT), 1);
+FLOAT;
+
+# dialect: snowflake
+ROUND(CAST(1.5 AS DECFLOAT), 0);
+DECFLOAT;
+
+# dialect: snowflake
+FLOOR(CAST(3.7 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+FLOOR(CAST(3.7 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+FLOOR(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+CEIL(CAST(3.2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+CEIL(CAST(3.2 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+CEIL(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+SQRT(CAST(16 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+SQRT(CAST(16 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+EXP(CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+EXP(CAST(2 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+LN(CAST(10 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LN(CAST(10 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+LOG(CAST(100 AS DECFLOAT), 10);
+DECFLOAT;
+
+# dialect: snowflake
+LOG(CAST(100 AS DOUBLE), 10);
+DOUBLE;
+
+# dialect: snowflake
+POW(CAST(2 AS DECFLOAT), 3);
+DECFLOAT;
+
+# dialect: snowflake
+POW(CAST(2 AS DOUBLE), 3);
+DOUBLE;
+
+# dialect: snowflake
+SIN(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+SIN(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+COS(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+COS(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TAN(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+TAN(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+COT(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+COT(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ASIN(CAST(0.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ASIN(CAST(0.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ACOS(CAST(0.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ACOS(CAST(0.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ATAN(CAST(1 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ATAN(CAST(1 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ATAN2(CAST(1 AS DECFLOAT), 1);
+DECFLOAT;
+
+# dialect: snowflake
+ATAN2(CAST(1 AS DOUBLE), 1);
+DOUBLE;
+
+# dialect: snowflake
+DEGREES(CAST(3.14159 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+DEGREES(CAST(3.14159 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+RADIANS(CAST(180 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+RADIANS(CAST(180 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TANH(CAST(1 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+TANH(CAST(1 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TO_DECFLOAT('123.456');
+DECFLOAT;
+
+# dialect: snowflake
+TO_DECFLOAT('123.456', '999.999');
+DECFLOAT;
+
+# dialect: snowflake
+TRY_TO_DECFLOAT('123.456');
+DECFLOAT;
+
+# dialect: snowflake
+TRY_TO_DECFLOAT('invalid');
+DECFLOAT;
+
+# dialect: snowflake
+ABS(CAST(-123.456 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ABS(CAST(-123.456 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+MOD(CAST(10 AS DECFLOAT), 3);
+DECFLOAT;
+
+# dialect: snowflake
+MOD(CAST(10 AS FLOAT), 3);
+FLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(1 AS FLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(2 AS DECFLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(1 AS FLOAT), CAST(2 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS FLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS DECFLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS FLOAT), CAST(2 AS FLOAT));
+FLOAT;
 
 # dialect: snowflake
 SECOND(CAST('08:50:57' AS TIME));

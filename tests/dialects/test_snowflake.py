@@ -182,6 +182,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_TIMESTAMP_LTZ(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_TZ(x) FROM t")
         self.validate_identity("TO_DECIMAL(expr, fmt, precision, scale)")
+        self.validate_identity("TO_DECFLOAT('123.456')")
+        self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
+        self.validate_identity("TRY_TO_DECFLOAT('123.456')")
+        self.validate_identity("TRY_TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
         self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)
@@ -3144,6 +3148,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                 self.assertEqual(
                     expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS VARCHAR) FROM t"
                 )
+
+    def test_decfloat(self):
+        self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
+        self.validate_identity("CREATE TABLE t (x DECFLOAT)")
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

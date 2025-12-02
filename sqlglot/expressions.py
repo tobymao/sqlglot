@@ -4685,6 +4685,7 @@ class DataType(Expression):
         DECIMAL64 = auto()
         DECIMAL128 = auto()
         DECIMAL256 = auto()
+        DECFLOAT = auto()
         DOUBLE = auto()
         DYNAMIC = auto()
         ENUM = auto()
@@ -4852,6 +4853,7 @@ class DataType(Expression):
         Type.DECIMAL64,
         Type.DECIMAL128,
         Type.DECIMAL256,
+        Type.DECFLOAT,
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,
@@ -5905,6 +5907,22 @@ class ToNumber(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_double
 class ToDouble(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/to_decfloat
+class ToDecfloat(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/try_to_decfloat
+class TryToDecfloat(Func):
     arg_types = {
         "this": True,
         "format": False,

@@ -3782,6 +3782,9 @@ DOUBLE;
 
 # dialect: snowflake
 APPROX_PERCENTILE_COMBINE(tbl.state_col);
+OBJECT;
+
+# dialect: snowflake
 APPROX_PERCENTILE_ACCUMULATE(tbl.bigint_col);
 OBJECT;
 

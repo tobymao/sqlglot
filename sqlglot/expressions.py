@@ -6297,6 +6297,10 @@ class Localtime(Func):
     arg_types = {"this": False}
 
 
+class Localtimestamp(Func):
+    arg_types = {"this": False}
+
+
 class CurrentTimestamp(Func):
     arg_types = {"this": False, "sysdate": False}
 

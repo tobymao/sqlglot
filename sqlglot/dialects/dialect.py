@@ -284,9 +284,12 @@ class _Dialect(type):
             "presto",
             "trino",
             "mysql",
+            "singlestore",
         ):
             no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions.pop(TokenType.LOCALTIME, None)
+            if enum != "oracle":
+                no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
             klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
         klass.VALID_INTERVAL_UNITS = {

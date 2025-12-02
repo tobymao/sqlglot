@@ -3151,8 +3151,20 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                 )
 
     def test_decfloat(self):
-        self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
-        self.validate_identity("CREATE TABLE t (x DECFLOAT)")
+        self.validate_all(
+            "SELECT CAST(1.5 AS DECFLOAT)",
+            write={
+                "snowflake": "SELECT CAST(1.5 AS DECFLOAT)",
+                "duckdb": "SELECT CAST(1.5 AS DECIMAL(38, 5))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (x DECFLOAT)",
+            write={
+                "snowflake": "CREATE TABLE t (x DECFLOAT)",
+                "duckdb": "CREATE TABLE t (x DECIMAL(38, 5))",
+            },
+        )
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

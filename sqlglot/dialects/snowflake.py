@@ -729,7 +729,6 @@ class Snowflake(Dialect):
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
             ),
             "TO_CHAR": build_timetostr_or_tochar,
-            "TO_BINARY": exp.ToBinary.from_arg_list,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
                 this=seq_get(args, 0),

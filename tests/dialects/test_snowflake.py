@@ -56,11 +56,13 @@ class TestSnowflake(Validator):
             "SELECT APPROXIMATE_SIMILARITY(minhash_col)",
         )
         self.validate_identity("SELECT APPROX_PERCENTILE_ACCUMULATE(col)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_ESTIMATE(state, 0.5)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state, 2)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column, 4)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_COMBINE(state_column)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")
@@ -151,9 +153,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RANDSTR(123, 456)")
         self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")
+        self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
+        self.validate_identity("SELECT ZIPF(2, 100, 1234)")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
+        self.validate_identity("SELECT XMLGET(object_col, 'level2')")
+        self.validate_identity("SELECT XMLGET(object_col, 'level3', 1)")
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")
@@ -3153,8 +3159,20 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                 )
 
     def test_decfloat(self):
-        self.validate_identity("SELECT CAST(1.5 AS DECFLOAT)")
-        self.validate_identity("CREATE TABLE t (x DECFLOAT)")
+        self.validate_all(
+            "SELECT CAST(1.5 AS DECFLOAT)",
+            write={
+                "snowflake": "SELECT CAST(1.5 AS DECFLOAT)",
+                "duckdb": "SELECT CAST(1.5 AS DECIMAL(38, 5))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (x DECFLOAT)",
+            write={
+                "snowflake": "CREATE TABLE t (x DECFLOAT)",
+                "duckdb": "CREATE TABLE t (x DECIMAL(38, 5))",
+            },
+        )
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

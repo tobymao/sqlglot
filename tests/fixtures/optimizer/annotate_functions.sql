@@ -409,6 +409,54 @@ EXP(tbl.bignum_col);
 BIGDECIMAL;
 
 # dialect: bigquery
+AVG(1);
+FLOAT64;
+
+# dialect: bigquery
+AVG(5.5);
+FLOAT64;
+
+# dialect: bigquery
+AVG(tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.int_col);
+INT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.int_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.int_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.bignum_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 
@@ -1838,6 +1886,26 @@ ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.str_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bin_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bool_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.date_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.double_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.str_col);
 ARRAY;
 
 # dialect: snowflake
@@ -3769,6 +3837,10 @@ APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
 DOUBLE;
 
 # dialect: snowflake
+APPROX_PERCENTILE_COMBINE(tbl.state_col);
+OBJECT;
+
+# dialect: snowflake
 APPROX_PERCENTILE_ACCUMULATE(tbl.bigint_col);
 OBJECT;
 
@@ -3779,6 +3851,10 @@ OBJECT;
 # dialect: snowflake
 APPROX_PERCENTILE_ACCUMULATE(tbl.int_col);
 OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ESTIMATE(tbl.state_col, 0.5);
+DOUBLE;
 
 # dialect: snowflake
 APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
@@ -3903,6 +3979,22 @@ DOUBLE;
 # dialect: snowflake
 VECTOR_L2_DISTANCE([1,2,3], [4,5,6]);
 DOUBLE;
+
+# dialect: snowflake
+ZIPF(1, 10, RANDOM());
+BIGINT;
+
+# dialect: snowflake
+ZIPF(2, 100, 1234);
+BIGINT;
+
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><level2>content</level2></root>'), 'level2');
+OBJECT;
+
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><item>a</item><item>b</item></root>'), 'item', 1);
+OBJECT;
 
 --------------------------------------
 -- T-SQL

@@ -188,6 +188,7 @@ EXPRESSION_METADATA = {
             exp.ApproxTopK,
             exp.ApproxTopKEstimate,
             exp.ArrayAgg,
+            exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,
             exp.RegexpExtractAll,
             exp.Split,
@@ -205,6 +206,7 @@ EXPRESSION_METADATA = {
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
             exp.Rand,
+            exp.Zipf,
         }
     },
     **{
@@ -260,6 +262,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
+            exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
             exp.Asinh,
             exp.Atanh,
@@ -332,9 +335,11 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
+            exp.ApproxPercentileCombine,
             exp.ApproxPercentileAccumulate,
             exp.ApproxTopKAccumulate,
             exp.ApproxTopKCombine,
+            exp.XMLGet,
         }
     },
     **{

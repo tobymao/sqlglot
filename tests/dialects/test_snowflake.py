@@ -158,6 +158,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
+        self.validate_identity("SELECT XMLGET(object_col, 'level2')")
+        self.validate_identity("SELECT XMLGET(object_col, 'level3', 1)")
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")

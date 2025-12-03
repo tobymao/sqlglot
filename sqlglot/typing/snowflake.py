@@ -336,6 +336,7 @@ EXPRESSION_METADATA = {
             exp.ApproxPercentileAccumulate,
             exp.ApproxTopKAccumulate,
             exp.ApproxTopKCombine,
+            exp.XMLGet,
         }
     },
     **{

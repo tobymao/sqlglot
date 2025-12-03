@@ -2165,6 +2165,10 @@ CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00
 TIMESTAMPNTZ;
 
 # dialect: snowflake
+CURRENT_REGION();
+VARCHAR;
+
+# dialect: snowflake
 DATEDIFF('year', tbl.date_col, tbl.date_col);
 INT;
 

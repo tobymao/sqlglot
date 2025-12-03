@@ -173,6 +173,7 @@ EXPRESSION_METADATA = {
             exp.DateTrunc,
             exp.Floor,
             exp.Left,
+            exp.Mode,
             exp.Pad,
             exp.Right,
             exp.Round,

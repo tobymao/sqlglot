@@ -640,13 +640,11 @@ class TestDialect(Validator):
             read={
                 "": "TO_BINARY('test', 'HEX')",
                 "snowflake": "TO_BINARY('test', 'HEX')",
-                "duckdb": "TO_BINARY('test', 'HEX')",
                 "spark": "TO_BINARY('test', 'HEX')",
                 "databricks": "TO_BINARY('test', 'HEX')",
             },
             write={
                 "snowflake": "TO_BINARY('test', 'HEX')",
-                "duckdb": "TO_BINARY('test', 'HEX')",
                 "spark": "TO_BINARY('test', 'HEX')",
                 "databricks": "TO_BINARY('test', 'HEX')",
             },

@@ -128,6 +128,14 @@ BIGINT;
 UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
 BIGINT;
 
+# dialect: snowflake
+TO_BINARY('test');
+BINARY;
+
+# dialect: snowflake
+TO_BINARY('test', 'HEX');
+BINARY;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

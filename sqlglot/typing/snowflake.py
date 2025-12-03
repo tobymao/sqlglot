@@ -222,6 +222,7 @@ EXPRESSION_METADATA = {
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,
+            exp.ToBinary,
             exp.TryBase64DecodeBinary,
             exp.TryHexDecodeBinary,
             exp.Unhex,

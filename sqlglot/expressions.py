@@ -6680,8 +6680,6 @@ class ToBase64(Func):
     pass
 
 
-# https://docs.snowflake.com/en/sql-reference/functions/to_binary
-# https://duckdb.org/docs/stable/sql/functions/text#binstring
 class ToBinary(Func):
     arg_types = {"this": True, "format": False}
 

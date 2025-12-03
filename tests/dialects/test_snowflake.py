@@ -1672,9 +1672,6 @@ class TestSnowflake(Validator):
 
         self.validate_identity("SELECT TRY_HEX_DECODE_STRING('48656C6C6F')")
 
-        self.validate_identity("SELECT TO_BINARY('test')")
-        self.validate_identity("SELECT TO_BINARY('test', 'HEX')")
-
         self.validate_all(
             "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
             read={

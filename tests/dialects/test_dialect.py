@@ -618,6 +618,26 @@ class TestDialect(Validator):
             },
         )
 
+    def test_to_binary(self):
+        self.validate_all(
+            "SELECT TO_BINARY('test')",
+            write={
+                "snowflake": "SELECT TO_BINARY('test')",
+                "duckdb": "SELECT TO_BINARY('test')",
+                "spark": "SELECT TO_BINARY('test')",
+                "databricks": "SELECT TO_BINARY('test')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_BINARY('test', 'HEX')",
+            write={
+                "snowflake": "SELECT TO_BINARY('test', 'HEX')",
+                "duckdb": "SELECT TO_BINARY('test', 'HEX')",
+                "spark": "SELECT TO_BINARY('test', 'HEX')",
+                "databricks": "SELECT TO_BINARY('test', 'HEX')",
+            },
+        )
+
     def test_if_null(self):
         self.validate_all(
             "SELECT IFNULL(1, NULL) FROM foo",

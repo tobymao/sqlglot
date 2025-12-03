@@ -1869,6 +1869,18 @@ BOOLOR_AGG(tbl.bool_col);
 BOOLEAN;
 
 # dialect: snowflake
+TO_BOOLEAN('true');
+BOOLEAN;
+
+# dialect: snowflake
+TO_BOOLEAN(1);
+BOOLEAN;
+
+# dialect: snowflake
+TO_BOOLEAN(tbl.varchar_col);
+BOOLEAN;
+
+# dialect: snowflake
 ARRAY_AGG(tbl.bin_col);
 ARRAY;
 

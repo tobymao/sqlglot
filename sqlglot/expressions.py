@@ -5871,6 +5871,9 @@ class Ascii(Func):
 class ToArray(Func):
     pass
 
+class ToBoolean(Func):
+    _sql_names = ["TO_BOOLEAN", "BOOLEAN"]
+
 
 # https://materialize.com/docs/sql/types/list/
 class List(Func):

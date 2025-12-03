@@ -362,6 +362,7 @@ EXPRESSION_METADATA = {
             exp.Collation,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
+            exp.CurrentRole,
             exp.CurrentOrganizationName,
             exp.DecompressString,
             exp.HexDecodeString,

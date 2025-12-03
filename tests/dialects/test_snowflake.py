@@ -62,6 +62,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column, 4)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_COMBINE(state_column)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")

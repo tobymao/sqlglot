@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from collections import defaultdict
 
-from sqlglot import exp, transforms, jsonpath
+from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
@@ -67,6 +67,7 @@ class Databricks(Spark):
         }
 
         COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.QDCOLON: lambda self, this, to: self.expression(
                 exp.TryCast,
                 this=this,

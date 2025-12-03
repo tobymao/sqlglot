@@ -1392,6 +1392,7 @@ class Snowflake(Dialect):
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.ManhattanDistance: rename_func("VECTOR_L1_DISTANCE"),
             exp.MakeInterval: no_make_interval_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,

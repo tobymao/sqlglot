@@ -3769,6 +3769,22 @@ PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 

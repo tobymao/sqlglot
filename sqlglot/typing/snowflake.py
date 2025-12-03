@@ -92,10 +92,11 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     """Annotate WithinGroup with correct type based on the inner function.
 
     1) Annotate args first
-    2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
+    2) Check if this is PercentileDisc/PercentileCont and if so, re-annotate its type to match the ordered expression's type
     """
+    
     if (
-        isinstance(expression.this, exp.PercentileDisc)
+        isinstance(expression.this, (exp.PercentileDisc, exp.PercentileCont))
         and isinstance(order_expr := expression.expression, exp.Order)
         and len(order_expr.expressions) == 1
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)

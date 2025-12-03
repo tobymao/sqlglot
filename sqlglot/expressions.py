@@ -8093,6 +8093,11 @@ class XMLElement(Func):
     arg_types = {"this": True, "expressions": False}
 
 
+class XMLGet(Func):
+    _sql_names = ["XMLGET"]
+    arg_types = {"this": True, "expression": True, "instance": False}
+
+
 class XMLTable(Func):
     arg_types = {
         "this": True,

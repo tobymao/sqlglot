@@ -3976,6 +3976,14 @@ BIGINT;
 ZIPF(2, 100, 1234);
 BIGINT;
 
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><level2>content</level2></root>'), 'level2');
+OBJECT;
+
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><item>a</item><item>b</item></root>'), 'item', 1);
+OBJECT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

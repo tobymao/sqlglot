@@ -94,7 +94,7 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     1) Annotate args first
     2) Check if this is PercentileDisc/PercentileCont and if so, re-annotate its type to match the ordered expression's type
     """
-    
+
     if (
         isinstance(expression.this, (exp.PercentileDisc, exp.PercentileCont))
         and isinstance(order_expr := expression.expression, exp.Order)

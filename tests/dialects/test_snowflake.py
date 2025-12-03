@@ -56,6 +56,7 @@ class TestSnowflake(Validator):
             "SELECT APPROXIMATE_SIMILARITY(minhash_col)",
         )
         self.validate_identity("SELECT APPROX_PERCENTILE_ACCUMULATE(col)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_ESTIMATE(state, 0.5)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state, 2)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")

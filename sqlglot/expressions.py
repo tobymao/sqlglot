@@ -5755,6 +5755,11 @@ class ApproxQuantiles(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_combine
+class ApproxPercentileCombine(AggFunc):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/minhash
 class Minhash(AggFunc):
     arg_types = {"this": True, "expressions": True}
@@ -7480,6 +7485,16 @@ class ApproxQuantile(Quantile):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_accumulate
+class ApproxPercentileAccumulate(AggFunc):
+    pass
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_estimate
+class ApproxPercentileEstimate(Func):
+    arg_types = {"this": True, "percentile": True}
+
+
 class Quarter(Func):
     pass
 
@@ -8102,6 +8117,11 @@ class XMLElement(Func):
     arg_types = {"this": True, "expressions": False}
 
 
+class XMLGet(Func):
+    _sql_names = ["XMLGET"]
+    arg_types = {"this": True, "expression": True, "instance": False}
+
+
 class XMLTable(Func):
     arg_types = {
         "this": True,
@@ -8123,6 +8143,10 @@ class XMLKeyValueOption(Expression):
 
 class Year(Func):
     pass
+
+
+class Zipf(Func):
+    arg_types = {"this": True, "elementcount": True, "gen": True}
 
 
 class Use(Expression):

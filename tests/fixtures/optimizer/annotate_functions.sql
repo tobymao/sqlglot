@@ -2177,6 +2177,10 @@ CURRENT_REGION();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_ORGANIZATION_NAME();
+VARCHAR;
+
+# dialect: snowflake
 DATEDIFF('year', tbl.date_col, tbl.date_col);
 INT;
 

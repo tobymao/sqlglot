@@ -6332,6 +6332,10 @@ class CurrentTimestampLTZ(Func):
     arg_types = {}
 
 
+class CurrentOrganizationName(Func):
+    arg_types = {}
+
+
 class CurrentSchema(Func):
     arg_types = {"this": False}
 

@@ -7374,6 +7374,10 @@ class Median(AggFunc):
     pass
 
 
+class Mode(AggFunc):
+    arg_types = {"this": False, "deterministic": False}
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

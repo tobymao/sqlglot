@@ -16,6 +16,8 @@ class TestDatabricks(Validator):
         self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
         self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
         self.validate_identity("REGEXP_LIKE(x, y)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")
         self.validate_identity("SELECT void FROM t")
@@ -420,3 +422,6 @@ class TestDatabricks(Validator):
 
         result = transpile(sql, read="dremio", write="databricks")[0]
         assert "CAST(12345 AS STRING)" in result
+
+    def test_qdcolon(self):
+        self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")

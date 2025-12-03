@@ -3769,6 +3769,18 @@ PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 
@@ -3995,6 +4007,38 @@ OBJECT;
 # dialect: snowflake
 XMLGET(PARSE_XML('<root><item>a</item><item>b</item></root>'), 'item', 1);
 OBJECT;
+
+# dialect: snowflake
+MODE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MODE(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MODE(tbl.timestamp_col);
+TIMESTAMP;
+
+# dialect: snowflake
+MODE(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
+MODE(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(10, 2);
+
+# dialect: snowflake
+MODE(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+MODE(CAST(NULL AS INT));
+INT;
+
+# dialect: snowflake
+MODE(tbl.str_col) OVER (PARTITION BY tbl.int_col);
+VARCHAR;
 
 --------------------------------------
 -- T-SQL

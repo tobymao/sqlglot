@@ -25,6 +25,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MAX(x)")
         self.validate_identity("SELECT COUNT(x)")
         self.validate_identity("SELECT MIN(amount)")
+        self.validate_identity("SELECT MODE(x)")
+        self.validate_identity("SELECT MODE(status) OVER (PARTITION BY region) FROM orders")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT SINH(1.5)")
@@ -36,6 +38,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT FLOOR(x)")
         self.validate_identity("SELECT FLOOR(135.135, 1)")
         self.validate_identity("SELECT FLOOR(x, -1)")
+        self.validate_identity(
+            "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY salary) FROM employees"
+        )
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),

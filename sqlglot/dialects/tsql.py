@@ -1057,6 +1057,7 @@ class TSQL(Dialect):
             exp.AnyValue: any_value_to_max_sql,
             exp.ArrayToString: rename_func("STRING_AGG"),
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
+            exp.Ceil: rename_func("CEILING"),
             exp.Chr: rename_func("CHAR"),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),

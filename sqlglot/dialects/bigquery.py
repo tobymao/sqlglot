@@ -223,9 +223,9 @@ def _generate_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.Ex
     unit = expression.args.get("unit")
 
     # Preserve ISOWEEK/WEEKISO as-is.
-    if isinstance(unit, exp.Var):
-        if unit.name.upper() in ("ISOWEEK", "WEEKISO"):
-            return self.sql(unit)
+    # Handle ISOWEEK/WEEKISO Var expressions
+    if isinstance(unit, exp.Var) and unit.name.upper() in ("ISOWEEK", "WEEKISO"):
+        return self.sql(unit)
 
     week_info = extract_week_unit_info(unit)
 
@@ -233,12 +233,13 @@ def _generate_bq_datetime_diff_unit(self: BigQuery.Generator, expression: exp.Ex
         day_name, _ = week_info
         if day_name == "SUNDAY":
             return "WEEK"
-        elif isinstance(unit, exp.WeekStart):
+
+        if isinstance(unit, exp.WeekStart):
             # Preserve WeekStart expressions as-is
             return self.sql(unit)
-        else:
-            # Convert to WEEK(day) for all other cases
-            return self.sql(exp.Week(this=exp.var(day_name)))
+
+        # Convert to WEEK(day) for all other cases
+        return self.sql(exp.Week(this=exp.var(day_name)))
 
     return self.sql(unit_to_var(expression))
 
@@ -284,6 +285,7 @@ def _normalize_week_unit(unit: t.Optional[exp.Expression]) -> t.Optional[exp.Exp
     if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
         return exp.Week(this=exp.var("SUNDAY"))
 
+    # This branch is necessary for the WEEK keyword in DATE_DIFF(..., WEEK) to be normalized.
     if isinstance(unit, exp.Column) and not unit.table and isinstance(unit.this, exp.Identifier):
         if unit.name.upper() == "WEEK":
             return exp.Week(this=exp.var("SUNDAY"))

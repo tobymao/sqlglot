@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     no_datetime_sql,
     encode_decode_sql,
+    extract_week_unit_info,
     build_formatted_time,
     no_comment_column_constraint_sql,
     no_time_sql,
@@ -294,8 +295,6 @@ def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
     and are passed through as-is, following the pattern used elsewhere in sqlglot
 
     """
-    from sqlglot.dialects.dialect import extract_week_unit_info
-
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
     unit = expression.args.get("unit")
@@ -305,6 +304,13 @@ def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
     if week_start and this and expr:
         _, start_dow = week_start
 
+        # For Monday-based weeks (ISO standard), use DuckDB's native WEEK unit
+        if start_dow == 1:
+            return self.sql(
+                exp.DateDiff(this=this, expression=expr, unit=exp.Literal.string("WEEK"))
+            )
+
+        # For other week start days, use DATE_TRUNC-based calculation
         # Build truncated week boundary expressions
         truncated_this = _build_week_trunc_expression(this, start_dow)
         truncated_expr = _build_week_trunc_expression(expr, start_dow)

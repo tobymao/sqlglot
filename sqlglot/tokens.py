@@ -382,6 +382,7 @@ class TokenType(AutoName):
     PUT = auto()
     QUALIFY = auto()
     QUOTE = auto()
+    QDCOLON = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REFRESH = auto()
@@ -704,6 +705,7 @@ class Tokenizer(metaclass=_Tokenizer):
         HINT_START: TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
+        "?::": TokenType.QDCOLON,
         "||": TokenType.DPIPE,
         "|>": TokenType.PIPE_GT,
         ">=": TokenType.GTE,

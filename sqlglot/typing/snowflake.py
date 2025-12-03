@@ -206,6 +206,7 @@ EXPRESSION_METADATA = {
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
             exp.Rand,
+            exp.Zipf,
         }
     },
     **{

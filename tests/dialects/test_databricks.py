@@ -420,3 +420,6 @@ class TestDatabricks(Validator):
 
         result = transpile(sql, read="dremio", write="databricks")[0]
         assert "CAST(12345 AS STRING)" in result
+
+    def test_qdcolon(self):
+        self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")

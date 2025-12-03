@@ -8116,6 +8116,10 @@ class Year(Func):
     pass
 
 
+class Zipf(Func):
+    arg_types = {"this": True, "elementcount": True, "gen": True}
+
+
 class Use(Expression):
     arg_types = {"this": False, "expressions": False, "kind": False}
 

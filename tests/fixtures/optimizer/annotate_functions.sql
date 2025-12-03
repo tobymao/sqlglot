@@ -1889,6 +1889,26 @@ ARRAY_AGG(tbl.str_col);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bin_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bool_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.date_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.double_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.str_col);
+ARRAY;
+
+# dialect: snowflake
 ARRAY_UNION_AGG(tbl.array_col);
 ARRAY;
 

@@ -7423,6 +7423,12 @@ class Normal(Func):
     arg_types = {"this": True, "stddev": True, "gen": True}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
+class NetHost(Func):
+    _sql_names = ["NET.HOST"]
+    arg_types = {"this": True}
+
+
 class Overlay(Func):
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 

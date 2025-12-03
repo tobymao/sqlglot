@@ -66,6 +66,14 @@ class Databricks(Spark):
             TokenType.COLON: exp.JSONExtract,
         }
 
+        COLUMN_OPERATORS = {
+            TokenType.QDCOLON: lambda self, this, to: self.expression(
+                exp.TryCast,
+                this=this,
+                to=to,
+            ),
+        }
+
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         COPY_PARAMS_ARE_WRAPPED = False

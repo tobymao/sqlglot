@@ -2001,6 +2001,14 @@ CAST(1.5 AS DECFLOAT);
 DECFLOAT;
 
 # dialect: snowflake
+CAST(1 AS VARCHAR);
+VARCHAR;
+
+# dialect: snowflake
+CAST('123' AS INT);
+INT;
+
+# dialect: snowflake
 COALESCE(TRUE, FALSE);
 BOOLEAN;
 

@@ -6344,6 +6344,10 @@ class CurrentRegion(Func):
     arg_types = {}
 
 
+class CurrentOrganizationUser(Func):
+    arg_types = {}
+
+
 class UtcDate(Func):
     arg_types = {}
 

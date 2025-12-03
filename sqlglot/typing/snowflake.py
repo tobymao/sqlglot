@@ -360,6 +360,7 @@ EXPRESSION_METADATA = {
             exp.Chr,
             exp.Collate,
             exp.Collation,
+            exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.DecompressString,
             exp.HexDecodeString,

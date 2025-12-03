@@ -5871,6 +5871,7 @@ class Ascii(Func):
 class ToArray(Func):
     pass
 
+
 class ToBoolean(Func):
     _sql_names = ["TO_BOOLEAN", "BOOLEAN"]
 

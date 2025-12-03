@@ -1577,6 +1577,54 @@ STRING_AGG(tbl.bin_col);
 BINARY;
 
 # dialect: bigquery
+STRING_AGG(tbl.str_col LIMIT 5);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col LIMIT 5);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col ORDER BY tbl.str_col LIMIT 5);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ' & ');
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ' & ' LIMIT 5);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ' & ' ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ' & ');
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ' & ' ORDER BY tbl.str_col LIMIT 5);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.bin_col, ' & ' ORDER BY tbl.bin_col LIMIT 5);
+BINARY;
+
+# dialect: bigquery
 DATETIME_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
 DATETIME;
 

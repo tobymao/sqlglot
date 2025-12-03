@@ -69,6 +69,24 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
     return annotated
 
 
+def _annotate_group_concat(self: TypeAnnotator, expression: exp.GroupConcat) -> exp.GroupConcat:
+    """
+    The input for STRING_AGG, aka GROUP_CONCAT, can be wrapped in Limit, Order, and/or Distinct
+    expressions (in that order).
+    """
+    this = expression.this
+
+    if isinstance(this, exp.Limit):
+        this = this.this
+    if isinstance(this, exp.Order):
+        this = this.this
+    if isinstance(this, exp.Distinct):
+        this = this.expressions[0] if this.expressions else None
+
+    self._set_type(expression, this.type)
+    return expression
+
+
 def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     array_args = expression.expressions
 
@@ -120,7 +138,6 @@ EXPRESSION_METADATA = {
             exp.DateTrunc,
             exp.DatetimeTrunc,
             exp.FirstValue,
-            exp.GroupConcat,
             exp.IgnoreNulls,
             exp.JSONExtract,
             exp.Lead,
@@ -300,6 +317,7 @@ EXPRESSION_METADATA = {
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         )
     },
+    exp.GroupConcat: {"annotator": lambda self, e: _annotate_group_concat(self, e)},
     exp.JSONFormat: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR

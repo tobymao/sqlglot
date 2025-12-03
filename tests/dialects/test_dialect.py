@@ -620,21 +620,35 @@ class TestDialect(Validator):
 
     def test_to_binary(self):
         self.validate_all(
-            "SELECT TO_BINARY('test')",
+            "TO_BINARY('test')",
+            read={
+                "": "TO_BINARY('test')",
+                "snowflake": "TO_BINARY('test')",
+                "duckdb": "TO_BINARY('test')",
+                "spark": "TO_BINARY('test')",
+                "databricks": "TO_BINARY('test')",
+            },
             write={
-                "snowflake": "SELECT TO_BINARY('test')",
-                "duckdb": "SELECT TO_BINARY('test')",
-                "spark": "SELECT TO_BINARY('test')",
-                "databricks": "SELECT TO_BINARY('test')",
+                "snowflake": "TO_BINARY('test')",
+                "duckdb": "TO_BINARY('test')",
+                "spark": "TO_BINARY('test')",
+                "databricks": "TO_BINARY('test')",
             },
         )
         self.validate_all(
-            "SELECT TO_BINARY('test', 'HEX')",
+            "TO_BINARY('test', 'HEX')",
+            read={
+                "": "TO_BINARY('test', 'HEX')",
+                "snowflake": "TO_BINARY('test', 'HEX')",
+                "duckdb": "TO_BINARY('test', 'HEX')",
+                "spark": "TO_BINARY('test', 'HEX')",
+                "databricks": "TO_BINARY('test', 'HEX')",
+            },
             write={
-                "snowflake": "SELECT TO_BINARY('test', 'HEX')",
-                "duckdb": "SELECT TO_BINARY('test', 'HEX')",
-                "spark": "SELECT TO_BINARY('test', 'HEX')",
-                "databricks": "SELECT TO_BINARY('test', 'HEX')",
+                "snowflake": "TO_BINARY('test', 'HEX')",
+                "duckdb": "TO_BINARY('test', 'HEX')",
+                "spark": "TO_BINARY('test', 'HEX')",
+                "databricks": "TO_BINARY('test', 'HEX')",
             },
         )
 

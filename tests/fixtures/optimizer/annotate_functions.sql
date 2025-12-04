@@ -2189,6 +2189,10 @@ CURRENT_REGION();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_ROLE_TYPE();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_NAME();
 VARCHAR;
 

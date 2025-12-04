@@ -2820,7 +2820,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(SUBSTRING(abc, 2), 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT REGEXP_EXTRACT(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1) FROM "table"''',
             },
         )
 
@@ -2838,7 +2838,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
-                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(SUBSTRING(abc, 2), 'pattern(group)', 1), 3) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1), 3) FROM "table"''',
             },
         )
 

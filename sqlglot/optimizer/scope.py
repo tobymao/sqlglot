@@ -360,7 +360,7 @@ class Scope:
             for expression in itertools.chain(self.derived_tables, self.udtfs):
                 self._references.append(
                     (
-                        _get_source_alias(expression),
+                        get_source_alias(expression),
                         expression if expression.args.get("pivots") else expression.unnest(),
                     )
                 )
@@ -485,8 +485,7 @@ class Scope:
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""
-        columns = self.sources.pop(old_name or "", [])
-        self.sources[new_name] = columns
+        self.sources[new_name] = self.sources.pop(old_name)
 
     def add_source(self, name, source):
         """Add a source to this scope"""
@@ -750,7 +749,7 @@ def _traverse_tables(scope):
             expression = expression.this
         if isinstance(expression, exp.Table):
             table_name = expression.name
-            source_name = expression.alias_or_name
+            source_name = get_source_alias(expression)
 
             if table_name in scope.sources and not expression.db:
                 # This is a reference to a parent source (e.g. a CTE), not an actual table, unless
@@ -805,7 +804,7 @@ def _traverse_tables(scope):
             # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
             # Until then, this means that only a single, unaliased derived table is allowed (rather,
             # the latest one wins.
-            sources[_get_source_alias(expression)] = child_scope
+            sources[get_source_alias(child_scope.expression)] = child_scope
 
         # append the final child_scope yielded
         if child_scope:
@@ -845,7 +844,7 @@ def _traverse_udtfs(scope):
             ):
                 yield child_scope
                 top = child_scope
-                sources[_get_source_alias(expression)] = child_scope
+                sources[get_source_alias(child_scope.expression)] = child_scope
 
             scope.subquery_scopes.append(top)
 
@@ -934,11 +933,24 @@ def find_in_scope(expression, expression_types, bfs=True):
     return next(find_all_in_scope(expression, expression_types, bfs=bfs), None)
 
 
-def _get_source_alias(expression):
+def get_source_alias(expression: exp.Expression) -> str | int:
+    expression_id = id(expression)
+    if isinstance(expression, exp.SetOperation):
+        """Returns the first non setop."""
+
+        while expression.parent and isinstance(expression, exp.SetOperation):
+            expression = expression.parent
+    elif isinstance(expression, exp.Select) and expression.parent:
+        expression = expression.parent
+        if isinstance(expression, exp.Subquery):
+            expression = expression.unwrap()
     alias_arg = expression.args.get("alias")
-    alias_name = expression.alias
+    alias_name: str | int = expression.alias_or_name
 
     if not alias_name and isinstance(alias_arg, exp.TableAlias) and len(alias_arg.columns) == 1:
         alias_name = alias_arg.columns[0].name
+
+    if not alias_name:
+        alias_name = expression_id
 
     return alias_name

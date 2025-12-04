@@ -4,14 +4,17 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.helper import name_sequence
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import (
-    qualify_columns as qualify_columns_func,
+    qualify_columns_in_scope,
     quote_identifiers as quote_identifiers_func,
     validate_qualify_columns as validate_qualify_columns_func,
 )
-from sqlglot.optimizer.qualify_tables import qualify_tables
+from sqlglot.optimizer.qualify_tables import normalize_db_and_catalog, qualify_tables_in_scope
+from sqlglot.optimizer.scope import traverse_scope
 from sqlglot.schema import Schema, ensure_schema
 
 
@@ -81,27 +84,36 @@ def qualify(
         dialect=dialect,
         store_original_column_identifiers=True,
     )
-    expression = qualify_tables(
-        expression,
-        db=db,
-        catalog=catalog,
-        dialect=dialect,
-        on_qualify=on_qualify,
-        canonicalize_table_aliases=canonicalize_table_aliases,
-    )
+    next_alias_name = name_sequence("_")
+
+    db_id, catalog_id = normalize_db_and_catalog(db, catalog, dialect)
+    schema = ensure_schema(schema, dialect=dialect)
+    annotator = TypeAnnotator(schema)
+
+    for scope in traverse_scope(expression):
+        qualify_tables_in_scope(
+            scope,
+            db=db_id,
+            catalog=catalog_id,
+            dialect=dialect,
+            next_alias_name=next_alias_name,
+            on_qualify=on_qualify,
+            canonicalize_table_aliases=canonicalize_table_aliases,
+        )
+
+        if qualify_columns:
+            qualify_columns_in_scope(
+                scope,
+                schema,
+                annotator,
+                expand_alias_refs=expand_alias_refs,
+                expand_stars=expand_stars,
+                infer_schema=infer_schema,
+                allow_partial_qualification=allow_partial_qualification,
+            )
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
-
-    if qualify_columns:
-        expression = qualify_columns_func(
-            expression,
-            schema,
-            expand_alias_refs=expand_alias_refs,
-            expand_stars=expand_stars,
-            infer_schema=infer_schema,
-            allow_partial_qualification=allow_partial_qualification,
-        )
 
     if quote_identifiers:
         expression = quote_identifiers_func(expression, dialect=dialect, identify=identify)

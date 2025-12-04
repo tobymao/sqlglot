@@ -17,6 +17,71 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
+def qualify_columns_in_scope(
+    scope: Scope,
+    schema: Schema,
+    annotator: TypeAnnotator,
+    expand_alias_refs: bool = True,
+    expand_stars: bool = True,
+    infer_schema: t.Optional[bool] = None,
+    allow_partial_qualification: bool = False,
+) -> None:
+    infer_schema = schema.empty if infer_schema is None else infer_schema
+    dialect = schema.dialect or Dialect()
+    pseudocolumns = dialect.PSEUDOCOLUMNS
+
+    if dialect.PREFER_CTE_ALIAS_COLUMN:
+        pushdown_cte_alias_columns(scope)
+
+    scope_expression = scope.expression
+    is_select = isinstance(scope_expression, exp.Select)
+
+    _separate_pseudocolumns(scope, pseudocolumns)
+
+    resolver = Resolver(scope, schema, infer_schema=infer_schema)
+    _pop_table_column_aliases(scope.ctes)
+    _pop_table_column_aliases(scope.derived_tables)
+    using_column_tables = _expand_using(scope, resolver)
+
+    if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
+        _expand_alias_refs(
+            scope,
+            resolver,
+            dialect,
+            expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
+        )
+
+    _convert_columns_to_dots(scope, resolver)
+    _qualify_columns(
+        scope,
+        resolver,
+        allow_partial_qualification=allow_partial_qualification,
+    )
+
+    if not schema.empty and expand_alias_refs:
+        _expand_alias_refs(scope, resolver, dialect)
+
+    if is_select:
+        if expand_stars:
+            _expand_stars(
+                scope,
+                resolver,
+                using_column_tables,
+                pseudocolumns,
+                annotator,
+            )
+        qualify_outputs(scope)
+
+    _expand_group_by(scope, dialect)
+
+    # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
+    # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
+    _expand_order_by_and_distinct_on(scope, resolver)
+
+    if dialect.ANNOTATE_ALL_SCOPES:
+        annotator.annotate_scope(scope)
+
+
 def qualify_columns(
     expression: exp.Expression,
     schema: t.Dict | Schema,
@@ -54,61 +119,17 @@ def qualify_columns(
     """
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
-    infer_schema = schema.empty if infer_schema is None else infer_schema
-    dialect = schema.dialect or Dialect()
-    pseudocolumns = dialect.PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
-        if dialect.PREFER_CTE_ALIAS_COLUMN:
-            pushdown_cte_alias_columns(scope)
-
-        scope_expression = scope.expression
-        is_select = isinstance(scope_expression, exp.Select)
-
-        _separate_pseudocolumns(scope, pseudocolumns)
-
-        resolver = Resolver(scope, schema, infer_schema=infer_schema)
-        _pop_table_column_aliases(scope.ctes)
-        _pop_table_column_aliases(scope.derived_tables)
-        using_column_tables = _expand_using(scope, resolver)
-
-        if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
-            _expand_alias_refs(
-                scope,
-                resolver,
-                dialect,
-                expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
-            )
-
-        _convert_columns_to_dots(scope, resolver)
-        _qualify_columns(
+        qualify_columns_in_scope(
             scope,
-            resolver,
+            schema,
+            annotator,
+            expand_alias_refs=expand_alias_refs,
+            expand_stars=expand_stars,
+            infer_schema=infer_schema,
             allow_partial_qualification=allow_partial_qualification,
         )
-
-        if not schema.empty and expand_alias_refs:
-            _expand_alias_refs(scope, resolver, dialect)
-
-        if is_select:
-            if expand_stars:
-                _expand_stars(
-                    scope,
-                    resolver,
-                    using_column_tables,
-                    pseudocolumns,
-                    annotator,
-                )
-            qualify_outputs(scope)
-
-        _expand_group_by(scope, dialect)
-
-        # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
-        # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
-
-        if dialect.ANNOTATE_ALL_SCOPES:
-            annotator.annotate_scope(scope)
 
     return expression
 

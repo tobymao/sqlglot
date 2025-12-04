@@ -3,12 +3,17 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.helper import seq_get
 from sqlglot.typing import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
+
+MAX_PRECISION = 38
+
+MAX_SCALE = 37
 
 
 def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
@@ -87,15 +92,74 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     """Annotate WithinGroup with correct type based on the inner function.
 
     1) Annotate args first
-    2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
+    2) Check if this is PercentileDisc/PercentileCont and if so, re-annotate its type to match the ordered expression's type
     """
+
     if (
-        isinstance(expression.this, exp.PercentileDisc)
+        isinstance(expression.this, (exp.PercentileDisc, exp.PercentileCont))
         and isinstance(order_expr := expression.expression, exp.Order)
         and len(order_expr.expressions) == 1
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
     ):
         self._set_type(expression, ordered_expr.this.type)
+
+    return expression
+
+
+def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
+    """Annotate MEDIAN function with correct return type.
+
+    Based on Snowflake documentation:
+    - If the expr is FLOAT -> annotate as FLOAT
+    - If the expr is NUMBER(p, s) -> annotate as NUMBER(min(p+3, 38), min(s+3, 37))
+    """
+    # First annotate the argument to get its type
+    expression = self._annotate_by_args(expression, "this")
+
+    # Get the input type
+    input_type = expression.this.type
+
+    if input_type.is_type(exp.DataType.Type.FLOAT):
+        # If input is FLOAT, return FLOAT
+        self._set_type(expression, exp.DataType.Type.FLOAT)
+    else:
+        # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
+        exprs = input_type.expressions
+
+        precision_expr = seq_get(exprs, 0)
+        precision = precision_expr.this.to_py() if precision_expr else MAX_PRECISION
+
+        scale_expr = seq_get(exprs, 1)
+        scale = scale_expr.this.to_py() if scale_expr else 0
+
+        new_precision = min(precision + 3, MAX_PRECISION)
+        new_scale = min(scale + 3, MAX_SCALE)
+
+        # Build the new NUMBER type
+        new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")
+        self._set_type(expression, new_type)
+
+    return expression
+
+
+def _annotate_math_with_float_decfloat(
+    self: TypeAnnotator, expression: exp.Expression
+) -> exp.Expression:
+    """Annotate math functions that preserve  DECFLOAT but return DOUBLE for others.
+
+    In Snowflake, trigonometric and exponential math functions:
+    - If input is DECFLOAT -> return DECFLOAT
+    - For integer types (INT, BIGINT, etc.) -> return DOUBLE
+    - For other numeric types (NUMBER, DECIMAL, DOUBLE) -> return DOUBLE
+    """
+    expression = self._annotate_by_args(expression, "this")
+
+    # If input is DECFLOAT, preserve
+    if expression.this.is_type(exp.DataType.Type.DECFLOAT):
+        self._set_type(expression, expression.this.type)
+    else:
+        # For all other types (integers, decimals, etc.), return DOUBLE
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
 
     return expression
 
@@ -110,6 +174,7 @@ EXPRESSION_METADATA = {
             exp.DateTrunc,
             exp.Floor,
             exp.Left,
+            exp.Mode,
             exp.Pad,
             exp.Right,
             exp.Round,
@@ -123,7 +188,10 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.ARRAY}
         for expr_type in (
             exp.ApproxTopK,
+            exp.ApproxTopKEstimate,
             exp.ArrayAgg,
+            exp.ArrayUniqueAgg,
+            exp.ArrayUnionAgg,
             exp.RegexpExtractAll,
             exp.Split,
             exp.StringToArray,
@@ -140,6 +208,7 @@ EXPRESSION_METADATA = {
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
             exp.Rand,
+            exp.Zipf,
         }
     },
     **{
@@ -153,6 +222,7 @@ EXPRESSION_METADATA = {
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,
+            exp.ToBinary,
             exp.TryBase64DecodeBinary,
             exp.TryHexDecodeBinary,
             exp.Unhex,
@@ -168,6 +238,8 @@ EXPRESSION_METADATA = {
             exp.EqualNull,
             exp.IsNullValue,
             exp.Search,
+            exp.SearchIp,
+            exp.ToBoolean,
         }
     },
     **{
@@ -194,25 +266,56 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
+            exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
-            exp.Asin,
             exp.Asinh,
-            exp.Atan,
-            exp.Atan2,
             exp.Atanh,
             exp.Cbrt,
-            exp.Cos,
             exp.Cosh,
+            exp.CosineDistance,
+            exp.DotProduct,
+            exp.EuclideanDistance,
+            exp.ManhattanDistance,
+            exp.MonthsBetween,
+            exp.Normal,
+            exp.Sinh,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DataType.Type.DECFLOAT}
+        for expr_type in {
+            exp.ToDecfloat,
+            exp.TryToDecfloat,
+        }
+    },
+    **{
+        expr_type: {"annotator": _annotate_math_with_float_decfloat}
+        for expr_type in {
+            exp.Acos,
+            exp.Asin,
+            exp.Atan,
+            exp.Atan2,
+            exp.Cos,
             exp.Cot,
             exp.Degrees,
             exp.Exp,
-            exp.MonthsBetween,
+            exp.Ln,
+            exp.Log,
+            exp.Pow,
+            exp.Radians,
             exp.RegrAvgx,
             exp.RegrAvgy,
+            exp.RegrCount,
+            exp.RegrIntercept,
+            exp.RegrR2,
+            exp.RegrSlope,
+            exp.RegrSxx,
+            exp.RegrSxy,
+            exp.RegrSyy,
             exp.RegrValx,
             exp.RegrValy,
             exp.Sin,
-            exp.Sinh,
+            exp.Sqrt,
             exp.Tan,
             exp.Tanh,
         }
@@ -243,8 +346,11 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
+            exp.ApproxPercentileCombine,
+            exp.ApproxPercentileAccumulate,
             exp.ApproxTopKAccumulate,
             exp.ApproxTopKCombine,
+            exp.XMLGet,
         }
     },
     **{
@@ -261,15 +367,22 @@ EXPRESSION_METADATA = {
             exp.AISummarizeAgg,
             exp.Base64DecodeString,
             exp.Base64Encode,
+            exp.CheckJson,
+            exp.CheckXml,
             exp.Chr,
             exp.Collate,
             exp.Collation,
+            exp.CurrentOrganizationUser,
+            exp.CurrentRegion,
+            exp.CurrentRoleType,
+            exp.CurrentOrganizationName,
             exp.DecompressString,
             exp.HexDecodeString,
             exp.HexEncode,
             exp.Initcap,
             exp.MD5,
             exp.Monthname,
+            exp.Randstr,
             exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
@@ -309,7 +422,13 @@ EXPRESSION_METADATA = {
     exp.GreatestIgnoreNulls: {
         "annotator": lambda self, e: self._annotate_by_args(e, "expressions")
     },
+    exp.HashAgg: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DataType.build("NUMBER(19, 0)", dialect="snowflake")
+        )
+    },
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
+    exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},

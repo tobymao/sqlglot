@@ -536,6 +536,7 @@ class TestTSQL(Validator):
                 "postgres": "JSON_AGG(c1 ORDER BY c1 NULLS FIRST)",
             },
         )
+        self.validate_identity("CEILING(2)")
 
     def test_option(self):
         possible_options = [

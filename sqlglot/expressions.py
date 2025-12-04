@@ -2320,7 +2320,7 @@ class ColumnPrefix(Expression):
 
 
 class PrimaryKey(Expression):
-    arg_types = {"expressions": True, "options": False, "include": False}
+    arg_types = {"this": False, "expressions": True, "options": False, "include": False}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html
@@ -4685,6 +4685,7 @@ class DataType(Expression):
         DECIMAL64 = auto()
         DECIMAL128 = auto()
         DECIMAL256 = auto()
+        DECFLOAT = auto()
         DOUBLE = auto()
         DYNAMIC = auto()
         ENUM = auto()
@@ -4852,6 +4853,7 @@ class DataType(Expression):
         Type.DECIMAL64,
         Type.DECIMAL128,
         Type.DECIMAL256,
+        Type.DECFLOAT,
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,
@@ -5135,7 +5137,7 @@ class Connector(Binary):
 
 
 class BitwiseAnd(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseLeftShift(Binary):
@@ -5143,7 +5145,7 @@ class BitwiseLeftShift(Binary):
 
 
 class BitwiseOr(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseRightShift(Binary):
@@ -5151,7 +5153,7 @@ class BitwiseRightShift(Binary):
 
 
 class BitwiseXor(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class Div(Binary):
@@ -5631,7 +5633,15 @@ class CosineDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class DotProduct(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class EuclideanDistance(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ManhattanDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
@@ -5741,12 +5751,21 @@ class ApproxTopKCombine(AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
+class ApproxTopKEstimate(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class ApproxTopSum(AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 
 
 class ApproxQuantiles(AggFunc):
     arg_types = {"this": True, "expression": False}
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_combine
+class ApproxPercentileCombine(AggFunc):
+    pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/minhash
@@ -5821,6 +5840,12 @@ class CombinedParameterizedAgg(ParameterizedAgg):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/hash_agg
+class HashAgg(AggFunc):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/hll
 # https://docs.aws.amazon.com/redshift/latest/dg/r_HLL_function.html
 class Hll(AggFunc):
@@ -5852,6 +5877,10 @@ class Ascii(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_array
 class ToArray(Func):
+    pass
+
+
+class ToBoolean(Func):
     pass
 
 
@@ -5895,6 +5924,22 @@ class ToNumber(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_double
 class ToDouble(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/to_decfloat
+class ToDecfloat(Func):
+    arg_types = {
+        "this": True,
+        "format": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/try_to_decfloat
+class TryToDecfloat(Func):
     arg_types = {
         "this": True,
         "format": False,
@@ -6198,6 +6243,14 @@ class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
 
+class CheckJson(Func):
+    arg_types = {"this": True}
+
+
+class CheckXml(Func):
+    arg_types = {"this": True, "disable_auto_convert": False}
+
+
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/String-Operators-and-Functions/TRANSLATE/TRANSLATE-Function-Syntax
 class TranslateCharacters(Expression):
     arg_types = {"this": True, "expression": True, "with_error": False}
@@ -6273,11 +6326,25 @@ class CurrentTime(Func):
     arg_types = {"this": False}
 
 
+# https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT
+# In Postgres, the difference between CURRENT_TIME vs LOCALTIME etc is that the latter does not have tz
+class Localtime(Func):
+    arg_types = {"this": False}
+
+
+class Localtimestamp(Func):
+    arg_types = {"this": False}
+
+
 class CurrentTimestamp(Func):
     arg_types = {"this": False, "sysdate": False}
 
 
 class CurrentTimestampLTZ(Func):
+    arg_types = {}
+
+
+class CurrentOrganizationName(Func):
     arg_types = {}
 
 
@@ -6287,6 +6354,18 @@ class CurrentSchema(Func):
 
 class CurrentUser(Func):
     arg_types = {"this": False}
+
+
+class CurrentRegion(Func):
+    arg_types = {}
+
+
+class CurrentRoleType(Func):
+    arg_types = {}
+
+
+class CurrentOrganizationUser(Func):
+    arg_types = {}
 
 
 class UtcDate(Func):
@@ -6627,6 +6706,10 @@ class ToBase32(Func):
 
 class ToBase64(Func):
     pass
+
+
+class ToBinary(Func):
+    arg_types = {"this": True, "format": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary
@@ -7319,6 +7402,10 @@ class Median(AggFunc):
     pass
 
 
+class Mode(AggFunc):
+    arg_types = {"this": False, "deterministic": False}
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -7346,6 +7433,15 @@ class Ntile(AggFunc):
 
 class Normalize(Func):
     arg_types = {"this": True, "form": False, "is_casefold": False}
+
+
+class Normal(Func):
+    arg_types = {"this": True, "stddev": True, "gen": True}
+
+
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
+class NetHost(Func):
+    _sql_names = ["NET.HOST"]
 
 
 class Overlay(Func):
@@ -7430,6 +7526,16 @@ class ApproxQuantile(Quantile):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_accumulate
+class ApproxPercentileAccumulate(AggFunc):
+    pass
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_estimate
+class ApproxPercentileEstimate(Func):
+    arg_types = {"this": True, "percentile": True}
+
+
 class Quarter(Func):
     pass
 
@@ -7443,6 +7549,10 @@ class Rand(Func):
 
 class Randn(Func):
     arg_types = {"this": False}
+
+
+class Randstr(Func):
+    arg_types = {"this": True, "generator": False}
 
 
 class RangeN(Func):
@@ -7481,6 +7591,7 @@ class RegexpExtract(Func):
         "occurrence": False,
         "parameters": False,
         "group": False,
+        "null_if_pos_overflow": False,  # for transpilation target behavior
     }
 
 
@@ -7546,19 +7657,47 @@ class RegexpCount(Func):
     }
 
 
-class RegrValx(Func):
+class RegrValx(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrValy(Func):
+class RegrValy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgy(Func):
+class RegrAvgy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgx(Func):
+class RegrAvgx(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrCount(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrIntercept(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrR2(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxx(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSyy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSlope(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
@@ -7708,6 +7847,11 @@ class Search(Func):
         "analyzer_options": False,  # BigQuery: analyzer_options_values
         "search_mode": False,  # Snowflake: OR | AND
     }
+
+
+# Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search_ip
+class SearchIp(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class StrToDate(Func):
@@ -8015,6 +8159,11 @@ class XMLElement(Func):
     arg_types = {"this": True, "expressions": False}
 
 
+class XMLGet(Func):
+    _sql_names = ["XMLGET"]
+    arg_types = {"this": True, "expression": True, "instance": False}
+
+
 class XMLTable(Func):
     arg_types = {
         "this": True,
@@ -8036,6 +8185,10 @@ class XMLKeyValueOption(Expression):
 
 class Year(Func):
     pass
+
+
+class Zipf(Func):
+    arg_types = {"this": True, "elementcount": True, "gen": True}
 
 
 class Use(Expression):

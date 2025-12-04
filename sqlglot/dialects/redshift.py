@@ -48,6 +48,7 @@ class Redshift(Postgres):
     HEX_LOWERCASE = True
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
     COALESCE_COMPARISON_NON_STANDARD = True
+    REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = False
 
     # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
@@ -69,6 +70,13 @@ class Redshift(Postgres):
             "DATE_DIFF": _build_date_delta(exp.TsOrDsDiff),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "LISTAGG": exp.GroupConcat.from_arg_list,
+            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                position=seq_get(args, 2),
+                occurrence=seq_get(args, 3),
+                parameters=seq_get(args, 4),
+            ),
             "SPLIT_TO_ARRAY": lambda args: exp.StringToArray(
                 this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string(",")
             ),
@@ -201,6 +209,7 @@ class Redshift(Postgres):
             exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
+            exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_window_clause,
@@ -219,6 +228,9 @@ class Redshift(Postgres):
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.UnixToTime: lambda self, e: self._unix_to_time_sql(e),
+            exp.SHA2Digest: lambda self, e: self.func(
+                "SHA2", e.this, e.args.get("length") or exp.Literal.number(256)
+            ),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

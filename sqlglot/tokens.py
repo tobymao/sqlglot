@@ -144,6 +144,7 @@ class TokenType(AutoName):
     DECIMAL64 = auto()
     DECIMAL128 = auto()
     DECIMAL256 = auto()
+    DECFLOAT = auto()
     UDECIMAL = auto()
     BIGDECIMAL = auto()
     CHAR = auto()
@@ -200,6 +201,8 @@ class TokenType(AutoName):
     POINT = auto()
     RING = auto()
     LINESTRING = auto()
+    LOCALTIME = auto()
+    LOCALTIMESTAMP = auto()
     MULTILINESTRING = auto()
     POLYGON = auto()
     MULTIPOLYGON = auto()
@@ -379,6 +382,7 @@ class TokenType(AutoName):
     PUT = auto()
     QUALIFY = auto()
     QUOTE = auto()
+    QDCOLON = auto()
     RANGE = auto()
     RECURSIVE = auto()
     REFRESH = auto()
@@ -701,6 +705,7 @@ class Tokenizer(metaclass=_Tokenizer):
         HINT_START: TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
+        "?::": TokenType.QDCOLON,
         "||": TokenType.DPIPE,
         "|>": TokenType.PIPE_GT,
         ">=": TokenType.GTE,
@@ -802,6 +807,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
         "LOAD": TokenType.LOAD,
+        "LOCALTIME": TokenType.LOCALTIME,
+        "LOCALTIMESTAMP": TokenType.LOCALTIMESTAMP,
         "LOCK": TokenType.LOCK,
         "MERGE": TokenType.MERGE,
         "NAMESPACE": TokenType.NAMESPACE,
@@ -912,6 +919,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DECIMAL64": TokenType.DECIMAL64,
         "DECIMAL128": TokenType.DECIMAL128,
         "DECIMAL256": TokenType.DECIMAL256,
+        "DECFLOAT": TokenType.DECFLOAT,
         "BIGDECIMAL": TokenType.BIGDECIMAL,
         "BIGNUMERIC": TokenType.BIGDECIMAL,
         "BIGNUM": TokenType.BIGNUM,

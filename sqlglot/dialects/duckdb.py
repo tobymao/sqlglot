@@ -40,6 +40,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     inline_array_unless_query,
     regexp_replace_global_modifier,
+    sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_date_unit, seq_get
@@ -425,6 +426,10 @@ class DuckDB(Dialect):
     }
 
     DATE_PART_MAPPING.pop("WEEKDAY")
+
+    INVERSE_TIME_MAPPING = {
+        "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
+    }
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
@@ -884,6 +889,7 @@ class DuckDB(Dialect):
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
+            exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",
@@ -985,6 +991,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.BPCHAR: "TEXT",
             exp.DataType.Type.CHAR: "TEXT",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.DECFLOAT: "DECIMAL(38, 5)",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.JSONB: "JSON",
             exp.DataType.Type.NCHAR: "TEXT",
@@ -1441,8 +1448,13 @@ class DuckDB(Dialect):
             params = expression.args.get("parameters")
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
+            null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+
             if position and (not position.is_int or position.to_py() > 1):
                 this = exp.Substring(this=this, start=position)
+
+                if null_if_pos_overflow:
+                    this = exp.Nullif(this=this, expression=exp.Literal.string(""))
 
             # Do not render group if there is no following argument,
             # and it's the default value for this dialect

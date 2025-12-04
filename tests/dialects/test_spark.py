@@ -14,7 +14,9 @@ class TestSpark(Validator):
         self.validate_identity("DAYOFMONTH(TO_DATE(x))")
         self.validate_identity("DAYOFYEAR(TO_DATE(x))")
         self.validate_identity("WEEKOFYEAR(TO_DATE(x))")
-
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
+        self.validate_identity("SELECT MODE() WITHIN GROUP (ORDER BY status) FROM orders")
         self.validate_identity("DROP NAMESPACE my_catalog.my_namespace")
         self.validate_identity("CREATE NAMESPACE my_catalog.my_namespace")
         self.validate_identity("INSERT OVERWRITE TABLE db1.tb1 TABLE db2.tb2")

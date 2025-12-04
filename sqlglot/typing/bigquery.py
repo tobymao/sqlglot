@@ -101,6 +101,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
         for expr_type in {
+            exp.Avg,
             exp.Ceil,
             exp.Exp,
             exp.Floor,
@@ -175,6 +176,7 @@ EXPRESSION_METADATA = {
             exp.SHA,
             exp.SHA2,
             exp.SHA1Digest,
+            exp.SHA2Digest,
             exp.Unhex,
         }
     },
@@ -255,6 +257,7 @@ EXPRESSION_METADATA = {
             exp.JSONType,
             exp.LaxString,
             exp.LowerHex,
+            exp.NetHost,
             exp.Normalize,
             exp.SafeConvertBytesToString,
             exp.Soundex,
@@ -266,6 +269,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.PercentileCont,
             exp.SafeAdd,
+            exp.SafeDivide,
             exp.SafeMultiply,
             exp.SafeSubtract,
         }

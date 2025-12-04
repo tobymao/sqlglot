@@ -638,6 +638,9 @@ class Dialect(metaclass=_Dialect):
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
     """The default value for the capturing group."""
 
+    REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = True
+    """Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length."""
+
     SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expression], t.Optional[bool]] = {
         exp.Except: True,
         exp.Intersect: True,
@@ -1965,11 +1968,21 @@ def build_like(
 
 def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
     def _builder(args: t.List, dialect: Dialect) -> E:
+        # The "position" argument specifies the index of the string character to start matching from.
+        # `null_if_pos_overflow` reflects the dialect's behavior when position is greater than the string
+        # length. If true, returns NULL. If false, returns an empty string. `null_if_pos_overflow` is
+        # only needed for exp.RegexpExtract - exp.RegexpExtractAll always returns an empty array if
+        # position overflows.
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             group=seq_get(args, 2) or exp.Literal.number(dialect.REGEXP_EXTRACT_DEFAULT_GROUP),
             parameters=seq_get(args, 3),
+            **(
+                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                if expr_type is exp.RegexpExtract
+                else {}
+            ),
         )
 
     return _builder

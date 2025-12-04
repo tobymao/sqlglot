@@ -244,8 +244,8 @@ def _build_datetime(args: t.List) -> exp.Func:
 
 def _build_regexp_extract(
     expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
-) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+) -> t.Callable[[t.List, BigQuery], E]:
+    def _builder(args: t.List, dialect: BigQuery) -> E:
         try:
             group = re.compile(args[1].name).groups == 1
         except re.error:
@@ -258,6 +258,11 @@ def _build_regexp_extract(
             position=seq_get(args, 2),
             occurrence=seq_get(args, 3),
             group=exp.Literal.number(1) if group else default_group,
+            **(
+                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                if expr_type is exp.RegexpExtract
+                else {}
+            ),
         )
 
     return _builder

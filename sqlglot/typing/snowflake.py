@@ -272,6 +272,7 @@ EXPRESSION_METADATA = {
             exp.Cbrt,
             exp.Cosh,
             exp.CosineDistance,
+            exp.DotProduct,
             exp.EuclideanDistance,
             exp.ManhattanDistance,
             exp.MonthsBetween,

@@ -4049,6 +4049,10 @@ VECTOR_COSINE_SIMILARITY([1,2,3], [4,5,6]);
 DOUBLE;
 
 # dialect: snowflake
+VECTOR_INNER_PRODUCT([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
 VECTOR_L1_DISTANCE([1,2,3], [4,5,6]);
 DOUBLE;
 

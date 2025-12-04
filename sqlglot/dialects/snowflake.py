@@ -344,8 +344,8 @@ def _transform_generate_date_array(expression: exp.Expression) -> exp.Expression
     return expression
 
 
-def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Snowflake], E]:
+    def _builder(args: t.List, dialect: Snowflake) -> E:
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
@@ -353,6 +353,11 @@ def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
             occurrence=seq_get(args, 3),
             parameters=seq_get(args, 4),
             group=seq_get(args, 5) or exp.Literal.number(0),
+            **(
+                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                if expr_type is exp.RegexpExtract
+                else {}
+            ),
         )
 
     return _builder

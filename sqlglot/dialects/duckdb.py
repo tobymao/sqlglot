@@ -1448,11 +1448,13 @@ class DuckDB(Dialect):
             params = expression.args.get("parameters")
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
+            null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+
             if position and (not position.is_int or position.to_py() > 1):
-                # substring returns '' if position > len(string), but the '' shouldn't carry through to REGEXP_EXTRACT
-                this = exp.Nullif(
-                    this=exp.Substring(this=this, start=position), expression=exp.Literal.string("")
-                )
+                this = exp.Substring(this=this, start=position)
+
+                if null_if_pos_overflow:
+                    this = exp.Nullif(this=this, expression=exp.Literal.string(""))
 
             # Do not render group if there is no following argument,
             # and it's the default value for this dialect

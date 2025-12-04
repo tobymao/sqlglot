@@ -7582,6 +7582,7 @@ class RegexpExtract(Func):
         "occurrence": False,
         "parameters": False,
         "group": False,
+        "null_if_pos_overflow": False,  # for transpilation target behavior
     }
 
 

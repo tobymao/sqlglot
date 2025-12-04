@@ -7426,7 +7426,6 @@ class Normal(Func):
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
 class NetHost(Func):
     _sql_names = ["NET.HOST"]
-    arg_types = {"this": True}
 
 
 class Overlay(Func):

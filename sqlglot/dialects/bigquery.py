@@ -641,7 +641,7 @@ class BigQuery(Dialect):
             "FORMAT_TIMESTAMP": _build_format_time(exp.TsOrDsToTimestamp),
             "FORMAT_TIME": _build_format_time(exp.TsOrDsToTime),
             "FROM_HEX": exp.Unhex.from_arg_list,
-            "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
+            "WEEK": lambda args: exp.Week(this=exp.var(seq_get(args, 0))),
         }
         # Remove SEARCH to avoid parameter routing issues - let it fall back to Anonymous function
         FUNCTIONS.pop("SEARCH")

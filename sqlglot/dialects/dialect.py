@@ -1674,7 +1674,7 @@ def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[
 def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
+    if isinstance(unit, (exp.Var, exp.Placeholder, exp.Week, exp.Column)):
         return unit
 
     value = unit.name if unit else default

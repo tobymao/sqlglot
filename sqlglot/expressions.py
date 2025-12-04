@@ -8108,10 +8108,6 @@ class Week(Func):
     arg_types = {"this": True, "mode": False}
 
 
-class WeekStart(Expression):
-    pass
-
-
 class NextDay(Func):
     arg_types = {"this": True, "expression": True}
 

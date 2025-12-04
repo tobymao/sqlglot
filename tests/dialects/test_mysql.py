@@ -214,6 +214,7 @@ class TestMySQL(Validator):
         self.validate_identity("""SELECT 'ab' MEMBER OF('[23, "abc", 17, "ab", 10]')""")
         self.validate_identity("""SELECT * FROM foo WHERE 'ab' MEMBER OF(content)""")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
+        self.validate_identity("SELECT CURRENT_ROLE()")
         self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS CHAR) FROM foo")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ')")

@@ -231,6 +231,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
         self.validate_identity("SELECT CURRENT_REGION()")
+        self.validate_identity("SELECT CURRENT_ROLE()")
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")

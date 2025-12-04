@@ -81,6 +81,7 @@ class SingleStore(MySQL):
             "!:>": TokenType.NCOLON_GT,
             "::$": TokenType.DCOLONDOLLAR,
             "::%": TokenType.DCOLONPERCENT,
+            "::?": TokenType.DCOLONQMARK,
         }
 
     class Parser(MySQL.Parser):
@@ -253,6 +254,11 @@ class SingleStore(MySQL):
             TokenType.DCOLONPERCENT: lambda self, this, path: build_json_extract_path(
                 exp.JSONExtractScalar, json_type="DOUBLE"
             )([this, exp.Literal.string(path.name)]),
+            TokenType.DCOLONQMARK: lambda self, this, path: self.expression(
+                exp.JSONExists,
+                this=this,
+                path=path.name,
+            ),
         }
         COLUMN_OPERATORS.pop(TokenType.ARROW)
         COLUMN_OPERATORS.pop(TokenType.DARROW)

@@ -14,6 +14,8 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     timestamptrunc_sql,
     build_date_delta,
+    no_last_day_sql,
+    DATE_ADD_OR_SUB,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -165,6 +167,29 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
     length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
     return self.func("SUBSTR", haystack_sql, direction, length)
+
+
+def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
+    interval = expression.expression if isinstance(expression.expression, exp.Interval) else None
+
+    unit = (
+        (interval.text("unit") or "DAY").upper()
+        if interval is not None
+        else (expression.text("unit") or "DAY").upper()
+    )
+
+    if unit not in DATE_UNITS:
+        self.unsupported(f"'{unit}' is not supported in Exasol.")
+        return self.function_fallback_sql(expression)
+
+    offset_expr: exp.Expression = expression.expression
+    if interval is not None:
+        offset_expr = interval.this
+
+    if isinstance(expression, exp.DateSub):
+        offset_expr = exp.Neg(this=offset_expr)
+
+    return self.func(f"ADD_{unit}S", expression.this, offset_expr)
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -365,6 +390,9 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
             exp.DateDiff: _date_diff_sql,
+            exp.DateAdd: _add_date_sql,
+            exp.TsOrDsAdd: _add_date_sql,
+            exp.DateSub: _add_date_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
             exp.IntDiv: rename_func("DIV"),
             exp.TsOrDsDiff: _date_diff_sql,
@@ -435,6 +463,7 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_timestamp.htm
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
+            exp.LastDay: no_last_day_sql,
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
@@ -450,14 +479,6 @@ class Exasol(Dialect):
             true = self.sql(expression, "true")
             false = self.sql(expression, "false")
             return f"IF {this} THEN {true} ELSE {false} ENDIF"
-
-        def dateadd_sql(self, expression: exp.DateAdd) -> str:
-            unit = expression.text("unit").upper() or "DAY"
-            if unit not in DATE_UNITS:
-                self.unsupported(f"'{unit}' is not supported in Exasol.")
-                return self.function_fallback_sql(expression)
-
-            return self.func(f"ADD_{unit}S", expression.this, expression.expression)
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)

@@ -92,21 +92,33 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
         ):
             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
-        def prefix_local(node):
+        def prefix_local(node, visible_aliases: dict[str, bool]) -> exp.Expression:
             if isinstance(node, exp.Column) and not node.table:
-                if node.name in aliases:
+                if node.name in visible_aliases:
                     return exp.Column(
-                        this=exp.to_identifier(node.name, quoted=aliases[node.name]),
+                        this=exp.to_identifier(node.name, quoted=visible_aliases[node.name]),
                         table=exp.to_identifier("LOCAL", quoted=False),
                     )
             return node
 
-        expression.set(
-            "expressions", [sel.transform(prefix_local) for sel in expression.expressions]
-        )
         for key in ("where", "group", "having"):
             if arg := expression.args.get(key):
-                expression.set(key, arg.transform(prefix_local))
+                expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
+
+        seen_aliases: dict[str, bool] = {}
+        new_selects: list[exp.Expression] = []
+        for sel in expression.selects:
+            if isinstance(sel, exp.Alias):
+                inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
+                sel.set("this", inner)
+
+                alias_node = sel.args.get("alias")
+                if alias_node and alias_node.name:
+                    seen_aliases[alias_node.name] = bool(alias_node.args.get("quoted"))
+                new_selects.append(sel)
+            else:
+                new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
+        expression.set("expressions", new_selects)
 
     return expression
 

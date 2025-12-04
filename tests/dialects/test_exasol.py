@@ -684,7 +684,7 @@ class TestExasol(Validator):
         )
         self.validate_identity(
             'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
-            'SELECT LOCAL.a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
+            'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
         )
         self.validate_identity(
             "SELECT YEAR(current_date) AS current_year, current_year + 1 AS next_year",
@@ -711,6 +711,11 @@ class TestExasol(Validator):
                 "Multiple aliases",
                 "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE LOCAL.a_year > 2020 AND LOCAL.a_month < 6",
                 "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE a_year > 2020 AND a_month < 6",
+            ),
+            (
+                "Select list aliases",
+                "SELECT YR AS THE_YEAR, ID AS YR, LOCAL.THE_YEAR + 1 AS NEXT_YEAR FROM my_table",
+                "SELECT YR AS THE_YEAR, ID AS YR, THE_YEAR + 1 AS NEXT_YEAR FROM my_table",
             ),
         ]
         for title, exasol_sql, dbx_sql in test_cases:

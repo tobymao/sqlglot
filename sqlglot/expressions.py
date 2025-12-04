@@ -6348,6 +6348,10 @@ class CurrentRegion(Func):
     arg_types = {}
 
 
+class CurrentRoleType(Func):
+    arg_types = {}
+
+
 class CurrentOrganizationUser(Func):
     arg_types = {}
 

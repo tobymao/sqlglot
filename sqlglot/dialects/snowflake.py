@@ -744,6 +744,7 @@ class Snowflake(Dialect):
             "TO_VARCHAR": build_timetostr_or_tochar,
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
+            "VECTOR_INNER_PRODUCT": exp.DotProduct.from_arg_list,
             "VECTOR_L1_DISTANCE": exp.ManhattanDistance.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
@@ -1361,6 +1362,7 @@ class Snowflake(Dialect):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression

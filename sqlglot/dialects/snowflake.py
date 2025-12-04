@@ -743,6 +743,8 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": build_timetostr_or_tochar,
             "TO_JSON": exp.JSONFormat.from_arg_list,
+            "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
+            "VECTOR_L1_DISTANCE": exp.ManhattanDistance.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
             "LIKE": build_like(exp.Like),
@@ -1363,6 +1365,7 @@ class Snowflake(Dialect):
             exp.Extract: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression
             ),
+            exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
             exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
@@ -1389,6 +1392,7 @@ class Snowflake(Dialect):
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.ManhattanDistance: rename_func("VECTOR_L1_DISTANCE"),
             exp.MakeInterval: no_make_interval_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,

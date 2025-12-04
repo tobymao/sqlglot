@@ -177,6 +177,9 @@ class TestSnowflake(Validator):
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
+        self.validate_identity("SELECT VECTOR_L1_DISTANCE(a, b)")
+        self.validate_identity("SELECT VECTOR_L2_DISTANCE(a, b)")
+        self.validate_identity("SELECT VECTOR_COSINE_SIMILARITY(a, b)")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
@@ -1568,7 +1571,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
             },
         )
-        self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
         # EXTRACT - converts to DATE_PART in Snowflake
         self.validate_identity(

@@ -991,6 +991,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "str_col": "STRING",
                 "bignum_col": "BIGNUMERIC",
                 "date_col": "DATE",
+                "decfloat_col": "DECFLOAT",
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",

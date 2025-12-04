@@ -7647,23 +7647,47 @@ class RegexpCount(Func):
     }
 
 
-class RegrValx(Func):
+class RegrValx(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrValy(Func):
+class RegrValy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgy(Func):
+class RegrAvgy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgx(Func):
+class RegrAvgx(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSlope(Func):
+class RegrCount(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrIntercept(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrR2(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxx(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSyy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSlope(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 

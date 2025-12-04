@@ -1042,6 +1042,18 @@ class BigQuery(Dialect):
                 this=self._match_text_seq("AS") and self._parse_select(),
             )
 
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            if isinstance(this, exp.Dot):
+                if this.this.name == "NET":
+                    if this.name.upper() == "HOST":
+                        this = self.expression(
+                            exp.NetHost, this=seq_get(this.expression.expressions, 0)
+                        )
+
+            return this
+
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False

@@ -4252,6 +4252,26 @@ INT;
 MODE(tbl.str_col) OVER (PARTITION BY tbl.int_col);
 VARCHAR;
 
+# dialect: snowflake
+VAR_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VAR_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_POP(tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

@@ -148,6 +148,22 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
+            "SELECT VAR_SAMP(x)",
+            write={
+                "snowflake": "SELECT VARIANCE(x)",
+                "duckdb": "SELECT VAR_SAMP(x)",
+                "postgres": "SELECT VAR_SAMP(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT VAR_POP(x)",
+            write={
+                "snowflake": "SELECT VARIANCE_POP(x)",
+                "duckdb": "SELECT VAR_POP(x)",
+                "postgres": "SELECT VAR_POP(x)",
+            },
+        )
+        self.validate_all(
             "SELECT SKEW(a)",
             write={
                 "snowflake": "SELECT SKEW(a)",

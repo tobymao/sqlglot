@@ -5637,6 +5637,10 @@ class EuclideanDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class ManhattanDistance(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class JarowinklerSimilarity(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -6332,12 +6336,28 @@ class CurrentTimestampLTZ(Func):
     arg_types = {}
 
 
+class CurrentOrganizationName(Func):
+    arg_types = {}
+
+
 class CurrentSchema(Func):
     arg_types = {"this": False}
 
 
 class CurrentUser(Func):
     arg_types = {"this": False}
+
+
+class CurrentRegion(Func):
+    arg_types = {}
+
+
+class CurrentRoleType(Func):
+    arg_types = {}
+
+
+class CurrentOrganizationUser(Func):
+    arg_types = {}
 
 
 class UtcDate(Func):
@@ -6678,6 +6698,10 @@ class ToBase32(Func):
 
 class ToBase64(Func):
     pass
+
+
+class ToBinary(Func):
+    arg_types = {"this": True, "format": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary
@@ -7368,6 +7392,10 @@ class MD5NumberUpper64(Func):
 
 class Median(AggFunc):
     pass
+
+
+class Mode(AggFunc):
+    arg_types = {"this": False, "deterministic": False}
 
 
 class Min(AggFunc):

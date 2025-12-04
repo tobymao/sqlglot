@@ -92,10 +92,11 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
     """Annotate WithinGroup with correct type based on the inner function.
 
     1) Annotate args first
-    2) Check if this is PercentileDisc and if so, re-annotate its type to match the ordered expression's type
+    2) Check if this is PercentileDisc/PercentileCont and if so, re-annotate its type to match the ordered expression's type
     """
+
     if (
-        isinstance(expression.this, exp.PercentileDisc)
+        isinstance(expression.this, (exp.PercentileDisc, exp.PercentileCont))
         and isinstance(order_expr := expression.expression, exp.Order)
         and len(order_expr.expressions) == 1
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
@@ -173,6 +174,7 @@ EXPRESSION_METADATA = {
             exp.DateTrunc,
             exp.Floor,
             exp.Left,
+            exp.Mode,
             exp.Pad,
             exp.Right,
             exp.Round,
@@ -220,6 +222,7 @@ EXPRESSION_METADATA = {
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,
+            exp.ToBinary,
             exp.TryBase64DecodeBinary,
             exp.TryHexDecodeBinary,
             exp.Unhex,
@@ -268,6 +271,9 @@ EXPRESSION_METADATA = {
             exp.Atanh,
             exp.Cbrt,
             exp.Cosh,
+            exp.CosineDistance,
+            exp.EuclideanDistance,
+            exp.ManhattanDistance,
             exp.MonthsBetween,
             exp.Normal,
             exp.Sinh,
@@ -364,6 +370,10 @@ EXPRESSION_METADATA = {
             exp.Chr,
             exp.Collate,
             exp.Collation,
+            exp.CurrentOrganizationUser,
+            exp.CurrentRegion,
+            exp.CurrentRoleType,
+            exp.CurrentOrganizationName,
             exp.DecompressString,
             exp.HexDecodeString,
             exp.HexEncode,

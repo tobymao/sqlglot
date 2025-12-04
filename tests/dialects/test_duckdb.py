@@ -19,6 +19,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("SELECT str[0:1]")
         self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity("SELECT MODE(category)")
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 

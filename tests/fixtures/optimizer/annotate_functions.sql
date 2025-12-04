@@ -128,6 +128,14 @@ BIGINT;
 UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
 BIGINT;
 
+# dialect: snowflake
+TO_BINARY('test');
+BINARY;
+
+# dialect: snowflake
+TO_BINARY('test', 'HEX');
+BINARY;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------
@@ -1600,6 +1608,38 @@ BIGINT;
 LENGTH(tbl.bin_col);
 BIGINT;
 
+# dialect: bigquery
+IF(TRUE, '2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+IF(TRUE, DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IF(TRUE, '00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IF(TRUE, '2010-01-01 00:00:00', TIMESTAMP '2020-02-02 00:00:00');
+TIMESTAMP;
+
+# dialect: bigquery
+COALESCE('2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+COALESCE(DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IFNULL('00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IFNULL(TIMESTAMP '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+TIMESTAMP;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -2001,6 +2041,14 @@ CAST(1.5 AS DECFLOAT);
 DECFLOAT;
 
 # dialect: snowflake
+CAST(1 AS VARCHAR);
+VARCHAR;
+
+# dialect: snowflake
+CAST('123' AS INT);
+INT;
+
+# dialect: snowflake
 COALESCE(TRUE, FALSE);
 BOOLEAN;
 
@@ -2163,6 +2211,22 @@ TIMESTAMPTZ;
 # dialect: snowflake
 CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000');
 TIMESTAMPNTZ;
+
+# dialect: snowflake
+CURRENT_ORGANIZATION_USER();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_REGION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ROLE_TYPE();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ORGANIZATION_NAME();
+VARCHAR;
 
 # dialect: snowflake
 DATEDIFF('year', tbl.date_col, tbl.date_col);
@@ -3901,6 +3965,18 @@ PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 
@@ -4101,6 +4177,18 @@ MIN(tbl.bigint_col) OVER (PARTITION BY 1);
 BIGINT;
 
 # dialect: snowflake
+VECTOR_COSINE_SIMILARITY([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L1_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L2_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
 ZIPF(1, 10, RANDOM());
 BIGINT;
 
@@ -4115,6 +4203,38 @@ OBJECT;
 # dialect: snowflake
 XMLGET(PARSE_XML('<root><item>a</item><item>b</item></root>'), 'item', 1);
 OBJECT;
+
+# dialect: snowflake
+MODE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MODE(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MODE(tbl.timestamp_col);
+TIMESTAMP;
+
+# dialect: snowflake
+MODE(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
+MODE(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(10, 2);
+
+# dialect: snowflake
+MODE(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+MODE(CAST(NULL AS INT));
+INT;
+
+# dialect: snowflake
+MODE(tbl.str_col) OVER (PARTITION BY tbl.int_col);
+VARCHAR;
 
 --------------------------------------
 -- T-SQL

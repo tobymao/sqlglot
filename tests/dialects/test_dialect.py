@@ -618,6 +618,42 @@ class TestDialect(Validator):
             },
         )
 
+    def test_to_binary(self):
+        self.validate_all(
+            "TO_BINARY('test')",
+            read={
+                "": "TO_BINARY('test')",
+                "snowflake": "TO_BINARY('test')",
+                "starrocks": "TO_BINARY('test')",
+                "duckdb": "TO_BINARY('test')",
+                "spark": "TO_BINARY('test')",
+                "databricks": "TO_BINARY('test')",
+            },
+            write={
+                "snowflake": "TO_BINARY('test')",
+                "starrocks": "TO_BINARY('test')",
+                "duckdb": "TO_BINARY('test')",
+                "spark": "TO_BINARY('test')",
+                "databricks": "TO_BINARY('test')",
+            },
+        )
+        self.validate_all(
+            "TO_BINARY('test', 'HEX')",
+            read={
+                "": "TO_BINARY('test', 'HEX')",
+                "snowflake": "TO_BINARY('test', 'HEX')",
+                "starrocks": "TO_BINARY('test', 'HEX')",
+                "spark": "TO_BINARY('test', 'HEX')",
+                "databricks": "TO_BINARY('test', 'HEX')",
+            },
+            write={
+                "snowflake": "TO_BINARY('test', 'HEX')",
+                "starrocks": "TO_BINARY('test', 'HEX')",
+                "spark": "TO_BINARY('test', 'HEX')",
+                "databricks": "TO_BINARY('test', 'HEX')",
+            },
+        )
+
     def test_if_null(self):
         self.validate_all(
             "SELECT IFNULL(1, NULL) FROM foo",

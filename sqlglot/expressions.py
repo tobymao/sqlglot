@@ -5876,6 +5876,10 @@ class ToArray(Func):
     pass
 
 
+class ToBoolean(Func):
+    pass
+
+
 # https://materialize.com/docs/sql/types/list/
 class List(Func):
     arg_types = {"expressions": False}

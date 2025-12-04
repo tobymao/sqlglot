@@ -132,6 +132,7 @@ class Oracle(Dialect):
                 unabbreviate=False,
             ),
         }
+        FUNCTIONS.pop("TO_BOOLEAN")
 
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.Parser.NO_PAREN_FUNCTION_PARSERS,

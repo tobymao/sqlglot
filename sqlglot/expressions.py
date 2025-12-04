@@ -5873,7 +5873,7 @@ class ToArray(Func):
 
 
 class ToBoolean(Func):
-    _sql_names = ["TO_BOOLEAN", "BOOLEAN"]
+    pass
 
 
 # https://materialize.com/docs/sql/types/list/

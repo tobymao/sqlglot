@@ -128,6 +128,11 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
 def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | exp.Anonymous]:
     def _builder(args: t.List) -> B | exp.Anonymous:
         if len(args) == 3:
+            # Special handling for bitwise operations with padside argument
+            if expr_type in (exp.BitwiseAnd, exp.BitwiseOr, exp.BitwiseXor):
+                return expr_type(
+                    this=seq_get(args, 0), expression=seq_get(args, 1), padside=seq_get(args, 2)
+                )
             return exp.Anonymous(this=name, expressions=args)
 
         return binary_from_function(expr_type)(args)

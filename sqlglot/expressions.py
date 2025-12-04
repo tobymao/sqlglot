@@ -5137,7 +5137,7 @@ class Connector(Binary):
 
 
 class BitwiseAnd(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseLeftShift(Binary):
@@ -5145,7 +5145,7 @@ class BitwiseLeftShift(Binary):
 
 
 class BitwiseOr(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseRightShift(Binary):
@@ -5153,7 +5153,7 @@ class BitwiseRightShift(Binary):
 
 
 class BitwiseXor(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class Div(Binary):

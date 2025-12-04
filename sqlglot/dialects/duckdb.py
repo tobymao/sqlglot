@@ -427,6 +427,10 @@ class DuckDB(Dialect):
 
     DATE_PART_MAPPING.pop("WEEKDAY")
 
+    INVERSE_TIME_MAPPING = {
+        "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
+    }
+
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
@@ -987,6 +991,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.BPCHAR: "TEXT",
             exp.DataType.Type.CHAR: "TEXT",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.DECFLOAT: "DECIMAL(38, 5)",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.JSONB: "JSON",
             exp.DataType.Type.NCHAR: "TEXT",
@@ -1443,8 +1448,13 @@ class DuckDB(Dialect):
             params = expression.args.get("parameters")
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
+            null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+
             if position and (not position.is_int or position.to_py() > 1):
                 this = exp.Substring(this=this, start=position)
+
+                if null_if_pos_overflow:
+                    this = exp.Nullif(this=this, expression=exp.Literal.string(""))
 
             # Do not render group if there is no following argument,
             # and it's the default value for this dialect

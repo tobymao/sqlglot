@@ -19,6 +19,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("SELECT str[0:1]")
         self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity("SELECT MODE(category)")
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -1389,7 +1390,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
             write={
-                "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', x)",
+                "bigquery": "FORMAT_DATE('%F %T', x)",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",

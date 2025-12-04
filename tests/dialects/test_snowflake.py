@@ -25,6 +25,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MAX(x)")
         self.validate_identity("SELECT COUNT(x)")
         self.validate_identity("SELECT MIN(amount)")
+        self.validate_identity("SELECT MODE(x)")
+        self.validate_identity("SELECT MODE(status) OVER (PARTITION BY region) FROM orders")
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT SINH(1.5)")
@@ -36,6 +38,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT FLOOR(x)")
         self.validate_identity("SELECT FLOOR(135.135, 1)")
         self.validate_identity("SELECT FLOOR(x, -1)")
+        self.validate_identity(
+            "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY salary) FROM employees"
+        )
         self.assertEqual(
             # Ensures we don't fail when generating ParseJSON with the `safe` arg set to `True`
             self.validate_identity("""SELECT TRY_PARSE_JSON('{"x: 1}')""").sql(),
@@ -55,11 +60,14 @@ class TestSnowflake(Validator):
             "SELECT APPROXIMATE_JACCARD_INDEX(minhash_col)",
             "SELECT APPROXIMATE_SIMILARITY(minhash_col)",
         )
+        self.validate_identity("SELECT APPROX_PERCENTILE_ACCUMULATE(col)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_ESTIMATE(state, 0.5)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state, 2)")
         self.validate_identity("SELECT APPROX_TOP_K_COMBINE(state)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column, 4)")
         self.validate_identity("SELECT APPROX_TOP_K_ESTIMATE(state_column)")
+        self.validate_identity("SELECT APPROX_PERCENTILE_COMBINE(state_column)")
         self.validate_identity("SELECT EQUAL_NULL(1, 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT FACTORIAL(5)")
@@ -77,6 +85,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")
+        self.validate_identity("SELECT TO_BOOLEAN('true')")
+        self.validate_identity("SELECT TO_BOOLEAN(1)")
         self.validate_identity("SELECT IS_NULL_VALUE(GET_PATH(payload, 'field'))")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
@@ -130,6 +140,12 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_VALY(y, x)")
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
+        self.validate_identity("SELECT REGR_COUNT(y, x)")
+        self.validate_identity("SELECT REGR_INTERCEPT(y, x)")
+        self.validate_identity("SELECT REGR_R2(y, x)")
+        self.validate_identity("SELECT REGR_SXX(y, x)")
+        self.validate_identity("SELECT REGR_SXY(y, x)")
+        self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",
@@ -147,10 +163,16 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT RANDOM()")
         self.validate_identity("SELECT RANDOM(123)")
+        self.validate_identity("SELECT RANDSTR(123, 456)")
+        self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")
+        self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
+        self.validate_identity("SELECT ZIPF(2, 100, 1234)")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
+        self.validate_identity("SELECT XMLGET(object_col, 'level2')")
+        self.validate_identity("SELECT XMLGET(object_col, 'level3', 1)")
         self.validate_identity("SELECT {*} FROM my_table")
         self.validate_identity("SELECT {my_table.*} FROM my_table")
         self.validate_identity("SELECT {* ILIKE 'col1%'} FROM my_table")
@@ -163,6 +185,10 @@ class TestSnowflake(Validator):
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
+        self.validate_identity("SELECT VECTOR_COSINE_SIMILARITY(a, b)")
+        self.validate_identity("SELECT VECTOR_INNER_PRODUCT(a, b)")
+        self.validate_identity("SELECT VECTOR_L1_DISTANCE(a, b)")
+        self.validate_identity("SELECT VECTOR_L2_DISTANCE(a, b)")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
@@ -180,6 +206,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_TIMESTAMP_LTZ(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_TZ(x) FROM t")
         self.validate_identity("TO_DECIMAL(expr, fmt, precision, scale)")
+        self.validate_identity("TO_DECFLOAT('123.456')")
+        self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
+        self.validate_identity("TRY_TO_DECFLOAT('123.456')")
+        self.validate_identity("TRY_TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
         self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)
@@ -211,6 +241,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT AI_SUMMARIZE_AGG(review)")
         self.validate_identity("SELECT AI_CLASSIFY('text', ['travel', 'cooking'])")
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
+        self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
+        self.validate_identity("SELECT CURRENT_REGION()")
+        self.validate_identity("SELECT CURRENT_ROLE_TYPE()")
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")
@@ -239,6 +272,7 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
+        self.validate_identity("SELECT CURRENT_ORGANIZATION_NAME()")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity("SELECT OBJECT_AGG(key, value) FROM tbl")
@@ -1130,7 +1164,7 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT STRPTIME('04/05/2013 01:02:03', '%m/%d/%Y %H:%M:%S')",
             },
             write={
-                "bigquery": "SELECT PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', '04/05/2013 01:02:03')",
+                "bigquery": "SELECT PARSE_TIMESTAMP('%m/%d/%Y %T', '04/05/2013 01:02:03')",
                 "snowflake": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
                 "spark": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'MM/dd/yyyy HH:mm:ss')",
             },
@@ -1404,10 +1438,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BITNOT(a)")
         self.validate_identity("SELECT BIT_NOT(a)", "SELECT BITNOT(a)")
         self.validate_identity("SELECT BITAND(a, b)")
+        self.validate_identity("SELECT BITAND(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_AND(a, b)", "SELECT BITAND(a, b)")
+        self.validate_identity("SELECT BIT_AND(a, b, 'LEFT')", "SELECT BITAND(a, b, 'LEFT')")
         self.validate_identity("SELECT BITOR(a, b)")
-        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
         self.validate_identity("SELECT BITOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BIT_OR(a, b, 'RIGHT')", "SELECT BITOR(a, b, 'RIGHT')")
+        self.validate_identity("SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BITXOR(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
@@ -1546,7 +1584,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
             },
         )
-        self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
         # EXTRACT - converts to DATE_PART in Snowflake
         self.validate_identity(
@@ -2750,6 +2787,10 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         search_mode = search_ast.args.get("search_mode")
         self.assertIsNotNone(search_mode)
 
+        self.validate_identity("SELECT SEARCH_IP(col, '192.168.0.0')").selects[0].assert_is(
+            exp.SearchIp
+        )
+
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l ')")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")
@@ -3138,6 +3179,22 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                 self.assertEqual(
                     expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS VARCHAR) FROM t"
                 )
+
+    def test_decfloat(self):
+        self.validate_all(
+            "SELECT CAST(1.5 AS DECFLOAT)",
+            write={
+                "snowflake": "SELECT CAST(1.5 AS DECFLOAT)",
+                "duckdb": "SELECT CAST(1.5 AS DECIMAL(38, 5))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (x DECFLOAT)",
+            write={
+                "snowflake": "CREATE TABLE t (x DECFLOAT)",
+                "duckdb": "CREATE TABLE t (x DECIMAL(38, 5))",
+            },
+        )
 
     def test_copy(self):
         self.validate_identity("COPY INTO test (c1) FROM (SELECT $1.c1 FROM @mystage)")

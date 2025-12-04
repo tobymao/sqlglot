@@ -724,3 +724,12 @@ FROM (
                 "postgres": "SELECT * FROM t FETCH FIRST 1 ROWS ONLY",
             },
         )
+
+    def test_regexp_extract(self):
+        self.validate_all(
+            "SELECT REGEXP_SUBSTR(abc, 'pattern(group)', 2) FROM table",
+            write={
+                "redshift": '''SELECT REGEXP_SUBSTR(abc, 'pattern(group)', 2) FROM "table"''',
+                "duckdb": '''SELECT REGEXP_EXTRACT(SUBSTRING(abc, 2), 'pattern(group)') FROM "table"''',
+            },
+        )

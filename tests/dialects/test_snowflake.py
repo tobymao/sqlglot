@@ -138,6 +138,12 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_VALY(y, x)")
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
+        self.validate_identity("SELECT REGR_COUNT(y, x)")
+        self.validate_identity("SELECT REGR_INTERCEPT(y, x)")
+        self.validate_identity("SELECT REGR_R2(y, x)")
+        self.validate_identity("SELECT REGR_SXX(y, x)")
+        self.validate_identity("SELECT REGR_SXY(y, x)")
+        self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",

@@ -1093,6 +1093,10 @@ FORMAT('%f %E %f %f', 1.1, 2.2, 3.4, 4.4);
 STRING;
 
 # dialect: bigquery
+NET.HOST('http://example.com');
+STRING;
+
+# dialect: bigquery
 PERCENTILE_CONT(CAST(1 AS NUMERIC), CAST(1 AS NUMERIC)) OVER (ORDER BY 1);
 NUMERIC;
 

@@ -3530,6 +3530,21 @@ SINGLE = TRUE""",
             with self.subTest(f"Checking  count arg of {node.sql('snowflake')}"):
                 self.assertIsNotNone(node.args.get("count"))
 
+        self.validate_all(
+            "SELECT MAX_BY(a, b) FROM t",
+            write={
+                "snowflake": "SELECT MAX_BY(a, b) FROM t",
+                "duckdb": "SELECT ARG_MAX(a, b) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN_BY(a, b) FROM t",
+            write={
+                "snowflake": "SELECT MIN_BY(a, b) FROM t",
+                "duckdb": "SELECT ARG_MIN(a, b) FROM t",
+            },
+        )
+
     def test_create_view_copy_grants(self):
         # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
         self.validate_identity(

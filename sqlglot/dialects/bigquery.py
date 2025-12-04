@@ -425,6 +425,13 @@ class BigQuery(Dialect):
     }
     COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
     COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
+    COERCES_TO[exp.DataType.Type.VARCHAR] |= {
+        exp.DataType.Type.DATE,
+        exp.DataType.Type.DATETIME,
+        exp.DataType.Type.TIME,
+        exp.DataType.Type.TIMESTAMP,
+        exp.DataType.Type.TIMESTAMPTZ,
+    }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

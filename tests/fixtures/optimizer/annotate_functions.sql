@@ -1608,6 +1608,38 @@ BIGINT;
 LENGTH(tbl.bin_col);
 BIGINT;
 
+# dialect: bigquery
+IF(TRUE, '2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+IF(TRUE, DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IF(TRUE, '00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IF(TRUE, '2010-01-01 00:00:00', TIMESTAMP '2020-02-02 00:00:00');
+TIMESTAMP;
+
+# dialect: bigquery
+COALESCE('2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+COALESCE(DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IFNULL('00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IFNULL(TIMESTAMP '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+TIMESTAMP;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -965,3 +965,6 @@ class TestSingleStore(Validator):
         self.validate_identity(
             "CREATE TABLE ComputedColumnConstraint (points INT, score AS (points * 2) PERSISTED BIGINT NOT NULL)"
         )
+
+    def test_dcolonqmark(self):
+        self.validate_identity("SELECT * FROM employee WHERE JSON_MATCH_ANY(payroll::?names)")

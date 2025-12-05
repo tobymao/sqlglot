@@ -1662,8 +1662,10 @@ class DuckDB(Dialect):
             return _arrow_json_extract_sql(self, expression)
 
         def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
-            this_sql = self.sql(expression, "this")
-            # Wrap in parentheses if starts with minus to prevent ~- parsing issues
-            if this_sql.startswith("-"):
-                this_sql = f"({this_sql})"
-            return f"~{this_sql}"
+            this = expression.this
+
+            # Wrap in parentheses to prevent parsing issues such as "SELECT ~-1"
+            if isinstance(this, exp.Neg):
+                this = exp.Paren(this=this)
+
+            return f"~{self.sql(this)}"

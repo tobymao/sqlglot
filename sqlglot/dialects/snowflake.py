@@ -560,7 +560,6 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
-    ROUND_casts_non_integer_decimals = True
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

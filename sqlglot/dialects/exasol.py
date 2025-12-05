@@ -183,14 +183,14 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
 
     select_expressions = expression.expressions or []
 
-    def is_qualified_star(expr: exp.Expression) -> bool:
+    def is_bare_star(expr: exp.Expression) -> bool:
         return isinstance(expr, exp.Star) and expr.this is None
 
-    has_unqualified_star = any(is_qualified_star(select) for select in select_expressions)
+    has_bare_star = any(is_bare_star(select) for select in select_expressions)
 
-    has_other_expression = any(not (is_qualified_star(select)) for select in select_expressions)
+    has_other_expression = any(not (is_bare_star(select)) for select in select_expressions)
 
-    if not (has_unqualified_star and has_other_expression):
+    if not (has_bare_star and has_other_expression):
         return expression
 
     scope = build_scope(expression)
@@ -206,7 +206,7 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
     new_select_expressions: list[exp.Expression] = []
 
     for select_expr in select_expressions:
-        new_select_expressions.extend(qualified_star_columns) if is_qualified_star(
+        new_select_expressions.extend(qualified_star_columns) if is_bare_star(
             select_expr
         ) else new_select_expressions.append(select_expr)
 

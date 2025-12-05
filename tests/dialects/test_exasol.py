@@ -23,6 +23,9 @@ class TestExasol(Validator):
             "SELECT t.* FROM t",
         )
         self.validate_identity(
+            "SELECT * FROM t",
+        )
+        self.validate_identity(
             "WITH t AS (SELECT 1 AS x) SELECT t.*, 3 FROM t",
         )
         self.validate_identity(

@@ -20,6 +20,7 @@ class Trino(Presto):
         KEYWORDS = {
             **Presto.Tokenizer.KEYWORDS,
             "REFRESH": TokenType.REFRESH,
+            "CURRENT_CATALOG": TokenType.CURRENT_CATALOG,
         }
 
     class Parser(Presto.Parser):
@@ -29,6 +30,11 @@ class Trino(Presto):
             "JSON_QUERY": lambda self: self._parse_json_query(),
             "JSON_VALUE": lambda self: self._parse_json_value(),
             "LISTAGG": lambda self: self._parse_string_agg(),
+        }
+
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
         }
 
         JSON_QUERY_OPTIONS: parser.OPTIONS_TYPE = {
@@ -120,3 +126,7 @@ class Trino(Presto):
                 expression.this,
                 json_path + option + quote + on_condition,
             )
+
+        def currentcatalog_sql(self, expression: exp.CurrentCatalog) -> str:
+            this = expression.this
+            return self.func("CURRENT_CATALOG", this) if this else "CURRENT_CATALOG"

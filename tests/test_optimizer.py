@@ -516,6 +516,48 @@ class TestOptimizer(unittest.TestCase):
             "SELECT a.b_id AS b_id FROM a AS a JOIN b AS b ON a.b_id = b.b_id JOIN c AS c ON b.b_id = c.b_id JOIN d AS d ON b.d_id = d.d_id",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT
+                      (SELECT SUM(c.amount)
+                       FROM UNNEST(credits) AS c
+                       WHERE type != 'promotion') as total
+                    FROM billing
+                    """,
+                    read="bigquery",
+                ),
+                schema={"billing": {"credits": "ARRAY<STRUCT<amount FLOAT64, type STRING>>"}},
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT (SELECT SUM(`c`.`amount`) AS `_col_0` FROM UNNEST(`billing`.`credits`) AS `c` WHERE `type` <> 'promotion') AS `total` FROM `billing` AS `billing`",
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    WITH cte AS (SELECT * FROM base_table)
+                    SELECT
+                      (SELECT SUM(item.price)
+                       FROM UNNEST(items) AS item
+                       WHERE category = 'electronics') as electronics_total
+                    FROM cte
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "base_table": {
+                        "id": "INT64",
+                        "items": "ARRAY<STRUCT<price FLOAT64, category STRING>>",
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `cte` AS (SELECT `base_table`.`id` AS `id`, `base_table`.`items` AS `items` FROM `base_table` AS `base_table`) SELECT (SELECT SUM(`item`.`price`) AS `_col_0` FROM UNNEST(`cte`.`items`) AS `item` WHERE `category` = 'electronics') AS `electronics_total` FROM `cte` AS `cte`",
+        )
+
         self.check_file(
             "qualify_columns",
             qualify_columns,

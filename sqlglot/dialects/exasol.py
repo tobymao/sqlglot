@@ -113,8 +113,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
                 sel.set("this", inner)
 
                 alias_node = sel.args.get("alias")
-                if alias_node and alias_node.name:
-                    seen_aliases[alias_node.name] = bool(alias_node.args.get("quoted"))
+                seen_aliases[alias_node.name] = bool(alias_node.args.get("quoted"))
                 new_selects.append(sel)
             else:
                 new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))

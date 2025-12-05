@@ -540,6 +540,12 @@ def _build_timestamp_from_parts(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def _build_round(args: t.List) -> exp.Round:
+    expression = exp.Round.from_arg_list(args)
+    expression.set("casts_non_integer_decimals", True)
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -554,6 +560,7 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
+    ROUND_casts_non_integer_decimals = True
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
@@ -707,6 +714,7 @@ class Snowflake(Dialect):
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REPLACE": build_replace_with_optional_replacement,
             "RLIKE": exp.RegexpLike.from_arg_list,
+            "ROUND": _build_round,
             "SHA1_BINARY": exp.SHA1Digest.from_arg_list,
             "SHA1_HEX": exp.SHA.from_arg_list,
             "SHA2_BINARY": exp.SHA2Digest.from_arg_list,

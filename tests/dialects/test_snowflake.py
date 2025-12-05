@@ -3671,9 +3671,25 @@ FROM SEMANTIC_VIEW(
         )
 
         self.validate_all(
+            "SELECT ROUND(EXPR => 2.25, SCALE => 1) AS value",
+            write={
+                "snowflake": "SELECT ROUND(EXPR => 2.25, SCALE => 1) AS value",
+                "duckdb": "SELECT ROUND(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
             "SELECT ROUND(2.25, 1, 'HALF_AWAY_FROM_ZERO') AS value",
             write={
                 "snowflake": """SELECT ROUND(2.25, 1, 'HALF_AWAY_FROM_ZERO') AS value""",
+                "duckdb": "SELECT ROUND(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(EXPR => 2.25, SCALE => 1, ROUNDING_MODE => 'HALF_AWAY_FROM_ZERO') AS value",
+            write={
+                "snowflake": "SELECT ROUND(EXPR => 2.25, SCALE => 1, ROUNDING_MODE => 'HALF_AWAY_FROM_ZERO') AS value",
                 "duckdb": "SELECT ROUND(2.25, 1) AS value",
             },
         )
@@ -3683,5 +3699,29 @@ FROM SEMANTIC_VIEW(
             write={
                 "snowflake": """SELECT ROUND(2.25, 1, 'HALF_TO_EVEN') AS value""",
                 "duckdb": "SELECT ROUND_EVEN(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(EXPR => 2.25, SCALE => 1, ROUNDING_MODE => 'HALF_TO_EVEN') AS value",
+            write={
+                "snowflake": "SELECT ROUND(EXPR => 2.25, SCALE => 1, ROUNDING_MODE => 'HALF_TO_EVEN') AS value",
+                "duckdb": "SELECT ROUND_EVEN(2.25, 1) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.256, 1.8) AS value",
+            write={
+                "snowflake": "SELECT ROUND(2.256, 1.8) AS value",
+                "duckdb": "SELECT ROUND(2.256, CAST(1.8 AS INT)) AS value",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ROUND(2.256, CAST(1.8 AS DECIMAL(38, 0))) AS value",
+            write={
+                "snowflake": "SELECT ROUND(2.256, CAST(1.8 AS DECIMAL(38, 0))) AS value",
+                "duckdb": "SELECT ROUND(2.256, CAST(CAST(1.8 AS DECIMAL(38, 0)) AS INT)) AS value",
             },
         )

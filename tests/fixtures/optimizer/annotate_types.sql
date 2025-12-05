@@ -125,4 +125,4 @@ TIMESTAMP;
 
 # dialect: bigquery
 NULL;
-BIGINT;
+INT64;

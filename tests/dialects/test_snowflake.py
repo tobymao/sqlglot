@@ -1437,6 +1437,13 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT BITNOT(a)")
         self.validate_identity("SELECT BIT_NOT(a)", "SELECT BITNOT(a)")
+        self.validate_all(
+            "SELECT BITNOT(-1)",
+            write={
+                "duckdb": "SELECT ~(-1)",
+                "snowflake": "SELECT BITNOT(-1)",
+            },
+        )
         self.validate_identity("SELECT BITAND(a, b)")
         self.validate_identity("SELECT BITAND(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_AND(a, b)", "SELECT BITAND(a, b)")

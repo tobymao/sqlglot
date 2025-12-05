@@ -1660,3 +1660,12 @@ class DuckDB(Dialect):
                     this=rename_func("JSON_VALUE")(self, expression), expression="'$'"
                 )
             return _arrow_json_extract_sql(self, expression)
+
+        def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
+            this = expression.this
+
+            # Wrap in parentheses to prevent parsing issues such as "SELECT ~-1"
+            if isinstance(this, exp.Neg):
+                this = exp.Paren(this=this)
+
+            return f"~{self.sql(this)}"

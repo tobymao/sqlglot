@@ -122,3 +122,7 @@ DATETIME;
 # dialect: bigquery
 CASE WHEN TRUE THEN TIMESTAMP '2020-02-02 00:00:00' ELSE '2010-01-01' END;
 TIMESTAMP;
+
+# dialect: bigquery
+NULL;
+BIGINT;

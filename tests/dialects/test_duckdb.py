@@ -633,6 +633,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "": "VARIANCE_POP(x)",
+                "duckdb": "VAR_POP(x)",
             },
         )
         self.validate_all(
@@ -1013,7 +1014,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "VARIANCE(a)",
             write={
-                "duckdb": "VARIANCE(a)",
+                "duckdb": "VAR_SAMP(a)",
                 "clickhouse": "varSamp(a)",
             },
         )

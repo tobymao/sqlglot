@@ -365,6 +365,7 @@ class Postgres(Dialect):
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CONSTRAINT TRIGGER": TokenType.COMMAND,
             "CSTRING": TokenType.PSEUDO_TYPE,
+            "CURRENT_CATALOG": TokenType.CURRENT_CATALOG,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
             "EXEC": TokenType.COMMAND,
@@ -452,6 +453,7 @@ class Postgres(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
+            TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
         }
 
         FUNCTION_PARSERS = {
@@ -899,3 +901,7 @@ class Postgres(Dialect):
             )
 
             return self.sql(case_expr)
+
+        def currentcatalog_sql(self, expression: exp.CurrentCatalog) -> str:
+            this = expression.this
+            return self.func("CURRENT_CATALOG", this) if this else "CURRENT_CATALOG"

@@ -258,6 +258,7 @@ class SingleStore(MySQL):
                 exp.JSONExists,
                 this=this,
                 path=path.name,
+                from_dcolonqmark=True,
             ),
         }
         COLUMN_OPERATORS.pop(TokenType.ARROW)
@@ -458,8 +459,10 @@ class SingleStore(MySQL):
             exp.JSONBExists: lambda self, e: self.func(
                 "BSON_MATCH_ANY_EXISTS", e.this, e.args.get("path")
             ),
-            exp.JSONExists: unsupported_args("passing", "on_condition")(
-                lambda self, e: self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
+            exp.JSONExists: lambda self, e: (
+                f"{self.sql(e.this)}::?{self.sql(e.args.get('path'))}"
+                if e.args.get("from_dcolonqmark")
+                else self.func("JSON_MATCH_ANY_EXISTS", e.this, e.args.get("path"))
             ),
             exp.JSONObject: unsupported_args(
                 "null_handling", "unique_keys", "return_type", "encoding"

@@ -7015,7 +7015,13 @@ class JSONArrayAgg(Func):
 
 
 class JSONExists(Func):
-    arg_types = {"this": True, "path": True, "passing": False, "on_condition": False}
+    arg_types = {
+        "this": True,
+        "path": True,
+        "passing": False,
+        "on_condition": False,
+        "from_dcolonqmark": False,
+    }
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html

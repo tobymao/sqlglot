@@ -144,8 +144,22 @@ class Resolver:
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.dialect.UNNEST_COLUMN_ONLY:
-                    if source.expression.is_type(exp.DataType.Type.STRUCT):
+                if self.dialect.UNNEST_COLUMN_ONLY and isinstance(source.expression, exp.Unnest):
+                    unnest_type = source.expression.type
+
+                    # if type is not annotated yet, try to get it from the schema
+                    if not unnest_type or unnest_type.is_type(exp.DataType.Type.UNKNOWN):
+                        unnest_expr = seq_get(source.expression.expressions, 0)
+                        if isinstance(unnest_expr, exp.Column) and self.scope.parent:
+                            unnest_type = self._get_unnest_column_type(unnest_expr)
+
+                    # check if unnesting an ARRAY of STRUCTs - extract struct field names
+                    if unnest_type and unnest_type.is_type(exp.DataType.Type.ARRAY):
+                        element_types = unnest_type.expressions
+                        if element_types and element_types[0].is_type(exp.DataType.Type.STRUCT):
+                            for field in element_types[0].expressions:  # type: ignore
+                                columns.append(field.name)
+                    elif source.expression.is_type(exp.DataType.Type.STRUCT):
                         for k in source.expression.type.expressions:  # type: ignore
                             columns.append(k.name)
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
@@ -299,3 +313,66 @@ class Resolver:
                 unambiguous_columns[column] = table
 
         return unambiguous_columns
+
+    def _get_unnest_column_type(self, column: exp.Column) -> t.Optional[exp.DataType]:
+        """
+        Get the type of a column being unnested, tracing through CTEs/subqueries to find the base table.
+
+        Args:
+            column: The column expression being unnested.
+
+        Returns:
+            The DataType of the column, or None if not found.
+        """
+        # start from parent scope and trace through sources to find the actual table
+        scope = self.scope.parent
+        if not scope:
+            return None
+
+        # try each source in the parent scope to find which one contains this column
+        for source_name in scope.sources:
+            source = scope.sources[source_name]
+            col_type: t.Optional[exp.DataType]
+
+            if isinstance(source, exp.Table):
+                # found a base table - get the column type from schema
+                col_type = self.schema.get_column_type(source, column)
+                if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+                    return col_type
+            elif isinstance(source, Scope):
+                # CTE or subquery - recursively check its sources
+                col_type = self._get_column_type_from_scope(source, column.name)
+                if col_type:
+                    return col_type
+
+        return None
+
+    def _get_column_type_from_scope(self, scope: Scope, col_name: str) -> t.Optional[exp.DataType]:
+        """
+        Recursively find a column's type by tracing through nested scopes to the base table.
+
+        Args:
+            scope: The scope to search.
+            col_name: The column name to find.
+
+        Returns:
+            The DataType of the column, or None if not found.
+        """
+        for source_name in scope.sources:
+            source = scope.sources[source_name]
+            col_type: t.Optional[exp.DataType]
+
+            if isinstance(source, exp.Table):
+                # found a base table - try to get the column type
+                col_type = self.schema.get_column_type(
+                    source, exp.Column(this=exp.to_identifier(col_name))
+                )
+                if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+                    return col_type
+            elif isinstance(source, Scope):
+                # nested scope - recurse
+                col_type = self._get_column_type_from_scope(source, col_name)
+                if col_type:
+                    return col_type
+
+        return None

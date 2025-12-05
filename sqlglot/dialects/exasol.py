@@ -20,6 +20,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.optimizer.scope import build_scope
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -167,6 +168,50 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
     length = self.func("NVL", f"{nullable_pos} - 1", self.func("LENGTH", haystack_sql))
     return self.func("SUBSTR", haystack_sql, direction, length)
+
+
+# https://docs.exasol.com/db/latest/sql/select.htm#:~:text=The%20select_list%20defines%20the%20columns%20of%20the%20result%20table.%20If%20*%20is%20used%2C%20all%20columns%20are%20listed.%20You%20can%20use%20an%20expression%20like%20t.*%20to%20list%20all%20columns%20of%20the%20table%20t%2C%20the%20view%20t%2C%20or%20the%20object%20with%20the%20table%20alias%20t.
+def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
+    """
+    Exasol doesn't support a bare * alongside other select items, so we rewrite it
+    Rewrite: SELECT *, <other> FROM <Table>
+    Into: SELECT T.*, <other> FROM <Table> AS T
+    """
+
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    select_expressions = expression.expressions or []
+
+    def is_bare_star(expr: exp.Expression) -> bool:
+        return isinstance(expr, exp.Star) and expr.this is None
+
+    has_bare_star = any(is_bare_star(select) for select in select_expressions)
+
+    has_other_expression = any(not (is_bare_star(select)) for select in select_expressions)
+
+    if not (has_bare_star and has_other_expression):
+        return expression
+
+    scope = build_scope(expression)
+
+    if not scope or not scope.selected_sources:
+        return expression
+
+    qualified_star_columns = [
+        exp.Column(this=exp.Star(), table=exp.to_identifier(source_name))
+        for source_name in scope.selected_sources.keys()
+    ]
+
+    new_select_expressions: list[exp.Expression] = []
+
+    for select_expr in select_expressions:
+        new_select_expressions.extend(qualified_star_columns) if is_bare_star(
+            select_expr
+        ) else new_select_expressions.append(select_expr)
+
+    expression.set("expressions", new_select_expressions)
+    return expression
 
 
 def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
@@ -453,6 +498,7 @@ class Exasol(Dialect):
             exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
             exp.Select: transforms.preprocess(
                 [
+                    _qualify_unscoped_star,
                     _add_local_prefix_for_aliases,
                 ]
             ),

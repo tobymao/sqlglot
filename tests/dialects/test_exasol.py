@@ -14,15 +14,24 @@ class TestExasol(Validator):
     def test_qualify_unscoped_star(self):
         self.validate_identity(
             "SELECT *, 1 FROM TEST",
-            "SELECT T.*, 1 FROM TEST AS T",
+            "SELECT TEST.*, 1 FROM TEST",
+        )
+        self.validate_identity(
+            "SELECT t.*, 1 FROM t",
+        )
+        self.validate_identity(
+            "SELECT t.* FROM t",
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 1 AS x) SELECT t.*, 3 FROM t",
         )
         self.validate_identity(
             "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT *, 3 FROM t1, t2",
-            "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT T.*, T_2.*, 3 FROM t1 AS T, t2 AS T_2",
+            "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT t1.*, t2.*, 3 FROM t1, t2",
         )
         self.validate_identity(
             'SELECT *, 3 FROM "A" JOIN "B" ON 1=1',
-            'SELECT T.*, T_2.*, 3 FROM "A" AS T JOIN "B" AS T_2 ON 1 = 1',
+            'SELECT A.*, B.*, 3 FROM "A" JOIN "B" ON 1 = 1',
         )
         self.validate_identity(
             "SELECT *, 7 FROM (SELECT 1 AS x) s CROSS JOIN (SELECT 2 AS y) q",

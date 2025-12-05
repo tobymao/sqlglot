@@ -18,7 +18,7 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get, find_new_name
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.scope import build_scope
 
@@ -171,68 +171,49 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
 
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=The%20select_list%20defines%20the%20columns%20of%20the%20result%20table.%20If%20*%20is%20used%2C%20all%20columns%20are%20listed.%20You%20can%20use%20an%20expression%20like%20t.*%20to%20list%20all%20columns%20of%20the%20table%20t%2C%20the%20view%20t%2C%20or%20the%20object%20with%20the%20table%20alias%20t.
-def _qualify_unscoped_star(node: exp.Expression) -> exp.Expression:
+def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
     """
     Exasol doesn't support a bare * alongside other select items, so we rewrite it
     Rewrite: SELECT *, <other> FROM <Table>
     Into: SELECT T.*, <other> FROM <Table> AS T
     """
 
-    if not isinstance(node, exp.Select):
-        return node
-    select_expressions = list(node.expressions or [])
+    if not isinstance(expression, exp.Select):
+        return expression
 
-    has_bare_star = any(
-        isinstance(expr, exp.Star) and expr.this is None for expr in select_expressions
-    )
+    select_expressions = expression.expressions or []
 
-    if not has_bare_star or len(select_expressions) <= 1:
-        return node
+    def is_qualified_star(expr: exp.Expression) -> bool:
+        return isinstance(expr, exp.Star) and expr.this is None
 
-    from_clause = node.args.get("from_")
+    has_unqualified_star = any(is_qualified_star(select) for select in select_expressions)
 
-    base_source = from_clause.this if from_clause else None
+    has_other_expression = any(not (is_qualified_star(select)) for select in select_expressions)
 
-    if not base_source:
-        return node
+    if not (has_unqualified_star and has_other_expression):
+        return expression
 
-    table_sources: list[exp.Expression] = [base_source]
+    scope = build_scope(expression)
 
-    table_sources.extend(
-        join.this
-        for join in (node.args.get("joins") or [])
-        if isinstance(join, exp.Join) and join.this
-    )
+    if not scope or not scope.selected_sources:
+        return expression
 
-    if not table_sources:
-        return node
-
-    scope = build_scope(node)
-    used_alias_names = set(scope.sources.keys()) if scope else set()
-
-    qualifiers: list[exp.Identifier] = []
-
-    for src in table_sources:
-        alias = src.args.get("alias")
-        if isinstance(alias, (exp.TableAlias, exp.Alias)) and alias.name:
-            name = alias.name
-        else:
-            name = find_new_name(used_alias_names, base="T")
-            src.set("alias", exp.TableAlias(this=exp.to_identifier(name, quoted=False)))
-            used_alias_names.add(name)
-        qualifiers.append(exp.to_identifier(name, quoted=False))
-
-    star_columns = [
-        exp.Column(this=exp.Star(), table=alias_identifier) for alias_identifier in qualifiers
+    qualified_star_columns = [
+        exp.Column(this=exp.Star(), table=exp.to_identifier(source_name))
+        for source_name in scope.selected_sources.keys()
     ]
 
-    new_items: list[exp.Expression] = []
-    for select_expression in select_expressions:
-        new_items.extend(star_columns) if isinstance(
-            select_expression, exp.Star
-        ) and select_expression.this is None else new_items.append(select_expression)
-    node.set("expressions", new_items)
-    return node
+    new_select_expressions: list[exp.Expression] = []
+
+    for select_expr in select_expressions:
+        new_select_expressions.extend(qualified_star_columns) if is_qualified_star(
+            select_expr
+        ) else new_select_expressions.append(select_expr)
+
+    expression.set("expressions", new_select_expressions)
+    return expression
+
+
 def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
     interval = expression.expression if isinstance(expression.expression, exp.Interval) else None
 

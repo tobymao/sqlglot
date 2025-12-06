@@ -75,6 +75,26 @@ class Databricks(Spark):
             ),
         }
 
+        def _parse_overlay(self) -> exp.Overlay:
+            this = self._parse_bitwise()
+
+            if self._match(TokenType.COMMA):
+                return self.expression(
+                    exp.Overlay,
+                    this=this,
+                    expression=self._parse_bitwise(),
+                    from_=self._match(TokenType.COMMA) and self._parse_bitwise(),
+                    for_=self._match(TokenType.COMMA) and self._parse_bitwise(),
+                )
+
+            return self.expression(
+                exp.Overlay,
+                this=this,
+                expression=self._match_text_seq("PLACING") and self._parse_bitwise(),
+                from_=self._match_text_seq("FROM") and self._parse_bitwise(),
+                for_=self._match_text_seq("FOR") and self._parse_bitwise(),
+            )
+
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         COPY_PARAMS_ARE_WRAPPED = False

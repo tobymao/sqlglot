@@ -190,6 +190,7 @@ EXPRESSION_METADATA = {
             exp.ApproxTopK,
             exp.ApproxTopKEstimate,
             exp.ArrayAgg,
+            exp.ArrayConstructCompact,
             exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,
             exp.RegexpExtractAll,

@@ -1665,6 +1665,14 @@ ADD_MONTHS(tbl.timestamp_col, -1);
 TIMESTAMP;
 
 # dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT();
+ARRAY;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT(1, null, 2);
+ARRAY;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 

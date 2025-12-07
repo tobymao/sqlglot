@@ -713,10 +713,10 @@ class TestExasol(Validator):
                 "SELECT YR AS THE_YEAR, ID AS YR, THE_YEAR + 1 AS NEXT_YEAR FROM my_table",
             ),
             (
-            "Select list aliases without Local keyword",
-            "SELECT YEAR(CURRENT_DATE) AS current_year, LOCAL.current_year + 1 AS next_year",
-            "SELECT YEAR(CURRENT_DATE) AS current_year, current_year + 1 AS next_year",
-        )
+                "Select list aliases without Local keyword",
+                "SELECT YEAR(CURRENT_DATE) AS current_year, LOCAL.current_year + 1 AS next_year",
+                "SELECT YEAR(CURRENT_DATE) AS current_year, current_year + 1 AS next_year",
+            ),
         ]
         for title, exasol_sql, dbx_sql in test_cases:
             with self.subTest(clause=title):

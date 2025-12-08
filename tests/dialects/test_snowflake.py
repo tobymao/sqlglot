@@ -227,7 +227,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
         self.validate_identity("SELECT CAST(x AS VECTOR(INT, 3))")
-        self.validate_identity("SELECT CAST(x AS FLOAT)", "SELECT CAST(x AS DOUBLE)")
         self.validate_identity("SELECT VECTOR_COSINE_SIMILARITY(a, b)")
         self.validate_identity("SELECT VECTOR_INNER_PRODUCT(a, b)")
         self.validate_identity("SELECT VECTOR_L1_DISTANCE(a, b)")
@@ -1798,6 +1797,10 @@ class TestSnowflake(Validator):
                 "bigquery": "SET a = 1",
                 "duckdb": "SET VARIABLE a = 1",
             },
+        )
+        self.validate_all(
+            "CAST(6.43 AS FLOAT)",
+            write={"snowflake": "CAST(6.43 AS DOUBLE)", "duckdb": "CAST(6.43 AS DOUBLE)"},
         )
 
     def test_null_treatment(self):

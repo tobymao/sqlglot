@@ -838,6 +838,9 @@ class Snowflake(Dialect):
         TYPE_CONVERTERS = {
             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
             exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=38, scale=0),
+            # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
+            # FLOAT is a synonym for DOUBLE in Snowflake
+            exp.DataType.Type.FLOAT: lambda self: exp.DataType.build("DOUBLE"),
         }
 
         SHOW_PARSERS = {
@@ -1577,7 +1580,7 @@ class Snowflake(Dialect):
             # Check if this is a FLOAT type nested inside a VECTOR type
             # VECTOR only accepts FLOAT (not DOUBLE), INT, and STRING as element types
             # https://docs.snowflake.com/en/sql-reference/data-types-vector
-            if expression.is_type(exp.DataType.Type.FLOAT):
+            if expression.is_type(exp.DataType.Type.DOUBLE):
                 parent = expression.parent
                 if isinstance(parent, exp.DataType) and parent.is_type(exp.DataType.Type.VECTOR):
                     # Preserve FLOAT for VECTOR types instead of mapping to synonym DOUBLE

@@ -110,7 +110,7 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     """Annotate MEDIAN function with correct return type.
 
     Based on Snowflake documentation:
-    - If the expr is FLOAT -> annotate as FLOAT
+    - If the expr is FLOAT/DOUBLE -> annotate as DOUBLE (FLOAT is a synonym for DOUBLE)
     - If the expr is NUMBER(p, s) -> annotate as NUMBER(min(p+3, 38), min(s+3, 37))
     """
     # First annotate the argument to get its type
@@ -119,9 +119,9 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     # Get the input type
     input_type = expression.this.type
 
-    if input_type.is_type(exp.DataType.Type.FLOAT):
-        # If input is FLOAT, return FLOAT
-        self._set_type(expression, exp.DataType.Type.FLOAT)
+    if input_type.is_type(exp.DataType.Type.DOUBLE, exp.DataType.Type.FLOAT):
+        # If input is FLOAT/DOUBLE, return DOUBLE (FLOAT is normalized to DOUBLE in Snowflake)
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
     else:
         # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
         exprs = input_type.expressions

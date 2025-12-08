@@ -1600,13 +1600,6 @@ class DuckDB(Dialect):
             decimals = expression.args.get("decimals")
             truncate = expression.args.get("truncate")
 
-            if isinstance(this, exp.Kwarg):
-                this = this.expression
-            if isinstance(decimals, exp.Kwarg):
-                decimals = decimals.expression
-            if isinstance(truncate, exp.Kwarg):
-                truncate = truncate.expression
-
             # DuckDB requires the scale (decimals) argument to be an INT
             # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
             if decimals is not None and expression.args.get("casts_non_integer_decimals"):

@@ -541,7 +541,31 @@ def _build_timestamp_from_parts(args: t.List) -> exp.Func:
 
 
 def _build_round(args: t.List) -> exp.Round:
-    expression = exp.Round.from_arg_list(args)
+    """
+    Build Round expression, unwrapping Snowflake's named parameters.
+
+    Maps EXPR => this, SCALE => decimals, ROUNDING_MODE => truncate.
+
+    Note: Snowflake does not support mixing named and positional arguments.
+    Arguments are either all named or all positional.
+    """
+    kwarg_map = {"EXPR": "this", "SCALE": "decimals", "ROUNDING_MODE": "truncate"}
+    round_args = {}
+    positional_keys = ["this", "decimals", "truncate"]
+    positional_idx = 0
+
+    for arg in args:
+        if isinstance(arg, exp.Kwarg):
+            key = arg.this.name.upper()
+            round_key = kwarg_map.get(key)
+            if round_key:
+                round_args[round_key] = arg.expression
+        else:
+            if positional_idx < len(positional_keys):
+                round_args[positional_keys[positional_idx]] = arg
+                positional_idx += 1
+
+    expression = exp.Round(**round_args)
     expression.set("casts_non_integer_decimals", True)
     return expression
 

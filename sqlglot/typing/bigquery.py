@@ -257,6 +257,7 @@ EXPRESSION_METADATA = {
             exp.JSONType,
             exp.LaxString,
             exp.LowerHex,
+            exp.MD5,
             exp.NetHost,
             exp.Normalize,
             exp.SafeConvertBytesToString,

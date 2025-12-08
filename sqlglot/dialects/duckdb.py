@@ -1,3 +1,5 @@
+# TODO: this comment is triggering a change to a supported dialect
+# it needs to be removed prior to merge
 from __future__ import annotations
 
 from decimal import Decimal

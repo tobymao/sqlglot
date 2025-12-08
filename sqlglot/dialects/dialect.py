@@ -703,6 +703,13 @@ class Dialect(metaclass=_Dialect):
     so we map the ExplodingGenerateSeries expression to "generate_series" string.
     """
 
+    DEFAULT_TYPE_OF_NULL = exp.DataType.Type.UNKNOWN
+    """
+    The default type of NULL value, it is mostly used to aid type coercion, e.g. in query set operations.
+
+    For example, in Bigquery the default type of a NULL value is INT64.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

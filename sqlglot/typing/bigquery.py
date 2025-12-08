@@ -160,7 +160,6 @@ EXPRESSION_METADATA = {
             exp.LaxInt64,
             exp.Length,
             exp.Ntile,
-            exp.Null,
             exp.Rank,
             exp.RangeBucket,
             exp.RegexpInstr,

@@ -371,6 +371,7 @@ class BigQuery(Dialect):
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = True
     QUERY_RESULTS_ARE_STRUCTS = True
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
+    DEFAULT_TYPE_OF_NULL = exp.DataType.Type.BIGINT
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'

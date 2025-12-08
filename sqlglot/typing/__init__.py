@@ -211,6 +211,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.ArrayReverse,
             exp.ArraySlice,
             exp.Filter,
+            exp.HavingMax,
             exp.LastValue,
             exp.Limit,
             exp.Order,

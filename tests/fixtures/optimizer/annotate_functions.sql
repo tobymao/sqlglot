@@ -1684,6 +1684,10 @@ TIME;
 IFNULL(TIMESTAMP '2010-01-01 00:00:00', '2020-02-02 00:00:00');
 TIMESTAMP;
 
+# dialect: bigquery
+ANY_VALUE(c2::STRING HAVING MIN c1::INT64);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

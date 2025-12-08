@@ -1536,6 +1536,7 @@ class Snowflake(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BIGDECIMAL: "DOUBLE",
+            exp.DataType.Type.FLOAT: "DOUBLE",
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
             exp.DataType.Type.TEXT: "VARCHAR",
@@ -1573,6 +1574,15 @@ class Snowflake(Dialect):
             return super().values_sql(expression, values_as_table=values_as_table)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
+            # Check if this is a FLOAT type nested inside a VECTOR type
+            # VECTOR only accepts FLOAT (not DOUBLE), INT, and STRING as element types
+            # https://docs.snowflake.com/en/sql-reference/data-types-vector
+            if expression.is_type(exp.DataType.Type.FLOAT):
+                parent = expression.parent
+                if isinstance(parent, exp.DataType) and parent.is_type(exp.DataType.Type.VECTOR):
+                    # Preserve FLOAT for VECTOR types instead of mapping to synonym DOUBLE
+                    return "FLOAT"
+
             expressions = expression.expressions
             if expressions and expression.is_type(*exp.DataType.STRUCT_TYPES):
                 for field_type in expressions:

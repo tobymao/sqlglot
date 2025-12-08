@@ -226,6 +226,8 @@ class TestSnowflake(Validator):
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
+        self.validate_identity("SELECT CAST(x AS VECTOR(INT, 3))")
+        self.validate_identity("SELECT CAST(x AS FLOAT)", "SELECT CAST(x AS DOUBLE)")
         self.validate_identity("SELECT VECTOR_COSINE_SIMILARITY(a, b)")
         self.validate_identity("SELECT VECTOR_INNER_PRODUCT(a, b)")
         self.validate_identity("SELECT VECTOR_L1_DISTANCE(a, b)")
@@ -324,7 +326,7 @@ class TestSnowflake(Validator):
         self.validate_identity("$x")  # parameter
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
-        self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
+        self.validate_identity("CREATE TABLE foo (bar DOUBLE AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_NAME()")

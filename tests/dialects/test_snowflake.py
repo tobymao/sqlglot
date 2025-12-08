@@ -719,6 +719,27 @@ class TestSnowflake(Validator):
                 "redshift": "SELECT GETBIT(11, 3)",
             },
         )
+        self.validate_all(
+            "SELECT TO_BINARY('48454C50', 'HEX')",
+            write={
+                "snowflake": "SELECT TO_BINARY('48454C50', 'HEX')",
+                "duckdb": "SELECT UNHEX('48454C50')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_BINARY('TEST', 'UTF-8')",
+            write={
+                "snowflake": "SELECT TO_BINARY('TEST', 'UTF-8')",
+                "duckdb": "SELECT ENCODE('TEST')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_BINARY('SEVMUA==', 'BASE64')",
+            write={
+                "snowflake": "SELECT TO_BINARY('SEVMUA==', 'BASE64')",
+                "duckdb": "SELECT FROM_BASE64('SEVMUA==')",
+            },
+        )
         self.validate_identity(
             "SELECT TIMESTAMPNTZFROMPARTS(2013, 4, 5, 12, 00, 00)",
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",

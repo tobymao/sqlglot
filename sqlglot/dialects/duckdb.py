@@ -85,6 +85,45 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     return result
 
 
+def _to_binary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
+    """
+    TO_BINARY(value, format) transpilation if the return_type is BINARY:
+    - 'HEX': TO_BINARY('48454C50', 'HEX') → UNHEX('48454C50')
+    - 'UTF-8': TO_BINARY('TEST', 'UTF-8') → ENCODE('TEST')
+    - 'BASE64': TO_BINARY('SEVMUA==', 'BASE64') → FROM_BASE64('SEVMUA==')
+
+    format can be 'HEX', 'UTF-8' or 'BASE64'
+    return_type can be either VARCHAR or BINARY
+    """
+    value = expression.this
+    format_arg = expression.args.get("format")
+    return_type_arg = expression.args.get("return_type")
+
+    return_type = "VARCHAR"
+    if return_type_arg:
+        return_type = return_type_arg.to_py().upper()
+
+    format = "UTF-8"
+    if format_arg:
+        format = format_arg.to_py().upper()
+
+    if format == "HEX":
+        if return_type == "BINARY":
+            return self.func("UNHEX", value)
+    elif format == "BASE64":
+        if return_type == "BINARY":
+            return self.func("FROM_BASE64", value)
+    else:  # UTF-8
+        if return_type == "BINARY":
+            return self.func("ENCODE", value)
+        else:
+            # DuckDB's TO_BINARY takes a UTF-8 string and returns a binary string representation (like '0101010...') of type VARCHAR
+            return self.func("TO_BINARY", value)
+
+    # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
+    return self.func("TO_BINARY", value)
+
+
 # BigQuery -> DuckDB conversion for the TIME_DIFF function
 def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     this = exp.cast(expression.this, exp.DataType.Type.TIME)
@@ -586,6 +625,11 @@ class DuckDB(Dialect):
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TIME_BUCKET": exp.DateBin.from_arg_list,
+            "TO_BINARY": lambda args: exp.ToBinary(
+                this=seq_get(args, 0),
+                format=exp.Literal.string("UTF-8"),
+                return_type=exp.Literal.string("VARCHAR"),
+            ),
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
@@ -931,6 +975,7 @@ class DuckDB(Dialect):
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,
+            exp.ToBinary: _to_binary_sql,
             exp.TimestampAdd: date_delta_to_binary_interval_op(),
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this

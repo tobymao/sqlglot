@@ -427,11 +427,9 @@ class TestDatabricks(Validator):
         self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")
 
     def test_overlay(self):
-        self.validate_all(
+        self.validate_identity(
             "SELECT OVERLAY('Spark SQL', 'ANSI ', 7, 0)",
-            write={
-                "databricks": "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
-            },
+            "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
         )
         self.validate_identity(
             "SELECT OVERLAY('Spark SQL' PLACING 'CORE' FROM 7)",

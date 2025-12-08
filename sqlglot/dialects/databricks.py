@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from collections import defaultdict
+import typing as t
 
 from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
@@ -76,23 +77,17 @@ class Databricks(Spark):
         }
 
         def _parse_overlay(self) -> exp.Overlay:
-            this = self._parse_bitwise()
-
-            if self._match(TokenType.COMMA):
-                return self.expression(
-                    exp.Overlay,
-                    this=this,
-                    expression=self._parse_bitwise(),
-                    from_=self._match(TokenType.COMMA) and self._parse_bitwise(),
-                    for_=self._match(TokenType.COMMA) and self._parse_bitwise(),
-                )
+            def _parse_overlay_arg(text: str) -> t.Optional[exp.Expression]:
+                return (
+                    self._match(TokenType.COMMA) or self._match_text_seq(text)
+                ) and self._parse_bitwise()
 
             return self.expression(
                 exp.Overlay,
-                this=this,
-                expression=self._match_text_seq("PLACING") and self._parse_bitwise(),
-                from_=self._match_text_seq("FROM") and self._parse_bitwise(),
-                for_=self._match_text_seq("FOR") and self._parse_bitwise(),
+                this=self._parse_bitwise(),
+                expression=_parse_overlay_arg("PLACING"),
+                from_=_parse_overlay_arg("FROM"),
+                for_=_parse_overlay_arg("FOR"),
             )
 
     class Generator(Spark.Generator):

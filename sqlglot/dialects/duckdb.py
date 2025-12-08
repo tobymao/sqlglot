@@ -1605,6 +1605,15 @@ class DuckDB(Dialect):
             decimals = expression.args.get("decimals")
             truncate = expression.args.get("truncate")
 
+            # DuckDB requires the scale (decimals) argument to be an INT
+            # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
+            if decimals is not None and expression.args.get("casts_non_integer_decimals"):
+                if isinstance(decimals, exp.Literal):
+                    if not decimals.is_int:
+                        decimals = exp.cast(decimals, exp.DataType.Type.INT)
+                elif not decimals.is_type(*exp.DataType.INTEGER_TYPES):
+                    decimals = exp.cast(decimals, exp.DataType.Type.INT)
+
             func = "ROUND"
             if truncate:
                 # BigQuery uses ROUND_HALF_EVEN; Snowflake uses HALF_TO_EVEN

@@ -75,12 +75,11 @@ def _build_nullifzero(args: t.List) -> exp.If:
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
 def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
-        aliases: dict[str, bool] = {}
-        for sel in expression.selects:
-            alias = sel.args.get("alias")
-
-            if isinstance(sel, exp.Alias) and alias:
-                aliases[alias.name] = bool(alias.args.get("quoted"))
+        aliases: dict[str, bool] = {
+            alias.name: bool(alias.args.get("quoted"))
+            for sel in expression.selects
+            if isinstance(sel, exp.Alias) and (alias := sel.args.get("alias"))
+        }
 
         table = expression.find(exp.Table)
         table_ident = table.this if table else None
@@ -92,18 +91,33 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
         ):
             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
-        def prefix_local(node):
+        def prefix_local(node, visible_aliases: dict[str, bool]) -> exp.Expression:
             if isinstance(node, exp.Column) and not node.table:
-                if node.name in aliases:
+                if node.name in visible_aliases:
                     return exp.Column(
-                        this=exp.to_identifier(node.name, quoted=aliases[node.name]),
+                        this=exp.to_identifier(node.name, quoted=visible_aliases[node.name]),
                         table=exp.to_identifier("LOCAL", quoted=False),
                     )
             return node
 
         for key in ("where", "group", "having"):
             if arg := expression.args.get(key):
-                expression.set(key, arg.transform(prefix_local))
+                expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
+
+        seen_aliases: dict[str, bool] = {}
+        new_selects: list[exp.Expression] = []
+        for sel in expression.selects:
+            if isinstance(sel, exp.Alias):
+                inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
+                sel.set("this", inner)
+
+                alias_node = sel.args.get("alias")
+
+                seen_aliases[sel.alias] = bool(alias_node and getattr(alias_node, "quoted", False))
+                new_selects.append(sel)
+            else:
+                new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
+        expression.set("expressions", new_selects)
 
     return expression
 

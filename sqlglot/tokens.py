@@ -276,6 +276,7 @@ class TokenType(AutoName):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
+    CURRENT_ROLE = auto()
     CURRENT_CATALOG = auto()
     DECLARE = auto()
     DEFAULT = auto()

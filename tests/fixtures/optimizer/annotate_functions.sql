@@ -1589,6 +1589,46 @@ STRING_AGG(tbl.bin_col);
 BINARY;
 
 # dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ',' ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.bin_col ORDER BY tbl.bin_col);
+BINARY;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ',' LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ',' ORDER BY tbl.str_col LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ',' ORDER BY tbl.str_col LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.bin_col ORDER BY tbl.bin_col LIMIT 10);
+BINARY;
+
+# dialect: bigquery
+ARRAY_AGG(tbl.int_col LIMIT 10);
+ARRAY<INT>;
+
+# dialect: bigquery
+ARRAY_AGG(DISTINCT tbl.str_col ORDER BY tbl.str_col LIMIT 10);
+ARRAY<STRING>;
+
+# dialect: bigquery
 DATETIME_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
 DATETIME;
 
@@ -1644,6 +1684,14 @@ TIME;
 IFNULL(TIMESTAMP '2010-01-01 00:00:00', '2020-02-02 00:00:00');
 TIMESTAMP;
 
+# dialect: bigquery
+ANY_VALUE(c2::STRING HAVING MIN c1::INT64);
+STRING;
+
+# dialect: bigquery
+ANY_VALUE(c2::STRING HAVING MAX c1::INT64);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -1663,6 +1711,14 @@ DATE;
 # dialect: snowflake
 ADD_MONTHS(tbl.timestamp_col, -1);
 TIMESTAMP;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT();
+ARRAY;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT(1, null, 2);
+ARRAY;
 
 # dialect: snowflake
 ASIN(tbl.double_col);
@@ -2234,6 +2290,10 @@ VARCHAR;
 
 # dialect: snowflake
 CURRENT_REGION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ROLE();
 VARCHAR;
 
 # dialect: snowflake

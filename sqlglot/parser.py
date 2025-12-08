@@ -291,6 +291,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
         TokenType.LOCALTIME: exp.Localtime,
         TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+        TokenType.CURRENT_ROLE: exp.CurrentRole,
     }
 
     STRUCT_TYPE_TOKENS = {

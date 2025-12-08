@@ -79,6 +79,7 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_SCHEMA")
         self.validate_identity("SELECT CURRENT_USER")
+        self.validate_identity("SELECT CURRENT_ROLE")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
         self.validate_identity("SELECT INTERVAL '4.1 DAY'")

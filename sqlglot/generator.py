@@ -3841,6 +3841,10 @@ class Generator(metaclass=_Generator):
             for expr in exprs[1:]:
                 like_expr = connective(like_expr, exp_class(this=this, expression=expr))
 
+            parent = expression.parent
+            if not isinstance(parent, type(like_expr)) and isinstance(parent, exp.Condition):
+                like_expr = exp.paren(like_expr, copy=False)
+
             return self.sql(like_expr)
 
         return self.binary(expression, op)

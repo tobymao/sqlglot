@@ -1253,6 +1253,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("SELECT GREATEST(1.0, 2.5, NULL, 3.7)")
         self.validate_identity("FROM t1, t2 SELECT *", "SELECT * FROM t1, t2")
+        self.validate_identity("ROUND(2.256, 1)")
 
         # TODO: This is incorrect AST, DATE_PART creates a STRUCT of values but it's stored in 'year' arg
         self.validate_identity("SELECT MAKE_DATE(DATE_PART(['year', 'month', 'day'], TODAY()))")

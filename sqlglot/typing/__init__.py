@@ -47,10 +47,13 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     **{
         expr_type: {"returns": exp.DataType.Type.BOOLEAN}
         for expr_type in {
+            exp.All,
+            exp.Any,
             exp.Between,
             exp.Boolean,
             exp.Contains,
             exp.EndsWith,
+            exp.Exists,
             exp.In,
             exp.LogicalAnd,
             exp.LogicalOr,

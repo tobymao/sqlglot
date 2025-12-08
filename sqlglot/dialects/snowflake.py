@@ -1539,7 +1539,6 @@ class Snowflake(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BIGDECIMAL: "DOUBLE",
-            exp.DataType.Type.FLOAT: "DOUBLE",
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
             exp.DataType.Type.TEXT: "VARCHAR",

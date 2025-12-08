@@ -12,9 +12,11 @@ class TestExasol(Validator):
         )
 
     def test_qualify_unscoped_star(self):
-        self.validate_identity(
-            "SELECT *, 1 FROM TEST",
+        self.validate_all(
             "SELECT TEST.*, 1 FROM TEST",
+            read={
+                "": "SELECT *, 1 FROM TEST",
+            },
         )
         self.validate_identity(
             "SELECT t.*, 1 FROM t",
@@ -28,17 +30,23 @@ class TestExasol(Validator):
         self.validate_identity(
             "WITH t AS (SELECT 1 AS x) SELECT t.*, 3 FROM t",
         )
-        self.validate_identity(
-            "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT *, 3 FROM t1, t2",
+        self.validate_all(
             "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT t1.*, t2.*, 3 FROM t1, t2",
+            read={
+                "": "WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT *, 3 FROM t1, t2",
+            },
         )
-        self.validate_identity(
-            'SELECT *, 3 FROM "A" JOIN "B" ON 1=1',
+        self.validate_all(
             'SELECT A.*, B.*, 3 FROM "A" JOIN "B" ON 1 = 1',
+            read={
+                "": 'SELECT *, 3 FROM "A" JOIN "B" ON 1=1',
+            },
         )
-        self.validate_identity(
-            "SELECT *, 7 FROM (SELECT 1 AS x) s CROSS JOIN (SELECT 2 AS y) q",
+        self.validate_all(
             "SELECT s.*, q.*, 7 FROM (SELECT 1 AS x) AS s CROSS JOIN (SELECT 2 AS y) AS q",
+            read={
+                "": "SELECT *, 7 FROM (SELECT 1 AS x) s CROSS JOIN (SELECT 2 AS y) q",
+            },
         )
 
     def test_type_mappings(self):

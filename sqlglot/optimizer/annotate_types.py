@@ -263,7 +263,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type.
         for expr in self._null_expressions.values():
-            expr.type = self.dialect.DEFAULT_TYPE_OF_NULL
+            expr.type = self.dialect.DEFAULT_NULL_TYPE
 
         return expression
 

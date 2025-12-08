@@ -128,6 +128,11 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
 def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | exp.Anonymous]:
     def _builder(args: t.List) -> B | exp.Anonymous:
         if len(args) == 3:
+            # Special handling for bitwise operations with padside argument
+            if expr_type in (exp.BitwiseAnd, exp.BitwiseOr, exp.BitwiseXor):
+                return expr_type(
+                    this=seq_get(args, 0), expression=seq_get(args, 1), padside=seq_get(args, 2)
+                )
             return exp.Anonymous(this=name, expressions=args)
 
         return binary_from_function(expr_type)(args)
@@ -344,8 +349,8 @@ def _transform_generate_date_array(expression: exp.Expression) -> exp.Expression
     return expression
 
 
-def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Snowflake], E]:
+    def _builder(args: t.List, dialect: Snowflake) -> E:
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
@@ -353,6 +358,11 @@ def _build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
             occurrence=seq_get(args, 3),
             parameters=seq_get(args, 4),
             group=seq_get(args, 5) or exp.Literal.number(0),
+            **(
+                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                if expr_type is exp.RegexpExtract
+                else {}
+            ),
         )
 
     return _builder
@@ -743,6 +753,9 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": build_timetostr_or_tochar,
             "TO_JSON": exp.JSONFormat.from_arg_list,
+            "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
+            "VECTOR_INNER_PRODUCT": exp.DotProduct.from_arg_list,
+            "VECTOR_L1_DISTANCE": exp.ManhattanDistance.from_arg_list,
             "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
             "LIKE": build_like(exp.Like),
@@ -1359,10 +1372,12 @@ class Snowflake(Dialect):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: lambda self, e: self.func(
                 "DATE_PART", map_date_part(e.this, self.dialect), e.expression
             ),
+            exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
             exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
             exp.FileFormatProperty: lambda self,
             e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
@@ -1389,6 +1404,7 @@ class Snowflake(Dialect):
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.ManhattanDistance: rename_func("VECTOR_L1_DISTANCE"),
             exp.MakeInterval: no_make_interval_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,

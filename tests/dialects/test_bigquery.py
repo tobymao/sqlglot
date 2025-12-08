@@ -57,6 +57,7 @@ class TestBigQuery(Validator):
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("NET.HOST('http://example.com')").assert_is(exp.NetHost)
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")
@@ -2820,7 +2821,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(SUBSTRING(abc, 2), 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT REGEXP_EXTRACT(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1) FROM "table"''',
             },
         )
 
@@ -2838,7 +2839,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2, 3) FROM table",
-                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(SUBSTRING(abc, 2), 'pattern(group)', 1), 3) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1), 3) FROM "table"''',
             },
         )
 

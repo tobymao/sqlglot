@@ -487,6 +487,28 @@ class TestExasol(Validator):
                     },
                 )
 
+                self.validate_all(
+                    f"SELECT ADD_{unit}S('2000-02-28', -'1')",
+                    read={
+                        "sqlite": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                        "bigquery": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                        "presto": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                        "redshift": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                        "snowflake": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                        "tsql": f"SELECT DATE_SUB('2000-02-28', INTERVAL 1 {unit})",
+                    },
+                )
+
+                self.validate_all(
+                    "SELECT CAST(ADD_DAYS(ADD_MONTHS(DATE_TRUNC('MONTH', DATE '2008-11-25'), 1), -1) AS DATE)",
+                    read={
+                        "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+                        "databricks": "SELECT LAST_DAY('2008-11-25')",
+                        "spark": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                        "presto": "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
+                    },
+                )
+
             with self.subTest(f"Testing {unit}S_BETWEEN"):
                 self.validate_all(
                     f"SELECT {unit}S_BETWEEN(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP)",
@@ -660,7 +682,9 @@ class TestExasol(Validator):
         self.validate_identity(
             'SELECT YEAR(a_date) AS "a_year" FROM MY_SUMMARY_TABLE GROUP BY LOCAL."a_year"',
         )
-        self.validate_identity('SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year')
+        self.validate_identity(
+            'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
+        )
 
         test_cases = [
             (
@@ -682,6 +706,16 @@ class TestExasol(Validator):
                 "Multiple aliases",
                 "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE LOCAL.a_year > 2020 AND LOCAL.a_month < 6",
                 "SELECT YEAR(a_date) AS a_year, MONTH(a_date) AS a_month FROM my_table WHERE a_year > 2020 AND a_month < 6",
+            ),
+            (
+                "Select list aliases",
+                "SELECT YR AS THE_YEAR, ID AS YR, LOCAL.THE_YEAR + 1 AS NEXT_YEAR FROM my_table",
+                "SELECT YR AS THE_YEAR, ID AS YR, THE_YEAR + 1 AS NEXT_YEAR FROM my_table",
+            ),
+            (
+                "Select list aliases without Local keyword",
+                "SELECT YEAR(CURRENT_DATE) AS current_year, LOCAL.current_year + 1 AS next_year",
+                "SELECT YEAR(CURRENT_DATE) AS current_year, current_year + 1 AS next_year",
             ),
         ]
         for title, exasol_sql, dbx_sql in test_cases:

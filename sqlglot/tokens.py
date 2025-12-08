@@ -41,6 +41,7 @@ class TokenType(AutoName):
     DCOLON = auto()
     DCOLONDOLLAR = auto()
     DCOLONPERCENT = auto()
+    DCOLONQMARK = auto()
     DQMARK = auto()
     SEMICOLON = auto()
     STAR = auto()

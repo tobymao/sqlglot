@@ -85,6 +85,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")
+        self.validate_identity("SELECT TO_BOOLEAN('true')")
+        self.validate_identity("SELECT TO_BOOLEAN(1)")
         self.validate_identity("SELECT IS_NULL_VALUE(GET_PATH(payload, 'field'))")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
         self.validate_identity("SELECT HEX_DECODE_STRING('48656C6C6F')")
@@ -138,6 +140,12 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_VALY(y, x)")
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
+        self.validate_identity("SELECT REGR_COUNT(y, x)")
+        self.validate_identity("SELECT REGR_INTERCEPT(y, x)")
+        self.validate_identity("SELECT REGR_R2(y, x)")
+        self.validate_identity("SELECT REGR_SXX(y, x)")
+        self.validate_identity("SELECT REGR_SXY(y, x)")
+        self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
             "SELECT SKEW(a)",
@@ -177,6 +185,10 @@ class TestSnowflake(Validator):
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
         self.validate_identity("SELECT CAST([1, 2, 3] AS VECTOR(FLOAT, 3))")
+        self.validate_identity("SELECT VECTOR_COSINE_SIMILARITY(a, b)")
+        self.validate_identity("SELECT VECTOR_INNER_PRODUCT(a, b)")
+        self.validate_identity("SELECT VECTOR_L1_DISTANCE(a, b)")
+        self.validate_identity("SELECT VECTOR_L2_DISTANCE(a, b)")
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
@@ -232,6 +244,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
         self.validate_identity("SELECT CURRENT_REGION()")
         self.validate_identity("SELECT CURRENT_ROLE()")
+        self.validate_identity("SELECT CURRENT_ROLE_TYPE()")
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")
@@ -1425,11 +1438,22 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT BITNOT(a)")
         self.validate_identity("SELECT BIT_NOT(a)", "SELECT BITNOT(a)")
+        self.validate_all(
+            "SELECT BITNOT(-1)",
+            write={
+                "duckdb": "SELECT ~(-1)",
+                "snowflake": "SELECT BITNOT(-1)",
+            },
+        )
         self.validate_identity("SELECT BITAND(a, b)")
+        self.validate_identity("SELECT BITAND(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_AND(a, b)", "SELECT BITAND(a, b)")
+        self.validate_identity("SELECT BIT_AND(a, b, 'LEFT')", "SELECT BITAND(a, b, 'LEFT')")
         self.validate_identity("SELECT BITOR(a, b)")
-        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
         self.validate_identity("SELECT BITOR(a, b, 'LEFT')")
+        self.validate_identity("SELECT BIT_OR(a, b)", "SELECT BITOR(a, b)")
+        self.validate_identity("SELECT BIT_OR(a, b, 'RIGHT')", "SELECT BITOR(a, b, 'RIGHT')")
+        self.validate_identity("SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BITXOR(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
@@ -1568,7 +1592,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
             },
         )
-        self.validate_identity("VECTOR_L2_DISTANCE(x, y)")
 
         # EXTRACT - converts to DATE_PART in Snowflake
         self.validate_identity(
@@ -3514,6 +3537,21 @@ SINGLE = TRUE""",
         for node in (max_by_3, min_by_3):
             with self.subTest(f"Checking  count arg of {node.sql('snowflake')}"):
                 self.assertIsNotNone(node.args.get("count"))
+
+        self.validate_all(
+            "SELECT MAX_BY(a, b) FROM t",
+            write={
+                "snowflake": "SELECT MAX_BY(a, b) FROM t",
+                "duckdb": "SELECT ARG_MAX(a, b) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN_BY(a, b) FROM t",
+            write={
+                "snowflake": "SELECT MIN_BY(a, b) FROM t",
+                "duckdb": "SELECT ARG_MIN(a, b) FROM t",
+            },
+        )
 
     def test_create_view_copy_grants(self):
         # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax

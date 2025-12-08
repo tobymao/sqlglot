@@ -5137,7 +5137,7 @@ class Connector(Binary):
 
 
 class BitwiseAnd(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseLeftShift(Binary):
@@ -5145,7 +5145,7 @@ class BitwiseLeftShift(Binary):
 
 
 class BitwiseOr(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseRightShift(Binary):
@@ -5153,7 +5153,7 @@ class BitwiseRightShift(Binary):
 
 
 class BitwiseXor(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class Div(Binary):
@@ -5633,7 +5633,15 @@ class CosineDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class DotProduct(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class EuclideanDistance(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class ManhattanDistance(Func):
     arg_types = {"this": True, "expression": True}
 
 
@@ -5872,6 +5880,10 @@ class ToArray(Func):
     pass
 
 
+class ToBoolean(Func):
+    pass
+
+
 # https://materialize.com/docs/sql/types/list/
 class List(Func):
     arg_types = {"expressions": False}
@@ -6018,7 +6030,7 @@ class ArrayConcatAgg(AggFunc):
 
 
 class ArrayConstructCompact(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 
@@ -6349,6 +6361,10 @@ class CurrentRegion(Func):
 
 
 class CurrentRole(Func):
+    arg_types = {} 
+
+
+class CurrentRoleType(Func):
     arg_types = {}
 
 
@@ -6696,6 +6712,10 @@ class ToBase64(Func):
     pass
 
 
+class ToBinary(Func):
+    arg_types = {"this": True, "format": False}
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary
 class Base64DecodeBinary(Func):
     arg_types = {"this": True, "alphabet": False}
@@ -7007,7 +7027,13 @@ class JSONArrayAgg(Func):
 
 
 class JSONExists(Func):
-    arg_types = {"this": True, "path": True, "passing": False, "on_condition": False}
+    arg_types = {
+        "this": True,
+        "path": True,
+        "passing": False,
+        "on_condition": False,
+        "from_dcolonqmark": False,
+    }
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
@@ -7423,6 +7449,11 @@ class Normal(Func):
     arg_types = {"this": True, "stddev": True, "gen": True}
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
+class NetHost(Func):
+    _sql_names = ["NET.HOST"]
+
+
 class Overlay(Func):
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 
@@ -7570,6 +7601,7 @@ class RegexpExtract(Func):
         "occurrence": False,
         "parameters": False,
         "group": False,
+        "null_if_pos_overflow": False,  # for transpilation target behavior
     }
 
 
@@ -7635,23 +7667,47 @@ class RegexpCount(Func):
     }
 
 
-class RegrValx(Func):
+class RegrValx(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrValy(Func):
+class RegrValy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgy(Func):
+class RegrAvgy(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgx(Func):
+class RegrAvgx(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSlope(Func):
+class RegrCount(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrIntercept(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrR2(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxx(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSxy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSyy(AggFunc):
+    arg_types = {"this": True, "expression": True}
+
+
+class RegrSlope(AggFunc):
     arg_types = {"this": True, "expression": True}
 
 

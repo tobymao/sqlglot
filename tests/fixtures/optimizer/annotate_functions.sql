@@ -853,6 +853,10 @@ MD5('foo');
 BINARY;
 
 # dialect: bigquery
+TO_HEX(MD5('foo'));
+STRING;
+
+# dialect: bigquery
 MAX_BY(tbl.str_col, tbl.bigint_col);
 STRING;
 

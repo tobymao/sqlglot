@@ -705,7 +705,7 @@ class Dialect(metaclass=_Dialect):
 
     DEFAULT_NULL_TYPE = exp.DataType.Type.UNKNOWN
     """
-    The default type of NULL, it is mostly used to aid type coercion, e.g. in query set operations.
+    The default type of NULL for producing the correct projection type.
 
     For example, in BigQuery the default type of the NULL value is INT64.
     """

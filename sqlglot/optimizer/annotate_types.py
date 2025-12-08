@@ -261,7 +261,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # This takes care of non-traversable expressions
         self._annotate_expression(expression)
 
-        # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type.
+        # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
+        # it is mostly used to aid type coercion, e.g. in query set operations.
         for expr in self._null_expressions.values():
             expr.type = self.dialect.DEFAULT_NULL_TYPE
 

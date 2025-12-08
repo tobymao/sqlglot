@@ -425,3 +425,18 @@ class TestDatabricks(Validator):
 
     def test_qdcolon(self):
         self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")
+
+    def test_overlay(self):
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL', 'ANSI ', 7, 0)",
+            "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL' PLACING 'CORE' FROM 7)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY(ENCODE('Spark SQL', 'utf-8') PLACING ENCODE('_', 'utf-8') FROM 6)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
+        )

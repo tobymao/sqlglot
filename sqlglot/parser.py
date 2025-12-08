@@ -291,6 +291,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
         TokenType.LOCALTIME: exp.Localtime,
         TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+        TokenType.CURRENT_ROLE: exp.CurrentRole,
     }
 
     STRUCT_TYPE_TOKENS = {
@@ -8749,12 +8750,17 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_overlay(self) -> exp.Overlay:
+        def _parse_overlay_arg(text: str) -> t.Optional[exp.Expression]:
+            return (
+                self._match(TokenType.COMMA) or self._match_text_seq(text)
+            ) and self._parse_bitwise()
+
         return self.expression(
             exp.Overlay,
             this=self._parse_bitwise(),
-            expression=self._match_text_seq("PLACING") and self._parse_bitwise(),
-            from_=self._match_text_seq("FROM") and self._parse_bitwise(),
-            for_=self._match_text_seq("FOR") and self._parse_bitwise(),
+            expression=_parse_overlay_arg("PLACING"),
+            from_=_parse_overlay_arg("FROM"),
+            for_=_parse_overlay_arg("FOR"),
         )
 
     def _parse_format_name(self) -> exp.Property:

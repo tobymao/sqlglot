@@ -703,6 +703,13 @@ class Dialect(metaclass=_Dialect):
     so we map the ExplodingGenerateSeries expression to "generate_series" string.
     """
 
+    DEFAULT_NULL_TYPE = exp.DataType.Type.UNKNOWN
+    """
+    The default type of NULL for producing the correct projection type.
+
+    For example, in BigQuery the default type of the NULL value is INT64.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

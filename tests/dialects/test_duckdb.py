@@ -45,6 +45,12 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "(c LIKE 'a' OR c LIKE 'b') AND other_cond",
+            read={
+                "databricks": "c LIKE ANY ('a', 'b') AND other_cond",
+            },
+        )
+        self.validate_all(
             "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",
             write={
                 "duckdb": "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (PARTITION BY gb ORDER BY ob) FROM t",

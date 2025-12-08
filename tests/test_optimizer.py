@@ -1937,3 +1937,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotated = annotate_types(parse_one(binary_sql), schema={"t": {"a": "INT"}})
         self.assertEqual(annotated.sql(), binary_sql)
         self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.INT)
+
+    def test_null_coerce_annotation(self):
+        null_sql = "SELECT t.foo FROM (SELECT CAST(1 AS BIGDECIMAL) AS foo UNION ALL SELECT NULL AS foo) AS t"
+        annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
+
+        self.assertEqual(annotated.sql(), null_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)
+
+        null_sql = "SELECT t.foo FROM (SELECT NULL AS foo UNION ALL SELECT CAST(1 AS BIGDECIMAL) AS foo) AS t"
+        annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
+        self.assertEqual(annotated.sql(), null_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)

@@ -771,7 +771,7 @@ class Snowflake(Dialect):
             ),
             "TO_BINARY": lambda args: exp.ToBinary(
                 this=seq_get(args, 0),
-                format=seq_get(args, 1),
+                format=seq_get(args, 1) or exp.Literal.string("HEX"),
                 return_type=exp.Literal.string("BINARY"),
             ),
             "TO_CHAR": build_timetostr_or_tochar,

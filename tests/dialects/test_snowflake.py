@@ -288,6 +288,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
+        self.validate_identity("SELECT TO_BINARY('XA')", "SELECT TO_BINARY('XA', 'HEX')")
+        self.validate_identity("SELECT TO_BINARY('XA', 'HEX')")
         self.validate_identity(
             "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"
         )

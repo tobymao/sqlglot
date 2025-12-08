@@ -186,11 +186,18 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
     def is_bare_star(expr: exp.Expression) -> bool:
         return isinstance(expr, exp.Star) and expr.this is None
 
-    has_bare_star = any(is_bare_star(select) for select in select_expressions)
+    has_other_expression = False
+    bare_star_expr: exp.Expression | None = None
+    for expr in select_expressions:
+        has_bare_star = is_bare_star(expr)
+        if has_bare_star and bare_star_expr is None:
+            bare_star_expr = expr
+        elif not has_bare_star:
+            has_other_expression = True
+        if bare_star_expr and has_other_expression:
+            break
 
-    has_other_expression = any(not (is_bare_star(select)) for select in select_expressions)
-
-    if not (has_bare_star and has_other_expression):
+    if not (bare_star_expr and has_other_expression):
         return expression
 
     scope = build_scope(expression)
@@ -198,9 +205,18 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
     if not scope or not scope.selected_sources:
         return expression
 
+    table_identifiers: list[exp.Identifier] = []
+
+    for source_name, (source_expr, _) in scope.selected_sources.items():
+        ident = (
+            source_expr.this.copy()
+            if isinstance(source_expr, exp.Table) and isinstance(source_expr.this, exp.Identifier)
+            else exp.to_identifier(source_name)
+        )
+        table_identifiers.append(ident)
+
     qualified_star_columns = [
-        exp.Column(this=exp.Star(), table=exp.to_identifier(source_name))
-        for source_name in scope.selected_sources.keys()
+        exp.Column(this=bare_star_expr.copy(), table=ident) for ident in table_identifiers
     ]
 
     new_select_expressions: list[exp.Expression] = []

@@ -37,7 +37,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            'SELECT A.*, B.*, 3 FROM "A" JOIN "B" ON 1 = 1',
+            'SELECT "A".*, "B".*, 3 FROM "A" JOIN "B" ON 1 = 1',
             read={
                 "": 'SELECT *, 3 FROM "A" JOIN "B" ON 1=1',
             },

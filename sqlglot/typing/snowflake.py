@@ -150,7 +150,7 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
     - DECFLOAT -> DECFLOAT(38)
     - FLOAT/DOUBLE -> FLOAT
     - INT, NUMBER(p, 0) -> NUMBER(38, 6)
-    - NUMBER(p, s) -> NUMBER(38, max(12, min(37, s)))
+    - NUMBER(p, s) -> NUMBER(38, max(12, s))
     """
     # First annotate the argument to get its type
     expression = self._annotate_by_args(expression, "this")

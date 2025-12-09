@@ -394,6 +394,18 @@ def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql
     return result_sql
 
 
+def _cast_to_bit(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    # HexString literals need special handling to bypass wrapping
+    if arg and isinstance(arg, exp.HexString):
+        return exp.cast(exp.Unhex(this=exp.Literal.string(arg.this)), exp.DataType.Type.BIT)
+
+    # If we have type info and it's not numeric, cast to BIT
+    if arg and arg.type and not arg.is_type(*exp.DataType.NUMERIC_TYPES):
+        return exp.cast(arg, exp.DataType.Type.BIT)
+
+    return arg
+
+
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     # Transform ANY_VALUE(expr HAVING MAX/MIN having_expr) to ARG_MAX_NULL/ARG_MIN_NULL
     having = expression.this
@@ -935,7 +947,6 @@ class DuckDB(Dialect):
             ),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
-            exp.BitwiseXor: rename_func("XOR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -1531,6 +1542,30 @@ class DuckDB(Dialect):
             )
             return _cast_to_blob(self, expression, result_sql)
 
+        def bitwiseor_sql(self, expression: exp.BitwiseOr) -> str:
+            left = _cast_to_bit(expression.this)
+            right = _cast_to_bit(expression.expression)
+            result_sql = f"{self.sql(left)} | {self.sql(right)}"
+            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
+                return f"CAST({result_sql} AS BLOB)"
+            return result_sql
+
+        def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
+            left = _cast_to_bit(expression.this)
+            right = _cast_to_bit(expression.expression)
+            result_sql = f"{self.sql(left)} & {self.sql(right)}"
+            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
+                return f"CAST({result_sql} AS BLOB)"
+            return result_sql
+
+        def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
+            left = _cast_to_bit(expression.this)
+            right = _cast_to_bit(expression.expression)
+            result_sql = self.func("XOR", self.sql(left), self.sql(right))
+            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
+                return f"CAST({result_sql} AS BLOB)"
+            return result_sql
+
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this
             key = expression.args.get("key")
@@ -1838,10 +1873,15 @@ class DuckDB(Dialect):
             return _arrow_json_extract_sql(self, expression)
 
         def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
-            this = expression.this
+            arg = _cast_to_bit(expression.this)
 
             # Wrap in parentheses to prevent parsing issues such as "SELECT ~-1"
-            if isinstance(this, exp.Neg):
-                this = exp.Paren(this=this)
+            if isinstance(expression.this, exp.Neg):
+                arg = exp.Paren(this=arg)
 
-            return f"~{self.sql(this)}"
+            result_sql = f"~{self.sql(arg)}"
+            if isinstance(arg, exp.Cast) or (
+                isinstance(arg, exp.Paren) and isinstance(arg.this, exp.Cast)
+            ):
+                return f"CAST({result_sql} AS BLOB)"
+            return result_sql

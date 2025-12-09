@@ -2289,6 +2289,10 @@ CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00
 TIMESTAMPNTZ;
 
 # dialect: snowflake
+CURRENT_ACCOUNT();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

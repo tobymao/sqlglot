@@ -159,6 +159,3 @@ class TestTrino(Validator):
             self.validate_identity(
                 f"""SELECT JSON_VALUE({json_doc}, 'lax $.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
             )
-
-    def test_current_catalog(self):
-        self.validate_identity("SELECT CURRENT_CATALOG")

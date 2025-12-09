@@ -6713,7 +6713,7 @@ class ToBase64(Func):
 
 
 class ToBinary(Func):
-    arg_types = {"this": True, "format": False, "returns_varchar": False}
+    arg_types = {"this": True, "format": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary

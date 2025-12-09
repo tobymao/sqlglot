@@ -623,14 +623,16 @@ class TestDialect(Validator):
             "TO_BINARY('1C')",
             read={
                 "": "TO_BINARY('1C')",
+                "snowflake": "TO_BINARY('1C')",
                 "starrocks": "TO_BINARY('1C')",
+                "duckdb": "TO_BINARY('1C')",
                 "spark": "TO_BINARY('1C')",
                 "databricks": "TO_BINARY('1C')",
             },
             write={
                 "snowflake": "TO_BINARY('1C')",
                 "starrocks": "TO_BINARY('1C')",
-                "duckdb": "ENCODE('1C')",
+                "duckdb": "TO_BINARY('1C')",
                 "spark": "TO_BINARY('1C')",
                 "databricks": "TO_BINARY('1C')",
             },
@@ -645,7 +647,7 @@ class TestDialect(Validator):
                 "databricks": "TO_BINARY('1C', 'HEX')",
             },
             write={
-                "snowflake": "TO_BINARY('1C')",
+                "snowflake": "TO_BINARY('1C', 'HEX')",
                 "starrocks": "TO_BINARY('1C', 'HEX')",
                 "spark": "TO_BINARY('1C', 'HEX')",
                 "databricks": "TO_BINARY('1C', 'HEX')",

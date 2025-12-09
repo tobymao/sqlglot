@@ -288,7 +288,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
-        self.validate_identity("SELECT TO_BINARY('CA')")
+        self.validate_identity("SELECT TO_BINARY('C2')")
+        self.validate_identity("SELECT TO_BINARY('C2', 'HEX')")
+        self.validate_identity("SELECT TO_BINARY('café', 'UTF-8')")
         self.validate_identity(
             "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"
         )
@@ -718,27 +720,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT GETBIT(11, 3)",
                 "databricks": "SELECT GETBIT(11, 3)",
                 "redshift": "SELECT GETBIT(11, 3)",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_BINARY('48454C50', 'HEX')",
-            write={
-                "snowflake": "SELECT TO_BINARY('48454C50')",
-                "duckdb": "SELECT UNHEX('48454C50')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_BINARY('TEST', 'UTF-8')",
-            write={
-                "snowflake": "SELECT TO_BINARY('TEST', 'UTF-8')",
-                "duckdb": "SELECT ENCODE('TEST')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_BINARY('SEVMUA==', 'BASE64')",
-            write={
-                "snowflake": "SELECT TO_BINARY('SEVMUA==', 'BASE64')",
-                "duckdb": "SELECT FROM_BASE64('SEVMUA==')",
             },
         )
         self.validate_identity(

@@ -102,13 +102,13 @@ def _to_binary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
     if format_arg:
         format = format_arg.name.upper()
 
-    if not expression.args.get("returns_varchar"):
-        if format == "HEX":
-            return self.func("UNHEX", value)
+    if expression.is_type(exp.DataType.Type.BINARY):
+        if format == "UTF-8":
+            return self.func("ENCODE", value)
         elif format == "BASE64":
             return self.func("FROM_BASE64", value)
-        else:  # UTF-8
-            return self.func("ENCODE", value)
+        else:  # HEX
+            return self.func("UNHEX", value)
 
     # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
     return self.func("TO_BINARY", value)
@@ -615,11 +615,6 @@ class DuckDB(Dialect):
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TIME_BUCKET": exp.DateBin.from_arg_list,
-            "TO_BINARY": lambda args: exp.ToBinary(
-                this=seq_get(args, 0),
-                format=exp.Literal.string("UTF-8"),
-                returns_varchar=True,
-            ),
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),

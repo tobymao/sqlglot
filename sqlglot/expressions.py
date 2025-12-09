@@ -6357,7 +6357,7 @@ class CurrentUser(Func):
 
 
 class CurrentCatalog(Func):
-    arg_types = {"this": False}
+    arg_types = {}
 
 
 class CurrentRegion(Func):

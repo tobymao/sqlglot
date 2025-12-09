@@ -4765,3 +4765,38 @@ FROM subquery2""",
                     select = parse_one(sql, dialect=dialect)
                     select.selects[0].assert_is(exp.Column)
                     self.assertEqual(select.sql(dialect), sql)
+
+    def test_current_catalog(self):
+        sql = "SELECT CURRENT_CATALOG"
+
+        unsupported_dialects = [
+            "bigquery",
+            "mysql",
+            "oracle",
+            "clickhouse",
+            "snowflake",
+            "spark",
+            "databricks",
+        ]
+
+        for dialect in unsupported_dialects:
+            with self.subTest(f"Testing CURRENT_CATALOG as Column in {dialect}"):
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.Column)
+                self.assertEqual(select.sql(dialect), sql)
+
+        supported_dialects = [
+            "postgres",
+            "duckdb",
+            "trino",
+            "databricks",
+        ]
+
+        for dialect in supported_dialects:
+            with self.subTest(f"Testing CURRENT_CATALOG expression in {dialect}"):
+                if dialect == "databricks":
+                    sql = "SELECT CURRENT_CATALOG()"
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.CurrentCatalog)
+
+                self.assertEqual(select.sql(dialect), sql)

@@ -759,6 +759,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "CURRENT_USER": TokenType.CURRENT_USER,
+        "CURRENT_CATALOG": TokenType.CURRENT_CATALOG,
         "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,

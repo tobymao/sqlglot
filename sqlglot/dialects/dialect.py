@@ -296,6 +296,17 @@ class _Dialect(type):
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
             klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
+        if enum not in (
+            "",
+            "postgres",
+            "duckdb",
+            "presto",
+            "trino",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions.pop(TokenType.CURRENT_CATALOG, None)
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),

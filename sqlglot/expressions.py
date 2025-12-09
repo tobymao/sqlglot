@@ -1353,7 +1353,7 @@ class Query(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        scalar: bool = False,
+        scalar: t.Optional[bool] = None,
         **opts,
     ) -> Q:
         """
@@ -8526,7 +8526,7 @@ def _apply_cte_builder(
     append: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    scalar: bool = False,
+    scalar: t.Optional[bool] = None,
     **opts,
 ) -> E:
     alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
@@ -8542,7 +8542,7 @@ def _apply_cte_builder(
         append=append,
         copy=copy,
         into=With,
-        properties={"recursive": recursive or False},
+        properties={"recursive": recursive} if recursive else {},
     )
 
 

@@ -395,10 +395,7 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
-            exp.ApproxPercentileCombine,
-            exp.ApproxPercentileAccumulate,
-            exp.ApproxTopKAccumulate,
-            exp.ApproxTopKCombine,
+            exp.TryToFile,
             exp.XMLGet,
         }
     },
@@ -406,6 +403,8 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.TIME}
         for expr_type in {
             exp.TimeFromParts,
+            exp.TryToTime,
+            exp.TsOrDsToTime,
         }
     },
     **{

@@ -166,6 +166,30 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RANDSTR(123, 456)")
         self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")
+
+        # Test RANDSTR transpilation to DuckDB
+        self.validate_all(
+            "SELECT RANDSTR(10, 123)",
+            write={
+                "snowflake": "SELECT RANDSTR(10, 123)",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+            },
+        )
+        self.validate_all(
+            "SELECT RANDSTR(10, RANDOM(123))",
+            write={
+                "snowflake": "SELECT RANDSTR(10, RANDOM(123))",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+            },
+        )
+        self.validate_all(
+            "SELECT RANDSTR(10, RANDOM())",
+            write={
+                "snowflake": "SELECT RANDSTR(10, RANDOM())",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + RANDOM())) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+            },
+        )
+
         self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
         self.validate_identity("SELECT ZIPF(2, 100, 1234)")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")

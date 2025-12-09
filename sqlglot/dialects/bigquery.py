@@ -251,7 +251,7 @@ def build_date_diff(args: t.List) -> exp.Expression:
     )
 
     # Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST to facilitate transpilation
-    # This is done post exp.DateDiff construction since the TimeUnit mixin performs canonicalizations of its constructor too
+    # This is done post exp.DateDiff construction since the TimeUnit mixin performs canonicalizations in its constructor too
     unit = expr.args.get("unit")
 
     if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":

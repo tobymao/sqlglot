@@ -3908,11 +3908,11 @@ class Parser(metaclass=_Parser):
             )
 
         if method:
-            kwargs["method"] = method.text
+            kwargs["method"] = method.text.upper()
         if side:
-            kwargs["side"] = side.text
+            kwargs["side"] = side.text.upper()
         if kind:
-            kwargs["kind"] = kind.text
+            kwargs["kind"] = kind.text.upper()
         if hint:
             kwargs["hint"] = hint
 

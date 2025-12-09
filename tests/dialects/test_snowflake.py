@@ -292,6 +292,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CURRENT_SESSION()")
         self.validate_identity("SELECT CURRENT_STATEMENT()")
         self.validate_identity("SELECT CURRENT_VERSION()")
+        self.validate_identity("SELECT CURRENT_TRANSACTION()")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
         self.validate_identity("SELECT CURRENT_REGION()")
         self.validate_identity("SELECT CURRENT_ROLE()")

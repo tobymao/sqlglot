@@ -297,41 +297,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):
-                selects[name] = col_types = self._setop_column_types.setdefault(id(expression), {})
-
-                if not col_types:
-                    # Process a chain / sub-tree of set operations
-                    for set_op in expression.walk(
-                        prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
-                    ):
-                        if not isinstance(set_op, exp.SetOperation):
-                            continue
-
-                        if set_op.args.get("by_name"):
-                            r_type_by_select = {
-                                s.alias_or_name: s.type for s in set_op.right.selects
-                            }
-                            setop_cols = {
-                                s.alias_or_name: self._maybe_coerce(
-                                    t.cast(exp.DataType, s.type),
-                                    r_type_by_select.get(s.alias_or_name)
-                                    or exp.DataType.Type.UNKNOWN,
-                                )
-                                for s in set_op.left.selects
-                            }
-                        else:
-                            setop_cols = {
-                                ls.alias_or_name: self._maybe_coerce(
-                                    t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
-                                )
-                                for ls, rs in zip(set_op.left.selects, set_op.right.selects)
-                            }
-
-                        # Coerce intermediate results with the previously registered types, if they exist
-                        for col_name, col_type in setop_cols.items():
-                            col_types[col_name] = self._maybe_coerce(
-                                col_type, col_types.get(col_name, exp.DataType.Type.NULL)
-                            )
+                selects[name] = self._get_setop_column_types(expression)
 
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
@@ -478,6 +444,69 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             return type1_value
 
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
+
+    def _get_setop_column_types(
+        self, setop: exp.SetOperation
+    ) -> t.Dict[str, exp.DataType | exp.DataType.Type]:
+        """
+        Computes and returns the coerced column types for a SetOperation.
+
+        This handles UNION, INTERSECT, EXCEPT, etc., coercing types across
+        left and right operands for all projections/columns.
+
+        Args:
+            setop: The SetOperation expression to analyze
+
+        Returns:
+            Dictionary mapping column names to their coerced types
+        """
+        setop_id = id(setop)
+        if setop_id in self._setop_column_types:
+            return self._setop_column_types[setop_id]
+
+        col_types: t.Dict[str, exp.DataType | exp.DataType.Type] = {}
+
+        # Validate that left and right have same number of projections
+        if not (
+            isinstance(setop, exp.SetOperation)
+            and setop.left.selects
+            and setop.right.selects
+            and len(setop.left.selects) == len(setop.right.selects)
+        ):
+            return col_types
+
+        # Process a chain / sub-tree of set operations
+        for set_op in setop.walk(
+            prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
+        ):
+            if not isinstance(set_op, exp.SetOperation):
+                continue
+
+            if set_op.args.get("by_name"):
+                r_type_by_select = {s.alias_or_name: s.type for s in set_op.right.selects}
+                setop_cols = {
+                    s.alias_or_name: self._maybe_coerce(
+                        t.cast(exp.DataType, s.type),
+                        r_type_by_select.get(s.alias_or_name) or exp.DataType.Type.UNKNOWN,
+                    )
+                    for s in set_op.left.selects
+                }
+            else:
+                setop_cols = {
+                    ls.alias_or_name: self._maybe_coerce(
+                        t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                    )
+                    for ls, rs in zip(set_op.left.selects, set_op.right.selects)
+                }
+
+            # Coerce intermediate results with the previously registered types, if they exist
+            for col_name, col_type in setop_cols.items():
+                col_types[col_name] = self._maybe_coerce(
+                    col_type, col_types.get(col_name, exp.DataType.Type.NULL)
+                )
+
+        self._setop_column_types[setop_id] = col_types
+        return col_types
 
     def _annotate_binary(self, expression: B) -> B:
         left, right = expression.left, expression.right

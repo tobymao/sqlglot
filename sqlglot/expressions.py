@@ -6342,6 +6342,10 @@ class CurrentSchemas(Func):
     arg_types = {"this": False}
 
 
+class CurrentSecondaryRoles(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

@@ -6334,6 +6334,10 @@ class CurrentIpAddress(Func):
     arg_types = {}
 
 
+class CurrentDatabase(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

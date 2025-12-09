@@ -713,6 +713,10 @@ class TestDuckDB(Validator):
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
 
+        expr = self.parse_one("TO_BINARY('48454C50')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
+
         expr = self.parse_one("TO_BINARY('TEST', 'UTF-8')", dialect="snowflake")
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "ENCODE('TEST')")

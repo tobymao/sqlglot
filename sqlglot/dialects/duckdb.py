@@ -98,7 +98,7 @@ def _to_binary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
     value = expression.this
     format_arg = expression.args.get("format")
 
-    format = "UTF-8"
+    format = "HEX"
     if format_arg:
         format = format_arg.name.upper()
 

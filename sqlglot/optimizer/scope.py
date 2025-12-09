@@ -485,8 +485,9 @@ class Scope:
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""
-        columns = self.sources.pop(old_name or "", [])
-        self.sources[new_name] = columns
+        old_name = old_name or ""
+        if old_name in self.sources:
+            self.sources[new_name] = self.sources.pop(old_name)
 
     def add_source(self, name, source):
         """Add a source to this scope"""

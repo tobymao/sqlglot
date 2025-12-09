@@ -6338,6 +6338,10 @@ class CurrentDatabase(Func):
     arg_types = {}
 
 
+class CurrentSchemas(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

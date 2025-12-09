@@ -287,6 +287,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CURRENT_CLIENT()")
         self.validate_identity("SELECT CURRENT_IP_ADDRESS()")
         self.validate_identity("SELECT CURRENT_DATABASE()")
+        self.validate_identity("SELECT CURRENT_SCHEMAS()")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
         self.validate_identity("SELECT CURRENT_REGION()")
         self.validate_identity("SELECT CURRENT_ROLE()")

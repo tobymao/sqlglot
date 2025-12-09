@@ -265,6 +265,7 @@ EXPRESSION_METADATA = {
             exp.ToBinary,
             exp.TryBase64DecodeBinary,
             exp.TryHexDecodeBinary,
+            exp.TryToBinary,
             exp.Unhex,
         }
     },
@@ -280,6 +281,7 @@ EXPRESSION_METADATA = {
             exp.Search,
             exp.SearchIp,
             exp.ToBoolean,
+            exp.TryToBoolean,
         }
     },
     **{
@@ -287,6 +289,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.NextDay,
             exp.PreviousDay,
+            exp.TryToDate,
         }
     },
     **{
@@ -320,6 +323,7 @@ EXPRESSION_METADATA = {
             exp.MonthsBetween,
             exp.Normal,
             exp.Sinh,
+            exp.TryToDouble,
         }
     },
     **{
@@ -391,7 +395,10 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
-            exp.ToFile,
+            exp.ApproxPercentileCombine,
+            exp.ApproxPercentileAccumulate,
+            exp.ApproxTopKAccumulate,
+            exp.ApproxTopKCombine,
             exp.XMLGet,
         }
     },
@@ -399,7 +406,6 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.TIME}
         for expr_type in {
             exp.TimeFromParts,
-            exp.TsOrDsToTime,
         }
     },
     **{
@@ -462,13 +468,6 @@ EXPRESSION_METADATA = {
             exp.Minhash,
             exp.MinhashCombine,
         }
-    },
-    **{
-        expr_type: {"annotator": _annotate_variance}
-        for expr_type in (
-            exp.Variance,
-            exp.VariancePop,
-        )
     },
     exp.ArgMax: {"annotator": _annotate_arg_max_min},
     exp.ArgMin: {"annotator": _annotate_arg_max_min},

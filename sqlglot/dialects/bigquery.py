@@ -242,6 +242,24 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def build_date_diff(args: t.List) -> exp.Expression:
+    expr = exp.DateDiff(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        unit=seq_get(args, 2),
+        date_part_boundary=True,
+    )
+
+    # Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST for correct cross-dialect transpilation
+    # This is done post exp.DateDiff construction since the TimeUnit mixin performs canonicalizations of its constructor too
+    unit = expr.args.get("unit")
+
+    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+        expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+
+    return expr
+
+
 def _build_regexp_extract(
     expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
 ) -> t.Callable[[t.List, BigQuery], E]:
@@ -564,6 +582,7 @@ class BigQuery(Dialect):
             "CONTAINS_SUBSTR": _build_contains_substring,
             "DATE": _build_date,
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
+            "DATE_DIFF": build_date_diff,
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=seq_get(args, 1),

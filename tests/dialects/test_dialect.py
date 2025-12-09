@@ -620,33 +620,33 @@ class TestDialect(Validator):
 
     def test_to_binary(self):
         self.validate_all(
-            "TO_BINARY('test')",
+            "TO_BINARY('1C')",
             read={
-                "": "TO_BINARY('test')",
-                "starrocks": "TO_BINARY('test')",
-                "spark": "TO_BINARY('test')",
-                "databricks": "TO_BINARY('test')",
+                "": "TO_BINARY('1C')",
+                "starrocks": "TO_BINARY('1C')",
+                "spark": "TO_BINARY('1C')",
+                "databricks": "TO_BINARY('1C')",
             },
             write={
-                "snowflake": "TO_BINARY('test')",
-                "starrocks": "TO_BINARY('test')",
-                "spark": "TO_BINARY('test')",
-                "databricks": "TO_BINARY('test')",
+                "snowflake": "TO_BINARY('1C')",
+                "starrocks": "TO_BINARY('1C')",
+                "spark": "TO_BINARY('1C')",
+                "databricks": "TO_BINARY('1C')",
             },
         )
         self.validate_all(
-            "TO_BINARY('test', 'HEX')",
+            "TO_BINARY('1C', 'HEX')",
             read={
-                "": "TO_BINARY('test', 'HEX')",
-                "starrocks": "TO_BINARY('test', 'HEX')",
-                "spark": "TO_BINARY('test', 'HEX')",
-                "databricks": "TO_BINARY('test', 'HEX')",
+                "": "TO_BINARY('1C', 'HEX')",
+                "starrocks": "TO_BINARY('1C', 'HEX')",
+                "spark": "TO_BINARY('1C', 'HEX')",
+                "databricks": "TO_BINARY('1C', 'HEX')",
             },
             write={
-                "snowflake": "TO_BINARY('test', 'HEX')",
-                "starrocks": "TO_BINARY('test', 'HEX')",
-                "spark": "TO_BINARY('test', 'HEX')",
-                "databricks": "TO_BINARY('test', 'HEX')",
+                "snowflake": "TO_BINARY('1C')",
+                "starrocks": "TO_BINARY('1C', 'HEX')",
+                "spark": "TO_BINARY('1C', 'HEX')",
+                "databricks": "TO_BINARY('1C', 'HEX')",
             },
         )
 

@@ -87,38 +87,28 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
 
 def _to_binary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
     """
-    TO_BINARY(value, format) transpilation if the return_type is BINARY:
+    TO_BINARY(value, format) transpilation if the return type is BINARY:
     - 'HEX': TO_BINARY('48454C50', 'HEX') → UNHEX('48454C50')
     - 'UTF-8': TO_BINARY('TEST', 'UTF-8') → ENCODE('TEST')
     - 'BASE64': TO_BINARY('SEVMUA==', 'BASE64') → FROM_BASE64('SEVMUA==')
 
     format can be 'HEX', 'UTF-8' or 'BASE64'
-    return_type can be either VARCHAR or BINARY
+    return type can be either VARCHAR or BINARY
     """
     value = expression.this
     format_arg = expression.args.get("format")
-    return_type_arg = expression.args.get("return_type")
-
-    return_type = "VARCHAR"
-    if return_type_arg:
-        return_type = return_type_arg.to_py().upper()
 
     format = "UTF-8"
     if format_arg:
-        format = format_arg.to_py().upper()
+        format = format_arg.name.upper()
 
-    if format == "HEX":
-        if return_type == "BINARY":
+    if not expression.args.get("returns_varchar"):
+        if format == "HEX":
             return self.func("UNHEX", value)
-    elif format == "BASE64":
-        if return_type == "BINARY":
+        elif format == "BASE64":
             return self.func("FROM_BASE64", value)
-    else:  # UTF-8
-        if return_type == "BINARY":
+        else:  # UTF-8
             return self.func("ENCODE", value)
-        else:
-            # DuckDB's TO_BINARY takes a UTF-8 string and returns a binary string representation (like '0101010...') of type VARCHAR
-            return self.func("TO_BINARY", value)
 
     # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
     return self.func("TO_BINARY", value)
@@ -628,7 +618,7 @@ class DuckDB(Dialect):
             "TO_BINARY": lambda args: exp.ToBinary(
                 this=seq_get(args, 0),
                 format=exp.Literal.string("UTF-8"),
-                return_type=exp.Literal.string("VARCHAR"),
+                returns_varchar=True,
             ),
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,

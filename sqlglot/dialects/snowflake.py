@@ -770,9 +770,7 @@ class Snowflake(Dialect):
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
             ),
             "TO_BINARY": lambda args: exp.ToBinary(
-                this=seq_get(args, 0),
-                format=seq_get(args, 1) or exp.Literal.string("HEX"),
-                return_type=exp.Literal.string("BINARY"),
+                this=seq_get(args, 0), format=seq_get(args, 1) or exp.Literal.string("HEX")
             ),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
@@ -1533,7 +1531,11 @@ class Snowflake(Dialect):
             exp.SHA2Digest: lambda self, e: self.func(
                 "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
             ),
-            exp.ToBinary: lambda self, e: self.func("TO_BINARY", e.this, e.args.get("format")),
+            exp.ToBinary: lambda self, e: (
+                self.func("TO_BINARY", e.this)
+                if (format_arg := e.args.get("format")) and format_arg.this.upper() == "HEX"
+                else self.func("TO_BINARY", e.this, e.args.get("format"))
+            ),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

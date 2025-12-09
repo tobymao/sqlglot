@@ -1353,7 +1353,7 @@ class Query(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        scalar: bool = False,
+        scalar: t.Optional[bool] = None,
         **opts,
     ) -> Q:
         """
@@ -6398,7 +6398,14 @@ class DateSub(Func, IntervalOp):
 
 class DateDiff(Func, TimeUnit):
     _sql_names = ["DATEDIFF", "DATE_DIFF"]
-    arg_types = {"this": True, "expression": True, "unit": False, "zone": False, "big_int": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "unit": False,
+        "zone": False,
+        "big_int": False,
+        "date_part_boundary": False,
+    }
 
 
 class DateTrunc(Func):
@@ -7727,7 +7734,12 @@ class Radians(Func):
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
 # tsql third argument function == trunctaion if not 0
 class Round(Func):
-    arg_types = {"this": True, "decimals": False, "truncate": False}
+    arg_types = {
+        "this": True,
+        "decimals": False,
+        "truncate": False,
+        "casts_non_integer_decimals": False,
+    }
 
 
 class RowNumber(Func):
@@ -8521,7 +8533,7 @@ def _apply_cte_builder(
     append: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    scalar: bool = False,
+    scalar: t.Optional[bool] = None,
     **opts,
 ) -> E:
     alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
@@ -8537,7 +8549,7 @@ def _apply_cte_builder(
         append=append,
         copy=copy,
         into=With,
-        properties={"recursive": recursive or False},
+        properties={"recursive": recursive} if recursive else {},
     )
 
 

@@ -3232,13 +3232,88 @@ OPTIONS (
         self.validate_identity("DATE_TRUNC(date, WEEK(MONDAY))")
         self.validate_identity(
             "LAST_DAY(DATETIME '2008-11-10 15:30:00', WEEK(SUNDAY))",
-            "LAST_DAY(CAST('2008-11-10 15:30:00' AS DATETIME), WEEK(SUNDAY))",
+            "LAST_DAY(CAST('2008-11-10 15:30:00' AS DATETIME), WEEK)",
         )
         self.validate_identity("DATE_DIFF('2017-12-18', '2017-12-17', WEEK(SATURDAY))")
         self.validate_identity("DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))")
         self.validate_identity(
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
+        )
+
+        # BigQuery → DuckDB transpilation tests for DATE_DIFF with week units
+        self.validate_all(
+            "SELECT DATE_DIFF('2024-06-15', '2024-01-08', WEEK(MONDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2024-06-15', '2024-01-08', WEEK(MONDAY))",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-06-15' AS DATE)))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('2026-01-15', '2024-01-08', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2026-01-15', '2024-01-08', WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2026-01-15' AS DATE) + INTERVAL '1' DAY))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('2024-01-15', '2022-04-28', WEEK(SATURDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2024-01-15', '2022-04-28', WEEK(SATURDAY))",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2022-04-28' AS DATE) + INTERVAL '-5' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '-5' DAY))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2024-01-15', '2024-01-08', WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY))",
+            },
+        )
+        # Test WEEK - Saturday to Sunday boundary (critical test for Sunday-start weeks)
+        # In BigQuery: Saturday -> Sunday crosses week boundary = 1 week
+        # Without fix: DuckDB treats as Monday-start weeks = 0 weeks (both in same week)
+        self.validate_all(
+            "SELECT DATE_DIFF('2024-01-07', '2024-01-06', WEEK)",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2024-01-07', '2024-01-06', WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-06' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-07' AS DATE) + INTERVAL '1' DAY))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+            write={
+                "bigquery": "SELECT DATE_DIFF('2024-01-15', '2024-01-08', ISOWEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE)))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF(DATE '2024-09-15', DATE '2024-01-08', WEEK(MONDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2024-09-15' AS DATE), CAST('2024-01-08' AS DATE), WEEK(MONDAY))",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-08' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-09-15' AS DATE)))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF(DATE '2024-01-01', DATE '2024-01-15', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2024-01-01' AS DATE), CAST('2024-01-15' AS DATE), WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-01' AS DATE) + INTERVAL '1' DAY))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF(DATE '2023-05-01', DATE '2024-01-15', ISOWEEK)",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2023-05-01' AS DATE), CAST('2024-01-15' AS DATE), ISOWEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-15' AS DATE)), DATE_TRUNC('WEEK', CAST('2023-05-01' AS DATE)))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF(DATE '2024-01-01', DATE '2024-01-15', DAY)",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2024-01-01' AS DATE), CAST('2024-01-15' AS DATE), DAY)",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('2024-01-15' AS DATE), CAST('2024-01-01' AS DATE))",
+            },
         )
 
     def test_approx_qunatiles(self):

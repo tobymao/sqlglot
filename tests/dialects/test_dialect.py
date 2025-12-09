@@ -4777,6 +4777,7 @@ FROM subquery2""",
             "snowflake",
             "spark",
             "databricks",
+            "presto",
         ]
 
         for dialect in unsupported_dialects:

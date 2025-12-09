@@ -93,7 +93,6 @@ class Trino(Presto):
             ),
             exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
             exp.Trim: trim_sql,
-            exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG",
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

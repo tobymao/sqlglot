@@ -976,7 +976,6 @@ class DuckDB(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
-            exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG",
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

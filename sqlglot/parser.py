@@ -289,7 +289,6 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
         TokenType.CURRENT_USER: exp.CurrentUser,
-        TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
         TokenType.LOCALTIME: exp.Localtime,
         TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.CURRENT_ROLE: exp.CurrentRole,

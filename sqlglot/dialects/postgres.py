@@ -729,7 +729,6 @@ class Postgres(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
             exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
             exp.CountIf: count_if_to_sum,
-            exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG",
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

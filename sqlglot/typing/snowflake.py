@@ -374,6 +374,7 @@ EXPRESSION_METADATA = {
             exp.Collate,
             exp.Collation,
             exp.CurrentAccount,
+            exp.CurrentAccountName,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

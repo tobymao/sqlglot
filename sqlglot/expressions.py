@@ -6318,6 +6318,10 @@ class CurrentAccount(Func):
     arg_types = {}
 
 
+class CurrentAccountName(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

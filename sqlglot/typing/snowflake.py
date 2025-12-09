@@ -13,6 +13,7 @@ DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
 
 MAX_PRECISION = 38
 
+MIN_SCALE = 12
 MAX_SCALE = 37
 
 
@@ -149,7 +150,7 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
     - DECFLOAT -> DECFLOAT(38)
     - FLOAT/DOUBLE -> FLOAT
     - INT, NUMBER(p, 0) -> NUMBER(38, 6)
-    - NUMBER(p, s) where s > 0 -> NUMBER(38, min(s+8, 37))
+    - NUMBER(p, s) -> NUMBER(38, max(12, min(37, s)))
     """
     # First annotate the argument to get its type
     expression = self._annotate_by_args(expression, "this")
@@ -159,8 +160,7 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
 
     # Special case: DECFLOAT -> DECFLOAT(38)
     if input_type.is_type(exp.DataType.Type.DECFLOAT):
-        new_type = exp.DataType.build("DECFLOAT", dialect="snowflake")
-        self._set_type(expression, new_type)
+        self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
     # Special case: FLOAT/DOUBLE -> DOUBLE
     elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
         self._set_type(expression, exp.DataType.Type.DOUBLE)
@@ -171,11 +171,10 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
         scale = scale_expr.this.to_py() if scale_expr else 0
 
         # If scale is 0 (INT, BIGINT, NUMBER(p,0)): return NUMBER(38, 6)
-        # If scale > 0: return NUMBER(38, min(s+8, 37))
         if scale == 0:
             new_scale = 6
         else:
-            new_scale = min(scale + 8, MAX_SCALE)
+            new_scale = max(MIN_SCALE, scale)
 
         # Build the new NUMBER type
         new_type = exp.DataType.build(f"NUMBER({MAX_PRECISION}, {new_scale})", dialect="snowflake")

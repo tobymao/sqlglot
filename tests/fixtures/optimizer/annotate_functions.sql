@@ -4376,6 +4376,18 @@ DOUBLE;
 VARIANCE_POP(tbl.int_col);
 NUMBER(38, 6);
 
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 6));
+NUMBER(38, 12);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 15));
+NUMBER(38, 15);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(30, 5));
+NUMBER(38, 12);
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

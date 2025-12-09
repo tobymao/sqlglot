@@ -2337,6 +2337,10 @@ CURRENT_TRANSACTION();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_WAREHOUSE();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

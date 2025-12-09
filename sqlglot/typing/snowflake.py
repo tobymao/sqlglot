@@ -423,6 +423,7 @@ EXPRESSION_METADATA = {
             exp.CurrentStatement,
             exp.CurrentVersion,
             exp.CurrentTransaction,
+            exp.CurrentWarehouse,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

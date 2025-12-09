@@ -6330,6 +6330,10 @@ class CurrentClient(Func):
     arg_types = {}
 
 
+class CurrentIpAddress(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

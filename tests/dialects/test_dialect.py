@@ -630,6 +630,7 @@ class TestDialect(Validator):
             write={
                 "snowflake": "TO_BINARY('1C')",
                 "starrocks": "TO_BINARY('1C')",
+                "duckdb": "ENCODE('1C')",
                 "spark": "TO_BINARY('1C')",
                 "databricks": "TO_BINARY('1C')",
             },
@@ -638,6 +639,7 @@ class TestDialect(Validator):
             "TO_BINARY('1C', 'HEX')",
             read={
                 "": "TO_BINARY('1C', 'HEX')",
+                "snowflake": "TO_BINARY('1C', 'HEX')",
                 "starrocks": "TO_BINARY('1C', 'HEX')",
                 "spark": "TO_BINARY('1C', 'HEX')",
                 "databricks": "TO_BINARY('1C', 'HEX')",

@@ -2317,6 +2317,10 @@ CURRENT_SCHEMAS();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_SECONDARY_ROLES();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

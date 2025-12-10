@@ -2293,6 +2293,10 @@ CURRENT_ACCOUNT();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_ACCOUNT_NAME();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

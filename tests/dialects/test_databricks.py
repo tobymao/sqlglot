@@ -220,6 +220,7 @@ class TestDatabricks(Validator):
             "WITH t AS (SELECT * FROM VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
         )
         self.validate_identity("NTILE() OVER (ORDER BY 1)")
+        self.validate_identity("CURRENT_VERSION()")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

@@ -25,6 +25,8 @@ class TestStarrocks(Validator):
             },
         )
 
+        self.validate_identity("CURRENT_VERSION()")
+
     def test_ddl(self):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 

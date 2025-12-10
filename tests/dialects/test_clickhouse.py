@@ -670,6 +670,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT ilike(a, b)", "SELECT a ILIKE b")
 
         self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
+        self.validate_identity("currentSchemas(TRUE)", "CURRENT_SCHEMAS(TRUE)")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

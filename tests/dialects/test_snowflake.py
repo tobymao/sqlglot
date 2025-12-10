@@ -259,6 +259,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
         self.validate_identity("SELECT CURRENT_ACCOUNT()")
         self.validate_identity("SELECT CURRENT_ACCOUNT_NAME()")
+        self.validate_identity("SELECT CURRENT_AVAILABLE_ROLES()")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_USER()")
         self.validate_identity("SELECT CURRENT_REGION()")
         self.validate_identity("SELECT CURRENT_ROLE()")

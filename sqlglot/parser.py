@@ -638,6 +638,7 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
         TokenType.CURRENT_USER,
+        TokenType.CURRENT_CATALOG,
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,

@@ -277,6 +277,7 @@ class TokenType(AutoName):
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
     CURRENT_ROLE = auto()
+    CURRENT_CATALOG = auto()
     DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
@@ -758,6 +759,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "CURRENT_USER": TokenType.CURRENT_USER,
+        "CURRENT_CATALOG": TokenType.CURRENT_CATALOG,
         "DATABASE": TokenType.DATABASE,
         "DEFAULT": TokenType.DEFAULT,
         "DELETE": TokenType.DELETE,

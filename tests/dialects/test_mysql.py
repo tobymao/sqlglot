@@ -432,6 +432,19 @@ class TestMySQL(Validator):
             },
         )
 
+        self.validate_all(
+            r"'\"'",
+            write={
+                "mysql": """\'"\'""",
+            },
+        )
+        self.validate_all(
+            "'\\\\\"a'",
+            write={
+                "mysql": "'\\\\\"a'",
+            },
+        )
+
     def test_introducers(self):
         self.validate_all(
             "_utf8mb4 'hola'",

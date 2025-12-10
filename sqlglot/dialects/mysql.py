@@ -202,6 +202,7 @@ class MySQL(Dialect):
         STRING_ESCAPES = ["'", '"', "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
+        STRING_ESCAPES_NOOP = ['"', "'"]
 
         NESTED_COMMENTS = False
 

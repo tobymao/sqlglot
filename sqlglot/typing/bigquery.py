@@ -104,7 +104,13 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
                 projection_type = col_types.get(first_col_name)
 
         # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
-        if projection_type and not projection_type.is_type(exp.DataType.Type.UNKNOWN):
+        if projection_type and not (
+            (
+                isinstance(projection_type, exp.DataType)
+                and projection_type.is_type(exp.DataType.Type.UNKNOWN)
+            )
+            or projection_type == exp.DataType.Type.UNKNOWN
+        ):
             element_type = (
                 projection_type.copy()
                 if isinstance(projection_type, exp.DataType)

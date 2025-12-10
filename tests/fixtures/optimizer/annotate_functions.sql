@@ -2333,6 +2333,10 @@ CURRENT_VERSION();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_TRANSACTION();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

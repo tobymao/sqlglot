@@ -6358,6 +6358,10 @@ class CurrentVersion(Func):
     arg_types = {}
 
 
+class CurrentTransaction(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

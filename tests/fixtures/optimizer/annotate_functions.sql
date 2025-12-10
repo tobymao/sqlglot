@@ -2313,6 +2313,10 @@ CURRENT_DATABASE();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_SCHEMAS();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

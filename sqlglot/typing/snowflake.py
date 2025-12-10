@@ -417,6 +417,7 @@ EXPRESSION_METADATA = {
             exp.CurrentClient,
             exp.CurrentDatabase,
             exp.CurrentIpAddress,
+            exp.CurrentSchemas,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

@@ -421,6 +421,7 @@ EXPRESSION_METADATA = {
             exp.CurrentSecondaryRoles,
             exp.CurrentSession,
             exp.CurrentStatement,
+            exp.CurrentVersion,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

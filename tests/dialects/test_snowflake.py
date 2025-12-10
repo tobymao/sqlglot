@@ -1367,7 +1367,7 @@ class TestSnowflake(Validator):
             },
             write={
                 "snowflake": "SELECT BOOLAND(1, -2)",
-                "duckdb": "SELECT ((1) AND (-2))",
+                "duckdb": "SELECT CASE WHEN 1 IS NULL THEN NULL ELSE 1 <> 0 END AND CASE WHEN -2 IS NULL THEN NULL ELSE -2 <> 0 END",
             },
         )
         self.validate_all(

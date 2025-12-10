@@ -499,6 +499,28 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _numeric_to_bool(expr: exp.Expression) -> exp.Expression:
+    """
+    For each expr, convert to: expr == NULL ? NULL : expr != 0
+    """
+    return exp.Case(ifs=[exp.If(this=expr.is_(exp.null()), true=exp.null())], default=expr.neq(0))
+
+
+def _booland_sql(self: DuckDB.Generator, expression: exp.Booland) -> str:
+    """
+    Transpile Snowflake's BOOLAND function to DuckDB equivalent.
+
+    Logic: For each expr, convert to: expr IS NULL ? NULL : expr != 0
+    Then use DuckDB's native AND operator.
+    """
+    expr1 = expression.this
+    expr2 = expression.expression
+
+    # Use DuckDB's native AND with converted boolean expressions
+    and_expr = exp.And(this=_numeric_to_bool(expr1), expression=_numeric_to_bool(expr2))
+    return self.sql(and_expr)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -937,6 +959,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXor: rename_func("XOR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
+            exp.Booland: _booland_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",

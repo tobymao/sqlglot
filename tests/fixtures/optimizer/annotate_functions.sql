@@ -2309,6 +2309,10 @@ CURRENT_IP_ADDRESS();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_DATABASE();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

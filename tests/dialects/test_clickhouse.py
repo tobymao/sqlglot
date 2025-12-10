@@ -669,6 +669,8 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT notLike(a, b)", "SELECT NOT a LIKE b")
         self.validate_identity("SELECT ilike(a, b)", "SELECT a ILIKE b")
 
+        self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

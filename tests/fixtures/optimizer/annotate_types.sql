@@ -126,3 +126,15 @@ TIMESTAMP;
 # dialect: bigquery
 NULL;
 INT64;
+
+# dialect: bigquery
+ARRAY(SELECT 'foo' UNION ALL SELECT 'bar');
+ARRAY<STRING>;
+
+# dialect: bigquery
+ARRAY(SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3);
+ARRAY<INT64>;
+
+# dialect: bigquery
+ARRAY(SELECT 1 UNION ALL SELECT 2.5);
+ARRAY<FLOAT64>;

@@ -6314,6 +6314,10 @@ class Cbrt(Func):
     pass
 
 
+class CurrentAccount(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

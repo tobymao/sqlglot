@@ -170,10 +170,8 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
         scale = scale_expr.this.to_py() if scale_expr else 0
 
         # If scale is 0 (INT, BIGINT, NUMBER(p,0)): return NUMBER(38, 6)
-        if scale == 0:
-            new_scale = 6
-        else:
-            new_scale = max(MIN_SCALE, scale)
+        # Otherwise, Snowflake appears to assign scale through the formula MAX(12, s)
+        new_scale = 6 if scale == 0 else max(12, scale)
 
         # Build the new NUMBER type
         new_type = exp.DataType.build(f"NUMBER({MAX_PRECISION}, {new_scale})", dialect="snowflake")

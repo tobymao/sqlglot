@@ -4324,6 +4324,78 @@ INT;
 MODE(tbl.str_col) OVER (PARTITION BY tbl.int_col);
 VARCHAR;
 
+# dialect: snowflake
+VAR_SAMP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VAR_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VAR_SAMP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VAR_POP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VAR_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VAR_POP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_POP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_POP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 6));
+NUMBER(38, 12);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 15));
+NUMBER(38, 15);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(30, 5));
+NUMBER(38, 12);
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

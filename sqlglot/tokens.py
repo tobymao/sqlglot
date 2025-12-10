@@ -600,6 +600,7 @@ class _Tokenizer(type):
                 tokens_preceding_hint={
                     _TOKEN_TYPE_TO_INDEX[v] for v in klass.TOKENS_PRECEDING_HINT
                 },
+                string_escapes_noop=klass._STRING_ESCAPES_NOOP,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],

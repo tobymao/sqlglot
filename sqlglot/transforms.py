@@ -877,12 +877,11 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
         where = query.args.get("where")
         joins = query.args.get("joins", [])
 
-        # knockout: we do not support left correlation (see point 2)
-        assert not scope.is_correlated_subquery, "Correlated queries are not supported"
-
-        # nothing to do - we check it here after knockout above
         if not where or not any(c.args.get("join_mark") for c in where.find_all(exp.Column)):
             continue
+
+        # knockout: we do not support left correlation (see point 2)
+        assert not scope.is_correlated_subquery, "Correlated queries are not supported"
 
         # make sure we have AND of ORs to have clear join terms
         where = normalize(where.this)

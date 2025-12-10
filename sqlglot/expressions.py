@@ -6326,6 +6326,10 @@ class CurrentAvailableRoles(Func):
     arg_types = {}
 
 
+class CurrentClient(Func):
+    arg_types = {}
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

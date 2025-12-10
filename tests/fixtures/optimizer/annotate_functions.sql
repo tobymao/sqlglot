@@ -2301,6 +2301,10 @@ CURRENT_AVAILABLE_ROLES();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_CLIENT();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

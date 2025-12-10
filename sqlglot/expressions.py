@@ -1,5 +1,3 @@
-# TODO: this comment is triggering a change to a file not part of any dialect
-# it needs to be removed prior to merge
 """
 ## Expressions
 

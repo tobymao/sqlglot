@@ -1,5 +1,3 @@
-# TODO: this comment is triggering a change to an unsupported dialect
-# it needs to be removed prior to merge
 from __future__ import annotations
 
 import typing as t

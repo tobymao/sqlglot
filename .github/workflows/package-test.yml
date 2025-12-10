@@ -9,8 +9,6 @@ on:
 jobs:
   run-checks:
     runs-on: ubuntu-22.04
-    # TODO: remove
-    if: false
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]

@@ -67,7 +67,7 @@ def get_dialects_from_manual_trigger(trigger: str) -> t.Set[str]:
 
 def get_dialects_from_git(base_ref: str, current_ref: str) -> t.Set[str]:
     """
-    Takes two git refs and runs `git diff --name-only <base_ref> <current_ref>
+    Takes two git refs and runs `git diff --name-only <base_ref> <current_ref>`
 
     If any of the returned file names contain a dialect from SUPPORTED_DIALECTS as
     a substring, that dialect is included in the returned set

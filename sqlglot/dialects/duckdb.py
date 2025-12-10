@@ -1201,6 +1201,35 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
+        def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
+            """
+            TO_BINARY(value, format) transpilation if the return type is BINARY:
+            - 'HEX': TO_BINARY('48454C50', 'HEX') → UNHEX('48454C50')
+            - 'UTF-8': TO_BINARY('TEST', 'UTF-8') → ENCODE('TEST')
+            - 'BASE64': TO_BINARY('SEVMUA==', 'BASE64') → FROM_BASE64('SEVMUA==')
+
+            format can be 'HEX', 'UTF-8' or 'BASE64'
+            return type can be either VARCHAR or BINARY
+            """
+            value = expression.this
+            format_arg = expression.args.get("format")
+
+            fmt = "HEX"
+            if format_arg:
+                fmt = format_arg.name.upper()
+
+            if expression.is_type(exp.DataType.Type.BINARY):
+                if fmt == "UTF-8":
+                    return self.func("ENCODE", value)
+                if fmt == "BASE64":
+                    return self.func("FROM_BASE64", value)
+
+                # Hex
+                return self.func("UNHEX", value)
+
+            # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
+            return self.func("TO_BINARY", value)
+
         def _greatest_least_sql(
             self: DuckDB.Generator, expression: exp.Greatest | exp.Least
         ) -> str:

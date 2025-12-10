@@ -525,6 +525,40 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _regr_valx_sql(self: DuckDB.Generator, expression: exp.RegrValx) -> str:
+    """
+    Transpile Snowflake's REGR_VALX to DuckDB equivalent.
+
+    REGR_VALX(y, x) returns NULL if the first argument (y) is NULL; otherwise returns the second argument (x).
+    This is a NULL-preserving function.
+    """
+    y = expression.this
+    x = expression.expression
+    return self.sql(
+        exp.Case(
+            ifs=[exp.If(this=exp.Is(this=y.copy(), expression=exp.Null()), true=exp.Null())],
+            default=x.copy(),
+        )
+    )
+
+
+def _regr_valy_sql(self: DuckDB.Generator, expression: exp.RegrValy) -> str:
+    """
+    Transpile Snowflake's REGR_VALY to DuckDB equivalent.
+
+    REGR_VALY(y, x) returns NULL if the second argument (x) is NULL; otherwise returns the first argument (y).
+    This is a NULL-preserving function.
+    """
+    y = expression.this
+    x = expression.expression
+    return self.sql(
+        exp.Case(
+            ifs=[exp.If(this=exp.Is(this=x.copy(), expression=exp.Null()), true=exp.Null())],
+            default=y.copy(),
+        )
+    )
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1033,6 +1067,8 @@ class DuckDB(Dialect):
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
+            exp.RegrValx: _regr_valx_sql,
+            exp.RegrValy: _regr_valy_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),

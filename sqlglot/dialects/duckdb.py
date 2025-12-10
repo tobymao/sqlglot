@@ -394,16 +394,33 @@ def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql
     return result_sql
 
 
-def _cast_to_bit(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    # HexString literals need special handling to bypass wrapping
-    if arg and isinstance(arg, exp.HexString):
+def _is_binary_arg(arg: exp.Expression) -> bool:
+    """Check if argument is a binary type or HexString."""
+    return isinstance(arg, exp.HexString) or arg.is_type(
+        exp.DataType.Type.BINARY,
+        exp.DataType.Type.VARBINARY,
+        exp.DataType.Type.BLOB,
+    )
+
+
+def _cast_to_bit(arg: exp.Expression) -> exp.Expression:
+    """Cast argument to BIT type if it's a binary type."""
+    if not _is_binary_arg(arg):
+        return arg
+
+    if isinstance(arg, exp.HexString):
         return exp.cast(exp.Unhex(this=exp.Literal.string(arg.this)), exp.DataType.Type.BIT)
 
-    # If we have type info and it's not numeric, cast to BIT
-    if arg and arg.type and not arg.is_type(*exp.DataType.NUMERIC_TYPES):
-        return exp.cast(arg, exp.DataType.Type.BIT)
+    return exp.cast(arg, exp.DataType.Type.BIT)
 
-    return arg
+
+def _prepare_binary_bitwise_args(expression: exp.Binary) -> None:
+    """Cast binary operands to BIT and set expression type to BINARY if needed."""
+    if _is_binary_arg(expression.this) or _is_binary_arg(expression.expression):
+        expression.type = exp.DataType.build("BINARY")
+
+    expression.set("this", _cast_to_bit(expression.this))
+    expression.set("expression", _cast_to_bit(expression.expression))
 
 
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
@@ -1543,28 +1560,19 @@ class DuckDB(Dialect):
             return _cast_to_blob(self, expression, result_sql)
 
         def bitwiseor_sql(self, expression: exp.BitwiseOr) -> str:
-            left = _cast_to_bit(expression.this)
-            right = _cast_to_bit(expression.expression)
-            result_sql = f"{self.sql(left)} | {self.sql(right)}"
-            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
-                return f"CAST({result_sql} AS BLOB)"
-            return result_sql
+            _prepare_binary_bitwise_args(expression)
+            result_sql = self.binary(expression, "|")
+            return _cast_to_blob(self, expression, result_sql)
 
         def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
-            left = _cast_to_bit(expression.this)
-            right = _cast_to_bit(expression.expression)
-            result_sql = f"{self.sql(left)} & {self.sql(right)}"
-            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
-                return f"CAST({result_sql} AS BLOB)"
-            return result_sql
+            _prepare_binary_bitwise_args(expression)
+            result_sql = self.binary(expression, "&")
+            return _cast_to_blob(self, expression, result_sql)
 
         def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
-            left = _cast_to_bit(expression.this)
-            right = _cast_to_bit(expression.expression)
-            result_sql = self.func("XOR", self.sql(left), self.sql(right))
-            if isinstance(left, exp.Cast) or isinstance(right, exp.Cast):
-                return f"CAST({result_sql} AS BLOB)"
-            return result_sql
+            _prepare_binary_bitwise_args(expression)
+            result_sql = self.func("XOR", expression.this, expression.expression)
+            return _cast_to_blob(self, expression, result_sql)
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this
@@ -1873,15 +1881,18 @@ class DuckDB(Dialect):
             return _arrow_json_extract_sql(self, expression)
 
         def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
-            arg = _cast_to_bit(expression.this)
+            this = expression.this
 
-            # Wrap in parentheses to prevent parsing issues such as "SELECT ~-1"
-            if isinstance(expression.this, exp.Neg):
+            if _is_binary_arg(this):
+                expression.type = exp.DataType.build("BINARY")
+
+            arg = _cast_to_bit(this)
+
+            if isinstance(this, exp.Neg):
                 arg = exp.Paren(this=arg)
 
-            result_sql = f"~{self.sql(arg)}"
-            if isinstance(arg, exp.Cast) or (
-                isinstance(arg, exp.Paren) and isinstance(arg.this, exp.Cast)
-            ):
-                return f"CAST({result_sql} AS BLOB)"
-            return result_sql
+            expression.set("this", arg)
+
+            result_sql = f"~{self.sql(expression, 'this')}"
+
+            return _cast_to_blob(self, expression, result_sql)

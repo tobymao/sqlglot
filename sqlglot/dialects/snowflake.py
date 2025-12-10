@@ -1576,11 +1576,6 @@ class Snowflake(Dialect):
             return super().values_sql(expression, values_as_table=values_as_table)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            # Convert BIT to VARBINARY for Snowflake compatibility
-            # DuckDB uses BIT for bitwise operations, but Snowflake doesn't support BIT type
-            if expression.is_type(exp.DataType.Type.BIT):
-                return "VARBINARY"
-
             expressions = expression.expressions
             if expressions and expression.is_type(*exp.DataType.STRUCT_TYPES):
                 for field_type in expressions:

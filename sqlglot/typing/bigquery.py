@@ -76,22 +76,52 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     #
     # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
     # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    if (
-        len(array_args) == 1
-        and isinstance(select := array_args[0].unnest(), exp.Select)
-        and (query_type := select.meta.get("query_type")) is not None
-        and query_type.is_type(exp.DataType.Type.STRUCT)
-        and len(query_type.expressions) == 1
-        and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-        and (projection_type := col_def.kind) is not None
-        and not projection_type.is_type(exp.DataType.Type.UNKNOWN)
-    ):
-        array_type = exp.DataType(
-            this=exp.DataType.Type.ARRAY,
-            expressions=[projection_type.copy()],
-            nested=True,
-        )
-        return self._set_type(expression, array_type)
+    # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
+    if len(array_args) == 1:
+        unnested = array_args[0].unnest()
+        projection_type: t.Optional[exp.DataType | exp.DataType.Type] = None
+
+        # Handle ARRAY(SELECT ...) - single SELECT query
+        if isinstance(unnested, exp.Select):
+            if (
+                (query_type := unnested.meta.get("query_type")) is not None
+                and query_type.is_type(exp.DataType.Type.STRUCT)
+                and len(query_type.expressions) == 1
+                and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
+                and (col_type := col_def.kind) is not None
+                and not col_type.is_type(exp.DataType.Type.UNKNOWN)
+            ):
+                projection_type = col_type
+
+        # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
+        elif isinstance(unnested, exp.SetOperation):
+            # Get all column types for the SetOperation
+            col_types = self._get_setop_column_types(unnested)
+            # For ARRAY constructor, there should only be one projection
+            # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
+            if col_types and unnested.left.selects:
+                first_col_name = unnested.left.selects[0].alias_or_name
+                projection_type = col_types.get(first_col_name)
+
+        # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
+        if projection_type and not (
+            (
+                isinstance(projection_type, exp.DataType)
+                and projection_type.is_type(exp.DataType.Type.UNKNOWN)
+            )
+            or projection_type == exp.DataType.Type.UNKNOWN
+        ):
+            element_type = (
+                projection_type.copy()
+                if isinstance(projection_type, exp.DataType)
+                else exp.DataType(this=projection_type)
+            )
+            array_type = exp.DataType(
+                this=exp.DataType.Type.ARRAY,
+                expressions=[element_type],
+                nested=True,
+            )
+            return self._set_type(expression, array_type)
 
     return self._annotate_by_args(expression, "expressions", array=True)
 

@@ -418,6 +418,7 @@ EXPRESSION_METADATA = {
             exp.CurrentDatabase,
             exp.CurrentIpAddress,
             exp.CurrentSchemas,
+            exp.CurrentSecondaryRoles,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

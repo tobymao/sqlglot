@@ -420,6 +420,7 @@ EXPRESSION_METADATA = {
             exp.CurrentSchemas,
             exp.CurrentSecondaryRoles,
             exp.CurrentSession,
+            exp.CurrentStatement,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
             exp.CurrentRole,

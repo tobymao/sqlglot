@@ -113,6 +113,7 @@ class Databricks(Spark):
                 if e.args.get("is_numeric")
                 else self.function_fallback_sql(e)
             ),
+            exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG()",
         }
 
         TRANSFORMS.pop(exp.RegexpLike)

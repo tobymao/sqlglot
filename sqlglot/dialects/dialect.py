@@ -296,6 +296,22 @@ class _Dialect(type):
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
             klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
+        if enum in (
+            "",
+            "postgres",
+            "duckdb",
+            "trino",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+        else:
+            # For dialects that don't support this keyword, treat it as a regular identifier
+            # This fixes the "Unexpected token" error in BQ, Spark, etc.
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.CURRENT_CATALOG,
+            }
+
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),

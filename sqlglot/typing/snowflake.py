@@ -142,6 +142,44 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     return expression
 
 
+def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
+    """Annotate variance functions (VAR_POP, VAR_SAMP, VARIANCE, VARIANCE_POP) with correct return type.
+
+    Based on Snowflake behavior:
+    - DECFLOAT -> DECFLOAT(38)
+    - FLOAT/DOUBLE -> FLOAT
+    - INT, NUMBER(p, 0) -> NUMBER(38, 6)
+    - NUMBER(p, s) -> NUMBER(38, max(12, s))
+    """
+    # First annotate the argument to get its type
+    expression = self._annotate_by_args(expression, "this")
+
+    # Get the input type
+    input_type = expression.this.type
+
+    # Special case: DECFLOAT -> DECFLOAT(38)
+    if input_type.is_type(exp.DataType.Type.DECFLOAT):
+        self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
+    # Special case: FLOAT/DOUBLE -> DOUBLE
+    elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
+    # For NUMBER types: determine the scale
+    else:
+        exprs = input_type.expressions
+        scale_expr = seq_get(exprs, 1)
+        scale = scale_expr.this.to_py() if scale_expr else 0
+
+        # If scale is 0 (INT, BIGINT, NUMBER(p,0)): return NUMBER(38, 6)
+        # Otherwise, Snowflake appears to assign scale through the formula MAX(12, s)
+        new_scale = 6 if scale == 0 else max(12, scale)
+
+        # Build the new NUMBER type
+        new_type = exp.DataType.build(f"NUMBER({MAX_PRECISION}, {new_scale})", dialect="snowflake")
+        self._set_type(expression, new_type)
+
+    return expression
+
+
 def _annotate_math_with_float_decfloat(
     self: TypeAnnotator, expression: exp.Expression
 ) -> exp.Expression:
@@ -408,6 +446,13 @@ EXPRESSION_METADATA = {
             exp.Minhash,
             exp.MinhashCombine,
         }
+    },
+    **{
+        expr_type: {"annotator": _annotate_variance}
+        for expr_type in (
+            exp.Variance,
+            exp.VariancePop,
+        )
     },
     exp.ArgMax: {"annotator": _annotate_arg_max_min},
     exp.ArgMin: {"annotator": _annotate_arg_max_min},

@@ -2325,6 +2325,10 @@ CURRENT_SESSION();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_STATEMENT();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

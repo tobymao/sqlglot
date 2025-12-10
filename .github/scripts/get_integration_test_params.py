@@ -162,6 +162,8 @@ if __name__ == "__main__":
             else f"all supported dialects"
         )
         print(f"Conclusion: should run tests for {dialects_str}")
+    else:
+        print(f"Conclusion: No tests to run")
 
     # write output variables
     lines = []

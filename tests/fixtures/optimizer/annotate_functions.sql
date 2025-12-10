@@ -2321,6 +2321,10 @@ CURRENT_SECONDARY_ROLES();
 VARCHAR;
 
 # dialect: snowflake
+CURRENT_SESSION();
+VARCHAR;
+
+# dialect: snowflake
 CURRENT_ORGANIZATION_USER();
 VARCHAR;
 

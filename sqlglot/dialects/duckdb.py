@@ -60,6 +60,10 @@ REGEX_ESCAPE_REPLACEMENTS = {
     "]": r"\]",
 }
 
+# Used to in RANDSTR transpilation
+RANDSTR_CHAR_POOL = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+RANDSTR_SEED = 123456
+
 # Whitespace control characters that DuckDB must process with `CHR({val})` calls
 WS_CONTROL_CHARS_TO_DUCK = {
     "\u000b": 11,
@@ -1200,6 +1204,51 @@ class DuckDB(Dialect):
             exp.Lead,
             exp.NthValue,
         )
+
+        def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
+            """
+            Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.
+
+            RANDSTR(length, generator) generates a random string of specified length.
+            - With numeric seed: Use HASH(i + seed) for deterministic output (same seed = same result)
+            - With RANDOM(): Use RANDOM() in the hash for non-deterministic output
+            - No generator: Use default seed value
+            """
+            length = expression.this
+            generator = expression.args.get("generator")
+
+            if generator:
+                if isinstance(generator, exp.Rand):
+                    # If it's RANDOM(), use its seed if available, otherwise use RANDOM() itself
+                    seed_value = generator.this or generator
+                else:
+                    # Const/int or other expression - use as seed directly
+                    seed_value = generator
+            else:
+                # No generator specified, use default seed (arbitrary but deterministic)
+                seed_value = exp.Literal.number(RANDSTR_SEED)
+
+            length_sql = self.sql(length)
+            seed_sql = self.sql(seed_value)
+
+            query: exp.Select = exp.maybe_parse(
+                f"""
+                SELECT LISTAGG(
+                    SUBSTRING(
+                        '{RANDSTR_CHAR_POOL}',
+                        1 + CAST(FLOOR(random_value * 62) AS INT),
+                        1
+                    ),
+                    ''
+                )
+                FROM (
+                    SELECT (ABS(HASH(i + {seed_sql})) % 1000) / 1000.0 AS random_value
+                    FROM RANGE({length_sql}) AS t(i)
+                )
+                """,
+                dialect="duckdb",
+            )
+            return f"({self.sql(query)})"
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """

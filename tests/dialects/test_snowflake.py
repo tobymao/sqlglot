@@ -3888,3 +3888,11 @@ FROM SEMANTIC_VIEW(
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "SELECT CAST(~CAST(UNHEX('FF') AS BIT) AS BLOB)")
         self.assertEqual(annotated.sql("snowflake"), "SELECT BITNOT(x'FF')")
+
+    def test_quoting(self):
+        self.assertEqual(
+            parse_one("select a, B from DUAL", dialect="snowflake").sql(
+                dialect="snowflake", identify="safe"
+            ),
+            'SELECT a, "B" FROM DUAL',
+        )

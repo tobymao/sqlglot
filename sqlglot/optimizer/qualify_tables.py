@@ -93,10 +93,7 @@ def qualify_tables(
         else:
             return
 
-        # Auto-generated aliases (_1, _2, ...) are quoted in order to be valid across all dialects
-        quoted = True if canonicalize_table_aliases or not target_alias else None
-
-        alias.set("this", exp.to_identifier(new_alias_name, quoted=quoted))
+        alias.set("this", exp.to_identifier(new_alias_name))
 
         if columns:
             alias.set("columns", [exp.to_identifier(c) for c in columns])
@@ -209,6 +206,6 @@ def qualify_tables(
                 and (canonical_table := canonical_aliases.get(table, "")) != column.table
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
-                column.set("table", exp.to_identifier(canonical_table, quoted=True))
+                column.set("table", exp.to_identifier(canonical_table))
 
     return expression

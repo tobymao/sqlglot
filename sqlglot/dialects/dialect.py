@@ -1023,42 +1023,50 @@ class Dialect(metaclass=_Dialect):
         )
         return any(unsafe(char) for char in text)
 
-    def can_identify(self, text: str, identify: str | bool = "safe") -> bool:
-        """Checks if text can be identified given an identify option.
+    def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
+        """Checks if an identifier can be quoted
 
         Args:
-            text: The text to check.
+            identifier: The identifier to check.
             identify:
-                `"always"` or `True`: Always returns `True`.
+                `True`: Always returns `True` except for certain cases.
                 `"safe"`: Only returns `True` if the identifier is case-insensitive.
+                `"unsafe"`: Only returns `True` if the identifier is case-sensitive.
 
         Returns:
             Whether the given text can be identified.
         """
-        if identify is True or identify == "always":
+        if identifier.quoted:
+            return True
+        if not identify:
+            return False
+        if isinstance(identifier.parent, exp.Func):
+            return False
+        if identify is True:
             return True
 
-        if identify == "safe":
-            return not self.case_sensitive(text)
+        is_safe = not self.case_sensitive(identifier.this) and bool(
+            exp.SAFE_IDENTIFIER_RE.match(identifier.this)
+        )
 
-        return False
+        if identify == "safe":
+            return is_safe
+        if identify == "unsafe":
+            return not is_safe
+
+        raise ValueError(f"Unexpected argument for identify: '{identify}'")
 
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
         """
-        Adds quotes to a given identifier.
+        Adds quotes to a given expression if it is an identifier.
 
         Args:
             expression: The expression of interest. If it's not an `Identifier`, this method is a no-op.
             identify: If set to `False`, the quotes will only be added if the identifier is deemed
                 "unsafe", with respect to its characters and this dialect's normalization strategy.
         """
-        if isinstance(expression, exp.Identifier) and not isinstance(expression.parent, exp.Func):
-            name = expression.this
-            expression.set(
-                "quoted",
-                identify or self.case_sensitive(name) or not exp.SAFE_IDENTIFIER_RE.match(name),
-            )
-
+        if isinstance(expression, exp.Identifier):
+            expression.set("quoted", self.can_quote(expression, identify or "unsafe"))
         return expression
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

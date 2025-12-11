@@ -75,15 +75,12 @@ class Oracle(Dialect):
 
     PSEUDOCOLUMNS = {"ROWNUM", "ROWID", "OBJECT_ID", "OBJECT_VALUE", "LEVEL"}
 
-    def quote_identifier(self, expression: E, identify: bool = True) -> E:
+    def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
         # Disable quoting for pseudocolumns as it may break queries e.g
         # `WHERE "ROWNUM" = ...` does not work but `WHERE ROWNUM = ...` does
-        if isinstance(expression, exp.Identifier) and isinstance(
-            expression.parent, exp.Pseudocolumn
-        ):
-            return expression
-
-        return super().quote_identifier(expression, identify=identify)
+        return (
+            identifier.quoted or not isinstance(identifier.parent, exp.Pseudocolumn)
+        ) and super().can_quote(identifier, identify=identify)
 
     class Tokenizer(tokens.Tokenizer):
         VAR_SINGLE_TOKENS = {"@", "$", "#"}

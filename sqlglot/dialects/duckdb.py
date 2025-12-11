@@ -525,26 +525,45 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
-def _regr_valx_sql(self: DuckDB.Generator, expression: exp.RegrValx) -> str:
+def _regr_val_sql(
+    self: DuckDB.Generator,
+    expression: exp.RegrValx | exp.RegrValy,
+    check_arg: str,
+) -> str:
     """
-    Transpile Snowflake's REGR_VALX to DuckDB equivalent.
+    Transpile Snowflake's REGR_VALX/REGR_VALY to DuckDB equivalent.
 
-    REGR_VALX(y, x) returns NULL if the first argument (y) is NULL; otherwise returns the second argument (x).
-    This is a NULL-preserving function.
+    REGR_VALX(y, x) returns NULL if y is NULL; otherwise returns x.
+    REGR_VALY(y, x) returns NULL if x is NULL; otherwise returns y.
+
+    Args:
+        check_arg: "y" to check y for NULL (REGR_VALX), "x" to check x for NULL (REGR_VALY)
     """
     from sqlglot.optimizer.annotate_types import annotate_types
 
     y = expression.this
     x = expression.expression
 
-    # Get the type from the x argument (what we return when y is not NULL)
-    result_type = x.type
+    # Determine which argument to check for NULL and which to return
+    if check_arg == "y":
+        check_for_null = y
+        return_value = x
+        # x is stored in expression attribute
+        return_value_attr = "expression"
+    else:  # check_arg == "x"
+        check_for_null = x
+        return_value = y
+        # y is stored in this attribute
+        return_value_attr = "this"
+
+    # Get the type from the return argument
+    result_type = return_value.type
 
     # If no type info, annotate the expression to infer types
     if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
         try:
             annotated = annotate_types(expression.copy(), dialect=self.dialect)
-            result_type = annotated.expression.type  # Get x's type from annotated expression
+            result_type = getattr(annotated, return_value_attr).type
         except Exception:
             pass
 
@@ -552,51 +571,17 @@ def _regr_valx_sql(self: DuckDB.Generator, expression: exp.RegrValx) -> str:
     if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
         result_type = exp.DataType.build("DOUBLE")
 
-    # Cast NULL to the same type as x to avoid DuckDB type inference issues
+    # Cast NULL to the same type as return_value to avoid DuckDB type inference issues
     typed_null = exp.Cast(this=exp.Null(), to=result_type)
 
     return self.sql(
         exp.Case(
-            ifs=[exp.If(this=exp.Is(this=y.copy(), expression=exp.Null()), true=typed_null)],
-            default=x.copy(),
-        )
-    )
-
-
-def _regr_valy_sql(self: DuckDB.Generator, expression: exp.RegrValy) -> str:
-    """
-    Transpile Snowflake's REGR_VALY to DuckDB equivalent.
-
-    REGR_VALY(y, x) returns NULL if the second argument (x) is NULL; otherwise returns the first argument (y).
-    This is a NULL-preserving function.
-    """
-    from sqlglot.optimizer.annotate_types import annotate_types
-
-    y = expression.this
-    x = expression.expression
-
-    # Get the type from the y argument (what we return when x is not NULL)
-    result_type = y.type
-
-    # If no type info, annotate the expression to infer types
-    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
-        try:
-            annotated = annotate_types(expression.copy(), dialect=self.dialect)
-            result_type = annotated.this.type  # Get y's type from annotated expression
-        except Exception:
-            pass
-
-    # Default to DOUBLE for regression functions if type still unknown
-    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
-        result_type = exp.DataType.build("DOUBLE")
-
-    # Cast NULL to the same type as y to avoid DuckDB type inference issues
-    typed_null = exp.Cast(this=exp.Null(), to=result_type)
-
-    return self.sql(
-        exp.Case(
-            ifs=[exp.If(this=exp.Is(this=x.copy(), expression=exp.Null()), true=typed_null)],
-            default=y.copy(),
+            ifs=[
+                exp.If(
+                    this=exp.Is(this=check_for_null.copy(), expression=exp.Null()), true=typed_null
+                )
+            ],
+            default=return_value.copy(),
         )
     )
 
@@ -1109,8 +1094,8 @@ class DuckDB(Dialect):
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
-            exp.RegrValx: _regr_valx_sql,
-            exp.RegrValy: _regr_valy_sql,
+            exp.RegrValx: lambda self, e: _regr_val_sql(self, e, check_arg="y"),
+            exp.RegrValy: lambda self, e: _regr_val_sql(self, e, check_arg="x"),
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),

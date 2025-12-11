@@ -787,6 +787,7 @@ class Dialect(metaclass=_Dialect):
         "WEEKDAY_ISO": "DAYOFWEEKISO",
         "DOW_ISO": "DAYOFWEEKISO",
         "DW_ISO": "DAYOFWEEKISO",
+        "DAYOFWEEK_ISO": "DAYOFWEEKISO",
         "DAY OF YEAR": "DAYOFYEAR",
         "DOY": "DAYOFYEAR",
         "DY": "DAYOFYEAR",

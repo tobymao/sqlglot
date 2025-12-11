@@ -13,6 +13,8 @@ jobs:
   should-run:
     name: Check if integration tests should run
     runs-on: ubuntu-latest
+    # only trigger if this is a PR event and not an event on some other issue
+    if: github.event_name == 'pull_request' || github.event.issue.pull_request
     outputs:
       skip: ${{ steps.test-parameters.outputs.skip }}
       dialects: ${{ steps.test-parameters.outputs.dialects }}

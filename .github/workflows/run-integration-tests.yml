@@ -10,15 +10,13 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  run-integration-tests:
-    name: Run Integration Tests
+  should-run:
+    name: Check if integration tests should run
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'issue_comment' &&
-       contains(github.event.comment.body, '/integration-test') &&
-       github.event.issue.pull_request) ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.body, '/integration-test'))
+    outputs:
+      skip: ${{ steps.test-parameters.outputs.skip }}
+      dialects: ${{ steps.test-parameters.outputs.dialects }}
+
     steps:
       - name: Print debugging info
         run: |
@@ -43,6 +41,29 @@ jobs:
 
             Ref Name: ${{ github.ref_name }}
           EOF
+
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          # we need to checkout all refs so we can run `git diff`
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Check if integration tests should be run
+        id: test-parameters
+        run: |
+          python .github/scripts/get_integration_test_params.py
+
+  run-integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: should-run
+    if: needs.should-run.outputs.skip == 'false'
+    steps:
       - name: Acquire credentials
         id: app-token
         uses: actions/create-github-app-token@v2
@@ -70,7 +91,8 @@ jobs:
             -f sqlglot_ref=${{ github.sha }} \
             -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
             -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }} \
-            -f correlation_id="$CORRELATION_ID"
+            -f correlation_id="$CORRELATION_ID" \
+            -f dialects="${{ needs.should-run.outputs.dialects }}"
 
           echo "Triggered workflow using correlation id: $CORRELATION_ID"
 
@@ -126,11 +148,37 @@ jobs:
         with:
           script: |
             // summary.json is downloaded from the remote workflow in the previous step
-            const summary = require("./summary.json")
+            const summary = require("./summary.json");
 
-            github.rest.issues.createComment({
+            // Add a unique identifier to find this comment later
+            const commentIdentifier = "<!-- integration-test-summary -->";
+            const body = `${commentIdentifier}\n${summary.msg}`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: summary.msg
-            })
+            });
+
+            const existingComment = comments.find(comment =>
+              comment.body.includes(commentIdentifier)
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }

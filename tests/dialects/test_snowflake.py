@@ -1619,6 +1619,14 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT EXTRACT(ISODOW FROM foo)",
             },
         )
+
+        self.validate_all(
+            "SELECT DATE_PART(DAYOFWEEK_ISO, foo)",
+            write={
+                "snowflake": "SELECT DATE_PART(DAYOFWEEKISO, foo)",
+                "duckdb": "SELECT EXTRACT(ISODOW FROM foo)",
+            },
+        )
         self.validate_identity("ALTER TABLE foo ADD col1 VARCHAR(512), col2 VARCHAR(512)")
         self.validate_identity(
             "ALTER TABLE foo ADD col1 VARCHAR NOT NULL TAG (key1='value_1'), col2 VARCHAR NOT NULL TAG (key2='value_2')"

@@ -5,7 +5,7 @@ This script is intended to be used as part of a GitHub Actions workflow in order
 a) be triggered at all
 b) if they should be triggered, should they be triggered for a subset of dialects or all dialects?
 
-The tests can be triggered manually by using the following directive in either the PR description or a PR comment:
+The tests can be triggered manually by using the following directive in the PR description:
 
  /integration-tests
 
@@ -118,21 +118,14 @@ if __name__ == "__main__":
 
     print(f"Handling event: \n" + json.dumps(event, indent=2))
 
-    # for issue_comment events, the body is located at github.event.comment.body
-    # since issues and PR's are the same thing in the GH backend, we also have to check if the issue type is "pull_request"
-    comment_body = (
-        event.get("comment", {}).get("body") if event.get("issue", {}).get("pull_request") else None
-    )
-
     # for pull_request events, the body is located at github.event.pull_request.body
-    pr_description = event.get("pull_request", {}).get("body")
+    pr_description: str = event.get("pull_request", {}).get("body", "")
 
     dialects = []
     should_run = False
 
-    text_blob = f"{comment_body or ''}{pr_description or ''}"
-    text_blob_lines = [l.strip().lower() for l in text_blob.splitlines()]
-    if trigger_line := [l for l in text_blob_lines if l.startswith(TRIGGER)]:
+    pr_description_lines = [l.strip().lower() for l in pr_description.splitlines()]
+    if trigger_line := [l for l in pr_description_lines if l.startswith(TRIGGER)]:
         # if the user has explicitly requested /integration-tests then use that
         print(f"Handling trigger line: {trigger_line[0]}")
         dialects = get_dialects_from_manual_trigger(trigger_line[0])
@@ -141,17 +134,14 @@ if __name__ == "__main__":
         # otherwise, do a git diff and inspect the changed files
         print(f"Explicit trigger line not detected; performing git diff")
         pull_request_base_ref = event.get("pull_request", {}).get("base", {}).get("sha")
-        issue_comment_base_ref = event.get("before")
-
-        base_ref = pull_request_base_ref or issue_comment_base_ref
-        if not base_ref:
+        if not pull_request_base_ref:
             raise ValueError("Unable to determine base ref")
 
         current_ref = github_sha
-        print(f"Comparing '{current_ref}' against '{base_ref}'")
+        print(f"Comparing '{current_ref}' against '{pull_request_base_ref}'")
         # otherwise, look at git files changed and only trigger if a file relating
         # to a supported dialect has changed
-        dialects = get_dialects_from_git(base_ref=base_ref, current_ref=github_sha)
+        dialects = get_dialects_from_git(base_ref=pull_request_base_ref, current_ref=github_sha)
         if dialects:
             should_run = True
 

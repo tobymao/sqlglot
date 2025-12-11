@@ -1,13 +1,8 @@
 name: Run Integration Tests
 
 on:
-  # note: the issue_comment event (PR's are issues) will only run the version of this workflow committed to 'main'
-  # this makes it impossible to properly test issue_comment triggers in a PR
-  # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#issue_comment
-  issue_comment:
-    types: [created, edited]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   should-run:

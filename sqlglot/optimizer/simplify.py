@@ -609,6 +609,10 @@ class Simplifier:
             elif isinstance(node, exp.Where):
                 wheres.append(node)
             elif isinstance(node, exp.Join):
+                # snowflake match_conditions have very strict ordering rules
+                if match := node.args.get("match_condition"):
+                    match.meta[FINAL] = True
+
                 joins.append(node)
 
         for where in wheres:

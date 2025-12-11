@@ -1404,3 +1404,8 @@ NULL AND TRUE;
 
 SELECT IF(NULL = NULL, 1, 100);
 SELECT 100;
+
+# dialect: snowflake
+SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
+SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;
+

@@ -634,17 +634,14 @@ class Snowflake(Dialect):
 
     PSEUDOCOLUMNS = {"LEVEL"}
 
-    def quote_identifier(self, expression: E, identify: bool = True) -> E:
+    def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
-        if (
-            isinstance(expression, exp.Identifier)
-            and isinstance(expression.parent, exp.Table)
-            and expression.name.lower() == "dual"
-        ):
-            return expression  # type: ignore
-
-        return super().quote_identifier(expression, identify=identify)
+        return super().can_quote(identifier, identify) and not (
+            isinstance(identifier.parent, exp.Table)
+            and not identifier.quoted
+            and identifier.name.lower() == "dual"
+        )
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         SINGLE_TOKENS = jsonpath.JSONPathTokenizer.SINGLE_TOKENS.copy()

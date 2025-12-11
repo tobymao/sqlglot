@@ -271,7 +271,7 @@ class TestOptimizer(unittest.TestCase):
                 db="db",
                 catalog="catalog",
             ).sql(),
-            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS \"_0\"",
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _0",
         )
 
         self.assertEqual(

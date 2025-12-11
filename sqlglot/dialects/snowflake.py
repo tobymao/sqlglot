@@ -1326,7 +1326,7 @@ class Snowflake(Dialect):
             "WAREHOUSE": TokenType.WAREHOUSE,
             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
             # FLOAT is a synonym for DOUBLE in Snowflake
-            "FLOAT": TokenType.DOUBLE
+            "FLOAT": TokenType.DOUBLE,
         }
         KEYWORDS.pop("/*+")
 

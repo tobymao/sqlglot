@@ -672,6 +672,10 @@ class TestClickhouse(Validator):
         self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
         self.validate_identity("currentSchemas(TRUE)", "CURRENT_SCHEMAS(TRUE)")
 
+        self.validate_identity(
+            "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
+        )
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

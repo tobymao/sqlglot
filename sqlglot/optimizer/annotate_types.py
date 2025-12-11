@@ -673,6 +673,21 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._set_type(expression, expr_type)
         return expression
 
+    def _annotate_subquery(self, expression: exp.Subquery) -> exp.Subquery:
+        # For scalar subqueries (subqueries with a single projection), infer the type
+        # from that single projection. This allows type propagation in cases like:
+        # SELECT (SELECT 1 AS c) AS c
+        query = expression.unnest()
+
+        if isinstance(query, exp.Query):
+            selects = query.selects
+            if len(selects) == 1:
+                self._set_type(expression, selects[0].type)
+                return expression
+
+        self._set_type(expression, exp.DataType.Type.UNKNOWN)
+        return expression
+
     def _annotate_struct_value(
         self, expression: exp.Expression
     ) -> t.Optional[exp.DataType] | exp.ColumnDef:

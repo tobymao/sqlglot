@@ -863,7 +863,7 @@ SELECT percentile AS percentile, value AS value, score AS score FROM UNNEST(ARRA
 # dialect: bigquery
 # execute: false
 WITH scores AS (SELECT * FROM UNNEST((SELECT ARRAY<STRUCT<percentile STRING, value INT64, score FLOAT64>>[("p10", 1, 0.0)]))) SELECT percentile FROM scores;
-WITH scores AS (SELECT * FROM UNNEST((SELECT ARRAY<STRUCT<percentile STRING, value INT64, score FLOAT64>>[('p10', 1, 0.0)] AS _col_0))) SELECT scores.percentile AS percentile FROM scores AS scores;
+WITH scores AS (SELECT percentile AS percentile, value AS value, score AS score FROM UNNEST((SELECT ARRAY<STRUCT<percentile STRING, value INT64, score FLOAT64>>[('p10', 1, 0.0)] AS _col_0))) SELECT scores.percentile AS percentile FROM scores AS scores;
 
 --------------------------------------
 -- Window functions

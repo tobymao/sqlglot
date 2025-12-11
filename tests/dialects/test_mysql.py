@@ -432,17 +432,18 @@ class TestMySQL(Validator):
             },
         )
 
-        self.validate_all(
+        self.validate_identity(
             r"'\"'",
-            write={
-                "mysql": """\'"\'""",
-            },
+            """\'"\'""",
         )
-        self.validate_all(
-            "'\\\\\"a'",
-            write={
-                "mysql": "'\\\\\"a'",
-            },
+        self.validate_identity("'\\\\\"a'")
+        self.validate_identity(
+            "'\t'",
+            "'\\t'",
+        )
+        self.validate_identity(
+            "'\j'",
+            "'j'",
         )
 
     def test_introducers(self):

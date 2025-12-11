@@ -202,7 +202,8 @@ class MySQL(Dialect):
         STRING_ESCAPES = ["'", '"', "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
-        STRING_ESCAPES_NOOP = ['"', "'"]
+        # https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
+        ESCAPE_FOLLOW_CHARS = ["0", "b", "n", "r", "t", "Z", "%", "_"]
 
         NESTED_COMMENTS = False
 

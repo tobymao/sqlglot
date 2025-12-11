@@ -665,14 +665,18 @@ impl<'a> TokenizerState<'a> {
             {
                 let peek_char_str = self.peek_char.to_string();
                 let equal_delimiter = delimiter == peek_char_str;
-                
+                let is_valid_custom_escape =
+                    self.current_char == '\\'
+                        && !self.settings.escape_follow_chars.is_empty()
+                        && !self.settings.escape_follow_chars.contains(&self.peek_char);
+
                 if equal_delimiter 
                     || escapes.contains(&self.peek_char) 
-                    || self.settings.string_escapes_noop.contains(&self.peek_char)
+                    || is_valid_custom_escape
                 {
                     if equal_delimiter {
                         text.push(self.peek_char);
-                    } else if self.settings.string_escapes_noop.contains(&self.peek_char)
+                    } else if is_valid_custom_escape
                         && self.current_char != self.peek_char 
                     {
                         text.push(self.peek_char);

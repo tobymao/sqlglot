@@ -104,7 +104,7 @@ pub struct TokenizerSettings {
     pub string_escapes_allowed_in_raw_strings: bool,
     pub nested_comments: bool,
     pub hint_start: String,
-    pub string_escapes_noop: HashSet<char>,
+    pub escape_follow_chars: HashSet<char>,
 }
 
 #[pymethods]
@@ -131,7 +131,7 @@ impl TokenizerSettings {
         string_escapes_allowed_in_raw_strings: bool,
         nested_comments: bool,
         hint_start: String,
-        string_escapes_noop: HashSet<String>,
+        escape_follow_chars: HashSet<String>,
     ) -> Self {
         let to_char = |v: &String| {
             if v.len() == 1 {
@@ -160,7 +160,7 @@ impl TokenizerSettings {
             identifier_escapes.iter().map(&to_char).collect();
 
         let string_escapes_native: HashSet<char> = string_escapes.iter().map(&to_char).collect();
-        let string_escapes_noop_native: HashSet<char> = string_escapes_noop.iter().map(&to_char).collect();
+        let escape_follow_chars_native: HashSet<char> = escape_follow_chars.iter().map(&to_char).collect();
 
         let var_single_tokens_native: HashSet<char> =
             var_single_tokens.iter().map(&to_char).collect();
@@ -186,7 +186,7 @@ impl TokenizerSettings {
             string_escapes_allowed_in_raw_strings,
             nested_comments,
             hint_start,
-            string_escapes_noop: string_escapes_noop_native,
+            escape_follow_chars: escape_follow_chars_native,
         };
 
         #[cfg(feature = "profiling")]

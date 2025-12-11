@@ -258,6 +258,7 @@ EXPRESSION_METADATA = {
             exp.BitmapOrAgg,
             exp.Compress,
             exp.DecompressBinary,
+            exp.HexString,
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,

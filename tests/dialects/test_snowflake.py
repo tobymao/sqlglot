@@ -1,6 +1,7 @@
 from unittest import mock
 
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
@@ -1514,35 +1515,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
 
-        # Binary bitwise operations
-        self.validate_all(
-            "SELECT BITOR(x'FF', x'0F')",
-            write={
-                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) | CAST(UNHEX('0F') AS BIT) AS BLOB)",
-                "snowflake": "SELECT BITOR(x'FF', x'0F')",
-            },
-        )
-        self.validate_all(
-            "SELECT BITAND(x'FF', x'0F')",
-            write={
-                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) & CAST(UNHEX('0F') AS BIT) AS BLOB)",
-                "snowflake": "SELECT BITAND(x'FF', x'0F')",
-            },
-        )
-        self.validate_all(
-            "SELECT BITXOR(x'FF', x'0F')",
-            write={
-                "duckdb": "SELECT CAST(XOR(CAST(UNHEX('FF') AS BIT), CAST(UNHEX('0F') AS BIT)) AS BLOB)",
-                "snowflake": "SELECT BITXOR(x'FF', x'0F')",
-            },
-        )
-        self.validate_all(
-            "SELECT BITNOT(x'FF')",
-            write={
-                "duckdb": "SELECT CAST(~CAST(UNHEX('FF') AS BIT) AS BLOB)",
-                "snowflake": "SELECT BITNOT(x'FF')",
-            },
-        )
         self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BITSHIFTRIGHT(a, 1)")
@@ -3885,3 +3857,34 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SELECT ROUND(2.256, CAST(CAST(1.8 AS DECIMAL(38, 0)) AS INT)) AS value",
             },
         )
+
+    def test_transpile_bitwise_ops(self):
+        # Binary bitwise operations
+        expr = self.parse_one("SELECT BITOR(x'FF', x'0F')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(CAST(UNHEX('FF') AS BIT) | CAST(UNHEX('0F') AS BIT) AS BLOB)",
+        )
+        self.assertEqual(annotated.sql("snowflake"), "SELECT BITOR(x'FF', x'0F')")
+
+        expr = self.parse_one("SELECT BITAND(x'FF', x'0F')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(CAST(UNHEX('FF') AS BIT) & CAST(UNHEX('0F') AS BIT) AS BLOB)",
+        )
+        self.assertEqual(annotated.sql("snowflake"), "SELECT BITAND(x'FF', x'0F')")
+
+        expr = self.parse_one("SELECT BITXOR(x'FF', x'0F')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT CAST(XOR(CAST(UNHEX('FF') AS BIT), CAST(UNHEX('0F') AS BIT)) AS BLOB)",
+        )
+        self.assertEqual(annotated.sql("snowflake"), "SELECT BITXOR(x'FF', x'0F')")
+
+        expr = self.parse_one("SELECT BITNOT(x'FF')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT CAST(~CAST(UNHEX('FF') AS BIT) AS BLOB)")
+        self.assertEqual(annotated.sql("snowflake"), "SELECT BITNOT(x'FF')")

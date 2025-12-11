@@ -119,7 +119,7 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     # Get the input type
     input_type = expression.this.type
 
-    if input_type.is_type(exp.DataType.Type.DOUBLE, exp.DataType.Type.FLOAT):
+    if input_type.is_type(exp.DataType.Type.DOUBLE):
         # If input is FLOAT/DOUBLE, return DOUBLE (FLOAT is normalized to DOUBLE in Snowflake)
         self._set_type(expression, exp.DataType.Type.DOUBLE)
     else:

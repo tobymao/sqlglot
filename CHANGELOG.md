@@ -1,6 +1,328 @@
 Changelog
 =========
 
+## [v28.2.0] - 2025-12-11
+### :boom: BREAKING CHANGES
+- due to [`ebe718a`](https://github.com/tobymao/sqlglot/commit/ebe718a72d5b5871a8d6e67754ff50e873d55b41) - Add support for format elements used in date/time functions like FORMAT_DATETIME *(PR [#6428](https://github.com/tobymao/sqlglot/pull/6428) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add support for format elements used in date/time functions like FORMAT_DATETIME (#6428)
+
+- due to [`c111f64`](https://github.com/tobymao/sqlglot/commit/c111f643d61064280024b4cc5c0fc250581fbe55) - annotation support for APPROX_PERCENTILE_ACCUMULATE *(PR [#6455](https://github.com/tobymao/sqlglot/pull/6455) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for APPROX_PERCENTILE_ACCUMULATE (#6455)
+
+- due to [`f305305`](https://github.com/tobymao/sqlglot/commit/f305305e5cf3ef45afba822542aebeb944c00e0b) - Annotate types for BigQuery's AVG function *(PR [#6459](https://github.com/tobymao/sqlglot/pull/6459) by [@vchan](https://github.com/vchan))*:
+
+  Annotate types for BigQuery's AVG function (#6459)
+
+- due to [`910349f`](https://github.com/tobymao/sqlglot/commit/910349f3c30af59ce1820e48cae0cbb77539877d) - Annotate types for BigQuery's SAFE_DIVIDE function *(PR [#6464](https://github.com/tobymao/sqlglot/pull/6464) by [@vchan](https://github.com/vchan))*:
+
+  Annotate types for BigQuery's SAFE_DIVIDE function (#6464)
+
+- due to [`5e75621`](https://github.com/tobymao/sqlglot/commit/5e75621e90defd50076383485f6a4689a8c551ac) - annotate type for snowflake func ARRAY_UNIQUE_AGG *(PR [#6465](https://github.com/tobymao/sqlglot/pull/6465) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*:
+
+  annotate type for snowflake func ARRAY_UNIQUE_AGG (#6465)
+
+- due to [`94d46b8`](https://github.com/tobymao/sqlglot/commit/94d46b8eafd5abe252407d2bbe306ca579a29b20) - annotation support for APPROX_PERCENTILE_ESTIMATE. Return type DOUBLE *(PR [#6461](https://github.com/tobymao/sqlglot/pull/6461) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for APPROX_PERCENTILE_ESTIMATE. Return type DOUBLE (#6461)
+
+- due to [`2ac30b0`](https://github.com/tobymao/sqlglot/commit/2ac30b08bd663bbaf00ae075c4db0c3d27ab6640) - annotation support for APPROX_PERCENTILE_COMBINE *(PR [#6460](https://github.com/tobymao/sqlglot/pull/6460) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for APPROX_PERCENTILE_COMBINE (#6460)
+
+- due to [`d44bda3`](https://github.com/tobymao/sqlglot/commit/d44bda376c06956947a09a9f279cce886a63b981) - Annotate type for ZIPF *(PR [#6453](https://github.com/tobymao/sqlglot/pull/6453) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Annotate type for ZIPF (#6453)
+
+- due to [`34dbd47`](https://github.com/tobymao/sqlglot/commit/34dbd478957c1796998d0b263f63c8ce1db7a320) - Annotate type for XMLGET *(PR [#6457](https://github.com/tobymao/sqlglot/pull/6457) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Annotate type for XMLGET (#6457)
+
+- due to [`0d211f2`](https://github.com/tobymao/sqlglot/commit/0d211f2b36167cfb7856b8ec25f597f70317a9c7) - annotate type for MODE function snowflake *(PR [#6447](https://github.com/tobymao/sqlglot/pull/6447) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  annotate type for MODE function snowflake (#6447)
+
+- due to [`cc4c8ab`](https://github.com/tobymao/sqlglot/commit/cc4c8ab43ab71790bc2bb9f8f3c06e34f89f999f) - annotate type for PERCENTILE_CONT in Snowflake *(PR [#6470](https://github.com/tobymao/sqlglot/pull/6470) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  annotate type for PERCENTILE_CONT in Snowflake (#6470)
+
+- due to [`7dbc242`](https://github.com/tobymao/sqlglot/commit/7dbc242a637a8890511cc14f22bce4d425f1f55d) - annotation support for CURRENT REGION. Return type VARCHAR *(PR [#6473](https://github.com/tobymao/sqlglot/pull/6473) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT REGION. Return type VARCHAR (#6473)
+
+- due to [`43a6a5c`](https://github.com/tobymao/sqlglot/commit/43a6a5c601421e15a7f94dd489cb4fbcf9d2c8c3) - annotation support for CURRENT_ORGANIZATION_NAME. Return type VARCHAR *(PR [#6475](https://github.com/tobymao/sqlglot/pull/6475) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ORGANIZATION_NAME. Return type VARCHAR (#6475)
+
+- due to [`f1f7c6a`](https://github.com/tobymao/sqlglot/commit/f1f7c6ae6b6aa3f6f2251d0f81ee667440ca53d1) - annotation support for CURRENT_ORGANIZATION_USER. *(PR [#6476](https://github.com/tobymao/sqlglot/pull/6476) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ORGANIZATION_USER. (#6476)
+
+- due to [`88dfd26`](https://github.com/tobymao/sqlglot/commit/88dfd26b832d13e517fe7c18d2c086885bf4954d) - annotate type for snowflake func TO_BINARY *(PR [#6474](https://github.com/tobymao/sqlglot/pull/6474) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*:
+
+  annotate type for snowflake func TO_BINARY (#6474)
+
+- due to [`d268203`](https://github.com/tobymao/sqlglot/commit/d268203e1dbae4e3aff863108f6d09a6f8274db5) - annotation support for CURRENT_ROLE_TYPE *(PR [#6479](https://github.com/tobymao/sqlglot/pull/6479) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ROLE_TYPE (#6479)
+
+- due to [`fd4431b`](https://github.com/tobymao/sqlglot/commit/fd4431bf9550c03aa761c642a68a21a146fd8548) - annotate type for VECTOR_L1_DISTANCE, VECTOR_L2_DISTANCE, VECTOR_COSINE_SIMILARITY functions *(PR [#6468](https://github.com/tobymao/sqlglot/pull/6468) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  annotate type for VECTOR_L1_DISTANCE, VECTOR_L2_DISTANCE, VECTOR_COSINE_SIMILARITY functions (#6468)
+
+- due to [`e6adba7`](https://github.com/tobymao/sqlglot/commit/e6adba76cc2f27633a9d38bfaea3356e71d00a4c) - Add support for coercing STRING literals to temporal types *(PR [#6482](https://github.com/tobymao/sqlglot/pull/6482) by [@vchan](https://github.com/vchan))*:
+
+  Add support for coercing STRING literals to temporal types (#6482)
+
+- due to [`68a5e61`](https://github.com/tobymao/sqlglot/commit/68a5e615b24e518cb90c9b80cf25355fcabdb468) - annotate type for REGR_* functions *(PR [#6452](https://github.com/tobymao/sqlglot/pull/6452) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  annotate type for REGR_* functions (#6452)
+
+- due to [`f7458a4`](https://github.com/tobymao/sqlglot/commit/f7458a40d3b09a2e212f6705ac4a77c99714508e) - annotate type for snowflake func TO_BOOLEAN *(PR [#6481](https://github.com/tobymao/sqlglot/pull/6481) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*:
+
+  annotate type for snowflake func TO_BOOLEAN (#6481)
+
+- due to [`1531a67`](https://github.com/tobymao/sqlglot/commit/1531a67ac7806f3b4582f6cf1ea02342a517de74) - annotate type for VECTOR_INNER_PRODUCT *(PR [#6486](https://github.com/tobymao/sqlglot/pull/6486) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  annotate type for VECTOR_INNER_PRODUCT (#6486)
+
+- due to [`df4c1d3`](https://github.com/tobymao/sqlglot/commit/df4c1d37ff77151a74b5de3d119c7e03f5db85f4) - REGEXP_EXTRACT position arg overflow *(PR [#6458](https://github.com/tobymao/sqlglot/pull/6458) by [@treysp](https://github.com/treysp))*:
+
+  REGEXP_EXTRACT position arg overflow (#6458)
+
+- due to [`f6b2b3b`](https://github.com/tobymao/sqlglot/commit/f6b2b3bc6e1c95340149be65d80ef7e177b28d82) - support padside argument for BIT[OR|AND|XOR] *(PR [#6487](https://github.com/tobymao/sqlglot/pull/6487) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support padside argument for BIT[OR|AND|XOR] (#6487)
+
+- due to [`5a49c3f`](https://github.com/tobymao/sqlglot/commit/5a49c3f7a7619ad9e711ff2cd9e85b8606969b36) - support ORDER / LIMIT expressions for BigQuery ARRAY_AGG / STRING_AGG functions *(PR [#6463](https://github.com/tobymao/sqlglot/pull/6463) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  support ORDER / LIMIT expressions for BigQuery ARRAY_AGG / STRING_AGG functions (#6463)
+
+- due to [`ef130f1`](https://github.com/tobymao/sqlglot/commit/ef130f1b944b4be835d4a6831fec9a333a825a34) - Annotated type for ARRAY_CONSTRUCT_COMPACT [#6496](https://github.com/tobymao/sqlglot/pull/6496) *(commit by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Annotated type for ARRAY_CONSTRUCT_COMPACT #6496
+
+- due to [`1b6076b`](https://github.com/tobymao/sqlglot/commit/1b6076bd5a64b044f52f5366244ba0746aca75e1) - wrap connectives generated due to transpiling LIKE ANY closes [#6493](https://github.com/tobymao/sqlglot/pull/6493) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  wrap connectives generated due to transpiling LIKE ANY closes #6493
+
+- due to [`36ad534`](https://github.com/tobymao/sqlglot/commit/36ad534b14eabe9ee197017f5087e8e5190f8526) - qualified select list with "LOCAL" *(PR [#6450](https://github.com/tobymao/sqlglot/pull/6450) by [@nnamdi16](https://github.com/nnamdi16))*:
+
+  qualified select list with "LOCAL" (#6450)
+
+- due to [`36cf0bf`](https://github.com/tobymao/sqlglot/commit/36cf0bf6671f622344afee52d7aafe30f19ecf9a) - annotation support for CURRENT_ROLE. *(PR [#6478](https://github.com/tobymao/sqlglot/pull/6478) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ROLE. (#6478)
+
+- due to [`cbba04c`](https://github.com/tobymao/sqlglot/commit/cbba04cb292fe8b3fd38c87d9ccb624cdcb52843) - support comma-separated syntax for OVERLAY function *(PR [#6497](https://github.com/tobymao/sqlglot/pull/6497) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support comma-separated syntax for OVERLAY function (#6497)
+
+- due to [`dc8f26a`](https://github.com/tobymao/sqlglot/commit/dc8f26a3a5e023a0e54caa345b129fb1b4fe805f) - bq annotate type for NULL *(PR [#6491](https://github.com/tobymao/sqlglot/pull/6491) by [@geooo109](https://github.com/geooo109))*:
+
+  bq annotate type for NULL (#6491)
+
+- due to [`52aceaa`](https://github.com/tobymao/sqlglot/commit/52aceaaa887dddb35f8ede5c2d9577fdeee35c48) - annotate `HavingMax` by `this` *(PR [#6499](https://github.com/tobymao/sqlglot/pull/6499) by [@georgesittas](https://github.com/georgesittas))*:
+
+  annotate `HavingMax` by `this` (#6499)
+
+- due to [`c97a81d`](https://github.com/tobymao/sqlglot/commit/c97a81d68a1584fad48475725665a7678fcad9d1) - annotate TO_HEX(MD5(...)) in BigQuery *(PR [#6500](https://github.com/tobymao/sqlglot/pull/6500) by [@georgesittas](https://github.com/georgesittas))*:
+
+  annotate TO_HEX(MD5(...)) in BigQuery (#6500)
+
+- due to [`a5797a1`](https://github.com/tobymao/sqlglot/commit/a5797a1c867c4ade71ae4ddf93232576993cf5bc) - handle named arguments and non-integer scale input for ROUND *(PR [#6495](https://github.com/tobymao/sqlglot/pull/6495) by [@toriwei](https://github.com/toriwei))*:
+
+  handle named arguments and non-integer scale input for ROUND (#6495)
+
+- due to [`3224235`](https://github.com/tobymao/sqlglot/commit/3224235c1b7a80511af11f7dbffe608a747a3df0) - make CTE builder produce AST consistent with parser closes [#6503](https://github.com/tobymao/sqlglot/pull/6503) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  make CTE builder produce AST consistent with parser closes #6503
+
+- due to [`8b5298a`](https://github.com/tobymao/sqlglot/commit/8b5298a6578af80fd9676eb222422862d5468859) - Transpile BQ's WEEK based `DATE_DIFF` *(PR [#6507](https://github.com/tobymao/sqlglot/pull/6507) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Transpile BQ's WEEK based `DATE_DIFF` (#6507)
+
+- due to [`9454a18`](https://github.com/tobymao/sqlglot/commit/9454a18cca41a510e61522f6b785d646980e2100) - uppercase join method, side, kind for consistency fixes [#6510](https://github.com/tobymao/sqlglot/pull/6510) *(PR [#6511](https://github.com/tobymao/sqlglot/pull/6511) by [@georgesittas](https://github.com/georgesittas))*:
+
+  uppercase join method, side, kind for consistency fixes #6510 (#6511)
+
+- due to [`41b776b`](https://github.com/tobymao/sqlglot/commit/41b776bdc6936f18accd9f7308b55acd383bb596) - added support for current_catalog *(PR [#6492](https://github.com/tobymao/sqlglot/pull/6492) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  added support for current_catalog (#6492)
+
+- due to [`dd19bea`](https://github.com/tobymao/sqlglot/commit/dd19beae95f077cfd8b6e315eca7ff212817b250) - annotation support for CURRENT_ACCOUNT *(PR [#6512](https://github.com/tobymao/sqlglot/pull/6512) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ACCOUNT (#6512)
+
+- due to [`2e8105e`](https://github.com/tobymao/sqlglot/commit/2e8105eebaec25fc8f94f1e68951198660f404e1) - Annotate type for VAR_POP, VAR_SAMP, DuckDB consistency fix for VAR_SAMP *(PR [#6488](https://github.com/tobymao/sqlglot/pull/6488) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Annotate type for VAR_POP, VAR_SAMP, DuckDB consistency fix for VAR_SAMP (#6488)
+
+- due to [`cfb02c1`](https://github.com/tobymao/sqlglot/commit/cfb02c1aa676e801b2d13a84467b4904cd834ffe) - annotation support for CURRENT_ACCOUNT_NAME *(PR [#6513](https://github.com/tobymao/sqlglot/pull/6513) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_ACCOUNT_NAME (#6513)
+
+- due to [`1004e31`](https://github.com/tobymao/sqlglot/commit/1004e31cce62cce2e2afb7eab85ed8bdecaede3b) - annotation support for CURRENT_AVAILABLE_ROLES *(PR [#6514](https://github.com/tobymao/sqlglot/pull/6514) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_AVAILABLE_ROLES (#6514)
+
+- due to [`ff201fe`](https://github.com/tobymao/sqlglot/commit/ff201febd27937a97674dd091928456dde733254) - annotation support for CURRENT_CLIENT *(PR [#6515](https://github.com/tobymao/sqlglot/pull/6515) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_CLIENT (#6515)
+
+- due to [`d777a9c`](https://github.com/tobymao/sqlglot/commit/d777a9c0feef15ac036f7b413112de4d7cc8bea4) - annotation support for CURRENT_IP_ADDRESS *(PR [#6518](https://github.com/tobymao/sqlglot/pull/6518) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_IP_ADDRESS (#6518)
+
+- due to [`c296061`](https://github.com/tobymao/sqlglot/commit/c2960615a3bd279b7c5f775d5b93ae12aa27a3b8) - Transpilation of TO_BINARY from snowflake to duckdb *(PR [#6504](https://github.com/tobymao/sqlglot/pull/6504) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  Transpilation of TO_BINARY from snowflake to duckdb (#6504)
+
+- due to [`7a70164`](https://github.com/tobymao/sqlglot/commit/7a70164d8cf361cf4c0a7d5789bb51676f772959) - transpile Snowflake's `RANDSTR` function *(PR [#6502](https://github.com/tobymao/sqlglot/pull/6502) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  transpile Snowflake's `RANDSTR` function (#6502)
+
+- due to [`a26d419`](https://github.com/tobymao/sqlglot/commit/a26d4191e5468e39eafdf7a981e7b890d438b2c9) - annotation support for CURRENT_DATABASE *(PR [#6516](https://github.com/tobymao/sqlglot/pull/6516) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_DATABASE (#6516)
+
+- due to [`0acdf7f`](https://github.com/tobymao/sqlglot/commit/0acdf7fc783f2722536ec24dcf8600957febf7ca) - annotation support for CURRENT_SCHEMAS *(PR [#6519](https://github.com/tobymao/sqlglot/pull/6519) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_SCHEMAS (#6519)
+
+- due to [`43cce89`](https://github.com/tobymao/sqlglot/commit/43cce895da80d21abc89d40de5d7fddd68871bf0) - annotation support for CURRENT_SECONDARY_ROLES *(PR [#6520](https://github.com/tobymao/sqlglot/pull/6520) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_SECONDARY_ROLES (#6520)
+
+- due to [`c21b4b1`](https://github.com/tobymao/sqlglot/commit/c21b4b1134b368ee5144339b59e70ddcc54f3dbc) - annotation support for CURRENT_SESSION *(PR [#6521](https://github.com/tobymao/sqlglot/pull/6521) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_SESSION (#6521)
+
+- due to [`57a83c0`](https://github.com/tobymao/sqlglot/commit/57a83c018dace690f7bb363c25ee6bde33c3d60f) - annotation support for CURRENT_STATEMENT *(PR [#6522](https://github.com/tobymao/sqlglot/pull/6522) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_STATEMENT (#6522)
+
+- due to [`4b240e4`](https://github.com/tobymao/sqlglot/commit/4b240e40a8809a6eea2a279370a884f4a7b03dfa) - annotation support for CURRENT_VERSION *(PR [#6524](https://github.com/tobymao/sqlglot/pull/6524) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_VERSION (#6524)
+
+- due to [`c1a831f`](https://github.com/tobymao/sqlglot/commit/c1a831f5bf662ab8d8e07dc2bb949f2adcbe7d7c) - annotation support for CURRENT_TRANSACTION *(PR [#6523](https://github.com/tobymao/sqlglot/pull/6523) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_TRANSACTION (#6523)
+
+- due to [`2e162b0`](https://github.com/tobymao/sqlglot/commit/2e162b0d34066e7aa7edac3156739bcd31a634fc) - annotation support for CURRENT_WAREHOUSE *(PR [#6525](https://github.com/tobymao/sqlglot/pull/6525) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  annotation support for CURRENT_WAREHOUSE (#6525)
+
+- due to [`9d06859`](https://github.com/tobymao/sqlglot/commit/9d0685923209c04747fa6fa2b35ee2e516453abc) - annotate bigquery ARRAY when arg contains set operations *(PR [#6517](https://github.com/tobymao/sqlglot/pull/6517) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*:
+
+  annotate bigquery ARRAY when arg contains set operations (#6517)
+
+- due to [`2fd14ed`](https://github.com/tobymao/sqlglot/commit/2fd14ed32b3793444405005fb98342222b4d7956) - query schema directly when type annotation fails for processing UNNEST source *(PR [#6451](https://github.com/tobymao/sqlglot/pull/6451) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*:
+
+  query schema directly when type annotation fails for processing UNNEST source (#6451)
+
+- due to [`41a9e88`](https://github.com/tobymao/sqlglot/commit/41a9e88bb9800205df0b3e10a1976699dc4fe4f9) - Add support to transpile binary args for bitwise operators *(PR [#6508](https://github.com/tobymao/sqlglot/pull/6508) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add support to transpile binary args for bitwise operators (#6508)
+
+- due to [`06c7ffb`](https://github.com/tobymao/sqlglot/commit/06c7ffbe14985a4da35a97d47322021e79525adf) - cleanup bitwise operator fixes *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  cleanup bitwise operator fixes
+
+
+### :sparkles: New Features
+- [`ebe718a`](https://github.com/tobymao/sqlglot/commit/ebe718a72d5b5871a8d6e67754ff50e873d55b41) - **duckdb**: Add support for format elements used in date/time functions like FORMAT_DATETIME *(PR [#6428](https://github.com/tobymao/sqlglot/pull/6428) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`c111f64`](https://github.com/tobymao/sqlglot/commit/c111f643d61064280024b4cc5c0fc250581fbe55) - **snowflake**: annotation support for APPROX_PERCENTILE_ACCUMULATE *(PR [#6455](https://github.com/tobymao/sqlglot/pull/6455) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`a7d211e`](https://github.com/tobymao/sqlglot/commit/a7d211e6fdce968c64b050c77e026cc23fdc07e5) - **duckdb**: transpile DECFLOAT type to DECIMAL(38, 5) *(PR [#6462](https://github.com/tobymao/sqlglot/pull/6462) by [@toriwei](https://github.com/toriwei))*
+- [`94d46b8`](https://github.com/tobymao/sqlglot/commit/94d46b8eafd5abe252407d2bbe306ca579a29b20) - **snowflake**: annotation support for APPROX_PERCENTILE_ESTIMATE. Return type DOUBLE *(PR [#6461](https://github.com/tobymao/sqlglot/pull/6461) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`2ac30b0`](https://github.com/tobymao/sqlglot/commit/2ac30b08bd663bbaf00ae075c4db0c3d27ab6640) - **snowflake**: annotation support for APPROX_PERCENTILE_COMBINE *(PR [#6460](https://github.com/tobymao/sqlglot/pull/6460) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`d44bda3`](https://github.com/tobymao/sqlglot/commit/d44bda376c06956947a09a9f279cce886a63b981) - **optimizer**: Annotate type for ZIPF *(PR [#6453](https://github.com/tobymao/sqlglot/pull/6453) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`34dbd47`](https://github.com/tobymao/sqlglot/commit/34dbd478957c1796998d0b263f63c8ce1db7a320) - **optimizer**: Annotate type for XMLGET *(PR [#6457](https://github.com/tobymao/sqlglot/pull/6457) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`ff3f0f9`](https://github.com/tobymao/sqlglot/commit/ff3f0f998674f5b2741c3f6cadbe24fa8fb607ad) - **databricks**: add support for ?:: operator *(PR [#6469](https://github.com/tobymao/sqlglot/pull/6469) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`0d211f2`](https://github.com/tobymao/sqlglot/commit/0d211f2b36167cfb7856b8ec25f597f70317a9c7) - **snowflake**: annotate type for MODE function snowflake *(PR [#6447](https://github.com/tobymao/sqlglot/pull/6447) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`cc4c8ab`](https://github.com/tobymao/sqlglot/commit/cc4c8ab43ab71790bc2bb9f8f3c06e34f89f999f) - **snowflake**: annotate type for PERCENTILE_CONT in Snowflake *(PR [#6470](https://github.com/tobymao/sqlglot/pull/6470) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`7dbc242`](https://github.com/tobymao/sqlglot/commit/7dbc242a637a8890511cc14f22bce4d425f1f55d) - **snowflake**: annotation support for CURRENT REGION. Return type VARCHAR *(PR [#6473](https://github.com/tobymao/sqlglot/pull/6473) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`43a6a5c`](https://github.com/tobymao/sqlglot/commit/43a6a5c601421e15a7f94dd489cb4fbcf9d2c8c3) - **snowflake**: annotation support for CURRENT_ORGANIZATION_NAME. Return type VARCHAR *(PR [#6475](https://github.com/tobymao/sqlglot/pull/6475) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`f1f7c6a`](https://github.com/tobymao/sqlglot/commit/f1f7c6ae6b6aa3f6f2251d0f81ee667440ca53d1) - **snowflake**: annotation support for CURRENT_ORGANIZATION_USER. *(PR [#6476](https://github.com/tobymao/sqlglot/pull/6476) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`d268203`](https://github.com/tobymao/sqlglot/commit/d268203e1dbae4e3aff863108f6d09a6f8274db5) - **snowflake**: annotation support for CURRENT_ROLE_TYPE *(PR [#6479](https://github.com/tobymao/sqlglot/pull/6479) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`fd4431b`](https://github.com/tobymao/sqlglot/commit/fd4431bf9550c03aa761c642a68a21a146fd8548) - **snowflake**: annotate type for VECTOR_L1_DISTANCE, VECTOR_L2_DISTANCE, VECTOR_COSINE_SIMILARITY functions *(PR [#6468](https://github.com/tobymao/sqlglot/pull/6468) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`e6adba7`](https://github.com/tobymao/sqlglot/commit/e6adba76cc2f27633a9d38bfaea3356e71d00a4c) - **BigQuery**: Add support for coercing STRING literals to temporal types *(PR [#6482](https://github.com/tobymao/sqlglot/pull/6482) by [@vchan](https://github.com/vchan))*
+- [`68a5e61`](https://github.com/tobymao/sqlglot/commit/68a5e615b24e518cb90c9b80cf25355fcabdb468) - **snowflake**: annotate type for REGR_* functions *(PR [#6452](https://github.com/tobymao/sqlglot/pull/6452) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`f7458a4`](https://github.com/tobymao/sqlglot/commit/f7458a40d3b09a2e212f6705ac4a77c99714508e) - **optimizer**: annotate type for snowflake func TO_BOOLEAN *(PR [#6481](https://github.com/tobymao/sqlglot/pull/6481) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`1531a67`](https://github.com/tobymao/sqlglot/commit/1531a67ac7806f3b4582f6cf1ea02342a517de74) - **snowflake**: annotate type for VECTOR_INNER_PRODUCT *(PR [#6486](https://github.com/tobymao/sqlglot/pull/6486) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`f6b2b3b`](https://github.com/tobymao/sqlglot/commit/f6b2b3bc6e1c95340149be65d80ef7e177b28d82) - **snowflake**: support padside argument for BIT[OR|AND|XOR] *(PR [#6487](https://github.com/tobymao/sqlglot/pull/6487) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`e891397`](https://github.com/tobymao/sqlglot/commit/e89139714aefd8a6481a90d9753c81910c9f88e9) - **BigQuery**: Add support for the NET.HOST function *(PR [#6480](https://github.com/tobymao/sqlglot/pull/6480) by [@vchan](https://github.com/vchan))*
+- [`2cc67cd`](https://github.com/tobymao/sqlglot/commit/2cc67cd7386914043a9cb4eb322fb1fa9af15c8b) - **singlestore**: support dcolonqmark *(PR [#6485](https://github.com/tobymao/sqlglot/pull/6485) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`7d485c7`](https://github.com/tobymao/sqlglot/commit/7d485c7cffe7b6d0113cfcfcf0736de0383bd380) - **duckdb**: Add transpilation support for the negative integer args for BITNOT *(PR [#6490](https://github.com/tobymao/sqlglot/pull/6490) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`ef130f1`](https://github.com/tobymao/sqlglot/commit/ef130f1b944b4be835d4a6831fec9a333a825a34) - **snowflake**: Annotated type for ARRAY_CONSTRUCT_COMPACT [#6496](https://github.com/tobymao/sqlglot/pull/6496) *(commit by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`36cf0bf`](https://github.com/tobymao/sqlglot/commit/36cf0bf6671f622344afee52d7aafe30f19ecf9a) - **snowflake**: annotation support for CURRENT_ROLE. *(PR [#6478](https://github.com/tobymao/sqlglot/pull/6478) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`cbba04c`](https://github.com/tobymao/sqlglot/commit/cbba04cb292fe8b3fd38c87d9ccb624cdcb52843) - **databricks**: support comma-separated syntax for OVERLAY function *(PR [#6497](https://github.com/tobymao/sqlglot/pull/6497) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dc8f26a`](https://github.com/tobymao/sqlglot/commit/dc8f26a3a5e023a0e54caa345b129fb1b4fe805f) - **optimizer**: bq annotate type for NULL *(PR [#6491](https://github.com/tobymao/sqlglot/pull/6491) by [@geooo109](https://github.com/geooo109))*
+- [`c97a81d`](https://github.com/tobymao/sqlglot/commit/c97a81d68a1584fad48475725665a7678fcad9d1) - **optimizer**: annotate TO_HEX(MD5(...)) in BigQuery *(PR [#6500](https://github.com/tobymao/sqlglot/pull/6500) by [@georgesittas](https://github.com/georgesittas))*
+- [`a5797a1`](https://github.com/tobymao/sqlglot/commit/a5797a1c867c4ade71ae4ddf93232576993cf5bc) - **duckdb**: handle named arguments and non-integer scale input for ROUND *(PR [#6495](https://github.com/tobymao/sqlglot/pull/6495) by [@toriwei](https://github.com/toriwei))*
+- [`8b5298a`](https://github.com/tobymao/sqlglot/commit/8b5298a6578af80fd9676eb222422862d5468859) - **duckdb**: Transpile BQ's WEEK based `DATE_DIFF` *(PR [#6507](https://github.com/tobymao/sqlglot/pull/6507) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2c013a5`](https://github.com/tobymao/sqlglot/commit/2c013a5cc8e37cde8a8f9443e0397191ce82f0f5) - **exasol**: qualify bare stars to facilitate transpilation *(PR [#6431](https://github.com/tobymao/sqlglot/pull/6431) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`41b776b`](https://github.com/tobymao/sqlglot/commit/41b776bdc6936f18accd9f7308b55acd383bb596) - **postgres,trino,duckdb**: added support for current_catalog *(PR [#6492](https://github.com/tobymao/sqlglot/pull/6492) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dd19bea`](https://github.com/tobymao/sqlglot/commit/dd19beae95f077cfd8b6e315eca7ff212817b250) - **snowflake**: annotation support for CURRENT_ACCOUNT *(PR [#6512](https://github.com/tobymao/sqlglot/pull/6512) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`2e8105e`](https://github.com/tobymao/sqlglot/commit/2e8105eebaec25fc8f94f1e68951198660f404e1) - **snowflake**: Annotate type for VAR_POP, VAR_SAMP, DuckDB consistency fix for VAR_SAMP *(PR [#6488](https://github.com/tobymao/sqlglot/pull/6488) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`cfb02c1`](https://github.com/tobymao/sqlglot/commit/cfb02c1aa676e801b2d13a84467b4904cd834ffe) - **snowflake**: annotation support for CURRENT_ACCOUNT_NAME *(PR [#6513](https://github.com/tobymao/sqlglot/pull/6513) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`1004e31`](https://github.com/tobymao/sqlglot/commit/1004e31cce62cce2e2afb7eab85ed8bdecaede3b) - **snowflake**: annotation support for CURRENT_AVAILABLE_ROLES *(PR [#6514](https://github.com/tobymao/sqlglot/pull/6514) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`ff201fe`](https://github.com/tobymao/sqlglot/commit/ff201febd27937a97674dd091928456dde733254) - **snowflake**: annotation support for CURRENT_CLIENT *(PR [#6515](https://github.com/tobymao/sqlglot/pull/6515) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`d777a9c`](https://github.com/tobymao/sqlglot/commit/d777a9c0feef15ac036f7b413112de4d7cc8bea4) - **snowflake**: annotation support for CURRENT_IP_ADDRESS *(PR [#6518](https://github.com/tobymao/sqlglot/pull/6518) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`c296061`](https://github.com/tobymao/sqlglot/commit/c2960615a3bd279b7c5f775d5b93ae12aa27a3b8) - **snowflake**: Transpilation of TO_BINARY from snowflake to duckdb *(PR [#6504](https://github.com/tobymao/sqlglot/pull/6504) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`7a70164`](https://github.com/tobymao/sqlglot/commit/7a70164d8cf361cf4c0a7d5789bb51676f772959) - **duckdb**: transpile Snowflake's `RANDSTR` function *(PR [#6502](https://github.com/tobymao/sqlglot/pull/6502) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`a26d419`](https://github.com/tobymao/sqlglot/commit/a26d4191e5468e39eafdf7a981e7b890d438b2c9) - **snowflake**: annotation support for CURRENT_DATABASE *(PR [#6516](https://github.com/tobymao/sqlglot/pull/6516) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`0acdf7f`](https://github.com/tobymao/sqlglot/commit/0acdf7fc783f2722536ec24dcf8600957febf7ca) - **snowflake**: annotation support for CURRENT_SCHEMAS *(PR [#6519](https://github.com/tobymao/sqlglot/pull/6519) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`43cce89`](https://github.com/tobymao/sqlglot/commit/43cce895da80d21abc89d40de5d7fddd68871bf0) - **snowflake**: annotation support for CURRENT_SECONDARY_ROLES *(PR [#6520](https://github.com/tobymao/sqlglot/pull/6520) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`c21b4b1`](https://github.com/tobymao/sqlglot/commit/c21b4b1134b368ee5144339b59e70ddcc54f3dbc) - **snowflake**: annotation support for CURRENT_SESSION *(PR [#6521](https://github.com/tobymao/sqlglot/pull/6521) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`57a83c0`](https://github.com/tobymao/sqlglot/commit/57a83c018dace690f7bb363c25ee6bde33c3d60f) - **snowflake**: annotation support for CURRENT_STATEMENT *(PR [#6522](https://github.com/tobymao/sqlglot/pull/6522) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`4b240e4`](https://github.com/tobymao/sqlglot/commit/4b240e40a8809a6eea2a279370a884f4a7b03dfa) - **snowflake**: annotation support for CURRENT_VERSION *(PR [#6524](https://github.com/tobymao/sqlglot/pull/6524) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`c1a831f`](https://github.com/tobymao/sqlglot/commit/c1a831f5bf662ab8d8e07dc2bb949f2adcbe7d7c) - **snowflake**: annotation support for CURRENT_TRANSACTION *(PR [#6523](https://github.com/tobymao/sqlglot/pull/6523) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`2e162b0`](https://github.com/tobymao/sqlglot/commit/2e162b0d34066e7aa7edac3156739bcd31a634fc) - **snowflake**: annotation support for CURRENT_WAREHOUSE *(PR [#6525](https://github.com/tobymao/sqlglot/pull/6525) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`18e9814`](https://github.com/tobymao/sqlglot/commit/18e98145906eaa5b769af49cf46b58a1d9448aee) - **snowflake**: support DAYOFWEEK_ISO date part *(PR [#6531](https://github.com/tobymao/sqlglot/pull/6531) by [@toriwei](https://github.com/toriwei))*
+- [`ee5e7b9`](https://github.com/tobymao/sqlglot/commit/ee5e7b931ca745a000dc8a720b56aee7b44186b2) - Automatically trigger integration tests scoped to modified dialects *(PR [#6505](https://github.com/tobymao/sqlglot/pull/6505) by [@erindru](https://github.com/erindru))*
+- [`e60634f`](https://github.com/tobymao/sqlglot/commit/e60634f0e1c396b54ad357132606286bd21d3e36) - **clickhouse**: Add support for quantilesExactExclusive agg func *(PR [#6535](https://github.com/tobymao/sqlglot/pull/6535) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#6533](https://github.com/tobymao/sqlglot/issues/6533) opened by [@vargasj-ms](https://github.com/vargasj-ms)*
+- [`41a9e88`](https://github.com/tobymao/sqlglot/commit/41a9e88bb9800205df0b3e10a1976699dc4fe4f9) - **duckdb**: Add support to transpile binary args for bitwise operators *(PR [#6508](https://github.com/tobymao/sqlglot/pull/6508) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`7021d54`](https://github.com/tobymao/sqlglot/commit/7021d54ecf0ceab3c3606642cbfca8e080cc8613) - **tsql**: CEILING generation *(PR [#6477](https://github.com/tobymao/sqlglot/pull/6477) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#6472](https://github.com/tobymao/sqlglot/issues/6472) opened by [@ricky-ho](https://github.com/ricky-ho)*
+- [`df4c1d3`](https://github.com/tobymao/sqlglot/commit/df4c1d37ff77151a74b5de3d119c7e03f5db85f4) - REGEXP_EXTRACT position arg overflow *(PR [#6458](https://github.com/tobymao/sqlglot/pull/6458) by [@treysp](https://github.com/treysp))*
+  - :arrow_lower_right: *fixes issue [#6442](https://github.com/tobymao/sqlglot/issues/6442) opened by [@erindru](https://github.com/erindru)*
+- [`5a49c3f`](https://github.com/tobymao/sqlglot/commit/5a49c3f7a7619ad9e711ff2cd9e85b8606969b36) - **optimizer**: support ORDER / LIMIT expressions for BigQuery ARRAY_AGG / STRING_AGG functions *(PR [#6463](https://github.com/tobymao/sqlglot/pull/6463) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+- [`1b6076b`](https://github.com/tobymao/sqlglot/commit/1b6076bd5a64b044f52f5366244ba0746aca75e1) - wrap connectives generated due to transpiling LIKE ANY closes [#6493](https://github.com/tobymao/sqlglot/pull/6493) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`36ad534`](https://github.com/tobymao/sqlglot/commit/36ad534b14eabe9ee197017f5087e8e5190f8526) - **exasol**: qualified select list with "LOCAL" *(PR [#6450](https://github.com/tobymao/sqlglot/pull/6450) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`52aceaa`](https://github.com/tobymao/sqlglot/commit/52aceaaa887dddb35f8ede5c2d9577fdeee35c48) - **optimizer**: annotate `HavingMax` by `this` *(PR [#6499](https://github.com/tobymao/sqlglot/pull/6499) by [@georgesittas](https://github.com/georgesittas))*
+- [`ce5487e`](https://github.com/tobymao/sqlglot/commit/ce5487ef2ec0a3de8fa79b9febf41236c05c04cc) - sources doesn't store columns, clean up this old code *(commit by [@tobymao](https://github.com/tobymao))*
+- [`3224235`](https://github.com/tobymao/sqlglot/commit/3224235c1b7a80511af11f7dbffe608a747a3df0) - make CTE builder produce AST consistent with parser closes [#6503](https://github.com/tobymao/sqlglot/pull/6503) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`9454a18`](https://github.com/tobymao/sqlglot/commit/9454a18cca41a510e61522f6b785d646980e2100) - uppercase join method, side, kind for consistency fixes [#6510](https://github.com/tobymao/sqlglot/pull/6510) *(PR [#6511](https://github.com/tobymao/sqlglot/pull/6511) by [@georgesittas](https://github.com/georgesittas))*
+- [`a6ec4b6`](https://github.com/tobymao/sqlglot/commit/a6ec4b688891691b26ab874a3401e370c0b8d574) - reorder join mark check in eliminate_join_marks *(PR [#6528](https://github.com/tobymao/sqlglot/pull/6528) by [@snovik75](https://github.com/snovik75))*
+  - :arrow_lower_right: *fixes issue [#6527](https://github.com/tobymao/sqlglot/issues/6527) opened by [@snovik75](https://github.com/snovik75)*
+- [`9d06859`](https://github.com/tobymao/sqlglot/commit/9d0685923209c04747fa6fa2b35ee2e516453abc) - **optimizer**: annotate bigquery ARRAY when arg contains set operations *(PR [#6517](https://github.com/tobymao/sqlglot/pull/6517) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`241073d`](https://github.com/tobymao/sqlglot/commit/241073d886e0b4ad7b2252a8c8c394e717ef700a) - on_qualify type *(commit by [@tobymao](https://github.com/tobymao))*
+- [`2fd14ed`](https://github.com/tobymao/sqlglot/commit/2fd14ed32b3793444405005fb98342222b4d7956) - **optimizer**: query schema directly when type annotation fails for processing UNNEST source *(PR [#6451](https://github.com/tobymao/sqlglot/pull/6451) by [@fivetran-BradfordPaskewitz](https://github.com/fivetran-BradfordPaskewitz))*
+
+### :recycle: Refactors
+- [`2d380e7`](https://github.com/tobymao/sqlglot/commit/2d380e72c9e3b842a8fe57c191f494c8872c00ee) - add test to make sure callback doesn't trigger ctes *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`4a061e2`](https://github.com/tobymao/sqlglot/commit/4a061e26b638c9acb0c8a77d9347914b35082bb3) - **optimizer**: Include BIGDECIMAL in numeric precedence *(PR [#6456](https://github.com/tobymao/sqlglot/pull/6456) by [@vchan](https://github.com/vchan))*
+- [`f305305`](https://github.com/tobymao/sqlglot/commit/f305305e5cf3ef45afba822542aebeb944c00e0b) - **optimizer**: Annotate types for BigQuery's AVG function *(PR [#6459](https://github.com/tobymao/sqlglot/pull/6459) by [@vchan](https://github.com/vchan))*
+- [`910349f`](https://github.com/tobymao/sqlglot/commit/910349f3c30af59ce1820e48cae0cbb77539877d) - **optimizer**: Annotate types for BigQuery's SAFE_DIVIDE function *(PR [#6464](https://github.com/tobymao/sqlglot/pull/6464) by [@vchan](https://github.com/vchan))*
+- [`5e75621`](https://github.com/tobymao/sqlglot/commit/5e75621e90defd50076383485f6a4689a8c551ac) - **optimizer**: annotate type for snowflake func ARRAY_UNIQUE_AGG *(PR [#6465](https://github.com/tobymao/sqlglot/pull/6465) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`4d77500`](https://github.com/tobymao/sqlglot/commit/4d775007d2ceb997ff33721def768493c95f98a5) - **optimizer**: add tests for snowflake CAST function *(PR [#6471](https://github.com/tobymao/sqlglot/pull/6471) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`88dfd26`](https://github.com/tobymao/sqlglot/commit/88dfd26b832d13e517fe7c18d2c086885bf4954d) - **optimizer**: annotate type for snowflake func TO_BINARY *(PR [#6474](https://github.com/tobymao/sqlglot/pull/6474) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`483318b`](https://github.com/tobymao/sqlglot/commit/483318bc25e4ee4fa2731be1a0aea02858872ab5) - clean up TO_BINARY tests *(commit by [@geooo109](https://github.com/geooo109))*
+- [`bff7084`](https://github.com/tobymao/sqlglot/commit/bff70841d0bfbede6ea0fae2e7b37d68735a53d8) - remove duckdb TO_BINARY 2 arg test *(commit by [@geooo109](https://github.com/geooo109))*
+- [`80591f9`](https://github.com/tobymao/sqlglot/commit/80591f9513dff9160884e4bbbd48d9c26cf8f253) - starrocks TO_BINARY tests *(commit by [@geooo109](https://github.com/geooo109))*
+- [`01e5a05`](https://github.com/tobymao/sqlglot/commit/01e5a050c76f728ef542f0127209e2cd1c5f5558) - **exasol**: implementing the last day function in exasol sql dialect *(PR [#6483](https://github.com/tobymao/sqlglot/pull/6483) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`aacc981`](https://github.com/tobymao/sqlglot/commit/aacc98105fb381c17a80ee011f107157279312d7) - **duckdb**: tests for MAX_BY and MIN_BY *(PR [#6489](https://github.com/tobymao/sqlglot/pull/6489) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`06c7ffb`](https://github.com/tobymao/sqlglot/commit/06c7ffbe14985a4da35a97d47322021e79525adf) - cleanup bitwise operator fixes *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v28.1.0] - 2025-12-02
 ### :boom: BREAKING CHANGES
 - due to [`e4d1a4f`](https://github.com/tobymao/sqlglot/commit/e4d1a4fcd6741d679c5444bf023077d2aaa8f980) - map date/timestamp `TRUNC` to `DATE_TRUNC` *(PR [#6328](https://github.com/tobymao/sqlglot/pull/6328) by [@nnamdi16](https://github.com/nnamdi16))*:
@@ -8716,3 +9038,4 @@ Changelog
 [v27.29.0]: https://github.com/tobymao/sqlglot/compare/v27.28.1...v27.29.0
 [v28.0.0]: https://github.com/tobymao/sqlglot/compare/v27.29.0...v28.0.0
 [v28.1.0]: https://github.com/tobymao/sqlglot/compare/v28.0.0...v28.1.0
+[v28.2.0]: https://github.com/tobymao/sqlglot/compare/v28.1.0...v28.2.0

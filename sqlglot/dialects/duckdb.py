@@ -525,6 +525,37 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _bitmap_bit_position_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
+    """
+    Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
+
+    Snowflake's BITMAP_BIT_POSITION behavior:
+    - For n = 0: returns 0
+    - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
+    - For n < 0: returns ABS(n) % 32768
+    """
+    arg = expression.this.copy()
+
+    return self.sql(
+        exp.case()
+        .when(exp.EQ(this=arg, expression=exp.Literal.number(0)), exp.Literal.number(0))
+        .when(
+            exp.GT(this=arg, expression=exp.Literal.number(0)),
+            exp.Mod(
+                this=exp.Paren(this=exp.Sub(this=arg, expression=exp.Literal.number(1))),
+                expression=exp.Literal.number(32768),
+            ),
+        )
+        .when(
+            exp.LT(this=arg, expression=exp.Literal.number(0)),
+            exp.Mod(
+                this=exp.Abs(this=arg),
+                expression=exp.Literal.number(32768),
+            ),
+        )
+    )
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -960,6 +991,7 @@ class DuckDB(Dialect):
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
+            exp.BitmapBitPosition: _bitmap_bit_position_sql,
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),

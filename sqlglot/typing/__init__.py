@@ -312,4 +312,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     },
     exp.ToMap: {"annotator": lambda self, e: self._annotate_to_map(e)},
     exp.Unnest: {"annotator": lambda self, e: self._annotate_unnest(e)},
+    exp.Subquery: {"annotator": lambda self, e: self._annotate_subquery(e)},
 }

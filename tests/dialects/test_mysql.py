@@ -432,6 +432,20 @@ class TestMySQL(Validator):
             },
         )
 
+        self.validate_identity(
+            r"'\"'",
+            """\'"\'""",
+        )
+        self.validate_identity("'\\\\\"a'")
+        self.validate_identity(
+            "'\t'",
+            "'\\t'",
+        )
+        self.validate_identity(
+            "'\j'",
+            "'j'",
+        )
+
     def test_introducers(self):
         self.validate_all(
             "_utf8mb4 'hola'",

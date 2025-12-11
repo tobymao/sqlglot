@@ -1513,6 +1513,36 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BITXOR(a, b, 'LEFT')")
         self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
+
+        # Binary bitwise operations
+        self.validate_all(
+            "SELECT BITOR(x'FF', x'0F')",
+            write={
+                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) | CAST(UNHEX('0F') AS BIT) AS BLOB)",
+                "snowflake": "SELECT BITOR(x'FF', x'0F')",
+            },
+        )
+        self.validate_all(
+            "SELECT BITAND(x'FF', x'0F')",
+            write={
+                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) & CAST(UNHEX('0F') AS BIT) AS BLOB)",
+                "snowflake": "SELECT BITAND(x'FF', x'0F')",
+            },
+        )
+        self.validate_all(
+            "SELECT BITXOR(x'FF', x'0F')",
+            write={
+                "duckdb": "SELECT CAST(XOR(CAST(UNHEX('FF') AS BIT), CAST(UNHEX('0F') AS BIT)) AS BLOB)",
+                "snowflake": "SELECT BITXOR(x'FF', x'0F')",
+            },
+        )
+        self.validate_all(
+            "SELECT BITNOT(x'FF')",
+            write={
+                "duckdb": "SELECT CAST(~CAST(UNHEX('FF') AS BIT) AS BLOB)",
+                "snowflake": "SELECT BITNOT(x'FF')",
+            },
+        )
         self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
         self.validate_identity("SELECT BITSHIFTRIGHT(a, 1)")

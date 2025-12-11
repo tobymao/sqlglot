@@ -1,6 +1,31 @@
 Changelog
 =========
 
+## [v28.3.0] - 2025-12-11
+### :boom: BREAKING CHANGES
+- due to [`62b348c`](https://github.com/tobymao/sqlglot/commit/62b348ce46d014895bd17d89ccb0b3e186e46d15) - add support for noop string escapes *(PR [#6526](https://github.com/tobymao/sqlglot/pull/6526) by [@nian0114](https://github.com/nian0114))*:
+
+  add support for noop string escapes (#6526)
+
+- due to [`1876c5a`](https://github.com/tobymao/sqlglot/commit/1876c5a86c3b737b7360c4fef25c44dc010b66db) - consolidate can_quote logic and fix an issue with identify=False *(PR [#6534](https://github.com/tobymao/sqlglot/pull/6534) by [@tobymao](https://github.com/tobymao))*:
+
+  consolidate can_quote logic and fix an issue with identify=False (#6534)
+
+- due to [`edb8964`](https://github.com/tobymao/sqlglot/commit/edb8964ed064a687e52323143d52281eaa391c9a) - bump sqlglotrs to 0.9.0 *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  bump sqlglotrs to 0.9.0
+
+
+### :bug: Bug Fixes
+- [`62b348c`](https://github.com/tobymao/sqlglot/commit/62b348ce46d014895bd17d89ccb0b3e186e46d15) - **tokenizer**: add support for noop string escapes *(PR [#6526](https://github.com/tobymao/sqlglot/pull/6526) by [@nian0114](https://github.com/nian0114))*
+
+### :recycle: Refactors
+- [`1876c5a`](https://github.com/tobymao/sqlglot/commit/1876c5a86c3b737b7360c4fef25c44dc010b66db) - consolidate can_quote logic and fix an issue with identify=False *(PR [#6534](https://github.com/tobymao/sqlglot/pull/6534) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`edb8964`](https://github.com/tobymao/sqlglot/commit/edb8964ed064a687e52323143d52281eaa391c9a) - bump sqlglotrs to 0.9.0 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v28.2.0] - 2025-12-11
 ### :boom: BREAKING CHANGES
 - due to [`ebe718a`](https://github.com/tobymao/sqlglot/commit/ebe718a72d5b5871a8d6e67754ff50e873d55b41) - Add support for format elements used in date/time functions like FORMAT_DATETIME *(PR [#6428](https://github.com/tobymao/sqlglot/pull/6428) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -9039,3 +9064,4 @@ Changelog
 [v28.0.0]: https://github.com/tobymao/sqlglot/compare/v27.29.0...v28.0.0
 [v28.1.0]: https://github.com/tobymao/sqlglot/compare/v28.0.0...v28.1.0
 [v28.2.0]: https://github.com/tobymao/sqlglot/compare/v28.1.0...v28.2.0
+[v28.3.0]: https://github.com/tobymao/sqlglot/compare/v28.2.0...v28.3.0

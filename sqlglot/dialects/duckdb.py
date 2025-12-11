@@ -386,41 +386,38 @@ def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
     return arg
 
 
-def _cast_to_blob(self: DuckDB.Generator, expression: exp.Expression, result_sql: str) -> str:
-    is_binary = expression.is_type(exp.DataType.Type.BINARY)
-    if is_binary:
-        blob = exp.DataType.build("BLOB", dialect="duckdb")
-        result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
-    return result_sql
-
-
-def _is_binary_arg(arg: exp.Expression) -> bool:
-    """Check if argument is a binary type or HexString."""
-    return isinstance(arg, exp.HexString) or arg.is_type(
+def _is_binary(arg: exp.Expression) -> bool:
+    return arg.is_type(
         exp.DataType.Type.BINARY,
         exp.DataType.Type.VARBINARY,
         exp.DataType.Type.BLOB,
     )
 
 
+def _gen_with_cast_to_blob(
+    self: DuckDB.Generator, expression: exp.Expression, result_sql: str
+) -> str:
+    if _is_binary(expression):
+        blob = exp.DataType.build("BLOB", dialect="duckdb")
+        result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
+    return result_sql
+
+
 def _cast_to_bit(arg: exp.Expression) -> exp.Expression:
-    """Cast argument to BIT type if it's a binary type."""
-    if not _is_binary_arg(arg):
+    if not _is_binary(arg):
         return arg
 
     if isinstance(arg, exp.HexString):
-        return exp.cast(exp.Unhex(this=exp.Literal.string(arg.this)), exp.DataType.Type.BIT)
+        arg = exp.Unhex(this=exp.Literal.string(arg.this))
 
     return exp.cast(arg, exp.DataType.Type.BIT)
 
 
 def _prepare_binary_bitwise_args(expression: exp.Binary) -> None:
-    """Cast binary operands to BIT and set expression type to BINARY if needed."""
-    if _is_binary_arg(expression.this) or _is_binary_arg(expression.expression):
-        expression.type = exp.DataType.build("BINARY")
-
-    expression.set("this", _cast_to_bit(expression.this))
-    expression.set("expression", _cast_to_bit(expression.expression))
+    if _is_binary(expression.this):
+        expression.set("this", _cast_to_bit(expression.this))
+    if _is_binary(expression.expression):
+        expression.set("expression", _cast_to_bit(expression.expression))
 
 
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
@@ -962,7 +959,9 @@ class DuckDB(Dialect):
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
+            exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
@@ -1544,11 +1543,11 @@ class DuckDB(Dialect):
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def upper_sql(self, expression: exp.Upper) -> str:
             result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def replace_sql(self, expression: exp.Replace) -> str:
             result_sql = self.func(
@@ -1557,22 +1556,17 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.expression),
                 _cast_to_varchar(expression.args.get("replacement")),
             )
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
-        def bitwiseor_sql(self, expression: exp.BitwiseOr) -> str:
+        def _bitwise_op(self, expression: exp.Binary, op: str) -> str:
             _prepare_binary_bitwise_args(expression)
-            result_sql = self.binary(expression, "|")
-            return _cast_to_blob(self, expression, result_sql)
-
-        def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
-            _prepare_binary_bitwise_args(expression)
-            result_sql = self.binary(expression, "&")
-            return _cast_to_blob(self, expression, result_sql)
+            result_sql = self.binary(expression, op)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
             _prepare_binary_bitwise_args(expression)
             result_sql = self.func("XOR", expression.this, expression.expression)
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def objectinsert_sql(self, expression: exp.ObjectInsert) -> str:
             this = expression.this
@@ -1808,7 +1802,7 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.this),
                 _cast_to_varchar(expression.expression),
             )
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def round_sql(self, expression: exp.Round) -> str:
             this = expression.this
@@ -1883,7 +1877,7 @@ class DuckDB(Dialect):
         def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
             this = expression.this
 
-            if _is_binary_arg(this):
+            if _is_binary(this):
                 expression.type = exp.DataType.build("BINARY")
 
             arg = _cast_to_bit(this)
@@ -1895,4 +1889,4 @@ class DuckDB(Dialect):
 
             result_sql = f"~{self.sql(expression, 'this')}"
 
-            return _cast_to_blob(self, expression, result_sql)
+            return _gen_with_cast_to_blob(self, expression, result_sql)

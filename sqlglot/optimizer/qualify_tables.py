@@ -16,7 +16,7 @@ def qualify_tables(
     expression: E,
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
-    on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
+    on_qualify: t.Optional[t.Callable[[exp.Table], None]] = None,
     dialect: DialectType = None,
     canonicalize_table_aliases: bool = False,
 ) -> E:

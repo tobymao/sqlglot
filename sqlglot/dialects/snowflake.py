@@ -838,9 +838,6 @@ class Snowflake(Dialect):
         TYPE_CONVERTERS = {
             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
             exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=38, scale=0),
-            # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
-            # FLOAT is a synonym for DOUBLE in Snowflake
-            exp.DataType.Type.FLOAT: lambda self: exp.DataType.build("DOUBLE"),
         }
 
         SHOW_PARSERS = {
@@ -1327,6 +1324,9 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
             "WAREHOUSE": TokenType.WAREHOUSE,
+            # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
+            # FLOAT is a synonym for DOUBLE in Snowflake
+            "FLOAT": TokenType.DOUBLE
         }
         KEYWORDS.pop("/*+")
 

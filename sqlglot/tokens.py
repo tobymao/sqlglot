@@ -549,6 +549,7 @@ class _Tokenizer(type):
         }
 
         klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
+        klass._ESCAPE_FOLLOW_CHARS = set(klass.ESCAPE_FOLLOW_CHARS)
         klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
         klass._COMMENTS = {
             **dict(
@@ -600,6 +601,7 @@ class _Tokenizer(type):
                 tokens_preceding_hint={
                     _TOKEN_TYPE_TO_INDEX[v] for v in klass.TOKENS_PRECEDING_HINT
                 },
+                escape_follow_chars=klass._ESCAPE_FOLLOW_CHARS,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
@@ -669,6 +671,7 @@ class Tokenizer(metaclass=_Tokenizer):
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
+    ESCAPE_FOLLOW_CHARS: t.List[str] = []
 
     # The strings in this list can always be used as escapes, regardless of the surrounding
     # identifier delimiters. By default, the closing delimiter is assumed to also act as an
@@ -699,6 +702,7 @@ class Tokenizer(metaclass=_Tokenizer):
     _STRING_ESCAPES: t.Set[str] = set()
     _KEYWORD_TRIE: t.Dict = {}
     _RS_TOKENIZER: t.Optional[t.Any] = None
+    _ESCAPE_FOLLOW_CHARS: t.Set[str] = set()
 
     KEYWORDS: t.Dict[str, TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
@@ -1511,13 +1515,22 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._advance(2)
                     text += unescaped_sequence
                     continue
+
+            is_valid_custom_escape = (
+                self.ESCAPE_FOLLOW_CHARS
+                and self._char == "\\"
+                and self._peek not in self.ESCAPE_FOLLOW_CHARS
+            )
+
             if (
                 (self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS or not raw_string)
                 and self._char in escapes
-                and (self._peek == delimiter or self._peek in escapes)
+                and (self._peek == delimiter or self._peek in escapes or is_valid_custom_escape)
                 and (self._char not in self._QUOTES or self._char == self._peek)
             ):
                 if self._peek == delimiter:
+                    text += self._peek
+                elif is_valid_custom_escape and self._char != self._peek:
                     text += self._peek
                 else:
                     text += self._char + self._peek

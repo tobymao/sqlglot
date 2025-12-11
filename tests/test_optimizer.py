@@ -244,6 +244,14 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_tables(self):
+        tables = set()
+        optimizer.qualify.qualify(
+            parse_one("with foo AS (select * from bar) select * from foo join baz"),
+            qualify_columns=False,
+            on_qualify=lambda t: tables.add(t.name),
+        )
+        self.assertEqual(tables, {"bar", "baz"})
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),

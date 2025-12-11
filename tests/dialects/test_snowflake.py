@@ -324,7 +324,7 @@ class TestSnowflake(Validator):
         self.validate_identity("$x")  # parameter
         self.validate_identity("a$b")  # valid snowflake identifier
         self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
-        self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
+        self.validate_identity("CREATE TABLE foo (bar DOUBLE AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("SELECT CURRENT_ORGANIZATION_NAME()")
@@ -1795,6 +1795,13 @@ class TestSnowflake(Validator):
                 "snowflake": "SET a = 1",
                 "bigquery": "SET a = 1",
                 "duckdb": "SET VARIABLE a = 1",
+            },
+        )
+        self.validate_all(
+            "CAST(6.43 AS FLOAT)",
+            write={
+                "snowflake": "CAST(6.43 AS DOUBLE)",
+                "duckdb": "CAST(6.43 AS DOUBLE)",
             },
         )
 

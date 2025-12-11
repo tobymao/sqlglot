@@ -5,7 +5,7 @@ SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
 SELECT "a" FROM x;
-SELECT x.a AS a FROM x AS x;
+SELECT x."a" AS a FROM x AS x;
 
 # execute: false
 SELECT a FROM zz GROUP BY a ORDER BY a;
@@ -110,7 +110,7 @@ SELECT T."col" AS "col" FROM TBL T;
 # execute: false
 # dialect: oracle
 WITH base AS (SELECT x.dummy AS COL_1 FROM dual x) SELECT b."COL_1" FROM base b;
-WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B.COL_1 AS COL_1 FROM BASE B;
+WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B."COL_1" AS COL_1 FROM BASE B;
 
 # execute: false
 -- this query seems to be invalid in postgres and duckdb but valid in bigquery

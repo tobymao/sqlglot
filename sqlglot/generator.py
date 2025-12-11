@@ -80,7 +80,7 @@ class Generator(metaclass=_Generator):
             Default: False.
         identify: Determines when an identifier should be quoted. Possible values are:
             False (default): Never quote, except in cases where it's mandatory by the dialect.
-            True or 'always': Always quote.
+            True: Always quote except for specials cases.
             'safe': Only quote identifiers that are case insensitive.
         normalize: Whether to normalize identifiers to lowercase.
             Default: False.
@@ -1679,7 +1679,7 @@ class Generator(metaclass=_Generator):
         text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
             expression.quoted
-            or self.dialect.can_identify(text, self.identify)
+            or self.dialect.can_quote(expression, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):

@@ -761,7 +761,40 @@ class Snowflake(Dialect):
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
+            "TRY_TO_BINARY": lambda args: exp.ToBinary(
+                this=seq_get(args, 0), format=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_BOOLEAN": lambda args: exp.ToBoolean(this=seq_get(args, 0), safe=True),
             "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
+            "TRY_TO_DECIMAL": lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1),
+                precision=seq_get(args, 2),
+                scale=seq_get(args, 3),
+                safe=True,
+                safe_name="TRY_TO_DECIMAL",
+            ),
+            "TRY_TO_DOUBLE": lambda args: exp.ToDouble(
+                this=seq_get(args, 0), format=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_FILE": lambda args: exp.ToFile(
+                this=seq_get(args, 0), path=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_NUMBER": lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1),
+                precision=seq_get(args, 2),
+                scale=seq_get(args, 3),
+                safe=True,
+            ),
+            "TRY_TO_NUMERIC": lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1),
+                precision=seq_get(args, 2),
+                scale=seq_get(args, 3),
+                safe=True,
+                safe_name="TRY_TO_NUMERIC",
+            ),
             "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),
             "TRY_TO_TIMESTAMP": _build_datetime(
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
@@ -1439,6 +1472,25 @@ class Snowflake(Dialect):
             exp.ParseJSON: lambda self, e: self.func(
                 "TRY_PARSE_JSON" if e.args.get("safe") else "PARSE_JSON", e.this
             ),
+            exp.ToBinary: lambda self, e: self.func(
+                "TRY_TO_BINARY" if e.args.get("safe") else "TO_BINARY", e.this, e.args.get("format")
+            ),
+            exp.ToBoolean: lambda self, e: self.func(
+                "TRY_TO_BOOLEAN" if e.args.get("safe") else "TO_BOOLEAN", e.this
+            ),
+            exp.ToDouble: lambda self, e: self.func(
+                "TRY_TO_DOUBLE" if e.args.get("safe") else "TO_DOUBLE", e.this, e.args.get("format")
+            ),
+            exp.ToFile: lambda self, e: self.func(
+                "TRY_TO_FILE" if e.args.get("safe") else "TO_FILE", e.this, e.args.get("path")
+            ),
+            exp.ToNumber: lambda self, e: self.func(
+                e.args.get("safe_name") or ("TRY_TO_NUMBER" if e.args.get("safe") else "TO_NUMBER"),
+                e.this,
+                e.args.get("format"),
+                e.args.get("precision"),
+                e.args.get("scale"),
+            ),
             exp.JSONFormat: rename_func("TO_JSON"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
@@ -1499,7 +1551,6 @@ class Snowflake(Dialect):
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToArray: rename_func("TO_ARRAY"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
-            exp.ToDouble: rename_func("TO_DOUBLE"),
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: lambda self, e: self.func(

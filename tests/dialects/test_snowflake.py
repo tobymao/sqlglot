@@ -251,6 +251,47 @@ class TestSnowflake(Validator):
         self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_DECFLOAT('123.456')")
         self.validate_identity("TRY_TO_DECFLOAT('1,234.56', '999,999.99')")
+        self.validate_identity("TRY_TO_BINARY('48656C6C6F')")
+        self.validate_identity("TRY_TO_BINARY('48656C6C6F', 'HEX')")
+        self.validate_identity("TRY_TO_BOOLEAN('true')")
+        self.validate_all(
+            "TRY_TO_DATE('2024-01-31')",
+            write={
+                "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
+                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
+            },
+        )
+        self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
+        self.validate_identity("TRY_TO_DECIMAL('123.45')")
+        self.validate_identity("TRY_TO_DECIMAL('123.45', '999.99')")
+        self.validate_identity("TRY_TO_DECIMAL('123.45', '999.99', 10, 2)")
+        self.validate_identity("TRY_TO_DOUBLE('123.456')")
+        self.validate_identity("TRY_TO_DOUBLE('123.456', '999.99')")
+        self.validate_identity("TRY_TO_FILE(object_col)")
+        self.validate_identity("TRY_TO_FILE('file.csv')")
+        self.validate_identity("TRY_TO_FILE('file.csv', 'relativepath/')")
+        self.validate_identity("TRY_TO_NUMBER('123.45')")
+        self.validate_identity("TRY_TO_NUMBER('123.45', '999.99')")
+        self.validate_identity("TRY_TO_NUMBER('123.45', '999.99', 10, 2)")
+        self.validate_identity("TRY_TO_NUMERIC('123.45')")
+        self.validate_identity("TRY_TO_NUMERIC('123.45', '999.99')")
+        self.validate_identity("TRY_TO_NUMERIC('123.45', '999.99', 10, 2)")
+        self.validate_all(
+            "TRY_TO_TIME('12:30:00')",
+            write={
+                "snowflake": "TRY_CAST('12:30:00' AS TIME)",
+                "duckdb": "TRY_CAST('12:30:00' AS TIME)",
+            },
+        )
+        self.validate_identity("TRY_TO_TIME('12:30:00', 'AUTO')")
+        self.validate_all(
+            "TRY_TO_TIMESTAMP('2024-01-15 12:30:00')",
+            write={
+                "snowflake": "TRY_CAST('2024-01-15 12:30:00' AS TIMESTAMP)",
+                "duckdb": "TRY_CAST('2024-01-15 12:30:00' AS TIMESTAMP)",
+            },
+        )
+        self.validate_identity("TRY_TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO')")
         self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
         self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)

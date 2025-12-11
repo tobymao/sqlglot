@@ -301,6 +301,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseXorAgg,
             exp.RegexpCount,
             exp.RegexpInstr,
+            exp.ToNumber,
         )
     },
     **{
@@ -383,13 +384,14 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.OBJECT}
         for expr_type in {
+            exp.ApproxPercentileAccumulate,
+            exp.ApproxPercentileCombine,
+            exp.ApproxTopKAccumulate,
+            exp.ApproxTopKCombine,
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
-            exp.ApproxPercentileCombine,
-            exp.ApproxPercentileAccumulate,
-            exp.ApproxTopKAccumulate,
-            exp.ApproxTopKCombine,
+            exp.ToFile,
             exp.XMLGet,
         }
     },
@@ -397,6 +399,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.TIME}
         for expr_type in {
             exp.TimeFromParts,
+            exp.TsOrDsToTime,
         }
     },
     **{

@@ -442,7 +442,7 @@ class TestMySQL(Validator):
             "'\\t'",
         )
         self.validate_identity(
-            "'\j'",
+            r"'\j'",
             "'j'",
         )
 

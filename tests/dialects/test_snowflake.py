@@ -149,6 +149,20 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
         self.validate_all(
+            "SELECT IFF(x > 5, 10, 20)",
+            write={
+                "snowflake": "SELECT IFF(x > 5, 10, 20)",
+                "duckdb": "SELECT CASE WHEN x > 5 THEN 10 ELSE 20 END",
+            },
+        )
+        self.validate_all(
+            "SELECT IFF(col IS NULL, 0, col)",
+            write={
+                "snowflake": "SELECT IFF(col IS NULL, 0, col)",
+                "duckdb": "SELECT CASE WHEN col IS NULL THEN 0 ELSE col END",
+            },
+        )
+        self.validate_all(
             "SELECT VAR_SAMP(x)",
             write={
                 "snowflake": "SELECT VARIANCE(x)",

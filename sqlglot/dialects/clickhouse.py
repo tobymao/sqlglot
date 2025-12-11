@@ -470,6 +470,7 @@ class ClickHouse(Dialect):
             "quantiles",
             "quantileExact",
             "quantilesExact",
+            "quantilesExactExclusive",
             "quantileExactLow",
             "quantilesExactLow",
             "quantileExactHigh",

@@ -223,10 +223,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CURRENT_VERSION()")
         self.validate_all(
             "UNIFORM(1, 10, 5)",
-            write={
-                "snowflake": UnsupportedError,
-                "databricks": "UNIFORM(1, 10, 5)"
-            },
+            write={"snowflake": UnsupportedError, "databricks": "UNIFORM(1, 10, 5)"},
         )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html

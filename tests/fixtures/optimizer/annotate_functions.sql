@@ -3609,16 +3609,28 @@ TRY_TO_DOUBLE('123.456', '999.99');
 DOUBLE;
 
 # dialect: snowflake
+TO_FILE(tbl.obj_col);
+FILE;
+
+# dialect: snowflake
+TO_FILE('file.csv');
+FILE;
+
+# dialect: snowflake
+TO_FILE('file.csv', '/relativepath/');
+FILE;
+
+# dialect: snowflake
 TRY_TO_FILE(tbl.obj_col);
-OBJECT;
+FILE;
 
 # dialect: snowflake
 TRY_TO_FILE('file.csv');
-OBJECT;
+FILE;
 
 # dialect: snowflake
 TRY_TO_FILE('file.csv', '/relativepath/');
-OBJECT;
+FILE;
 
 # dialect: snowflake
 TRY_TO_NUMBER('123.45');

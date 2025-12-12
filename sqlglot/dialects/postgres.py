@@ -358,6 +358,8 @@ class Postgres(Dialect):
             "<@": TokenType.LT_AT,
             "?&": TokenType.QMARK_AMP,
             "?|": TokenType.QMARK_PIPE,
+            "&<": TokenType.AMP_LT,
+            "&>": TokenType.AMP_GT,
             "#-": TokenType.HASH_DASH,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
@@ -477,6 +479,8 @@ class Postgres(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.AMP_LT: binary_range_parser(exp.OverlapsLeft),
+            TokenType.AMP_GT: binary_range_parser(exp.OverlapsRight),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
@@ -671,6 +675,8 @@ class Postgres(Dialect):
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
             exp.Merge: merge_without_target_sql,
+            exp.OverlapsLeft: lambda self, e: self.binary(e, "&<"),
+            exp.OverlapsRight: lambda self, e: self.binary(e, "&>"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

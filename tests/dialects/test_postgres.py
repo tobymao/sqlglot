@@ -1680,3 +1680,13 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             day_time_str = "a > INTERVAL '1 00:00' AND TRUE"
             self.validate_identity(day_time_str, "a > INTERVAL '1 00:00' AND TRUE")
             self.assertIsInstance(self.parse_one(day_time_str), exp.And)
+
+    def test_overlap_operator(self):
+        self.validate_identity(
+            "SELECT '[1,10]'::int4range &< '[5,15]'::int4range",
+            "SELECT CAST('[1,10]' AS INT4RANGE) &< CAST('[5,15]' AS INT4RANGE)",
+        )
+        self.validate_identity(
+            "SELECT '[1,10]'::int4range &> '[5,15]'::int4range",
+            "SELECT CAST('[1,10]' AS INT4RANGE) &> CAST('[5,15]' AS INT4RANGE)",
+        )

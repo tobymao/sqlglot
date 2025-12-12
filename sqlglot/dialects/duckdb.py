@@ -530,29 +530,20 @@ def _bitmap_bit_position_sql(self: DuckDB.Generator, expression: exp.BitmapBitPo
     Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
 
     Snowflake's BITMAP_BIT_POSITION behavior:
-    - For n = 0: returns 0
+    - For n <= 0: returns ABS(n) % 32768
     - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
-    - For n < 0: returns ABS(n) % 32768
     """
-    arg = expression.this.copy()
-
-    return self.sql(
-        exp.case()
-        .when(exp.EQ(this=arg, expression=exp.Literal.number(0)), exp.Literal.number(0))
-        .when(
-            exp.GT(this=arg, expression=exp.Literal.number(0)),
-            exp.Mod(
-                this=exp.Paren(this=exp.Sub(this=arg, expression=exp.Literal.number(1))),
-                expression=exp.Literal.number(32768),
-            ),
-        )
-        .when(
-            exp.LT(this=arg, expression=exp.Literal.number(0)),
-            exp.Mod(
-                this=exp.Abs(this=arg),
-                expression=exp.Literal.number(32768),
-            ),
-        )
+    this = expression.this
+    MAX_BIT_POSITION = exp.Literal.number(32768)
+    
+     return exp.Mod(
+       this = exp.Paren(this=exp.If(
+         this=exp.GT(this=this, expression=exp.Literal.number(0)),
+         true=this - exp.Literal.number(1),
+         false=exp.Abs(this=this)
+         )
+       ),
+       expression = MAX_BIT_POSITION
     )
 
 

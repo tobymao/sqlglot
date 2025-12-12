@@ -27,6 +27,25 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
     return expression
 
 
+def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expression:
+    """
+    +------------+------------+------------+-------------+---------+
+    | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
+    | INT64      | FLOAT64    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | NUMERIC    | NUMERIC    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
+    | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
+    """
+    if expression.this.is_type(*exp.DataType.INTEGER_TYPES) and expression.expression.is_type(
+        *exp.DataType.INTEGER_TYPES
+    ):
+        return self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+    return _annotate_by_args_with_coerce(self, expression)
+
+
 def _annotate_by_args_with_coerce(
     self: TypeAnnotator, expression: exp.Expression
 ) -> exp.Expression:
@@ -353,4 +372,5 @@ EXPRESSION_METADATA = {
             e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
         )
     },
+    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
 }

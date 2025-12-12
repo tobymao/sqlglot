@@ -430,7 +430,7 @@ BIGNUMERIC;
 
 # dialect: bigquery
 SAFE_DIVIDE(tbl.int_col, tbl.int_col);
-INT64;
+FLOAT64;
 
 # dialect: bigquery
 SAFE_DIVIDE(tbl.int_col, tbl.bignum_col);

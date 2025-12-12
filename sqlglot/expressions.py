@@ -5881,7 +5881,7 @@ class ToArray(Func):
 
 
 class ToBoolean(Func):
-    pass
+    arg_types = {"this": True, "safe": False}
 
 
 # https://materialize.com/docs/sql/types/list/
@@ -5919,6 +5919,8 @@ class ToNumber(Func):
         "nlsparam": False,
         "precision": False,
         "scale": False,
+        "safe": False,
+        "safe_name": False,
     }
 
 
@@ -5927,6 +5929,7 @@ class ToDouble(Func):
     arg_types = {
         "this": True,
         "format": False,
+        "safe": False,
     }
 
 
@@ -5943,6 +5946,15 @@ class TryToDecfloat(Func):
     arg_types = {
         "this": True,
         "format": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/to_file
+class ToFile(Func):
+    arg_types = {
+        "this": True,
+        "path": False,
+        "safe": False,
     }
 
 
@@ -6776,7 +6788,7 @@ class ToBase64(Func):
 
 
 class ToBinary(Func):
-    arg_types = {"this": True, "format": False}
+    arg_types = {"this": True, "format": False, "safe": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary

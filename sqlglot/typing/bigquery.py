@@ -336,9 +336,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.TIMESTAMPTZ} for expr_type in TIMESTAMP_EXPRESSIONS
     },
-    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
-    exp.ParseBignumeric: {"returns": exp.DataType.Type.BIGDECIMAL},
-    exp.ParseNumeric: {"returns": exp.DataType.Type.DECIMAL},
     exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ApproxTopSum: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.Array: {"annotator": _annotate_array},
@@ -346,6 +343,7 @@ EXPRESSION_METADATA = {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions")
     },
     exp.Concat: {"annotator": _annotate_concat},
+    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
     exp.GenerateTimestampArray: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
@@ -367,10 +365,12 @@ EXPRESSION_METADATA = {
         )
     },
     exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
+    exp.ParseBignumeric: {"returns": exp.DataType.Type.BIGDECIMAL},
+    exp.ParseNumeric: {"returns": exp.DataType.Type.DECIMAL},
+    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
     exp.ToCodePoints: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
         )
     },
-    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
 }

@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pre-commit test unit style check docs docs-serve
+.PHONY: install install-dev install-pre-commit test test-fast test-fast-rs unit style check docs docs-serve
 
 ifdef UV
     PIP := uv pip
@@ -33,8 +33,14 @@ install-pre-commit:
 test:
 	SQLGLOTRS_TOKENIZER=0 python -m unittest
 
+test-fast:
+	SQLGLOTRS_TOKENIZER=0 python -m unittest --failfast
+
 test-rs:
 	RUST_BACKTRACE=1 python -m unittest
+
+test-fast-rs:
+	RUST_BACKTRACE=1 python -m unittest --failfast
 
 unit:
 	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest

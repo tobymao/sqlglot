@@ -1873,6 +1873,7 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(6.43 AS DOUBLE)",
             },
         )
+        self.validate_identity("UNIFORM(123, 456, 100)")
 
     def test_null_treatment(self):
         self.validate_all(

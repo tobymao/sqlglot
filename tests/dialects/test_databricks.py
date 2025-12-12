@@ -221,6 +221,8 @@ class TestDatabricks(Validator):
         )
         self.validate_identity("NTILE() OVER (ORDER BY 1)")
         self.validate_identity("CURRENT_VERSION()")
+        self.validate_identity("UNIFORM(123, 456)")
+        self.validate_identity("UNIFORM(123, 456, 100)")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

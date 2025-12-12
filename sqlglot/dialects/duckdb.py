@@ -545,12 +545,12 @@ def _regr_val_sql(
     x = expression.expression
 
     # Determine which argument to check for NULL and which to return
-    if check_arg == "y":
+    if isinstance(expression, exp.RegrValx):
         check_for_null = y
         return_value = x
         # x is stored in expression attribute
         return_value_attr = "expression"
-    else:  # check_arg == "x"
+    else:  
         check_for_null = x
         return_value = y
         # y is stored in this attribute

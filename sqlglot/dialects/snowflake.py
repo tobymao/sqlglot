@@ -1997,9 +1997,15 @@ class Snowflake(Dialect):
             return rename_func("SPLIT_PART")(self, expression)
 
         def uniform_sql(self, expression: exp.Uniform) -> str:
-            if expression.args.get("seed"):
-                self.unsupported("Seed parameter is not supported in Snowflake UNIFORM")
+            gen = expression.args.get("gen")
+            seed = expression.args.get("seed")
 
-            return self.func(
-                "UNIFORM", expression.this, expression.expression, expression.args.get("gen")
-            )
+            # From Databricks UNIFORM(min, max, seed) -> Wrap gen in RANDOM(seed)
+            if seed:
+                gen = exp.Rand(this=seed)
+
+            # No gen argument (from Databricks 2-arg UNIFORM(min, max)) -> Add RANDOM()
+            if not gen:
+                gen = exp.Rand()
+
+            return self.func("UNIFORM", expression.this, expression.expression, gen)

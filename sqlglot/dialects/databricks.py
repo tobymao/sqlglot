@@ -152,9 +152,11 @@ class Databricks(Spark):
             return super().jsonpath_sql(expression)
 
         def uniform_sql(self, expression: exp.Uniform) -> str:
-            if expression.args.get("gen"):
-                self.unsupported("Gen parameter is not supported in Databricks UNIFORM")
+            gen = expression.args.get("gen")
+            seed = expression.args.get("seed")
 
-            return self.func(
-                "UNIFORM", expression.this, expression.expression, expression.args.get("seed")
-            )
+            # From Snowflake UNIFORM(min, max, gen) with gen as RANDOM() or RANDOM(seed) -> Extract seed
+            if gen and isinstance(gen, exp.Rand):
+                seed = gen.this
+
+            return self.func("UNIFORM", expression.this, expression.expression, seed)

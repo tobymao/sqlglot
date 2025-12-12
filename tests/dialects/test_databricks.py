@@ -1,5 +1,5 @@
 from sqlglot import exp, transpile, parse_one
-from sqlglot.errors import ParseError, UnsupportedError
+from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
 
@@ -223,7 +223,17 @@ class TestDatabricks(Validator):
         self.validate_identity("CURRENT_VERSION()")
         self.validate_all(
             "UNIFORM(1, 10, 5)",
-            write={"snowflake": UnsupportedError, "databricks": "UNIFORM(1, 10, 5)"},
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM(5))",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
+        self.validate_all(
+            "UNIFORM(1, 10)",
+            write={
+                "databricks": "UNIFORM(1, 10)",
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+            },
         )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html

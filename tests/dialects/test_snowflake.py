@@ -1874,8 +1874,18 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "UNIFORM(1, 10, 5)",
-            write={"snowflake": "UNIFORM(1, 10, 5)", "databricks": UnsupportedError},
+            "UNIFORM(1, 10, RANDOM(5))",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM(5))",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
+        self.validate_all(
+            "UNIFORM(1, 10, RANDOM())",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+                "databricks": "UNIFORM(1, 10)",
+            },
         )
 
     def test_null_treatment(self):

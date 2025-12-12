@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.dialects.spark import Spark
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
@@ -59,6 +60,9 @@ class Databricks(Spark):
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
+            "UNIFORM": lambda args: exp.Uniform(
+                this=seq_get(args, 0), expression=seq_get(args, 1), seed=seq_get(args, 2)
+            ),
         }
 
         FACTOR = {

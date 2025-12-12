@@ -8105,7 +8105,7 @@ class Unicode(Func):
 
 
 class Uniform(Func):
-    arg_types = {"this": True, "expression": True, "gen": False}
+    arg_types = {"this": True, "expression": True, "gen": False, "seed": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#unix_date

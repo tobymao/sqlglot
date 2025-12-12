@@ -527,30 +527,6 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
-def _bitmap_bit_position_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
-    """
-    Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
-
-    Snowflake's BITMAP_BIT_POSITION behavior:
-    - For n <= 0: returns ABS(n) % 32768
-    - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
-    """
-    this = expression.this
-
-    return self.sql(
-        exp.Mod(
-            this=exp.Paren(
-                this=exp.If(
-                    this=exp.GT(this=this, expression=exp.Literal.number(0)),
-                    true=this - exp.Literal.number(1),
-                    false=exp.Abs(this=this),
-                )
-            ),
-            expression=MAX_BIT_POSITION,
-        )
-    )
-
-
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -986,7 +962,6 @@ class DuckDB(Dialect):
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
-            exp.BitmapBitPosition: _bitmap_bit_position_sql,
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
@@ -1258,6 +1233,29 @@ class DuckDB(Dialect):
             exp.Lead,
             exp.NthValue,
         )
+
+        def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
+            """
+            Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
+
+            Snowflake's BITMAP_BIT_POSITION behavior:
+            - For n <= 0: returns ABS(n) % 32768
+            - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
+            """
+            this = expression.this
+
+            return self.sql(
+                exp.Mod(
+                    this=exp.Paren(
+                        this=exp.If(
+                            this=exp.GT(this=this, expression=exp.Literal.number(0)),
+                            true=this - exp.Literal.number(1),
+                            false=exp.Abs(this=this),
+                        )
+                    ),
+                    expression=MAX_BIT_POSITION,
+                )
+            )
 
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """

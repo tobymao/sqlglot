@@ -535,15 +535,18 @@ def _bitmap_bit_position_sql(self: DuckDB.Generator, expression: exp.BitmapBitPo
     """
     this = expression.this
     MAX_BIT_POSITION = exp.Literal.number(32768)
-    
-     return exp.Mod(
-       this = exp.Paren(this=exp.If(
-         this=exp.GT(this=this, expression=exp.Literal.number(0)),
-         true=this - exp.Literal.number(1),
-         false=exp.Abs(this=this)
-         )
-       ),
-       expression = MAX_BIT_POSITION
+
+    return self.sql(
+        exp.Mod(
+            this=exp.Paren(
+                this=exp.If(
+                    this=exp.GT(this=this, expression=exp.Literal.number(0)),
+                    true=this - exp.Literal.number(1),
+                    false=exp.Abs(this=this),
+                )
+            ),
+            expression=MAX_BIT_POSITION,
+        )
     )
 
 

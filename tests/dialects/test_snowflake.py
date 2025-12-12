@@ -77,7 +77,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT BITMAP_BIT_POSITION(10)",
             write={
-                "duckdb": "SELECT CASE WHEN 10 = 0 THEN 0 WHEN 10 > 0 THEN (10 - 1) % 32768 WHEN 10 < 0 THEN ABS(10) % 32768 END",
+                "duckdb": "SELECT (CASE WHEN 10 > 0 THEN 10 - 1 ELSE ABS(10) END) % 32768",
                 "snowflake": "SELECT BITMAP_BIT_POSITION(10)",
             },
         )

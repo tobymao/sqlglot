@@ -262,9 +262,13 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
-        self.validate_identity("TRY_TO_DECIMAL('123.45')")
-        self.validate_identity("TRY_TO_DECIMAL('123.45', '999.99')")
-        self.validate_identity("TRY_TO_DECIMAL('123.45', '999.99', 10, 2)")
+        self.validate_identity("TRY_TO_DECIMAL('123.45')", "TRY_TO_NUMBER('123.45')")
+        self.validate_identity(
+            "TRY_TO_DECIMAL('123.45', '999.99')", "TRY_TO_NUMBER('123.45', '999.99')"
+        )
+        self.validate_identity(
+            "TRY_TO_DECIMAL('123.45', '999.99', 10, 2)", "TRY_TO_NUMBER('123.45', '999.99', 10, 2)"
+        )
         self.validate_identity("TRY_TO_DOUBLE('123.456')")
         self.validate_identity("TRY_TO_DOUBLE('123.456', '999.99')")
         self.validate_identity("TRY_TO_FILE(object_col)")
@@ -273,9 +277,13 @@ class TestSnowflake(Validator):
         self.validate_identity("TRY_TO_NUMBER('123.45')")
         self.validate_identity("TRY_TO_NUMBER('123.45', '999.99')")
         self.validate_identity("TRY_TO_NUMBER('123.45', '999.99', 10, 2)")
-        self.validate_identity("TRY_TO_NUMERIC('123.45')")
-        self.validate_identity("TRY_TO_NUMERIC('123.45', '999.99')")
-        self.validate_identity("TRY_TO_NUMERIC('123.45', '999.99', 10, 2)")
+        self.validate_identity("TRY_TO_NUMERIC('123.45')", "TRY_TO_NUMBER('123.45')")
+        self.validate_identity(
+            "TRY_TO_NUMERIC('123.45', '999.99')", "TRY_TO_NUMBER('123.45', '999.99')"
+        )
+        self.validate_identity(
+            "TRY_TO_NUMERIC('123.45', '999.99', 10, 2)", "TRY_TO_NUMBER('123.45', '999.99', 10, 2)"
+        )
         self.validate_all(
             "TRY_TO_TIME('12:30:00')",
             write={

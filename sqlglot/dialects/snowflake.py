@@ -804,9 +804,6 @@ class Snowflake(Dialect):
             "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
             "TO_VARCHAR": build_timetostr_or_tochar,
             "TO_JSON": exp.JSONFormat.from_arg_list,
-            "UNIFORM": lambda args: exp.Uniform(
-                this=seq_get(args, 0), expression=seq_get(args, 1), gen=seq_get(args, 2)
-            ),
             "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
             "VECTOR_INNER_PRODUCT": exp.DotProduct.from_arg_list,
             "VECTOR_L1_DISTANCE": exp.ManhattanDistance.from_arg_list,

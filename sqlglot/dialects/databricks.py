@@ -155,8 +155,8 @@ class Databricks(Spark):
             gen = expression.args.get("gen")
             seed = expression.args.get("seed")
 
-            # From Snowflake UNIFORM(min, max, gen) with gen as RANDOM() or RANDOM(seed) -> Extract seed
-            if gen and isinstance(gen, exp.Rand):
+            # From Snowflake UNIFORM(min, max, gen) as RANDOM(), RANDOM(seed), or constant value -> Extract seed
+            if gen:
                 seed = gen.this
 
             return self.func("UNIFORM", expression.this, expression.expression, seed)

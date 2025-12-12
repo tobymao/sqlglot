@@ -1880,11 +1880,20 @@ class TestSnowflake(Validator):
                 "databricks": "UNIFORM(1, 10, 5)",
             },
         )
+        (
+            self.validate_all(
+                "UNIFORM(1, 10, RANDOM())",
+                write={
+                    "snowflake": "UNIFORM(1, 10, RANDOM())",
+                    "databricks": "UNIFORM(1, 10)",
+                },
+            ),
+        )
         self.validate_all(
-            "UNIFORM(1, 10, RANDOM())",
+            "UNIFORM(1, 10, 5)",
             write={
-                "snowflake": "UNIFORM(1, 10, RANDOM())",
-                "databricks": "UNIFORM(1, 10)",
+                "snowflake": "UNIFORM(1, 10, 5)",
+                "databricks": "UNIFORM(1, 10, 5)",
             },
         )
 

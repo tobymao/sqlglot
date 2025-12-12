@@ -1873,6 +1873,13 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(6.43 AS DOUBLE)",
             },
         )
+        self.validate_all(
+            "UNIFORM(1, 10, 5)",
+            write={
+                "snowflake": "UNIFORM(1, 10, 5)",
+                "databricks": UnsupportedError
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

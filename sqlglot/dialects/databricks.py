@@ -150,3 +150,11 @@ class Databricks(Spark):
         def jsonpath_sql(self, expression: exp.JSONPath) -> str:
             expression.set("escape", None)
             return super().jsonpath_sql(expression)
+
+        def uniform_sql(self, expression: exp.Uniform) -> str:
+            if expression.args.get("gen"):
+                self.unsupported("Gen parameter is not supported in Databricks UNIFORM")
+
+            return self.func(
+                "UNIFORM", expression.this, expression.expression, expression.args.get("seed")
+            )

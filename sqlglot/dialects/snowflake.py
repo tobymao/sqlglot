@@ -1995,3 +1995,11 @@ class Snowflake(Dialect):
                 expression.set("part_index", exp.Literal.number(1))
 
             return rename_func("SPLIT_PART")(self, expression)
+
+        def uniform_sql(self, expression: exp.Uniform) -> str:
+            if expression.args.get("seed"):
+                self.unsupported("Seed parameter is not supported in Snowflake UNIFORM")
+
+            return self.func(
+                "UNIFORM", expression.this, expression.expression, expression.args.get("gen")
+            )

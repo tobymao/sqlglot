@@ -63,6 +63,10 @@ INT;
 STRUCT(1 AS col);
 STRUCT<col INT>;
 
+# Note: ensure the struct is annotated as UNKNOWN when any of its arguments are UNKNOWN
+STRUCT(1, f2);
+UNKNOWN;
+
 STRUCT(1 AS col, 2.5 AS row);
 STRUCT<col INT, row DOUBLE>;
 

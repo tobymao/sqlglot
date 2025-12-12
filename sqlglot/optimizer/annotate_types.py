@@ -692,27 +692,40 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self, expression: exp.Expression
     ) -> t.Optional[exp.DataType] | exp.ColumnDef:
         # Case: STRUCT(key AS value)
+        this: t.Optional[exp.Expression] = None
+        kind = expression.type
+
         if alias := expression.args.get("alias"):
-            return exp.ColumnDef(this=alias.copy(), kind=expression.type)
+            this = alias.copy()
+        elif expression.expression:
+            # Case: STRUCT(key = value) or STRUCT(key := value)
+            this = expression.this.copy()
+            kind = expression.expression.type
+        elif isinstance(expression, exp.Column):
+            # Case: STRUCT(c)
+            this = expression.this.copy()
 
-        # Case: STRUCT(key = value) or STRUCT(key := value)
-        if expression.expression:
-            return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
+        if kind and kind.is_type(exp.DataType.Type.UNKNOWN):
+            return None
 
-        # Case: STRUCT(c)
-        if isinstance(expression, exp.Column):
-            return exp.ColumnDef(this=expression.this.copy(), kind=expression.type)
+        if this:
+            return exp.ColumnDef(this=this, kind=kind)
 
-        return expression.type
+        return kind
 
     def _annotate_struct(self, expression: exp.Struct) -> exp.Struct:
+        expressions = []
+        for expr in expression.expressions:
+            struct_field_type = self._annotate_struct_value(expr)
+            if struct_field_type is None:
+                self._set_type(expression, None)
+                return expression
+
+            expressions.append(struct_field_type)
+
         self._set_type(
             expression,
-            exp.DataType(
-                this=exp.DataType.Type.STRUCT,
-                expressions=[self._annotate_struct_value(expr) for expr in expression.expressions],
-                nested=True,
-            ),
+            exp.DataType(this=exp.DataType.Type.STRUCT, expressions=expressions, nested=True),
         )
         return expression
 

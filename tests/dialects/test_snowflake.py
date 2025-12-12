@@ -74,7 +74,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT FACTORIAL(5)")
         self.validate_identity("SELECT BIT_LENGTH('abc')")
         self.validate_identity("SELECT BIT_LENGTH(x'A1B2')")
-        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_all(
+            "SELECT BITMAP_BIT_POSITION(10)",
+            write={
+                "duckdb": "SELECT (CASE WHEN 10 > 0 THEN 10 - 1 ELSE ABS(10) END) % 32768",
+                "snowflake": "SELECT BITMAP_BIT_POSITION(10)",
+            },
+        )
         self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
         self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity(

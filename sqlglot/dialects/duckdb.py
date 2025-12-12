@@ -85,6 +85,8 @@ WEEK_START_DAY_TO_DOW = {
     "SUNDAY": 7,
 }
 
+MAX_BIT_POSITION = exp.Literal.number(32768)
+
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -1231,6 +1233,29 @@ class DuckDB(Dialect):
             exp.Lead,
             exp.NthValue,
         )
+
+        def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
+            """
+            Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
+
+            Snowflake's BITMAP_BIT_POSITION behavior:
+            - For n <= 0: returns ABS(n) % 32768
+            - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
+            """
+            this = expression.this
+
+            return self.sql(
+                exp.Mod(
+                    this=exp.Paren(
+                        this=exp.If(
+                            this=exp.GT(this=this, expression=exp.Literal.number(0)),
+                            true=this - exp.Literal.number(1),
+                            false=exp.Abs(this=this),
+                        )
+                    ),
+                    expression=MAX_BIT_POSITION,
+                )
+            )
 
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """

@@ -4691,6 +4691,7 @@ class DataType(Expression):
         ENUM = auto()
         ENUM8 = auto()
         ENUM16 = auto()
+        FILE = auto()
         FIXEDSTRING = auto()
         FLOAT = auto()
         GEOGRAPHY = auto()
@@ -4788,6 +4789,7 @@ class DataType(Expression):
         TDIGEST = auto()
 
     STRUCT_TYPES = {
+        Type.FILE,
         Type.NESTED,
         Type.OBJECT,
         Type.STRUCT,

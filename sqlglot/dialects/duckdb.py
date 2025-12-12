@@ -85,6 +85,8 @@ WEEK_START_DAY_TO_DOW = {
     "SUNDAY": 7,
 }
 
+MAX_BIT_POSITION = exp.Literal.number(32768)
+
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
@@ -534,7 +536,6 @@ def _bitmap_bit_position_sql(self: DuckDB.Generator, expression: exp.BitmapBitPo
     - For n > 0: returns (n - 1) % 32768 (maximum return value is 32767)
     """
     this = expression.this
-    MAX_BIT_POSITION = exp.Literal.number(32768)
 
     return self.sql(
         exp.Mod(

@@ -1992,3 +1992,17 @@ class Snowflake(Dialect):
                 expression.set("part_index", exp.Literal.number(1))
 
             return rename_func("SPLIT_PART")(self, expression)
+
+        def uniform_sql(self, expression: exp.Uniform) -> str:
+            gen = expression.args.get("gen")
+            seed = expression.args.get("seed")
+
+            # From Databricks UNIFORM(min, max, seed) -> Wrap gen in RANDOM(seed)
+            if seed:
+                gen = exp.Rand(this=seed)
+
+            # No gen argument (from Databricks 2-arg UNIFORM(min, max)) -> Add RANDOM()
+            if not gen:
+                gen = exp.Rand()
+
+            return self.func("UNIFORM", expression.this, expression.expression, gen)

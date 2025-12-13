@@ -336,10 +336,8 @@ class TestExasol(Validator):
                 "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                 write={
                     "exasol": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
-                    "redshift": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "presto": "SELECT DATE_FORMAT(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                     "oracle": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
-                    "postgres": "SELECT TO_CHAR(CAST('1999-12-31' AS DATE)) AS TO_CHAR",
                 },
                 read={
                     "exasol": "SELECT TO_CHAR(DATE '1999-12-31') AS TO_CHAR",

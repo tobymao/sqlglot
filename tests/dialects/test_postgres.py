@@ -1680,4 +1680,3 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             day_time_str = "a > INTERVAL '1 00:00' AND TRUE"
             self.validate_identity(day_time_str, "a > INTERVAL '1 00:00' AND TRUE")
             self.assertIsInstance(self.parse_one(day_time_str), exp.And)
-

@@ -675,8 +675,6 @@ class Postgres(Dialect):
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
             exp.Merge: merge_without_target_sql,
-            exp.OverlapsLeft: lambda self, e: self.binary(e, "&<"),
-            exp.OverlapsRight: lambda self, e: self.binary(e, "&>"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

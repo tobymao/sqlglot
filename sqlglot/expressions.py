@@ -5164,6 +5164,14 @@ class Overlaps(Binary):
     pass
 
 
+class OverlapsLeft(Binary):
+    pass
+
+
+class OverlapsRight(Binary):
+    pass
+
+
 class Dot(Binary):
     @property
     def is_star(self) -> bool:

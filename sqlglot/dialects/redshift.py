@@ -147,6 +147,8 @@ class Redshift(Postgres):
             "BINARY VARYING": TokenType.VARBINARY,
         }
         KEYWORDS.pop("VALUES")
+        KEYWORDS.pop("&<")
+        KEYWORDS.pop("&>")
 
         # Redshift allows # to appear as a table identifier prefix
         SINGLE_TOKENS = Postgres.Tokenizer.SINGLE_TOKENS.copy()

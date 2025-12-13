@@ -84,6 +84,8 @@ class TokenType(AutoName):
     SESSION = auto()
     SESSION_PARAMETER = auto()
     DAMP = auto()
+    AMP_LT = auto()
+    AMP_GT = auto()
     XOR = auto()
     DSTAR = auto()
     QMARK_AMP = auto()

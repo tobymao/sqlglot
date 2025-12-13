@@ -277,7 +277,6 @@ class Exasol(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     # https://docs.exasol.com/db/latest/sql/select.htm
     SUPPORTS_SEMI_ANTI_JOIN = False
-    SUPPORTS_COLUMN_JOIN_MARKS = True
     NULL_ORDERING = "nulls_are_last"
     # https://docs.exasol.com/db/latest/sql_references/literals.htm#StringLiterals
     CONCAT_COALESCE = True
@@ -314,6 +313,7 @@ class Exasol(Dialect):
         IDENTIFIERS = ['"', ("[", "]")]
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "USER": TokenType.CURRENT_USER,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,

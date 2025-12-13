@@ -1873,6 +1873,29 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(6.43 AS DOUBLE)",
             },
         )
+        self.validate_all(
+            "UNIFORM(1, 10, RANDOM(5))",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM(5))",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
+        (
+            self.validate_all(
+                "UNIFORM(1, 10, RANDOM())",
+                write={
+                    "snowflake": "UNIFORM(1, 10, RANDOM())",
+                    "databricks": "UNIFORM(1, 10)",
+                },
+            ),
+        )
+        self.validate_all(
+            "UNIFORM(1, 10, 5)",
+            write={
+                "snowflake": "UNIFORM(1, 10, 5)",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

@@ -221,6 +221,20 @@ class TestDatabricks(Validator):
         )
         self.validate_identity("NTILE() OVER (ORDER BY 1)")
         self.validate_identity("CURRENT_VERSION()")
+        self.validate_all(
+            "UNIFORM(1, 10, 5)",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM(5))",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
+        self.validate_all(
+            "UNIFORM(1, 10)",
+            write={
+                "databricks": "UNIFORM(1, 10)",
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+            },
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

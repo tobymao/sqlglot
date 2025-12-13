@@ -465,6 +465,10 @@ SAFE_DIVIDE(tbl.double_col, tbl.double_col);
 FLOAT64;
 
 # dialect: bigquery
+SAFE.TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 

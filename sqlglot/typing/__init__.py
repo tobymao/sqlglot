@@ -12,6 +12,7 @@ TIMESTAMP_EXPRESSIONS = {
     exp.TimestampAdd,
     exp.TimestampSub,
     exp.UnixToTime,
+    exp.SafeTimestamp,
 }
 
 EXPRESSION_METADATA: ExpressionMetadataType = {

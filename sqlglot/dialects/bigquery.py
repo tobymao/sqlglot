@@ -97,6 +97,23 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
     return self.create_sql(expression)
 
 
+def _transform_safe_timestamp(expression: exp.Expression) -> exp.Expression:
+    """Transform SAFE.TIMESTAMP() calls to SafeTimestamp expression."""
+    if isinstance(expression, exp.Dot):
+        if (
+            isinstance(expression.this, exp.Identifier)
+            and expression.this.name.upper() == "SAFE"
+            and isinstance(expression.expression, exp.Anonymous)
+            and str(expression.expression.this).upper() == "TIMESTAMP"
+        ):
+            return exp.SafeTimestamp(
+                this=seq_get(expression.expression.expressions, 0),
+                zone=seq_get(expression.expression.expressions, 1),
+            )
+
+    return expression
+
+
 # https://issuetracker.google.com/issues/162294746
 # workaround for bigquery bug when grouping by an expression and then ordering
 # WITH x AS (SELECT 1 y)
@@ -458,6 +475,13 @@ class BigQuery(Dialect):
     }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
+
+    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
+        """Override parse to apply SAFE.TIMESTAMP transformation."""
+        expressions = super().parse(sql, **opts)
+
+        # Apply transformation to convert SAFE.TIMESTAMP() to SafeTimestamp
+        return [expr.transform(_transform_safe_timestamp) if expr else expr for expr in expressions]
 
     def normalize_identifier(self, expression: E) -> E:
         if (

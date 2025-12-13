@@ -1080,6 +1080,7 @@ class TSQL(Dialect):
             exp.CurrentSchema: rename_func("SCHEMA_NAME"),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,

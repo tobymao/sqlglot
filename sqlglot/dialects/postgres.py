@@ -696,6 +696,7 @@ class Postgres(Dialect):
                 [
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
+                    transforms.eliminate_join_marks,
                 ]
             ),
             exp.SHA2: sha256_sql,

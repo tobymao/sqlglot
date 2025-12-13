@@ -788,6 +788,7 @@ class MySQL(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,

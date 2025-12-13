@@ -212,6 +212,7 @@ class Redshift(Postgres):
             exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_window_clause,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,

@@ -222,6 +222,7 @@ class SQLite(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_qualify,
                     transforms.eliminate_semi_and_anti_joins,

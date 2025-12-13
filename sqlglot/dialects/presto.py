@@ -500,6 +500,7 @@ class Presto(Dialect):
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_window_clause,
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,

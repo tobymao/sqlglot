@@ -7838,6 +7838,10 @@ class SafeConvertBytesToString(Func):
     pass
 
 
+class SafeTimestamp(Func):
+    arg_types = {"this": True, "zone": False}
+
+
 class SHA(Func):
     _sql_names = ["SHA", "SHA1"]
 

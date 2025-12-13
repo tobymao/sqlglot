@@ -20,7 +20,12 @@ class Tableau(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Coalesce: rename_func("IFNULL"),
-            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_join_marks,
+                    transforms.eliminate_distinct_on,
+                ]
+            ),
         }
 
         PROPERTIES_LOCATION = {

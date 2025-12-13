@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from sqlglot import expressions as exp
-from sqlglot import parser, generator, tokens
+from sqlglot import parser, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     build_timetostr_or_tochar,
@@ -221,6 +221,11 @@ class Dremio(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_join_marks,
+                ]
+            ),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.ToChar: rename_func("TO_CHAR"),

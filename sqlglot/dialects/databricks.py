@@ -104,6 +104,7 @@ class Databricks(Spark):
             exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_distinct_on,
                     transforms.unnest_to_explode,
                     transforms.any_to_exists,

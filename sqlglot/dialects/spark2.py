@@ -276,6 +276,7 @@ class Spark2(Hive):
             ),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.unnest_to_explode,

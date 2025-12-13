@@ -1,4 +1,4 @@
-from sqlglot import exp, generator
+from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import rename_func, Dialect
 
 
@@ -15,6 +15,11 @@ class Druid(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_join_marks,
+                ]
+            ),
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.Mod: rename_func("MOD"),
         }

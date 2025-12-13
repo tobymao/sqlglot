@@ -84,6 +84,7 @@ class Trino(Presto):
             exp.Merge: merge_without_target_sql,
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.explode_projection_to_unnest(1),

@@ -339,7 +339,11 @@ class Teradata(Dialect):
             exp.Pow: lambda self, e: self.binary(e, "**"),
             exp.Rand: lambda self, e: self.func("RANDOM", e.args.get("lower"), e.args.get("upper")),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+                [
+                    transforms.eliminate_join_marks,
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
             ),
             exp.StrPosition: lambda self, e: (
                 strposition_sql(

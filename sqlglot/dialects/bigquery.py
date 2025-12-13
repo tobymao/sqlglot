@@ -1199,6 +1199,7 @@ class BigQuery(Dialect):
             ),
             exp.Select: transforms.preprocess(
                 [
+                    transforms.eliminate_join_marks,
                     transforms.explode_projection_to_unnest(),
                     transforms.unqualify_unnest,
                     transforms.eliminate_distinct_on,

@@ -4801,3 +4801,36 @@ FROM subquery2""",
                 select.selects[0].assert_is(exp.CurrentCatalog)
 
                 self.assertEqual(select.sql(dialect), sql)
+
+    def test_session_user(self):
+        sql = "SELECT SESSION_USER"
+
+        unsupported_dialects = [
+            "bigquery",
+            "mysql",
+            "oracle",
+            "clickhouse",
+            "snowflake",
+            "spark",
+            "presto",
+        ]
+
+        for dialect in unsupported_dialects:
+            with self.subTest(f"Testing that SESSION_USER is parsed as a Column in {dialect}"):
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.Column)
+                self.assertEqual(select.sql(dialect), sql)
+
+        supported_dialects = [
+            "postgres",
+            "duckdb",
+            "databricks",
+        ]
+
+        for dialect in supported_dialects:
+            with self.subTest(
+                f"Testing that SESSION_USER is parsed as a SessionUser expression in {dialect}"
+            ):
+                select = parse_one(sql, dialect=dialect)
+                select.selects[0].assert_is(exp.SessionUser)
+                self.assertEqual(select.sql(dialect), sql)

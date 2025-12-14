@@ -660,6 +660,7 @@ class Parser(metaclass=_Parser):
         TokenType.REPLACE,
         TokenType.RLIKE,
         TokenType.ROW,
+        TokenType.SESSION_USER,
         TokenType.UNNEST,
         TokenType.VAR,
         TokenType.LEFT,

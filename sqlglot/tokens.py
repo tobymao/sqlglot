@@ -83,6 +83,7 @@ class TokenType(AutoName):
     PARAMETER = auto()
     SESSION = auto()
     SESSION_PARAMETER = auto()
+    SESSION_USER = auto()
     DAMP = auto()
     XOR = auto()
     DSTAR = auto()
@@ -863,6 +864,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,
         "SESSION": TokenType.SESSION,
+        "SESSION_USER": TokenType.SESSION_USER,
         "SET": TokenType.SET,
         "SETTINGS": TokenType.SETTINGS,
         "SHOW": TokenType.SHOW,

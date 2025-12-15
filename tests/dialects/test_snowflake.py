@@ -4010,3 +4010,23 @@ FROM SEMANTIC_VIEW(
             ),
             'SELECT a, "B" FROM DUAL',
         )
+
+    def test_floor(self):
+        self.validate_all(
+            "SELECT FLOOR(1.753, 2)",
+            write={"duckdb": "SELECT ROUND(FLOOR(1.753 * POWER(10, 2)) / POWER(10, 2), 2)"},
+        )
+        self.validate_all(
+            "SELECT FLOOR(123.45, -1)",
+            write={"duckdb": "SELECT ROUND(FLOOR(123.45 * POWER(10, -1)) / POWER(10, -1), -1)"},
+        )
+        self.validate_all(
+            "SELECT FLOOR(a + b, 2)",
+            write={"duckdb": "SELECT ROUND(FLOOR((a + b) * POWER(10, 2)) / POWER(10, 2), 2)"},
+        )
+        self.validate_all(
+            "SELECT FLOOR(1.234, 1.5)",
+            write={
+                "duckdb": "SELECT ROUND(FLOOR(1.234 * POWER(10, CAST(1.5 AS INT))) / POWER(10, CAST(1.5 AS INT)), CAST(1.5 AS INT))"
+            },
+        )

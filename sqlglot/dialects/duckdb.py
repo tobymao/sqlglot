@@ -527,6 +527,29 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
+    decimals = expression.args.get("decimals")
+
+    if decimals is not None and expression.args.get("to") is None:
+        this = expression.this
+        if isinstance(this, exp.Binary):
+            this = exp.Paren(this=this)
+
+        n_int = decimals
+        if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
+            n_int = exp.cast(decimals, exp.DataType.Type.INT)
+
+        pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
+        floored = exp.Floor(this=exp.Mul(this=this, expression=pow_))
+        result = exp.Div(this=floored, expression=pow_.copy())
+
+        return self.round_sql(
+            exp.Round(this=result, decimals=decimals, casts_non_integer_decimals=True)
+        )
+
+    return self.ceil_floor(expression)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -999,6 +1022,7 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.Floor: _floor_sql,
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,
@@ -1837,10 +1861,7 @@ class DuckDB(Dialect):
             # DuckDB requires the scale (decimals) argument to be an INT
             # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
             if decimals is not None and expression.args.get("casts_non_integer_decimals"):
-                if isinstance(decimals, exp.Literal):
-                    if not decimals.is_int:
-                        decimals = exp.cast(decimals, exp.DataType.Type.INT)
-                elif not decimals.is_type(*exp.DataType.INTEGER_TYPES):
+                if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
                     decimals = exp.cast(decimals, exp.DataType.Type.INT)
 
             func = "ROUND"

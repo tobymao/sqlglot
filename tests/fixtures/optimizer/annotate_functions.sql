@@ -3581,12 +3581,32 @@ TRY_TO_BOOLEAN('true');
 BOOLEAN;
 
 # dialect: snowflake
+TO_DATE('2024-01-31');
+DATE;
+
+# dialect: snowflake
+TO_DATE('2024-01-31', 'AUTO');
+DATE;
+
+# dialect: snowflake
 TRY_TO_DATE('2024-01-31');
 DATE;
 
 # dialect: snowflake
 TRY_TO_DATE('2024-01-31', 'AUTO');
 DATE;
+
+# dialect: snowflake
+TO_DECIMAL('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DECIMAL('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DECIMAL('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
 
 # dialect: snowflake
 TRY_TO_DECIMAL('123.45');
@@ -3599,6 +3619,14 @@ DECIMAL(38, 0);
 # dialect: snowflake
 TRY_TO_DECIMAL('123.45', '999.99', 10, 2);
 DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DOUBLE('123.456');
+DOUBLE;
+
+# dialect: snowflake
+TO_DOUBLE('123.456', '999.99');
+DOUBLE;
 
 # dialect: snowflake
 TRY_TO_DOUBLE('123.456');
@@ -3633,6 +3661,18 @@ TRY_TO_FILE('file.csv', '/relativepath/');
 FILE;
 
 # dialect: snowflake
+TO_NUMBER('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_NUMBER('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_NUMBER('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
 TRY_TO_NUMBER('123.45');
 DECIMAL(38, 0);
 
@@ -3655,6 +3695,14 @@ DECIMAL(38, 0);
 # dialect: snowflake
 TRY_TO_NUMERIC('123.45', '999.99', 10, 2);
 DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_TIME('12:30:00');
+TIME;
+
+# dialect: snowflake
+TO_TIME('12:30:00', 'AUTO');
+TIME;
 
 # dialect: snowflake
 TRY_TO_TIME('12:30:00');

@@ -946,6 +946,13 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT COLLATE('B', 'und:ci')",
             },
         )
+
+        self.validate_all(
+            "SELECT To_BOOLEAN('T')",
+            write={
+                "duckdb": "SELECT CASE WHEN ISNAN(TRY_CAST('T' AS REAL)) OR ISINF(TRY_CAST('T' AS REAL)) THEN ERROR('TO_BOOLEAN: Non-numeric values NaN and INF are not supported') WHEN UPPER(CAST('T' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('T' AS TEXT)) = 'OFF' THEN FALSE ELSE CAST('T' AS BOOLEAN) END",
+            },
+        )
         self.validate_all(
             "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
             read={

@@ -641,9 +641,15 @@ FROM (
         )
 
     def test_join_markers(self):
-        self.validate_identity(
-            "select a.foo, b.bar, a.baz from a, b where a.baz = b.baz (+)",
+        self.validate_identity("SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)")
+
+        self.validate_all(
             "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
+            write={
+                "": "SELECT a.foo, b.bar, a.baz FROM a LEFT JOIN b ON a.baz = b.baz",
+                "oracle": "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
+                "exasol": "SELECT a.foo, b.bar, a.baz FROM a, b WHERE a.baz = b.baz (+)",
+            },
         )
 
     def test_time(self):

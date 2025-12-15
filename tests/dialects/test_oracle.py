@@ -371,13 +371,10 @@ class TestOracle(Validator):
 
         self.validate_all(
             "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
-            write={"": UnsupportedError},
-        )
-        self.validate_all(
-            "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
             write={
-                "": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y",
+                "": "SELECT e1.x, e2.x FROM e AS e1 LEFT JOIN e AS e2 ON e1.y = e2.y",
                 "oracle": "SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)",
+                "exasol": "SELECT e1.x, e2.x FROM e AS e1, e AS e2 WHERE e1.y = e2.y (+)",
             },
         )
 

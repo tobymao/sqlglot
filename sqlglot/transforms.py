@@ -870,6 +870,14 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
     from sqlglot.optimizer.normalize import normalize, normalized
     from collections import defaultdict
 
+    # Early exit if no join marks exist
+    if not any(
+        c.args.get("join_mark")
+        for where in expression.find_all(exp.Where)
+        for c in where.find_all(exp.Column)
+    ):
+        return expression
+
     # we go in reverse to check the main query for left correlation
     for scope in reversed(traverse_scope(expression)):
         query = scope.expression

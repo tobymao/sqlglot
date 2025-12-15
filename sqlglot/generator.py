@@ -833,6 +833,11 @@ class Generator(metaclass=_Generator):
 
             expression = ensure_bools(expression)
 
+        if not self.dialect.SUPPORTS_COLUMN_JOIN_MARKS:
+            from sqlglot.transforms import eliminate_join_marks
+
+            expression = eliminate_join_marks(expression)
+
         return expression
 
     def _move_ctes_to_top_level(self, expression: E) -> E:

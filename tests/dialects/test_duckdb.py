@@ -75,6 +75,60 @@ class TestDuckDB(Validator):
                 "duckdb": "CAST(x AS UUID)",
             },
         )
+
+        self.validate_all(
+            "SELECT APPROX_TOP_K(category, 1) FROM t",
+            write={
+                "snowflake": "SELECT APPROX_TOP_K(category, 1) FROM t",
+                "duckdb": "SELECT APPROX_TOP_K(category, 1) FROM t",
+            },
+            read={
+                "snowflake": "SELECT APPROX_TOP_K(category) FROM t",  # Adds k=1
+            },
+        )
+
+        self.validate_all(
+            "SELECT APPROX_TOP_K(category, 3) FROM t",
+            write={
+                "snowflake": "SELECT APPROX_TOP_K(category, 3) FROM t",
+                "duckdb": "SELECT APPROX_TOP_K(category, 3) FROM t",
+            },
+        )
+
+        expr = parse_one("SELECT APPROX_TOP_K(category, 5, 100) FROM t", dialect="snowflake")
+        self.assertEqual(expr.sql(dialect="duckdb"), "SELECT APPROX_TOP_K(category, 5) FROM t")
+        self.assertEqual(
+            expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(category, 5, 100) FROM t"
+        )
+
+        self.validate_all(
+            "SELECT APPROX_TOP_K(UPPER(category), 2) FROM t",
+            write={
+                "duckdb": "SELECT APPROX_TOP_K(UPPER(category), 2) FROM t",
+            },
+            read={
+                "snowflake": "SELECT APPROX_TOP_K(UPPER(category), 2) FROM t",
+            },
+        )
+
+        self.validate_all(
+            "SELECT APPROX_TOP_K(category, 2) OVER (PARTITION BY region) FROM t",
+            write={
+                "duckdb": "SELECT APPROX_TOP_K(category, 2) OVER (PARTITION BY region) FROM t",
+            },
+            read={
+                "snowflake": "SELECT APPROX_TOP_K(category, 2) OVER (PARTITION BY region) FROM t",
+            },
+        )
+
+        expr = parse_one("SELECT APPROX_TOP_K(col, 0) FROM t", dialect="snowflake")
+        self.assertEqual(expr.sql(dialect="duckdb"), "SELECT APPROX_TOP_K(col, 0) FROM t")
+
+        expr = parse_one("SELECT APPROX_TOP_K(col, 5 + 1) FROM t", dialect="snowflake")
+        duckdb_sql = expr.sql(dialect="duckdb")
+        self.assertIn("APPROX_TOP_K", duckdb_sql)
+        self.assertIn("5 + 1", duckdb_sql)
+
         self.validate_all(
             """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
             read={

@@ -948,6 +948,12 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _anyvalue_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.ApproxTopK: lambda self, e: self.func(
+                "APPROX_TOP_K",
+                e.this,
+                e.expression or exp.Literal.number(1),  # k parameter with default
+                # Note: e.args.get("counters") intentionally omitted - DuckDB doesn't support it
+            ),
             exp.Array: transforms.preprocess(
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,

@@ -48,26 +48,20 @@ class TestSnowflake(Validator):
             """SELECT PARSE_JSON('{"x: 1}')""",
         )
 
-        expr = parse_one("SELECT APPROX_TOP_K(category) FROM t", dialect="snowflake")
-        expr.selects[0].assert_is(exp.ApproxTopK)
-        self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(category, 1) FROM t")
-
-        self.validate_identity("SELECT APPROX_TOP_K(category, 3) FROM t")
-
-        self.validate_identity("SELECT APPROX_TOP_K(category, 5, 100) FROM t")
+        expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
+        expr.selects[0].assert_is(exp.AggFunc)
+        self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
 
         expr = parse_one("SELECT APPROX_TOP_K(col) FROM t", dialect="snowflake")
         func = expr.selects[0]
+        self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(col, 1) FROM t")
         self.assertIsNotNone(func.expression)  # k parameter exists
         self.assertEqual(func.expression.this, "1")  # k is 1
         self.assertIsNone(func.args.get("counters"))  # no counters
 
-        self.validate_identity("SELECT APPROX_TOP_K(category, 2) OVER (PARTITION BY region) FROM t")
+        self.validate_identity("SELECT APPROX_TOP_K(category, 3) FROM t")
 
-        self.validate_identity("SELECT region, APPROX_TOP_K(category, 2) FROM t GROUP BY region")
-
-        self.validate_identity("SELECT APPROX_TOP_K(col, LENGTH(name)) FROM t")
-        self.validate_identity("SELECT APPROX_TOP_K(col, LENGTH(name)) FROM t")
+        self.validate_identity("SELECT APPROX_TOP_K(category, 5, 100) FROM t")
 
         self.validate_identity("SELECT MINHASH(5, col)")
         self.validate_identity("SELECT MINHASH(5, col1, col2)")

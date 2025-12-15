@@ -266,7 +266,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_TIMESTAMP_NTZ(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_LTZ(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP_TZ(x) FROM t")
-        self.validate_identity("TO_DECIMAL(expr, fmt, precision, scale)")
+        self.validate_identity("TO_DECIMAL(expr)", "TO_NUMBER(expr)")
+        self.validate_identity("TO_DECIMAL(expr, fmt)", "TO_NUMBER(expr, fmt)")
+        self.validate_identity(
+            "TO_DECIMAL(expr, fmt, precision, scale)", "TO_NUMBER(expr, fmt, precision, scale)"
+        )
+        self.validate_identity("TO_NUMBER(expr)")
+        self.validate_identity("TO_NUMBER(expr, fmt)")
+        self.validate_identity("TO_NUMBER(expr, fmt, precision, scale)")
         self.validate_identity("TO_DECFLOAT('123.456')")
         self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_DECFLOAT('123.456')")
@@ -300,6 +307,11 @@ class TestSnowflake(Validator):
         self.validate_identity("TRY_TO_NUMBER('123.45')")
         self.validate_identity("TRY_TO_NUMBER('123.45', '999.99')")
         self.validate_identity("TRY_TO_NUMBER('123.45', '999.99', 10, 2)")
+        self.validate_identity("TO_NUMERIC('123.45')", "TO_NUMBER('123.45')")
+        self.validate_identity("TO_NUMERIC('123.45', '999.99')", "TO_NUMBER('123.45', '999.99')")
+        self.validate_identity(
+            "TO_NUMERIC('123.45', '999.99', 10, 2)", "TO_NUMBER('123.45', '999.99', 10, 2)"
+        )
         self.validate_identity("TRY_TO_NUMERIC('123.45')", "TRY_TO_NUMBER('123.45')")
         self.validate_identity(
             "TRY_TO_NUMERIC('123.45', '999.99')", "TRY_TO_NUMBER('123.45', '999.99')"

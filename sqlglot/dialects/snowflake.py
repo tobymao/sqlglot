@@ -791,11 +791,14 @@ class Snowflake(Dialect):
             ),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
-            "TO_NUMBER": lambda args: exp.ToNumber(
-                this=seq_get(args, 0),
-                format=seq_get(args, 1),
-                precision=seq_get(args, 2),
-                scale=seq_get(args, 3),
+            **dict.fromkeys(
+                ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
+                lambda args: exp.ToNumber(
+                    this=seq_get(args, 0),
+                    format=seq_get(args, 1),
+                    precision=seq_get(args, 2),
+                    scale=seq_get(args, 3),
+                ),
             ),
             "TO_TIME": _build_datetime("TO_TIME", exp.DataType.Type.TIME),
             "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP),

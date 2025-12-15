@@ -1861,12 +1861,7 @@ class DuckDB(Dialect):
             # DuckDB requires the scale (decimals) argument to be an INT
             # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
             if decimals is not None and expression.args.get("casts_non_integer_decimals"):
-                if isinstance(decimals, exp.Literal):
-                    if not decimals.is_int:
-                        decimals = exp.cast(decimals, exp.DataType.Type.INT)
-                elif decimals.is_int:
-                    pass
-                elif not decimals.is_type(*exp.DataType.INTEGER_TYPES):
+                if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
                     decimals = exp.cast(decimals, exp.DataType.Type.INT)
 
             func = "ROUND"

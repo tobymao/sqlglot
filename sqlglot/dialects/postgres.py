@@ -358,6 +358,8 @@ class Postgres(Dialect):
             "<@": TokenType.LT_AT,
             "?&": TokenType.QMARK_AMP,
             "?|": TokenType.QMARK_PIPE,
+            "&<": TokenType.AMP_LT,
+            "&>": TokenType.AMP_GT,
             "#-": TokenType.HASH_DASH,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
@@ -477,6 +479,8 @@ class Postgres(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
+            TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),

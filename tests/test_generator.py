@@ -48,3 +48,14 @@ class TestGenerator(unittest.TestCase):
     def test_generate_nested_binary(self):
         sql = "SELECT 'foo'" + (" || 'foo'" * 1000)
         self.assertEqual(parse_one(sql).sql(copy=False), sql)
+
+    def test_overlap_operator(self):
+        for op in ("&<", "&>"):
+            with self.subTest(op=op):
+                input_sql = f"SELECT '[1,10]'::int4range {op} '[5,15]'::int4range"
+                expected_sql = (
+                    f"SELECT CAST('[1,10]' AS INT4RANGE) {op} CAST('[5,15]' AS INT4RANGE)"
+                )
+                ast = parse_one(input_sql, read="postgres")
+                self.assertEqual(ast.sql(), expected_sql)
+                self.assertEqual(ast.sql("postgres"), expected_sql)

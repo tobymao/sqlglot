@@ -537,12 +537,7 @@ def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
 
         n_int = decimals.copy()
         if not (
-            (isinstance(decimals, exp.Literal) and decimals.is_int)
-            or (
-                isinstance(decimals, exp.Neg)
-                and isinstance(decimals.this, exp.Literal)
-                and decimals.this.is_int
-            )
+            decimals.is_int
             or decimals.is_type(*exp.DataType.INTEGER_TYPES)
         ):
             n_int = exp.cast(decimals.copy(), exp.DataType.Type.INT)
@@ -1872,11 +1867,7 @@ class DuckDB(Dialect):
                 if isinstance(decimals, exp.Literal):
                     if not decimals.is_int:
                         decimals = exp.cast(decimals, exp.DataType.Type.INT)
-                elif (
-                    isinstance(decimals, exp.Neg)
-                    and isinstance(decimals.this, exp.Literal)
-                    and decimals.this.is_int
-                ):
+                elif decimals.is_int:
                     pass
                 elif not decimals.is_type(*exp.DataType.INTEGER_TYPES):
                     decimals = exp.cast(decimals, exp.DataType.Type.INT)

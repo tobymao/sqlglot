@@ -317,6 +317,8 @@ class _Dialect(type):
             "duckdb",
             "databricks",
             "postgres",
+            "tsql",
+            "spark",
         ):
             no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser

@@ -531,23 +531,20 @@ def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
     decimals = expression.args.get("decimals")
 
     if decimals is not None and expression.args.get("to") is None:
-        this = expression.this.copy()
+        this = expression.this
         if isinstance(this, exp.Binary):
             this = exp.Paren(this=this)
 
-        n_int = decimals.copy()
-        if not (
-            decimals.is_int
-            or decimals.is_type(*exp.DataType.INTEGER_TYPES)
-        ):
-            n_int = exp.cast(decimals.copy(), exp.DataType.Type.INT)
+        n_int = decimals
+        if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
+            n_int = exp.cast(decimals, exp.DataType.Type.INT)
 
-        pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int.copy())
+        pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
         floored = exp.Floor(this=exp.Mul(this=this, expression=pow_))
         result = exp.Div(this=floored, expression=pow_.copy())
 
         return self.round_sql(
-            exp.Round(this=result, decimals=decimals.copy(), casts_non_integer_decimals=True)
+            exp.Round(this=result, decimals=decimals, casts_non_integer_decimals=True)
         )
 
     return self.ceil_floor(expression)

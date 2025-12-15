@@ -50,22 +50,12 @@ class TestGenerator(unittest.TestCase):
         self.assertEqual(parse_one(sql).sql(copy=False), sql)
 
     def test_overlap_operator(self):
-        sql = "SELECT '[1,10]'::int4range &< '[5,15]'::int4range"
-        self.assertEqual(
-            parse_one(sql, dialect="postgres").sql(),
-            "SELECT CAST('[1,10]' AS INT4RANGE) &< CAST('[5,15]' AS INT4RANGE)",
-        )
-        self.assertEqual(
-            parse_one(sql, dialect="postgres").sql(dialect="postgres"),
-            "SELECT CAST('[1,10]' AS INT4RANGE) &< CAST('[5,15]' AS INT4RANGE)",
-        )
-
-        sql = "SELECT '[1,10]'::int4range &> '[5,15]'::int4range"
-        self.assertEqual(
-            parse_one(sql, dialect="postgres").sql(),
-            "SELECT CAST('[1,10]' AS INT4RANGE) &> CAST('[5,15]' AS INT4RANGE)",
-        )
-        self.assertEqual(
-            parse_one(sql, dialect="postgres").sql(dialect="postgres"),
-            "SELECT CAST('[1,10]' AS INT4RANGE) &> CAST('[5,15]' AS INT4RANGE)",
-        )
+        for op in ("&<", "&>"):
+            with self.subTest(op=op):
+                input_sql = f"SELECT '[1,10]'::int4range {op} '[5,15]'::int4range"
+                expected_sql = (
+                    f"SELECT CAST('[1,10]' AS INT4RANGE) {op} CAST('[5,15]' AS INT4RANGE)"
+                )
+                ast = parse_one(input_sql, read="postgres")
+                self.assertEqual(ast.sql(), expected_sql)
+                self.assertEqual(ast.sql("postgres"), expected_sql)

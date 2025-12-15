@@ -5164,11 +5164,11 @@ class Overlaps(Binary):
     pass
 
 
-class OverlapsLeft(Binary):
+class ExtendsLeft(Binary):
     pass
 
 
-class OverlapsRight(Binary):
+class ExtendsRight(Binary):
     pass
 
 

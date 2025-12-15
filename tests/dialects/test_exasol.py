@@ -1,4 +1,6 @@
 from tests.dialects.test_dialect import Validator
+from sqlglot import parse_one
+from sqlglot.optimizer import optimize
 
 
 class TestExasol(Validator):
@@ -761,4 +763,110 @@ class TestExasol(Validator):
                 self.validate_all(
                     exasol_sql,
                     write={"exasol": exasol_sql, "databricks": dbx_sql},
+                )
+
+    def test_pivot(self):
+        test_cases = [
+            (
+                "Single-column pivot rewrite",
+                """
+                SELECT
+                      "_0"."year" AS "year",
+                      "_0"."region" AS "region",
+                      "_0"."q1" AS "q1",
+                      "_0"."q2" AS "q2",
+                      "_0"."q3" AS "q3",
+                      "_0"."q4" AS "q4"
+                    FROM (SELECT "sales"."year", "sales"."region", SUM(CASE WHEN "sales"."quarter" = 1 THEN "sales"."sales" END) AS "q1", SUM(CASE WHEN "sales"."quarter" = 2 THEN "sales"."sales" END) AS "q2", SUM(CASE WHEN "sales"."quarter" = 3 THEN "sales"."sales" END) AS "q3", SUM(CASE WHEN "sales"."quarter" = 4 THEN "sales"."sales" END) AS "q4" FROM "sales" AS "sales" GROUP BY "sales"."year", "sales"."region")"_0"
+                """,
+                "SELECT year, region, q1, q2, q3, q4 FROM sales PIVOT (sum(sales) AS sales FOR quarter IN (1 AS q1, 2 AS q2, 3 AS q3, 4 AS q4))",
+            ),
+            (
+                "Tuple pivot rewrite (multi-column FOR)",
+                """
+                SELECT
+                  "_0"."year" AS "year",
+                  "_0"."q1_east" AS "q1_east",
+                  "_0"."q1_west" AS "q1_west",
+                  "_0"."q2_east" AS "q2_east",
+                  "_0"."q2_west" AS "q2_west",
+                  "_0"."q3_east" AS "q3_east",
+                  "_0"."q3_west" AS "q3_west",
+                  "_0"."q4_east" AS "q4_east",
+                  "_0"."q4_west" AS "q4_west"
+                FROM (SELECT "sales"."year", SUM(CASE WHEN "sales"."quarter" = 1 AND "sales"."region" = 'east' THEN "sales"."sales" END) AS "q1_east", SUM(CASE WHEN "sales"."quarter" = 1 AND "sales"."region" = 'west' THEN "sales"."sales" END) AS "q1_west", SUM(CASE WHEN "sales"."quarter" = 2 AND "sales"."region" = 'east' THEN "sales"."sales" END) AS "q2_east", SUM(CASE WHEN "sales"."quarter" = 2 AND "sales"."region" = 'west' THEN "sales"."sales" END) AS "q2_west", SUM(CASE WHEN "sales"."quarter" = 3 AND "sales"."region" = 'east' THEN "sales"."sales" END) AS "q3_east", SUM(CASE WHEN "sales"."quarter" = 3 AND "sales"."region" = 'west' THEN "sales"."sales" END) AS "q3_west", SUM(CASE WHEN "sales"."quarter" = 4 AND "sales"."region" = 'east' THEN "sales"."sales" END) AS "q4_east", SUM(CASE WHEN "sales"."quarter" = 4 AND "sales"."region" = 'west' THEN "sales"."sales" END) AS "q4_west" FROM "sales" AS "sales" GROUP BY "sales"."year")"_0"
+                """,
+                """
+                SELECT year, q1_east, q1_west, q2_east, q2_west, q3_east, q3_west, q4_east, q4_west
+                FROM sales
+                PIVOT (sum(sales) AS sales
+                  FOR (quarter, region)
+                  IN ((1, 'east') AS q1_east, (1, 'west') AS q1_west, (2, 'east') AS q2_east, (2, 'west') AS q2_west,
+                      (3, 'east') AS q3_east, (3, 'west') AS q3_west, (4, 'east') AS q4_east, (4, 'west') AS q4_west))
+                """,
+            ),
+            (
+                "Pivot rewrite over derived table source",
+                """
+                SELECT
+                  "_0"."year" AS "year",
+                  "_0"."q1" AS "q1",
+                  "_0"."q2" AS "q2",
+                  "_0"."q3" AS "q3",
+                  "_0"."q4" AS "q4"
+                FROM (SELECT "s"."year", SUM(CASE WHEN "s"."quarter" = 1 THEN "s"."sales" END) AS "q1", SUM(CASE WHEN "s"."quarter" = 2 THEN "s"."sales" END) AS "q2", SUM(CASE WHEN "s"."quarter" = 3 THEN "s"."sales" END) AS "q3", SUM(CASE WHEN "s"."quarter" = 4 THEN "s"."sales" END) AS "q4" FROM (SELECT
+                  "sales"."year" AS "year",
+                  "sales"."quarter" AS "quarter",
+                  "sales"."sales" AS "sales"
+                FROM "sales" AS "sales") AS "s" GROUP BY "s"."year")"_0"
+                """,
+                """
+                SELECT year, q1, q2, q3, q4
+                FROM (SELECT year, quarter, sales FROM sales) AS s
+                PIVOT (sum(sales) AS sales
+                    FOR quarter
+                    IN (1 AS q1, 2 AS q2, 3 AS q3, 4 AS q4))
+                """,
+            ),
+            (
+                "Pivot rewrite with multiple aggregates",
+                """
+                SELECT
+                  "_0"."year" AS "year",
+                  "_0"."q1_total" AS "q1_total",
+                  "_0"."q1_avg" AS "q1_avg",
+                  "_0"."q2_total" AS "q2_total",
+                  "_0"."q2_avg" AS "q2_avg",
+                  "_0"."q3_total" AS "q3_total",
+                  "_0"."q3_avg" AS "q3_avg",
+                  "_0"."q4_total" AS "q4_total",
+                  "_0"."q4_avg" AS "q4_avg"
+                FROM (SELECT "s"."year", SUM(CASE WHEN "s"."quarter" = 1 THEN "s"."sales" END) AS "q1_total", AVG(CASE WHEN "s"."quarter" = 1 THEN "s"."sales" END) AS "q1_avg", SUM(CASE WHEN "s"."quarter" = 2 THEN "s"."sales" END) AS "q2_total", AVG(CASE WHEN "s"."quarter" = 2 THEN "s"."sales" END) AS "q2_avg", SUM(CASE WHEN "s"."quarter" = 3 THEN "s"."sales" END) AS "q3_total", AVG(CASE WHEN "s"."quarter" = 3 THEN "s"."sales" END) AS "q3_avg", SUM(CASE WHEN "s"."quarter" = 4 THEN "s"."sales" END) AS "q4_total", AVG(CASE WHEN "s"."quarter" = 4 THEN "s"."sales" END) AS "q4_avg" FROM (SELECT
+                  "sales"."year" AS "year",
+                  "sales"."quarter" AS "quarter",
+                  "sales"."sales" AS "sales"
+                FROM "sales" AS "sales") AS "s" GROUP BY "s"."year")"_0"
+                """,
+                """
+                SELECT year, q1_total, q1_avg, q2_total, q2_avg, q3_total, q3_avg, q4_total, q4_avg
+                FROM (SELECT year, quarter, sales FROM sales) AS s
+                PIVOT (sum(sales) AS total, avg(sales) AS avg
+                  FOR quarter
+                  IN (1 AS q1, 2 AS q2, 3 AS q3, 4 AS q4))
+                """,
+            ),
+        ]
+        for title, exasol_sql, dbx_sql in test_cases:
+            with self.subTest(clause=title):
+                schema = {
+                    "sales": {"year": "INT", "quarter": "INT", "region": "STRING", "sales": "INT"}
+                }
+                expr = parse_one(dbx_sql, read="databricks")
+                optimize_expr = optimize(expr, schema)
+
+                transpile = optimize_expr.sql(dialect="exasol")
+
+                self.assertEqual(
+                    parse_one(transpile, read="exasol").sql(dialect="exasol"),
+                    parse_one(exasol_sql, read="exasol").sql(dialect="exasol"),
                 )

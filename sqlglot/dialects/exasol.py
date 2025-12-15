@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from typing import Any
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, parser, tokens, transforms, Expression
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -17,6 +18,7 @@ from sqlglot.dialects.dialect import (
     no_last_day_sql,
     DATE_ADD_OR_SUB,
 )
+from sqlglot.expressions import Paren, Tuple
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -564,3 +566,205 @@ class Exasol(Dialect):
             if expression.args.get("expressions"):
                 self.unsupported("Exasol does not support arguments in RANK")
             return self.func("RANK")
+
+        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+            """
+            If a table has PIVOTs attached, let the Pivot render a derived table .
+            """
+            pivots = expression.args.get("pivots") or []
+            if not pivots:
+                return super().table_sql(expression)
+
+            if len(pivots) > 1:
+                self.unsupported("Multiple PIVOT clauses are not supported by Exasol")
+                return super().table_sql(expression)
+            pivot = pivots[0]
+            return self.sql(pivot)
+
+        def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
+            pivots = expression.args.get("pivots") or []
+            if not pivots:
+                return super().subquery_sql(expression)
+
+            if len(pivots) > 1:
+                self.unsupported("Multiple PIVOT clauses are not supported by Exasol")
+                return super().subquery_sql(expression)
+            pivot = pivots[0]
+            return self.sql(pivot)
+
+        def pivot_sql(self, expression: exp.Pivot) -> str:
+            """
+            Exasol does not support PIVOT, so we rewrite it.
+
+            Rewrite:
+            SELECT ... FROM T PIVOT (...)
+
+            Into:
+            SELECT ... FROM (
+                SELECT <group cols>,
+                        <agg(CASE WHEN ...)>
+                FROM T
+                GROUP BY <group cols>
+            )
+            """
+
+            if expression.unpivot:
+                self.unsupported("UNPIVOT is not supported in Exasol.")
+                return super().pivot_sql(expression)
+            source_relation = expression.find_ancestor(exp.From)
+
+            if not source_relation:
+                return super().pivot_sql(expression)
+
+            if isinstance(source_relation.this, exp.Table) or isinstance(
+                source_relation.this, exp.Subquery
+            ):
+                source_table_sql = (
+                    f"({self.sql(source_relation.this.this)})"
+                    if isinstance(source_relation.this, exp.Subquery)
+                    else self.sql(source_relation.this.this)
+                )
+                source_alias_expr = source_relation.this.args.get("alias")
+                from_source_sql = (
+                    f"{source_table_sql} AS {self.sql(source_alias_expr)}"
+                    if source_alias_expr
+                    else source_table_sql
+                )
+                source_name = (
+                    source_alias_expr.this
+                    if isinstance(source_alias_expr, exp.TableAlias)
+                    else source_table_sql
+                )
+            else:
+                return super().pivot_sql(expression)
+
+            aggregate_aliases = expression.expressions or []
+
+            if not aggregate_aliases:
+                return super().pivot_sql(expression)
+
+            pivot_fields = expression.fields or []
+
+            if len(pivot_fields) != 1 or not isinstance(pivot_fields[0], exp.In):
+                return super().pivot_sql(expression)
+
+            pivot_in_condition = pivot_fields[0]
+            pivot_key_expr = pivot_in_condition.this
+            pivot_values_nodes = pivot_in_condition.expressions or []
+
+            if not pivot_values_nodes:
+                return super().pivot_sql(expression)
+
+            pivot_alias_expr = expression.args.get("alias")
+
+            has_pivot_alias = isinstance(pivot_alias_expr, exp.TableAlias)
+
+            def unwrap_tuple(
+                node: exp.Expression | None,
+            ) -> Tuple | Expression | None | Paren | Any:
+                if isinstance(node, exp.Tuple):
+                    return node
+                if isinstance(node, exp.Paren) and isinstance(node.this, exp.Tuple):
+                    return node.this
+                return None
+
+            pivot_case_specs: list[tuple[exp.Expression, str, exp.Expression, str]] = []
+            pivot_output_column_names: set[str] = set()
+
+            for pivot_value in pivot_values_nodes:
+                pivot_value_alias = (
+                    pivot_value.alias_or_name
+                    if isinstance(pivot_value, exp.PivotAlias)
+                    else pivot_value.sql(dialect=self.dialect)
+                )
+                pivot_value_expr = (
+                    pivot_value.this if isinstance(pivot_value, exp.PivotAlias) else pivot_value
+                )
+
+                for aggregate_alias in aggregate_aliases:
+                    aggregate_func_expr = aggregate_alias.this
+                    aggregate_func_name = (
+                        getattr(aggregate_func_expr, "key", None) or aggregate_func_expr.name
+                    ).upper()
+                    aggregate_input_expr = aggregate_func_expr.this
+                    aggregate_result_suffix = aggregate_alias.alias
+
+                    output_column_name = (
+                        f"{pivot_value_alias}_{aggregate_result_suffix}"
+                        if aggregate_result_suffix and len(aggregate_aliases) > 1
+                        else pivot_value_alias
+                    )
+                    pivot_case_specs.append(
+                        (
+                            pivot_value_expr,
+                            aggregate_func_name,
+                            aggregate_input_expr,
+                            output_column_name,
+                        )
+                    )
+
+                    pivot_output_column_names.add(output_column_name)
+
+            group_by_columns = list(expression.args.get("group") or [])
+            if not group_by_columns and has_pivot_alias and source_name:
+                outer_select = expression.find_ancestor(exp.Select)
+
+                if isinstance(outer_select, exp.Select):
+                    for projection in outer_select.expressions or []:
+                        projected_expr = (
+                            projection.this if isinstance(projection, exp.Alias) else projection
+                        )
+                        if not isinstance(projected_expr, exp.Column):
+                            continue
+
+                        projected_column_name = projected_expr.name
+
+                        if projected_column_name in pivot_output_column_names:
+                            continue
+
+                        group_by_columns.append(
+                            exp.Column(
+                                this=exp.to_identifier(projected_column_name, True),
+                                table=exp.to_identifier(source_name),
+                            )
+                        )
+
+            group_columns_sql = [self.sql(col) for col in group_by_columns]
+            select_list_sql_parts: list[str] = list(group_columns_sql)
+
+            for (
+                pivot_value_expr,
+                aggregate_func_name,
+                aggregate_input_expr,
+                output_column_name,
+            ) in pivot_case_specs:
+                key_tuple = unwrap_tuple(pivot_key_expr)
+                value_tuple = unwrap_tuple(pivot_value_expr)
+
+                if key_tuple and value_tuple:
+                    comparisons: list[str] = []
+                    for key_part, value_part in zip(
+                        key_tuple.expressions or [], value_tuple.expressions or []
+                    ):
+                        comparisons.append(f"{self.sql(key_part)} = {self.sql(value_part)}")
+                    condition_sql = " AND ".join(comparisons)
+                else:
+                    condition_sql = f"{self.sql(pivot_key_expr)} = {self.sql(pivot_value_expr)}"
+                aggregate_input_sql = self.sql(aggregate_input_expr)
+                output_column_sql = self.sql(exp.to_identifier(output_column_name, True))
+                case_expr_sql = f"CASE WHEN {condition_sql} THEN {aggregate_input_sql} END"
+                select_list_sql_parts.append(
+                    f"{aggregate_func_name}({case_expr_sql}) AS {output_column_sql}"
+                )
+
+            inner_select_sql = ", ".join(select_list_sql_parts)
+
+            if group_columns_sql:
+                group_by_sql = ", ".join(group_columns_sql)
+                inner_query = (
+                    f"SELECT {inner_select_sql} FROM {from_source_sql} GROUP BY {group_by_sql}"
+                )
+            else:
+                inner_query = f"SELECT {inner_select_sql} FROM {from_source_sql}"
+            pivot_alias_sql = f"{self.sql(pivot_alias_expr)}" if pivot_alias_expr else ""
+            return f"({inner_query}){pivot_alias_sql}"

@@ -345,5 +345,14 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
+    def test_none_args_are_not_treated_as_leaves(self):
+        expr_src = parse_one("a.b")
+        expr_tgt = exp.Column(this=exp.to_identifier("b"), table=exp.to_identifier("a"))
+
+        self.assertEqual(set(expr_src.args), {"this", "table", "db", "catalog"})
+        self.assertEqual(set(expr_tgt.args), {"this", "table"})
+
+        self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
+
     def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))

@@ -297,6 +297,7 @@ class TokenType(AutoName):
     EXISTS = auto()
     FALSE = auto()
     FETCH = auto()
+    FILE = auto()
     FILE_FORMAT = auto()
     FILTER = auto()
     FINAL = auto()
@@ -783,6 +784,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "FALSE": TokenType.FALSE,
         "FETCH": TokenType.FETCH,
         "FILTER": TokenType.FILTER,
+        "FILE": TokenType.FILE,
         "FIRST": TokenType.FIRST,
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,

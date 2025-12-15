@@ -391,8 +391,13 @@ EXPRESSION_METADATA = {
             exp.ObjectAgg,
             exp.ParseIp,
             exp.ParseUrl,
-            exp.ToFile,
             exp.XMLGet,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DataType.Type.FILE}
+        for expr_type in {
+            exp.ToFile,
         }
     },
     **{

@@ -56,7 +56,7 @@ class Resolver:
                         column_name, self._get_available_source_columns(join_context)
                     )
                 except OptimizeError:
-                    return
+                    return None
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(

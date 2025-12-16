@@ -193,6 +193,12 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT GREATEST(1, 2)",
+            write={
+                "duckdb": "SELECT CASE WHEN 1 IS NULL OR 2 IS NULL THEN NULL ELSE GREATEST(1, 2) END",
+            },
+        )
+        self.validate_all(
             "SELECT VAR_POP(x)",
             write={
                 "snowflake": "SELECT VARIANCE_POP(x)",

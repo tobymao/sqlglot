@@ -107,33 +107,26 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
         this=exp.func("ISNAN", cast_to_real), expression=exp.func("ISINF", cast_to_real)
     )
 
-    case_expr = exp.Case(
-        ifs=[
-            exp.If(
-                this=nan_inf_check,
-                true=exp.func(
-                    "ERROR",
-                    exp.Literal.string(
-                        "TO_BOOLEAN: Non-numeric values NaN and INF are not supported"
-                    ),
-                ),
+    case_expr = (
+        exp.case()
+        .when(
+            nan_inf_check,
+            exp.func(
+                "ERROR",
+                exp.Literal.string("TO_BOOLEAN: Non-numeric values NaN and INF are not supported"),
             ),
-            # Handle 'on' -> TRUE (case insensitive) - only for string literals
-            exp.If(
-                this=exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
-                    exp.Literal.string("ON")
-                ),
-                true=exp.true(),
-            ),
-            # Handle 'off' -> FALSE (case insensitive) - only for string literals
-            exp.If(
-                this=exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
-                    exp.Literal.string("OFF")
-                ),
-                true=exp.false(),
-            ),
-        ],
-        default=exp.cast(arg, exp.DataType.Type.BOOLEAN),
+        )
+        # Handle 'on' -> TRUE (case insensitive) - only for string literals
+        .when(
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+            exp.true(),
+        )
+        # Handle 'off' -> FALSE (case insensitive) - only for string literals
+        .when(
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+            exp.false(),
+        )
+        .else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))
     )
 
     return self.sql(case_expr)

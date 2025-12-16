@@ -239,6 +239,8 @@ class TestDatabricks(Validator):
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
         self.validate_identity("NOW()", "CURRENT_TIMESTAMP()")
         self.validate_identity("CURRENT_TIMEZONE()")
+        self.validate_identity("CURDATE()", "CURRENT_DATE")
+        self.validate_identity("CURDATE", "CURRENT_DATE")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

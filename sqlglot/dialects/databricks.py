@@ -55,6 +55,7 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
+            "CURDATE": exp.CurrentDate.from_arg_list,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
@@ -65,6 +66,11 @@ class Databricks(Spark):
             "UNIFORM": lambda args: exp.Uniform(
                 this=seq_get(args, 0), expression=seq_get(args, 1), seed=seq_get(args, 2)
             ),
+        }
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **Spark.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "CURDATE": lambda self: self._parse_curdate(),
         }
 
         FACTOR = {
@@ -80,6 +86,12 @@ class Databricks(Spark):
                 to=to,
             ),
         }
+
+        def _parse_curdate(self) -> exp.CurrentDate:
+            # CURDATE, an alias for CURRENT_DATE, has optional parentheses
+            if self._match(TokenType.L_PAREN):
+                self._match_r_paren()
+            return self.expression(exp.CurrentDate)
 
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"

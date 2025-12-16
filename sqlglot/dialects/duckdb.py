@@ -88,6 +88,50 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 
+def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
+    """
+    Transpile TO_BOOLEAN function from Snowflake to DuckDB equivalent.
+
+    DuckDB's CAST to BOOLEAN supports most of Snowflake's TO_BOOLEAN strings except 'on'/'off'.
+    We need to handle the 'on'/'off' cases explicitly, plus NaN/INF error cases.
+
+    In Snowflake, NaN and INF values cause errors. We use DuckDB's native ERROR()
+    function to replicate this behavior with a clear error message.
+    """
+    arg = expression.this
+
+    cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build("REAL"))
+
+    # Check for NaN and INF values
+    nan_inf_check = exp.Or(
+        this=exp.func("ISNAN", cast_to_real), expression=exp.func("ISINF", cast_to_real)
+    )
+
+    case_expr = (
+        exp.case()
+        .when(
+            nan_inf_check,
+            exp.func(
+                "ERROR",
+                exp.Literal.string("TO_BOOLEAN: Non-numeric values NaN and INF are not supported"),
+            ),
+        )
+        # Handle 'on' -> TRUE (case insensitive) - only for string literals
+        .when(
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+            exp.true(),
+        )
+        # Handle 'off' -> FALSE (case insensitive) - only for string literals
+        .when(
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+            exp.false(),
+        )
+        .else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))
+    )
+
+    return self.sql(case_expr)
+
+
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     result = f"CAST({self.sql(expression, 'this')} AS DATE)"
@@ -1144,6 +1188,7 @@ class DuckDB(Dialect):
                 "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
+            exp.ToBoolean: _to_boolean_sql,
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",

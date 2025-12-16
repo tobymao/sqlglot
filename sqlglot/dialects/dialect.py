@@ -315,10 +315,9 @@ class _Dialect(type):
         if enum in (
             "",
             "duckdb",
-            "databricks",
+            "spark",
             "postgres",
             "tsql",
-            "spark",
         ):
             no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser

@@ -465,6 +465,14 @@ SAFE_DIVIDE(tbl.double_col, tbl.double_col);
 FLOAT64;
 
 # dialect: bigquery
+SAFE.TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
+TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 
@@ -3191,6 +3199,18 @@ DOUBLE;
 # dialect: snowflake
 REGR_SLOPE(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
+
+# dialect: snowflake
+REGR_VALX(NULL, 2.0);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(NULL, NULL);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(2.0, NULL);
+DOUBLE;
 
 # dialect: snowflake
 REGR_VALX(1.0, 2.0);

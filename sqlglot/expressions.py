@@ -6418,6 +6418,10 @@ class CurrentTimestampLTZ(Func):
     arg_types = {}
 
 
+class CurrentTimezone(Func):
+    arg_types = {}
+
+
 class CurrentOrganizationName(Func):
     arg_types = {}
 
@@ -6447,6 +6451,10 @@ class CurrentRoleType(Func):
 
 
 class CurrentOrganizationUser(Func):
+    arg_types = {}
+
+
+class SessionUser(Func):
     arg_types = {}
 
 
@@ -6625,7 +6633,7 @@ class Elt(Func):
 
 
 class Timestamp(Func):
-    arg_types = {"this": False, "zone": False, "with_tz": False}
+    arg_types = {"this": False, "zone": False, "with_tz": False, "safe": False}
 
 
 class TimestampAdd(Func, TimeUnit):

@@ -48,9 +48,12 @@ class TestSnowflake(Validator):
             """SELECT PARSE_JSON('{"x: 1}')""",
         )
 
-        expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
-        expr.selects[0].assert_is(exp.AggFunc)
-        self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
+        self.validate_identity(
+            "SELECT APPROX_TOP_K(col) FROM t",
+            "SELECT APPROX_TOP_K(col, 1) FROM t",
+        )
+        self.validate_identity("SELECT APPROX_TOP_K(category, 3) FROM t")
+        self.validate_identity("APPROX_TOP_K(C4, 3, 5)").assert_is(exp.AggFunc)
 
         self.validate_identity("SELECT MINHASH(5, col)")
         self.validate_identity("SELECT MINHASH(5, col1, col2)")
@@ -143,8 +146,20 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DEGREES(PI() / 3)")
         self.validate_identity("SELECT DEGREES(1)")
         self.validate_identity("SELECT RADIANS(180)")
-        self.validate_identity("SELECT REGR_VALX(y, x)")
-        self.validate_identity("SELECT REGR_VALY(y, x)")
+        self.validate_all(
+            "SELECT REGR_VALX(y, x)",
+            write={
+                "snowflake": "SELECT REGR_VALX(y, x)",
+                "duckdb": "SELECT CASE WHEN y IS NULL THEN CAST(NULL AS DOUBLE) ELSE x END",
+            },
+        )
+        self.validate_all(
+            "SELECT REGR_VALY(y, x)",
+            write={
+                "snowflake": "SELECT REGR_VALY(y, x)",
+                "duckdb": "SELECT CASE WHEN x IS NULL THEN CAST(NULL AS DOUBLE) ELSE y END",
+            },
+        )
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
         self.validate_identity("SELECT REGR_COUNT(y, x)")

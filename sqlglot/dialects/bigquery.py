@@ -1066,11 +1066,17 @@ class BigQuery(Dialect):
             this = super()._parse_column_ops(this)
 
             if isinstance(this, exp.Dot):
-                if this.this.name == "NET":
-                    if this.name.upper() == "HOST":
+                prefix_name = this.this.name.upper()
+                func_name = this.name.upper()
+                if prefix_name == "NET":
+                    if func_name == "HOST":
                         this = self.expression(
                             exp.NetHost, this=seq_get(this.expression.expressions, 0)
                         )
+                elif prefix_name == "SAFE":
+                    if func_name == "TIMESTAMP":
+                        this = _build_timestamp(this.expression.expressions)
+                        this.set("safe", True)
 
             return this
 
@@ -1221,6 +1227,7 @@ class BigQuery(Dialect):
             ),
             exp.StrToDate: _str_to_datetime_sql,
             exp.StrToTime: _str_to_datetime_sql,
+            exp.SessionUser: lambda *_: "SESSION_USER()",
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
             exp.TimeFromParts: rename_func("TIME"),
             exp.TimestampFromParts: rename_func("DATETIME"),
@@ -1538,3 +1545,7 @@ class BigQuery(Dialect):
             kind = f" {kind}" if kind else ""
 
             return f"{variables}{kind}{default}"
+
+        def timestamp_sql(self, expression: exp.Timestamp) -> str:
+            prefix = "SAFE." if expression.args.get("safe") else ""
+            return self.func(f"{prefix}TIMESTAMP", expression.this, expression.args.get("zone"))

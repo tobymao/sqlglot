@@ -312,6 +312,21 @@ class _Dialect(type):
                 TokenType.CURRENT_CATALOG,
             }
 
+        if enum in (
+            "",
+            "duckdb",
+            "spark",
+            "postgres",
+            "tsql",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+        else:
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.SESSION_USER,
+            }
+
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),

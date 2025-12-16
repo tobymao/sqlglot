@@ -40,7 +40,13 @@ class TestLineage(unittest.TestCase):
             "SELECT x.a AS a FROM x AS x",
         )
         self.assertEqual(downstream.source_name, "y")
-        self.assertGreater(len(node.to_html()._repr_html_()), 1000)
+
+        graph_html = node.to_html()
+        self.assertGreater(len(graph_html._repr_html_()), 1000)
+
+        for edge in graph_html.edges:
+            self.assertIn("from", edge)
+            self.assertIn("to", edge)
 
         # test that sql is not modified
         sql = "SELECT a FROM x"
@@ -555,7 +561,7 @@ class TestLineage(unittest.TestCase):
 
     def test_pivot_without_alias(self) -> None:
         sql = """
-        SELECT 
+        SELECT
             a as other_a
         FROM (select value,category from sample_data)
         PIVOT (
@@ -570,7 +576,7 @@ class TestLineage(unittest.TestCase):
 
     def test_pivot_with_alias(self) -> None:
         sql = """
-            SELECT 
+            SELECT
                 cat_a_s as other_as
             FROM sample_data
             PIVOT (
@@ -586,7 +592,7 @@ class TestLineage(unittest.TestCase):
     def test_pivot_with_cte(self) -> None:
         sql = """
         WITH t as (
-            SELECT 
+            SELECT
                 a as other_a
             FROM sample_data
             PIVOT (
@@ -691,13 +697,13 @@ class TestLineage(unittest.TestCase):
         sql = """
         WITH cte AS (
             SELECT * FROM (
-                SELECT product_type, month, loan_id 
+                SELECT product_type, month, loan_id
                 FROM loan_ledger
             ) PIVOT (
                 COUNT(loan_id) FOR month IN ('2024-10', '2024-11')
             )
         )
-        SELECT 
+        SELECT
             cte.product_type AS product_type,
             cte."2024-10" AS "2024-10"
         FROM cte

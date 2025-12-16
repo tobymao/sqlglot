@@ -236,6 +236,9 @@ class TestDatabricks(Validator):
             },
         )
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
+        self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("NOW()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("CURRENT_TIMEZONE()")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

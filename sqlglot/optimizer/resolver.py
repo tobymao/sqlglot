@@ -50,9 +50,13 @@ class Resolver:
             if join_context := self._get_column_join_context(column):
                 # In this case, the return value will be the join that _may_ be able to disambiguate the column
                 # and we can use the source columns available at that join to get the table name
-                table_name = self._get_table_name_from_sources(
-                    column_name, self._get_available_source_columns(join_context)
-                )
+                # catch OptimizeError if column is still ambiguous and try to resolve with schema inference below
+                try:
+                    table_name = self._get_table_name_from_sources(
+                        column_name, self._get_available_source_columns(join_context)
+                    )
+                except OptimizeError:
+                    pass
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(

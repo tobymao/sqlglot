@@ -742,6 +742,7 @@ class Snowflake(Dialect):
             ),
             "FLATTEN": exp.Explode.from_arg_list,
             "GET": exp.GetExtract.from_arg_list,
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0),
                 expression=dialect.to_json_path(seq_get(args, 1)),
@@ -832,6 +833,7 @@ class Snowflake(Dialect):
             "ILIKE": build_like(exp.ILike),
             "SEARCH": _build_search,
             "SKEW": exp.Skewness.from_arg_list,
+            "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
             "WEEKISO": exp.WeekOfYear.from_arg_list,
             "WEEKOFYEAR": exp.Week.from_arg_list,
         }

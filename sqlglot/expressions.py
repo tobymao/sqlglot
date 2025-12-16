@@ -6422,6 +6422,10 @@ class CurrentTimezone(Func):
     arg_types = {}
 
 
+class Sysdate(Func):
+    arg_types = {}
+
+
 class CurrentOrganizationName(Func):
     arg_types = {}
 

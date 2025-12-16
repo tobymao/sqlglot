@@ -6628,7 +6628,7 @@ class Exists(Func, SubqueryPredicate):
 
 
 class Timestamp(Func):
-    arg_types = {"this": False, "zone": False, "with_tz": False}
+    arg_types = {"this": False, "zone": False, "with_tz": False, "safe": False}
 
 
 class TimestampAdd(Func, TimeUnit):

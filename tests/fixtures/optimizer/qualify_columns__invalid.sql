@@ -15,4 +15,3 @@ SELECT x FROM tbl AS tbl(a);
 SELECT a JOIN b USING (a);
 SELECT x.a FROM x INNER JOIN y ON x.a = c INNER JOIN z ON x.a = c;
 SELECT b FROM x INNER JOIN y ON x.a = y.c INNER JOIN z ON x.a = z.c;
-SELECT INLINE_VIEW.a FROM ((SELECT a FROM table1) inline_view LEFT JOIN table2 ON a = table2.id) LEFT JOIN x ON inline_view.a = x.a;

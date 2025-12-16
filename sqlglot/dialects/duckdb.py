@@ -550,6 +550,60 @@ def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
     return self.ceil_floor(expression)
 
 
+def _regr_val_sql(
+    self: DuckDB.Generator,
+    expression: exp.RegrValx | exp.RegrValy,
+) -> str:
+    """
+    Transpile Snowflake's REGR_VALX/REGR_VALY to DuckDB equivalent.
+
+    REGR_VALX(y, x) returns NULL if y is NULL; otherwise returns x.
+    REGR_VALY(y, x) returns NULL if x is NULL; otherwise returns y.
+    """
+    from sqlglot.optimizer.annotate_types import annotate_types
+
+    y = expression.this
+    x = expression.expression
+
+    # Determine which argument to check for NULL and which to return based on expression type
+    if isinstance(expression, exp.RegrValx):
+        # REGR_VALX: check y for NULL, return x
+        check_for_null = y
+        return_value = x
+        return_value_attr = "expression"
+    else:
+        # REGR_VALY: check x for NULL, return y
+        check_for_null = x
+        return_value = y
+        return_value_attr = "this"
+
+    # Get the type from the return argument
+    result_type = return_value.type
+
+    # If no type info, annotate the expression to infer types
+    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
+        try:
+            annotated = annotate_types(expression.copy(), dialect=self.dialect)
+            result_type = getattr(annotated, return_value_attr).type
+        except Exception:
+            pass
+
+    # Default to DOUBLE for regression functions if type still unknown
+    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
+        result_type = exp.DataType.build("DOUBLE")
+
+    # Cast NULL to the same type as return_value to avoid DuckDB type inference issues
+    typed_null = exp.Cast(this=exp.Null(), to=result_type)
+
+    return self.sql(
+        exp.If(
+            this=exp.Is(this=check_for_null.copy(), expression=exp.Null()),
+            true=typed_null,
+            false=return_value.copy(),
+        )
+    )
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1059,6 +1113,8 @@ class DuckDB(Dialect):
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
+            exp.RegrValx: _regr_val_sql,
+            exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),

@@ -143,8 +143,20 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DEGREES(PI() / 3)")
         self.validate_identity("SELECT DEGREES(1)")
         self.validate_identity("SELECT RADIANS(180)")
-        self.validate_identity("SELECT REGR_VALX(y, x)")
-        self.validate_identity("SELECT REGR_VALY(y, x)")
+        self.validate_all(
+            "SELECT REGR_VALX(y, x)",
+            write={
+                "snowflake": "SELECT REGR_VALX(y, x)",
+                "duckdb": "SELECT CASE WHEN y IS NULL THEN CAST(NULL AS DOUBLE) ELSE x END",
+            },
+        )
+        self.validate_all(
+            "SELECT REGR_VALY(y, x)",
+            write={
+                "snowflake": "SELECT REGR_VALY(y, x)",
+                "duckdb": "SELECT CASE WHEN x IS NULL THEN CAST(NULL AS DOUBLE) ELSE y END",
+            },
+        )
         self.validate_identity("SELECT REGR_AVGX(y, x)")
         self.validate_identity("SELECT REGR_AVGY(y, x)")
         self.validate_identity("SELECT REGR_COUNT(y, x)")

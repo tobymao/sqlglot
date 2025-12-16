@@ -3193,6 +3193,18 @@ REGR_SLOPE(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
 
 # dialect: snowflake
+REGR_VALX(NULL, 2.0);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(NULL, NULL);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(2.0, NULL);
+DOUBLE;
+
+# dialect: snowflake
 REGR_VALX(1.0, 2.0);
 DOUBLE;
 

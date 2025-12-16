@@ -6426,10 +6426,6 @@ class Sysdate(Func):
     arg_types = {}
 
 
-class Systimestamp(Func):
-    arg_types = {}
-
-
 class CurrentOrganizationName(Func):
     arg_types = {}
 

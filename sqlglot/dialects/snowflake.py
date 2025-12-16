@@ -833,6 +833,7 @@ class Snowflake(Dialect):
             "ILIKE": build_like(exp.ILike),
             "SEARCH": _build_search,
             "SKEW": exp.Skewness.from_arg_list,
+            "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
             "WEEKISO": exp.WeekOfYear.from_arg_list,
             "WEEKOFYEAR": exp.Week.from_arg_list,
         }

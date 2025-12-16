@@ -235,6 +235,9 @@ class TestDatabricks(Validator):
                 "snowflake": "UNIFORM(1, 10, RANDOM())",
             },
         )
+        self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("NOW()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("CURRENT_TIMEZONE()")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

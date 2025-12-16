@@ -6418,6 +6418,10 @@ class CurrentTimestampLTZ(Func):
     arg_types = {}
 
 
+class CurrentTimezone(Func):
+    arg_types = {}
+
+
 class CurrentOrganizationName(Func):
     arg_types = {}
 

@@ -1934,6 +1934,9 @@ class TestSnowflake(Validator):
                 "databricks": "UNIFORM(1, 10, 5)",
             },
         )
+        self.validate_identity("SYSDATE()")
+        self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
 
     def test_null_treatment(self):
         self.validate_all(

@@ -213,7 +213,7 @@ class TestSingleStore(Validator):
                 "mysql": 'SELECT JSON_VALUE(\'{"item": "shoes", "price": "49.95"}\', \'$.price\' RETURNING DECIMAL(4, 2))'
             },
         )
-        self.validate_identity("""SELECT BSON_COMPARE('"string"':>BSON,'"string"':>BSON)""")
+        self.validate_identity("SELECT BSON_COMPARE('\"string\"' :> BSON, '\"string\"' :> BSON)")
 
     def test_json(self):
         self.validate_identity("SELECT JSON_ARRAY_CONTAINS_STRING('[\"a\", \"b\"]', 'b')")

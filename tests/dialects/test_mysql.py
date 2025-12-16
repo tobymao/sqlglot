@@ -331,6 +331,7 @@ class TestMySQL(Validator):
             "SELECT 'foo' NOT SOUNDS LIKE 'bar'", "SELECT NOT SOUNDEX('foo') = SOUNDEX('bar')"
         )
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:

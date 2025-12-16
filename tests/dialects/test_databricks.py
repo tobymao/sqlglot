@@ -235,6 +235,7 @@ class TestDatabricks(Validator):
                 "snowflake": "UNIFORM(1, 10, RANDOM())",
             },
         )
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
         self.validate_identity("NOW()", "CURRENT_TIMESTAMP()")
         self.validate_identity("CURRENT_TIMEZONE()")

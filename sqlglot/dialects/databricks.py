@@ -67,6 +67,11 @@ class Databricks(Spark):
             ),
         }
 
+        NO_PAREN_FUNCTION_PARSERS = {
+            **Spark.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "CURDATE": lambda self: self._parse_curdate(),
+        }
+
         FACTOR = {
             **Spark.Parser.FACTOR,
             TokenType.COLON: exp.JSONExtract,
@@ -80,6 +85,12 @@ class Databricks(Spark):
                 to=to,
             ),
         }
+
+        def _parse_curdate(self) -> exp.CurrentDate:
+            # CURDATE, an alias for CURRENT_DATE, has optional parentheses
+            if self._match(TokenType.L_PAREN):
+                self._match_r_paren()
+            return self.expression(exp.CurrentDate)
 
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"

@@ -3515,6 +3515,12 @@ OPTIONS (
             "SELECT `t`.`col` AS `col` FROM `t` AS `t` WHERE `_partitiontime` BETWEEN `t`.`a` AND `t`.`b`",
         )
 
+        ast = self.validate_identity("SELECT _DBT_MAX_PARTITION FROM t")
+        self.assertIsNone(ast.find(exp.Pseudocolumn))
+
+        qualified = qualify(ast, schema=schema, dialect="bigquery")
+        self.assertIsNotNone(qualified.find(exp.Pseudocolumn))
+
     def test_round(self):
         self.validate_all(
             "SELECT ROUND(2.25) AS value",

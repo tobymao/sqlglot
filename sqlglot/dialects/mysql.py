@@ -801,6 +801,7 @@ class MySQL(Dialect):
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),
+            exp.SessionUser: lambda *_: "SESSION_USER()",
             exp.TableSample: no_tablesample_sql,
             exp.TimeFromParts: rename_func("MAKETIME"),
             exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),

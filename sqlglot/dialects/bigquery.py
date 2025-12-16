@@ -1221,6 +1221,7 @@ class BigQuery(Dialect):
             ),
             exp.StrToDate: _str_to_datetime_sql,
             exp.StrToTime: _str_to_datetime_sql,
+            exp.SessionUser: lambda *_: "SESSION_USER()",
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
             exp.TimeFromParts: rename_func("TIME"),
             exp.TimestampFromParts: rename_func("DATETIME"),

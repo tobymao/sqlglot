@@ -55,7 +55,6 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
-            "CURDATE": exp.CurrentDate.from_arg_list,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),

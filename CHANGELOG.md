@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v28.4.1] - 2025-12-16
+### :boom: BREAKING CHANGES
+- due to [`cfc9346`](https://github.com/tobymao/sqlglot/commit/cfc9346ba0477523d3de8f923d83fd09814b22ac) - bump sqlglotrs to 0.10.0 *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  bump sqlglotrs to 0.10.0
+
+
+### :wrench: Chores
+- [`cfc9346`](https://github.com/tobymao/sqlglot/commit/cfc9346ba0477523d3de8f923d83fd09814b22ac) - bump sqlglotrs to 0.10.0 *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v28.4.0] - 2025-12-16
 ### :boom: BREAKING CHANGES
 - due to [`938f4b6`](https://github.com/tobymao/sqlglot/commit/938f4b6ebc1c0d26bd3c1400883978c79a435189) - annotate type for LAST_DAY *(PR [#5528](https://github.com/tobymao/sqlglot/pull/5528) by [@geooo109](https://github.com/geooo109))*:
@@ -11504,3 +11515,4 @@ Changelog
 [v28.2.0]: https://github.com/tobymao/sqlglot/compare/v28.1.0...v28.2.0
 [v28.3.0]: https://github.com/tobymao/sqlglot/compare/v28.2.0...v28.3.0
 [v28.4.0]: https://github.com/tobymao/sqlglot/compare/v27.6.1...v28.4.0
+[v28.4.1]: https://github.com/tobymao/sqlglot/compare/v28.4.0...v28.4.1

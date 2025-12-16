@@ -243,6 +243,13 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT BOOLNOT(0)",
+            write={
+                "duckdb": "SELECT NOT (0)",
+            },
+        )
+
         self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
         self.validate_identity("SELECT ZIPF(2, 100, 1234)")
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")

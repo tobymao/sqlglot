@@ -747,6 +747,9 @@ class Snowflake(Dialect):
                 expression=dialect.to_json_path(seq_get(args, 1)),
                 requires_json=True,
             ),
+            "GREATEST": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
+            ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "MD5_HEX": exp.MD5.from_arg_list,

@@ -202,6 +202,19 @@ def _annotate_math_with_float_decfloat(
     return expression
 
 
+def _annotate_str_to_time(self: TypeAnnotator, expression: exp.StrToTime) -> exp.StrToTime:
+    # target_type is stored as a DataType instance
+    target_type_arg = expression.args.get("target_type")
+
+    if isinstance(target_type_arg, exp.DataType):
+        target_type = target_type_arg.this
+    else:
+        target_type = exp.DataType.Type.TIMESTAMP
+
+    self._set_type(expression, target_type)
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -499,6 +512,7 @@ EXPRESSION_METADATA = {
     exp.LeastIgnoreNulls: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
+    exp.StrToTime: {"annotator": _annotate_str_to_time},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},
     exp.WithinGroup: {"annotator": _annotate_within_group},

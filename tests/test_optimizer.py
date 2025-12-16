@@ -631,9 +631,10 @@ class TestOptimizer(unittest.TestCase):
         """
 
         with self.assertRaises(OptimizeError) as ctx:
-            expression = optimizer.qualify_columns.qualify_columns(
-                parse_one(sql), schema=self.schema
-            )
+            schema = MappingSchema()
+            schema.add_table("table3", ["a"])
+
+            expression = optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=schema)
             optimizer.qualify_columns.validate_qualify_columns(expression)
 
         error_msg = str(ctx.exception)

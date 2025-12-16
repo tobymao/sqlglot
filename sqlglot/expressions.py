@@ -6619,6 +6619,11 @@ class Exists(Func, SubqueryPredicate):
     arg_types = {"this": True, "expression": False}
 
 
+class Elt(Func):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 class Timestamp(Func):
     arg_types = {"this": False, "zone": False, "with_tz": False}
 

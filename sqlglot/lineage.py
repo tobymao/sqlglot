@@ -61,7 +61,7 @@ class Node:
             }
 
             for d in node.downstream:
-                edges.append({"from_": node_id, "to": id(d)})
+                edges.append({"from": node_id, "to": id(d)})
         return GraphHTML(nodes, edges, **opts)
 
 

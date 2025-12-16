@@ -290,10 +290,23 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if not values:
                     continue
 
-                selects[name] = {
-                    alias: column.type
-                    for alias, column in zip(expression.alias_column_names, values)
-                }
+                alias_column_names = expression.alias_column_names
+
+                if (
+                    isinstance(expression, exp.Unnest)
+                    and not alias_column_names
+                    and expression.type
+                    and expression.type.is_type(exp.DataType.Type.STRUCT)
+                ):
+                    selects[name] = {
+                        col_def.name: t.cast(t.Union[exp.DataType, exp.DataType.Type], col_def.kind)
+                        for col_def in expression.type.expressions
+                        if isinstance(col_def, exp.ColumnDef) and col_def.kind
+                    }
+                else:
+                    selects[name] = {
+                        alias: column.type for alias, column in zip(alias_column_names, values)
+                    }
             elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
                 expression.right.selects
             ):

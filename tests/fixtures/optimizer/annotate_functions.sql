@@ -469,6 +469,10 @@ SAFE.TIMESTAMP(tbl.str_col);
 TIMESTAMPTZ;
 
 # dialect: bigquery
+TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
 STRING;
 

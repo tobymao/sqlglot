@@ -97,13 +97,6 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
     return self.create_sql(expression)
 
 
-def _timestamp_sql(self: BigQuery.Generator, expression: exp.Timestamp) -> str:
-    """Generate SQL for TIMESTAMP, handling SAFE.TIMESTAMP syntax."""
-    if expression.args.get("safe"):
-        return self.func("SAFE.TIMESTAMP", expression.this, expression.args.get("zone"))
-    return self.function_fallback_sql(expression)
-
-
 # https://issuetracker.google.com/issues/162294746
 # workaround for bigquery bug when grouping by an expression and then ordering
 # WITH x AS (SELECT 1 y)
@@ -1073,20 +1066,17 @@ class BigQuery(Dialect):
             this = super()._parse_column_ops(this)
 
             if isinstance(this, exp.Dot):
-                if this.this.name == "NET":
-                    if this.name.upper() == "HOST":
+                prefix_name = this.this.name.upper()
+                func_name = this.name.upper()
+                if prefix_name == "NET":
+                    if func_name == "HOST":
                         this = self.expression(
                             exp.NetHost, this=seq_get(this.expression.expressions, 0)
                         )
-                elif this.this.name.upper() == "SAFE":
-                    if this.name.upper() == "TIMESTAMP":
-                        this = self.expression(
-                            exp.Timestamp,
-                            this=seq_get(this.expression.expressions, 0),
-                            zone=seq_get(this.expression.expressions, 1),
-                            safe=True,
-                            with_tz=True,
-                        )
+                elif prefix_name == "SAFE":
+                    if func_name == "TIMESTAMP":
+                        this = _build_timestamp(this.expression.expressions)
+                        this.set("safe", True)
 
             return this
 
@@ -1239,7 +1229,6 @@ class BigQuery(Dialect):
             exp.StrToTime: _str_to_datetime_sql,
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
             exp.TimeFromParts: rename_func("TIME"),
-            exp.Timestamp: _timestamp_sql,
             exp.TimestampFromParts: rename_func("DATETIME"),
             exp.TimeSub: date_add_interval_sql("TIME", "SUB"),
             exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
@@ -1555,3 +1544,7 @@ class BigQuery(Dialect):
             kind = f" {kind}" if kind else ""
 
             return f"{variables}{kind}{default}"
+
+        def timestamp_sql(self, expression: exp.Timestamp) -> str:
+            prefix = "SAFE." if expression.args.get("safe") else ""
+            return self.func(f"{prefix}TIMESTAMP", expression.this, expression.args.get("zone"))

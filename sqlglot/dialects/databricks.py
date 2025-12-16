@@ -55,10 +55,12 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
             "DATEDIFF": build_date_delta(exp.DateDiff),
             "DATE_DIFF": build_date_delta(exp.DateDiff),
+            "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
             "UNIFORM": lambda args: exp.Uniform(
                 this=seq_get(args, 0), expression=seq_get(args, 1), seed=seq_get(args, 2)

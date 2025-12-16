@@ -742,6 +742,7 @@ class Snowflake(Dialect):
             ),
             "FLATTEN": exp.Explode.from_arg_list,
             "GET": exp.GetExtract.from_arg_list,
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
                 this=seq_get(args, 0),
                 expression=dialect.to_json_path(seq_get(args, 1)),

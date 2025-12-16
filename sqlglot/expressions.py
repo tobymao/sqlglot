@@ -7302,6 +7302,10 @@ class JSONBExtract(Binary, Func):
     _sql_names = ["JSONB_EXTRACT"]
 
 
+class BSONCompare(Binary, Func):
+    _sql_names = ["BSON_COMPARE"]
+
+
 class JSONBExtractScalar(Binary, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]

@@ -6450,6 +6450,10 @@ class CurrentOrganizationUser(Func):
     arg_types = {}
 
 
+class SessionUser(Func):
+    arg_types = {}
+
+
 class UtcDate(Func):
     arg_types = {}
 

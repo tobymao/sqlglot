@@ -1285,6 +1285,59 @@ def var_map_sql(
     return self.func(map_func_name, *args)
 
 
+def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
+    """
+    Transpile MONTHS_BETWEEN to dialects that don't have native support.
+
+    Snowflake's MONTHS_BETWEEN returns whole months + fractional part where:
+    - Fractional part = (DAY(date1) - DAY(date2)) / 31
+    - Special case: If both dates are last day of month, fractional part = 0
+
+    Formula: DATEDIFF('month', date2, date1) + (DAY(date1) - DAY(date2)) / 31.0
+    """
+    date1 = expression.this
+    date2 = expression.expression
+
+    # Cast to DATE to ensure consistent behavior
+    date1_cast = exp.cast(date1, exp.DataType.Type.DATE, copy=False)
+    date2_cast = exp.cast(date2, exp.DataType.Type.DATE, copy=False)
+
+    # Whole months: DATEDIFF('month', date2, date1)
+    whole_months = exp.DateDiff(this=date1_cast, expression=date2_cast, unit=exp.var("month"))
+
+    # Day components
+    day1 = exp.Day(this=date1_cast.copy())
+    day2 = exp.Day(this=date2_cast.copy())
+
+    # Last day of month components
+    last_day_of_month1 = exp.LastDay(this=date1_cast.copy())
+    last_day_of_month2 = exp.LastDay(this=date2_cast.copy())
+
+    day_of_last_day1 = exp.Day(this=last_day_of_month1)
+    day_of_last_day2 = exp.Day(this=last_day_of_month2)
+
+    # Check if both are last day of month
+    last_day1 = exp.EQ(this=day1.copy(), expression=day_of_last_day1)
+    last_day2 = exp.EQ(this=day2.copy(), expression=day_of_last_day2)
+    both_last_day = exp.And(this=last_day1, expression=last_day2)
+
+    # Fractional part: (DAY(date1) - DAY(date2)) / 31.0
+    fractional = exp.Div(
+        this=exp.Paren(this=exp.Sub(this=day1.copy(), expression=day2.copy())),
+        expression=exp.Literal.number("31.0"),
+    )
+
+    # If both are last day of month, fractional = 0, else calculate fractional
+    fractional_with_check = exp.If(
+        this=both_last_day, true=exp.Literal.number("0"), false=fractional
+    )
+
+    # Final result: whole_months + fractional
+    result = exp.Add(this=whole_months, expression=fractional_with_check)
+
+    return self.sql(result)
+
+
 def build_formatted_time(
     exp_class: t.Type[E], dialect: str, default: t.Optional[bool | str] = None
 ) -> t.Callable[[t.List], E]:

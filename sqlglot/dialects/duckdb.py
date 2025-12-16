@@ -1027,6 +1027,7 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _anyvalue_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.ApproxTopK: lambda self, e: self.approxtopk_sql(e),
             exp.Array: transforms.preprocess(
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
@@ -1465,6 +1466,12 @@ class DuckDB(Dialect):
             from_clause = expression.args.get("from_")
             from_clause = f" FROM {from_clause}" if from_clause else ""
             return f"{force}INSTALL {this}{from_clause}"
+
+        def approxtopk_sql(self, expression: exp.ApproxTopK) -> str:
+            self.unsupported(
+                "APPROX_TOP_K cannot be transpiled to DuckDB due to incompatible return types. "
+            )
+            return self.function_fallback_sql(expression)
 
         def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))

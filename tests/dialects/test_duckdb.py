@@ -75,6 +75,15 @@ class TestDuckDB(Validator):
                 "duckdb": "CAST(x AS UUID)",
             },
         )
+
+        self.validate_all(
+            "SELECT APPROX_TOP_K(category, 3) FROM t",
+            write={
+                "snowflake": "SELECT APPROX_TOP_K(category, 3) FROM t",
+                "duckdb": UnsupportedError,
+            },
+        )
+
         self.validate_all(
             """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
             read={

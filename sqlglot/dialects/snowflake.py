@@ -53,6 +53,21 @@ def _build_strtok(args: t.List) -> exp.SplitPart:
     return exp.SplitPart.from_arg_list(args)
 
 
+def _build_approx_top_k(args: t.List) -> exp.ApproxTopK:
+    """
+    Normalizes APPROX_TOP_K arguments to match Snowflake semantics.
+
+    Snowflake APPROX_TOP_K signature: APPROX_TOP_K(column [, k] [, counters])
+    - k defaults to 1 if omitted (per Snowflake documentation)
+    - counters is optional precision parameter
+    """
+    # Add default k=1 if only column is provided
+    if len(args) == 1:
+        args.append(exp.Literal.number(1))
+
+    return exp.ApproxTopK.from_arg_list(args)
+
+
 def _build_datetime(
     name: str, kind: exp.DataType.Type, safe: bool = False
 ) -> t.Callable[[t.List], exp.Func]:
@@ -677,6 +692,7 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False

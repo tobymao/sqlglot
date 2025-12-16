@@ -1750,25 +1750,108 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
+        # ADD_MONTHS - Basic integer months with type preservation
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31', 1)",
             write={
-                "duckdb": "SELECT DATE_ADD(CAST('2023-01-31' AS TIMESTAMP), INTERVAL 1 MONTH)",
+                "duckdb": "SELECT CASE WHEN LAST_DAY(CAST('2023-01-31' AS TIMESTAMP)) = CAST('2023-01-31' AS TIMESTAMP) THEN LAST_DAY(CAST('2023-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH) ELSE CAST('2023-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH END",
                 "snowflake": "SELECT ADD_MONTHS('2023-01-31', 1)",
             },
         )
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31'::date, 1)",
             write={
-                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS DATE), INTERVAL 1 MONTH) AS DATE)",
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2023-01-31' AS DATE)) = CAST('2023-01-31' AS DATE) THEN LAST_DAY(CAST('2023-01-31' AS DATE) + INTERVAL 1 MONTH) ELSE CAST('2023-01-31' AS DATE) + INTERVAL 1 MONTH END AS DATE)",
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS DATE), 1)",
             },
         )
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31'::timestamptz, 1)",
             write={
-                "duckdb": "SELECT CAST(DATE_ADD(CAST('2023-01-31' AS TIMESTAMPTZ), INTERVAL 1 MONTH) AS TIMESTAMPTZ)",
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2023-01-31' AS TIMESTAMPTZ)) = CAST('2023-01-31' AS TIMESTAMPTZ) THEN LAST_DAY(CAST('2023-01-31' AS TIMESTAMPTZ) + INTERVAL 1 MONTH) ELSE CAST('2023-01-31' AS TIMESTAMPTZ) + INTERVAL 1 MONTH END AS TIMESTAMPTZ)",
                 "snowflake": "SELECT ADD_MONTHS(CAST('2023-01-31' AS TIMESTAMPTZ), 1)",
+            },
+        )
+
+        # ADD_MONTHS - Float month values (rounded to integer)
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, 2.7)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(2.7) AS INT)))) ELSE DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(2.7) AS INT))) END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), 2.7)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, -2.3)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(-2.3) AS INT)))) ELSE DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(-2.3) AS INT))) END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), -2.3)",
+            },
+        )
+
+        # ADD_MONTHS - Decimal month values (rounded to integer)
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, 3.2::DECIMAL(10,2))",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(CAST(3.2 AS DECIMAL(10, 2))) AS INT)))) ELSE DATE_ADD(CAST('2016-05-15' AS DATE), TO_MONTHS(CAST(ROUND(CAST(3.2 AS DECIMAL(10, 2))) AS INT))) END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), CAST(3.2 AS DECIMAL(10, 2)))",
+            },
+        )
+
+        # ADD_MONTHS - End-of-month preservation (Snowflake semantic)
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-02-29'::DATE, 1)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-02-29' AS DATE)) = CAST('2016-02-29' AS DATE) THEN LAST_DAY(CAST('2016-02-29' AS DATE) + INTERVAL 1 MONTH) ELSE CAST('2016-02-29' AS DATE) + INTERVAL 1 MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-02-29' AS DATE), 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-31'::DATE, 1)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-31' AS DATE)) = CAST('2016-05-31' AS DATE) THEN LAST_DAY(CAST('2016-05-31' AS DATE) + INTERVAL 1 MONTH) ELSE CAST('2016-05-31' AS DATE) + INTERVAL 1 MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-31' AS DATE), 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-31'::DATE, -1)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-31' AS DATE)) = CAST('2016-05-31' AS DATE) THEN LAST_DAY(CAST('2016-05-31' AS DATE) + INTERVAL (-1) MONTH) ELSE CAST('2016-05-31' AS DATE) + INTERVAL (-1) MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-31' AS DATE), -1)",
+            },
+        )
+
+        # ADD_MONTHS - Mid-month dates (end-of-month logic should not trigger)
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, 1)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(CAST('2016-05-15' AS DATE) + INTERVAL 1 MONTH) ELSE CAST('2016-05-15' AS DATE) + INTERVAL 1 MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), 1)",
+            },
+        )
+
+        # ADD_MONTHS - NULL handling
+        self.validate_all(
+            "SELECT ADD_MONTHS(NULL::DATE, 2)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST(NULL AS DATE)) = CAST(NULL AS DATE) THEN LAST_DAY(CAST(NULL AS DATE) + INTERVAL 2 MONTH) ELSE CAST(NULL AS DATE) + INTERVAL 2 MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST(NULL AS DATE), 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, NULL)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(CAST('2016-05-15' AS DATE) + INTERVAL (NULL) MONTH) ELSE CAST('2016-05-15' AS DATE) + INTERVAL (NULL) MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), NULL)",
+            },
+        )
+
+        # ADD_MONTHS - Zero months
+        self.validate_all(
+            "SELECT ADD_MONTHS('2016-05-15'::DATE, 0)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2016-05-15' AS DATE)) = CAST('2016-05-15' AS DATE) THEN LAST_DAY(CAST('2016-05-15' AS DATE) + INTERVAL 0 MONTH) ELSE CAST('2016-05-15' AS DATE) + INTERVAL 0 MONTH END AS DATE)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2016-05-15' AS DATE), 0)",
             },
         )
 

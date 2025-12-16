@@ -1890,28 +1890,52 @@ class DuckDB(Dialect):
             return posexplode_sql
 
         def addmonths_sql(self, expression: exp.AddMonths) -> str:
+            """
+            Handles three key issues:
+            1. Float/decimal months: Snowflake rounds, DuckDB INTERVAL requires integers
+            2. End-of-month preservation: If input is last day of month, result is last day of result month
+            3. Type preservation: Maintains DATE/TIMESTAMPTZ types (DuckDB defaults to TIMESTAMP)
+            """
+            from sqlglot.optimizer.annotate_types import annotate_types
+
             this = expression.this
-
             if not this.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
-
                 this = annotate_types(this, dialect=self.dialect)
 
             if this.is_type(*exp.DataType.TEXT_TYPES):
                 this = exp.Cast(this=this, to=exp.DataType(this=exp.DataType.Type.TIMESTAMP))
 
-            func = self.func(
-                "DATE_ADD", this, exp.Interval(this=expression.expression, unit=exp.var("MONTH"))
-            )
+            # Detect float/decimal months to apply rounding (Snowflake behavior)
+            months_expr = expression.expression
+            if not months_expr.type:
+                months_expr = annotate_types(months_expr, dialect=self.dialect)
 
-            # DuckDB's DATE_ADD function returns TIMESTAMP/DATETIME by default, even when the input is DATE
-            # To match for example Snowflake's ADD_MONTHS behavior (which preserves the input type)
-            # We need to cast the result back to the original type when the input is DATE or TIMESTAMPTZ
-            # Example: ADD_MONTHS('2023-01-31'::date, 1) should return DATE, not TIMESTAMP
+            if months_expr.is_type(
+                exp.DataType.Type.FLOAT,
+                exp.DataType.Type.DOUBLE,
+                exp.DataType.Type.DECIMAL,
+            ):
+                # Float/decimal: Use TO_MONTHS(CAST(ROUND(value) AS INT))
+                # DuckDB INTERVAL syntax doesn't support non-integer expressions
+                to_months = exp.func("TO_MONTHS", exp.cast(exp.func("ROUND", months_expr), "INT"))
+                date_add_sql = self.func("DATE_ADD", this, to_months)
+            else:
+                # Integer: Use standard INTERVAL syntax (date + INTERVAL N MONTH)
+                interval = exp.Interval(this=months_expr, unit=exp.var("MONTH"))
+                date_add_sql = self.sql(exp.Add(this=this, expression=interval))
+
+            # Apply end-of-month preservation if Snowflake flag is set
+            preserve_eom = expression.args.get("preserve_end_of_month")
+            if preserve_eom:
+                # CASE WHEN LAST_DAY(date) = date THEN LAST_DAY(result) ELSE result END
+                result_sql = f"CASE WHEN {self.func('LAST_DAY', this)} = {self.sql(this)} THEN {self.func('LAST_DAY', date_add_sql)} ELSE {date_add_sql} END"
+            else:
+                result_sql = date_add_sql
+
+            # Preserve original DATE/TIMESTAMPTZ type (DuckDB arithmetic returns TIMESTAMP)
             if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
-                return self.sql(exp.Cast(this=func, to=this.type))
-
-            return self.sql(func)
+                return self.sql(exp.Cast(this=result_sql, to=this.type))
+            return result_sql
 
         def format_sql(self, expression: exp.Format) -> str:
             if expression.name.lower() == "%s" and len(expression.expressions) == 1:

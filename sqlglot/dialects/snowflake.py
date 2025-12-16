@@ -1043,29 +1043,7 @@ class Snowflake(Dialect):
             expression = (
                 self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
             )
-
-            this = map_date_part(this)
-            name = this.name.upper()
-
-            if name.startswith("EPOCH"):
-                if name == "EPOCH_MILLISECOND":
-                    scale = 10**3
-                elif name == "EPOCH_MICROSECOND":
-                    scale = 10**6
-                elif name == "EPOCH_NANOSECOND":
-                    scale = 10**9
-                else:
-                    scale = None
-
-                ts = self.expression(exp.Cast, this=expression, to=exp.DataType.build("TIMESTAMP"))
-                to_unix: exp.Expression = self.expression(exp.TimeToUnix, this=ts)
-
-                if scale:
-                    to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
-
-                return to_unix
-
-            return self.expression(exp.Extract, this=this, expression=expression)
+            return self.expression(exp.Extract, this=map_date_part(this), expression=expression)
 
         def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
             if is_map:

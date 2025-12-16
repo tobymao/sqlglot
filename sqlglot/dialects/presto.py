@@ -612,6 +612,31 @@ class Presto(Dialect):
             "with",
         }
 
+        def extract_sql(self, expression: exp.Extract) -> str:
+            date_part = expression.name
+
+            if not date_part.startswith("EPOCH"):
+                return super().extract_sql(expression)
+
+            if date_part == "EPOCH_MILLISECOND":
+                scale = 10**3
+            elif date_part == "EPOCH_MICROSECOND":
+                scale = 10**6
+            elif date_part == "EPOCH_NANOSECOND":
+                scale = 10**9
+            else:
+                scale = None
+
+            value = expression.expression
+
+            ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
+            to_unix: exp.Expression = exp.TimeToUnix(this=ts)
+
+            if scale:
+                to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
+
+            return self.sql(to_unix)
+
         def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
             this = expression.this
             is_json = expression.args.get("is_json")

@@ -933,6 +933,7 @@ class TestHive(Validator):
         self.validate_identity(
             "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
         )
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

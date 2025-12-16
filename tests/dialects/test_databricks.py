@@ -235,6 +235,7 @@ class TestDatabricks(Validator):
                 "snowflake": "UNIFORM(1, 10, RANDOM())",
             },
         )
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

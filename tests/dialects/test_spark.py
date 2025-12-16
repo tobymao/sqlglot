@@ -927,6 +927,7 @@ TBLPROPERTIES (
             },
         )
         self.validate_identity("BITMAP_OR_AGG(x)")
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
     def test_bool_or(self):
         self.validate_all(

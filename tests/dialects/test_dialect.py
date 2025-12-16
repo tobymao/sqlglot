@@ -1,6 +1,7 @@
 import typing as t
 import unittest
 
+
 from sqlglot import (
     Dialect,
     Dialects,
@@ -4803,24 +4804,22 @@ FROM subquery2""",
                 self.assertEqual(select.sql(dialect), sql)
 
     def test_session_user(self):
-        sql = "SELECT SESSION_USER"
+        no_paren_sql = "SELECT SESSION_USER"
+        func_sql = "SELECT SESSION_USER()"
 
-        unsupported_dialects = [
-            "bigquery",
-            "mysql",
-            "oracle",
-            "clickhouse",
-            "snowflake",
-            "presto",
-        ]
-
-        for dialect in unsupported_dialects:
+        # These dialects support only SESSION_USER()
+        for dialect in ("bigquery", "mysql"):
             with self.subTest(f"Testing that SESSION_USER is parsed as a Column in {dialect}"):
-                select = parse_one(sql, dialect=dialect)
+                select = parse_one(no_paren_sql, dialect=dialect)
                 select.selects[0].assert_is(exp.Column)
-                self.assertEqual(select.sql(dialect), sql)
+                self.assertEqual(select.sql(dialect), no_paren_sql)
 
-        supported_dialects = [
+                select = parse_one(func_sql, dialect=dialect)
+                select.selects[0].assert_is(exp.SessionUser)
+                self.assertEqual(select.sql(dialect), func_sql)
+
+        # These dialects support either only SESSION_USER or both
+        no_paren_dialects = [
             "postgres",
             "duckdb",
             "databricks",
@@ -4828,25 +4827,16 @@ FROM subquery2""",
             "spark",
         ]
 
-        for dialect in supported_dialects:
+        for dialect in no_paren_dialects:
             with self.subTest(
                 f"Testing that SESSION_USER is parsed as a SessionUser expression in {dialect}"
             ):
-                select = parse_one(sql, dialect=dialect)
+                select = parse_one(no_paren_sql, dialect=dialect)
                 select.selects[0].assert_is(exp.SessionUser)
-                self.assertEqual(select.sql(dialect), sql)
+                self.assertEqual(select.sql(dialect), no_paren_sql)
 
-        # session_user()
-        # databricks and spark support both SESSION_USER and SESSION_USER(), so we compare with SELECT SESSION_USER.
-        sql = "SELECT SESSION_USER()"
-        supported_dialects = ["bigquery", "mysql", "databricks", "spark"]
-        for dialect in supported_dialects:
-            with self.subTest(
-                f"Testing that SESSION_USER() is parsed as a SessionUser in {dialect}"
-            ):
-                select = parse_one(sql, dialect=dialect)
-                select.selects[0].assert_is(exp.SessionUser)
-                if dialect in ["databricks", "spark"]:
-                    self.assertEqual(select.sql(dialect), "SELECT SESSION_USER")
-                else:
-                    self.assertEqual(select.sql(dialect), sql)
+                # These dialects support both SESSION_USER and SESSION_USER()
+                if dialect in ("databricks", "spark", "duckdb"):
+                    self.assertEqual(
+                        parse_one(func_sql, dialect=dialect).sql(dialect), no_paren_sql
+                    )

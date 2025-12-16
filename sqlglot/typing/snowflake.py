@@ -205,12 +205,11 @@ def _annotate_math_with_float_decfloat(
 def _annotate_str_to_time(self: TypeAnnotator, expression: exp.StrToTime) -> exp.StrToTime:
     # target_type is stored as a DataType instance
     target_type_arg = expression.args.get("target_type")
-
-    if isinstance(target_type_arg, exp.DataType):
-        target_type = target_type_arg.this
-    else:
-        target_type = exp.DataType.Type.TIMESTAMP
-
+    target_type = (
+        target_type_arg.this
+        if isinstance(target_type_arg, exp.DataType)
+        else exp.DataType.Type.TIMESTAMP
+    )
     self._set_type(expression, target_type)
     return expression
 

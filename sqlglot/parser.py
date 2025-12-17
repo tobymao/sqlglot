@@ -6076,7 +6076,8 @@ class Parser(metaclass=_Parser):
                     this = exp.Identifier(this=this, quoted=True).update_positions(token)
 
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
-                this = this.update_positions(token)
+
+            this = this.update_positions(token)
 
         if isinstance(this, exp.Expression):
             this.add_comments(comments)

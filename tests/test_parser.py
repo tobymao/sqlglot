@@ -990,6 +990,8 @@ class TestParser(unittest.TestCase):
         ast = parse_one("SELECT 1")
         self.assertEqual(ast.find(exp.Literal).meta, {"line": 1, "col": 8, "start": 7, "end": 7})
 
+        self.assertEqual(parse_one("max(1)").meta, {"col": 3, "end": 2, "line": 1, "start": 0})
+
     def test_quoted_identifier_meta(self):
         sql = 'SELECT "a" FROM "test_schema"."test_table_a"'
         ast = parse_one(sql)

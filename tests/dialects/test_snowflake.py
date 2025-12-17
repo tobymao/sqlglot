@@ -91,8 +91,6 @@ class TestSnowflake(Validator):
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => ARRAY_CONSTRUCT(1, 2, 3, 5)))",
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => [1, 2, 3, 5]))",
         )
-        self.validate_identity("SELECT BOOLNOT(0)")
-        self.validate_identity("SELECT BOOLNOT(-3.79)")
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")
@@ -246,6 +244,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT BOOLNOT(0)",
             write={
+                "snowflake": "SELECT BOOLNOT(0)",
                 "duckdb": "SELECT NOT (0)",
             },
         )

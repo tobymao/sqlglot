@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     no_datetime_sql,
     encode_decode_sql,
     build_formatted_time,
+    months_between_sql,
     no_comment_column_constraint_sql,
     no_time_sql,
     no_timestamp_sql,
@@ -1135,12 +1136,7 @@ class DuckDB(Dialect):
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
             exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
-            exp.MonthsBetween: lambda self, e: self.func(
-                "DATEDIFF",
-                "'month'",
-                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP, copy=True),
-                exp.cast(e.this, exp.DataType.Type.TIMESTAMP, copy=True),
-            ),
+            exp.MonthsBetween: months_between_sql,
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.

@@ -106,7 +106,7 @@ def _build_datetime(
                 if not int_scale_or_fmt and not is_float(value.name):
                     expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
                     expr.set("safe", safe)
-                    expr.set("target_type", exp.DataType.build(kind))
+                    expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
                     return expr
 
         if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and not int_value:

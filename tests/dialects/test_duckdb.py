@@ -2092,3 +2092,32 @@ class TestDuckDB(Validator):
                 self.validate_identity(
                     f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
                 )
+
+    def test_bitwise_agg(self):
+        self.validate_all(
+            "SELECT BIT_OR(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITOR_AGG(int_value) FROM t",
+            },
+            write={
+                "duckdb": "SELECT BIT_OR(int_value) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_AND(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITAND_AGG(int_value) FROM t",
+            },
+            write={
+                "duckdb": "SELECT BIT_AND(int_value) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_XOR(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITXOR_AGG(int_value) FROM t",
+            },
+            write={
+                "duckdb": "SELECT BIT_XOR(int_value) FROM t",
+            },
+        )

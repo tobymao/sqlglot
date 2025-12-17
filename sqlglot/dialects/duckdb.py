@@ -475,6 +475,41 @@ def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     return self.function_fallback_sql(expression)
 
 
+def _bitwise_agg_sql(
+    self: DuckDB.Generator,
+    expression: t.Union[exp.BitwiseOrAgg, exp.BitwiseAndAgg, exp.BitwiseXorAgg],
+) -> str:
+    """
+    DuckDB's bitwise aggregate functions only accept integer types. For other types:
+    - DECIMAL/STRING: Use CAST(arg AS INT) to convert directly, will round to nearest int
+    - FLOAT/DOUBLE: Use ROUND(arg)::INT to round to nearest integer, required due to float precision loss
+    """
+    if isinstance(expression, exp.BitwiseOrAgg):
+        func_name = "BIT_OR"
+    elif isinstance(expression, exp.BitwiseAndAgg):
+        func_name = "BIT_AND"
+    else:  # exp.BitwiseXorAgg
+        func_name = "BIT_XOR"
+
+    arg = expression.this
+
+    if not arg.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        arg = annotate_types(arg, dialect=self.dialect)
+
+    if arg.is_type(*exp.DataType.REAL_TYPES, *exp.DataType.TEXT_TYPES):
+        if arg.is_type(*exp.DataType.FLOAT_TYPES):
+            # float types need to be rounded first due to precision loss
+            arg = exp.func("ROUND", arg)
+
+        casted = exp.cast(arg, exp.DataType.Type.INT)
+        return self.func(func_name, casted)
+
+    # For integer types or when type is unknown, use as-is
+    return self.func(func_name, arg)
+
+
 def _literal_sql_with_ws_chr(self: DuckDB.Generator, literal: str) -> str:
     # DuckDB does not support \uXXXX escapes, so we must use CHR() instead of replacing them directly
     if not any(ch in WS_CONTROL_CHARS_TO_DUCK for ch in literal):
@@ -1083,10 +1118,10 @@ class DuckDB(Dialect):
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
-            exp.BitwiseAndAgg: rename_func("BIT_AND"),
+            exp.BitwiseAndAgg: _bitwise_agg_sql,
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
-            exp.BitwiseOrAgg: rename_func("BIT_OR"),
-            exp.BitwiseXorAgg: rename_func("BIT_XOR"),
+            exp.BitwiseOrAgg: _bitwise_agg_sql,
+            exp.BitwiseXorAgg: _bitwise_agg_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",

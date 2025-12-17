@@ -748,7 +748,16 @@ class Snowflake(Dialect):
                 requires_json=True,
             ),
             "GREATEST": lambda args: exp.Greatest(
-                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=False
+            ),
+            "GREATEST_IGNORE_NULLS": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
+            ),
+            "LEAST": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=False
+            ),
+            "LEAST_IGNORE_NULLS": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
@@ -1693,6 +1702,18 @@ class Snowflake(Dialect):
                 return self.func("LN", expression.this)
 
             return super().log_sql(expression)
+
+        def greatest_sql(self, expression: exp.Greatest) -> str:
+            args = [expression.this] + expression.expressions
+            if expression.args.get("ignore_nulls"):
+                return self.func("GREATEST_IGNORE_NULLS", *args)
+            return self.func("GREATEST", *args)
+
+        def least_sql(self, expression: exp.Least) -> str:
+            args = [expression.this] + expression.expressions
+            if expression.args.get("ignore_nulls"):
+                return self.func("LEAST_IGNORE_NULLS", *args)
+            return self.func("LEAST", *args)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             unnest_alias = expression.args.get("alias")

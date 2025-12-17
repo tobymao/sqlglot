@@ -1462,15 +1462,18 @@ class DuckDB(Dialect):
             """
             Handle GREATEST/LEAST functions with dialect-aware NULL behavior.
 
-            - If null_if_any_null=True (BigQuery-style): return NULL if any argument is NULL
-            - If null_if_any_null=False (DuckDB/PostgreSQL-style): ignore NULLs, return greatest/least non-NULL value
+            - If ignore_nulls=False (BigQuery-style): return NULL if any argument is NULL
+            - If ignore_nulls=True (DuckDB/PostgreSQL-style): ignore NULLs, return greatest/least non-NULL value
             """
             # Get all arguments
             all_args = [expression.this, *expression.expressions]
             fallback_sql = self.function_fallback_sql(expression)
 
-            if expression.args.get("null_if_any_null"):
-                # BigQuery behavior: NULL if any argument is NULL
+            if expression.args.get("ignore_nulls"):
+                # DuckDB/PostgreSQL behavior: use native GREATEST/LEAST (ignores NULLs)
+                return self.sql(fallback_sql)
+            else:
+                # return NULL if any argument is NULL
                 case_expr = exp.case().when(
                     exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
                     exp.null(),
@@ -1478,9 +1481,6 @@ class DuckDB(Dialect):
                 )
                 case_expr.set("default", fallback_sql)
                 return self.sql(case_expr)
-
-            # DuckDB/PostgreSQL behavior: use native GREATEST/LEAST (ignores NULLs)
-            return self.sql(fallback_sql)
 
         def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
             return self._greatest_least_sql(expression)

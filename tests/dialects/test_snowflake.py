@@ -22,7 +22,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DATE_PART(EPOCH_MILLISECOND, CURRENT_TIMESTAMP()) AS a")
         self.validate_identity("SELECT GET(a, b)")
         self.validate_identity("SELECT HASH_AGG(a, b, c, d)")
+        self.validate_identity("SELECT GREATEST(1, 2, 3, NULL)")
         self.validate_identity("SELECT GREATEST_IGNORE_NULLS(1, 2, 3, NULL)")
+        self.validate_identity("SELECT LEAST(5, NULL, 7, 3)")
         self.validate_identity("SELECT LEAST_IGNORE_NULLS(5, NULL, 7, 3)")
         self.validate_identity("SELECT MAX(x)")
         self.validate_identity("SELECT COUNT(x)")
@@ -196,6 +198,24 @@ class TestSnowflake(Validator):
             "SELECT GREATEST(1, 2)",
             write={
                 "duckdb": "SELECT CASE WHEN 1 IS NULL OR 2 IS NULL THEN NULL ELSE GREATEST(1, 2) END",
+            },
+        )
+        self.validate_all(
+            "SELECT GREATEST_IGNORE_NULLS(1, 2)",
+            write={
+                "duckdb": "SELECT GREATEST(1, 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT LEAST(1, 2)",
+            write={
+                "duckdb": "SELECT CASE WHEN 1 IS NULL OR 2 IS NULL THEN NULL ELSE LEAST(1, 2) END",
+            },
+        )
+        self.validate_all(
+            "SELECT LEAST_IGNORE_NULLS(1, 2)",
+            write={
+                "duckdb": "SELECT LEAST(1, 2)",
             },
         )
         self.validate_all(

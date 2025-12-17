@@ -6886,17 +6886,7 @@ class Getbit(Func):
 
 
 class Greatest(Func):
-    arg_types = {"this": True, "expressions": False, "null_if_any_null": False}
-    is_var_len_args = True
-
-
-class GreatestIgnoreNulls(Func):
-    arg_types = {"expressions": True}
-    is_var_len_args = True
-
-
-class LeastIgnoreNulls(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
 
@@ -7364,7 +7354,7 @@ class ParseDatetime(Func):
 
 
 class Least(Func):
-    arg_types = {"this": True, "expressions": False, "null_if_any_null": False}
+    arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
 

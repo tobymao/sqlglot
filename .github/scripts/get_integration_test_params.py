@@ -98,15 +98,9 @@ def get_dialects_from_git(base_ref: str, current_ref: str) -> t.Set[str]:
 
 if __name__ == "__main__":
     github_event_path = os.environ.get("GITHUB_EVENT_PATH")
-    github_sha = os.environ.get("GITHUB_SHA")
     github_output = os.environ.get("GITHUB_OUTPUT")
 
-    if (
-        not os.environ.get("GITHUB_ACTIONS")
-        or not github_event_path
-        or not github_sha
-        or not github_output
-    ):
+    if not os.environ.get("GITHUB_ACTIONS") or not github_event_path or not github_output:
         print(f"This script needs to run within GitHub Actions")
         sys.exit(1)
 
@@ -137,11 +131,15 @@ if __name__ == "__main__":
         if not pull_request_base_ref:
             raise ValueError("Unable to determine base ref")
 
-        current_ref = github_sha
+        current_ref = event.get("pull_request", {}).get("head", {}).get("sha")
+
+        if not current_ref:
+            raise ValueError("Unable to determine current/head ref")
+
         print(f"Comparing '{current_ref}' against '{pull_request_base_ref}'")
         # otherwise, look at git files changed and only trigger if a file relating
         # to a supported dialect has changed
-        dialects = get_dialects_from_git(base_ref=pull_request_base_ref, current_ref=github_sha)
+        dialects = get_dialects_from_git(base_ref=pull_request_base_ref, current_ref=current_ref)
         if dialects:
             should_run = True
 

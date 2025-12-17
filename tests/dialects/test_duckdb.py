@@ -2119,23 +2119,27 @@ class TestDuckDB(Validator):
             "SELECT BIT_OR(CAST(val AS FLOAT)) FROM t",
             write={
                 "duckdb": "SELECT BIT_OR(CAST(ROUND(CAST(val AS REAL)) AS INT)) FROM t",
+                "snowflake": "SELECT BITORAGG(CAST(val AS FLOAT)) FROM t",
             },
         )
         self.validate_all(
             "SELECT BIT_AND(CAST(val AS DOUBLE)) FROM t",
             write={
                 "duckdb": "SELECT BIT_AND(CAST(ROUND(CAST(val AS DOUBLE)) AS INT)) FROM t",
+                "snowflake": "SELECT BITANDAGG(CAST(val AS DOUBLE)) FROM t",
             },
         )
         self.validate_all(
             "SELECT BIT_OR(CAST(val AS DECIMAL(10, 2))) FROM t",
             write={
                 "duckdb": "SELECT BIT_OR(CAST(CAST(val AS DECIMAL(10, 2)) AS INT)) FROM t",
+                "snowflake": "SELECT BITORAGG(CAST(val AS DECIMAL(10, 2))) FROM t",
             },
         )
         self.validate_all(
             "SELECT BIT_XOR(CAST(val AS DECIMAL)) FROM t",
             write={
                 "duckdb": "SELECT BIT_XOR(CAST(CAST(val AS DECIMAL(18, 3)) AS INT)) FROM t",
+                "snowflake": "SELECT BITXORAGG(CAST(val AS DECIMAL(18, 3))) FROM t",
             },
         )

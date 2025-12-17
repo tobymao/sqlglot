@@ -503,10 +503,8 @@ def _bitwise_agg_sql(
             # float types need to be rounded first due to precision loss
             arg = exp.func("ROUND", arg)
 
-        casted = exp.cast(arg, exp.DataType.Type.INT)
-        return self.func(func_name, casted)
+        arg = exp.cast(arg, exp.DataType.Type.INT)
 
-    # For integer types or when type is unknown, use as-is
     return self.func(func_name, arg)
 
 

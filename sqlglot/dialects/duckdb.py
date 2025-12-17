@@ -1071,6 +1071,7 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _anyvalue_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.Boolnot: lambda self, e: f"NOT ({self.sql(e, 'this')})",
             exp.Array: transforms.preprocess(
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,

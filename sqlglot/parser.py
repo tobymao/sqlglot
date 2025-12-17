@@ -979,6 +979,12 @@ class Parser(metaclass=_Parser):
         TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
         TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
         TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
+        TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
+        TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
+        TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
+        TokenType.DAT: lambda self, this: self.expression(
+            exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
+        ),
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
@@ -9077,3 +9083,26 @@ class Parser(metaclass=_Parser):
             expr.set("expression", exp.Literal.string(self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS))
 
         return expr
+
+    def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        while True:
+            if not self._match(TokenType.L_PAREN):
+                break
+
+            op = ""
+            while self._curr and not self._match(TokenType.R_PAREN):
+                op += self._curr.text
+                self._advance()
+
+            this = self.expression(
+                exp.Operator,
+                comments=self._prev_comments,
+                this=this,
+                operator=op,
+                expression=self._parse_bitwise(),
+            )
+
+            if not self._match(TokenType.OPERATOR):
+                break
+
+        return this

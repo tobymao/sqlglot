@@ -376,7 +376,6 @@ class Postgres(Dialect):
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,
             "ONLY": TokenType.ONLY,
-            "OPERATOR": TokenType.OPERATOR,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
@@ -479,12 +478,6 @@ class Postgres(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
-            TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
-            TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
-            TokenType.DAT: lambda self, this: self.expression(
-                exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
-            ),
-            TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         }
 
         STATEMENT_PARSERS = {
@@ -516,29 +509,6 @@ class Postgres(Dialect):
             )
             self._match_text_seq("S")
             return self.expression(exp.Placeholder, this=this)
-
-        def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            while True:
-                if not self._match(TokenType.L_PAREN):
-                    break
-
-                op = ""
-                while self._curr and not self._match(TokenType.R_PAREN):
-                    op += self._curr.text
-                    self._advance()
-
-                this = self.expression(
-                    exp.Operator,
-                    comments=self._prev_comments,
-                    this=this,
-                    operator=op,
-                    expression=self._parse_bitwise(),
-                )
-
-                if not self._match(TokenType.OPERATOR):
-                    break
-
-            return this
 
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()

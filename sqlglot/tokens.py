@@ -850,6 +850,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PRAGMA": TokenType.PRAGMA,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,
+        "OPERATOR": TokenType.OPERATOR,
         "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,

@@ -7118,7 +7118,7 @@ class JSONArray(Func):
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAYAGG.html
-class JSONArrayAgg(Func):
+class JSONArrayAgg(AggFunc):
     arg_types = {
         "this": True,
         "order": False,

@@ -3733,6 +3733,38 @@ TRY_TO_TIME('12:30:00', 'AUTO');
 TIME;
 
 # dialect: snowflake
+TO_TIMESTAMP('2024-01-15 12:30:00');
+TIMESTAMP;
+
+# dialect: snowflake
+TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMP;
+
+# dialect: snowflake
+TO_TIMESTAMP_LTZ('2024-01-15 12:30:00');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_LTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_NTZ('2024-01-15 12:30:00');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_NTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_TZ('2024-01-15 12:30:00');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_TZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPTZ;
+
+# dialect: snowflake
 TRY_TO_TIMESTAMP('2024-01-15 12:30:00');
 TIMESTAMP;
 

@@ -3509,6 +3509,10 @@ class Generator(metaclass=_Generator):
         default = f" DEFAULT {default} ON CONVERSION ERROR" if default else ""
         return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{default}{format_sql}{action})"
 
+    # Base implementation that excludes safe, zone, and target_type metadata args
+    def strtotime_sql(self, expression: exp.StrToTime) -> str:
+        return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
+
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"

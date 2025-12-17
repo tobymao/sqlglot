@@ -740,6 +740,13 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT LTRIM(RTRIM(col)) FROM t1",
+            write={
+                "duckdb": "SELECT LTRIM(RTRIM(col)) FROM t1",
+                "snowflake": "SELECT LTRIM(RTRIM(col)) FROM t1",
+            },
+        )
+        self.validate_all(
             "SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x')])) AS _t0(seq, key, path, index, value, this)",
             read={
                 "bigquery": "SELECT x FROM UNNEST([STRUCT('x' AS x)])",

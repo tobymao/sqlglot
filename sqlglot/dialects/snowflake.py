@@ -165,15 +165,6 @@ def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | 
     return _builder
 
 
-def _build_add_months(args: t.List) -> exp.AddMonths:
-    """Build ADD_MONTHS with preserve_end_of_month flag set to True for Snowflake."""
-    return exp.AddMonths(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        preserve_end_of_month=exp.true(),
-    )
-
-
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _build_if_from_div0(args: t.List) -> exp.If:
     lhs = exp._wrap(seq_get(args, 0), exp.Binary)
@@ -710,7 +701,11 @@ class Snowflake(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ADD_MONTHS": _build_add_months,
+            "ADD_MONTHS": lambda args: exp.AddMonths(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                preserve_end_of_month=True,
+            ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
@@ -1411,7 +1406,6 @@ class Snowflake(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.AddMonths: lambda self, e: self.func("ADD_MONTHS", e.this, e.expression),
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),

@@ -1906,36 +1906,53 @@ class DuckDB(Dialect):
                 this = exp.Cast(this=this, to=exp.DataType(this=exp.DataType.Type.TIMESTAMP))
 
             # Detect float/decimal months to apply rounding (Snowflake behavior)
+            # DuckDB INTERVAL syntax doesn't support non-integer expressions, so use TO_MONTHS
             months_expr = expression.expression
             if not months_expr.type:
                 months_expr = annotate_types(months_expr, dialect=self.dialect)
 
-            if months_expr.is_type(
-                exp.DataType.Type.FLOAT,
-                exp.DataType.Type.DOUBLE,
-                exp.DataType.Type.DECIMAL,
-            ):
-                # Float/decimal: Use TO_MONTHS(CAST(ROUND(value) AS INT))
-                # DuckDB INTERVAL syntax doesn't support non-integer expressions
-                to_months = exp.func("TO_MONTHS", exp.cast(exp.func("ROUND", months_expr), "INT"))
-                date_add_sql = self.func("DATE_ADD", this, to_months)
-            else:
-                # Integer: Use standard INTERVAL syntax (date + INTERVAL N MONTH)
-                interval = exp.Interval(this=months_expr, unit=exp.var("MONTH"))
-                date_add_sql = self.sql(exp.Add(this=this, expression=interval))
+            # Build interval or to_months expression based on type
+            # Float/decimal case: Round and use TO_MONTHS(CAST(ROUND(value) AS INT))
+            interval_or_to_months = (
+                exp.func("TO_MONTHS", exp.cast(exp.func("ROUND", months_expr), "INT"))
+                if months_expr.is_type(
+                    exp.DataType.Type.FLOAT,
+                    exp.DataType.Type.DOUBLE,
+                    exp.DataType.Type.DECIMAL,
+                )
+                # Integer case: standard INTERVAL N MONTH syntax
+                else exp.Interval(this=months_expr, unit=exp.var("MONTH"))
+            )
+
+            date_add_expr = exp.Add(this=this, expression=interval_or_to_months)
 
             # Apply end-of-month preservation if Snowflake flag is set
+            # CASE WHEN LAST_DAY(date) = date THEN LAST_DAY(result) ELSE result END
             preserve_eom = expression.args.get("preserve_end_of_month")
-            if preserve_eom:
-                # CASE WHEN LAST_DAY(date) = date THEN LAST_DAY(result) ELSE result END
-                result_sql = f"CASE WHEN {self.func('LAST_DAY', this)} = {self.sql(this)} THEN {self.func('LAST_DAY', date_add_sql)} ELSE {date_add_sql} END"
-            else:
-                result_sql = date_add_sql
+            result_expr = (
+                exp.Case(
+                    ifs=[
+                        exp.If(
+                            this=exp.EQ(
+                                this=exp.func("LAST_DAY", this),
+                                expression=this,
+                            ),
+                            true=exp.func("LAST_DAY", date_add_expr),
+                        )
+                    ],
+                    default=date_add_expr,
+                )
+                if preserve_eom
+                else date_add_expr
+            )
 
-            # Preserve original DATE/TIMESTAMPTZ type (DuckDB arithmetic returns TIMESTAMP)
+            # DuckDB's DATE_ADD function returns TIMESTAMP/DATETIME by default, even when the input is DATE
+            # To match for example Snowflake's ADD_MONTHS behavior (which preserves the input type)
+            # We need to cast the result back to the original type when the input is DATE or TIMESTAMPTZ
+            # Example: ADD_MONTHS('2023-01-31'::date, 1) should return DATE, not TIMESTAMP
             if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
-                return self.sql(exp.Cast(this=result_sql, to=this.type))
-            return result_sql
+                return self.sql(exp.Cast(this=result_expr, to=this.type))
+            return self.sql(result_expr)
 
         def format_sql(self, expression: exp.Format) -> str:
             if expression.name.lower() == "%s" and len(expression.expressions) == 1:

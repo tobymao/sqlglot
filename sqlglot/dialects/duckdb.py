@@ -572,26 +572,58 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
-def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
+def _scale_rounding_sql(
+    self: DuckDB.Generator,
+    expression: exp.Expression,
+    rounding_func: type[exp.Expression],
+) -> str | None:
+    """
+    Handle scale parameter transformation for rounding functions.
+
+    DuckDB doesn't support the scale parameter for certain functions (e.g., FLOOR, CEIL),
+    so we transform: FUNC(x, n) to ROUND(FUNC(x * 10^n) / 10^n, n)
+
+    Args:
+        self: The DuckDB generator instance
+        expression: The expression to transform (must have 'this', 'decimals', and 'to' args)
+        rounding_func: The rounding function class to use in the transformation
+
+    Returns:
+        The transformed SQL string if decimals parameter exists, None otherwise
+    """
     decimals = expression.args.get("decimals")
 
-    if decimals is not None and expression.args.get("to") is None:
-        this = expression.this
-        if isinstance(this, exp.Binary):
-            this = exp.Paren(this=this)
+    if decimals is None or expression.args.get("to") is not None:
+        return None
 
-        n_int = decimals
-        if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
-            n_int = exp.cast(decimals, exp.DataType.Type.INT)
+    this = expression.this
+    if isinstance(this, exp.Binary):
+        this = exp.Paren(this=this)
 
-        pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
-        floored = exp.Floor(this=exp.Mul(this=this, expression=pow_))
-        result = exp.Div(this=floored, expression=pow_.copy())
+    n_int = decimals
+    if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
+        n_int = exp.cast(decimals, exp.DataType.Type.INT)
 
-        return self.round_sql(
-            exp.Round(this=result, decimals=decimals, casts_non_integer_decimals=True)
-        )
+    pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
+    rounded = rounding_func(this=exp.Mul(this=this, expression=pow_))
+    result = exp.Div(this=rounded, expression=pow_.copy())
 
+    return self.round_sql(
+        exp.Round(this=result, decimals=decimals, casts_non_integer_decimals=True)
+    )
+
+
+def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
+    scaled_sql = _scale_rounding_sql(self, expression, exp.Floor)
+    if scaled_sql is not None:
+        return scaled_sql
+    return self.ceil_floor(expression)
+
+
+def _ceil_sql(self: DuckDB.Generator, expression: exp.Ceil) -> str:
+    scaled_sql = _scale_rounding_sql(self, expression, exp.Ceil)
+    if scaled_sql is not None:
+        return scaled_sql
     return self.ceil_floor(expression)
 
 
@@ -1122,6 +1154,7 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.Ceil: _ceil_sql,
             exp.Floor: _floor_sql,
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,

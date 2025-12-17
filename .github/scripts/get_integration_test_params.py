@@ -132,6 +132,10 @@ if __name__ == "__main__":
             raise ValueError("Unable to determine base ref")
 
         current_ref = event.get("pull_request", {}).get("head", {}).get("sha")
+
+        if not current_ref:
+            raise ValueError("Unable to determine current/head ref")
+
         print(f"Comparing '{current_ref}' against '{pull_request_base_ref}'")
         # otherwise, look at git files changed and only trigger if a file relating
         # to a supported dialect has changed

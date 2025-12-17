@@ -1950,11 +1950,11 @@ class DuckDB(Dialect):
             return self.func("DATE_TRUNC", unit, timestamp)
 
         def trim_sql(self, expression: exp.Trim) -> str:
-            result_sql = self.func(
-                "TRIM",
-                _cast_to_varchar(expression.this),
-                _cast_to_varchar(expression.expression),
-            )
+            expression.this.replace(_cast_to_varchar(expression.this))
+            if expression.expression:
+                expression.expression.replace(_cast_to_varchar(expression.expression))
+
+            result_sql = super().trim_sql(expression)
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def round_sql(self, expression: exp.Round) -> str:

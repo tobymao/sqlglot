@@ -2953,6 +2953,34 @@ LTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+MAP_CAT(OBJECT_CONSTRUCT('a', 1), OBJECT_CONSTRUCT('b', 2));
+MAP(VARCHAR, INT);
+
+# dialect: snowflake
+MAP_CONTAINS_KEY(OBJECT_CONSTRUCT('a', 1, 'b', 2), 'a');
+BOOLEAN;
+
+# dialect: snowflake
+MAP_DELETE(OBJECT_CONSTRUCT('a', 1, 'b', 2, 'c', 3), 'b');
+MAP(VARCHAR, INT);
+
+# dialect: snowflake
+MAP_INSERT(OBJECT_CONSTRUCT('a', 1), 'b', 2);
+MAP(VARCHAR, INT);
+
+# dialect: snowflake
+MAP_KEYS(OBJECT_CONSTRUCT('a', 1, 'b', 2));
+ARRAY(VARCHAR);
+
+# dialect: snowflake
+MAP_PICK(OBJECT_CONSTRUCT('a', 1, 'b', 2, 'c', 3), 'a', 'c');
+MAP(VARCHAR, INT);
+
+# dialect: snowflake
+MAP_SIZE(OBJECT_CONSTRUCT('a', 1, 'b', 2));
+INT;
+
+# dialect: snowflake
 MINUTE(CAST('08:50:57' AS TIME));
 INT;
 

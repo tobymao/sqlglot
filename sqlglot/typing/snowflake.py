@@ -243,6 +243,7 @@ EXPRESSION_METADATA = {
             exp.ArrayConstructCompact,
             exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,
+            exp.MapKeys,
             exp.RegexpExtractAll,
             exp.Split,
             exp.StringToArray,
@@ -289,6 +290,7 @@ EXPRESSION_METADATA = {
             exp.BoolxorAgg,
             exp.EqualNull,
             exp.IsNullValue,
+            exp.MapContainsKey,
             exp.Search,
             exp.SearchIp,
             exp.ToBoolean,
@@ -385,6 +387,7 @@ EXPRESSION_METADATA = {
             exp.JarowinklerSimilarity,
             exp.Length,
             exp.Levenshtein,
+            exp.MapSize,
             exp.Minute,
             exp.RtrimmedLength,
             exp.Second,
@@ -404,6 +407,15 @@ EXPRESSION_METADATA = {
             exp.ParseIp,
             exp.ParseUrl,
             exp.XMLGet,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DataType.Type.MAP}
+        for expr_type in {
+            exp.MapCat,
+            exp.MapDelete,
+            exp.MapInsert,
+            exp.MapPick,
         }
     },
     **{

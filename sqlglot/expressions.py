@@ -7441,6 +7441,38 @@ class MapFromEntries(Func):
     pass
 
 
+class MapCat(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+class MapContainsKey(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class MapDelete(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+class MapInsert(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+class MapKeys(Func):
+    pass
+
+
+class MapPick(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+class MapSize(Func):
+    pass
+
+
 # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql?view=sql-server-ver16
 class ScopeResolution(Expression):
     arg_types = {"this": False, "expression": True}

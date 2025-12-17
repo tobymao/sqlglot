@@ -1581,6 +1581,70 @@ class DuckDB(Dialect):
             )
             return f"({self.sql(query)})"
 
+        def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
+            """
+            Transpile Snowflake's ZIPF to DuckDB equivalent using cumulative distribution function.
+
+            ZIPF(s, n, gen) generates a random value following Zipf distribution.
+            - s: exponent parameter (typically 1.0)
+            - n: number of elements (range from 1 to n)
+            - gen: random generator or seed
+
+            Uses CDF-based sampling: compute weights 1/k^s, normalize to CDF, sample with random().
+            """
+            s = expression.this
+            n = expression.args.get("elementcount")
+            gen = expression.args.get("gen")
+
+            if isinstance(gen, exp.Rand):
+                # Use RANDOM() for non-deterministic output
+                random_expr = "RANDOM()"
+            else:
+                # Use seed with HASH for deterministic output
+                seed_sql = self.sql(gen)
+                random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
+
+            s_sql = self.sql(s)
+
+            # Cast n to BIGINT if needed for RANGE compatibility
+            # RANGE requires BIGINT arguments, not DECIMAL or float literals
+            needs_cast = False
+
+            if n and isinstance(n, exp.Cast):
+                # Check if it's cast to DECIMAL type
+                to_type = n.to
+                if to_type and isinstance(to_type, exp.DataType):
+                    if to_type.this == exp.DataType.Type.DECIMAL:
+                        needs_cast = True
+            elif n and isinstance(n, exp.Literal):
+                # Check if it's a float literal (e.g., 10.0)
+                if n.is_number and not n.is_int:
+                    needs_cast = True
+
+            if needs_cast and n:
+                n_sql = self.sql(exp.cast(n, exp.DataType.Type.BIGINT))
+            else:
+                n_sql = self.sql(n)
+
+            query: exp.Select = exp.maybe_parse(
+                f"""
+                WITH weights AS (
+                    SELECT i, 1.0 / POWER(i, {s_sql}) AS w
+                    FROM RANGE(1, {n_sql} + 1) AS t(i)
+                ),
+                cdf AS (
+                    SELECT i,
+                           SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob
+                    FROM weights
+                )
+                SELECT MIN(i)
+                FROM cdf
+                WHERE cum_prob >= {random_expr}
+                """,
+                dialect="duckdb",
+            )
+            return f"({self.sql(query)})"
+
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """
             TO_BINARY(value, format) transpilation if the return type is BINARY:

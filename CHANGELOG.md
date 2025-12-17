@@ -1,6 +1,41 @@
 Changelog
 =========
 
+## [v28.5.0] - 2025-12-17
+### :boom: BREAKING CHANGES
+- due to [`4dfc810`](https://github.com/tobymao/sqlglot/commit/4dfc810f45d5a617ada2ba4ed57002549c8d1853) - support transpilation of BOOLNOT from snowflake to duckdb *(PR [#6577](https://github.com/tobymao/sqlglot/pull/6577) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of BOOLNOT from snowflake to duckdb (#6577)
+
+- due to [`b857185`](https://github.com/tobymao/sqlglot/commit/b8571850ca55802671484d118560a7b90e893c39) - remove Sysdate in favor of CurrentTimestamp with sysdate arg *(PR [#6584](https://github.com/tobymao/sqlglot/pull/6584) by [@georgesittas](https://github.com/georgesittas))*:
+
+  remove Sysdate in favor of CurrentTimestamp with sysdate arg (#6584)
+
+- due to [`bf217d6`](https://github.com/tobymao/sqlglot/commit/bf217d69f92efcbce5b69d637976e915ca63998d) - make `JSONArrayAgg` an `AggFunc` *(PR [#6585](https://github.com/tobymao/sqlglot/pull/6585) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  make `JSONArrayAgg` an `AggFunc` (#6585)
+
+- due to [`604efe5`](https://github.com/tobymao/sqlglot/commit/604efe5cf5812d0b1dd9d625ed278907d0d7fb8f) - Type annotation fixes for TO_TIMESTAMP* *(PR [#6557](https://github.com/tobymao/sqlglot/pull/6557) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Type annotation fixes for TO_TIMESTAMP* (#6557)
+
+
+### :sparkles: New Features
+- [`4dfc810`](https://github.com/tobymao/sqlglot/commit/4dfc810f45d5a617ada2ba4ed57002549c8d1853) - **snowflake**: support transpilation of BOOLNOT from snowflake to duckdb *(PR [#6577](https://github.com/tobymao/sqlglot/pull/6577) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`7077981`](https://github.com/tobymao/sqlglot/commit/707798166c1b45e633bd0e8d02d1c0146598b03a) - **snowflake**: Transpilation of Snowflake MONTHS_BETWEEN to DuckDB *(PR [#6561](https://github.com/tobymao/sqlglot/pull/6561) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`604efe5`](https://github.com/tobymao/sqlglot/commit/604efe5cf5812d0b1dd9d625ed278907d0d7fb8f) - **snowflake**: Type annotation fixes for TO_TIMESTAMP* *(PR [#6557](https://github.com/tobymao/sqlglot/pull/6557) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`3567880`](https://github.com/tobymao/sqlglot/commit/35678808dafb37c5d37c806682e6af9b6351bced) - add tokens to functions *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`b857185`](https://github.com/tobymao/sqlglot/commit/b8571850ca55802671484d118560a7b90e893c39) - **snowflake**: remove Sysdate in favor of CurrentTimestamp with sysdate arg *(PR [#6584](https://github.com/tobymao/sqlglot/pull/6584) by [@georgesittas](https://github.com/georgesittas))*
+- [`bf217d6`](https://github.com/tobymao/sqlglot/commit/bf217d69f92efcbce5b69d637976e915ca63998d) - make `JSONArrayAgg` an `AggFunc` *(PR [#6585](https://github.com/tobymao/sqlglot/pull/6585) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`48f5e99`](https://github.com/tobymao/sqlglot/commit/48f5e999d3d3f6ad51c30e7a33a3a574d0e50d2b) - **duckdb**: preserve l/r-trim syntax *(PR [#6588](https://github.com/tobymao/sqlglot/pull/6588) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#6587](https://github.com/tobymao/sqlglot/issues/6587) opened by [@baruchoxman](https://github.com/baruchoxman)*
+
+### :wrench: Chores
+- [`ea0263a`](https://github.com/tobymao/sqlglot/commit/ea0263aa555591b03b06a4b6dee093fe42b545f9) - Skip integration tests GA for external contributors & fix `git diff` *(PR [#6582](https://github.com/tobymao/sqlglot/pull/6582) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v28.4.1] - 2025-12-16
 ### :boom: BREAKING CHANGES
 - due to [`cfc9346`](https://github.com/tobymao/sqlglot/commit/cfc9346ba0477523d3de8f923d83fd09814b22ac) - bump sqlglotrs to 0.10.0 *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -11516,3 +11551,4 @@ Changelog
 [v28.3.0]: https://github.com/tobymao/sqlglot/compare/v28.2.0...v28.3.0
 [v28.4.0]: https://github.com/tobymao/sqlglot/compare/v27.6.1...v28.4.0
 [v28.4.1]: https://github.com/tobymao/sqlglot/compare/v28.4.0...v28.4.1
+[v28.5.0]: https://github.com/tobymao/sqlglot/compare/v28.4.1...v28.5.0

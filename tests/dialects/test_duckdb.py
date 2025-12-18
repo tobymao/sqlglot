@@ -2092,3 +2092,54 @@ class TestDuckDB(Validator):
                 self.validate_identity(
                     f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
                 )
+
+    def test_bitwise_agg(self):
+        self.validate_all(
+            "SELECT BIT_OR(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITOR_AGG(int_value) FROM t",
+                "duckdb": "SELECT BIT_OR(int_value) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_AND(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITAND_AGG(int_value) FROM t",
+                "duckdb": "SELECT BIT_AND(int_value) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_XOR(int_value) FROM t",
+            read={
+                "snowflake": "SELECT BITXOR_AGG(int_value) FROM t",
+                "duckdb": "SELECT BIT_XOR(int_value) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_OR(CAST(val AS FLOAT)) FROM t",
+            write={
+                "duckdb": "SELECT BIT_OR(CAST(ROUND(CAST(val AS REAL)) AS INT)) FROM t",
+                "snowflake": "SELECT BITORAGG(CAST(val AS FLOAT)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_AND(CAST(val AS DOUBLE)) FROM t",
+            write={
+                "duckdb": "SELECT BIT_AND(CAST(ROUND(CAST(val AS DOUBLE)) AS INT)) FROM t",
+                "snowflake": "SELECT BITANDAGG(CAST(val AS DOUBLE)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_OR(CAST(val AS DECIMAL(10, 2))) FROM t",
+            write={
+                "duckdb": "SELECT BIT_OR(CAST(CAST(val AS DECIMAL(10, 2)) AS INT)) FROM t",
+                "snowflake": "SELECT BITORAGG(CAST(val AS DECIMAL(10, 2))) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT BIT_XOR(CAST(val AS DECIMAL)) FROM t",
+            write={
+                "duckdb": "SELECT BIT_XOR(CAST(CAST(val AS DECIMAL(18, 3)) AS INT)) FROM t",
+                "snowflake": "SELECT BITXORAGG(CAST(val AS DECIMAL(18, 3))) FROM t",
+            },
+        )

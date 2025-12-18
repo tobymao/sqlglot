@@ -91,44 +91,53 @@ MAX_BIT_POSITION = exp.Literal.number(32768)
 
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     """
-    Transpile TO_BOOLEAN function from Snowflake to DuckDB equivalent.
+    Transpile TO_BOOLEAN and TRY_TO_BOOLEAN functions from Snowflake to DuckDB equivalent.
 
     DuckDB's CAST to BOOLEAN supports most of Snowflake's TO_BOOLEAN strings except 'on'/'off'.
-    We need to handle the 'on'/'off' cases explicitly, plus NaN/INF error cases.
+    We need to handle the 'on'/'off' cases explicitly.
 
-    In Snowflake, NaN and INF values cause errors. We use DuckDB's native ERROR()
+    For TO_BOOLEAN (safe=False): NaN and INF values cause errors. We use DuckDB's native ERROR()
     function to replicate this behavior with a clear error message.
+
+    For TRY_TO_BOOLEAN (safe=True): Use DuckDB's TRY_CAST for conversion, which returns NULL
+    for invalid inputs instead of throwing errors.
     """
     arg = expression.this
+    is_safe = expression.args.get("safe", False)
 
-    cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build("REAL"))
-
-    # Check for NaN and INF values
-    nan_inf_check = exp.Or(
-        this=exp.func("ISNAN", cast_to_real), expression=exp.func("ISINF", cast_to_real)
-    )
-
-    case_expr = (
+    base_case_expr = (
         exp.case()
         .when(
+            # Handle 'on' -> TRUE (case insensitive)
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+            exp.true(),
+        )
+        .when(
+            # Handle 'off' -> FALSE (case insensitive)
+            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+            exp.false(),
+        )
+    )
+
+    if is_safe:
+        # TRY_TO_BOOLEAN: handle 'on'/'off' and use TRY_CAST for everything else
+        case_expr = base_case_expr.else_(exp.func("TRY_CAST", arg, exp.DataType.build("BOOLEAN")))
+    else:
+        # TO_BOOLEAN: handle NaN/INF errors, 'on'/'off', and use regular CAST
+        cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build("REAL"))
+
+        # Check for NaN and INF values
+        nan_inf_check = exp.Or(
+            this=exp.func("ISNAN", cast_to_real), expression=exp.func("ISINF", cast_to_real)
+        )
+
+        case_expr = base_case_expr.when(
             nan_inf_check,
             exp.func(
                 "ERROR",
                 exp.Literal.string("TO_BOOLEAN: Non-numeric values NaN and INF are not supported"),
             ),
-        )
-        # Handle 'on' -> TRUE (case insensitive) - only for string literals
-        .when(
-            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
-            exp.true(),
-        )
-        # Handle 'off' -> FALSE (case insensitive) - only for string literals
-        .when(
-            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
-            exp.false(),
-        )
-        .else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))
-    )
+        ).else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))
 
     return self.sql(case_expr)
 

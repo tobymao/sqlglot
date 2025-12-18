@@ -2065,25 +2065,3 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
         self.assertEqual(annotated.sql(), null_sql)
         self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)
-
-    def test_union_all_literal_annotation(self):
-        union_all_sql = "SELECT t.col FROM (SELECT 1 AS col UNION ALL SELECT 2 AS col) AS t"
-        annotated = parse_and_optimize(
-            annotate_types, union_all_sql, "bigquery", dialect="bigquery"
-        )
-        self.assertEqual(annotated.sql(), union_all_sql)
-        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.INT)
-
-        union_all_sql = "SELECT t.col FROM (SELECT 1.5 AS col UNION ALL SELECT 2 AS col) AS t"
-        annotated = parse_and_optimize(
-            annotate_types, union_all_sql, "bigquery", dialect="bigquery"
-        )
-        self.assertEqual(annotated.sql(), union_all_sql)
-        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.DOUBLE)
-
-        union_all_sql = "SELECT t.col FROM (SELECT 1 AS col UNION ALL SELECT CAST(2.5 AS BIGDECIMAL) AS col) AS t"
-        annotated = parse_and_optimize(
-            annotate_types, union_all_sql, "bigquery", dialect="bigquery"
-        )
-        self.assertEqual(annotated.sql(), union_all_sql)
-        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)

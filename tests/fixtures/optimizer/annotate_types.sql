@@ -31,6 +31,15 @@ bool;
 x is not null;
 bool;
 
+EXISTS(SELECT 1);
+bool;
+
+ALL(SELECT 1);
+bool;
+
+ANY(SELECT 1);
+bool;
+
 null;
 UNKNOWN;
 

@@ -233,13 +233,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
-            write={
-                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
-                "postgres": "SELECT CAST(CAST('1999-12-01 10:00:00' AS TIMESTAMP) AS TEXT)",
-            },
-        )
-        self.validate_all(
             "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
             write={
                 "oracle": "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",

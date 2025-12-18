@@ -113,7 +113,7 @@ if __name__ == "__main__":
     print(f"Handling event: \n" + json.dumps(event, indent=2))
 
     # for pull_request events, the body is located at github.event.pull_request.body
-    pr_description: str = event.get("pull_request", {}).get("body", "")
+    pr_description: str = event.get("pull_request", {}).get("body") or ""
 
     dialects = []
     should_run = False

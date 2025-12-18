@@ -646,15 +646,8 @@ def _scale_rounding_sql(
     )
 
 
-def _floor_sql(self: DuckDB.Generator, expression: exp.Floor) -> str:
-    scaled_sql = _scale_rounding_sql(self, expression, exp.Floor)
-    if scaled_sql is not None:
-        return scaled_sql
-    return self.ceil_floor(expression)
-
-
-def _ceil_sql(self: DuckDB.Generator, expression: exp.Ceil) -> str:
-    scaled_sql = _scale_rounding_sql(self, expression, exp.Ceil)
+def _ceil_floor(self: DuckDB.Generator, expression: exp.Floor | exp.Ceil) -> str:
+    scaled_sql = _scale_rounding_sql(self, expression, type(expression))
     if scaled_sql is not None:
         return scaled_sql
     return self.ceil_floor(expression)
@@ -1187,8 +1180,8 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
-            exp.Ceil: _ceil_sql,
-            exp.Floor: _floor_sql,
+            exp.Ceil: _ceil_floor,
+            exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,

@@ -714,7 +714,9 @@ class Postgres(Dialect):
             exp.TimestampTrunc: timestamptrunc_sql(zone=True),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-            exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.ToChar: lambda self, e: self.function_fallback_sql(e)
+            if e.args.get("format")
+            else self.tochar_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("+"),

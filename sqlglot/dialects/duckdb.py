@@ -605,6 +605,43 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
+def _logical_and_sql(self: DuckDB.Generator, expression: exp.LogicalAnd) -> str:
+    """
+    Generate BOOL_AND SQL with cast to BOOLEAN if needed.
+
+    DuckDB's BOOL_AND strictly requires boolean inputs, so cast if not already boolean.
+    """
+    this = expression.this
+    if not this.is_type(exp.DataType.Type.BOOLEAN):
+        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
+    return self.func("BOOL_AND", this)
+
+
+def _logical_or_sql(self: DuckDB.Generator, expression: exp.LogicalOr) -> str:
+    """
+    Generate BOOL_OR SQL with cast to BOOLEAN if needed.
+
+    DuckDB's BOOL_OR strictly requires boolean inputs, so cast if not already boolean.
+    """
+    this = expression.this
+    if not this.is_type(exp.DataType.Type.BOOLEAN):
+        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
+    return self.func("BOOL_OR", this)
+
+
+def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
+    """
+    Generate COUNT_IF SQL for BOOLXOR_AGG with cast to BOOLEAN if needed.
+
+    DuckDB's COUNT_IF strictly requires boolean inputs, so cast if not already boolean.
+    BOOLXOR_AGG returns true if odd number of trues, implemented as COUNT_IF(this) % 2.
+    """
+    this = expression.this
+    if not this.is_type(exp.DataType.Type.BOOLEAN):
+        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
+    return self.sql(exp.Mod(this=exp.CountIf(this=this), expression=exp.Literal.number(2)))
+
+
 def _scale_rounding_sql(
     self: DuckDB.Generator,
     expression: exp.Expression,
@@ -1188,9 +1225,9 @@ class DuckDB(Dialect):
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
-            exp.LogicalOr: rename_func("BOOL_OR"),
-            exp.LogicalAnd: rename_func("BOOL_AND"),
-            exp.BoolxorAgg: lambda self, e: self.sql(exp.CountIf(this=e.this).eq(1)),
+            exp.LogicalOr: _logical_or_sql,
+            exp.LogicalAnd: _logical_and_sql,
+            exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),

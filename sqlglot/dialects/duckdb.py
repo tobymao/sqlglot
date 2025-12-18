@@ -634,12 +634,13 @@ def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
     Generate COUNT_IF SQL for BOOLXOR_AGG with cast to BOOLEAN if needed.
 
     DuckDB's COUNT_IF strictly requires boolean inputs, so cast if not already boolean.
-    BOOLXOR_AGG returns true if odd number of trues, implemented as COUNT_IF(this) % 2.
+    Snowflake's BOOLXOR_AGG returns TRUE if exactly one input is TRUE, FALSE otherwise.
     """
     this = expression.this
     if not this.is_type(exp.DataType.Type.BOOLEAN):
         this = exp.cast(this, exp.DataType.Type.BOOLEAN)
-    return self.sql(exp.Mod(this=exp.CountIf(this=this), expression=exp.Literal.number(2)))
+    # Returns TRUE if exactly one value is true (count = 1), FALSE otherwise
+    return self.sql(exp.EQ(this=exp.CountIf(this=this), expression=exp.Literal.number(1)))
 
 
 def _scale_rounding_sql(

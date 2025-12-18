@@ -1088,7 +1088,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT BOOLXOR_AGG(c1) FROM test",
             write={
-                "duckdb": "SELECT COUNT_IF(CAST(c1 AS BOOLEAN)) % 2 FROM test",
+                "duckdb": "SELECT COUNT_IF(CAST(c1 AS BOOLEAN)) = 1 FROM test",
                 "snowflake": "SELECT BOOLXOR_AGG(c1) FROM test",
             },
         )

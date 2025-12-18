@@ -418,17 +418,19 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             # Handle unqualified columns from UNNEST with STRUCT type
             if scope and isinstance(expr, exp.Column) and not expr.table:
+                field_type = None
                 for _, source in scope.sources.items():
-                    if isinstance(source, Scope) and isinstance(source.expression, exp.Unnest):
+                    if (
+                        not field_type
+                        and isinstance(source, Scope)
+                        and isinstance(source.expression, exp.Unnest)
+                    ):
                         field_type = self._get_struct_field_type(source.expression.type, expr.name)
-                        if field_type:
-                            self._set_type(expr, field_type)
-                            if expr.type and expr.type.args.get("nullable") is False:
-                                expr.meta["nonnull"] = True
-                            break
 
-                # If we set a type, continue to next expression
-                if id(expr) in self._visited:
+                if field_type:
+                    self._set_type(expr, field_type)
+                    if expr.type and expr.type.args.get("nullable") is False:
+                        expr.meta["nonnull"] = True
                     continue
 
             spec = self.expression_metadata.get(expr.__class__)
@@ -678,7 +680,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _get_struct_field_type(
-        self, struct_type: exp.DataType, field_name: str
+        self, struct_type: t.Optional[exp.DataType], field_name: str
     ) -> t.Optional[exp.DataType | exp.DataType.Type]:
         """
         Extracts the type of a named field from a STRUCT type.

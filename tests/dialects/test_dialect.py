@@ -4842,7 +4842,7 @@ FROM subquery2""",
                     )
 
     def test_operator(self):
-        expr = self.parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3")
+        expr = self.validate_identity("1 OPERATOR(+) 2 OPERATOR(*) 3")
 
         expr.left.assert_is(exp.Operator)
         expr.left.left.assert_is(exp.Literal)

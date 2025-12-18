@@ -1951,7 +1951,7 @@ class DuckDB(Dialect):
         def addmonths_sql(self, expression: exp.AddMonths) -> str:
             """
             Handles three key issues:
-            1. Float/decimal months: Snowflake rounds, DuckDB INTERVAL requires integers
+            1. Float/decimal months: e.g., Snowflake rounds, whereas DuckDB INTERVAL requires integers
             2. End-of-month preservation: If input is last day of month, result is last day of result month
             3. Type preservation: Maintains DATE/TIMESTAMPTZ types (DuckDB defaults to TIMESTAMP)
             """
@@ -1989,18 +1989,12 @@ class DuckDB(Dialect):
             # CASE WHEN LAST_DAY(date) = date THEN LAST_DAY(result) ELSE result END
             preserve_eom = expression.args.get("preserve_end_of_month")
             result_expr = (
-                exp.Case(
-                    ifs=[
-                        exp.If(
-                            this=exp.EQ(
-                                this=exp.func("LAST_DAY", this),
-                                expression=this,
-                            ),
-                            true=exp.func("LAST_DAY", date_add_expr),
-                        )
-                    ],
-                    default=date_add_expr,
+                exp.case()
+                .when(
+                    exp.EQ(this=exp.func("LAST_DAY", this), expression=this),
+                    exp.func("LAST_DAY", date_add_expr),
                 )
+                .else_(date_add_expr)
                 if preserve_eom
                 else date_add_expr
             )

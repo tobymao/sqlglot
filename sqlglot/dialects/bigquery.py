@@ -389,6 +389,7 @@ class BigQuery(Dialect):
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = True
     QUERY_RESULTS_ARE_STRUCTS = True
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
+    LEAST_GREATEST_IGNORES_NULLS = False
     DEFAULT_NULL_TYPE = exp.DataType.Type.BIGINT
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
@@ -602,12 +603,6 @@ class BigQuery(Dialect):
             "EDIT_DISTANCE": _build_levenshtein,
             "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
-            "GREATEST": lambda args: exp.Greatest(
-                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
-            ),
-            "LEAST": lambda args: exp.Least(
-                this=seq_get(args, 0), expressions=args[1:], null_if_any_null=True
-            ),
             "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
             "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
             "JSON_EXTRACT_STRING_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),

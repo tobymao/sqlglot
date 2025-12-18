@@ -239,8 +239,16 @@ class Parser(metaclass=_Parser):
             is_string=dialect.UUID_IS_STRING_TYPE or None
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
-        "GREATEST": lambda args: exp.Greatest(this=seq_get(args, 0), expressions=args[1:]),
-        "LEAST": lambda args: exp.Least(this=seq_get(args, 0), expressions=args[1:]),
+        "GREATEST": lambda args, dialect: exp.Greatest(
+            this=seq_get(args, 0),
+            expressions=args[1:],
+            ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
+        ),
+        "LEAST": lambda args, dialect: exp.Least(
+            this=seq_get(args, 0),
+            expressions=args[1:],
+            ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
+        ),
         "HEX": build_hex,
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),

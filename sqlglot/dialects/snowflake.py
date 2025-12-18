@@ -629,6 +629,7 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
+    LEAST_GREATEST_IGNORES_NULLS = False
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
@@ -762,6 +763,12 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0),
                 expression=dialect.to_json_path(seq_get(args, 1)),
                 requires_json=True,
+            ),
+            "GREATEST_IGNORE_NULLS": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
+            ),
+            "LEAST_IGNORE_NULLS": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
@@ -1711,6 +1718,14 @@ class Snowflake(Dialect):
                 return self.func("LN", expression.this)
 
             return super().log_sql(expression)
+
+        def greatest_sql(self, expression: exp.Greatest) -> str:
+            name = "GREATEST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "GREATEST"
+            return self.func(name, expression.this, *expression.expressions)
+
+        def least_sql(self, expression: exp.Least) -> str:
+            name = "LEAST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "LEAST"
+            return self.func(name, expression.this, *expression.expressions)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             unnest_alias = expression.args.get("alias")

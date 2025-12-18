@@ -701,6 +701,11 @@ class Snowflake(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ADD_MONTHS": lambda args: exp.AddMonths(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                preserve_end_of_month=True,
+            ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),

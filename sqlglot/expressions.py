@@ -7528,7 +7528,7 @@ class Monthname(Func):
 
 
 class AddMonths(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "preserve_end_of_month": False}
 
 
 class Nvl2(Func):

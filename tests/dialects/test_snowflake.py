@@ -332,7 +332,13 @@ class TestSnowflake(Validator):
         self.validate_identity("TRY_TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_BINARY('48656C6C6F')")
         self.validate_identity("TRY_TO_BINARY('48656C6C6F', 'HEX')")
-        self.validate_identity("TRY_TO_BOOLEAN('true')")
+        self.validate_all(
+            "TRY_TO_BOOLEAN('true')",
+            write={
+                "snowflake": "TRY_TO_BOOLEAN('true')",
+                "duckdb": "CASE WHEN UPPER(CAST('true' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('true' AS TEXT)) = 'OFF' THEN FALSE ELSE TRY_CAST('true' AS BOOLEAN) END",
+            },
+        )
         self.validate_all(
             "TRY_TO_DATE('2024-01-31')",
             write={
@@ -1009,7 +1015,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT To_BOOLEAN('T')",
             write={
-                "duckdb": "SELECT CASE WHEN ISNAN(TRY_CAST('T' AS REAL)) OR ISINF(TRY_CAST('T' AS REAL)) THEN ERROR('TO_BOOLEAN: Non-numeric values NaN and INF are not supported') WHEN UPPER(CAST('T' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('T' AS TEXT)) = 'OFF' THEN FALSE ELSE CAST('T' AS BOOLEAN) END",
+                "duckdb": "SELECT CASE WHEN UPPER(CAST('T' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('T' AS TEXT)) = 'OFF' THEN FALSE WHEN ISNAN(TRY_CAST('T' AS REAL)) OR ISINF(TRY_CAST('T' AS REAL)) THEN ERROR('TO_BOOLEAN: Non-numeric values NaN and INF are not supported') ELSE CAST('T' AS BOOLEAN) END",
             },
         )
         self.validate_all(

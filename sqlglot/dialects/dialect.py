@@ -741,6 +741,13 @@ class Dialect(metaclass=_Dialect):
     For example, in BigQuery the default type of the NULL value is INT64.
     """
 
+    LEAST_GREATEST_IGNORES_NULLS = True
+    """
+    Whether LEAST/GREATEST functions ignore NULL values, e.g:
+    - BigQuery, Snowflake, MySQL, Presto/Trino: LEAST(1, NULL, 2) -> NULL
+    - Spark, Postgres, DuckDB, TSQL: LEAST(1, NULL, 2) -> 1
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

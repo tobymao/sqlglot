@@ -619,6 +619,7 @@ class Snowflake(Dialect):
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
+    LEAST_GREATEST_IGNORES_NULLS = False
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
@@ -747,14 +748,8 @@ class Snowflake(Dialect):
                 expression=dialect.to_json_path(seq_get(args, 1)),
                 requires_json=True,
             ),
-            "GREATEST": lambda args: exp.Greatest(
-                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=False
-            ),
             "GREATEST_IGNORE_NULLS": lambda args: exp.Greatest(
                 this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
-            ),
-            "LEAST": lambda args: exp.Least(
-                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=False
             ),
             "LEAST_IGNORE_NULLS": lambda args: exp.Least(
                 this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
@@ -1704,16 +1699,12 @@ class Snowflake(Dialect):
             return super().log_sql(expression)
 
         def greatest_sql(self, expression: exp.Greatest) -> str:
-            args = [expression.this] + expression.expressions
-            if expression.args.get("ignore_nulls"):
-                return self.func("GREATEST_IGNORE_NULLS", *args)
-            return self.func("GREATEST", *args)
+            name = "GREATEST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "GREATEST"
+            return self.func(name, expression.this, *expression.expressions)
 
         def least_sql(self, expression: exp.Least) -> str:
-            args = [expression.this] + expression.expressions
-            if expression.args.get("ignore_nulls"):
-                return self.func("LEAST_IGNORE_NULLS", *args)
-            return self.func("LEAST", *args)
+            name = "LEAST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "LEAST"
+            return self.func(name, expression.this, *expression.expressions)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             unnest_alias = expression.args.get("alias")

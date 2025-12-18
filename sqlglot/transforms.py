@@ -533,9 +533,7 @@ def explode_projection_to_unnest(
                     )
 
             if arrays:
-                end: exp.Condition = exp.Greatest(
-                    this=arrays[0], expressions=arrays[1:], ignore_nulls=False
-                )
+                end: exp.Condition = exp.Greatest(this=arrays[0], expressions=arrays[1:])
 
                 if index_offset != 1:
                     end = end - (1 - index_offset)

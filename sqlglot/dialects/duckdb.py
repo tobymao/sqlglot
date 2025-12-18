@@ -1472,15 +1472,15 @@ class DuckDB(Dialect):
             if expression.args.get("ignore_nulls"):
                 # DuckDB/PostgreSQL behavior: use native GREATEST/LEAST (ignores NULLs)
                 return self.sql(fallback_sql)
-            else:
-                # return NULL if any argument is NULL
-                case_expr = exp.case().when(
-                    exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
-                    exp.null(),
-                    copy=False,
-                )
-                case_expr.set("default", fallback_sql)
-                return self.sql(case_expr)
+
+            # return NULL if any argument is NULL
+            case_expr = exp.case().when(
+                exp.or_(*[arg.is_(exp.null()) for arg in all_args], copy=False),
+                exp.null(),
+                copy=False,
+            )
+            case_expr.set("default", fallback_sql)
+            return self.sql(case_expr)
 
         def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
             return self._greatest_least_sql(expression)

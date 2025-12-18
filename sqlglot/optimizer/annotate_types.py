@@ -403,7 +403,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     if expr.table in selects and expr.name in selects[expr.table]:
                         self._set_type(expr, selects[expr.table][expr.name])
                     elif isinstance(source.expression, exp.Unnest):
-                        self._set_type(expr, source.expression.type)
+                        field_type = self._get_struct_field_type(source.expression.type, expr.name)
+                        self._set_type(
+                            expr, field_type or source.expression.type or exp.DataType.Type.UNKNOWN
+                        )
                     else:
                         self._set_type(expr, exp.DataType.Type.UNKNOWN)
                 else:
@@ -412,6 +415,21 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if expr.type and expr.type.args.get("nullable") is False:
                     expr.meta["nonnull"] = True
                 continue
+
+            # Handle unqualified columns from UNNEST with STRUCT type
+            if scope and isinstance(expr, exp.Column) and not expr.table:
+                for _, source in scope.sources.items():
+                    if isinstance(source, Scope) and isinstance(source.expression, exp.Unnest):
+                        field_type = self._get_struct_field_type(source.expression.type, expr.name)
+                        if field_type:
+                            self._set_type(expr, field_type)
+                            if expr.type and expr.type.args.get("nullable") is False:
+                                expr.meta["nonnull"] = True
+                            break
+
+                # If we set a type, continue to next expression
+                if id(expr) in self._visited:
+                    continue
 
             spec = self.expression_metadata.get(expr.__class__)
 
@@ -659,15 +677,36 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
+    def _get_struct_field_type(
+        self, struct_type: exp.DataType, field_name: str
+    ) -> t.Optional[exp.DataType | exp.DataType.Type]:
+        """
+        Extracts the type of a named field from a STRUCT type.
+
+        Args:
+            struct_type: The STRUCT DataType to search
+            field_name: The name of the field to find
+
+        Returns:
+            The field's type if found, otherwise None
+        """
+        if not struct_type or not struct_type.is_type(exp.DataType.Type.STRUCT):
+            return None
+
+        for col_def in struct_type.expressions:
+            if isinstance(col_def, exp.ColumnDef) and col_def.name == field_name:
+                return col_def.kind
+
+        return None
+
     def _annotate_dot(self, expression: exp.Dot) -> exp.Dot:
         self._set_type(expression, None)
         this_type = expression.this.type
 
         if this_type and this_type.is_type(exp.DataType.Type.STRUCT):
-            for e in this_type.expressions:
-                if e.name == expression.expression.name:
-                    self._set_type(expression, e.kind)
-                    break
+            field_type = self._get_struct_field_type(this_type, expression.expression.name)
+            if field_type:
+                self._set_type(expression, field_type)
 
         return expression
 

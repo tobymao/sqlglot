@@ -143,5 +143,29 @@ ARRAY<INT64>;
 ARRAY(SELECT 1 UNION ALL SELECT 2.5);
 ARRAY<FLOAT64>;
 
+# dialect: bigquery
+(SELECT a FROM UNNEST([STRUCT(1 AS a, 'x' AS b)]));
+INT64;
+
+# dialect: bigquery
+(SELECT b FROM UNNEST([STRUCT(1 AS a, 'x' AS b)]));
+STRING;
+
+# dialect: bigquery
+(SELECT a FROM UNNEST(ARRAY<STRUCT<a INT64, b STRING>>[STRUCT(1, 'x')]));
+INT64;
+
+# dialect: bigquery
+(SELECT b FROM UNNEST(ARRAY<STRUCT<a INT64, b STRING>>[STRUCT(1, 'x')]));
+STRING;
+
+# dialect: bigquery
+(SELECT c FROM UNNEST([STRUCT(1 AS a, 2.5 AS b, 'test' AS c)]));
+STRING;
+
+# dialect: bigquery
+(SELECT val FROM UNNEST([STRUCT(10.5 AS val)]));
+FLOAT64;
+
 1 + (SELECT 2.5 AS c);
 DOUBLE;

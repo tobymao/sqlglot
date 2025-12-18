@@ -1356,9 +1356,15 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT DATE(DATETIME '2016-12-25 23:59:59')"},
         )
         self.validate_all(
-            "SELECT STRPTIME(STRFTIME(CAST(CAST('2016-12-25' AS TIMESTAMPTZ) AS DATE), '%d/%m/%Y') || ' ' || 'America/Los_Angeles', '%d/%m/%Y %Z')",
+            "SELECT CAST(CAST(CAST('2016-12-25' AS TIMESTAMPTZ) AS TIMESTAMP) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles' AS DATE)",
             read={
                 "bigquery": "SELECT DATE(TIMESTAMP '2016-12-25', 'America/Los_Angeles')",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(CAST('2024-01-15 23:30:00' AS TIMESTAMP) AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin' AS DATE)",
+            read={
+                "bigquery": "SELECT DATE('2024-01-15 23:30:00', 'Europe/Berlin')",
             },
         )
         self.validate_all(

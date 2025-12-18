@@ -135,17 +135,20 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
-    result = f"CAST({self.sql(expression, 'this')} AS DATE)"
+    this = expression.this
     zone = self.sql(expression, "zone")
 
     if zone:
-        date_str = self.func("STRFTIME", result, "'%d/%m/%Y'")
-        date_str = f"{date_str} || ' ' || {zone}"
+        # BigQuery considers "this" at UTC, converts it to the specified
+        # time zone and then keeps only the DATE part
+        # To micmic that, we:
+        #   (1) Cast to TIMESTAMP to remove DuckDB's local tz
+        #   (2) Apply consecutive AtTimeZone calls for UTC -> zone conversion
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+        at_utc = exp.AtTimeZone(this=this, zone=exp.Literal.string("UTC"))
+        this = exp.AtTimeZone(this=at_utc, zone=zone)
 
-        # This will create a TIMESTAMP with time zone information
-        result = self.func("STRPTIME", date_str, "'%d/%m/%Y %Z'")
-
-    return result
+    return self.sql(exp.cast(expression=this, to=exp.DataType.Type.DATE))
 
 
 # BigQuery -> DuckDB conversion for the TIME_DIFF function

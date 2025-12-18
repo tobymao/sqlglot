@@ -989,6 +989,9 @@ class TSQL(Dialect):
 
             return expression
 
+        def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+            return self._parse_ordered()
+
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
         QUERY_HINTS = False

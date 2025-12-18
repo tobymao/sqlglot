@@ -1003,6 +1003,13 @@ FROM json_data, field_ids""",
                 "redshift": "SELECT TO_CHAR(foo, bar)",
             },
         )
+        self.validate_all(
+            "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+            read={
+                "sqlite": "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+                "postgres": "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+            },
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

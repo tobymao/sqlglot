@@ -1164,8 +1164,16 @@ class DuckDB(Dialect):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("ISODOW"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
-            exp.Dayname: lambda self, e: self.func("STRFTIME", e.this, exp.Literal.string("%a")),
-            exp.Monthname: lambda self, e: self.func("STRFTIME", e.this, exp.Literal.string("%b")),
+            exp.Dayname: lambda self, e: (
+                self.func("STRFTIME", e.this, exp.Literal.string("%a"))
+                if e.args.get("name_format")
+                else self.func("DAYNAME", e.this)
+            ),
+            exp.Monthname: lambda self, e: (
+                self.func("STRFTIME", e.this, exp.Literal.string("%b"))
+                if e.args.get("name_format")
+                else self.func("MONTHNAME", e.this)
+            ),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
             exp.DateAdd: date_delta_to_binary_interval_op(),

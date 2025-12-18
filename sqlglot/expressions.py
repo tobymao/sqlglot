@@ -6564,7 +6564,7 @@ class DayOfYear(Func):
 
 
 class Dayname(Func):
-    pass
+    arg_types = {"this": True, "name_format": False}
 
 
 class ToDays(Func):
@@ -7518,7 +7518,7 @@ class Month(Func):
 
 
 class Monthname(Func):
-    pass
+    arg_types = {"this": True, "name_format": False}
 
 
 class AddMonths(Func):

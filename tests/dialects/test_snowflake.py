@@ -304,6 +304,12 @@ class TestSnowflake(Validator):
         self.validate_identity("TRY_TO_BINARY('48656C6C6F', 'HEX')")
         self.validate_identity("TRY_TO_BOOLEAN('true')")
         self.validate_all(
+            "TRY_TO_BOOLEAN('true')",
+            write={
+                "duckdb": "CASE WHEN UPPER(CAST('true' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('true' AS TEXT)) = 'OFF' THEN FALSE ELSE TRY_CAST('true' AS BOOLEAN) END",
+            },
+        )
+        self.validate_all(
             "TRY_TO_DATE('2024-01-31')",
             write={
                 "snowflake": "TRY_CAST('2024-01-31' AS DATE)",

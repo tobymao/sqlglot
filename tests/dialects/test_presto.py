@@ -495,6 +495,18 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT WEEK_OF_YEAR(y)",
+            read={
+              "presto": "SELECT WEEK(y)",
+            },
+            write={
+              "spark": "SELECT WEEKOFYEAR(y)",
+              "presto": "SELECT WEEK_OF_YEAR(y)",
+              "trino": "SELECT WEEK_OF_YEAR(y)",
+            },
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE test WITH (FORMAT = 'PARQUET') AS SELECT 1",

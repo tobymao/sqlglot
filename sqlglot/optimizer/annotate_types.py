@@ -601,7 +601,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 expressions.append(arg)
 
-        if self.dialect.NON_LITERAL_TYPE_PRECEDENCE:
+        if self.dialect.PRIORITIZE_NON_LITERAL_TYPES:
             literals = []
             non_literals = []
             for expr in expressions:
@@ -612,11 +612,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             if literals and non_literals:
                 literal_type = self._maybe_coerce_expressions(literals)
+                non_literal_type = self._maybe_coerce_expressions(non_literals)
+
                 literal_this_type = (
                     literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
                 )
-
-                non_literal_type = self._maybe_coerce_expressions(non_literals)
                 non_literal_this_type = (
                     non_literal_type.this
                     if isinstance(non_literal_type, exp.DataType)
@@ -630,13 +630,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     literal_this_type in exp.DataType.REAL_TYPES
                     and non_literal_this_type in exp.DataType.REAL_TYPES
                 ):
-                    return self._set_type(expression, non_literal_type)
+                    expr_type = non_literal_type
+                else:
+                    expr_type = self._maybe_coerce(non_literal_type, literal_type)
+            else:
+                expr_type = None
+        else:
+            expr_type = None
 
-                return self._set_type(
-                    expression, self._maybe_coerce(non_literal_type, literal_type)
-                )
-
-        self._set_type(expression, self._maybe_coerce_expressions(expressions))
+        self._set_type(expression, expr_type or self._maybe_coerce_expressions(expressions))
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

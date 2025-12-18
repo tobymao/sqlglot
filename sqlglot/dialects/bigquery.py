@@ -391,7 +391,7 @@ class BigQuery(Dialect):
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
     LEAST_GREATEST_IGNORES_NULLS = False
     DEFAULT_NULL_TYPE = exp.DataType.Type.BIGINT
-    NON_LITERAL_TYPE_PRECEDENCE = True
+    PRIORITIZE_NON_LITERAL_TYPES = True
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'

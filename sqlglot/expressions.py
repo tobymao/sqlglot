@@ -6563,6 +6563,10 @@ class DayOfYear(Func):
     _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
+class Dayname(Func):
+    pass
+
+
 class ToDays(Func):
     pass
 

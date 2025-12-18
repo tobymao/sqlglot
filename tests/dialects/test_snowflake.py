@@ -1085,6 +1085,13 @@ class TestSnowflake(Validator):
                 "mysql": "SELECT MIN(c1), MIN(c2) FROM test",
             },
         )
+        self.validate_all(
+            "SELECT BOOLXOR_AGG(c1) FROM test",
+            write={
+                "duckdb": "SELECT COUNT_IF(c1) = 1 FROM test",
+                "snowflake": "SELECT BOOLXOR_AGG(c1) FROM test",
+            },
+        )
         for suffix in (
             "",
             " OVER ()",

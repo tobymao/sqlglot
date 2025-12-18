@@ -272,7 +272,11 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     exp.Array: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions", array=True)},
     exp.ArrayAgg: {"annotator": lambda self, e: self._annotate_by_args(e, "this", array=True)},
     exp.Bracket: {"annotator": lambda self, e: self._annotate_bracket(e)},
-    exp.Case: {"annotator": lambda self, e: self._annotate_by_args(e, "default", "ifs")},
+    exp.Case: {
+        "annotator": lambda self, e: self._annotate_by_args(
+            e, *[if_expr.args.get("true") for if_expr in e.args.get("ifs")], "default"
+        )
+    },
     exp.Count: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.Type.BIGINT if e.args.get("big_int") else exp.DataType.Type.INT

@@ -569,31 +569,74 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     @t.no_type_check
+    def _maybe_coerce_expressions(
+        self, expressions: t.List[exp.Expression]
+    ) -> exp.DataType | exp.DataType.Type | None:
+        result_type = None
+        for expr in expressions:
+            expr_type = expr.type
+
+            # Stop at the first nested data type
+            if expr_type.args.get("nested"):
+                return expr_type
+
+            if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
+                result_type = self._maybe_coerce(result_type or expr_type, expr_type)
+
+        return result_type
+
+    @t.no_type_check
     def _annotate_by_args(
         self,
         expression: E,
-        *args: str,
+        *args: str | exp.Expression,
         promote: bool = False,
         array: bool = False,
     ) -> E:
         expressions: t.List[exp.Expression] = []
         for arg in args:
-            arg_expr = expression.args.get(arg)
-            expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+            if isinstance(arg, str):
+                arg_expr = expression.args.get(arg)
+                expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+            else:
+                expressions.append(arg)
 
-        last_datatype = None
-        for expr in expressions:
-            expr_type = expr.type
+        if self.dialect.NON_LITERAL_TYPE_PRECEDENCE:
+            literals = []
+            non_literals = []
+            for expr in expressions:
+                if isinstance(expr, exp.Literal):
+                    literals.append(expr)
+                else:
+                    non_literals.append(expr)
 
-            # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
-            if expr_type.args.get("nested"):
-                last_datatype = expr_type
-                break
+            if literals and non_literals:
+                literal_type = self._maybe_coerce_expressions(literals)
+                literal_this_type = (
+                    literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
+                )
 
-            if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
+                non_literal_type = self._maybe_coerce_expressions(non_literals)
+                non_literal_this_type = (
+                    non_literal_type.this
+                    if isinstance(non_literal_type, exp.DataType)
+                    else non_literal_type
+                )
 
-        self._set_type(expression, last_datatype)
+                if (
+                    literal_this_type in exp.DataType.INTEGER_TYPES
+                    and non_literal_this_type in exp.DataType.INTEGER_TYPES
+                ) or (
+                    literal_this_type in exp.DataType.REAL_TYPES
+                    and non_literal_this_type in exp.DataType.REAL_TYPES
+                ):
+                    return self._set_type(expression, non_literal_type)
+
+                return self._set_type(
+                    expression, self._maybe_coerce(non_literal_type, literal_type)
+                )
+
+        self._set_type(expression, self._maybe_coerce_expressions(expressions))
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

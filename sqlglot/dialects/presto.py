@@ -267,6 +267,7 @@ class Presto(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
     SUPPORTS_VALUES_DEFAULT = False
+    LEAST_GREATEST_IGNORES_NULLS = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 

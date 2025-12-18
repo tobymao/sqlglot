@@ -111,12 +111,16 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
             exp.case()
             # Handle 'on' -> TRUE (case insensitive)
             .when(
-                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
+                    exp.Literal.string("ON")
+                ),
                 exp.true(),
             )
             # Handle 'off' -> FALSE (case insensitive)
             .when(
-                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
+                    exp.Literal.string("OFF")
+                ),
                 exp.false(),
             )
             .else_(exp.func("TRY_CAST", arg, exp.DataType.build("BOOLEAN")))
@@ -136,17 +140,23 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
                 nan_inf_check,
                 exp.func(
                     "ERROR",
-                    exp.Literal.string("TO_BOOLEAN: Non-numeric values NaN and INF are not supported"),
+                    exp.Literal.string(
+                        "TO_BOOLEAN: Non-numeric values NaN and INF are not supported"
+                    ),
                 ),
             )
             # Handle 'on' -> TRUE (case insensitive)
             .when(
-                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
+                    exp.Literal.string("ON")
+                ),
                 exp.true(),
             )
             # Handle 'off' -> FALSE (case insensitive)
             .when(
-                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+                exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(
+                    exp.Literal.string("OFF")
+                ),
                 exp.false(),
             )
             .else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))

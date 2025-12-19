@@ -716,7 +716,6 @@ class Tokenizer(metaclass=_Tokenizer):
         HINT_START: TokenType.HINT,
         "&<": TokenType.AMP_LT,
         "&>": TokenType.AMP_GT,
-        "@@": TokenType.DAT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "?::": TokenType.QDCOLON,

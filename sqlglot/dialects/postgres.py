@@ -353,6 +353,7 @@ class Postgres(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
+            "@@": TokenType.DAT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "?&": TokenType.QMARK_AMP,

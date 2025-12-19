@@ -908,9 +908,6 @@ class Parser(metaclass=_Parser):
         TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
         TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt, this=self._parse_unary()),
         TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
-        TokenType.DAT: lambda self: self.expression(
-            exp.SessionParameter, this=self._parse_id_var()
-        ),
     }
 
     STRING_PARSERS = {

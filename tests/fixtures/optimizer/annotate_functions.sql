@@ -2953,6 +2953,34 @@ LTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+MAP_CAT(CAST(col AS MAP(VARCHAR, VARCHAR)), CAST(col AS MAP(VARCHAR, VARCHAR)));
+MAP;
+
+# dialect: snowflake
+MAP_CONTAINS_KEY('k1', CAST(col AS MAP(VARCHAR, VARCHAR)));
+BOOLEAN;
+
+# dialect: snowflake
+MAP_DELETE(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b');
+MAP;
+
+# dialect: snowflake
+MAP_INSERT(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b', '2');
+MAP;
+
+# dialect: snowflake
+MAP_KEYS(CAST(col AS MAP(VARCHAR, VARCHAR)));
+ARRAY;
+
+# dialect: snowflake
+MAP_PICK(CAST(col AS MAP(VARCHAR, VARCHAR)), 'a', 'c');
+MAP;
+
+# dialect: snowflake
+MAP_SIZE(CAST(col AS MAP(VARCHAR, VARCHAR)));
+INT;
+
+# dialect: snowflake
 MINUTE(CAST('08:50:57' AS TIME));
 INT;
 

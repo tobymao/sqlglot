@@ -591,6 +591,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     ) -> E:
         literal_type = None
         non_literal_type = None
+        nested_type = None
 
         for arg in args:
             if isinstance(arg, str):
@@ -603,7 +604,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
                 # Stop at the first nested data type
                 if expr_type.args.get("nested"):
-                    self._set_type(expression, expr_type)
+                    nested_type = expr_type
                     break
 
                 if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
@@ -614,12 +615,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                             non_literal_type or expr_type, expr_type
                         )
 
-            current_type = expression.type
-            if current_type and current_type.args.get("nested"):
+            if nested_type:
                 break
 
         result_type = None
-        if literal_type and non_literal_type:
+        if nested_type:
+            result_type = nested_type
+        elif literal_type and non_literal_type:
             if self.dialect.PRIORITIZE_NON_LITERAL_TYPES:
                 literal_this_type = (
                     literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
@@ -638,9 +640,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 ):
                     result_type = non_literal_type
         else:
-            result_type = (
-                literal_type or non_literal_type or expression.type or exp.DataType.Type.UNKNOWN
-            )
+            result_type = literal_type or non_literal_type or exp.DataType.Type.UNKNOWN
 
         self._set_type(
             expression, result_type or self._maybe_coerce(non_literal_type, literal_type)

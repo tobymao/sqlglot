@@ -568,19 +568,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    def _maybe_wrap_with_array(self, expression: E, array: bool = False) -> E:
-        if array:
-            self._set_type(
-                expression,
-                exp.DataType(
-                    this=exp.DataType.Type.ARRAY,
-                    expressions=[expression.type],
-                    nested=True,
-                ),
-            )
-
-        return expression
-
     @t.no_type_check
     def _annotate_by_args(
         self,

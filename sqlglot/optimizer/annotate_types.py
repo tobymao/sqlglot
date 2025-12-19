@@ -614,33 +614,31 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                             non_literal_type or expr_type, expr_type
                         )
 
-        prioritized_type = None
-        if self.dialect.PRIORITIZE_NON_LITERAL_TYPES and literal_type and non_literal_type:
-            literal_this_type = (
-                literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
-            )
-            non_literal_this_type = (
-                non_literal_type.this
-                if isinstance(non_literal_type, exp.DataType)
-                else non_literal_type
-            )
+        result_type = None
+        if literal_type and non_literal_type:
+            if self.dialect.PRIORITIZE_NON_LITERAL_TYPES:
+                literal_this_type = (
+                    literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
+                )
+                non_literal_this_type = (
+                    non_literal_type.this
+                    if isinstance(non_literal_type, exp.DataType)
+                    else non_literal_type
+                )
+                if (
+                    literal_this_type in exp.DataType.INTEGER_TYPES
+                    and non_literal_this_type in exp.DataType.INTEGER_TYPES
+                ) or (
+                    literal_this_type in exp.DataType.REAL_TYPES
+                    and non_literal_this_type in exp.DataType.REAL_TYPES
+                ):
+                    result_type = non_literal_type
+        elif literal_type:
+            result_type = literal_type
+        else:
+            result_type = non_literal_type
 
-            if (
-                literal_this_type in exp.DataType.INTEGER_TYPES
-                and non_literal_this_type in exp.DataType.INTEGER_TYPES
-            ) or (
-                literal_this_type in exp.DataType.REAL_TYPES
-                and non_literal_this_type in exp.DataType.REAL_TYPES
-            ):
-                prioritized_type = non_literal_type
-
-        self._set_type(
-            expression,
-            prioritized_type
-            or self._maybe_coerce(
-                non_literal_type or literal_type, literal_type or non_literal_type
-            ),
-        )
+        self._set_type(expression, result_type or self._maybe_coerce(non_literal_type, literal_type))
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

@@ -369,6 +369,8 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("DAYNAME(x)")
+        self.validate_identity("MONTHNAME(x)")
         self.validate_identity(
             "SELECT LIST_TRANSFORM([5, NULL, 6], (x, y) -> COALESCE(x, y, 0) + 1)"
         )

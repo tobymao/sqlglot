@@ -750,7 +750,7 @@ class Snowflake(Dialect):
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,
-            "DAYNAME": lambda args: exp.Dayname(this=seq_get(args, 0), name_format=True),
+            "DAYNAME": lambda args: exp.Dayname(this=seq_get(args, 0), abbreviated=True),
             "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,
             "DIV0": _build_if_from_div0,
             "DIV0NULL": _build_if_from_div0null,
@@ -777,7 +777,7 @@ class Snowflake(Dialect):
             "MD5_BINARY": exp.MD5Digest.from_arg_list,
             "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
             "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
-            "MONTHNAME": lambda args: exp.Monthname(this=seq_get(args, 0), name_format=True),
+            "MONTHNAME": lambda args: exp.Monthname(this=seq_get(args, 0), abbreviated=True),
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
             ),

@@ -619,6 +619,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 break
 
         result_type = None
+
         if nested_type:
             result_type = nested_type
         elif literal_type and non_literal_type:

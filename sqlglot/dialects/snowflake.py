@@ -135,7 +135,10 @@ def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
 
 def _build_datediff(args: t.List) -> exp.DateDiff:
     return exp.DateDiff(
-        this=seq_get(args, 2), expression=seq_get(args, 1), unit=map_date_part(seq_get(args, 0))
+        this=seq_get(args, 2),
+        expression=seq_get(args, 1),
+        unit=map_date_part(seq_get(args, 0)),
+        date_part_boundary=True,
     )
 
 

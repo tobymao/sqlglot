@@ -2396,6 +2396,45 @@ class TestSnowflake(Validator):
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
         )
 
+        # Test DATEDIFF with WEEK unit - week boundary crossing
+        self.validate_all(
+            "DATEDIFF(WEEK, '2024-12-13', '2024-12-17')",
+            write={
+                "duckdb": "DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-12-13' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-12-17' AS DATE)))",
+                "snowflake": "DATEDIFF(WEEK, '2024-12-13', '2024-12-17')",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(WEEK, '2024-12-15', '2024-12-16')",
+            write={
+                "duckdb": "DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-12-15' AS DATE)), DATE_TRUNC('WEEK', CAST('2024-12-16' AS DATE)))",
+                "snowflake": "DATEDIFF(WEEK, '2024-12-15', '2024-12-16')",
+            },
+        )
+
+        # Test DATEDIFF with other date parts - should not use DATE_TRUNC
+        self.validate_all(
+            "DATEDIFF(YEAR, '2020-01-15', '2023-06-20')",
+            write={
+                "duckdb": "DATE_DIFF('YEAR', CAST('2020-01-15' AS DATE), CAST('2023-06-20' AS DATE))",
+                "snowflake": "DATEDIFF(YEAR, '2020-01-15', '2023-06-20')",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(MONTH, '2020-01-15', '2023-06-20')",
+            write={
+                "duckdb": "DATE_DIFF('MONTH', CAST('2020-01-15' AS DATE), CAST('2023-06-20' AS DATE))",
+                "snowflake": "DATEDIFF(MONTH, '2020-01-15', '2023-06-20')",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(QUARTER, '2020-01-15', '2023-06-20')",
+            write={
+                "duckdb": "DATE_DIFF('QUARTER', CAST('2020-01-15' AS DATE), CAST('2023-06-20' AS DATE))",
+                "snowflake": "DATEDIFF(QUARTER, '2020-01-15', '2023-06-20')",
+            },
+        )
+
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")

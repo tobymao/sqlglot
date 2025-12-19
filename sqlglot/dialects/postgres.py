@@ -475,6 +475,9 @@ class Postgres(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.DAT: lambda self, this: self.expression(
+                exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
+            ),
         }
 
         STATEMENT_PARSERS = {

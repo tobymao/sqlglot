@@ -985,7 +985,6 @@ class Parser(metaclass=_Parser):
         TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
         TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
-        TokenType.DAT: binary_range_parser(exp.Match),
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {

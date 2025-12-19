@@ -369,6 +369,10 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity(
+            "SELECT tbl.x*1e4+tbl.y FROM tbl",
+            "SELECT tbl.x * 1e4 + tbl.y FROM tbl",
+        )
         self.validate_identity("DAYNAME(x)")
         self.validate_identity("MONTHNAME(x)")
         self.validate_identity(

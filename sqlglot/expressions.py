@@ -7450,7 +7450,7 @@ class MapContainsKey(Func):
 
 
 class MapDelete(Func):
-    arg_types = {"this": True, "key": True}
+    arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 

@@ -1187,12 +1187,12 @@ class DuckDB(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Dayname: lambda self, e: (
                 self.func("STRFTIME", e.this, exp.Literal.string("%a"))
-                if e.args.get("name_format")
+                if e.args.get("abbreviated")
                 else self.func("DAYNAME", e.this)
             ),
             exp.Monthname: lambda self, e: (
                 self.func("STRFTIME", e.this, exp.Literal.string("%b"))
-                if e.args.get("name_format")
+                if e.args.get("abbreviated")
                 else self.func("MONTHNAME", e.this)
             ),
             exp.DataType: _datatype_sql,

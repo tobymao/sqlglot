@@ -38,6 +38,7 @@ class TestPostgres(Validator):
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
+        self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")

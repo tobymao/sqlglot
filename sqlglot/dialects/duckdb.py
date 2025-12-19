@@ -433,6 +433,12 @@ def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
     return arg
 
 
+def _cast_to_boolean(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    if arg and not arg.is_type(exp.DataType.Type.BOOLEAN):
+        return exp.cast(arg, exp.DataType.Type.BOOLEAN)
+    return arg
+
+
 def _is_binary(arg: exp.Expression) -> bool:
     return arg.is_type(
         exp.DataType.Type.BINARY,
@@ -605,42 +611,19 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
 
 
-def _logical_and_sql(self: DuckDB.Generator, expression: exp.LogicalAnd) -> str:
-    """
-    Generate BOOL_AND SQL with cast to BOOLEAN if needed.
-
-    DuckDB's BOOL_AND strictly requires boolean inputs, so cast if not already boolean.
-    """
-    this = expression.this
-    if not this.is_type(exp.DataType.Type.BOOLEAN):
-        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
-    return self.func("BOOL_AND", this)
-
-
-def _logical_or_sql(self: DuckDB.Generator, expression: exp.LogicalOr) -> str:
-    """
-    Generate BOOL_OR SQL with cast to BOOLEAN if needed.
-
-    DuckDB's BOOL_OR strictly requires boolean inputs, so cast if not already boolean.
-    """
-    this = expression.this
-    if not this.is_type(exp.DataType.Type.BOOLEAN):
-        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
-    return self.func("BOOL_OR", this)
-
-
 def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
     """
-    Generate COUNT_IF SQL for BOOLXOR_AGG with cast to BOOLEAN if needed.
+    Snowflake's `BOOLXOR_AGG(col)` returns TRUE if exactly one input in `col` is TRUE, FALSE otherwise;
+    Since DuckDB does not have a mapping function, we mimic the behavior by generating `COUNT_IF(col) = 1`.
 
     DuckDB's COUNT_IF strictly requires boolean inputs, so cast if not already boolean.
-    Snowflake's BOOLXOR_AGG returns TRUE if exactly one input is TRUE, FALSE otherwise.
     """
-    this = expression.this
-    if not this.is_type(exp.DataType.Type.BOOLEAN):
-        this = exp.cast(this, exp.DataType.Type.BOOLEAN)
-    # Returns TRUE if exactly one value is true (count = 1), FALSE otherwise
-    return self.sql(exp.EQ(this=exp.CountIf(this=this), expression=exp.Literal.number(1)))
+    return self.sql(
+        exp.EQ(
+            this=exp.CountIf(this=_cast_to_boolean(expression.this)),
+            expression=exp.Literal.number(1),
+        )
+    )
 
 
 def _scale_rounding_sql(
@@ -1226,8 +1209,8 @@ class DuckDB(Dialect):
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
-            exp.LogicalOr: _logical_or_sql,
-            exp.LogicalAnd: _logical_and_sql,
+            exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
+            exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,

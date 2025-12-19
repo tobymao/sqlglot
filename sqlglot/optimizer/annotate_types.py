@@ -633,10 +633,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     and non_literal_this_type in exp.DataType.REAL_TYPES
                 ):
                     result_type = non_literal_type
-        elif literal_type:
-            result_type = literal_type
         else:
-            result_type = non_literal_type
+            result_type = literal_type or non_literal_type
 
         self._set_type(
             expression, result_type or self._maybe_coerce(non_literal_type, literal_type)

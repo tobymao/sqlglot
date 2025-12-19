@@ -6563,6 +6563,10 @@ class DayOfYear(Func):
     _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
+class Dayname(Func):
+    arg_types = {"this": True, "name_format": False}
+
+
 class ToDays(Func):
     pass
 
@@ -7514,7 +7518,7 @@ class Month(Func):
 
 
 class Monthname(Func):
-    pass
+    arg_types = {"this": True, "name_format": False}
 
 
 class AddMonths(Func):

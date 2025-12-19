@@ -7442,7 +7442,7 @@ class MapFromEntries(Func):
 
 
 class MapCat(Func):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expression": True}
 
 
 class MapContainsKey(Func):

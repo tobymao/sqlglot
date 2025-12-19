@@ -187,6 +187,38 @@ FLOAT64;
 CASE WHEN x < y THEN CAST(3.5 AS BIGNUMERIC) WHEN x > y THEN 3/10 ELSE 2 END;
 FLOAT64;
 
+# dialect: snowflake
+BITSHIFTLEFT(255, 4);
+INT;
+
+# dialect: snowflake
+BITSHIFTRIGHT(1024, 2);
+INT;
+
+# dialect: snowflake
+BITSHIFTLEFT(CAST(255 AS BINARY), 4);
+BINARY;
+
+# dialect: snowflake
+BITSHIFTRIGHT(CAST(255 AS BINARY), 4);
+BINARY;
+
+# dialect: snowflake
+BITSHIFTLEFT(X'FF', 4);
+BINARY;
+
+# dialect: snowflake
+BITSHIFTRIGHT(X'FF', 4);
+BINARY;
+
+# dialect: snowflake
+BITOR(BITSHIFTLEFT(5, 16), BITSHIFTLEFT(3, 8));
+INT;
+
+# dialect: snowflake
+BITAND(BITSHIFTLEFT(255, 4), BITSHIFTLEFT(15, 2));
+INT;
+
 # dialect: bigquery
 CAST(1 AS BIGNUMERIC) + 1.5;
 BIGNUMERIC;

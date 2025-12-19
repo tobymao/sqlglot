@@ -769,6 +769,32 @@ def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
     )
 
 
+def _prepare_bitshift_for_duckdb(expression: exp.Expression) -> exp.Expression:
+    """
+    Transform bitwise shift expressions for DuckDB by injecting INT128 casts.
+
+    DuckDB's bitwise shift operators don't work with BLOB/BINARY types, so we cast
+    them to INT128 for integer arithmetic.
+
+    Note: Assumes type annotation has been applied with the source dialect.
+    """
+    # Unwrap BINARY/VARBINARY casts that DuckDB can't handle
+    if isinstance(expression.this, exp.Cast) and _is_binary(expression.this):
+        expression.this.replace(expression.this.this)
+
+    # Check if the input is a BLOB/BINARY type (using is_type) or requires INT128
+    # If so, cast to INT128 for integer arithmetic
+    if _is_binary(expression.this) or expression.args.get("requires_int128"):
+        expression.this.replace(exp.cast(expression.this, exp.DataType.Type.INT128))
+
+    # Wrap in parentheses if parent is a bitwise operator to "fix" DuckDB precedence issue
+    # DuckDB parses: a << b | c << d  as  (a << b | c) << d
+    if isinstance(expression.parent, (exp.BitwiseAnd, exp.BitwiseOr, exp.BitwiseXor)):
+        return exp.paren(expression, copy=False)
+
+    return expression
+
+
 def _scale_rounding_sql(
     self: DuckDB.Generator,
     expression: exp.Expression,
@@ -1358,8 +1384,10 @@ class DuckDB(Dialect):
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
+            exp.BitwiseLeftShift: transforms.preprocess([_prepare_bitshift_for_duckdb]),
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: _bitwise_agg_sql,
+            exp.BitwiseRightShift: transforms.preprocess([_prepare_bitshift_for_duckdb]),
             exp.BitwiseXorAgg: _bitwise_agg_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),

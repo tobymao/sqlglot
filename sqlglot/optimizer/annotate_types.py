@@ -568,22 +568,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    @t.no_type_check
-    def _maybe_coerce_expressions(
-        self, expressions: t.List[exp.Expression]
-    ) -> exp.DataType | exp.DataType.Type | None:
-        result_type = None
-        for expr in expressions:
-            expr_type = expr.type
+    def _maybe_wrap_with_array(self, expression: E, array: bool = False) -> E:
+        if array:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.ARRAY,
+                    expressions=[expression.type],
+                    nested=True,
+                ),
+            )
 
-            # Stop at the first nested data type
-            if expr_type.args.get("nested"):
-                return expr_type
-
-            if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                result_type = self._maybe_coerce(result_type or expr_type, expr_type)
-
-        return result_type
+        return expression
 
     @t.no_type_check
     def _annotate_by_args(
@@ -593,52 +589,58 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         promote: bool = False,
         array: bool = False,
     ) -> E:
-        expressions: t.List[exp.Expression] = []
+        literal_type = None
+        non_literal_type = None
+
         for arg in args:
             if isinstance(arg, str):
-                arg_expr = expression.args.get(arg)
-                expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+                expressions = expression.args.get(arg)
             else:
-                expressions.append(arg)
+                expressions = arg
 
-        if self.dialect.PRIORITIZE_NON_LITERAL_TYPES:
-            literals = []
-            non_literals = []
-            for expr in expressions:
-                if isinstance(expr, exp.Literal):
-                    literals.append(expr)
-                else:
-                    non_literals.append(expr)
+            for expr in ensure_list(expressions):
+                expr_type = expr.type
 
-            if literals and non_literals:
-                literal_type = self._maybe_coerce_expressions(literals)
-                non_literal_type = self._maybe_coerce_expressions(non_literals)
+                # Stop at the first nested data type
+                if expr_type.args.get("nested"):
+                    self._set_type(expression, expr_type)
+                    return self._maybe_wrap_with_array(expression, array=array)
 
-                literal_this_type = (
-                    literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
-                )
-                non_literal_this_type = (
-                    non_literal_type.this
-                    if isinstance(non_literal_type, exp.DataType)
-                    else non_literal_type
-                )
+                if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
+                    if isinstance(expr, exp.Literal):
+                        literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
+                    else:
+                        non_literal_type = self._maybe_coerce(
+                            non_literal_type or expr_type, expr_type
+                        )
 
-                if (
-                    literal_this_type in exp.DataType.INTEGER_TYPES
-                    and non_literal_this_type in exp.DataType.INTEGER_TYPES
-                ) or (
-                    literal_this_type in exp.DataType.REAL_TYPES
-                    and non_literal_this_type in exp.DataType.REAL_TYPES
-                ):
-                    expr_type = non_literal_type
-                else:
-                    expr_type = self._maybe_coerce(non_literal_type, literal_type)
-            else:
-                expr_type = None
-        else:
-            expr_type = None
+        prioritized_type = None
+        if self.dialect.PRIORITIZE_NON_LITERAL_TYPES and literal_type and non_literal_type:
+            literal_this_type = (
+                literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
+            )
+            non_literal_this_type = (
+                non_literal_type.this
+                if isinstance(non_literal_type, exp.DataType)
+                else non_literal_type
+            )
 
-        self._set_type(expression, expr_type or self._maybe_coerce_expressions(expressions))
+            if (
+                literal_this_type in exp.DataType.INTEGER_TYPES
+                and non_literal_this_type in exp.DataType.INTEGER_TYPES
+            ) or (
+                literal_this_type in exp.DataType.REAL_TYPES
+                and non_literal_this_type in exp.DataType.REAL_TYPES
+            ):
+                prioritized_type = non_literal_type
+
+        self._set_type(
+            expression,
+            prioritized_type
+            or self._maybe_coerce(
+                non_literal_type or literal_type, literal_type or non_literal_type
+            ),
+        )
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:
@@ -646,15 +648,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif expression.type.this in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DataType.Type.DOUBLE)
 
-        if array:
-            self._set_type(
-                expression,
-                exp.DataType(
-                    this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
-                ),
-            )
-
-        return expression
+        return self._maybe_wrap_with_array(expression, array=array)
 
     def _annotate_timeunit(
         self, expression: exp.TimeUnit | exp.DateTrunc

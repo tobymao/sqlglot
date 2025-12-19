@@ -604,7 +604,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 # Stop at the first nested data type
                 if expr_type.args.get("nested"):
                     self._set_type(expression, expr_type)
-                    return self._maybe_wrap_with_array(expression, array=array)
+                    break
 
                 if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
                     if isinstance(expr, exp.Literal):
@@ -613,6 +613,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         non_literal_type = self._maybe_coerce(
                             non_literal_type or expr_type, expr_type
                         )
+
+            current_type = expression.type
+            if current_type and current_type.args.get("nested"):
+                break
 
         result_type = None
         if literal_type and non_literal_type:
@@ -634,7 +638,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 ):
                     result_type = non_literal_type
         else:
-            result_type = literal_type or non_literal_type
+            result_type = (
+                literal_type or non_literal_type or expression.type or exp.DataType.Type.UNKNOWN
+            )
 
         self._set_type(
             expression, result_type or self._maybe_coerce(non_literal_type, literal_type)
@@ -646,7 +652,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             elif expression.type.this in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DataType.Type.DOUBLE)
 
-        return self._maybe_wrap_with_array(expression, array=array)
+        if array:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.ARRAY,
+                    expressions=[expression.type],
+                    nested=True,
+                ),
+            )
+
+        return expression
 
     def _annotate_timeunit(
         self, expression: exp.TimeUnit | exp.DateTrunc

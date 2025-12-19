@@ -87,6 +87,7 @@ class TokenType(AutoName):
     DAMP = auto()
     AMP_LT = auto()
     AMP_GT = auto()
+    ADJACENT = auto()
     XOR = auto()
     DSTAR = auto()
     QMARK_AMP = auto()

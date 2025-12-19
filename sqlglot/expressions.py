@@ -5313,6 +5313,10 @@ class Sub(Binary):
     pass
 
 
+class Adjacent(Binary):
+    pass
+
+
 # Unary Expressions
 # (NOT a)
 class Unary(Condition):

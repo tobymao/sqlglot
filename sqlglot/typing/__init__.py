@@ -274,7 +274,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     exp.Bracket: {"annotator": lambda self, e: self._annotate_bracket(e)},
     exp.Case: {
         "annotator": lambda self, e: self._annotate_by_args(
-            e, *[if_expr.args.get("true") for if_expr in e.args.get("ifs")], "default"
+            e, *[if_expr.args["true"] for if_expr in e.args["ifs"]], "default"
         )
     },
     exp.Count: {

@@ -2953,31 +2953,31 @@ LTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
-MAP_CAT(CAST(OBJECT_CONSTRUCT('a', '1') AS MAP(VARCHAR, VARCHAR)), CAST(OBJECT_CONSTRUCT('b', '2') AS MAP(VARCHAR, VARCHAR)));
+MAP_CAT(CAST(col AS MAP(VARCHAR, VARCHAR)), CAST(col AS MAP(VARCHAR, VARCHAR)));
 MAP;
 
 # dialect: snowflake
-MAP_CONTAINS_KEY('k1', CAST(OBJECT_CONSTRUCT('k1', 'v1', 'k2', 'v2', 'k3', 'v3') AS MAP(VARCHAR, VARCHAR)));
+MAP_CONTAINS_KEY('k1', CAST(col AS MAP(VARCHAR, VARCHAR)));
 BOOLEAN;
 
 # dialect: snowflake
-MAP_DELETE(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2', 'c', '3') AS MAP(VARCHAR, VARCHAR)), 'b');
+MAP_DELETE(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b');
 MAP;
 
 # dialect: snowflake
-MAP_INSERT(CAST(OBJECT_CONSTRUCT('a', '1') AS MAP(VARCHAR, VARCHAR)), 'b', '2');
+MAP_INSERT(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b', '2');
 MAP;
 
 # dialect: snowflake
-MAP_KEYS(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2') AS MAP(VARCHAR, VARCHAR)));
+MAP_KEYS(CAST(col AS MAP(VARCHAR, VARCHAR)));
 ARRAY;
 
 # dialect: snowflake
-MAP_PICK(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2', 'c', '3') AS MAP(VARCHAR, VARCHAR)), 'a', 'c');
+MAP_PICK(CAST(col AS MAP(VARCHAR, VARCHAR)), 'a', 'c');
 MAP;
 
 # dialect: snowflake
-MAP_SIZE(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2') AS MAP(VARCHAR, VARCHAR)));
+MAP_SIZE(CAST(col AS MAP(VARCHAR, VARCHAR)));
 INT;
 
 # dialect: snowflake

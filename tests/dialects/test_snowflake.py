@@ -310,26 +310,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity(
-            "SELECT MAP_CAT(CAST(OBJECT_CONSTRUCT('a', '1') AS MAP(VARCHAR, VARCHAR)), CAST(OBJECT_CONSTRUCT('b', '2') AS MAP(VARCHAR, VARCHAR)))"
+            "SELECT MAP_CAT(CAST(col AS MAP(VARCHAR, VARCHAR)), CAST(col AS MAP(VARCHAR, VARCHAR)))"
         )
-        self.validate_identity(
-            "SELECT MAP_CONTAINS_KEY('k1', CAST(OBJECT_CONSTRUCT('k1', 'v1', 'k2', 'v2', 'k3', 'v3') AS MAP(VARCHAR, VARCHAR)))"
-        )
-        self.validate_identity(
-            "SELECT MAP_DELETE(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2', 'c', '3') AS MAP(VARCHAR, VARCHAR)), 'b')"
-        )
-        self.validate_identity(
-            "SELECT MAP_INSERT(CAST(OBJECT_CONSTRUCT('a', '1') AS MAP(VARCHAR, VARCHAR)), 'b', '2')"
-        )
-        self.validate_identity(
-            "SELECT MAP_KEYS(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2') AS MAP(VARCHAR, VARCHAR)))"
-        )
-        self.validate_identity(
-            "SELECT MAP_PICK(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2', 'c', '3') AS MAP(VARCHAR, VARCHAR)), 'a', 'c')"
-        )
-        self.validate_identity(
-            "SELECT MAP_SIZE(CAST(OBJECT_CONSTRUCT('a', '1', 'b', '2') AS MAP(VARCHAR, VARCHAR)))"
-        )
+        self.validate_identity("SELECT MAP_CONTAINS_KEY('k1', CAST(col AS MAP(VARCHAR, VARCHAR)))")
+        self.validate_identity("SELECT MAP_DELETE(CAST(col AS MAP(VARCHAR, VARCHAR)), 'k1')")
+        self.validate_identity("SELECT MAP_INSERT(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b', '2')")
+        self.validate_identity("SELECT MAP_KEYS(CAST(col AS MAP(VARCHAR, VARCHAR)))")
+        self.validate_identity("SELECT MAP_PICK(CAST(col AS MAP(VARCHAR, VARCHAR)), 'a', 'c')")
+        self.validate_identity("SELECT MAP_SIZE(CAST(col AS MAP(VARCHAR, VARCHAR)))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
         self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")
         self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR) RENAME FIELDS)")

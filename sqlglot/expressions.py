@@ -7442,22 +7442,20 @@ class MapFromEntries(Func):
 
 
 class MapCat(Func):
-    arg_types = {"this": True, "expressions": False}
-    is_var_len_args = True
+    arg_types = {"this": True, "expressions": True}
 
 
 class MapContainsKey(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "key": True}
 
 
 class MapDelete(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "key": True}
     is_var_len_args = True
 
 
 class MapInsert(Func):
-    arg_types = {"this": True, "expressions": False}
-    is_var_len_args = True
+    arg_types = {"this": True, "key": False, "value": True, "update_flag": False}
 
 
 class MapKeys(Func):
@@ -7465,7 +7463,7 @@ class MapKeys(Func):
 
 
 class MapPick(Func):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 

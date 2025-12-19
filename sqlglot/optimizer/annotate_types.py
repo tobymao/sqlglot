@@ -638,7 +638,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             result_type = non_literal_type
 
-        self._set_type(expression, result_type or self._maybe_coerce(non_literal_type, literal_type))
+        self._set_type(
+            expression, result_type or self._maybe_coerce(non_literal_type, literal_type)
+        )
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

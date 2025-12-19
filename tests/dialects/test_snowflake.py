@@ -1100,7 +1100,7 @@ class TestSnowflake(Validator):
             "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
             write={
                 "": "SELECT LOGICAL_OR(c1), LOGICAL_OR(c2) FROM test",
-                "duckdb": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
+                "duckdb": "SELECT BOOL_OR(CAST(c1 AS BOOLEAN)), BOOL_OR(CAST(c2 AS BOOLEAN)) FROM test",
                 "oracle": "SELECT MAX(c1), MAX(c2) FROM test",
                 "postgres": "SELECT BOOL_OR(c1), BOOL_OR(c2) FROM test",
                 "snowflake": "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
@@ -1112,13 +1112,20 @@ class TestSnowflake(Validator):
             "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
             write={
                 "": "SELECT LOGICAL_AND(c1), LOGICAL_AND(c2) FROM test",
-                "duckdb": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
+                "duckdb": "SELECT BOOL_AND(CAST(c1 AS BOOLEAN)), BOOL_AND(CAST(c2 AS BOOLEAN)) FROM test",
                 "oracle": "SELECT MIN(c1), MIN(c2) FROM test",
                 "postgres": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
                 "snowflake": "SELECT BOOLAND_AGG(c1), BOOLAND_AGG(c2) FROM test",
                 "spark": "SELECT BOOL_AND(c1), BOOL_AND(c2) FROM test",
                 "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
                 "mysql": "SELECT MIN(c1), MIN(c2) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLXOR_AGG(c1) FROM test",
+            write={
+                "duckdb": "SELECT COUNT_IF(CAST(c1 AS BOOLEAN)) = 1 FROM test",
+                "snowflake": "SELECT BOOLXOR_AGG(c1) FROM test",
             },
         )
         for suffix in (

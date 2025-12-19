@@ -492,7 +492,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "SELECT a, LOGICAL_OR(b) FROM foo GROUP BY a",
-            "SELECT a, BOOL_OR(b) FROM foo GROUP BY a",
+            "SELECT a, BOOL_OR(CAST(b AS BOOLEAN)) FROM foo GROUP BY a",
         )
         self.validate_identity(
             "SELECT JSON_EXTRACT_STRING(c, '$.k1') = 'v1'",

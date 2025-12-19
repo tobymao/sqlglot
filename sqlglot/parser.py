@@ -908,6 +908,9 @@ class Parser(metaclass=_Parser):
         TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
         TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt, this=self._parse_unary()),
         TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
+        TokenType.DAT: lambda self: self.expression(
+            exp.SessionParameter, this=self._parse_id_var()
+        ),
     }
 
     STRING_PARSERS = {
@@ -982,9 +985,7 @@ class Parser(metaclass=_Parser):
         TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
         TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
-        TokenType.DAT: lambda self, this: self.expression(
-            exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
-        ),
+        TokenType.DAT: binary_range_parser(exp.Match),
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {

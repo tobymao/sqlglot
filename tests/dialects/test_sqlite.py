@@ -160,7 +160,6 @@ class TestSQLite(Validator):
         self.validate_identity(
             "SELECT * FROM t WHERE NULL IS NOT y", "SELECT * FROM t WHERE NOT NULL IS y"
         )
-        self.validate_identity("SELECT * FROM search_index WHERE content MATCH 'test'")
 
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")

@@ -57,7 +57,7 @@ jobs:
     name: Run Integration Tests
     runs-on: ubuntu-latest
     needs: should-run
-    if: needs.should-run.outputs.skip == 'false' && github.event.repository.fork != true
+    if: needs.should-run.outputs.skip == 'false' && github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Acquire credentials
         id: app-token

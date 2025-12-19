@@ -1923,6 +1923,34 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SECOND(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT HOUR(CAST('2024-05-09 08:50:57' AS TIMESTAMP))")
         self.validate_identity("SELECT MONTHNAME(CAST('2024-05-09' AS DATE))")
+        self.validate_all(
+            "SELECT DAYNAME(TO_DATE('2025-01-15'))",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2025-01-15' AS DATE), '%a')",
+                "snowflake": "SELECT DAYNAME(CAST('2025-01-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT DAYNAME(TO_TIMESTAMP('2025-02-28 10:30:45'))",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2025-02-28 10:30:45' AS TIMESTAMP), '%a')",
+                "snowflake": "SELECT DAYNAME(CAST('2025-02-28 10:30:45' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT MONTHNAME(TO_DATE('2025-01-15'))",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2025-01-15' AS DATE), '%b')",
+                "snowflake": "SELECT MONTHNAME(CAST('2025-01-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT MONTHNAME(TO_TIMESTAMP('2025-02-28 10:30:45'))",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2025-02-28 10:30:45' AS TIMESTAMP), '%b')",
+                "snowflake": "SELECT MONTHNAME(CAST('2025-02-28 10:30:45' AS TIMESTAMP))",
+            },
+        )
         self.validate_identity("SELECT PREVIOUS_DAY(CAST('2024-05-09' AS DATE), 'MONDAY')")
         self.validate_identity("SELECT TIME_FROM_PARTS(14, 30, 45)")
         self.validate_identity("SELECT TIME_FROM_PARTS(14, 30, 45, 123)")

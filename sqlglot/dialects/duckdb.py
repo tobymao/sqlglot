@@ -442,6 +442,12 @@ def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
     return arg
 
 
+def _cast_to_boolean(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    if arg and not arg.is_type(exp.DataType.Type.BOOLEAN):
+        return exp.cast(arg, exp.DataType.Type.BOOLEAN)
+    return arg
+
+
 def _is_binary(arg: exp.Expression) -> bool:
     return arg.is_type(
         exp.DataType.Type.BINARY,
@@ -612,6 +618,21 @@ def _initcap_sql(self: DuckDB.Generator, expression: exp.Initcap) -> str:
     escaped_delimiters_sql = _escape_regex_metachars(self, delimiters, delimiters_sql)
 
     return _build_capitalization_sql(self, this_sql, escaped_delimiters_sql)
+
+
+def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
+    """
+    Snowflake's `BOOLXOR_AGG(col)` returns TRUE if exactly one input in `col` is TRUE, FALSE otherwise;
+    Since DuckDB does not have a mapping function, we mimic the behavior by generating `COUNT_IF(col) = 1`.
+
+    DuckDB's COUNT_IF strictly requires boolean inputs, so cast if not already boolean.
+    """
+    return self.sql(
+        exp.EQ(
+            this=exp.CountIf(this=_cast_to_boolean(expression.this)),
+            expression=exp.Literal.number(1),
+        )
+    )
 
 
 def _scale_rounding_sql(
@@ -1197,8 +1218,9 @@ class DuckDB(Dialect):
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
             exp.Lateral: explode_to_unnest_sql,
-            exp.LogicalOr: rename_func("BOOL_OR"),
-            exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
+            exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
+            exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),

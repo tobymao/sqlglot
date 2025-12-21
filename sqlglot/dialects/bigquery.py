@@ -959,7 +959,7 @@ class BigQuery(Dialect):
         def _parse_make_interval(self) -> exp.MakeInterval:
             expr = exp.MakeInterval()
 
-            for arg_key in expr.arg_types:
+            for arg_key in ["year", "month", "day", "hour", "minute", "second"]:
                 value = self._parse_lambda()
 
                 if not value:

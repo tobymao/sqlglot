@@ -279,8 +279,22 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
-        self.validate_identity("SELECT ZIPF(2, 100, 1234)")
+        self.validate_all(
+            "SELECT ZIPF(1, 10, 1234)",
+            write={
+                "duckdb": "SELECT (WITH weights AS (SELECT i, 1.0 / POWER(i, 1) AS w FROM RANGE(1, 10 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= (ABS(HASH(1234)) % 1000000) / 1000000.0)",
+                "snowflake": "SELECT ZIPF(1, 10, 1234)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ZIPF(2, 100, RANDOM())",
+            write={
+                "duckdb": "SELECT (WITH weights AS (SELECT i, 1.0 / POWER(i, 2) AS w FROM RANGE(1, 100 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= RANDOM())",
+                "snowflake": "SELECT ZIPF(2, 100, RANDOM())",
+            },
+        )
+
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
@@ -4283,44 +4297,6 @@ FROM SEMANTIC_VIEW(
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "SELECT CAST(~CAST(UNHEX('FF') AS BIT) AS BLOB)")
         self.assertEqual(annotated.sql("snowflake"), "SELECT BITNOT(x'FF')")
-
-    def test_transpile_zipf(self):
-        # Test ZIPF transpilation from Snowflake to DuckDB
-        self.validate_all(
-            "SELECT ZIPF(1, 10, 1234)",
-            write={
-                "duckdb": "SELECT (WITH weights AS (SELECT i, 1.0 / POWER(i, 1) AS w FROM RANGE(1, 10 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= (ABS(HASH(1234)) % 1000000) / 1000000.0)",
-                "snowflake": "SELECT ZIPF(1, 10, 1234)",
-            },
-        )
-
-        self.validate_all(
-            "SELECT ZIPF(2, 100, RANDOM())",
-            write={
-                "duckdb": "SELECT (WITH weights AS (SELECT i, 1.0 / POWER(i, 2) AS w FROM RANGE(1, 100 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= RANDOM())",
-                "snowflake": "SELECT ZIPF(2, 100, RANDOM())",
-            },
-        )
-
-        # Validate that the transpiled SQL contains the correct Zipf distribution formula
-        # For ZIPF(s, n, gen), weights should be 1/k^s for k in [1, n]
-        expr = self.parse_one("SELECT ZIPF(1.5, 50, 999)", dialect="snowflake")
-        duckdb_sql = expr.sql(dialect="duckdb")
-
-        # Verify the weight formula: 1.0 / POWER(i, s)
-        self.assertIn("1.0 / POWER(i, 1.5)", duckdb_sql)
-
-        # Verify the range: RANGE(1, n + 1)
-        self.assertIn("RANGE(1, 50 + 1)", duckdb_sql)
-
-        # Verify CDF calculation: SUM(w) OVER (ORDER BY i) / SUM(w) OVER ()
-        self.assertIn("SUM(w) OVER (ORDER BY i) / SUM(w) OVER ()", duckdb_sql)
-
-        # Verify sampling method: WHERE cum_prob >= random_value
-        self.assertIn("WHERE cum_prob >=", duckdb_sql)
-
-        # Verify it returns the minimum matching rank
-        self.assertIn("SELECT MIN(i)", duckdb_sql)
 
     def test_quoting(self):
         self.assertEqual(

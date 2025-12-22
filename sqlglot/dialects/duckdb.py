@@ -49,6 +49,15 @@ from sqlglot.helper import is_date_unit, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
 
+# Bitwise operations that return binary when given binary input
+BITWISE_BINARY_OPS = (
+    exp.BitwiseLeftShift,
+    exp.BitwiseRightShift,
+    exp.BitwiseAnd,
+    exp.BitwiseOr,
+    exp.BitwiseXor,
+)
+
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
@@ -605,8 +614,6 @@ def _cast_to_bit(arg: exp.Expression) -> exp.Expression:
 
     if isinstance(arg, exp.HexString):
         arg = exp.Unhex(this=exp.Literal.string(arg.this))
-    elif isinstance(arg, exp.Cast) and isinstance(arg.this, exp.HexString):
-        arg = exp.Unhex(this=exp.Literal.string(arg.this.this))
 
     return exp.cast(arg, exp.DataType.Type.BIT)
 

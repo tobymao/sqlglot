@@ -1011,11 +1011,9 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_identity("SELECT NUMRANGE(1.1, 2.2) -|- NUMRANGE(2.2, 3.3)")
-        self.validate_all(
+        self.validate_identity(
             "SELECT SLOPE(point '(4,4)', point '(0,0)')",
-            write={
-                "postgres": "SELECT SLOPE(CAST('(4,4)' AS POINT), CAST('(0,0)' AS POINT))",
-            },
+            "SELECT SLOPE(CAST('(4,4)' AS POINT), CAST('(0,0)' AS POINT))",
         )
 
     def test_ddl(self):

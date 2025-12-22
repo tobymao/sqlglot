@@ -1010,6 +1010,7 @@ FROM json_data, field_ids""",
                 "postgres": "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
             },
         )
+        self.validate_identity("SELECT NUMRANGE(1.1, 2.2) -|- NUMRANGE(2.2, 3.3)")
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

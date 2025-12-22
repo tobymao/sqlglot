@@ -5313,6 +5313,12 @@ class Sub(Binary):
     pass
 
 
+# https://www.postgresql.org/docs/current/functions-range.html
+# Represents range adjacency operator: -|-
+class Adjacent(Binary):
+    pass
+
+
 # Unary Expressions
 # (NOT a)
 class Unary(Condition):

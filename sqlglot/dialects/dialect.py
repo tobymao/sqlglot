@@ -748,6 +748,11 @@ class Dialect(metaclass=_Dialect):
     - Spark, Postgres, DuckDB, TSQL: LEAST(1, NULL, 2) -> 1
     """
 
+    PRIORITIZE_NON_LITERAL_TYPES = False
+    """
+    Whether to prioritize non-literal types over literals during type annotation.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

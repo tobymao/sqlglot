@@ -1677,6 +1677,14 @@ IF(TRUE, '00:00:00', TIME '00:01:00');
 TIME;
 
 # dialect: bigquery
+IF(TRUE, 1, CAST(2.5 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+IF(TRUE, 1.5, 2.5);
+FLOAT64;
+
+# dialect: bigquery
 IF(TRUE, '2010-01-01 00:00:00', TIMESTAMP '2020-02-02 00:00:00');
 TIMESTAMP;
 

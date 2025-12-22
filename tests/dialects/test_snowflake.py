@@ -1767,6 +1767,41 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "LAST_DAY(DATE('2023-04-15'))",
+            write={
+                "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(DATE('2023-04-15'), 'month')",
+            write={
+                "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(DATE('2024-06-15'), 'year')",
+            write={
+                "duckdb": "MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-06-15' AS DATE)), 12, 31)",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(DATE('2024-01-15'), 'quarter')",
+            write={
+                "duckdb": "LAST_DAY(MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-01-15' AS DATE)), EXTRACT(QUARTER FROM CAST('2024-01-15' AS DATE)) * 3, 1))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(DATE('2025-12-15'), 'week')",
+            write={
+                "duckdb": "CAST(CAST('2025-12-15' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2025-12-15' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
             "SELECT ST_DISTANCE(a, b)",
             write={
                 "snowflake": "SELECT ST_DISTANCE(a, b)",

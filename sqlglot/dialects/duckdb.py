@@ -1592,27 +1592,34 @@ class DuckDB(Dialect):
 
             Uses CDF-based sampling: compute weights 1/k^s, normalize to CDF, sample with random().
 
-            Note: Snowflake defines s and n as needing to be constants because they define the distribution
-            shape and are embedded in the generated CTEs. RANGE() also requires constant arguments.
+            Note: s and n must be constants because they define the distribution shape and are
+            embedded in the generated CTEs. RANGE() also requires constant arguments.
             """
             s = expression.this
             n = expression.args.get("elementcount")
             gen = expression.args.get("gen")
 
             # Validate that s and n are literals (constants)
-            # The Zipf distribution parameters must be compile-time constants because:
-            # 1. They define the distribution shape
-            # 2. The transpiled SQL embeds them in CTEs (POWER and RANGE)
-            # 3. RANGE() requires constant arguments
-            if s and not isinstance(s, exp.Literal):
-                self.unsupported(
-                    f"ZIPF: parameter 's' (exponent) must be a constant literal, got {type(s).__name__}"
-                )
+            # The Zipf distribution parameters must be BIGINT constants to be used in RANGE and POWER functions
+            if s:
+                if not isinstance(s, exp.Literal):
+                    self.unsupported(
+                        f"ZIPF: parameter 's' (exponent) must be a constant literal, got {type(s).__name__}"
+                    )
+                if isinstance(s, exp.Literal) and not s.is_int:
+                    s_sql = self.sql(exp.cast(s, exp.DataType.Type.BIGINT))
+                else:
+                    s_sql = self.sql(s)
 
-            if n and not isinstance(n, exp.Literal):
-                self.unsupported(
-                    f"ZIPF: parameter 'n' (element count) must be a constant literal, got {type(n).__name__}"
-                )
+            if n:
+                if not isinstance(n, exp.Literal):
+                    self.unsupported(
+                        f"ZIPF: parameter 'n' (element count) must be a constant literal, got {type(n).__name__}"
+                    )
+                if isinstance(n, exp.Literal) and not n.is_int:
+                    n_sql = self.sql(exp.cast(n, exp.DataType.Type.BIGINT))
+                else:
+                    n_sql = self.sql(n)
 
             if isinstance(gen, exp.Rand):
                 # Use RANDOM() for non-deterministic output
@@ -1621,9 +1628,6 @@ class DuckDB(Dialect):
                 # Use seed with HASH for deterministic output
                 seed_sql = self.sql(gen)
                 random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
-
-            s_sql = self.sql(s)
-            n_sql = self.sql(n)
 
             query: exp.Select = exp.maybe_parse(
                 f"""

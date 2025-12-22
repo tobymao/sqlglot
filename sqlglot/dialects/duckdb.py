@@ -8,6 +8,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
+    DATETIME_DELTA,
     Dialect,
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
@@ -17,7 +18,7 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     build_default_decimal_type,
     count_if_to_sum,
-    date_delta_to_binary_interval_op,
+    date_delta_to_binary_interval_op as base_date_delta_to_binary_interval_op,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -142,6 +143,53 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     return self.function_fallback_sql(expression)
 
 
+def _unwrap_cast(expr: exp.Expression) -> exp.Expression:
+    """Unwrap Cast expression to avoid double-casting that loses nanosecond precision.
+
+    Nested casts can lose precision when converting between
+    timestamp types. By unwrapping the inner cast, we go directly from the source
+    expression to TIMESTAMP_NS, preserving nanosecond precision.
+    """
+    return expr.this if isinstance(expr, exp.Cast) else expr
+
+
+def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
+    """Check if unit is NANOSECOND."""
+    return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
+
+
+def _handle_nanosecond_diff(
+    self: DuckDB.Generator,
+    end_time: exp.Expression,
+    start_time: exp.Expression,
+) -> str:
+    """Generate NANOSECOND diff using EPOCH_NS since DATE_DIFF doesn't support it."""
+    end_ns = exp.cast(_unwrap_cast(end_time), exp.DataType.Type.TIMESTAMP_NS)
+    start_ns = exp.cast(_unwrap_cast(start_time), exp.DataType.Type.TIMESTAMP_NS)
+
+    # Build expression tree: EPOCH_NS(end) - EPOCH_NS(start)
+    return self.sql(
+        exp.Sub(this=exp.func("EPOCH_NS", end_ns), expression=exp.func("EPOCH_NS", start_ns))
+    )
+
+
+def _handle_nanosecond_add(
+    self: DuckDB.Generator,
+    timestamp: exp.Expression,
+    nanoseconds: exp.Expression,
+) -> str:
+    """Generate NANOSECOND add using EPOCH_NS and make_timestamp_ns since INTERVAL doesn't support it."""
+    timestamp_ns = exp.cast(_unwrap_cast(timestamp), exp.DataType.Type.TIMESTAMP_NS)
+
+    # Build expression tree: make_timestamp_ns(EPOCH_NS(timestamp) + nanoseconds)
+    return self.sql(
+        exp.func(
+            "make_timestamp_ns",
+            exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=nanoseconds),
+        )
+    )
+
+
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     """
     Transpile TO_BOOLEAN and TRY_TO_BOOLEAN functions from Snowflake to DuckDB equivalent.
@@ -215,12 +263,40 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
 
 # BigQuery -> DuckDB conversion for the TIME_DIFF function
 def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
+    unit = expression.args.get("unit")
+
+    if _is_nanosecond_unit(unit):
+        this_ts = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
+        expr_ts = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP_NS)
+        return _handle_nanosecond_diff(self, expr_ts, this_ts)
+
     this = exp.cast(expression.this, exp.DataType.Type.TIME)
     expr = exp.cast(expression.expression, exp.DataType.Type.TIME)
 
     # Although the 2 dialects share similar signatures, BQ seems to inverse
     # the sign of the result so the start/end time operands are flipped
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
+
+
+def date_delta_to_binary_interval_op(
+    cast: bool = True,
+) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
+    """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
+    base_impl = base_date_delta_to_binary_interval_op(cast=cast)
+
+    def duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
+        unit = expression.args.get("unit")
+
+        # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
+        if _is_nanosecond_unit(unit):
+            interval_value = expression.expression
+            if isinstance(interval_value, exp.Interval):
+                interval_value = interval_value.this
+            return _handle_nanosecond_add(self, expression.this, interval_value)
+
+        return base_impl(self, expression)
+
+    return duckdb_date_delta_sql
 
 
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
@@ -439,9 +515,13 @@ def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> e
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    unit = expression.args.get("unit")
+
+    if _is_nanosecond_unit(unit):
+        return _handle_nanosecond_diff(self, expression.this, expression.expression)
+
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
-    unit = expression.args.get("unit")
 
     # DuckDB's WEEK diff does not respect Monday crossing (week boundaries), it checks (end_day - start_day) / 7:
     #  SELECT DATE_DIFF('WEEK', CAST('2024-12-13' AS DATE), CAST('2024-12-17' AS DATE)) --> 0 (Monday crossed)

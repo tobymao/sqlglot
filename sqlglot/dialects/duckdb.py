@@ -1586,15 +1586,33 @@ class DuckDB(Dialect):
             Transpile Snowflake's ZIPF to DuckDB equivalent using cumulative distribution function.
 
             ZIPF(s, n, gen) generates a random value following Zipf distribution.
-            - s: exponent parameter (typically 1.0)
-            - n: number of elements (range from 1 to n)
+            - s: exponent parameter (typically 1.0) - MUST BE A CONSTANT LITERAL
+            - n: number of elements (range from 1 to n) - MUST BE A CONSTANT LITERAL
             - gen: random generator or seed
 
             Uses CDF-based sampling: compute weights 1/k^s, normalize to CDF, sample with random().
+
+            Note: Snowflake defines s and n as needing to be constants because they define the distribution
+            shape and are embedded in the generated CTEs. RANGE() also requires constant arguments.
             """
             s = expression.this
             n = expression.args.get("elementcount")
             gen = expression.args.get("gen")
+
+            # Validate that s and n are literals (constants)
+            # The Zipf distribution parameters must be compile-time constants because:
+            # 1. They define the distribution shape
+            # 2. The transpiled SQL embeds them in CTEs (POWER and RANGE)
+            # 3. RANGE() requires constant arguments
+            if s and not isinstance(s, exp.Literal):
+                self.unsupported(
+                    f"ZIPF: parameter 's' (exponent) must be a constant literal, got {type(s).__name__}"
+                )
+
+            if n and not isinstance(n, exp.Literal):
+                self.unsupported(
+                    f"ZIPF: parameter 'n' (element count) must be a constant literal, got {type(n).__name__}"
+                )
 
             if isinstance(gen, exp.Rand):
                 # Use RANDOM() for non-deterministic output
@@ -1605,26 +1623,7 @@ class DuckDB(Dialect):
                 random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
 
             s_sql = self.sql(s)
-
-            # Cast n to BIGINT if needed for RANGE compatibility
-            # RANGE requires BIGINT arguments, not DECIMAL or float literals
-            needs_cast = False
-
-            if n and isinstance(n, exp.Cast):
-                # Check if it's cast to DECIMAL type
-                to_type = n.to
-                if to_type and isinstance(to_type, exp.DataType):
-                    if to_type.this == exp.DataType.Type.DECIMAL:
-                        needs_cast = True
-            elif n and isinstance(n, exp.Literal):
-                # Check if it's a float literal (e.g., 10.0)
-                if n.is_number and not n.is_int:
-                    needs_cast = True
-
-            if needs_cast and n:
-                n_sql = self.sql(exp.cast(n, exp.DataType.Type.BIGINT))
-            else:
-                n_sql = self.sql(n)
+            n_sql = self.sql(n)
 
             query: exp.Select = exp.maybe_parse(
                 f"""

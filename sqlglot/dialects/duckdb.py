@@ -101,7 +101,7 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         # Default behavior - use DuckDB's native LAST_DAY
         return self.func("LAST_DAY", date_expr)
 
-    elif unit.upper() == "YEAR":
+    if unit.upper() == "YEAR":
         # Last day of year: December 31st of the same year
         year_expr = exp.func("EXTRACT", "YEAR", date_expr)
         make_date_expr = exp.func(
@@ -109,7 +109,7 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         )
         return self.sql(make_date_expr)
 
-    elif unit.upper() == "QUARTER":
+    if unit.upper() == "QUARTER":
         # Last day of quarter
         year_expr = exp.func("EXTRACT", "YEAR", date_expr)
         quarter_expr = exp.func("EXTRACT", "QUARTER", date_expr)
@@ -124,7 +124,7 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         last_day_expr = exp.func("LAST_DAY", first_day_last_month_expr)
         return self.sql(last_day_expr)
 
-    elif unit.upper() == "WEEK":
+    if unit.upper() == "WEEK":
         # DuckDB DAYOFWEEK: Sunday=0, Monday=1, ..., Saturday=6
         dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
         # Days to the last day of week: (7 - dayofweek) % 7, assuming the last day of week is Sunday (Snowflake)
@@ -138,11 +138,10 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         cast_expr = exp.cast(add_expr, exp.DataType.Type.DATE)
         return self.sql(cast_expr)
 
-    else:
-        # Unsupported date part - throw error
-        error_msg = f"Unsupported date part '{unit}' in LAST_DAY function"
-        error_expr = exp.func("ERROR", exp.Literal.string(error_msg))
-        return self.sql(error_expr)
+    error_msg = f"Unsupported date part '{unit}' in LAST_DAY function"
+
+    self.unsupported(error_msg)
+    return self.function_fallback_sql(expression)
 
 
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:

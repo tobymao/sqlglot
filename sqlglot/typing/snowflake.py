@@ -239,6 +239,7 @@ EXPRESSION_METADATA = {
         for expr_type in (
             exp.ApproxTopK,
             exp.ApproxTopKEstimate,
+            exp.Array,
             exp.ArrayAgg,
             exp.ArrayConstructCompact,
             exp.ArrayUniqueAgg,

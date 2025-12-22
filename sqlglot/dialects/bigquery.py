@@ -51,6 +51,8 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtr
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
 
+MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
+
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
@@ -959,7 +961,7 @@ class BigQuery(Dialect):
         def _parse_make_interval(self) -> exp.MakeInterval:
             expr = exp.MakeInterval()
 
-            for arg_key in expr.arg_types:
+            for arg_key in MAKE_INTERVAL_KWARGS:
                 value = self._parse_lambda()
 
                 if not value:

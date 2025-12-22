@@ -928,6 +928,7 @@ TBLPROPERTIES (
         )
         self.validate_identity("BITMAP_OR_AGG(x)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
 
     def test_bool_or(self):
         self.validate_all(

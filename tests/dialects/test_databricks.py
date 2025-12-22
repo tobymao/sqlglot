@@ -241,6 +241,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CURRENT_TIMEZONE()")
         self.validate_identity("CURDATE()", "CURRENT_DATE")
         self.validate_identity("CURDATE", "CURRENT_DATE")
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

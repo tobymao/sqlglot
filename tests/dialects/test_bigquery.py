@@ -175,6 +175,7 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("LOOP SET x = x + 1", check_command_warning=True)
         self.validate_identity("REPEAT SET x = x + 1", check_command_warning=True)
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 1, 12, 30, 10)")
         self.validate_identity(
             "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
             check_command_warning=True,

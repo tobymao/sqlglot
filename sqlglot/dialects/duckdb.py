@@ -138,9 +138,7 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         cast_expr = exp.cast(add_expr, exp.DataType.Type.DATE)
         return self.sql(cast_expr)
 
-    error_msg = f"Unsupported date part '{unit}' in LAST_DAY function"
-
-    self.unsupported(error_msg)
+    self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
     return self.function_fallback_sql(expression)
 
 

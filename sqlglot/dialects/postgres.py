@@ -374,6 +374,7 @@ class Postgres(Dialect):
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,
             "ONLY": TokenType.ONLY,
+            "POINT": TokenType.POINT,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,

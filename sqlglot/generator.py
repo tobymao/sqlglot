@@ -112,6 +112,7 @@ class Generator(metaclass=_Generator):
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
+        exp.Adjacent: lambda self, e: self.binary(e, "-|-"),
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
         exp.AnalyzeColumns: lambda self, e: self.sql(e, "this"),

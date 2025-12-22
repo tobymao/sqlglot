@@ -1596,6 +1596,51 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(fields.get("name"), exp.DataType.build("VARCHAR"))
         self.assertEqual(fields.get("age"), exp.DataType.build("INT"))
 
+    def test_unnest_unqualified_column_annotation(self):
+        """Test that unqualified columns in UNNEST are properly typed from parent scope"""
+        schema = {
+            "table1": {
+                "labels": "ARRAY<STRUCT<key VARCHAR, value VARCHAR>>",
+                "tags": "ARRAY<INT>",
+            }
+        }
+
+        # Test 1: STRUCT field access in scalar subquery (main fix case)
+        sql = """
+            SELECT (
+                SELECT labels.value
+                FROM UNNEST(labels) AS labels
+                WHERE labels.key = 'department'
+            ) AS department_tag
+            FROM table1
+        """
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(sql, read="bigquery"), schema=schema, dialect="bigquery"
+            ),
+            schema=schema,
+            dialect="bigquery",
+        )
+
+        # The scalar subquery should have VARCHAR type (not UNKNOWN)
+        subquery = expression.selects[0].this
+        self.assertEqual(subquery.type, exp.DataType.build("VARCHAR"))
+
+        # The UNNEST should have STRUCT type
+        unnest = expression.find(exp.Unnest)
+        self.assertTrue(unnest.type.is_type(exp.DataType.Type.STRUCT))
+
+        # Test 2: Simple unqualified array
+        sql2 = "SELECT t FROM table1, UNNEST(tags) AS t"
+        expression2 = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(sql2, read="bigquery"), schema=schema, dialect="bigquery"
+            ),
+            schema=schema,
+            dialect="bigquery",
+        )
+        self.assertEqual(expression2.selects[0].type, exp.DataType.build("INT"))
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))

@@ -271,6 +271,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def annotate_scope(self, scope: Scope) -> None:
         selects = {}
 
+        # Pre-annotate UNNEST expressions before building selects dictionary.
+        # This allows UNNEST to resolve unqualified column types from parent scope,
+        # which is critical for STRUCT field extraction to work correctly.
+        for name, source in scope.sources.items():
+            if isinstance(source, Scope) and isinstance(source.expression, exp.Unnest):
+                unnest_expr = source.expression
+                if not unnest_expr.type or unnest_expr.type.is_type(exp.DataType.Type.UNKNOWN):
+                    self._annotate_unnest_with_parent_scope(unnest_expr, scope)
+
         for name, source in scope.sources.items():
             if not isinstance(source, Scope):
                 continue
@@ -676,6 +685,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
+        if expression.type and not expression.is_type(exp.DataType.Type.UNKNOWN):
+            return expression
+
         child = seq_get(expression.expressions, 0)
 
         if child and child.is_type(exp.DataType.Type.ARRAY):
@@ -684,6 +696,38 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             expr_type = None
 
         self._set_type(expression, expr_type)
+        return expression
+
+    def _annotate_unnest_with_parent_scope(
+        self, expression: exp.Unnest, scope: Scope
+    ) -> exp.Unnest:
+        # Annotate UNNEST expressions that may reference parent scope columns like:
+        # SELECT (SELECT c.value FROM UNNEST(c) AS c) FROM t
+        child = seq_get(expression.expressions, 0)
+        expr_type = None
+
+        if child and child.type and child.is_type(exp.DataType.Type.ARRAY):
+            expr_type = seq_get(child.type.expressions, 0)
+        elif isinstance(child, exp.Column) and scope.parent:
+            # handle unqualified columns that may reference parent scope
+            table_name = child.table
+            if not table_name:
+                from sqlglot.optimizer.resolver import Resolver
+
+                parent_resolver = Resolver(scope.parent, self.schema, infer_schema=True)
+                table_identifier = parent_resolver.get_table(child)
+
+                if table_identifier:
+                    table_name = table_identifier.name
+
+            source = scope.parent.sources.get(table_name)
+            if source:
+                col_type = parent_resolver._get_column_type_from_scope(source, child)
+
+                if col_type and col_type.is_type(exp.DataType.Type.ARRAY):
+                    expr_type = seq_get(col_type.expressions, 0)
+
+        self._set_type(expression, expr_type or exp.DataType.Type.UNKNOWN)
         return expression
 
     def _annotate_subquery(self, expression: exp.Subquery) -> exp.Subquery:

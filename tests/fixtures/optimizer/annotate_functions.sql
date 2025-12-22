@@ -1733,6 +1733,10 @@ ADD_MONTHS(tbl.timestamp_col, -1);
 TIMESTAMP;
 
 # dialect: snowflake
+ARRAY_CONSTRUCT();
+ARRAY;
+
+# dialect: snowflake
 ARRAY_CONSTRUCT_COMPACT();
 ARRAY;
 

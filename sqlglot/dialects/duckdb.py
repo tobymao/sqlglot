@@ -89,6 +89,59 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 
+def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
+    """
+    DuckDB's LAST_DAY only supports finding the last day of a month.
+    For other date parts (year, quarter, week), we need to implement equivalent logic.
+    """
+    date_expr = expression.this
+    unit = expression.text("unit")
+
+    if not unit or unit.upper() == "MONTH":
+        # Default behavior - use DuckDB's native LAST_DAY
+        return self.func("LAST_DAY", date_expr)
+
+    if unit.upper() == "YEAR":
+        # Last day of year: December 31st of the same year
+        year_expr = exp.func("EXTRACT", "YEAR", date_expr)
+        make_date_expr = exp.func(
+            "MAKE_DATE", year_expr, exp.Literal.number(12), exp.Literal.number(31)
+        )
+        return self.sql(make_date_expr)
+
+    if unit.upper() == "QUARTER":
+        # Last day of quarter
+        year_expr = exp.func("EXTRACT", "YEAR", date_expr)
+        quarter_expr = exp.func("EXTRACT", "QUARTER", date_expr)
+
+        # Calculate last month of quarter: quarter * 3. Quarter can be 1 to 4
+        last_month_expr = exp.Mul(this=quarter_expr, expression=exp.Literal.number(3))
+        first_day_last_month_expr = exp.func(
+            "MAKE_DATE", year_expr, last_month_expr, exp.Literal.number(1)
+        )
+
+        # Last day of the last month of the quarter
+        last_day_expr = exp.func("LAST_DAY", first_day_last_month_expr)
+        return self.sql(last_day_expr)
+
+    if unit.upper() == "WEEK":
+        # DuckDB DAYOFWEEK: Sunday=0, Monday=1, ..., Saturday=6
+        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
+        # Days to the last day of week: (7 - dayofweek) % 7, assuming the last day of week is Sunday (Snowflake)
+        # Wrap in parentheses to ensure correct precedence
+        days_to_sunday_expr = exp.Mod(
+            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(7), expression=dow)),
+            expression=exp.Literal.number(7),
+        )
+        interval_expr = exp.Interval(this=days_to_sunday_expr, unit=exp.var("DAY"))
+        add_expr = exp.Add(this=date_expr, expression=interval_expr)
+        cast_expr = exp.cast(add_expr, exp.DataType.Type.DATE)
+        return self.sql(cast_expr)
+
+    self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
+    return self.function_fallback_sql(expression)
+
+
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     """
     Transpile TO_BOOLEAN and TRY_TO_BOOLEAN functions from Snowflake to DuckDB equivalent.
@@ -1323,6 +1376,7 @@ class DuckDB(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
+            exp.LastDay: _last_day_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

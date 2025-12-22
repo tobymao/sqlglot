@@ -656,7 +656,6 @@ LANGUAGE js AS
                 "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
             },
             write={
-                "duckdb": UnsupportedError,
                 "bigquery": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
                 "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
             },

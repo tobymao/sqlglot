@@ -572,28 +572,67 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_by_args(
         self,
         expression: E,
-        *args: str,
+        *args: str | exp.Expression,
         promote: bool = False,
         array: bool = False,
     ) -> E:
-        expressions: t.List[exp.Expression] = []
+        literal_type = None
+        non_literal_type = None
+        nested_type = None
+
         for arg in args:
-            arg_expr = expression.args.get(arg)
-            expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+            if isinstance(arg, str):
+                expressions = expression.args.get(arg)
+            else:
+                expressions = arg
 
-        last_datatype = None
-        for expr in expressions:
-            expr_type = expr.type
+            for expr in ensure_list(expressions):
+                expr_type = expr.type
 
-            # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
-            if expr_type.args.get("nested"):
-                last_datatype = expr_type
+                # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
+                if expr_type.args.get("nested"):
+                    nested_type = expr_type
+                    break
+
+                if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
+                    if isinstance(expr, exp.Literal):
+                        literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
+                    else:
+                        non_literal_type = self._maybe_coerce(
+                            non_literal_type or expr_type, expr_type
+                        )
+
+            if nested_type:
                 break
 
-            if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
+        result_type = None
 
-        self._set_type(expression, last_datatype)
+        if nested_type:
+            result_type = nested_type
+        elif literal_type and non_literal_type:
+            if self.dialect.PRIORITIZE_NON_LITERAL_TYPES:
+                literal_this_type = (
+                    literal_type.this if isinstance(literal_type, exp.DataType) else literal_type
+                )
+                non_literal_this_type = (
+                    non_literal_type.this
+                    if isinstance(non_literal_type, exp.DataType)
+                    else non_literal_type
+                )
+                if (
+                    literal_this_type in exp.DataType.INTEGER_TYPES
+                    and non_literal_this_type in exp.DataType.INTEGER_TYPES
+                ) or (
+                    literal_this_type in exp.DataType.REAL_TYPES
+                    and non_literal_this_type in exp.DataType.REAL_TYPES
+                ):
+                    result_type = non_literal_type
+        else:
+            result_type = literal_type or non_literal_type or exp.DataType.Type.UNKNOWN
+
+        self._set_type(
+            expression, result_type or self._maybe_coerce(non_literal_type, literal_type)
+        )
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:

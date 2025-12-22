@@ -1767,36 +1767,41 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
-            "LAST_DAY(DATE('2023-04-15'))",
+            "LAST_DAY(CAST('2023-04-15' AS DATE))",
             write={
+                "snowflake": "LAST_DAY(CAST('2023-04-15' AS DATE))",
                 "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
             },
         )
 
         self.validate_all(
-            "LAST_DAY(DATE('2023-04-15'), 'month')",
+            "LAST_DAY(CAST('2023-04-15' AS DATE), MONTH)",
             write={
+                "snowflake": "LAST_DAY(CAST('2023-04-15' AS DATE), MONTH)",
                 "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
             },
         )
 
         self.validate_all(
-            "LAST_DAY(DATE('2024-06-15'), 'year')",
+            "LAST_DAY(CAST('2024-06-15' AS DATE), YEAR)",
             write={
+                "snowflake": "LAST_DAY(CAST('2024-06-15' AS DATE), YEAR)",
                 "duckdb": "MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-06-15' AS DATE)), 12, 31)",
             },
         )
 
         self.validate_all(
-            "LAST_DAY(DATE('2024-01-15'), 'quarter')",
+            "LAST_DAY(CAST('2024-01-15' AS DATE), QUARTER)",
             write={
+                "snowflake": "LAST_DAY(CAST('2024-01-15' AS DATE), QUARTER)",
                 "duckdb": "LAST_DAY(MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-01-15' AS DATE)), EXTRACT(QUARTER FROM CAST('2024-01-15' AS DATE)) * 3, 1))",
             },
         )
 
         self.validate_all(
-            "LAST_DAY(DATE('2025-12-15'), 'week')",
+            "LAST_DAY(CAST('2025-12-15' AS DATE), WEEK)",
             write={
+                "snowflake": "LAST_DAY(CAST('2025-12-15' AS DATE), WEEK)",
                 "duckdb": "CAST(CAST('2025-12-15' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2025-12-15' AS DATE))) % 7) DAY AS DATE)",
             },
         )

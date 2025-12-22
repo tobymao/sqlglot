@@ -1363,8 +1363,12 @@ class Tokenizer(metaclass=_Tokenizer):
                 decimal = True
                 self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
-                scientific += 1
-                self._advance()
+                # Only consume +/- if followed by a digit
+                if self._current + 1 < self.size and self.sql[self._current + 1].isdigit():
+                    scientific += 1
+                    self._advance()
+                else:
+                    return self._add(TokenType.NUMBER)
             elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()

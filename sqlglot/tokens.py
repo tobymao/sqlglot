@@ -715,6 +715,8 @@ class Tokenizer(metaclass=_Tokenizer):
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
         **{f"{prefix}}}}}": TokenType.BLOCK_END for prefix in ("+", "-")},
         HINT_START: TokenType.HINT,
+        "&<": TokenType.AMP_LT,
+        "&>": TokenType.AMP_GT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
         "?::": TokenType.QDCOLON,
@@ -852,6 +854,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PRAGMA": TokenType.PRAGMA,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,
+        "OPERATOR": TokenType.OPERATOR,
         "QUALIFY": TokenType.QUALIFY,
         "RANGE": TokenType.RANGE,
         "RECURSIVE": TokenType.RECURSIVE,
@@ -1365,8 +1368,12 @@ class Tokenizer(metaclass=_Tokenizer):
                 decimal = True
                 self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
-                scientific += 1
-                self._advance()
+                # Only consume +/- if followed by a digit
+                if self._current + 1 < self.size and self.sql[self._current + 1].isdigit():
+                    scientific += 1
+                    self._advance()
+                else:
+                    return self._add(TokenType.NUMBER)
             elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()

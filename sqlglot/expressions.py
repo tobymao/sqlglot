@@ -6597,6 +6597,7 @@ class MakeInterval(Func):
     arg_types = {
         "year": False,
         "month": False,
+        "week": False,
         "day": False,
         "hour": False,
         "minute": False,

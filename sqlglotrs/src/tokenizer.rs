@@ -513,8 +513,13 @@ impl<'a> TokenizerState<'a> {
                 decimal = true;
                 self.advance(1)?;
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
-                scientific += 1;
-                self.advance(1)?;
+                // Only consume +/- if followed by a digit
+                if self.current + 1 < self.size && self.sql[self.current + 1].is_ascii_digit() {
+                    scientific += 1;
+                    self.advance(1)?;
+                } else {
+                    return self.add(self.token_types.number, None);
+                }
             } else if self.peek_char.to_ascii_uppercase() == 'E' && scientific == 0 {
                 scientific += 1;
                 self.advance(1)?;

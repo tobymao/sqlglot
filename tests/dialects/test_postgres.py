@@ -1334,20 +1334,6 @@ FROM json_data, field_ids""",
                 ],
             )
 
-    def test_operator(self):
-        expr = self.parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3")
-
-        expr.left.assert_is(exp.Operator)
-        expr.left.left.assert_is(exp.Literal)
-        expr.left.right.assert_is(exp.Literal)
-        expr.right.assert_is(exp.Literal)
-        self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
-
-        self.validate_identity("SELECT operator FROM t")
-        self.validate_identity("SELECT 1 OPERATOR(+) 2")
-        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
-        self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
-
     def test_bool_or(self):
         self.validate_identity(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

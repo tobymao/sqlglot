@@ -769,6 +769,11 @@ class Snowflake(Dialect):
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
             "BITMAP_OR_AGG": exp.BitmapOrAgg.from_arg_list,
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
+            "CORR": lambda args: exp.Corr(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                null_on_zero_variance=True,
+            ),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATEFROMPARTS": _build_date_from_parts,
             "DATE_FROM_PARTS": _build_date_from_parts,

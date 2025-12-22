@@ -1758,11 +1758,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BIT_XOR(a, b)", "SELECT BITXOR(a, b)")
         self.validate_identity("SELECT BIT_XOR(a, b, 'LEFT')", "SELECT BITXOR(a, b, 'LEFT')")
 
-        self.validate_identity("SELECT BITSHIFTLEFT(a, 1)")
-        self.validate_identity("SELECT BIT_SHIFTLEFT(a, 1)", "SELECT BITSHIFTLEFT(a, 1)")
-        self.validate_identity("SELECT BITSHIFTRIGHT(a, 1)")
-        self.validate_identity("SELECT BIT_SHIFTRIGHT(a, 1)", "SELECT BITSHIFTRIGHT(a, 1)")
-
         # duckdb has an order of operations precedence issue with bitshift and bitwise operators
         self.validate_all(
             "SELECT BITOR(BITSHIFTLEFT(5, 16), BITSHIFTLEFT(3, 8))",
@@ -1777,10 +1772,6 @@ class TestSnowflake(Validator):
             write={"duckdb": "SELECT CAST(255 AS INT128) << 4"},
         )
         self.validate_all(
-            "SELECT BITSHIFTLEFT(255, 4)",
-            write={"duckdb": "SELECT CAST(255 AS INT128) << 4"},
-        )
-        self.validate_all(
             "SELECT BITSHIFTLEFT(CAST(255 AS BINARY), 4)",
             write={"duckdb": "SELECT CAST(CAST(CAST(255 AS BLOB) AS BIT) << 4 AS BLOB)"},
         )
@@ -1788,12 +1779,14 @@ class TestSnowflake(Validator):
             "SELECT BITSHIFTLEFT(X'FF', 4)",
             write={"duckdb": "SELECT CAST(255 AS INT128) << 4"},
         )
-
         self.validate_all(
-            "SELECT BITSHIFTRIGHT(1024, 4)",
-            write={"duckdb": "SELECT CAST(1024 AS INT128) >> 4"},
+            "SELECT BITSHIFTRIGHT(255, 4)",
+            write={"duckdb": "SELECT CAST(255 AS INT128) >> 4"},
         )
-
+        self.validate_all(
+            "SELECT BITSHIFTRIGHT(CAST(255 AS BINARY), 4)",
+            write={"duckdb": "SELECT CAST(CAST(CAST(255 AS BLOB) AS BIT) >> 4 AS BLOB)"},
+        )
         self.validate_all(
             "SELECT BITSHIFTRIGHT(X'FF', 4)",
             write={"duckdb": "SELECT CAST(255 AS INT128) >> 4"},

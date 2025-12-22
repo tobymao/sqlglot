@@ -738,6 +738,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "~~": TokenType.LIKE,
         "~~*": TokenType.ILIKE,
         "~*": TokenType.IRLIKE,
+        "-|-": TokenType.ADJACENT,
         "ALL": TokenType.ALL,
         "AND": TokenType.AND,
         "ANTI": TokenType.ANTI,

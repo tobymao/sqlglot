@@ -361,7 +361,6 @@ class Postgres(Dialect):
             "&<": TokenType.AMP_LT,
             "&>": TokenType.AMP_GT,
             "#-": TokenType.HASH_DASH,
-            "-|-": TokenType.ADJACENT,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
             "BEGIN": TokenType.BEGIN,
@@ -486,7 +485,6 @@ class Postgres(Dialect):
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
             TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
-            TokenType.ADJACENT: binary_range_parser(exp.Adjacent),
         }
 
         STATEMENT_PARSERS = {
@@ -635,7 +633,6 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            exp.Adjacent: lambda self, e: self.binary(e, "-|-"),
             exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,

@@ -589,7 +589,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             for expr in ensure_list(expressions):
                 expr_type = expr.type
 
-                # Stop at the first nested data type
+                # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
                     break
@@ -644,9 +644,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(
                 expression,
                 exp.DataType(
-                    this=exp.DataType.Type.ARRAY,
-                    expressions=[expression.type],
-                    nested=True,
+                    this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
                 ),
             )
 

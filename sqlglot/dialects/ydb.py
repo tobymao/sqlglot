@@ -89,7 +89,9 @@ def eliminate_join_marks(expression: exp.Expression) -> exp.Expression:
                 marked_column_tables.add(table)
 
             if not len(marked_column_tables) == 1:
-                raise ValueError(f"Columns of only a single table can be marked with (+) in a given binary predicate")
+                raise ValueError(
+                    "Columns of only a single table can be marked with (+) in a given binary predicate"
+                )
 
             # Add predicate if join already copied, or add join if it is new
             # Use the last col that was processed (should have table attribute)
@@ -595,7 +597,7 @@ class YDB(Dialect):
                     expression = exp.DataType.build("int64")
                 else:
                     if len(size_expressions) == 1 or (
-                            len(size_expressions) == 2 and int(size_expressions[1].name) == 0
+                        len(size_expressions) == 2 and int(size_expressions[1].name) == 0
                     ):
                         if isinstance(size_expressions[0].this, exp.Star):
                             expression = exp.DataType.build("decimal(38, 0)")
@@ -619,7 +621,6 @@ class YDB(Dialect):
                     )
 
             return super().datatype_sql(expression)
-
 
         def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
             """

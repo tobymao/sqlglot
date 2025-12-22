@@ -290,11 +290,10 @@ class TestYDB(Validator):
         sql = """SELECT * \
                  FROM x \
                  WHERE x.a IN (SELECT y.a FROM y WHERE y.b = x.b)"""
-        expected = """SELECT * FROM `x` LEFT JOIN (SELECT y.a AS a, y.b AS _u_1 FROM `y` WHERE TRUE GROUP BY (b AS b)) AS _u_0 ON x.b = _u_0._u_1 WHERE ListHasItems(($_x, $p_0) - > (ListFilter($_x, ($_x) -> {RETURN $_x = $p_0}))(a, x.a))"""
+        expected = """SELECT * FROM `x` LEFT JOIN (SELECT y.a AS a, y.b AS _u_1 FROM `y` WHERE TRUE GROUP BY (b AS b)) AS _u_0 ON x.b = _u_0._u_1 WHERE ListHasItems(($_x, $p_0)->(ListFilter($_x, ($_x) -> {RETURN $_x = $p_0}))(a, x.a))"""
 
         parsed = parse_one(sql)
         result = parsed.sql(dialect="ydb")
-
         self.assertEqual(result, expected)
 
     def test_unnest_aggregate_subquery(self):
@@ -622,7 +621,6 @@ PARTITION BY HASH (`id`);""",
             "CREATE TABLE `users` (id Uint64 NOT NULL, username Utf8 NOT NULL, email Utf8, age INT32, height Float, weight Double, created_at Timestamp, balance Decimal(6, 1), data_bytes Bytes, PRIMARY KEY(`id`))\nPARTITION BY HASH (`id`);",
         )
 
-
     def test_create_table_complex_types(self):
         sql = """
               CREATE TABLE users
@@ -654,5 +652,8 @@ PARTITION BY HASH (`id`);""",
         parsed = parse_one(sql)
         generated_sql = parsed.sql(dialect="ydb")
 
-        self.assertEqual("""CREATE TABLE `users` (id Uint64 NOT NULL, username Utf8 NOT NULL, email Utf8, age INT32, height Float, weight Double, created_at Timestamp, balance Decimal(6, 1), small_id INT16, tiny_id INT8, big_id INT64, first_name Utf8, last_name Utf8, description Utf8, long_text String, price Decimal(10, 2), amount Decimal(8, 0), rating Decimal(3, 1), birth_date DATE, event_time DATETIME, image_data String, PRIMARY KEY(`id`))
-PARTITION BY HASH (`id`);""", generated_sql)
+        self.assertEqual(
+            """CREATE TABLE `users` (id Uint64 NOT NULL, username Utf8 NOT NULL, email Utf8, age INT32, height Float, weight Double, created_at Timestamp, balance Decimal(6, 1), small_id INT16, tiny_id INT8, big_id INT64, first_name Utf8, last_name Utf8, description Utf8, long_text String, price Decimal(10, 2), amount Decimal(8, 0), rating Decimal(3, 1), birth_date DATE, event_time DATETIME, image_data String, PRIMARY KEY(`id`))
+PARTITION BY HASH (`id`);""",
+            generated_sql,
+        )

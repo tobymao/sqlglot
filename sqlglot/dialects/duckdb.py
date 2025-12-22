@@ -49,6 +49,15 @@ from sqlglot.helper import is_date_unit, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
 
+# Bitwise operations that return binary when given binary input
+BITWISE_BINARY_OPS = (
+    exp.BitwiseLeftShift,
+    exp.BitwiseRightShift,
+    exp.BitwiseAnd,
+    exp.BitwiseOr,
+    exp.BitwiseXor,
+)
+
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
@@ -605,6 +614,8 @@ def _cast_to_bit(arg: exp.Expression) -> exp.Expression:
 
     if isinstance(arg, exp.HexString):
         arg = exp.Unhex(this=exp.Literal.string(arg.this))
+    elif isinstance(arg, exp.Cast) and isinstance(arg.this, exp.HexString):
+        arg = exp.Unhex(this=exp.Literal.string(arg.this.this))
 
     return exp.cast(arg, exp.DataType.Type.BIT)
 
@@ -769,30 +780,60 @@ def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
     )
 
 
-def _prepare_bitshift_for_duckdb(expression: exp.Expression) -> exp.Expression:
+def _bitshift_sql(
+    self: DuckDB.Generator, expression: exp.BitwiseLeftShift | exp.BitwiseRightShift
+) -> str:
     """
-    Transform bitwise shift expressions for DuckDB by injecting INT128 casts.
+    Transform bitshift expressions for DuckDB by injecting BIT/INT128 casts.
 
     DuckDB's bitwise shift operators don't work with BLOB/BINARY types, so we cast
-    them to INT128 for integer arithmetic.
+    them to BIT for the operation, then cast the result back to the original type.
 
     Note: Assumes type annotation has been applied with the source dialect.
     """
-    # Unwrap BINARY/VARBINARY casts that DuckDB can't handle
-    if isinstance(expression.this, exp.Cast) and _is_binary(expression.this):
-        expression.this.replace(expression.this.this)
+    operator = "<<" if isinstance(expression, exp.BitwiseLeftShift) else ">>"
+    original_type = None
+    this = expression.this
 
-    # Check if the input is a BLOB/BINARY type (using is_type) or requires INT128
-    # If so, cast to INT128 for integer arithmetic
-    if _is_binary(expression.this) or expression.args.get("requires_int128"):
-        expression.this.replace(exp.cast(expression.this, exp.DataType.Type.INT128))
+    # Check if input is binary:
+    # 1. Direct binary type annotation on expression.this
+    # 2. Chained bitshift where inner operation's input is binary
+    # 3. CAST to binary type (e.g., X'FF'::BINARY)
+    is_binary_input = (
+        _is_binary(this)
+        or (isinstance(this.this, exp.Expression) and _is_binary(this.this))
+        or (isinstance(this, exp.Cast) and _is_binary(this))
+    )
+
+    # Deal with binary separately, remember the original type, cast back later, etc.
+    if is_binary_input:
+        original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
+
+        # for chained binary operators
+        if isinstance(this, exp.Binary):
+            expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
+        else:
+            expression.set("this", _cast_to_bit(this))
+
+        # Remove the flag for binary otherwise the final cast will get wrapped in an extra INT128 cast
+        expression.args.pop("requires_int128")
+
+    # cast to INT128 if required (e.g. coming from Snowflake)
+    elif expression.args.get("requires_int128"):
+        this.replace(exp.cast(this, exp.DataType.Type.INT128))
+
+    result_sql = self.binary(expression, operator)
 
     # Wrap in parentheses if parent is a bitwise operator to "fix" DuckDB precedence issue
     # DuckDB parses: a << b | c << d  as  (a << b | c) << d
-    if isinstance(expression.parent, (exp.BitwiseAnd, exp.BitwiseOr, exp.BitwiseXor)):
-        return exp.paren(expression, copy=False)
+    if isinstance(expression.parent, exp.Binary):
+        result_sql = self.sql(exp.Paren(this=result_sql))
 
-    return expression
+    # Cast the result back to the original type
+    if original_type:
+        result_sql = self.sql(exp.Cast(this=result_sql, to=original_type))
+
+    return result_sql
 
 
 def _scale_rounding_sql(
@@ -1384,10 +1425,10 @@ class DuckDB(Dialect):
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
-            exp.BitwiseLeftShift: transforms.preprocess([_prepare_bitshift_for_duckdb]),
+            exp.BitwiseLeftShift: _bitshift_sql,
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: _bitwise_agg_sql,
-            exp.BitwiseRightShift: transforms.preprocess([_prepare_bitshift_for_duckdb]),
+            exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),

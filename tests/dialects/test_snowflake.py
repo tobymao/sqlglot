@@ -1782,7 +1782,7 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "SELECT BITSHIFTLEFT(CAST(255 AS BINARY), 4)",
-            write={"duckdb": "SELECT CAST(255 AS INT128) << 4"},
+            write={"duckdb": "SELECT CAST(CAST(CAST(255 AS BLOB) AS BIT) << 4 AS BLOB)"},
         )
         self.validate_all(
             "SELECT BITSHIFTLEFT(X'FF', 4)",
@@ -1793,10 +1793,7 @@ class TestSnowflake(Validator):
             "SELECT BITSHIFTRIGHT(1024, 4)",
             write={"duckdb": "SELECT CAST(1024 AS INT128) >> 4"},
         )
-        self.validate_all(
-            "SELECT BITSHIFTRIGHT(CAST(255 AS BINARY), 4)",
-            write={"duckdb": "SELECT CAST(255 AS INT128) >> 4"},
-        )
+
         self.validate_all(
             "SELECT BITSHIFTRIGHT(X'FF', 4)",
             write={"duckdb": "SELECT CAST(255 AS INT128) >> 4"},

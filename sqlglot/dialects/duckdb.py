@@ -789,11 +789,8 @@ def _bitshift_sql(
     # Check if input is binary:
     # 1. Direct binary type annotation on expression.this
     # 2. Chained bitshift where inner operation's input is binary
-    # 3. CAST to binary type (e.g., X'FF'::BINARY)
-    is_binary_input = (
-        _is_binary(this)
-        or (isinstance(this.this, exp.Expression) and _is_binary(this.this))
-        or (isinstance(this, exp.Cast) and _is_binary(this))
+    is_binary_input = _is_binary(this) or (
+        isinstance(this.this, exp.Expression) and _is_binary(this.this)
     )
 
     # Deal with binary separately, remember the original type, cast back later

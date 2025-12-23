@@ -2493,10 +2493,10 @@ class TestSnowflake(Validator):
 
         # Test TIMEDIFF with NANOSECOND - DuckDB uses EPOCH_NS for nanosecond precision
         self.validate_all(
-            "TIMEDIFF(NANOSECOND, '10:00:00.000000000', '10:00:00.123456789')",
+            "TIMEDIFF(NANOSECOND, CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP), CAST('2023-01-01 10:00:00.123456789' AS TIMESTAMP))",
             write={
-                "duckdb": "EPOCH_NS(CAST('10:00:00.123456789' AS TIMESTAMP_NS)) - EPOCH_NS(CAST('10:00:00.000000000' AS TIMESTAMP_NS))",
-                "snowflake": "DATEDIFF(NANOSECOND, '10:00:00.000000000', '10:00:00.123456789')",
+                "duckdb": "EPOCH_NS(CAST('2023-01-01 10:00:00.123456789' AS TIMESTAMP_NS)) - EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS))",
+                "snowflake": "DATEDIFF(NANOSECOND, CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP), CAST('2023-01-01 10:00:00.123456789' AS TIMESTAMP))",
             },
         )
 
@@ -2518,10 +2518,10 @@ class TestSnowflake(Validator):
 
         # Test TIMEADD with NANOSECOND - DuckDB uses MAKE_TIMESTAMP_NS
         self.validate_all(
-            "TIMEADD(NANOSECOND, 123456789, '10:00:00.000000000')",
+            "TIMEADD(NANOSECOND, 123456789, CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP))",
             write={
-                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST('10:00:00.000000000' AS TIMESTAMP_NS)) + 123456789)",
-                "snowflake": "TIMEADD(NANOSECOND, 123456789, '10:00:00.000000000')",
+                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS)) + 123456789)",
+                "snowflake": "TIMEADD(NANOSECOND, 123456789, CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP))",
             },
         )
 

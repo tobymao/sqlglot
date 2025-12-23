@@ -144,11 +144,16 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
 
 
 def _unwrap_cast(expr: exp.Expression) -> exp.Expression:
-    """Unwrap Cast expression to avoid double-casting that loses nanosecond precision.
+    """Unwrap Cast expression to avoid nested casts when recasting to different types.
 
-    Nested casts can lose precision when converting between
-    timestamp types. By unwrapping the inner cast, we go directly from the source
-    expression to TIMESTAMP_NS, preserving nanosecond precision.
+    While exp.cast avoids recasting to the SAME type, it doesn't unwrap casts to
+    DIFFERENT types. This helper extracts the inner expression before casting to
+    avoid nested casts like CAST(CAST(x AS TIMESTAMP) AS TIMESTAMP_NS).
+
+    Example:
+        Input: CAST('2023-01-01' AS TIMESTAMP)
+        Without unwrap: CAST(CAST('2023-01-01' AS TIMESTAMP) AS TIMESTAMP_NS)
+        With unwrap: CAST('2023-01-01' AS TIMESTAMP_NS)
     """
     return expr.this if isinstance(expr, exp.Cast) else expr
 
@@ -266,9 +271,7 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     unit = expression.args.get("unit")
 
     if _is_nanosecond_unit(unit):
-        this_ts = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
-        expr_ts = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP_NS)
-        return _handle_nanosecond_diff(self, expr_ts, this_ts)
+        return _handle_nanosecond_diff(self, expression.expression, expression.this)
 
     this = exp.cast(expression.this, exp.DataType.Type.TIME)
     expr = exp.cast(expression.expression, exp.DataType.Type.TIME)

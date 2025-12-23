@@ -396,15 +396,31 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
+    target_type = expression.args.get("target_type")
+
+    # Check if we need NTZ (naive timestamp in UTC)
+    is_ntz = target_type and target_type.this in (
+        exp.DataType.Type.TIMESTAMP,
+        exp.DataType.Type.TIMESTAMPNTZ,
+    )
 
     if scale in (None, exp.UnixToTime.SECONDS):
+        # TO_TIMESTAMP returns TIMESTAMPTZ. For NTZ, use AT TIME ZONE 'UTC' to get UTC as naive.
+        if is_ntz:
+            return f"TO_TIMESTAMP({self.sql(timestamp)}) AT TIME ZONE 'UTC'"
         return self.func("TO_TIMESTAMP", timestamp)
     if scale == exp.UnixToTime.MILLIS:
+        # EPOCH_MS already returns TIMESTAMP (naive, UTC)
         return self.func("EPOCH_MS", timestamp)
     if scale == exp.UnixToTime.MICROS:
+        # MAKE_TIMESTAMP already returns TIMESTAMP (naive, UTC)
         return self.func("MAKE_TIMESTAMP", timestamp)
 
-    return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
+    # Other scales: divide and use TO_TIMESTAMP
+    div_expr = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+    if is_ntz:
+        return f"TO_TIMESTAMP({self.sql(div_expr)}) AT TIME ZONE 'UTC'"
+    return self.func("TO_TIMESTAMP", div_expr)
 
 
 WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)
@@ -1468,6 +1484,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMPTZ",
             exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
@@ -1799,10 +1816,22 @@ class DuckDB(Dialect):
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
+            # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)
+            target_type = expression.args.get("target_type")
+            needs_tz = target_type and target_type.this in (
+                exp.DataType.Type.TIMESTAMPLTZ,
+                exp.DataType.Type.TIMESTAMPTZ,
+            )
+
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS TIMESTAMP)"
-            return str_to_time_sql(self, expression)
+                cast_type = "TIMESTAMPTZ" if needs_tz else "TIMESTAMP"
+                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS {cast_type})"
+
+            base_sql = str_to_time_sql(self, expression)
+            if needs_tz:
+                return f"CAST({base_sql} AS TIMESTAMPTZ)"
+            return base_sql
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             if expression.args.get("safe"):

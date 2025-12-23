@@ -4253,6 +4253,39 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_transpile_to_binary(self):
+        expr = self.parse_one("TO_BINARY('48454C50', 'HEX')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
+
+        expr = self.parse_one("TO_BINARY('48454C50')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
+
+        expr = self.parse_one("TO_BINARY('TEST', 'UTF-8')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "ENCODE('TEST')")
+
+        expr = self.parse_one("TO_BINARY('SEVMUA==', 'BASE64')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "FROM_BASE64('SEVMUA==')")
+
+        expr = self.parse_one("TRY_TO_BINARY('48454C50', 'HEX')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(UNHEX('48454C50'))")
+
+        expr = self.parse_one("TRY_TO_BINARY('48454C50')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(UNHEX('48454C50'))")
+
+        expr = self.parse_one("TRY_TO_BINARY('Hello', 'UTF-8')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(ENCODE('Hello'))")
+
+        expr = self.parse_one("TRY_TO_BINARY('SGVsbG8=', 'BASE64')", dialect="snowflake")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(FROM_BASE64('SGVsbG8='))")
+
     def test_transpile_bitwise_ops(self):
         # Binary bitwise operations
         expr = self.parse_one("SELECT BITOR(x'FF', x'0F')", dialect="snowflake")

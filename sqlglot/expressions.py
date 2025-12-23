@@ -8181,6 +8181,7 @@ class UnixToTime(Func):
         "hours": False,
         "minutes": False,
         "format": False,
+        "target_type": False,
     }
 
     SECONDS = Literal.number(0)

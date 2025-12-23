@@ -159,7 +159,6 @@ def _unwrap_cast(expr: exp.Expression) -> exp.Expression:
 
 
 def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
-    """Check if unit is NANOSECOND."""
     return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
 
 
@@ -268,7 +267,7 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
 
 # BigQuery -> DuckDB conversion for the TIME_DIFF function
 def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
-    unit = expression.args.get("unit")
+    unit = expression.unit
 
     if _is_nanosecond_unit(unit):
         return _handle_nanosecond_diff(self, expression.expression, expression.this)
@@ -288,7 +287,7 @@ def date_delta_to_binary_interval_op(
     base_impl = base_date_delta_to_binary_interval_op(cast=cast)
 
     def duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
-        unit = expression.args.get("unit")
+        unit = expression.unit
 
         # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
         if _is_nanosecond_unit(unit):
@@ -518,7 +517,7 @@ def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> e
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
-    unit = expression.args.get("unit")
+    unit = expression.unit
 
     if _is_nanosecond_unit(unit):
         return _handle_nanosecond_diff(self, expression.this, expression.expression)

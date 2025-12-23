@@ -789,7 +789,7 @@ class YDB(Dialect):
             """
 
             self.unnest_subqueries(expression)
-
+            expression = eliminate_join_marks(expression)
             expression = expression.copy() if copy else expression
 
             # Without pragmas, some queries may not work - for example, implicit cross joins are disabled by default.

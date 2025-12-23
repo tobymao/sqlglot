@@ -796,7 +796,7 @@ def _bitshift_sql(
         or (isinstance(this, exp.Cast) and _is_binary(this))
     )
 
-    # Deal with binary separately, remember the original type, cast back later, etc.
+    # Deal with binary separately, remember the original type, cast back later
     if is_binary_input:
         original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
 
@@ -812,6 +812,11 @@ def _bitshift_sql(
     # cast to INT128 if required (e.g. coming from Snowflake)
     elif expression.args.get("requires_int128"):
         this.replace(exp.cast(this, exp.DataType.Type.INT128))
+
+    # Cast shift amount to int in case it's something else
+    shift_amount = expression.expression
+    if isinstance(shift_amount, exp.Literal) and not shift_amount.is_int:
+        expression.set("expression", exp.cast(shift_amount, exp.DataType.Type.INT))
 
     result_sql = self.binary(expression, operator)
 

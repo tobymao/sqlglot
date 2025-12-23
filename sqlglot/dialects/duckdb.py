@@ -143,21 +143,6 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     return self.function_fallback_sql(expression)
 
 
-def _unwrap_cast(expr: exp.Expression) -> exp.Expression:
-    """Unwrap Cast expression to avoid nested casts when recasting to different types.
-
-    While exp.cast avoids recasting to the SAME type, it doesn't unwrap casts to
-    DIFFERENT types. This helper extracts the inner expression before casting to
-    avoid nested casts like CAST(CAST(x AS TIMESTAMP) AS TIMESTAMP_NS).
-
-    Example:
-        Input: CAST('2023-01-01' AS TIMESTAMP)
-        Without unwrap: CAST(CAST('2023-01-01' AS TIMESTAMP) AS TIMESTAMP_NS)
-        With unwrap: CAST('2023-01-01' AS TIMESTAMP_NS)
-    """
-    return expr.this if isinstance(expr, exp.Cast) else expr
-
-
 def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
     return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
 
@@ -168,8 +153,8 @@ def _handle_nanosecond_diff(
     start_time: exp.Expression,
 ) -> str:
     """Generate NANOSECOND diff using EPOCH_NS since DATE_DIFF doesn't support it."""
-    end_ns = exp.cast(_unwrap_cast(end_time), exp.DataType.Type.TIMESTAMP_NS)
-    start_ns = exp.cast(_unwrap_cast(start_time), exp.DataType.Type.TIMESTAMP_NS)
+    end_ns = exp.cast(end_time, exp.DataType.Type.TIMESTAMP_NS)
+    start_ns = exp.cast(start_time, exp.DataType.Type.TIMESTAMP_NS)
 
     # Build expression tree: EPOCH_NS(end) - EPOCH_NS(start)
     return self.sql(
@@ -183,7 +168,7 @@ def _handle_nanosecond_add(
     nanoseconds: exp.Expression,
 ) -> str:
     """Generate NANOSECOND add using EPOCH_NS and make_timestamp_ns since INTERVAL doesn't support it."""
-    timestamp_ns = exp.cast(_unwrap_cast(timestamp), exp.DataType.Type.TIMESTAMP_NS)
+    timestamp_ns = exp.cast(timestamp, exp.DataType.Type.TIMESTAMP_NS)
 
     # Build expression tree: make_timestamp_ns(EPOCH_NS(timestamp) + nanoseconds)
     return self.sql(

@@ -1599,28 +1599,6 @@ class DuckDB(Dialect):
             n = expression.args.get("elementcount")
             gen = expression.args.get("gen")
 
-            # Validate that s and n are literals (constants)
-            # The Zipf distribution parameters must be BIGINT constants to be used in RANGE and POWER functions
-            if s:
-                if not isinstance(s, exp.Literal):
-                    self.unsupported(
-                        f"ZIPF: parameter 's' (exponent) must be a constant literal, got {type(s).__name__}"
-                    )
-                if isinstance(s, exp.Literal) and not s.is_int:
-                    s_sql = self.sql(exp.cast(s, exp.DataType.Type.BIGINT))
-                else:
-                    s_sql = self.sql(s)
-
-            if n:
-                if not isinstance(n, exp.Literal):
-                    self.unsupported(
-                        f"ZIPF: parameter 'n' (element count) must be a constant literal, got {type(n).__name__}"
-                    )
-                if isinstance(n, exp.Literal) and not n.is_int:
-                    n_sql = self.sql(exp.cast(n, exp.DataType.Type.BIGINT))
-                else:
-                    n_sql = self.sql(n)
-
             if isinstance(gen, exp.Rand):
                 # Use RANDOM() for non-deterministic output
                 random_expr = "RANDOM()"
@@ -1629,20 +1607,22 @@ class DuckDB(Dialect):
                 seed_sql = self.sql(gen)
                 random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
 
+            # CTEs: rand captures random value once, weights computes 1/i^s once per row,
+            # cdf computes cumulative probabilities using window functions
             query: exp.Select = exp.maybe_parse(
                 f"""
-                WITH weights AS (
-                    SELECT i, 1.0 / POWER(i, {s_sql}) AS w
-                    FROM RANGE(1, {n_sql} + 1) AS t(i)
+                WITH rand AS (SELECT {random_expr} AS r),
+                weights AS (
+                    SELECT i, 1.0 / POWER(i, {s}) AS w
+                    FROM RANGE(1, {n} + 1) AS t(i)
                 ),
                 cdf AS (
-                    SELECT i,
-                           SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob
+                    SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob
                     FROM weights
                 )
                 SELECT MIN(i)
                 FROM cdf
-                WHERE cum_prob >= {random_expr}
+                WHERE cum_prob >= (SELECT r FROM rand)
                 """,
                 dialect="duckdb",
             )

@@ -5,7 +5,6 @@ from itertools import groupby
 import re
 import typing as t
 
-import sqlglot
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
@@ -1830,44 +1829,25 @@ class DuckDB(Dialect):
                     exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
                 )
                 return self.sql(
-                    exp.Cast(
-                        this=exp.Anonymous(
-                            this="TRY_STRPTIME",
-                            expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
-                        ),
-                        to=exp.DataType(this=cast_type),
-                    )
+                    exp.cast(self.func('TRY_STRPTIME', expression.this, formatted_time), cast_type)
                 )
 
             base_sql = str_to_time_sql(self, expression)
             if needs_tz:
                 return self.sql(
-                    exp.Cast(
-                        this=sqlglot.parse_one(base_sql),
-                        to=exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
+                    exp.cast(
+                        base_sql,
+                        exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
                     )
                 )
             return base_sql
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
             formatted_time = self.format_time(expression)
-            if expression.args.get("safe"):
-                return self.sql(
-                    exp.Cast(
-                        this=exp.Anonymous(
-                            this="TRY_STRPTIME",
-                            expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
-                        ),
-                        to=exp.DataType(this=exp.DataType.Type.DATE),
-                    )
-                )
+            function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
             return self.sql(
-                exp.Cast(
-                    this=exp.Anonymous(
-                        this="STRPTIME",
-                        expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
-                    ),
-                    to=exp.DataType(this=exp.DataType.Type.DATE),
+                exp.cast(
+                    self.func(function_name, expression.this, formatted_time), exp.DataType(this=exp.DataType.Type.DATE)
                 )
             )
 

@@ -784,34 +784,18 @@ def _bitshift_sql(
     original_type = None
     this = expression.this
 
-    # Check if input is binary:
-    # 1. Direct binary type annotation on expression.this
-    # 2. Chained bitshift where inner operation's input is binary
-    is_binary_input = _is_binary(this) or (
-        isinstance(this.this, exp.Expression) and _is_binary(this.this)
-    )
+    # Ensure type annotation is available for nested expressions
+    if not this.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        this = annotate_types(this, dialect=self.dialect)
 
     # Deal with binary separately, remember the original type, cast back later
-    if is_binary_input:
+    if _is_binary(this):
         original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
-
-        # for chained binary operators
-        if isinstance(this, exp.Binary):
-            expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
-        else:
-            expression.set("this", _cast_to_bit(this))
-
-        # Remove the flag for binary otherwise the final cast will get wrapped in an extra INT128 cast
-        expression.args.pop("requires_int128")
-
-    # cast to INT128 if required (e.g. coming from Snowflake)
+        expression.set("this", _cast_to_bit(this))
     elif expression.args.get("requires_int128"):
         this.replace(exp.cast(this, exp.DataType.Type.INT128))
-
-    # Cast shift amount to int in case it's something else
-    shift_amount = expression.expression
-    if isinstance(shift_amount, exp.Literal) and not shift_amount.is_int:
-        expression.set("expression", exp.cast(shift_amount, exp.DataType.Type.INT))
 
     result_sql = self.binary(expression, operator)
 

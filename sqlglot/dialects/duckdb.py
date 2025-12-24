@@ -1598,6 +1598,24 @@ class DuckDB(Dialect):
             """
         )
 
+        # Template for RANDSTR transpilation - placeholders get replaced with actual parameters
+        RANDSTR_TEMPLATE: exp.Expression = exp.maybe_parse(
+            f"""
+            SELECT LISTAGG(
+                SUBSTRING(
+                    '{RANDSTR_CHAR_POOL}',
+                    1 + CAST(FLOOR(random_value * 62) AS INT),
+                    1
+                ),
+                ''
+            )
+            FROM (
+                SELECT (ABS(HASH(i + :seed)) % 1000) / 1000.0 AS random_value
+                FROM RANGE(:length) AS t(i)
+            )
+            """,
+        )
+
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """
             Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
@@ -1624,6 +1642,7 @@ class DuckDB(Dialect):
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """
             Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.
+            Uses a pre-parsed template with placeholders replaced by expression nodes.
 
             RANDSTR(length, generator) generates a random string of specified length.
             - With numeric seed: Use HASH(i + seed) for deterministic output (same seed = same result)
@@ -1644,27 +1663,8 @@ class DuckDB(Dialect):
                 # No generator specified, use default seed (arbitrary but deterministic)
                 seed_value = exp.Literal.number(RANDSTR_SEED)
 
-            length_sql = self.sql(length)
-            seed_sql = self.sql(seed_value)
-
-            query: exp.Select = exp.maybe_parse(
-                f"""
-                SELECT LISTAGG(
-                    SUBSTRING(
-                        '{RANDSTR_CHAR_POOL}',
-                        1 + CAST(FLOOR(random_value * 62) AS INT),
-                        1
-                    ),
-                    ''
-                )
-                FROM (
-                    SELECT (ABS(HASH(i + {seed_sql})) % 1000) / 1000.0 AS random_value
-                    FROM RANGE({length_sql}) AS t(i)
-                )
-                """,
-                dialect="duckdb",
-            )
-            return f"({self.sql(query)})"
+            replacements = {"seed": seed_value, "length": length}
+            return f"({self.sql(exp.replace_placeholders(self.RANDSTR_TEMPLATE, **replacements))})"
 
         def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
             """

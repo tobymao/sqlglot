@@ -756,7 +756,6 @@ class MySQL(Dialect):
         VARCHAR_REQUIRES_SIZE = True
         SUPPORTS_MEDIAN = False
 
-
         def chr_sql(self, expression: exp.Chr) -> str:
             this = self.expressions(sqls=[expression.this] + expression.expressions)
             charset = expression.args.get("charset")
@@ -1311,8 +1310,6 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
-
-
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = expression.args.get("unit")

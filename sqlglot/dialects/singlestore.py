@@ -342,7 +342,6 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript,
         }
 
-
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             # exp.Chr set below to ensure override

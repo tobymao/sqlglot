@@ -816,6 +816,21 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
+            "TRY_DECRYPT": lambda args: exp.Decrypt(
+                this=seq_get(args, 0),
+                passphrase=seq_get(args, 1),
+                aad=seq_get(args, 2),
+                encryption_method=seq_get(args, 3),
+                safe=True,
+            ),
+            "TRY_DECRYPT_RAW": lambda args: exp.DecryptRaw(
+                this=seq_get(args, 0),
+                key=seq_get(args, 1),
+                iv=seq_get(args, 2),
+                aad=seq_get(args, 3),
+                encryption_method=seq_get(args, 4),
+                safe=True,
+            ),
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
             "TRY_TO_BINARY": lambda args: exp.ToBinary(
                 this=seq_get(args, 0), format=seq_get(args, 1), safe=True
@@ -1453,6 +1468,21 @@ class Snowflake(Dialect):
             exp.DatetimeAdd: date_delta_sql("TIMESTAMPADD"),
             exp.DatetimeDiff: timestampdiff_sql,
             exp.DateStrToDate: datestrtodate_sql,
+            exp.Decrypt: lambda self, e: self.func(
+                f"{'TRY_' if e.args.get('safe') else ''}DECRYPT",
+                e.this,
+                e.args.get("passphrase"),
+                e.args.get("aad"),
+                e.args.get("encryption_method"),
+            ),
+            exp.DecryptRaw: lambda self, e: self.func(
+                f"{'TRY_' if e.args.get('safe') else ''}DECRYPT_RAW",
+                e.this,
+                e.args.get("key"),
+                e.args.get("iv"),
+                e.args.get("aad"),
+                e.args.get("encryption_method"),
+            ),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),

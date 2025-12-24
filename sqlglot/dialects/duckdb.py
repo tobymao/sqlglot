@@ -1580,6 +1580,24 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
+        # Template for ZIPF transpilation - placeholders get replaced with actual parameters
+        ZIPF_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            WITH rand AS (SELECT :random_expr AS r),
+            weights AS (
+                SELECT i, 1.0 / POWER(i, :s) AS w
+                FROM RANGE(1, :n + 1) AS t(i)
+            ),
+            cdf AS (
+                SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS p
+                FROM weights
+            )
+            SELECT MIN(i)
+            FROM cdf
+            WHERE p >= (SELECT r FROM rand)
+            """
+        )
+
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """
             Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
@@ -1648,40 +1666,18 @@ class DuckDB(Dialect):
             )
             return f"({self.sql(query)})"
 
-        # Template for ZIPF transpilation - placeholders get replaced with actual parameters
-        ZIPF_TEMPLATE: t.ClassVar[exp.Expression] = exp.maybe_parse(
-            """
-            WITH rand AS (SELECT :random_expr AS r),
-            weights AS (
-                SELECT i, 1.0 / POWER(i, :s) AS w
-                FROM RANGE(1, :n + 1) AS t(i)
-            ),
-            cdf AS (
-                SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS p
-                FROM weights
-            )
-            SELECT MIN(i)
-            FROM cdf
-            WHERE p >= (SELECT r FROM rand)
-            """
-        )
-
         def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
             """
             Transpile Snowflake's ZIPF to DuckDB using CDF-based inverse sampling.
             Uses a pre-parsed template with placeholders replaced by expression nodes.
             """
             s = expression.this
-            n = expression.args.get("elementcount")
-            gen = expression.args.get("gen")
+            n = expression.args["elementcount"]
+            gen = expression.args["gen"]
 
-            random_expr: exp.Expression
-            if isinstance(gen, exp.Rand):
-                # Use RANDOM() for non-deterministic output
-                random_expr = exp.Rand()
-            elif gen:
+            if gen and not isinstance(gen, exp.Rand):
                 # (ABS(HASH(seed)) % 1000000) / 1000000.0
-                random_expr = exp.Div(
+                random_expr: exp.Expression = exp.Div(
                     this=exp.Paren(
                         this=exp.Mod(
                             this=exp.Abs(this=exp.Anonymous(this="HASH", expressions=[gen.copy()])),
@@ -1691,23 +1687,11 @@ class DuckDB(Dialect):
                     expression=exp.Literal.number(1000000.0),
                 )
             else:
+                # Use RANDOM() for non-deterministic output
                 random_expr = exp.Rand()
 
-            # s, n are required args per Zipf.arg_types
-            assert s is not None and n is not None
-            replacements: dict[str, exp.Expression] = {
-                "s": s,
-                "n": n,
-                "random_expr": random_expr,
-            }
-
-            def replace_placeholder(node: exp.Expression) -> exp.Expression:
-                if isinstance(node, exp.Placeholder) and node.name in replacements:
-                    return replacements[node.name].copy()
-                return node
-
-            query = self.ZIPF_TEMPLATE.copy().transform(replace_placeholder)
-            return f"({self.sql(query)})"
+            replacements = {"s": s, "n": n, "random_expr": random_expr}
+            return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """

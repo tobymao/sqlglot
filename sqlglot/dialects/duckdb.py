@@ -1602,30 +1602,41 @@ class DuckDB(Dialect):
         def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
             """
             Transpile Snowflake's ZIPF to DuckDB using CDF-based inverse sampling.
-            Uses a pre-parsed template with placeholders that get replaced with parameters.
+            Uses a pre-parsed template with placeholders replaced by expression nodes.
             """
             s = expression.this
             n = expression.args.get("elementcount")
             gen = expression.args.get("gen")
 
+            random_expr: exp.Expression
             if isinstance(gen, exp.Rand):
                 # Use RANDOM() for non-deterministic output
-                random_expr = "RANDOM()"
+                random_expr = exp.Rand()
+            elif gen:
+                # (ABS(HASH(seed)) % 1000000) / 1000000.0
+                random_expr = exp.Div(
+                    this=exp.Paren(
+                        this=exp.Mod(
+                            this=exp.Abs(this=exp.Anonymous(this="HASH", expressions=[gen.copy()])),
+                            expression=exp.Literal.number(1000000),
+                        )
+                    ),
+                    expression=exp.Literal.number(1000000.0),
+                )
             else:
-                # Use seed with HASH for deterministic output
-                seed_sql = self.sql(gen)
-                random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
+                random_expr = exp.Rand()
 
             # s, n are required args per Zipf.arg_types
-            replacements = {
-                "s": exp.maybe_parse(s),
-                "n": exp.maybe_parse(n),
-                "random_expr": exp.maybe_parse(random_expr),
+            assert s is not None and n is not None
+            replacements: dict[str, exp.Expression] = {
+                "s": s,
+                "n": n,
+                "random_expr": random_expr,
             }
 
             def replace_placeholder(node: exp.Expression) -> exp.Expression:
                 if isinstance(node, exp.Placeholder) and node.name in replacements:
-                    return replacements[node.name]
+                    return replacements[node.name].copy()
                 return node
 
             query = self.ZIPF_TEMPLATE.copy().transform(replace_placeholder)

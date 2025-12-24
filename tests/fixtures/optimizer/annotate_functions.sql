@@ -4093,6 +4093,18 @@ SEARCH_IP(col, '192.168.0.0');
 BOOLEAN;
 
 # dialect: snowflake
+STDDEV(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 STRTOK_TO_ARRAY('a,b,c', ',');
 ARRAY;
 

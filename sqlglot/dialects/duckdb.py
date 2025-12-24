@@ -18,7 +18,7 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     build_default_decimal_type,
     count_if_to_sum,
-    date_delta_to_binary_interval_op as base_date_delta_to_binary_interval_op,
+    date_delta_to_binary_interval_op,
     date_trunc_to_time,
     datestrtodate_sql,
     no_datetime_sql,
@@ -162,23 +162,6 @@ def _handle_nanosecond_diff(
     )
 
 
-def _handle_nanosecond_add(
-    self: DuckDB.Generator,
-    timestamp: exp.Expression,
-    nanoseconds: exp.Expression,
-) -> str:
-    """Generate NANOSECOND add using EPOCH_NS and make_timestamp_ns since INTERVAL doesn't support it."""
-    timestamp_ns = exp.cast(timestamp, exp.DataType.Type.TIMESTAMP_NS)
-
-    # Build expression tree: make_timestamp_ns(EPOCH_NS(timestamp) + nanoseconds)
-    return self.sql(
-        exp.func(
-            "make_timestamp_ns",
-            exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=nanoseconds),
-        )
-    )
-
-
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     """
     Transpile TO_BOOLEAN and TRY_TO_BOOLEAN functions from Snowflake to DuckDB equivalent.
@@ -265,13 +248,13 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
-def date_delta_to_binary_interval_op(
+def _date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
     """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
-    base_impl = base_date_delta_to_binary_interval_op(cast=cast)
+    base_impl = date_delta_to_binary_interval_op(cast=cast)
 
-    def duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
+    def _duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
         unit = expression.unit
 
         # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
@@ -279,11 +262,19 @@ def date_delta_to_binary_interval_op(
             interval_value = expression.expression
             if isinstance(interval_value, exp.Interval):
                 interval_value = interval_value.this
-            return _handle_nanosecond_add(self, expression.this, interval_value)
+
+            timestamp_ns = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
+
+            return self.sql(
+                exp.func(
+                    "MAKE_TIMESTAMP_NS",
+                    exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=interval_value),
+                )
+            )
 
         return base_impl(self, expression)
 
-    return duckdb_date_delta_sql
+    return _duckdb_date_delta_sql
 
 
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
@@ -1320,15 +1311,15 @@ class DuckDB(Dialect):
             ),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
-            exp.DateAdd: date_delta_to_binary_interval_op(),
+            exp.DateAdd: _date_delta_to_binary_interval_op(),
             exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.DateSub: date_delta_to_binary_interval_op(),
+            exp.DateSub: _date_delta_to_binary_interval_op(),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
             exp.DatetimeDiff: _date_diff_sql,
-            exp.DatetimeSub: date_delta_to_binary_interval_op(),
-            exp.DatetimeAdd: date_delta_to_binary_interval_op(),
+            exp.DatetimeSub: _date_delta_to_binary_interval_op(),
+            exp.DatetimeAdd: _date_delta_to_binary_interval_op(),
             exp.DateToDi: lambda self,
             e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
@@ -1392,16 +1383,16 @@ class DuckDB(Dialect):
             ),
             exp.Struct: _struct_sql,
             exp.Transform: rename_func("LIST_TRANSFORM"),
-            exp.TimeAdd: date_delta_to_binary_interval_op(),
-            exp.TimeSub: date_delta_to_binary_interval_op(),
+            exp.TimeAdd: _date_delta_to_binary_interval_op(),
+            exp.TimeSub: _date_delta_to_binary_interval_op(),
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,
-            exp.TimestampAdd: date_delta_to_binary_interval_op(),
+            exp.TimestampAdd: _date_delta_to_binary_interval_op(),
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
-            exp.TimestampSub: date_delta_to_binary_interval_op(),
+            exp.TimestampSub: _date_delta_to_binary_interval_op(),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: self.func(
@@ -1412,7 +1403,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: date_delta_to_binary_interval_op(),
+            exp.TsOrDsAdd: _date_delta_to_binary_interval_op(),
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",

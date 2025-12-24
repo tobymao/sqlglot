@@ -342,14 +342,9 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript,
         }
 
-        def _chr_sql(self, expression: exp.Chr) -> str:
-            if expression.args.get("charset"):
-                return f"CHAR({self.expressions(expression, flat=True)} USING {self.sql(expression, 'charset')})"
-            return rename_func("CHAR")(self, expression)
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
-            exp.CharacterSet: rename_func("CHARSET"),
             # exp.Chr set below to ensure override
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
             if e.args.get("format")
@@ -504,7 +499,6 @@ class SingleStore(MySQL):
             ),
             exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
-            exp.Chr: rename_func("CHAR"),
             exp.Contains: rename_func("INSTR"),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(
                 lambda self, e: self.func(
@@ -576,7 +570,6 @@ class SingleStore(MySQL):
                 "format",
             )(lambda self, e: super().describe_sql(e)),
         }
-        TRANSFORMS[exp.Chr] = _chr_sql
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)
 

@@ -20,6 +20,7 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT 1")
         self.validate_identity("SELECT * FROM `users` ORDER BY ALL")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz')")
+        self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
 
     def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")

@@ -85,8 +85,14 @@ class SingleStore(MySQL):
         }
 
     class Parser(MySQL.Parser):
+        FUNC_TOKENS = {
+            *MySQL.Parser.FUNC_TOKENS,
+            TokenType.CHARACTER_SET,
+        }
+
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
+            "CHARSET": lambda args: exp.CharacterSet(this=seq_get(args, 0)),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
@@ -342,8 +348,15 @@ class SingleStore(MySQL):
             exp.JSONPathSubscript,
         }
 
+        def _chr_sql(self, expression: exp.Chr) -> str:
+            if expression.args.get("charset"):
+                return f"CHAR({self.expressions(expression, flat=True)} USING {self.sql(expression, 'charset')})"
+            return rename_func("CHAR")(self, expression)
+
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
+            exp.CharacterSet: rename_func("CHARSET"),
+            # exp.Chr set below to ensure override
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
             if e.args.get("format")
             else self.func("DATE", e.this),
@@ -569,6 +582,7 @@ class SingleStore(MySQL):
                 "format",
             )(lambda self, e: super().describe_sql(e)),
         }
+        TRANSFORMS[exp.Chr] = _chr_sql
         TRANSFORMS.pop(exp.JSONExtractScalar)
         TRANSFORMS.pop(exp.CurrentDate)
 

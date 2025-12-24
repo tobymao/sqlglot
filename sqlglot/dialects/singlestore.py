@@ -85,14 +85,8 @@ class SingleStore(MySQL):
         }
 
     class Parser(MySQL.Parser):
-        FUNC_TOKENS = {
-            *MySQL.Parser.FUNC_TOKENS,
-            TokenType.CHARACTER_SET,
-        }
-
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
-            "CHARSET": lambda args: exp.CharacterSet(this=seq_get(args, 0)),
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),

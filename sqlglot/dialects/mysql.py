@@ -293,6 +293,7 @@ class MySQL(Dialect):
             TokenType.MOD,
             TokenType.SCHEMA,
             TokenType.VALUES,
+            TokenType.CHARACTER_SET,
         }
 
         CONJUNCTION = {
@@ -330,6 +331,7 @@ class MySQL(Dialect):
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "BIT_COUNT": exp.BitwiseCount.from_arg_list,
+            "CHARSET": lambda args: exp.CharacterSet(this=seq_get(args, 0)),
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
                 source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
             ),

@@ -1593,7 +1593,7 @@ class DuckDB(Dialect):
             """
             value = expression.this
             format_arg = expression.args.get("format")
-            is_safe = expression.args.get("safe", False)
+            is_safe = expression.args.get("safe")
 
             fmt = "HEX"
             if format_arg:

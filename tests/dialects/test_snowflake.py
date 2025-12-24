@@ -282,7 +282,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT ZIPF(1, 10, 1234)",
             write={
-                "duckdb": "SELECT (WITH rand AS (SELECT (ABS(HASH(1234)) % 1000000) / 1000000.0 AS r), weights AS (SELECT i, 1.0 / POWER(i, 1) AS w FROM RANGE(1, 10 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= (SELECT r FROM rand))",
+                "duckdb": "SELECT (WITH rand AS (SELECT (ABS(HASH(1234)) % 1000000) / 1000000.0 AS r), weights AS (SELECT i, 1.0 / POWER(i, 1) AS w FROM RANGE(1, 10 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i NULLS FIRST) / SUM(w) OVER () AS p FROM weights) SELECT MIN(i) FROM cdf WHERE p >= (SELECT r FROM rand))",
                 "snowflake": "SELECT ZIPF(1, 10, 1234)",
             },
         )
@@ -290,7 +290,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT ZIPF(2, 100, RANDOM())",
             write={
-                "duckdb": "SELECT (WITH rand AS (SELECT RANDOM() AS r), weights AS (SELECT i, 1.0 / POWER(i, 2) AS w FROM RANGE(1, 100 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob FROM weights) SELECT MIN(i) FROM cdf WHERE cum_prob >= (SELECT r FROM rand))",
+                "duckdb": "SELECT (WITH rand AS (SELECT RANDOM() AS r), weights AS (SELECT i, 1.0 / POWER(i, 2) AS w FROM RANGE(1, 100 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i NULLS FIRST) / SUM(w) OVER () AS p FROM weights) SELECT MIN(i) FROM cdf WHERE p >= (SELECT r FROM rand))",
                 "snowflake": "SELECT ZIPF(2, 100, RANDOM())",
             },
         )

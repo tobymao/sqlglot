@@ -1581,19 +1581,28 @@ class DuckDB(Dialect):
             )
             return f"({self.sql(query)})"
 
+        # Template for ZIPF transpilation - placeholders get replaced with actual parameters
+        ZIPF_TEMPLATE: t.ClassVar[exp.Expression] = exp.maybe_parse(
+            """
+            WITH rand AS (SELECT :random_expr AS r),
+            weights AS (
+                SELECT i, 1.0 / POWER(i, :s) AS w
+                FROM RANGE(1, :n + 1) AS t(i)
+            ),
+            cdf AS (
+                SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS p
+                FROM weights
+            )
+            SELECT MIN(i)
+            FROM cdf
+            WHERE p >= (SELECT r FROM rand)
+            """
+        )
+
         def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
             """
-            Transpile Snowflake's ZIPF to DuckDB equivalent using cumulative distribution function.
-
-            ZIPF(s, n, gen) generates a random value following Zipf distribution.
-            - s: exponent parameter (typically 1.0) - MUST BE A CONSTANT LITERAL
-            - n: number of elements (range from 1 to n) - MUST BE A CONSTANT LITERAL
-            - gen: random generator or seed
-
-            Uses CDF-based sampling: compute weights 1/k^s, normalize to CDF, sample with random().
-
-            Note: s and n must be constants because they define the distribution shape and are
-            embedded in the generated CTEs. RANGE() also requires constant arguments.
+            Transpile Snowflake's ZIPF to DuckDB using CDF-based inverse sampling.
+            Uses a pre-parsed template with placeholders that get replaced with parameters.
             """
             s = expression.this
             n = expression.args.get("elementcount")
@@ -1607,25 +1616,19 @@ class DuckDB(Dialect):
                 seed_sql = self.sql(gen)
                 random_expr = f"(ABS(HASH({seed_sql})) % 1000000) / 1000000.0"
 
-            # CTEs: rand captures random value once, weights computes 1/i^s once per row,
-            # cdf computes cumulative probabilities using window functions
-            query: exp.Select = exp.maybe_parse(
-                f"""
-                WITH rand AS (SELECT {random_expr} AS r),
-                weights AS (
-                    SELECT i, 1.0 / POWER(i, {s}) AS w
-                    FROM RANGE(1, {n} + 1) AS t(i)
-                ),
-                cdf AS (
-                    SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS cum_prob
-                    FROM weights
-                )
-                SELECT MIN(i)
-                FROM cdf
-                WHERE cum_prob >= (SELECT r FROM rand)
-                """,
-                dialect="duckdb",
-            )
+            # s, n are required args per Zipf.arg_types
+            replacements = {
+                "s": exp.maybe_parse(s),
+                "n": exp.maybe_parse(n),
+                "random_expr": exp.maybe_parse(random_expr),
+            }
+
+            def replace_placeholder(node: exp.Expression) -> exp.Expression:
+                if isinstance(node, exp.Placeholder) and node.name in replacements:
+                    return replacements[node.name]
+                return node
+
+            query = self.ZIPF_TEMPLATE.copy().transform(replace_placeholder)
             return f"({self.sql(query)})"
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:

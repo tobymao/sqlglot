@@ -1398,6 +1398,36 @@ FROM json_data, field_ids""",
             },
         )
 
+    def test_corr(self):
+        self.validate_all(
+            "SELECT CORR(a, b)",
+            write={
+                "duckdb": "SELECT CORR(a, b)",
+                "postgres": "SELECT CORR(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT CORR(a, b) OVER (PARTITION BY c)",
+            write={
+                "duckdb": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+                "postgres": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+            },
+        )
+        self.validate_all(
+            "SELECT CORR(a, b) FILTER(WHERE c > 0)",
+            write={
+                "duckdb": "SELECT CORR(a, b) FILTER(WHERE c > 0)",
+                "postgres": "SELECT CORR(a, b) FILTER(WHERE c > 0)",
+            },
+        )
+        self.validate_all(
+            "SELECT CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d)",
+            write={
+                "duckdb": "SELECT CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d)",
+                "postgres": "SELECT CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d)",
+            },
+        )
+
     def test_regexp_binary(self):
         """See https://github.com/tobymao/sqlglot/pull/2404 for details."""
         self.assertIsInstance(self.parse_one("'thomas' ~ '.*thomas.*'"), exp.Binary)

@@ -1761,7 +1761,7 @@ class SingleStore(MySQL):
                 self.func("TO_JSON", expression.this),
             )
 
-        @unsupported_args("kind", "nested", "values")
+        @unsupported_args("kind", "values")
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`

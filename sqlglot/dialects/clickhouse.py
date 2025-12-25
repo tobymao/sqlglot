@@ -565,6 +565,8 @@ class ClickHouse(Dialect):
             "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
             "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
+            "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
+            "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
         }
 
         FUNCTION_PARSERS.pop("MATCH")

@@ -3184,7 +3184,12 @@ class Parser(metaclass=_Parser):
             elif self._match(TokenType.RETURNING, advance=False):
                 kwargs["returning"] = self._parse_returning()
             elif self._match(TokenType.FROM, advance=False):
-                kwargs["from_"] = self._parse_from(joins=True)
+                from_ = self._parse_from(joins=True)
+                table = from_.this if from_ else None
+                if isinstance(table, exp.Subquery) and self._match(TokenType.JOIN, advance=False):
+                    table.set("joins", list(self._parse_joins()) or None)
+
+                kwargs["from_"] = from_
             elif self._match(TokenType.WHERE, advance=False):
                 kwargs["where"] = self._parse_where()
             elif self._match(TokenType.ORDER_BY, advance=False):

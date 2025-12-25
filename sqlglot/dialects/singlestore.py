@@ -82,6 +82,7 @@ class SingleStore(MySQL):
             "::$": TokenType.DCOLONDOLLAR,
             "::%": TokenType.DCOLONPERCENT,
             "::?": TokenType.DCOLONQMARK,
+            "RECORD": TokenType.STRUCT,
         }
 
     class Parser(MySQL.Parser):
@@ -328,6 +329,7 @@ class SingleStore(MySQL):
         SUPPORTS_UESCAPE = False
         NULL_ORDERING_SUPPORTED = True
         MATCH_AGAINST_TABLE_PREFIX = "TABLE "
+        STRUCT_DELIMITER = ("(", ")")
 
         @staticmethod
         def _unicode_substitute(m: re.Match[str]) -> str:
@@ -613,7 +615,6 @@ class SingleStore(MySQL):
             exp.DataType.Type.SERIAL,
             exp.DataType.Type.SMALLSERIAL,
             exp.DataType.Type.SMALLMONEY,
-            exp.DataType.Type.STRUCT,
             exp.DataType.Type.SUPER,
             exp.DataType.Type.TIMETZ,
             exp.DataType.Type.TIMESTAMPNTZ,
@@ -654,6 +655,7 @@ class SingleStore(MySQL):
             exp.DataType.Type.LINESTRING: "GEOGRAPHY",
             exp.DataType.Type.POLYGON: "GEOGRAPHY",
             exp.DataType.Type.MULTIPOLYGON: "GEOGRAPHY",
+            exp.DataType.Type.STRUCT: "RECORD",
             exp.DataType.Type.JSONB: "BSON",
             exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP",

@@ -1011,6 +1011,16 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_identity("SELECT NUMRANGE(1.1, 2.2) -|- NUMRANGE(2.2, 3.3)")
+        self.validate_identity(
+            "SELECT SLOPE(point '(4,4)', point '(0,0)')",
+            "SELECT SLOPE(CAST('(4,4)' AS POINT), CAST('(0,0)' AS POINT))",
+        )
+
+        width_bucket = self.validate_identity("WIDTH_BUCKET(10, ARRAY[5, 15])")
+        self.assertIsNotNone(width_bucket.args.get("threshold"))
+
+        width_bucket = self.validate_identity("WIDTH_BUCKET(10, 5, 15, 25)")
+        self.assertIsNone(width_bucket.args.get("threshold"))
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

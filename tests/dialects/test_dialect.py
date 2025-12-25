@@ -3383,7 +3383,7 @@ FROM subquery2""",
                 "spark": "SELECT 1 EXCEPT ALL SELECT 1",
                 "sqlite": UnsupportedError,
                 "starrocks": UnsupportedError,
-                "trino": UnsupportedError,
+                "trino": "SELECT 1 EXCEPT ALL SELECT 1",
                 "tsql": UnsupportedError,
             },
         )

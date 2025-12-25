@@ -443,6 +443,7 @@ class TestClickhouse(Validator):
                 "mysql": "SELECT 1 XOR 0 XOR 1",
             },
         )
+        self.validate_identity("SELECT xor(0, 1, 1, 0)")
         self.validate_all(
             "CONCAT(a, b)",
             read={
@@ -674,6 +675,10 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
         )
+
+        self.validate_identity("SELECT or(0, 1, -2)", "SELECT 0 OR 1 OR -2")
+        self.validate_identity("SELECT and(1, 2, 3)", "SELECT 1 AND 2 AND 3")
+        self.validate_identity("SELECT or(and(3, 0), 5)", "SELECT (3 AND 0) OR 5")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

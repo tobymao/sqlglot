@@ -8,6 +8,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
+    DATETIME_DELTA,
     Dialect,
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
@@ -89,6 +90,78 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 
+def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
+    """
+    DuckDB's LAST_DAY only supports finding the last day of a month.
+    For other date parts (year, quarter, week), we need to implement equivalent logic.
+    """
+    date_expr = expression.this
+    unit = expression.text("unit")
+
+    if not unit or unit.upper() == "MONTH":
+        # Default behavior - use DuckDB's native LAST_DAY
+        return self.func("LAST_DAY", date_expr)
+
+    if unit.upper() == "YEAR":
+        # Last day of year: December 31st of the same year
+        year_expr = exp.func("EXTRACT", "YEAR", date_expr)
+        make_date_expr = exp.func(
+            "MAKE_DATE", year_expr, exp.Literal.number(12), exp.Literal.number(31)
+        )
+        return self.sql(make_date_expr)
+
+    if unit.upper() == "QUARTER":
+        # Last day of quarter
+        year_expr = exp.func("EXTRACT", "YEAR", date_expr)
+        quarter_expr = exp.func("EXTRACT", "QUARTER", date_expr)
+
+        # Calculate last month of quarter: quarter * 3. Quarter can be 1 to 4
+        last_month_expr = exp.Mul(this=quarter_expr, expression=exp.Literal.number(3))
+        first_day_last_month_expr = exp.func(
+            "MAKE_DATE", year_expr, last_month_expr, exp.Literal.number(1)
+        )
+
+        # Last day of the last month of the quarter
+        last_day_expr = exp.func("LAST_DAY", first_day_last_month_expr)
+        return self.sql(last_day_expr)
+
+    if unit.upper() == "WEEK":
+        # DuckDB DAYOFWEEK: Sunday=0, Monday=1, ..., Saturday=6
+        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
+        # Days to the last day of week: (7 - dayofweek) % 7, assuming the last day of week is Sunday (Snowflake)
+        # Wrap in parentheses to ensure correct precedence
+        days_to_sunday_expr = exp.Mod(
+            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(7), expression=dow)),
+            expression=exp.Literal.number(7),
+        )
+        interval_expr = exp.Interval(this=days_to_sunday_expr, unit=exp.var("DAY"))
+        add_expr = exp.Add(this=date_expr, expression=interval_expr)
+        cast_expr = exp.cast(add_expr, exp.DataType.Type.DATE)
+        return self.sql(cast_expr)
+
+    self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
+    return self.function_fallback_sql(expression)
+
+
+def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
+    return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
+
+
+def _handle_nanosecond_diff(
+    self: DuckDB.Generator,
+    end_time: exp.Expression,
+    start_time: exp.Expression,
+) -> str:
+    """Generate NANOSECOND diff using EPOCH_NS since DATE_DIFF doesn't support it."""
+    end_ns = exp.cast(end_time, exp.DataType.Type.TIMESTAMP_NS)
+    start_ns = exp.cast(start_time, exp.DataType.Type.TIMESTAMP_NS)
+
+    # Build expression tree: EPOCH_NS(end) - EPOCH_NS(start)
+    return self.sql(
+        exp.Sub(this=exp.func("EPOCH_NS", end_ns), expression=exp.func("EPOCH_NS", start_ns))
+    )
+
+
 def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     """
     Transpile TO_BOOLEAN and TRY_TO_BOOLEAN functions from Snowflake to DuckDB equivalent.
@@ -162,12 +235,46 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
 
 # BigQuery -> DuckDB conversion for the TIME_DIFF function
 def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
+    unit = expression.unit
+
+    if _is_nanosecond_unit(unit):
+        return _handle_nanosecond_diff(self, expression.expression, expression.this)
+
     this = exp.cast(expression.this, exp.DataType.Type.TIME)
     expr = exp.cast(expression.expression, exp.DataType.Type.TIME)
 
     # Although the 2 dialects share similar signatures, BQ seems to inverse
     # the sign of the result so the start/end time operands are flipped
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
+
+
+def _date_delta_to_binary_interval_op(
+    cast: bool = True,
+) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
+    """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
+    base_impl = date_delta_to_binary_interval_op(cast=cast)
+
+    def _duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
+        unit = expression.unit
+
+        # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
+        if _is_nanosecond_unit(unit):
+            interval_value = expression.expression
+            if isinstance(interval_value, exp.Interval):
+                interval_value = interval_value.this
+
+            timestamp_ns = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
+
+            return self.sql(
+                exp.func(
+                    "MAKE_TIMESTAMP_NS",
+                    exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=interval_value),
+                )
+            )
+
+        return base_impl(self, expression)
+
+    return _duckdb_date_delta_sql
 
 
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
@@ -386,9 +493,13 @@ def _build_week_trunc_expression(date_expr: exp.Expression, start_dow: int) -> e
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
+    unit = expression.unit
+
+    if _is_nanosecond_unit(unit):
+        return _handle_nanosecond_diff(self, expression.this, expression.expression)
+
     this = _implicit_datetime_cast(expression.this)
     expr = _implicit_datetime_cast(expression.expression)
-    unit = expression.args.get("unit")
 
     # DuckDB's WEEK diff does not respect Monday crossing (week boundaries), it checks (end_day - start_day) / 7:
     #  SELECT DATE_DIFF('WEEK', CAST('2024-12-13' AS DATE), CAST('2024-12-17' AS DATE)) --> 0 (Monday crossed)
@@ -1200,15 +1311,15 @@ class DuckDB(Dialect):
             ),
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
-            exp.DateAdd: date_delta_to_binary_interval_op(),
+            exp.DateAdd: _date_delta_to_binary_interval_op(),
             exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.DateSub: date_delta_to_binary_interval_op(),
+            exp.DateSub: _date_delta_to_binary_interval_op(),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.Datetime: no_datetime_sql,
             exp.DatetimeDiff: _date_diff_sql,
-            exp.DatetimeSub: date_delta_to_binary_interval_op(),
-            exp.DatetimeAdd: date_delta_to_binary_interval_op(),
+            exp.DatetimeSub: _date_delta_to_binary_interval_op(),
+            exp.DatetimeAdd: _date_delta_to_binary_interval_op(),
             exp.DateToDi: lambda self,
             e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
@@ -1272,16 +1383,16 @@ class DuckDB(Dialect):
             ),
             exp.Struct: _struct_sql,
             exp.Transform: rename_func("LIST_TRANSFORM"),
-            exp.TimeAdd: date_delta_to_binary_interval_op(),
-            exp.TimeSub: date_delta_to_binary_interval_op(),
+            exp.TimeAdd: _date_delta_to_binary_interval_op(),
+            exp.TimeSub: _date_delta_to_binary_interval_op(),
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
             exp.Timestamp: no_timestamp_sql,
-            exp.TimestampAdd: date_delta_to_binary_interval_op(),
+            exp.TimestampAdd: _date_delta_to_binary_interval_op(),
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
-            exp.TimestampSub: date_delta_to_binary_interval_op(),
+            exp.TimestampSub: _date_delta_to_binary_interval_op(),
             exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: self.func(
@@ -1292,7 +1403,7 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: date_delta_to_binary_interval_op(),
+            exp.TsOrDsAdd: _date_delta_to_binary_interval_op(),
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",
@@ -1323,6 +1434,7 @@ class DuckDB(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
+            exp.LastDay: _last_day_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -1459,6 +1571,42 @@ class DuckDB(Dialect):
             exp.NthValue,
         )
 
+        # Template for ZIPF transpilation - placeholders get replaced with actual parameters
+        ZIPF_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            WITH rand AS (SELECT :random_expr AS r),
+            weights AS (
+                SELECT i, 1.0 / POWER(i, :s) AS w
+                FROM RANGE(1, :n + 1) AS t(i)
+            ),
+            cdf AS (
+                SELECT i, SUM(w) OVER (ORDER BY i) / SUM(w) OVER () AS p
+                FROM weights
+            )
+            SELECT MIN(i)
+            FROM cdf
+            WHERE p >= (SELECT r FROM rand)
+            """
+        )
+
+        # Template for RANDSTR transpilation - placeholders get replaced with actual parameters
+        RANDSTR_TEMPLATE: exp.Expression = exp.maybe_parse(
+            f"""
+            SELECT LISTAGG(
+                SUBSTRING(
+                    '{RANDSTR_CHAR_POOL}',
+                    1 + CAST(FLOOR(random_value * 62) AS INT),
+                    1
+                ),
+                ''
+            )
+            FROM (
+                SELECT (ABS(HASH(i + :seed)) % 1000) / 1000.0 AS random_value
+                FROM RANGE(:length) AS t(i)
+            )
+            """,
+        )
+
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """
             Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
@@ -1485,6 +1633,7 @@ class DuckDB(Dialect):
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """
             Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.
+            Uses a pre-parsed template with placeholders replaced by expression nodes.
 
             RANDSTR(length, generator) generates a random string of specified length.
             - With numeric seed: Use HASH(i + seed) for deterministic output (same seed = same result)
@@ -1505,27 +1654,35 @@ class DuckDB(Dialect):
                 # No generator specified, use default seed (arbitrary but deterministic)
                 seed_value = exp.Literal.number(RANDSTR_SEED)
 
-            length_sql = self.sql(length)
-            seed_sql = self.sql(seed_value)
+            replacements = {"seed": seed_value, "length": length}
+            return f"({self.sql(exp.replace_placeholders(self.RANDSTR_TEMPLATE, **replacements))})"
 
-            query: exp.Select = exp.maybe_parse(
-                f"""
-                SELECT LISTAGG(
-                    SUBSTRING(
-                        '{RANDSTR_CHAR_POOL}',
-                        1 + CAST(FLOOR(random_value * 62) AS INT),
-                        1
+        def zipf_sql(self: DuckDB.Generator, expression: exp.Zipf) -> str:
+            """
+            Transpile Snowflake's ZIPF to DuckDB using CDF-based inverse sampling.
+            Uses a pre-parsed template with placeholders replaced by expression nodes.
+            """
+            s = expression.this
+            n = expression.args["elementcount"]
+            gen = expression.args["gen"]
+
+            if gen and not isinstance(gen, exp.Rand):
+                # (ABS(HASH(seed)) % 1000000) / 1000000.0
+                random_expr: exp.Expression = exp.Div(
+                    this=exp.Paren(
+                        this=exp.Mod(
+                            this=exp.Abs(this=exp.Anonymous(this="HASH", expressions=[gen.copy()])),
+                            expression=exp.Literal.number(1000000),
+                        )
                     ),
-                    ''
+                    expression=exp.Literal.number(1000000.0),
                 )
-                FROM (
-                    SELECT (ABS(HASH(i + {seed_sql})) % 1000) / 1000.0 AS random_value
-                    FROM RANGE({length_sql}) AS t(i)
-                )
-                """,
-                dialect="duckdb",
-            )
-            return f"({self.sql(query)})"
+            else:
+                # Use RANDOM() for non-deterministic output
+                random_expr = exp.Rand()
+
+            replacements = {"s": s, "n": n, "random_expr": random_expr}
+            return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """

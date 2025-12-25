@@ -69,6 +69,7 @@ class Trino(Presto):
             )
 
     class Generator(Presto.Generator):
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
         PROPERTIES_LOCATION = {
             **Presto.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,

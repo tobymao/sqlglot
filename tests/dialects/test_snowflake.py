@@ -253,21 +253,21 @@ class TestSnowflake(Validator):
             "SELECT RANDSTR(10, 123)",
             write={
                 "snowflake": "SELECT RANDSTR(10, 123)",
-                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(10) AS t(i)))",
             },
         )
         self.validate_all(
             "SELECT RANDSTR(10, RANDOM(123))",
             write={
                 "snowflake": "SELECT RANDSTR(10, RANDOM(123))",
-                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + 123)) % 1000) / 1000.0 AS random_value FROM RANGE(10) AS t(i)))",
             },
         )
         self.validate_all(
             "SELECT RANDSTR(10, RANDOM())",
             write={
                 "snowflake": "SELECT RANDSTR(10, RANDOM())",
-                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + RANDOM())) % 1000) / 1000.0 AS random_value FROM RANGE(0, 10) AS t(i)))",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + RANDOM())) % 1000) / 1000.0 AS random_value FROM RANGE(10) AS t(i)))",
             },
         )
 
@@ -279,8 +279,22 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("SELECT ZIPF(1, 10, RANDOM())")
-        self.validate_identity("SELECT ZIPF(2, 100, 1234)")
+        self.validate_all(
+            "SELECT ZIPF(1, 10, 1234)",
+            write={
+                "duckdb": "SELECT (WITH rand AS (SELECT (ABS(HASH(1234)) % 1000000) / 1000000.0 AS r), weights AS (SELECT i, 1.0 / POWER(i, 1) AS w FROM RANGE(1, 10 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i NULLS FIRST) / SUM(w) OVER () AS p FROM weights) SELECT MIN(i) FROM cdf WHERE p >= (SELECT r FROM rand))",
+                "snowflake": "SELECT ZIPF(1, 10, 1234)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ZIPF(2, 100, RANDOM())",
+            write={
+                "duckdb": "SELECT (WITH rand AS (SELECT RANDOM() AS r), weights AS (SELECT i, 1.0 / POWER(i, 2) AS w FROM RANGE(1, 100 + 1) AS t(i)), cdf AS (SELECT i, SUM(w) OVER (ORDER BY i NULLS FIRST) / SUM(w) OVER () AS p FROM weights) SELECT MIN(i) FROM cdf WHERE p >= (SELECT r FROM rand))",
+                "snowflake": "SELECT ZIPF(2, 100, RANDOM())",
+            },
+        )
+
         self.validate_identity("SELECT GROUPING_ID(a, b) AS g_id FROM x GROUP BY ROLLUP (a, b)")
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 1)")
@@ -546,10 +560,6 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DD"T"hh24:mi:ss.ff3TZHTZM')"""
-        )
-        self.validate_identity(
-            "UPDATE sometesttable u FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' query_id ) b SET qry_hash_count = new_count WHERE u.sample_query_id  = b.query_id",
-            "UPDATE sometesttable AS u SET qry_hash_count = new_count FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' AS query_id) AS b WHERE u.sample_query_id = b.query_id",
         )
         self.validate_identity(
             "SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t",
@@ -1776,6 +1786,46 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "LAST_DAY(CAST('2023-04-15' AS DATE))",
+            write={
+                "snowflake": "LAST_DAY(CAST('2023-04-15' AS DATE))",
+                "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(CAST('2023-04-15' AS DATE), MONTH)",
+            write={
+                "snowflake": "LAST_DAY(CAST('2023-04-15' AS DATE), MONTH)",
+                "duckdb": "LAST_DAY(CAST('2023-04-15' AS DATE))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(CAST('2024-06-15' AS DATE), YEAR)",
+            write={
+                "snowflake": "LAST_DAY(CAST('2024-06-15' AS DATE), YEAR)",
+                "duckdb": "MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-06-15' AS DATE)), 12, 31)",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(CAST('2024-01-15' AS DATE), QUARTER)",
+            write={
+                "snowflake": "LAST_DAY(CAST('2024-01-15' AS DATE), QUARTER)",
+                "duckdb": "LAST_DAY(MAKE_DATE(EXTRACT(YEAR FROM CAST('2024-01-15' AS DATE)), EXTRACT(QUARTER FROM CAST('2024-01-15' AS DATE)) * 3, 1))",
+            },
+        )
+
+        self.validate_all(
+            "LAST_DAY(CAST('2025-12-15' AS DATE), WEEK)",
+            write={
+                "snowflake": "LAST_DAY(CAST('2025-12-15' AS DATE), WEEK)",
+                "duckdb": "CAST(CAST('2025-12-15' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2025-12-15' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
             "SELECT ST_DISTANCE(a, b)",
             write={
                 "snowflake": "SELECT ST_DISTANCE(a, b)",
@@ -2432,6 +2482,69 @@ class TestSnowflake(Validator):
             write={
                 "duckdb": "DATE_DIFF('QUARTER', CAST('2020-01-15' AS DATE), CAST('2023-06-20' AS DATE))",
                 "snowflake": "DATEDIFF(QUARTER, '2020-01-15', '2023-06-20')",
+            },
+        )
+
+        # Test DATEDIFF with NANOSECOND - DuckDB uses EPOCH_NS since DATE_DIFF doesn't support NANOSECOND
+        self.validate_all(
+            "DATEDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",
+            write={
+                "duckdb": "EPOCH_NS(CAST('2023-01-01 10:00:00.123456789' AS TIMESTAMP_NS)) - EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS))",
+                "snowflake": "DATEDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",
+            },
+        )
+
+        # Test DATEDIFF with NANOSECOND on columns
+        self.validate_all(
+            "DATEDIFF(NANOSECOND, start_time, end_time)",
+            write={
+                "duckdb": "EPOCH_NS(CAST(end_time AS TIMESTAMP_NS)) - EPOCH_NS(CAST(start_time AS TIMESTAMP_NS))",
+                "snowflake": "DATEDIFF(NANOSECOND, start_time, end_time)",
+            },
+        )
+
+        # Test DATEADD with NANOSECOND - DuckDB uses MAKE_TIMESTAMP_NS since INTERVAL doesn't support NANOSECOND
+        self.validate_all(
+            "DATEADD(NANOSECOND, 123456789, '2023-01-01 10:00:00.000000000')",
+            write={
+                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS)) + 123456789)",
+                "snowflake": "DATEADD(NANOSECOND, 123456789, '2023-01-01 10:00:00.000000000')",
+            },
+        )
+
+        # Test DATEADD with NANOSECOND on columns
+        self.validate_all(
+            "DATEADD(NANOSECOND, nano_offset, timestamp_col)",
+            write={
+                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST(timestamp_col AS TIMESTAMP_NS)) + nano_offset)",
+                "snowflake": "DATEADD(NANOSECOND, nano_offset, timestamp_col)",
+            },
+        )
+
+        # Test negative NANOSECOND values (subtraction)
+        self.validate_all(
+            "DATEADD(NANOSECOND, -123456789, '2023-01-01 10:00:00.500000000')",
+            write={
+                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST('2023-01-01 10:00:00.500000000' AS TIMESTAMP_NS)) + -123456789)",
+                "snowflake": "DATEADD(NANOSECOND, -123456789, '2023-01-01 10:00:00.500000000')",
+            },
+        )
+
+        # Test TIMESTAMPDIFF with NANOSECOND - Snowflake parser converts to DATEDIFF
+        self.validate_all(
+            "TIMESTAMPDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",
+            write={
+                "duckdb": "EPOCH_NS(CAST('2023-01-01 10:00:00.123456789' AS TIMESTAMP_NS)) - EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS))",
+                "snowflake": "DATEDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",
+            },
+        )
+
+        # Test TIMESTAMPADD with NANOSECOND - Snowflake parser converts to DATEADD
+        self.validate_all(
+            "TIMESTAMPADD(NANOSECOND, 123456789, '2023-01-01 10:00:00.000000000')",
+            write={
+                "duckdb": "MAKE_TIMESTAMP_NS(EPOCH_NS(CAST('2023-01-01 10:00:00.000000000' AS TIMESTAMP_NS)) + 123456789)",
+                "snowflake": "DATEADD(NANOSECOND, 123456789, '2023-01-01 10:00:00.000000000')",
             },
         )
 
@@ -4290,4 +4403,16 @@ FROM SEMANTIC_VIEW(
             write={
                 "duckdb": "SELECT ROUND(CEIL(1.234 * POWER(10, CAST(1.5 AS INT))) / POWER(10, CAST(1.5 AS INT)), CAST(1.5 AS INT))"
             },
+        )
+
+    def test_update_statement(self):
+        self.validate_identity("UPDATE test SET t = 1 FROM t1")
+        self.validate_identity("UPDATE test SET t = 1 FROM t2 JOIN t3 ON t2.id = t3.id")
+        self.validate_identity(
+            "UPDATE test SET t = 1 FROM (SELECT id FROM test2) AS t2 JOIN test3 AS t3 ON t2.id = t3.id"
+        )
+
+        self.validate_identity(
+            "UPDATE sometesttable u FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' query_id ) b SET qry_hash_count = new_count WHERE u.sample_query_id  = b.query_id",
+            "UPDATE sometesttable AS u SET qry_hash_count = new_count FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' AS query_id) AS b WHERE u.sample_query_id = b.query_id",
         )

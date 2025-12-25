@@ -374,6 +374,7 @@ class Postgres(Dialect):
             "NAME": TokenType.NAME,
             "OID": TokenType.OBJECT_IDENTIFIER,
             "ONLY": TokenType.ONLY,
+            "POINT": TokenType.POINT,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
@@ -446,6 +447,11 @@ class Postgres(Dialect):
             "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
             "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
             "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
+            "WIDTH_BUCKET": lambda args: exp.WidthBucket(
+                this=seq_get(args, 0), threshold=seq_get(args, 1)
+            )
+            if len(args) == 2
+            else exp.WidthBucket.from_arg_list(args),
         }
 
         NO_PAREN_FUNCTIONS = {

@@ -562,10 +562,6 @@ class TestSnowflake(Validator):
             """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DD"T"hh24:mi:ss.ff3TZHTZM')"""
         )
         self.validate_identity(
-            "UPDATE sometesttable u FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' query_id ) b SET qry_hash_count = new_count WHERE u.sample_query_id  = b.query_id",
-            "UPDATE sometesttable AS u SET qry_hash_count = new_count FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' AS query_id) AS b WHERE u.sample_query_id = b.query_id",
-        )
-        self.validate_identity(
             "SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t",
             "SELECT * REPLACE (CAST(col AS VARCHAR) AS scol) FROM t",
         )
@@ -4407,4 +4403,16 @@ FROM SEMANTIC_VIEW(
             write={
                 "duckdb": "SELECT ROUND(CEIL(1.234 * POWER(10, CAST(1.5 AS INT))) / POWER(10, CAST(1.5 AS INT)), CAST(1.5 AS INT))"
             },
+        )
+
+    def test_update_statement(self):
+        self.validate_identity("UPDATE test SET t = 1 FROM t1")
+        self.validate_identity("UPDATE test SET t = 1 FROM t2 JOIN t3 ON t2.id = t3.id")
+        self.validate_identity(
+            "UPDATE test SET t = 1 FROM (SELECT id FROM test2) AS t2 JOIN test3 AS t3 ON t2.id = t3.id"
+        )
+
+        self.validate_identity(
+            "UPDATE sometesttable u FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' query_id ) b SET qry_hash_count = new_count WHERE u.sample_query_id  = b.query_id",
+            "UPDATE sometesttable AS u SET qry_hash_count = new_count FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' AS query_id) AS b WHERE u.sample_query_id = b.query_id",
         )

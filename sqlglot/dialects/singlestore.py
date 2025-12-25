@@ -346,7 +346,6 @@ class SingleStore(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
-            # exp.Chr set below to ensure override
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
             if e.args.get("format")
             else self.func("DATE", e.this),

@@ -756,12 +756,6 @@ class MySQL(Dialect):
         VARCHAR_REQUIRES_SIZE = True
         SUPPORTS_MEDIAN = False
 
-        def chr_sql(self, expression: exp.Chr) -> str:
-            this = self.expressions(sqls=[expression.this] + expression.expressions)
-            charset = expression.args.get("charset")
-            using = f" USING {self.sql(charset)}" if charset else ""
-            return f"CHAR({this}{using})"
-
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ArrayAgg: rename_func("GROUP_CONCAT"),
@@ -769,7 +763,6 @@ class MySQL(Dialect):
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.BitwiseCount: rename_func("BIT_COUNT"),
-            exp.Chr: chr_sql,
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -1310,6 +1303,12 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
+
+        def chr_sql(self, expression: exp.Chr) -> str:
+            this = self.expressions(sqls=[expression.this] + expression.expressions)
+            charset = expression.args.get("charset")
+            using = f" USING {self.sql(charset)}" if charset else ""
+            return f"CHAR({this}{using})"
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = expression.args.get("unit")

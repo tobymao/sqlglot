@@ -6882,7 +6882,7 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.USING):
             to: t.Optional[exp.Expression] = self.expression(
-                exp.CharacterSet, this=self._parse_var()
+                exp.CharacterSet, this=self._parse_var(tokens={TokenType.BINARY})
             )
         elif self._match(TokenType.COMMA):
             to = self._parse_types()

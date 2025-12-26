@@ -573,6 +573,9 @@ class TestMySQL(Validator):
                 "mysql": "CAST(x AS CHAR CHARACTER SET latin1)",
             },
         )
+        self.validate_identity(
+            "CONVERT('a' USING binary)", "CAST('a' AS CHAR CHARACTER SET binary)"
+        )
 
     def test_match_against(self):
         self.validate_all(

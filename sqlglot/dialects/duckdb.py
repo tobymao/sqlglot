@@ -749,6 +749,42 @@ def _boolxor_agg_sql(self: DuckDB.Generator, expression: exp.BoolxorAgg) -> str:
     )
 
 
+def _bitshift_sql(
+    self: DuckDB.Generator, expression: exp.BitwiseLeftShift | exp.BitwiseRightShift
+) -> str:
+    """
+    Transform bitshift expressions for DuckDB by injecting BIT/INT128 casts.
+
+    DuckDB's bitwise shift operators don't work with BLOB/BINARY types, so we cast
+    them to BIT for the operation, then cast the result back to the original type.
+
+    Note: Assumes type annotation has been applied with the source dialect.
+    """
+    operator = "<<" if isinstance(expression, exp.BitwiseLeftShift) else ">>"
+    original_type = None
+    this = expression.this
+
+    # Deal with binary separately, remember the original type, cast back later
+    if _is_binary(this):
+        original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
+        expression.set("this", _cast_to_bit(this))
+    elif expression.args.get("requires_int128"):
+        this.replace(exp.cast(this, exp.DataType.Type.INT128))
+
+    result_sql = self.binary(expression, operator)
+
+    # Wrap in parentheses if parent is a bitwise operator to "fix" DuckDB precedence issue
+    # DuckDB parses: a << b | c << d  as  (a << b | c) << d
+    if isinstance(expression.parent, exp.Binary):
+        result_sql = self.sql(exp.Paren(this=result_sql))
+
+    # Cast the result back to the original type
+    if original_type:
+        result_sql = self.sql(exp.Cast(this=result_sql, to=original_type))
+
+    return result_sql
+
+
 def _scale_rounding_sql(
     self: DuckDB.Generator,
     expression: exp.Expression,
@@ -1288,8 +1324,10 @@ class DuckDB(Dialect):
             ),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
+            exp.BitwiseLeftShift: _bitshift_sql,
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: _bitwise_agg_sql,
+            exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),

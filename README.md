@@ -588,3 +588,29 @@ x + interval '1' month
 **Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
 
 **Community Dialects** are developed and maintained primarily through community contributions. These are fully functional but may receive lower priority for issue resolution compared to officially supported dialects. We welcome and encourage community contributions to improve these dialects.
+
+### Creating a Dialect Plugin
+
+If your database isn't supported, you can create a plugin that registers a custom dialect via entry points. Create a package with your dialect class and register it in `setup.py`:
+
+```python
+from setuptools import setup
+
+setup(
+    name="mydb-sqlglot-dialect",
+    entry_points={
+        "sqlglot.dialects": [
+            "mydb = my_package.dialect:MyDB",
+        ],
+    },
+)
+```
+
+The dialect will be automatically discovered and can be used like any built-in dialect:
+
+```python
+from sqlglot import transpile
+transpile("SELECT * FROM t", read="mydb", write="postgres")
+```
+
+See the [Custom Dialects](#custom-dialects) section for implementation details.

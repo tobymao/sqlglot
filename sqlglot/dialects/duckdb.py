@@ -1686,16 +1686,17 @@ class DuckDB(Dialect):
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """
-            TO_BINARY(value, format) transpilation if the return type is BINARY:
+            TO_BINARY and TRY_TO_BINARY transpilation:
             - 'HEX': TO_BINARY('48454C50', 'HEX') → UNHEX('48454C50')
             - 'UTF-8': TO_BINARY('TEST', 'UTF-8') → ENCODE('TEST')
             - 'BASE64': TO_BINARY('SEVMUA==', 'BASE64') → FROM_BASE64('SEVMUA==')
 
-            format can be 'HEX', 'UTF-8' or 'BASE64'
-            return type can be either VARCHAR or BINARY
+            For TRY_TO_BINARY (safe=True), wrap with TRY():
+            - 'HEX': TRY_TO_BINARY('invalid', 'HEX') → TRY(UNHEX('invalid'))
             """
             value = expression.this
             format_arg = expression.args.get("format")
+            is_safe = expression.args.get("safe")
 
             fmt = "HEX"
             if format_arg:
@@ -1703,12 +1704,23 @@ class DuckDB(Dialect):
 
             if expression.is_type(exp.DataType.Type.BINARY):
                 if fmt == "UTF-8":
-                    return self.func("ENCODE", value)
-                if fmt == "BASE64":
-                    return self.func("FROM_BASE64", value)
+                    result = self.func("ENCODE", value)
+                elif fmt == "BASE64":
+                    result = self.func("FROM_BASE64", value)
+                elif fmt == "HEX":
+                    result = self.func("UNHEX", value)
+                else:
+                    if is_safe:
+                        return self.sql(exp.null())
+                    else:
+                        self.unsupported(f"format {fmt} is not supported")
+                        result = self.func("TO_BINARY", value)
 
-                # Hex
-                return self.func("UNHEX", value)
+                # Wrap with TRY() for TRY_TO_BINARY
+                if is_safe:
+                    result = self.func("TRY", result)
+
+                return result
 
             # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
             return self.func("TO_BINARY", value)

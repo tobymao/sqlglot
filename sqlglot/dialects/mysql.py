@@ -293,6 +293,7 @@ class MySQL(Dialect):
             TokenType.MOD,
             TokenType.SCHEMA,
             TokenType.VALUES,
+            TokenType.CHARACTER_SET,
         }
 
         CONJUNCTION = {

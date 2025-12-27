@@ -499,7 +499,6 @@ class SingleStore(MySQL):
             ),
             exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
-            exp.Chr: rename_func("CHAR"),
             exp.Contains: rename_func("INSTR"),
             exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(
                 lambda self, e: self.func(
@@ -1762,8 +1761,13 @@ class SingleStore(MySQL):
                 self.func("TO_JSON", expression.this),
             )
 
-        @unsupported_args("kind", "nested", "values")
+        @unsupported_args("kind", "values")
         def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.args.get("nested") and not expression.is_type(exp.DataType.Type.STRUCT):
+                self.unsupported(
+                    f"Argument 'nested' is not supported for representation of '{expression.this.value}' in SingleStore"
+                )
+
             if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
                 return "BLOB"

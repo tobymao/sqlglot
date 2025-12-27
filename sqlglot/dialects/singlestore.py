@@ -1763,6 +1763,11 @@ class SingleStore(MySQL):
 
         @unsupported_args("kind", "values")
         def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.args.get("nested") and not expression.is_type(exp.DataType.Type.STRUCT):
+                self.unsupported(
+                    f"Argument 'nested' is not supported for representation of '{expression.this.value}' in SingleStore"
+                )
+
             if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
                 return "BLOB"

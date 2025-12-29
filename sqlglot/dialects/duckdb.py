@@ -5,6 +5,7 @@ from itertools import groupby
 import re
 import typing as t
 
+import sqlglot
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (

@@ -353,8 +353,6 @@ class TestSnowflake(Validator):
         self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_DECFLOAT('123.456')")
         self.validate_identity("TRY_TO_DECFLOAT('1,234.56', '999,999.99')")
-        self.validate_identity("TRY_TO_BINARY('48656C6C6F')")
-        self.validate_identity("TRY_TO_BINARY('48656C6C6F', 'HEX')")
         self.validate_all(
             "TRY_TO_BOOLEAN('true')",
             write={
@@ -507,9 +505,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
-        self.validate_identity("SELECT TO_BINARY('C2')")
-        self.validate_identity("SELECT TO_BINARY('C2', 'HEX')")
-        self.validate_identity("SELECT TO_BINARY('café', 'UTF-8')")
         self.validate_identity(
             "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"
         )
@@ -4325,6 +4320,43 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SELECT ROUND(2.256, CAST(CAST(1.8 AS DECIMAL(38, 0)) AS INT)) AS value",
             },
         )
+
+    def test_to_binary(self):
+        expr = self.validate_identity("TO_BINARY('48454C50', 'HEX')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
+
+        expr = self.validate_identity("TO_BINARY('48454C50')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "UNHEX('48454C50')")
+
+        expr = self.validate_identity("TO_BINARY('TEST', 'UTF-8')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "ENCODE('TEST')")
+
+        expr = self.validate_identity("TO_BINARY('SEVMUA==', 'BASE64')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "FROM_BASE64('SEVMUA==')")
+
+        expr = self.validate_identity("TRY_TO_BINARY('48454C50', 'HEX')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(UNHEX('48454C50'))")
+
+        expr = self.validate_identity("TRY_TO_BINARY('48454C50')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(UNHEX('48454C50'))")
+
+        expr = self.validate_identity("TRY_TO_BINARY('Hello', 'UTF-8')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(ENCODE('Hello'))")
+
+        expr = self.validate_identity("TRY_TO_BINARY('SGVsbG8=', 'BASE64')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "TRY(FROM_BASE64('SGVsbG8='))")
+
+        expr = self.validate_identity("TRY_TO_BINARY('Hello', 'UTF-16')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "NULL")
 
     def test_transpile_bitwise_ops(self):
         # Binary bitwise operations

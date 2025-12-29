@@ -871,6 +871,21 @@ def _regr_val_sql(
     )
 
 
+def _maybe_corr_null_to_false(
+    expression: t.Union[exp.Filter, exp.Window, exp.Corr],
+) -> t.Optional[t.Union[exp.Filter, exp.Window, exp.Corr]]:
+    expr = expression.copy()
+    corr = expr
+    while isinstance(corr, (exp.Window, exp.Filter)):
+        corr = corr.this
+
+    if not isinstance(corr, exp.Corr) or not corr.args.get("null_on_zero_variance"):
+        return None
+
+    corr.set("null_on_zero_variance", False)
+    return expr
+
+
 def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
     """
     Snowflake's DATE_FROM_PARTS allows out-of-range values for the month and day input.
@@ -1348,7 +1363,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
-            exp.Corr: lambda self, e: self.corr_sql(e),
+            exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
@@ -2545,62 +2560,35 @@ class DuckDB(Dialect):
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
         def window_sql(self, expression: exp.Window) -> str:
-            if isinstance(expression.this, exp.Corr) or (
-                isinstance(expression.this, exp.Filter)
-                and isinstance(expression.this.this, exp.Corr)
+            this = expression.this
+            if isinstance(this, exp.Corr) or (
+                isinstance(this, exp.Filter) and isinstance(this.this, exp.Corr)
             ):
-                return self.corr_sql(expression)
+                return self._corr_sql(expression)
 
             return super().window_sql(expression)
 
         def filter_sql(self, expression: exp.Filter) -> str:
             if isinstance(expression.this, exp.Corr):
-                return self.corr_sql(expression)
+                return self._corr_sql(expression)
 
             return super().filter_sql(expression)
 
-        def corr_sql(
-            self: DuckDB.Generator,
+        def _corr_sql(
+            self,
             expression: t.Union[exp.Filter, exp.Window, exp.Corr],
         ) -> str:
-            if isinstance(expression, exp.Corr):
-                corr_sql = self.func("CORR", expression.this, expression.expression)
-                if not expression.args.get("null_on_zero_variance"):
-                    return corr_sql
-            elif isinstance(expression, exp.Window):
-                inner = expression.this
-                if isinstance(inner, exp.Filter):
-                    corr = inner.this
-                    if not corr.args.get("null_on_zero_variance"):
-                        return super().window_sql(expression)
+            if isinstance(expression, exp.Corr) and not expression.args.get(
+                "null_on_zero_variance"
+            ):
+                return self.func("CORR", expression.this, expression.expression)
 
-                    corr_no_null = corr.copy()
-                    corr_no_null.set("null_on_zero_variance", False)
-                    inner_no_null = inner.copy()
-                    inner_no_null.set("this", corr_no_null)
-                    outer_no_null = expression.copy()
-                    outer_no_null.set("this", inner_no_null)
-
-                    corr_sql = super().window_sql(outer_no_null)
-                else:
-                    if not inner.args.get("null_on_zero_variance"):
-                        return super().window_sql(expression)
-
-                    corr_no_null = inner.copy()
-                    corr_no_null.set("null_on_zero_variance", False)
-                    outer_no_null = expression.copy()
-                    outer_no_null.set("this", corr_no_null)
-
-                    corr_sql = super().window_sql(outer_no_null)
-            elif isinstance(expression, exp.Filter):
-                if not expression.this.args.get("null_on_zero_variance"):
+            corr_expr = _maybe_corr_null_to_false(expression)
+            if corr_expr is None:
+                if isinstance(expression, exp.Window):
+                    return super().window_sql(expression)
+                if isinstance(expression, exp.Filter):
                     return super().filter_sql(expression)
+                corr_expr = expression  # make mypy happy
 
-                corr_no_null = expression.this.copy()
-                corr_no_null.set("null_on_zero_variance", False)
-                filter_no_null = expression.copy()
-                filter_no_null.set("this", corr_no_null)
-
-                corr_sql = super().filter_sql(filter_no_null)
-
-            return f"CASE WHEN {self.func('ISNAN', corr_sql)} THEN NULL ELSE {corr_sql} END"
+            return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))

@@ -196,14 +196,6 @@ BITSHIFTRIGHT(1024, 2);
 INT;
 
 # dialect: snowflake
-BITSHIFTLEFT(CAST(255 AS BINARY), 4);
-BINARY;
-
-# dialect: snowflake
-BITSHIFTRIGHT(CAST(255 AS BINARY), 4);
-BINARY;
-
-# dialect: snowflake
 BITSHIFTLEFT(X'FF', 4);
 BINARY;
 

@@ -406,9 +406,10 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
 
     if scale in (None, exp.UnixToTime.SECONDS):
         # TO_TIMESTAMP returns TIMESTAMPTZ. For NTZ, use AT TIME ZONE 'UTC' to get UTC as naive.
+        to_timestamp: exp.Expression = exp.Anonymous(this="TO_TIMESTAMP", expressions=[timestamp])
         if is_ntz:
-            return f"TO_TIMESTAMP({self.sql(timestamp)}) AT TIME ZONE 'UTC'"
-        return self.func("TO_TIMESTAMP", timestamp)
+            to_timestamp = exp.AtTimeZone(this=to_timestamp, zone=exp.Literal.string("UTC"))
+        return self.sql(to_timestamp)
     if scale == exp.UnixToTime.MILLIS:
         # EPOCH_MS already returns TIMESTAMP (naive, UTC)
         return self.func("EPOCH_MS", timestamp)
@@ -417,10 +418,13 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
         return self.func("MAKE_TIMESTAMP", timestamp)
 
     # Other scales: divide and use TO_TIMESTAMP
-    div_expr = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+    timestamp = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+    to_timestamp = exp.Anonymous(this="TO_TIMESTAMP", expressions=[timestamp])
+
     if is_ntz:
-        return f"TO_TIMESTAMP({self.sql(div_expr)}) AT TIME ZONE 'UTC'"
-    return self.func("TO_TIMESTAMP", div_expr)
+        to_timestamp = exp.AtTimeZone(this=to_timestamp, zone=exp.Literal.string("UTC"))
+
+    return self.sql(to_timestamp)
 
 
 WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)

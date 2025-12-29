@@ -475,8 +475,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("SELECT STDDEV(x)", "SELECT STDDEV_SAMP(x)")
+        self.validate_identity(
+            "SELECT STDDEV(x) OVER (PARTITION BY 1)", "SELECT STDDEV_SAMP(x) OVER (PARTITION BY 1)"
+        )
         self.validate_identity("SELECT STDDEV_POP(x)")
+        self.validate_identity("SELECT STDDEV_POP(x) OVER (PARTITION BY 1)")
         self.validate_identity("SELECT STDDEV_SAMP(x)")
+        self.validate_identity("SELECT STDDEV_SAMP(x) OVER (PARTITION BY 1)")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")

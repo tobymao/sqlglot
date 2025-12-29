@@ -2137,22 +2137,23 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "UNIFORM(1, 10, RANDOM(5))",
                 "databricks": "UNIFORM(1, 10, 5)",
+                "duckdb": "CAST(FLOOR(1 + RANDOM() * (10 - 1 + 1)) AS BIGINT)",
             },
         )
-        (
-            self.validate_all(
-                "UNIFORM(1, 10, RANDOM())",
-                write={
-                    "snowflake": "UNIFORM(1, 10, RANDOM())",
-                    "databricks": "UNIFORM(1, 10)",
-                },
-            ),
+        self.validate_all(
+            "UNIFORM(1, 10, RANDOM())",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+                "databricks": "UNIFORM(1, 10)",
+                "duckdb": "CAST(FLOOR(1 + RANDOM() * (10 - 1 + 1)) AS BIGINT)",
+            },
         )
         self.validate_all(
             "UNIFORM(1, 10, 5)",
             write={
                 "snowflake": "UNIFORM(1, 10, 5)",
                 "databricks": "UNIFORM(1, 10, 5)",
+                "duckdb": "CAST(FLOOR(1 + (ABS(HASH(5)) % 1000000) / 1000000.0 * (10 - 1 + 1)) AS BIGINT)",
             },
         )
         self.validate_identity("SYSDATE()")

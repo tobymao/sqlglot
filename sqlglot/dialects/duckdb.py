@@ -1607,6 +1607,12 @@ class DuckDB(Dialect):
             """,
         )
 
+        UNIFORM_INT_TEMPLATE: exp.Expression = exp.maybe_parse(
+            "CAST(FLOOR(:min + :random * (:max - :min + 1)) AS BIGINT)"
+        )
+
+        UNIFORM_FLOAT_TEMPLATE: exp.Expression = exp.maybe_parse(":min + :random * (:max - :min)")
+
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """
             Transpile Snowflake's BITMAP_BIT_POSITION to DuckDB CASE expression.
@@ -1820,6 +1826,7 @@ class DuckDB(Dialect):
         def uniform_sql(self, expression: exp.Uniform) -> str:
             """
             Transpile Snowflake's UNIFORM(min, max, gen) to DuckDB.
+            Uses pre-parsed templates with placeholders replaced by expression nodes.
 
             UNIFORM returns a random value in [min, max]:
             - Integer result if both min and max are integers
@@ -1836,35 +1843,17 @@ class DuckDB(Dialect):
             # Build the random value expression [0, 1)
             if gen and not isinstance(gen, exp.Rand):
                 # Seed value: (ABS(HASH(seed)) % 1000000) / 1000000.0
-                random_expr: exp.Expression = exp.Div(
-                    this=exp.Paren(
-                        this=exp.Mod(
-                            this=exp.Abs(this=exp.Anonymous(this="HASH", expressions=[gen])),
-                            expression=exp.Literal.number(1000000),
-                        )
-                    ),
-                    expression=exp.Literal.number(1000000.0),
+                random_expr = exp.replace_placeholders(
+                    exp.maybe_parse("(ABS(HASH(:seed)) % 1000000) / 1000000.0"),
+                    seed=gen,
                 )
             else:
                 random_expr = exp.Rand()
 
-            # Build: min + random * (max - min [+ 1 for int])
-            range_expr: exp.Expression = exp.Sub(this=max_val, expression=min_val)
-            if is_int_result:
-                range_expr = exp.Add(this=range_expr, expression=exp.Literal.number(1))
+            template = self.UNIFORM_INT_TEMPLATE if is_int_result else self.UNIFORM_FLOAT_TEMPLATE
+            replacements = {"min": min_val, "max": max_val, "random": random_expr}
 
-            result: exp.Expression = exp.Add(
-                this=min_val,
-                expression=exp.Mul(this=random_expr, expression=exp.Paren(this=range_expr)),
-            )
-
-            if is_int_result:
-                result = exp.Cast(
-                    this=exp.Floor(this=result),
-                    to=exp.DataType.build("BIGINT"),
-                )
-
-            return self.sql(result)
+            return self.sql(exp.replace_placeholders(template, **replacements))
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

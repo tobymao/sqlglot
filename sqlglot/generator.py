@@ -5474,7 +5474,7 @@ class Generator(metaclass=_Generator):
         return self.func("WEEK", expression.this)
 
     def chr_sql(self, expression: exp.Chr) -> str:
-        this = self.expressions(sqls=[expression.this] + expression.expressions)
+        this = self.expressions(expression)
         charset = expression.args.get("charset")
         using = f" USING {self.sql(charset)}" if charset else ""
         return f"{expression.sql_name()}({this}{using})"

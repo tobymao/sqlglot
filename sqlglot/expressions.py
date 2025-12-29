@@ -8069,11 +8069,11 @@ class Stddev(AggFunc):
 
 
 class StddevPop(AggFunc):
-    arg_types = {"this": True, "partition": False, "order": False}
+    pass
 
 
 class StddevSamp(AggFunc):
-    arg_types = {"this": True, "partition": False, "order": False}
+    pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/time_functions#time

@@ -1809,14 +1809,14 @@ class TestSnowflake(Validator):
             "SELECT BITSHIFTLEFT(X'002A'::BINARY, 1)",
             write={
                 "snowflake": "SELECT BITSHIFTLEFT(CAST(x'002A' AS BINARY), 1)",
-                "duckdb": "SELECT CAST(CAST(UNHEX('002A') AS BIT) << 1 AS BLOB)",
+                "duckdb": "SELECT CAST(CAST(CAST(UNHEX('002A') AS BLOB) AS BIT) << 1 AS BLOB)",
             },
         )
         self.validate_all(
             "SELECT BITSHIFTRIGHT(X'002A'::BINARY, 1)",
             write={
                 "snowflake": "SELECT BITSHIFTRIGHT(CAST(x'002A' AS BINARY), 1)",
-                "duckdb": "SELECT CAST(CAST(UNHEX('002A') AS BIT) >> 1 AS BLOB)",
+                "duckdb": "SELECT CAST(CAST(CAST(UNHEX('002A') AS BLOB) AS BIT) >> 1 AS BLOB)",
             },
         )
 
@@ -2237,7 +2237,7 @@ class TestSnowflake(Validator):
             "SELECT x'ABCD'",
             write={
                 "snowflake": "SELECT x'ABCD'",
-                "duckdb": "SELECT CAST(HEX(FROM_HEX('ABCD')) AS VARBINARY)",
+                "duckdb": "SELECT UNHEX('ABCD')",
             },
         )
 

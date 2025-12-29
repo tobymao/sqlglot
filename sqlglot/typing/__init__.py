@@ -42,6 +42,8 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         for expr_type in {
             exp.FromBase32,
             exp.FromBase64,
+            exp.HexString,
+            exp.Unhex,
         }
     },
     **{

@@ -583,7 +583,7 @@ def _cast_to_boolean(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
 
 
 def _is_binary(arg: exp.Expression) -> bool:
-    return arg.is_type(
+    return isinstance(arg, exp.HexString) or arg.is_type(
         exp.DataType.Type.BINARY,
         exp.DataType.Type.VARBINARY,
         exp.DataType.Type.BLOB,
@@ -791,7 +791,7 @@ def _bitshift_sql(
         this = annotate_types(this, dialect=self.dialect)
 
     # Deal with binary separately, remember the original type, cast back later
-    if _is_binary(this) or isinstance(this, exp.HexString):
+    if _is_binary(this):
         original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
         expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
     elif expression.args.get("requires_int128"):
@@ -2495,16 +2495,8 @@ class DuckDB(Dialect):
         def hexstring_sql(
             self, expression: exp.HexString, binary_function_repr: t.Optional[str] = None
         ) -> str:
-            from_hex = super().hexstring_sql(expression, binary_function_repr="FROM_HEX")
-
-            if expression.args.get("is_integer"):
-                return from_hex
-
-            # `from_hex` has transpiled x'ABCD' (BINARY) to DuckDB's '\xAB\xCD' (BINARY)
-            # `to_hex` & CASTing transforms it to "ABCD" (BINARY) to match representation
-            to_hex = exp.cast(self.func("TO_HEX", from_hex), exp.DataType.Type.BLOB)
-
-            return self.sql(to_hex)
+            # UNHEX('FF') correctly produces blob \xFF in DuckDB
+            return super().hexstring_sql(expression, binary_function_repr="UNHEX")
 
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
             unit = unit_to_str(expression)

@@ -791,9 +791,9 @@ def _bitshift_sql(
         this = annotate_types(this, dialect=self.dialect)
 
     # Deal with binary separately, remember the original type, cast back later
-    if _is_binary(this):
+    if _is_binary(this) or isinstance(this, exp.HexString):
         original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
-        expression.set("this", _cast_to_bit(this))
+        expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
     elif expression.args.get("requires_int128"):
         this.replace(exp.cast(this, exp.DataType.Type.INT128))
 

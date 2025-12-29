@@ -182,9 +182,6 @@ def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | 
         # Snowflake specifies INT128 for bitwise shifts
         if expr_type in (exp.BitwiseLeftShift, exp.BitwiseRightShift):
             result.set("requires_int128", True)
-            # Mark HexStrings as integers for proper rendering in target dialects
-            for hexstr in result.find_all(exp.HexString):
-                hexstr.set("is_integer", True)
 
         return result
 

@@ -1787,8 +1787,8 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT BITSHIFTLEFT(X'FF', 4)",
             write={
-                "snowflake": "SELECT BITSHIFTLEFT(255, 4)",
-                "duckdb": "SELECT CAST(255 AS INT128) << 4",
+                "snowflake": "SELECT BITSHIFTLEFT(x'FF', 4)",
+                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) << 4 AS BLOB)",
             },
         )
         self.validate_all(
@@ -1801,8 +1801,22 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT BITSHIFTRIGHT(X'FF', 4)",
             write={
-                "snowflake": "SELECT BITSHIFTRIGHT(255, 4)",
-                "duckdb": "SELECT CAST(255 AS INT128) >> 4",
+                "snowflake": "SELECT BITSHIFTRIGHT(x'FF', 4)",
+                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)",
+            },
+        )
+        self.validate_all(
+            "SELECT BITSHIFTLEFT(X'002A'::BINARY, 1)",
+            write={
+                "snowflake": "SELECT BITSHIFTLEFT(CAST(x'002A' AS BINARY), 1)",
+                "duckdb": "SELECT CAST(CAST(UNHEX('002A') AS BIT) << 1 AS BLOB)",
+            },
+        )
+        self.validate_all(
+            "SELECT BITSHIFTRIGHT(X'002A'::BINARY, 1)",
+            write={
+                "snowflake": "SELECT BITSHIFTRIGHT(CAST(x'002A' AS BINARY), 1)",
+                "duckdb": "SELECT CAST(CAST(UNHEX('002A') AS BIT) >> 1 AS BLOB)",
             },
         )
 

@@ -5,6 +5,7 @@ from itertools import groupby
 import re
 import typing as t
 
+import sqlglot
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
@@ -1829,19 +1830,50 @@ class DuckDB(Dialect):
 
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                cast_type = "TIMESTAMPTZ" if needs_tz else "TIMESTAMP"
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS {cast_type})"
+                cast_type = (
+                    exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
+                )
+                return self.sql(
+                    exp.Cast(
+                        this=exp.Anonymous(
+                            this="TRY_STRPTIME",
+                            expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
+                        ),
+                        to=exp.DataType(this=cast_type),
+                    )
+                )
 
             base_sql = str_to_time_sql(self, expression)
             if needs_tz:
-                return f"CAST({base_sql} AS TIMESTAMPTZ)"
+                return self.sql(
+                    exp.Cast(
+                        this=sqlglot.parse_one(base_sql),
+                        to=exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
+                    )
+                )
             return base_sql
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
+            formatted_time = self.format_time(expression)
             if expression.args.get("safe"):
-                formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
-            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
+                return self.sql(
+                    exp.Cast(
+                        this=exp.Anonymous(
+                            this="TRY_STRPTIME",
+                            expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
+                        ),
+                        to=exp.DataType(this=exp.DataType.Type.DATE),
+                    )
+                )
+            return self.sql(
+                exp.Cast(
+                    this=exp.Anonymous(
+                        this="STRPTIME",
+                        expressions=[expression.this, sqlglot.parse_one(formatted_time or "")],
+                    ),
+                    to=exp.DataType(this=exp.DataType.Type.DATE),
+                )
+            )
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
             if not expression.this:

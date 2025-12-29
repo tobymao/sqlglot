@@ -151,7 +151,6 @@ class Oracle(Dialect):
                 order=self._parse_order(),
             ),
             "JSON_EXISTS": lambda self: self._parse_json_exists(),
-            "CHR": lambda self: self._parse_chr(),
         }
         FUNCTION_PARSERS.pop("CONVERT")
 
@@ -255,11 +254,6 @@ class Oracle(Dialect):
                 on_condition=self._parse_on_condition(),
             )
 
-        def _parse_chr(self) -> exp.Chr:
-            args = [self._parse_bitwise()]
-            charset = self._match(TokenType.USING) and self._parse_var()
-            return self.expression(exp.Chr, expressions=args, charset=charset)
-
         def _parse_into(self) -> t.Optional[exp.Into]:
             # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
             bulk_collect = self._match(TokenType.BULK_COLLECT_INTO)
@@ -340,8 +334,6 @@ class Oracle(Dialect):
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
-            exp.Chr: lambda self,
-            e: f"CHR({self.sql(e.expressions[0])}{' USING ' + self.sql(e, 'charset') if e.args.get('charset') else ''})",
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
             exp.EuclideanDistance: rename_func("L2_DISTANCE"),
             exp.ILike: no_ilike_sql,

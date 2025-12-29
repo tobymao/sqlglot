@@ -1281,6 +1281,16 @@ class Parser(metaclass=_Parser):
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
+        "CHAR": lambda self: self.expression(
+            exp.Chr,
+            expressions=self._parse_csv(self._parse_assignment),
+            charset=self._match(TokenType.USING) and self._parse_var(),
+        ),
+        "CHR": lambda self: self.expression(
+            exp.Chr,
+            expressions=self._parse_csv(self._parse_assignment),
+            charset=self._match(TokenType.USING) and self._parse_var(),
+        ),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),

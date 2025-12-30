@@ -2465,7 +2465,10 @@ class DuckDB(Dialect):
                 result_sql = self.func("DATE_TRUNC", unit, timestamp)
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
 
-            return self.func("DATE_TRUNC", unit, timestamp)
+            result = self.func("DATE_TRUNC", unit, timestamp)
+            if expression.args.get("cast_to_granularity_type") and timestamp.type:
+                return self.sql(exp.Cast(this=result, to=timestamp.type))
+            return result
 
         def trim_sql(self, expression: exp.Trim) -> str:
             expression.this.replace(_cast_to_varchar(expression.this))

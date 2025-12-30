@@ -6669,7 +6669,7 @@ class TimestampDiff(Func, TimeUnit):
 
 
 class TimestampTrunc(Func, TimeUnit):
-    arg_types = {"this": True, "unit": True, "zone": False}
+    arg_types = {"this": True, "unit": True, "zone": False, "cast_to_granularity_type": False}
 
 
 class TimeSlice(Func, TimeUnit):

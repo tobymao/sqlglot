@@ -806,3 +806,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             qualified.sql(dialect="oracle"),
             'WITH "T" AS (SELECT 1 AS "COL") SELECT "T"."COL" AS "COL", ROWID AS "ROWID" FROM "T" "T" WHERE ROWNUM = 1',
         )
+
+    def test_chr(self):
+        self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
+        self.validate_identity("SELECT CHR(187)")

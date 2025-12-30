@@ -373,11 +373,6 @@ class MySQL(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "CHAR": lambda self: self.expression(
-                exp.Chr,
-                expressions=self._parse_csv(self._parse_assignment),
-                charset=self._match(TokenType.USING) and self._parse_var(),
-            ),
             "GROUP_CONCAT": lambda self: self._parse_group_concat(),
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
@@ -1303,7 +1298,7 @@ class MySQL(Dialect):
             return ""
 
         def chr_sql(self, expression: exp.Chr) -> str:
-            this = self.expressions(sqls=[expression.this] + expression.expressions)
+            this = self.expressions(expression)
             charset = expression.args.get("charset")
             using = f" USING {self.sql(charset)}" if charset else ""
             return f"CHAR({this}{using})"

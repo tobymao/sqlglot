@@ -212,8 +212,6 @@ class Parser(metaclass=_Parser):
         "ARRAY_AGG": lambda args, dialect: exp.ArrayAgg(
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
         ),
-        "CHAR": lambda args: exp.Chr(expressions=args),
-        "CHR": lambda args: exp.Chr(expressions=args),
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,
@@ -1281,6 +1279,8 @@ class Parser(metaclass=_Parser):
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
+        "CHAR": lambda self: self._parse_char(),
+        "CHR": lambda self: self._parse_char(),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),
@@ -6764,6 +6764,13 @@ class Parser(metaclass=_Parser):
 
         gap_fill = exp.GapFill.from_arg_list(args)
         return self.validate_expression(gap_fill, args)
+
+    def _parse_char(self) -> exp.Chr:
+        return self.expression(
+            exp.Chr,
+            expressions=self._parse_csv(self._parse_assignment),
+            charset=self._match(TokenType.USING) and self._parse_var(),
+        )
 
     def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
         this = self._parse_disjunction()

@@ -1540,7 +1540,6 @@ class Snowflake(Dialect):
             ),
             exp.SHA: rename_func("SHA1"),
             exp.SHA1Digest: rename_func("SHA1_BINARY"),
-            exp.Stddev: rename_func("STDDEV_SAMP"),
             exp.MD5Digest: rename_func("MD5_BINARY"),
             exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),

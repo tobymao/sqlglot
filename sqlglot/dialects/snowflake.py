@@ -804,6 +804,7 @@ class Snowflake(Dialect):
             "SHA2_BINARY": exp.SHA2Digest.from_arg_list,
             "SHA2_HEX": exp.SHA2.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "STDDEV_SAMP": exp.Stddev.from_arg_list,
             "STRTOK": _build_strtok,
             "SYSDATE": lambda args: exp.CurrentTimestamp(this=seq_get(args, 0), sysdate=True),
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),

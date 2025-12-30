@@ -6509,7 +6509,7 @@ class DateDiff(Func, TimeUnit):
 
 
 class DateTrunc(Func):
-    arg_types = {"unit": True, "this": True, "zone": False}
+    arg_types = {"unit": True, "this": True, "zone": False, "cast_to_granularity_type": False}
 
     def __init__(self, **args):
         # Across most dialects it's safe to unabbreviate the unit (e.g. 'Q' -> 'QUARTER') except Oracle

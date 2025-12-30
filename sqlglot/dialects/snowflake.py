@@ -261,7 +261,9 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
     unit = map_date_part(trunc.args["unit"])
     trunc.set("unit", unit)
-    if isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit):
+    if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit)) or (
+        isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
+    ):
         trunc.set("cast_to_granularity_type", True)
     return trunc
 

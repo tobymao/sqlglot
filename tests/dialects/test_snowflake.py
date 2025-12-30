@@ -2672,8 +2672,8 @@ class TestSnowflake(Validator):
             "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
             write={
                 "snowflake": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
-                "duckdb": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))"
-            }
+                "duckdb": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+            },
         )
         self.validate_all(
             "DATE_TRUNC('YEAR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
@@ -2683,15 +2683,22 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE))",
+            write={
+                "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE))",
+                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
             "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
             write={
                 "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
-                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))"
-            }
+                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+            },
         )
         # Snowflake's DATE_TRUNC return type matches type of the expresison
         # DuckDB's DATE_TRUNC return type matches type of granularity part.
-        # In Snowflake --> DuckDB, DATE_TRUNC(date_part, timestamp) should be cast to timestamp type preserve Snowflake behavior.
+        # In Snowflake --> DuckDB, DATE_TRUNC(date_part, timestamp) should be cast to timestamp to preserve Snowflake behavior.
         expr = self.parse_one("DATE_TRUNC(YEAR, TIMESTAMP '2026-01-01 00:00:00')")
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(
@@ -2713,6 +2720,13 @@ class TestSnowflake(Validator):
             "DATE_TRUNC('HOUR', CAST('2024-06-15 14:23:45' AS TIMESTAMP))",
         )
 
+        # In Snowflake --> DuckDB, DATE_TRUNC(time_part, date) should be cast to date to preserve Snowflake behavior.
+        expr = self.parse_one("DATE_TRUNC('HOUR', DATE '2026-01-01')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST(DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE)) AS DATE)",
+        )
         self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
 
         self.validate_identity(

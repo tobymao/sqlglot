@@ -1834,7 +1834,7 @@ class DuckDB(Dialect):
             is_int_result = min_val.is_int and max_val.is_int
 
             # Build the random value expression [0, 1)
-            if gen and not isinstance(gen, exp.Rand):
+            if not isinstance(gen, exp.Rand):
                 # Seed value: (ABS(HASH(seed)) % 1000000) / 1000000.0
                 random_expr: exp.Expression = exp.Div(
                     this=exp.Paren(

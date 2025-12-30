@@ -6739,6 +6739,7 @@ class Decrypt(Func):
         "passphrase": True,
         "aad": False,
         "encryption_method": False,
+        "aead": False,
         "safe": False,
     }
 
@@ -6751,6 +6752,7 @@ class DecryptRaw(Func):
         "iv": True,
         "aad": False,
         "encryption_method": False,
+        "aead": False,
         "safe": False,
     }
 

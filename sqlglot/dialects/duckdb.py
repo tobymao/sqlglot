@@ -2453,11 +2453,11 @@ class DuckDB(Dialect):
 
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
             unit = unit_to_str(expression)
-            timestamp = expression.this
-            result = self.func("DATE_TRUNC", unit, timestamp)
+            date = expression.this
+            result = self.func("DATE_TRUNC", unit, date)
 
-            if expression.args.get("cast_to_granularity_type") and timestamp.type:
-                return self.sql(exp.Cast(this=result, to=timestamp.type))
+            if expression.args.get("cast_to_granularity_type") and date.type:
+                return self.sql(exp.Cast(this=result, to=date.type))
             return result
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:

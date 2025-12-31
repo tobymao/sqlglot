@@ -1475,7 +1475,6 @@ class Snowflake(Dialect):
                 e.args.get("passphrase"),
                 e.args.get("aad"),
                 e.args.get("encryption_method"),
-                e.args.get("aead"),
             ),
             exp.DecryptRaw: lambda self, e: self.func(
                 f"{'TRY_' if e.args.get('safe') else ''}DECRYPT_RAW",

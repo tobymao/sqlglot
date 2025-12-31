@@ -241,6 +241,7 @@ EXPRESSION_METADATA = {
             exp.ApproxTopKEstimate,
             exp.Array,
             exp.ArrayAgg,
+            exp.ArrayAppend,
             exp.ArrayConstructCompact,
             exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,

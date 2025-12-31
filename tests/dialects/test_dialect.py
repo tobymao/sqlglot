@@ -1480,12 +1480,14 @@ class TestDialect(Validator):
                 "duckdb": "LIST_PREPEND(x, arr)",
                 "postgres": "ARRAY_PREPEND(x, arr)",
                 "spark": "ARRAY_PREPEND(arr, x)",
+                "databricks": "ARRAY_PREPEND(arr, x)",
                 "snowflake": "ARRAY_PREPEND(arr, x)",
             },
             write={
                 "duckdb": "LIST_PREPEND(x, arr)",
                 "postgres": "ARRAY_PREPEND(x, arr)",
                 "spark": "ARRAY_PREPEND(arr, x)",
+                "databricks": "ARRAY_PREPEND(arr, x)",
                 "snowflake": "ARRAY_PREPEND(arr, x)",
             },
         )
@@ -1497,12 +1499,14 @@ class TestDialect(Validator):
                 "duckdb": "LIST_APPEND(arr, x)",
                 "postgres": "ARRAY_APPEND(arr, x)",
                 "spark": "ARRAY_APPEND(arr, x)",
+                "databricks": "ARRAY_APPEND(arr, x)",
                 "snowflake": "ARRAY_APPEND(arr, x)",
             },
             write={
                 "duckdb": "LIST_APPEND(arr, x)",
                 "postgres": "ARRAY_APPEND(arr, x)",
                 "spark": "ARRAY_APPEND(arr, x)",
+                "databricks": "ARRAY_APPEND(arr, x)",
                 "snowflake": "ARRAY_APPEND(arr, x)",
             },
         )

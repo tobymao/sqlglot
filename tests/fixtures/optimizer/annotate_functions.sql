@@ -1749,6 +1749,10 @@ ARRAY_APPEND([1, 2, 3], 4);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_PREPEND([2, 3, 4], 1);
+ARRAY;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 

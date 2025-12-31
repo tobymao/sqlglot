@@ -6051,6 +6051,10 @@ class ArrayAppend(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class ArrayPrepend(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArrayConcat(Func):
     _sql_names = ["ARRAY_CONCAT", "ARRAY_CAT"]
     arg_types = {"this": True, "expressions": False}

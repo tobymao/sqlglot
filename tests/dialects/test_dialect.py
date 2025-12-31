@@ -1473,6 +1473,15 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "ARRAY_PREPEND(arr, x)",
+            write={
+                "duckdb": "LIST_PREPEND(x, arr)",
+                "postgres": "ARRAY_PREPEND(x, arr)",
+                "snowflake": "ARRAY_PREPEND(arr, x)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

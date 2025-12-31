@@ -243,6 +243,7 @@ EXPRESSION_METADATA = {
             exp.ArrayAgg,
             exp.ArrayAppend,
             exp.ArrayConstructCompact,
+            exp.ArrayPrepend,
             exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,
             exp.MapKeys,

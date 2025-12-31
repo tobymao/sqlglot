@@ -819,6 +819,9 @@ def _expand_stars(
             new_selections.append(expression)
             continue
 
+        # Preserve position metadata from the star expression
+        star_meta = expression.meta.copy() if expression.meta else {}
+
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
@@ -866,6 +869,9 @@ def _expand_stars(
                 else:
                     alias_ = renamed_columns.get(name, name)
                     selection_expr = replaced_columns.get(name) or exp.column(name, table=table)
+                    # Copy position metadata from the star to the expanded column
+                    if star_meta:
+                        selection_expr.meta.update(star_meta)
                     new_selections.append(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name
@@ -939,11 +945,15 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+            original_meta = selection.meta.copy()
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",
                 copy=False,
             )
+            # Preserve position metadata from the original expression
+            if original_meta:
+                selection.meta.update(original_meta)
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
 

@@ -829,6 +829,7 @@ class Snowflake(Dialect):
                 iv=seq_get(args, 2),
                 aad=seq_get(args, 3),
                 encryption_method=seq_get(args, 4),
+                aead=seq_get(args, 5),
                 safe=True,
             ),
             "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),

@@ -291,6 +291,10 @@ def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
+def _build_array_prepend(args: t.List) -> exp.Expression:
+    return exp.ArrayPrepend(this=seq_get(args, 1), expression=seq_get(args, 0))
+
+
 def _build_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
@@ -971,6 +975,7 @@ class DuckDB(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
+            "ARRAY_PREPEND": _build_array_prepend,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
@@ -995,12 +1000,14 @@ class DuckDB(Dialect):
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+            "LIST_APPEND": exp.ArrayAppend.from_arg_list,
             "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
             "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
             "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "LIST_FILTER": exp.ArrayFilter.from_arg_list,
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+            "LIST_PREPEND": _build_array_prepend,
             "LIST_REVERSE_SORT": _build_sort_array_desc,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_TRANSFORM": exp.Transform.from_arg_list,
@@ -1279,9 +1286,11 @@ class DuckDB(Dialect):
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
             ),
+            exp.ArrayAppend: rename_func("LIST_APPEND"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
+            exp.ArrayPrepend: lambda self, e: self.func("LIST_PREPEND", e.expression, e.this),
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])

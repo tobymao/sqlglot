@@ -1473,6 +1473,30 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "ARRAY_PREPEND(arr, x)",
+            read={
+                "duckdb": "LIST_PREPEND(x, arr)",
+                "postgres": "ARRAY_PREPEND(x, arr)",
+            },
+            write={
+                "duckdb": "LIST_PREPEND(x, arr)",
+                "postgres": "ARRAY_PREPEND(x, arr)",
+                "spark": "ARRAY_PREPEND(arr, x)",
+                "snowflake": "ARRAY_PREPEND(arr, x)",
+            },
+        )
+
+        self.validate_all(
+            "ARRAY_APPEND(arr, x)",
+            write={
+                "duckdb": "LIST_APPEND(arr, x)",
+                "postgres": "ARRAY_APPEND(arr, x)",
+                "spark": "ARRAY_APPEND(arr, x)",
+                "snowflake": "ARRAY_APPEND(arr, x)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

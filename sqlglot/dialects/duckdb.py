@@ -1683,7 +1683,7 @@ class DuckDB(Dialect):
 
             replacements = {"s": s, "n": n, "random_expr": random_expr}
             return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
-        
+
         def unixtodate_sql(self: DuckDB.Generator, expression: exp.UnixToDate) -> str:
             """
             Transpile UnixToDate to DuckDB equivalent using make_timestamp_ns with Snowflake logic.
@@ -1699,19 +1699,28 @@ class DuckDB(Dialect):
             # Convert input to BIGINT first for comparisons
             bigint_value = exp.cast(value, exp.DataType.Type.BIGINT)
 
-            # Use CASE to determine precision based on Snowflake thresholds and multiply accordingly
-            case_expr = exp.case().when(
-                exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000)),
-                exp.Mul(this=bigint_value, expression=exp.Literal.number(1000000000))  # seconds
-            ).when(
-                exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000000)),
-                exp.Mul(this=bigint_value, expression=exp.Literal.number(1000000))  # milliseconds
-            ).when(
-                exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000000000)),
-                exp.Mul(this=bigint_value, expression=exp.Literal.number(1000))  # microseconds
-            ).else_(bigint_value)  # nanoseconds, use as-is
+            # Use CASE to determine precision based on Snowflake thresholds and multiply accordingly so that the value is in nanoseconds
+            case_expr = (
+                exp.case()
+                .when(
+                    exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000)),
+                    exp.Mul(
+                        this=bigint_value, expression=exp.Literal.number(1000000000)
+                    ),  # seconds
+                )
+                .when(
+                    exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000000)),
+                    exp.Mul(
+                        this=bigint_value, expression=exp.Literal.number(1000000)
+                    ),  # milliseconds
+                )
+                .when(
+                    exp.LT(this=bigint_value, expression=exp.Literal.number(31536000000000000)),
+                    exp.Mul(this=bigint_value, expression=exp.Literal.number(1000)),  # microseconds
+                )
+                .else_(bigint_value)
+            )  # nanoseconds, use as-is
 
-            # Use make_timestamp_ns with the adjusted nanoseconds value
             timestamp_expr = exp.func("MAKE_TIMESTAMP_NS", case_expr)
             date_expr = exp.cast(timestamp_expr, exp.DataType.Type.DATE)
 

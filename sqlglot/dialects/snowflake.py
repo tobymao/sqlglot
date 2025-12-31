@@ -114,7 +114,7 @@ def _build_datetime(
             formatted_exp = build_formatted_time(klass, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp
-        
+
         if kind == exp.DataType.Type.DATE and int_value:
             return exp.UnixToDate(this=value, safe=safe)
 

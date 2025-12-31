@@ -114,6 +114,9 @@ def _build_datetime(
             formatted_exp = build_formatted_time(klass, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp
+        
+        if kind == exp.DataType.Type.DATE and int_value:
+            return exp.UnixToDate(this=value, safe=safe)
 
         return exp.Anonymous(this=name, expressions=args)
 
@@ -1579,6 +1582,7 @@ class Snowflake(Dialect):
             exp.TsOrDsToDate: lambda self, e: self.func(
                 f"{'TRY_' if e.args.get('safe') else ''}TO_DATE", e.this, self.format_time(e)
             ),
+            exp.UnixToDate: rename_func("TO_DATE"),
             exp.TsOrDsToTime: lambda self, e: self.func(
                 f"{'TRY_' if e.args.get('safe') else ''}TO_TIME", e.this, self.format_time(e)
             ),

@@ -73,6 +73,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.StrToDate,
             exp.TimeStrToDate,
             exp.TsOrDsToDate,
+            exp.UnixToDate,
         }
     },
     **{

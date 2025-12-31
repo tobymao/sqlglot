@@ -2548,7 +2548,7 @@ class TestSnowflake(Validator):
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
 
-        self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
+        self.validate_identity("TO_DATE('12345')").assert_is(exp.UnixToDate)
 
         self.validate_identity(
             "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
@@ -2563,6 +2563,20 @@ class TestSnowflake(Validator):
             write={
                 "duckdb": "CAST(x AS DATE)",
                 "snowflake": "TO_DATE(x)",
+            },
+        )
+        self.validate_all(
+            "TO_DATE('1640995200')",
+            write={
+                "snowflake": "TO_DATE('1640995200')",
+                "duckdb": "CAST(MAKE_TIMESTAMP_NS(CASE WHEN CAST('1640995200' AS BIGINT) < 31536000000 THEN CAST('1640995200' AS BIGINT) * 1000000000 WHEN CAST('1640995200' AS BIGINT) < 31536000000000 THEN CAST('1640995200' AS BIGINT) * 1000000 WHEN CAST('1640995200' AS BIGINT) < 31536000000000000 THEN CAST('1640995200' AS BIGINT) * 1000 ELSE CAST('1640995200' AS BIGINT) END) AS DATE)",
+            },
+        )
+        self.validate_all(
+            "DATE('1640995200')",
+            write={
+                "snowflake": "TO_DATE('1640995200')",
+                "duckdb": "CAST(MAKE_TIMESTAMP_NS(CASE WHEN CAST('1640995200' AS BIGINT) < 31536000000 THEN CAST('1640995200' AS BIGINT) * 1000000000 WHEN CAST('1640995200' AS BIGINT) < 31536000000000 THEN CAST('1640995200' AS BIGINT) * 1000000 WHEN CAST('1640995200' AS BIGINT) < 31536000000000000 THEN CAST('1640995200' AS BIGINT) * 1000 ELSE CAST('1640995200' AS BIGINT) END) AS DATE)",
             },
         )
         self.validate_all(

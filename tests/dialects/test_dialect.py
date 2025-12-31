@@ -1476,8 +1476,11 @@ class TestDialect(Validator):
         self.validate_all(
             "ARRAY_PREPEND(arr, x)",
             read={
+                "": "ARRAY_PREPEND(arr, x)",
                 "duckdb": "LIST_PREPEND(x, arr)",
                 "postgres": "ARRAY_PREPEND(x, arr)",
+                "spark": "ARRAY_PREPEND(arr, x)",
+                "snowflake": "ARRAY_PREPEND(arr, x)",
             },
             write={
                 "duckdb": "LIST_PREPEND(x, arr)",
@@ -1489,6 +1492,13 @@ class TestDialect(Validator):
 
         self.validate_all(
             "ARRAY_APPEND(arr, x)",
+            read={
+                "": "ARRAY_APPEND(arr, x)",
+                "duckdb": "LIST_APPEND(arr, x)",
+                "postgres": "ARRAY_APPEND(arr, x)",
+                "spark": "ARRAY_APPEND(arr, x)",
+                "snowflake": "ARRAY_APPEND(arr, x)",
+            },
             write={
                 "duckdb": "LIST_APPEND(arr, x)",
                 "postgres": "ARRAY_APPEND(arr, x)",

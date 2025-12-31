@@ -1286,6 +1286,7 @@ class DuckDB(Dialect):
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
             ),
+            exp.ArrayAppend: rename_func("LIST_APPEND"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

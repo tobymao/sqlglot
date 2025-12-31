@@ -4720,6 +4720,86 @@ NUMBER(38, 15);
 VARIANCE_POP(1::NUMBER(30, 5));
 NUMBER(38, 12);
 
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM', HEX_DECODE_BINARY('ff'));
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM', HEX_DECODE_BINARY('ff'));
+BINARY;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

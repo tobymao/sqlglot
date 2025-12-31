@@ -4447,6 +4447,39 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_encryption_functions(self):
+        # ENCRYPT
+        self.validate_identity("ENCRYPT(value, 'passphrase')")
+        self.validate_identity("ENCRYPT(value, 'passphrase', 'aad')")
+        self.validate_identity("ENCRYPT(value, 'passphrase', 'aad', 'AES-GCM')")
+
+        # ENCRYPT_RAW
+        self.validate_identity("ENCRYPT_RAW(value, key, iv)")
+        self.validate_identity("ENCRYPT_RAW(value, key, iv, aad)")
+        self.validate_identity("ENCRYPT_RAW(value, key, iv, aad, 'AES-GCM')")
+
+        # DECRYPT
+        self.validate_identity("DECRYPT(encrypted, 'passphrase')")
+        self.validate_identity("DECRYPT(encrypted, 'passphrase', 'aad')")
+        self.validate_identity("DECRYPT(encrypted, 'passphrase', 'aad', 'AES-GCM')")
+
+        # DECRYPT_RAW
+        self.validate_identity("DECRYPT_RAW(encrypted, key, iv)")
+        self.validate_identity("DECRYPT_RAW(encrypted, key, iv, aad)")
+        self.validate_identity("DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM')")
+        self.validate_identity("DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM', aead)")
+
+        # TRY_DECRYPT (parses as Decrypt with safe=True)
+        self.validate_identity("TRY_DECRYPT(encrypted, 'passphrase')")
+        self.validate_identity("TRY_DECRYPT(encrypted, 'passphrase', 'aad')")
+        self.validate_identity("TRY_DECRYPT(encrypted, 'passphrase', 'aad', 'AES-GCM')")
+
+        # TRY_DECRYPT_RAW (parses as DecryptRaw with safe=True)
+        self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv)")
+        self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad)")
+        self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM')")
+        self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM', aead)")
+
     def test_update_statement(self):
         self.validate_identity("UPDATE test SET t = 1 FROM t1")
         self.validate_identity("UPDATE test SET t = 1 FROM t2 JOIN t3 ON t2.id = t3.id")

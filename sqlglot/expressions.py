@@ -6740,6 +6740,30 @@ class DecodeCase(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/decrypt
+class Decrypt(Func):
+    arg_types = {
+        "this": True,
+        "passphrase": True,
+        "aad": False,
+        "encryption_method": False,
+        "safe": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/decrypt_raw
+class DecryptRaw(Func):
+    arg_types = {
+        "this": True,
+        "key": True,
+        "iv": True,
+        "aad": False,
+        "encryption_method": False,
+        "aead": False,
+        "safe": False,
+    }
+
+
 class DenseRank(AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
@@ -6751,6 +6775,16 @@ class DiToDate(Func):
 
 class Encode(Func):
     arg_types = {"this": True, "charset": True}
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/encrypt
+class Encrypt(Func):
+    arg_types = {"this": True, "passphrase": True, "aad": False, "encryption_method": False}
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/encrypt_raw
+class EncryptRaw(Func):
+    arg_types = {"this": True, "key": True, "iv": True, "aad": False, "encryption_method": False}
 
 
 class EqualNull(Func):

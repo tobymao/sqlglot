@@ -56,6 +56,8 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT (TIMESTAMP '2025-12-30 20:00:00' - TIMESTAMP '2025-12-29 14:30:00') DAY TO SECOND"
         )
+        self.validate_identity("SELECT (SYSTIMESTAMP - order_date) DAY(9) TO SECOND FROM orders")
+        self.validate_identity("SELECT (SYSTIMESTAMP - order_date) DAY(9) TO SECOND(3) FROM orders")
         self.validate_identity(
             "SELECT * FROM consumer LEFT JOIN groceries ON consumer.groceries_id = consumer.id PIVOT(MAX(type_id) FOR consumer_type IN (1, 2, 3, 4))"
         )

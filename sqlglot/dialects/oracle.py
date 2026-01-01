@@ -288,14 +288,15 @@ class Oracle(Dialect):
                 return this
 
             index = self._index
-            unit = self._parse_var(any_token=True, upper=True)
+            unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
 
             if unit and self._match_text_seq("TO"):
-                to_unit = self._parse_var(any_token=True, upper=True)
+                to_unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
+
                 if to_unit:
                     unit = exp.IntervalSpan(
-                        this=exp.Var(this=unit),
-                        expression=exp.Var(this=to_unit),
+                        this=exp.Var(this=unit) if isinstance(unit, str) else unit,
+                        expression=exp.Var(this=to_unit) if isinstance(to_unit, str) else to_unit,
                     )
                     return self.expression(exp.Interval, this=this, unit=unit)
 

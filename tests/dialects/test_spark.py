@@ -14,7 +14,9 @@ class TestSpark(Validator):
         self.validate_identity("DAYOFMONTH(TO_DATE(x))")
         self.validate_identity("DAYOFYEAR(TO_DATE(x))")
         self.validate_identity("WEEKOFYEAR(TO_DATE(x))")
-
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
+        self.validate_identity("SELECT MODE() WITHIN GROUP (ORDER BY status) FROM orders")
         self.validate_identity("DROP NAMESPACE my_catalog.my_namespace")
         self.validate_identity("CREATE NAMESPACE my_catalog.my_namespace")
         self.validate_identity("INSERT OVERWRITE TABLE db1.tb1 TABLE db2.tb2")
@@ -274,6 +276,10 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
+        self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("ALTER TABLE foo ADD PARTITION(event = 'click')")
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS PARTITION(event = 'click')")
         self.validate_identity("IF(cond, foo AS bar, bla AS baz)")
@@ -526,7 +532,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
             write={
-                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('MONTH', CAST('1996-10-30' AS DATE), CAST('1997-02-28 10:30:00' AS DATE)) + CASE WHEN DAY(CAST('1997-02-28 10:30:00' AS DATE)) = DAY(LAST_DAY(CAST('1997-02-28 10:30:00' AS DATE))) AND DAY(CAST('1996-10-30' AS DATE)) = DAY(LAST_DAY(CAST('1996-10-30' AS DATE))) THEN 0 ELSE (DAY(CAST('1997-02-28 10:30:00' AS DATE)) - DAY(CAST('1996-10-30' AS DATE))) / 31.0 END",
                 "hive": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
                 "spark": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
             },
@@ -534,7 +540,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30', FALSE)",
             write={
-                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('MONTH', CAST('1996-10-30' AS DATE), CAST('1997-02-28 10:30:00' AS DATE)) + CASE WHEN DAY(CAST('1997-02-28 10:30:00' AS DATE)) = DAY(LAST_DAY(CAST('1997-02-28 10:30:00' AS DATE))) AND DAY(CAST('1996-10-30' AS DATE)) = DAY(LAST_DAY(CAST('1996-10-30' AS DATE))) THEN 0 ELSE (DAY(CAST('1997-02-28 10:30:00' AS DATE)) - DAY(CAST('1996-10-30' AS DATE))) / 31.0 END",
                 "hive": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
                 "spark": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30', FALSE)",
             },
@@ -920,6 +926,9 @@ TBLPROPERTIES (
                 "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
             },
         )
+        self.validate_identity("BITMAP_OR_AGG(x)")
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
 
     def test_bool_or(self):
         self.validate_all(

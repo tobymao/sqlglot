@@ -18,8 +18,6 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
     |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
     +---------+---------+---------+------------+---------+
     """
-    self._annotate_args(expression)
-
     this: exp.Expression = expression.this
 
     self._set_type(
@@ -27,6 +25,25 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
         exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
     )
     return expression
+
+
+def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expression:
+    """
+    +------------+------------+------------+-------------+---------+
+    | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
+    | INT64      | FLOAT64    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | NUMERIC    | NUMERIC    | NUMERIC    | BIGNUMERIC  | FLOAT64 |
+    | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
+    | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
+    +------------+------------+------------+-------------+---------+
+    """
+    if expression.this.is_type(*exp.DataType.INTEGER_TYPES) and expression.expression.is_type(
+        *exp.DataType.INTEGER_TYPES
+    ):
+        return self._set_type(expression, exp.DataType.Type.DOUBLE)
+
+    return _annotate_by_args_with_coerce(self, expression)
 
 
 def _annotate_by_args_with_coerce(
@@ -42,15 +59,11 @@ def _annotate_by_args_with_coerce(
     | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
     +------------+------------+------------+-------------+---------+
     """
-    self._annotate_args(expression)
-
     self._set_type(expression, self._maybe_coerce(expression.this.type, expression.expression.type))
     return expression
 
 
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
-    self._annotate_args(expression)
-
     struct_type = exp.DataType(
         this=exp.DataType.Type.STRUCT,
         expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
@@ -70,7 +83,7 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
     # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
     if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
-        annotated.type = exp.DataType.Type.VARCHAR
+        self._set_type(annotated, exp.DataType.Type.VARCHAR)
 
     return annotated
 
@@ -82,22 +95,52 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     #
     # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
     # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    if (
-        len(array_args) == 1
-        and isinstance(select := array_args[0].unnest(), exp.Select)
-        and (query_type := select.meta.get("query_type")) is not None
-        and query_type.is_type(exp.DataType.Type.STRUCT)
-        and len(query_type.expressions) == 1
-        and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-        and (projection_type := col_def.kind) is not None
-        and not projection_type.is_type(exp.DataType.Type.UNKNOWN)
-    ):
-        array_type = exp.DataType(
-            this=exp.DataType.Type.ARRAY,
-            expressions=[projection_type.copy()],
-            nested=True,
-        )
-        return self._annotate_with_type(expression, array_type)
+    # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
+    if len(array_args) == 1:
+        unnested = array_args[0].unnest()
+        projection_type: t.Optional[exp.DataType | exp.DataType.Type] = None
+
+        # Handle ARRAY(SELECT ...) - single SELECT query
+        if isinstance(unnested, exp.Select):
+            if (
+                (query_type := unnested.meta.get("query_type")) is not None
+                and query_type.is_type(exp.DataType.Type.STRUCT)
+                and len(query_type.expressions) == 1
+                and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
+                and (col_type := col_def.kind) is not None
+                and not col_type.is_type(exp.DataType.Type.UNKNOWN)
+            ):
+                projection_type = col_type
+
+        # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
+        elif isinstance(unnested, exp.SetOperation):
+            # Get all column types for the SetOperation
+            col_types = self._get_setop_column_types(unnested)
+            # For ARRAY constructor, there should only be one projection
+            # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
+            if col_types and unnested.left.selects:
+                first_col_name = unnested.left.selects[0].alias_or_name
+                projection_type = col_types.get(first_col_name)
+
+        # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
+        if projection_type and not (
+            (
+                isinstance(projection_type, exp.DataType)
+                and projection_type.is_type(exp.DataType.Type.UNKNOWN)
+            )
+            or projection_type == exp.DataType.Type.UNKNOWN
+        ):
+            element_type = (
+                projection_type.copy()
+                if isinstance(projection_type, exp.DataType)
+                else exp.DataType(this=projection_type)
+            )
+            array_type = exp.DataType(
+                this=exp.DataType.Type.ARRAY,
+                expressions=[element_type],
+                nested=True,
+            )
+            return self._set_type(expression, array_type)
 
     return self._annotate_by_args(expression, "expressions", array=True)
 
@@ -107,6 +150,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
         for expr_type in {
+            exp.Avg,
             exp.Ceil,
             exp.Exp,
             exp.Floor,
@@ -180,6 +224,8 @@ EXPRESSION_METADATA = {
             exp.MD5Digest,
             exp.SHA,
             exp.SHA2,
+            exp.SHA1Digest,
+            exp.SHA2Digest,
             exp.Unhex,
         }
     },
@@ -260,6 +306,8 @@ EXPRESSION_METADATA = {
             exp.JSONType,
             exp.LaxString,
             exp.LowerHex,
+            exp.MD5,
+            exp.NetHost,
             exp.Normalize,
             exp.SafeConvertBytesToString,
             exp.Soundex,
@@ -271,6 +319,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.PercentileCont,
             exp.SafeAdd,
+            exp.SafeDivide,
             exp.SafeMultiply,
             exp.SafeSubtract,
         }
@@ -287,9 +336,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.TIMESTAMPTZ} for expr_type in TIMESTAMP_EXPRESSIONS
     },
-    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
-    exp.ParseBignumeric: {"returns": exp.DataType.Type.BIGDECIMAL},
-    exp.ParseNumeric: {"returns": exp.DataType.Type.DECIMAL},
     exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ApproxTopSum: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.Array: {"annotator": _annotate_array},
@@ -297,29 +343,33 @@ EXPRESSION_METADATA = {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions")
     },
     exp.Concat: {"annotator": _annotate_concat},
+    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
     exp.GenerateTimestampArray: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
         )
     },
     exp.JSONFormat: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
         )
     },
     exp.JSONKeysAtDepth: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
     exp.JSONValueArray: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
     exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
+    exp.ParseBignumeric: {"returns": exp.DataType.Type.BIGDECIMAL},
+    exp.ParseNumeric: {"returns": exp.DataType.Type.DECIMAL},
+    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
     exp.ToCodePoints: {
-        "annotator": lambda self, e: self._annotate_with_type(
+        "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
         )
     },

@@ -48,7 +48,7 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
 # If a derived table has these Select args, it can't be merged
 UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
     "expressions",
-    "from",
+    "from_",
     "joins",
     "where",
     "order",
@@ -165,7 +165,7 @@ def _mergeable(
         if not on:
             return False
         selections = [c.name for c in on.find_all(exp.Column) if c.table == alias]
-        inner_from = inner_scope.expression.args.get("from")
+        inner_from = inner_scope.expression.args.get("from_")
         if not inner_from:
             return False
         inner_from_table = inner_from.alias_or_name
@@ -197,7 +197,7 @@ def _mergeable(
         and not outer_scope.expression.is_star
         and isinstance(inner_select, exp.Select)
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
-        and inner_select.args.get("from") is not None
+        and inner_select.args.get("from_") is not None
         and not outer_scope.pivots
         and not any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions)
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
@@ -261,7 +261,7 @@ def _merge_from(
     """
     Merge FROM clause of inner query into outer query.
     """
-    new_subquery = inner_scope.expression.args["from"].this
+    new_subquery = inner_scope.expression.args["from_"].this
     new_subquery.set("joins", node_to_replace.args.get("joins"))
     node_to_replace.replace(new_subquery)
     for join_hint in outer_scope.join_hints:
@@ -357,7 +357,7 @@ def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
     if isinstance(from_or_join, exp.Join):
         # Merge predicates from an outer join to the ON clause
         # if it only has columns that are already joined
-        from_ = expression.args.get("from")
+        from_ = expression.args.get("from_")
         sources = {from_.alias_or_name} if from_ else set()
 
         for join in expression.args["joins"]:

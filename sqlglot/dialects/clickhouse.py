@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
     build_date_delta,
     build_formatted_time,
+    build_like,
     inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
@@ -23,6 +24,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     unit_to_var,
     trim_sql,
+    sha2_digest_sql,
 )
 from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
@@ -353,6 +355,8 @@ class ClickHouse(Dialect):
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
             "ARRAYSLICE": exp.ArraySlice.from_arg_list,
+            "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
+            "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
             "COUNTIF": _build_count_if,
             "COSINEDISTANCE": exp.CosineDistance.from_arg_list,
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
@@ -364,13 +368,16 @@ class ClickHouse(Dialect):
             "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
             "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
             "HAS": exp.ArrayContains.from_arg_list,
+            "ILIKE": build_like(exp.ILike),
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LIKE": build_like(exp.Like),
             "L2Distance": exp.EuclideanDistance.from_arg_list,
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "NOTLIKE": build_like(exp.Like, not_like=True),
             "PARSEDATETIME": _build_datetime_format(exp.ParseDatetime),
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "STR_TO_DATE": _build_str_to_date,
@@ -464,6 +471,7 @@ class ClickHouse(Dialect):
             "quantiles",
             "quantileExact",
             "quantilesExact",
+            "quantilesExactExclusive",
             "quantileExactLow",
             "quantilesExactLow",
             "quantileExactHigh",
@@ -557,6 +565,8 @@ class ClickHouse(Dialect):
             "MEDIAN": lambda self: self._parse_quantile(),
             "COLUMNS": lambda self: self._parse_columns(),
             "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
+            "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
+            "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
         }
 
         FUNCTION_PARSERS.pop("MATCH")
@@ -817,7 +827,7 @@ class ClickHouse(Dialect):
             if join:
                 method = join.args.get("method")
                 join.set("method", None)
-                join.set("global", method)
+                join.set("global_", method)
 
                 # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
                 # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join
@@ -1143,6 +1153,8 @@ class ClickHouse(Dialect):
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
+            exp.CurrentDatabase: rename_func("CURRENT_DATABASE"),
+            exp.CurrentSchemas: rename_func("CURRENT_SCHEMAS"),
             exp.CountIf: rename_func("countIf"),
             exp.CosineDistance: rename_func("cosineDistance"),
             exp.CompressColumnConstraint: lambda self,
@@ -1195,7 +1207,9 @@ class ClickHouse(Dialect):
             exp.MD5Digest: rename_func("MD5"),
             exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
             exp.SHA: rename_func("SHA1"),
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA2Digest: sha2_digest_sql,
             exp.Split: lambda self, e: self.func(
                 "splitByString", e.args.get("expression"), e.this, e.args.get("limit")
             ),

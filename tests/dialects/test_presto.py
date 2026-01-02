@@ -293,7 +293,7 @@ class TestPresto(Validator):
         self.validate_all(
             "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
             write={
-                "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', x)",
+                "bigquery": "FORMAT_DATE('%F %T', x)",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
@@ -492,6 +492,18 @@ class TestPresto(Validator):
             "DATE_ADD('MINUTE', CAST(FLOOR(CAST(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP) AS DOUBLE) / NULLIF(30, 0)) * 30 AS BIGINT), col)",
             read={
                 "spark": "TIMESTAMPADD(MINUTE, FLOOR(EXTRACT(MINUTE FROM CURRENT_TIMESTAMP)/30)*30, col)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT WEEK_OF_YEAR(y)",
+            read={
+                "presto": "SELECT WEEK(y)",
+            },
+            write={
+                "spark": "SELECT WEEKOFYEAR(y)",
+                "presto": "SELECT WEEK_OF_YEAR(y)",
+                "trino": "SELECT WEEK_OF_YEAR(y)",
             },
         )
 
@@ -1365,5 +1377,13 @@ MATCH_RECOGNIZE (
                 "presto": "BITWISE_XOR_AGG(x)",
                 "trino": "BITWISE_XOR_AGG(x)",
                 "oracle": "BITWISE_XOR_AGG(x)",
+            },
+        )
+
+    def test_initcap(self):
+        self.validate_all(
+            "INITCAP(col)",
+            write={
+                "presto": "REGEXP_REPLACE(col, '(\\w)(\\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
             },
         )

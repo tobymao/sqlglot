@@ -164,6 +164,7 @@ class MySQL(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
+    LEAST_GREATEST_IGNORES_NULLS = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -202,6 +203,8 @@ class MySQL(Dialect):
         STRING_ESCAPES = ["'", '"', "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
+        # https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
+        ESCAPE_FOLLOW_CHARS = ["0", "b", "n", "r", "t", "Z", "%", "_"]
 
         NESTED_COMMENTS = False
 
@@ -290,6 +293,7 @@ class MySQL(Dialect):
             TokenType.MOD,
             TokenType.SCHEMA,
             TokenType.VALUES,
+            TokenType.CHARACTER_SET,
         }
 
         CONJUNCTION = {
@@ -370,11 +374,6 @@ class MySQL(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "CHAR": lambda self: self.expression(
-                exp.Chr,
-                expressions=self._parse_csv(self._parse_assignment),
-                charset=self._match(TokenType.USING) and self._parse_var(),
-            ),
             "GROUP_CONCAT": lambda self: self._parse_group_concat(),
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
@@ -464,6 +463,7 @@ class MySQL(Dialect):
             "INDEX": lambda self: self._parse_index_constraint(),
             "KEY": lambda self: self._parse_index_constraint(),
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
+            "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint),
         }
 
         ALTER_PARSERS = {
@@ -671,7 +671,7 @@ class MySQL(Dialect):
                 for_role=for_role,
                 into_outfile=into_outfile,
                 json=json,
-                **{"global": global_},  # type: ignore
+                global_=global_,
             )
 
         def _parse_oldstyle_limit(
@@ -757,6 +757,7 @@ class MySQL(Dialect):
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),
             exp.BitwiseCount: rename_func("BIT_COUNT"),
+            exp.Chr: lambda self, e: self.chr_sql(e, "CHAR"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -798,6 +799,7 @@ class MySQL(Dialect):
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),
+            exp.SessionUser: lambda *_: "SESSION_USER()",
             exp.TableSample: no_tablesample_sql,
             exp.TimeFromParts: rename_func("MAKETIME"),
             exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
@@ -1229,7 +1231,7 @@ class MySQL(Dialect):
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""
-            global_ = " GLOBAL" if expression.args.get("global") else ""
+            global_ = " GLOBAL" if expression.args.get("global_") else ""
 
             target = self.sql(expression, "target")
             target = f" {target}" if target else ""
@@ -1297,12 +1299,6 @@ class MySQL(Dialect):
                 return f" LIMIT {limit_offset}"
             return ""
 
-        def chr_sql(self, expression: exp.Chr) -> str:
-            this = self.expressions(sqls=[expression.this] + expression.expressions)
-            charset = expression.args.get("charset")
-            using = f" USING {self.sql(charset)}" if charset else ""
-            return f"CHAR({this}{using})"
-
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = expression.args.get("unit")
 
@@ -1329,6 +1325,11 @@ class MySQL(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"REGEXP_LIKE({self.sql(expression.this)}, '^[[:ascii:]]*$')"
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            # https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+            self.unsupported("MySQL does not support IGNORE NULLS.")
+            return self.sql(expression.this)
 
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:

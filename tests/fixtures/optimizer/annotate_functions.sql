@@ -128,6 +128,14 @@ BIGINT;
 UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
 BIGINT;
 
+# dialect: snowflake
+TO_BINARY('test');
+BINARY;
+
+# dialect: snowflake
+TO_BINARY('test', 'HEX');
+BINARY;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------
@@ -407,6 +415,62 @@ DOUBLE;
 # dialect: bigquery
 EXP(tbl.bignum_col);
 BIGDECIMAL;
+
+# dialect: bigquery
+AVG(1);
+FLOAT64;
+
+# dialect: bigquery
+AVG(5.5);
+FLOAT64;
+
+# dialect: bigquery
+AVG(tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.int_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.int_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.int_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.bignum_col);
+BIGNUMERIC;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.bignum_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.int_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.bignum_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE_DIVIDE(tbl.double_col, tbl.double_col);
+FLOAT64;
+
+# dialect: bigquery
+SAFE.TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
+TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
 
 # dialect: bigquery
 CONCAT(tbl.str_col, tbl.str_col);
@@ -797,6 +861,10 @@ MD5('foo');
 BINARY;
 
 # dialect: bigquery
+TO_HEX(MD5('foo'));
+STRING;
+
+# dialect: bigquery
 MAX_BY(tbl.str_col, tbl.bigint_col);
 STRING;
 
@@ -1034,6 +1102,10 @@ STRING;
 
 # dialect: bigquery
 FORMAT('%f %E %f %f', 1.1, 2.2, 3.4, 4.4);
+STRING;
+
+# dialect: bigquery
+NET.HOST('http://example.com');
 STRING;
 
 # dialect: bigquery
@@ -1529,6 +1601,46 @@ STRING_AGG(tbl.bin_col);
 BINARY;
 
 # dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ',' ORDER BY tbl.str_col);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.bin_col ORDER BY tbl.bin_col);
+BINARY;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ',' LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(tbl.str_col, ',' ORDER BY tbl.str_col LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.str_col, ',' ORDER BY tbl.str_col LIMIT 10);
+STRING;
+
+# dialect: bigquery
+STRING_AGG(DISTINCT tbl.bin_col ORDER BY tbl.bin_col LIMIT 10);
+BINARY;
+
+# dialect: bigquery
+ARRAY_AGG(tbl.int_col LIMIT 10);
+ARRAY<INT>;
+
+# dialect: bigquery
+ARRAY_AGG(DISTINCT tbl.str_col ORDER BY tbl.str_col LIMIT 10);
+ARRAY<STRING>;
+
+# dialect: bigquery
 DATETIME_TRUNC(DATETIME "2008-12-25 15:30:00", DAY);
 DATETIME;
 
@@ -1552,6 +1664,54 @@ BIGINT;
 LENGTH(tbl.bin_col);
 BIGINT;
 
+# dialect: bigquery
+IF(TRUE, '2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+IF(TRUE, DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IF(TRUE, '00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IF(TRUE, 1, CAST(2.5 AS BIGNUMERIC));
+BIGNUMERIC;
+
+# dialect: bigquery
+IF(TRUE, 1.5, 2.5);
+FLOAT64;
+
+# dialect: bigquery
+IF(TRUE, '2010-01-01 00:00:00', TIMESTAMP '2020-02-02 00:00:00');
+TIMESTAMP;
+
+# dialect: bigquery
+COALESCE('2010-01-01', DATE '2020-02-02');
+DATE;
+
+# dialect: bigquery
+COALESCE(DATETIME '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+DATETIME;
+
+# dialect: bigquery
+IFNULL('00:00:00', TIME '00:01:00');
+TIME;
+
+# dialect: bigquery
+IFNULL(TIMESTAMP '2010-01-01 00:00:00', '2020-02-02 00:00:00');
+TIMESTAMP;
+
+# dialect: bigquery
+ANY_VALUE(c2::STRING HAVING MIN c1::INT64);
+STRING;
+
+# dialect: bigquery
+ANY_VALUE(c2::STRING HAVING MAX c1::INT64);
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -1571,6 +1731,26 @@ DATE;
 # dialect: snowflake
 ADD_MONTHS(tbl.timestamp_col, -1);
 TIMESTAMP;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT();
+ARRAY;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT();
+ARRAY;
+
+# dialect: snowflake
+ARRAY_CONSTRUCT_COMPACT(1, null, 2);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_APPEND([1, 2, 3], 4);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_PREPEND([2, 3, 4], 1);
+ARRAY;
 
 # dialect: snowflake
 ASIN(tbl.double_col);
@@ -1655,6 +1835,18 @@ VARCHAR;
 # dialect: snowflake
 BIT_LENGTH('abc');
 INT;
+
+# dialect: snowflake
+BITMAP_BIT_POSITION(tbl.int_col);
+BIGINT;
+
+# dialect: snowflake
+BITMAP_BUCKET_NUMBER(tbl.int_col);
+BIGINT;
+
+# dialect: snowflake
+BITMAP_CONSTRUCT_AGG(tbl.int_col);
+BINARY;
 
 # dialect: snowflake
 BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(tbl.int_col));
@@ -1773,6 +1965,10 @@ BIT_XORAGG(tbl.int_col);
 NUMBER(38, 0);
 
 # dialect: snowflake
+BITMAP_OR_AGG(tbl.bin_col);
+BINARY;
+
+# dialect: snowflake
 BOOLXOR_AGG(tbl.bool_col);
 BOOLEAN;
 
@@ -1805,24 +2001,60 @@ BOOLOR_AGG(tbl.bool_col);
 BOOLEAN;
 
 # dialect: snowflake
+TO_BOOLEAN('true');
+BOOLEAN;
+
+# dialect: snowflake
+TO_BOOLEAN(1);
+BOOLEAN;
+
+# dialect: snowflake
+TO_BOOLEAN(tbl.varchar_col);
+BOOLEAN;
+
+# dialect: snowflake
 ARRAY_AGG(tbl.bin_col);
-ARRAY<BINARY>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.bool_col);
-ARRAY<BOOLEAN>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.date_col);
-ARRAY<DATE>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.double_col);
-ARRAY<DOUBLE>;
+ARRAY;
 
 # dialect: snowflake
 ARRAY_AGG(tbl.str_col);
-ARRAY<VARCHAR>;
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bin_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.bool_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.date_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.double_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNIQUE_AGG(tbl.str_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_UNION_AGG(tbl.array_col);
+ARRAY;
 
 # dialect: snowflake
 CHARINDEX('world', 'hello world');
@@ -1869,6 +2101,18 @@ CHR(8364);
 VARCHAR;
 
 # dialect: snowflake
+CHECK_JSON('{"key": "value", "array": [1, 2, 3]}');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>');
+VARCHAR;
+
+# dialect: snowflake
+CHECK_XML('<root><key attribute="attr">value</key></root>', TRUE);
+VARCHAR;
+
+# dialect: snowflake
 COLLATE('hello', 'utf8');
 VARCHAR;
 
@@ -1897,8 +2141,28 @@ COALESCE(CAST('2024-01-01' AS DATE), CAST('2024-12-31' AS DATE));
 DATE;
 
 # dialect: snowflake
+CAST(1.5 AS DECFLOAT);
+DECFLOAT;
+
+# dialect: snowflake
+CAST(1 AS VARCHAR);
+VARCHAR;
+
+# dialect: snowflake
+CAST('123' AS INT);
+INT;
+
+# dialect: snowflake
 COALESCE(TRUE, FALSE);
 BOOLEAN;
+
+# dialect: snowflake
+COUNT(*);
+BIGINT;
+
+# dialect: snowflake
+COUNT(DISTINCT tbl.str_col);
+BIGINT;
 
 # dialect: snowflake
 COMPRESS('Hello World', 'SNAPPY');
@@ -2051,6 +2315,78 @@ TIMESTAMPTZ;
 # dialect: snowflake
 CONVERT_TIMEZONE('America/Los_Angeles', 'America/New_York', '2024-08-06 09:10:00.000');
 TIMESTAMPNTZ;
+
+# dialect: snowflake
+CURRENT_ACCOUNT();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ACCOUNT_NAME();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_AVAILABLE_ROLES();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_CLIENT();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_IP_ADDRESS();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_DATABASE();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_SCHEMAS();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_SECONDARY_ROLES();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_SESSION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_STATEMENT();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_VERSION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_TRANSACTION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_WAREHOUSE();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ORGANIZATION_USER();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_REGION();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ROLE();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ROLE_TYPE();
+VARCHAR;
+
+# dialect: snowflake
+CURRENT_ORGANIZATION_NAME();
+VARCHAR;
 
 # dialect: snowflake
 DATEDIFF('year', tbl.date_col, tbl.date_col);
@@ -2361,6 +2697,10 @@ GREATEST_IGNORE_NULLS(CAST('2023-01-01' AS DATE), CAST('2023-01-02' AS DATE));
 DATE;
 
 # dialect: snowflake
+HASH_AGG(tbl.str_col);
+DECIMAL(19, 0);
+
+# dialect: snowflake
 LEAST_IGNORE_NULLS(1, 2, 3);
 INT;
 
@@ -2597,6 +2937,14 @@ RANDOM(123);
 BIGINT;
 
 # dialect: snowflake
+RANDSTR(123, 456);
+VARCHAR;
+
+# dialect: snowflake
+RANDSTR(123, RANDOM());
+VARCHAR;
+
+# dialect: snowflake
 RADIANS(tbl.double_col);
 DOUBLE;
 
@@ -2625,8 +2973,48 @@ LTRIM(NULL);
 VARCHAR;
 
 # dialect: snowflake
+MAP_CAT(CAST(col AS MAP(VARCHAR, VARCHAR)), CAST(col AS MAP(VARCHAR, VARCHAR)));
+MAP;
+
+# dialect: snowflake
+MAP_CONTAINS_KEY('k1', CAST(col AS MAP(VARCHAR, VARCHAR)));
+BOOLEAN;
+
+# dialect: snowflake
+MAP_DELETE(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b');
+MAP;
+
+# dialect: snowflake
+MAP_INSERT(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b', '2');
+MAP;
+
+# dialect: snowflake
+MAP_KEYS(CAST(col AS MAP(VARCHAR, VARCHAR)));
+ARRAY;
+
+# dialect: snowflake
+MAP_PICK(CAST(col AS MAP(VARCHAR, VARCHAR)), 'a', 'c');
+MAP;
+
+# dialect: snowflake
+MAP_SIZE(CAST(col AS MAP(VARCHAR, VARCHAR)));
+INT;
+
+# dialect: snowflake
 MINUTE(CAST('08:50:57' AS TIME));
 INT;
+
+# dialect: snowflake
+MEDIAN(2.71::FLOAT);
+FLOAT;
+
+# dialect: snowflake
+MEDIAN(tbl.bigint_col) OVER (PARTITION BY 1);
+DECIMAL(38, 3);
+
+# dialect: snowflake
+MEDIAN(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(13, 5);
 
 # dialect: snowflake
 MONTHNAME(CAST('2024-05-09' AS DATE));
@@ -2635,6 +3023,10 @@ VARCHAR;
 # dialect: snowflake
 MONTHNAME(CAST('2024-05-09 08:50:57' AS TIMESTAMP));
 VARCHAR;
+
+# dialect: snowflake
+NORMAL(0, 1, RANDOM());
+DOUBLE;
 
 # dialect: snowflake
 NVL2(col1, col2, col3);
@@ -2725,7 +3117,147 @@ REGR_AVGX(tbl.double_col, tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+REGR_AVGX(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_AVGX(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
 REGR_AVGY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_AVGY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_AVGY(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_COUNT(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_COUNT(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_COUNT(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_COUNT(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_INTERCEPT(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_INTERCEPT(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_INTERCEPT(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_INTERCEPT(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_R2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_R2(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_R2(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_R2(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_SXX(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXX(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXX(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXX(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_SXY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXY(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SXY(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_SYY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SYY(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SYY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SYY(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_SLOPE(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+REGR_VALX(NULL, 2.0);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(NULL, NULL);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(2.0, NULL);
 DOUBLE;
 
 # dialect: snowflake
@@ -2733,8 +3265,24 @@ REGR_VALX(1.0, 2.0);
 DOUBLE;
 
 # dialect: snowflake
+REGR_VALX(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALX(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
 REGR_VALY(1.0, 2.0);
 DOUBLE;
+
+# dialect: snowflake
+REGR_VALY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
+REGR_VALY(tbl.decfloat_col, tbl.decfloat_col);
+DECFLOAT;
 
 # dialect: snowflake
 'foo' REGEXP 'bar';
@@ -2911,6 +3459,406 @@ BIGINT;
 # dialect: snowflake
 ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
 DOUBLE;
+
+# dialect: snowflake
+ROUND(CAST(3.14 AS FLOAT), 1);
+FLOAT;
+
+# dialect: snowflake
+ROUND(CAST(1.5 AS DECFLOAT), 0);
+DECFLOAT;
+
+# dialect: snowflake
+FLOOR(CAST(3.7 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+FLOOR(CAST(3.7 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+FLOOR(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+CEIL(CAST(3.2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+CEIL(CAST(3.2 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+CEIL(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+SQRT(CAST(16 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+SQRT(CAST(16 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+EXP(CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+EXP(CAST(2 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+LN(CAST(10 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LN(CAST(10 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+LOG(CAST(100 AS DECFLOAT), 10);
+DECFLOAT;
+
+# dialect: snowflake
+LOG(CAST(100 AS DOUBLE), 10);
+DOUBLE;
+
+# dialect: snowflake
+POW(CAST(2 AS DECFLOAT), 3);
+DECFLOAT;
+
+# dialect: snowflake
+POW(CAST(2 AS DOUBLE), 3);
+DOUBLE;
+
+# dialect: snowflake
+SIN(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+SIN(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+COS(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+COS(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TAN(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+TAN(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+COT(CAST(1.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+COT(CAST(1.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ASIN(CAST(0.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ASIN(CAST(0.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ACOS(CAST(0.5 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ACOS(CAST(0.5 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ATAN(CAST(1 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ATAN(CAST(1 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+ATAN2(CAST(1 AS DECFLOAT), 1);
+DECFLOAT;
+
+# dialect: snowflake
+ATAN2(CAST(1 AS DOUBLE), 1);
+DOUBLE;
+
+# dialect: snowflake
+DEGREES(CAST(3.14159 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+DEGREES(CAST(3.14159 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+RADIANS(CAST(180 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+RADIANS(CAST(180 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TANH(CAST(1 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+TANH(CAST(1 AS DOUBLE));
+DOUBLE;
+
+# dialect: snowflake
+TO_DECFLOAT('123.456');
+DECFLOAT;
+
+# dialect: snowflake
+TO_DECFLOAT('123.456', '999.999');
+DECFLOAT;
+
+# dialect: snowflake
+TRY_TO_DECFLOAT('123.456');
+DECFLOAT;
+
+# dialect: snowflake
+TRY_TO_DECFLOAT('invalid');
+DECFLOAT;
+
+# dialect: snowflake
+TRY_TO_BINARY('48656C6C6F');
+BINARY;
+
+# dialect: snowflake
+TRY_TO_BINARY('48656C6C6F', 'HEX');
+BINARY;
+
+# dialect: snowflake
+TRY_TO_BOOLEAN('true');
+BOOLEAN;
+
+# dialect: snowflake
+TO_DATE('2024-01-31');
+DATE;
+
+# dialect: snowflake
+TO_DATE('2024-01-31', 'AUTO');
+DATE;
+
+# dialect: snowflake
+TRY_TO_DATE('2024-01-31');
+DATE;
+
+# dialect: snowflake
+TRY_TO_DATE('2024-01-31', 'AUTO');
+DATE;
+
+# dialect: snowflake
+TO_DECIMAL('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DECIMAL('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DECIMAL('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_DECIMAL('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_DECIMAL('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_DECIMAL('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_DOUBLE('123.456');
+DOUBLE;
+
+# dialect: snowflake
+TO_DOUBLE('123.456', '999.99');
+DOUBLE;
+
+# dialect: snowflake
+TRY_TO_DOUBLE('123.456');
+DOUBLE;
+
+# dialect: snowflake
+TRY_TO_DOUBLE('123.456', '999.99');
+DOUBLE;
+
+# dialect: snowflake
+TO_FILE(tbl.obj_col);
+FILE;
+
+# dialect: snowflake
+TO_FILE('file.csv');
+FILE;
+
+# dialect: snowflake
+TO_FILE('file.csv', '/relativepath/');
+FILE;
+
+# dialect: snowflake
+TRY_TO_FILE(tbl.obj_col);
+FILE;
+
+# dialect: snowflake
+TRY_TO_FILE('file.csv');
+FILE;
+
+# dialect: snowflake
+TRY_TO_FILE('file.csv', '/relativepath/');
+FILE;
+
+# dialect: snowflake
+TO_NUMBER('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_NUMBER('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_NUMBER('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMBER('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMBER('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMBER('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMERIC('123.45');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMERIC('123.45', '999.99');
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TRY_TO_NUMERIC('123.45', '999.99', 10, 2);
+DECIMAL(38, 0);
+
+# dialect: snowflake
+TO_TIME('12:30:00');
+TIME;
+
+# dialect: snowflake
+TO_TIME('12:30:00', 'AUTO');
+TIME;
+
+# dialect: snowflake
+TRY_TO_TIME('12:30:00');
+TIME;
+
+# dialect: snowflake
+TRY_TO_TIME('12:30:00', 'AUTO');
+TIME;
+
+# dialect: snowflake
+TO_TIMESTAMP('2024-01-15 12:30:00');
+TIMESTAMP;
+
+# dialect: snowflake
+TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMP;
+
+# dialect: snowflake
+TO_TIMESTAMP_LTZ('2024-01-15 12:30:00');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_LTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_NTZ('2024-01-15 12:30:00');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_NTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_TZ('2024-01-15 12:30:00');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+TO_TIMESTAMP_TZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP('2024-01-15 12:30:00');
+TIMESTAMP;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMP;
+
+# dialect: snowflake
+ABS(CAST(-123.456 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+ABS(CAST(-123.456 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+MOD(CAST(10 AS DECFLOAT), 3);
+DECFLOAT;
+
+# dialect: snowflake
+MOD(CAST(10 AS FLOAT), 3);
+FLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(1 AS FLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(2 AS DECFLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+GREATEST(CAST(1 AS FLOAT), CAST(2 AS FLOAT));
+FLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS FLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS DECFLOAT), CAST(2 AS DECFLOAT));
+DECFLOAT;
+
+# dialect: snowflake
+LEAST(CAST(1 AS FLOAT), CAST(2 AS FLOAT));
+FLOAT;
 
 # dialect: snowflake
 SECOND(CAST('08:50:57' AS TIME));
@@ -3147,6 +4095,34 @@ BOOLEAN;
 # dialect: snowflake
 SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'AND');
 BOOLEAN;
+
+# dialect: snowflake
+SEARCH_IP(col, '192.168.0.0');
+BOOLEAN;
+
+# dialect: snowflake
+STDDEV(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_POP(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+STDDEV_SAMP(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
 
 # dialect: snowflake
 STRTOK_TO_ARRAY('a,b,c', ',');
@@ -3389,8 +4365,52 @@ OBJECT_AGG(tbl.str_col, tbl.variant_col);
 OBJECT;
 
 # dialect: snowflake
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
+
+# dialect: snowflake
+MAX(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+MAX(tbl.int_col);
+INT;
+
+# dialect: snowflake
+MAX(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MAX(tbl.str_col);
+VARCHAR;
+
+# dialect: snowflake
+MAX(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MAX(tbl.timestamp_col);
+TIMESTAMP;
 
 # dialect: snowflake
 MAX_BY('foo', tbl.bigint_col);
@@ -3398,7 +4418,7 @@ VARCHAR;
 
 # dialect: snowflake
 MAX_BY('foo', tbl.bigint_col, 3);
-ARRAY<VARCHAR>;
+ARRAY;
 
 # dialect: snowflake
 MIN_BY('foo', tbl.bigint_col);
@@ -3406,7 +4426,7 @@ VARCHAR;
 
 # dialect: snowflake
 MIN_BY('foo', tbl.bigint_col, 3);
-ARRAY<VARCHAR>;
+ARRAY;
 
 # dialect: snowflake
 APPROX_PERCENTILE(tbl.bigint_col, 0.5);
@@ -3431,6 +4451,354 @@ DOUBLE;
 # dialect: snowflake
 APPROX_PERCENTILE(tbl.int_col, 0.9) OVER (PARTITION BY 1);
 DOUBLE;
+
+# dialect: snowflake
+APPROX_PERCENTILE_COMBINE(tbl.state_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.bigint_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.double_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ACCUMULATE(tbl.int_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_PERCENTILE_ESTIMATE(tbl.state_col, 0.5);
+DOUBLE;
+
+# dialect: snowflake
+APPROX_TOP_K_ACCUMULATE(tbl.str_col, 10);
+OBJECT;
+
+# dialect: snowflake
+APPROX_TOP_K_COMBINE(tbl.state_col, 10);
+OBJECT;
+
+# dialect: snowflake
+APPROX_TOP_K_COMBINE(tbl.state_col);
+OBJECT;
+
+# dialect: snowflake
+APPROX_TOP_K_ESTIMATE(tbl.state_col, 4);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K_ESTIMATE(tbl.state_col);
+ARRAY;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(*);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(DISTINCT tbl.str_col);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.str_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_COUNT_DISTINCT(tbl.double_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.bigint_col);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col, 5);
+ARRAY;
+
+# dialect: snowflake
+APPROX_TOP_K(tbl.str_col, 5, 1000);
+ARRAY;
+
+# dialect: snowflake
+MINHASH(5, tbl.int_col);
+VARIANT;
+
+# dialect: snowflake
+MINHASH(5, tbl.int_col, tbl.str_col);
+VARIANT;
+
+# dialect: snowflake
+MINHASH(5, *);
+VARIANT;
+
+# dialect: snowflake
+MINHASH_COMBINE(tbl.variant_col);
+VARIANT;
+
+# dialect: snowflake
+APPROXIMATE_SIMILARITY(tbl.variant_col);
+DOUBLE;
+
+# dialect: snowflake
+APPROXIMATE_JACCARD_INDEX(tbl.variant_col);
+DOUBLE;
+
+# dialect: snowflake
+MIN(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MIN(tbl.int_col);
+INT;
+
+# dialect: snowflake
+MIN(tbl.bigint_col);
+BIGINT;
+
+# dialect: snowflake
+MIN(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(10, 2);
+
+# dialect: snowflake
+MIN(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+VECTOR_COSINE_SIMILARITY([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_INNER_PRODUCT([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L1_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+VECTOR_L2_DISTANCE([1,2,3], [4,5,6]);
+DOUBLE;
+
+# dialect: snowflake
+ZIPF(1, 10, RANDOM());
+BIGINT;
+
+# dialect: snowflake
+ZIPF(2, 100, 1234);
+BIGINT;
+
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><level2>content</level2></root>'), 'level2');
+OBJECT;
+
+# dialect: snowflake
+XMLGET(PARSE_XML('<root><item>a</item><item>b</item></root>'), 'item', 1);
+OBJECT;
+
+# dialect: snowflake
+MODE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+MODE(tbl.date_col);
+DATE;
+
+# dialect: snowflake
+MODE(tbl.timestamp_col);
+TIMESTAMP;
+
+# dialect: snowflake
+MODE(tbl.bool_col);
+BOOLEAN;
+
+# dialect: snowflake
+MODE(CAST(100 AS DECIMAL(10,2)));
+DECIMAL(10, 2);
+
+# dialect: snowflake
+MODE(tbl.bigint_col) OVER (PARTITION BY 1);
+BIGINT;
+
+# dialect: snowflake
+MODE(CAST(NULL AS INT));
+INT;
+
+# dialect: snowflake
+MODE(tbl.str_col) OVER (PARTITION BY tbl.int_col);
+VARCHAR;
+
+# dialect: snowflake
+VAR_SAMP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VAR_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VAR_SAMP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_SAMP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VAR_POP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VAR_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VAR_POP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_POP(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+VARIANCE_POP(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+VARIANCE_POP(tbl.int_col);
+NUMBER(38, 6);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 6));
+NUMBER(38, 12);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(38, 15));
+NUMBER(38, 15);
+
+# dialect: snowflake
+VARIANCE_POP(1::NUMBER(30, 5));
+NUMBER(38, 12);
+
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT(tbl.str_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+ENCRYPT_RAW(tbl.str_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+DECRYPT(tbl.encrypted_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM', HEX_DECODE_BINARY('ff'));
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase', 'aad');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT(tbl.encrypted_col, 'passphrase', 'aad', 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col);
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col);
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM');
+BINARY;
+
+# dialect: snowflake
+TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM', HEX_DECODE_BINARY('ff'));
+BINARY;
 
 --------------------------------------
 -- T-SQL

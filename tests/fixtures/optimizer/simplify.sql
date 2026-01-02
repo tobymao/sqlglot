@@ -2,10 +2,10 @@
 -- Conditions
 --------------------------------------
 x AND x;
-x;
+x AND TRUE;
 
 y OR y;
-y;
+y AND TRUE;
 
 x AND NOT x;
 NOT x AND x;
@@ -56,22 +56,22 @@ STRUCT(NULL AS a);
 STRUCT(NULL AS a);
 
 NULL AND TRUE;
-NULL;
+NULL AND TRUE;
 
 NULL AND FALSE;
 FALSE;
 
 NULL AND NULL;
-NULL;
+NULL AND TRUE;
 
 NULL OR TRUE;
 TRUE;
 
 NULL OR NULL;
-NULL;
+NULL AND TRUE;
 
 FALSE OR NULL;
-NULL;
+NULL AND TRUE;
 
 NOT TRUE;
 FALSE;
@@ -80,10 +80,10 @@ NOT FALSE;
 TRUE;
 
 NOT NULL;
-NULL;
+NULL AND TRUE;
 
 NULL = NULL;
-NULL;
+NULL = NULL;
 
 SELECT (EXISTS(SELECT 1 WHERE FALSE)) AND NULL;
 SELECT EXISTS(SELECT 1 WHERE FALSE) AND NULL;
@@ -101,10 +101,10 @@ FALSE;
 TRUE;
 
 0 OR NULL;
-NULL;
+NULL AND TRUE;
 
 NULL OR 0;
-NULL;
+NULL AND TRUE;
 
 0 AND NULL;
 FALSE;
@@ -153,6 +153,18 @@ COALESCE(x, y) <> ALL (SELECT z FROM w);
 SELECT NOT (2 <> ALL (SELECT 2 UNION ALL SELECT 3));
 SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 
+SELECT t_bool.a AND TRUE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT TRUE AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a OR FALSE FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT FALSE OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
 --------------------------------------
 -- Absorption
 --------------------------------------
@@ -160,7 +172,7 @@ SELECT 2 = ANY(SELECT 2 UNION ALL SELECT 3);
 (A OR B) AND (C OR NOT A);
 
 A AND (A OR B);
-A;
+A AND TRUE;
 
 A AND D AND E AND (B OR A);
 A AND D AND E;
@@ -169,16 +181,16 @@ D AND A AND E AND (B OR A);
 A AND D AND E;
 
 (A OR B) AND A;
-A;
+A AND TRUE;
 
 C AND D AND (A OR B) AND E AND F AND A;
 A AND C AND D AND E AND F;
 
 A OR (A AND B);
-A;
+A AND TRUE;
 
 (A AND B) OR A;
-A;
+A AND TRUE;
 
 A AND (NOT A OR B);
 A AND B;
@@ -187,6 +199,9 @@ A AND B;
 A AND B;
 
 A OR (NOT A AND B);
+A OR B;
+
+A OR ((((NOT A AND B))));
 A OR B;
 
 (A OR C) AND ((A OR C) OR B);
@@ -199,7 +214,7 @@ A AND (B AND C) AND (D AND E);
 A AND B AND C AND D AND E;
 
 A AND (A OR B) AND (A OR B OR C);
-A;
+A AND TRUE;
 
 (A OR B) AND (A OR C) AND (A OR B OR C);
 (A OR B) AND (A OR C);
@@ -208,28 +223,28 @@ A;
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (NOT A AND B);
-B;
+B AND TRUE;
 
 (A AND NOT B) OR (A AND B);
-A;
+A AND TRUE;
 
 (NOT A AND B) OR (A AND B);
-B;
+B AND TRUE;
 
 (A OR B) AND (A OR NOT B);
-A;
+A AND TRUE;
 
 (A OR B) AND (NOT A OR B);
-B;
+B AND TRUE;
 
 (A OR NOT B) AND (A OR B);
-A;
+A AND TRUE;
 
 (NOT A OR B) AND (A OR B);
-B;
+B AND TRUE;
 
 (NOT A OR NOT B) AND (NOT A OR B);
 NOT A;
@@ -241,13 +256,25 @@ E OR (A AND B) OR C OR D OR (A AND NOT B);
 A OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A;
+A AND TRUE;
+
+SELECT t_bool.a OR t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT t_bool.a AND t_bool.a FROM t_bool;
+SELECT t_bool.a FROM t_bool;
+
+SELECT SUM(t.x OR t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
+
+SELECT SUM(t.x AND t.x) FROM t;
+SELECT SUM(t.x AND TRUE) FROM t;
 
 --------------------------------------
 -- Associativity
@@ -495,10 +522,10 @@ FALSE;
 TRUE;
 
 1 > NULL;
-NULL;
+1 > NULL;
 
 1 <= NULL;
-NULL;
+1 <= NULL;
 
 1 IS NULL;
 FALSE;
@@ -892,7 +919,7 @@ COALESCE(x, 1) = 1;
 x = 1 OR x IS NULL;
 
 COALESCE(x, 1) IS NULL;
-NOT x IS NULL AND x IS NULL;
+FALSE;
 
 COALESCE(ROW() OVER (), 1) = 1;
 ROW() OVER () = 1 OR ROW() OVER () IS NULL;
@@ -1367,7 +1394,18 @@ TRUE;
 FALSE;
 
 NULL OR NOT NULL;
-NULL;
+NULL AND TRUE;
 
 NULL AND NOT NULL;
-NULL;
+NULL AND TRUE;
+
+NULL OR (NULL AND TRUE);
+NULL AND TRUE;
+
+SELECT IF(NULL = NULL, 1, 100);
+SELECT 100;
+
+# dialect: snowflake
+SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
+SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;
+

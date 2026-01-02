@@ -513,10 +513,17 @@ impl<'a> TokenizerState<'a> {
                 decimal = true;
                 self.advance(1)?;
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
-                scientific += 1;
-                self.advance(1)?;
+                // Only consume +/- if followed by a digit
+                if self.current + 1 < self.size && self.sql[self.current + 1].is_ascii_digit() {
+                    scientific += 1;
+                    self.advance(1)?;
+                } else {
+                    return self.add(self.token_types.number, None);
+                }
             } else if self.peek_char.to_ascii_uppercase() == 'E' && scientific == 0 {
                 scientific += 1;
+                self.advance(1)?;
+            } else if self.peek_char == '_' && self.dialect_settings.numbers_can_be_underscore_separated {
                 self.advance(1)?;
             } else if self.is_alphabetic_or_underscore(self.peek_char) {
                 let number_text = self.text();
@@ -541,16 +548,10 @@ impl<'a> TokenizerState<'a> {
                     )
                     .copied();
 
-                let replaced = literal.replace("_", "");
-
                 if let Some(unwrapped_token_type) = token_type {
                     self.add(self.token_types.number, Some(number_text))?;
                     self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
-                } else if self.dialect_settings.numbers_can_be_underscore_separated
-                    && self.is_numeric(&replaced)
-                {
-                    self.add(self.token_types.number, Some(number_text + &replaced))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(self.token_types.var, None)?;
                 } else {
@@ -669,8 +670,20 @@ impl<'a> TokenizerState<'a> {
             {
                 let peek_char_str = self.peek_char.to_string();
                 let equal_delimiter = delimiter == peek_char_str;
-                if equal_delimiter || escapes.contains(&self.peek_char) {
+                let is_valid_custom_escape =
+                    self.current_char == '\\'
+                        && !self.settings.escape_follow_chars.is_empty()
+                        && !self.settings.escape_follow_chars.contains(&self.peek_char);
+
+                if equal_delimiter 
+                    || escapes.contains(&self.peek_char) 
+                    || is_valid_custom_escape
+                {
                     if equal_delimiter {
+                        text.push(self.peek_char);
+                    } else if is_valid_custom_escape
+                        && self.current_char != self.peek_char 
+                    {
                         text.push(self.peek_char);
                     } else {
                         text.push(self.current_char);
@@ -719,10 +732,6 @@ impl<'a> TokenizerState<'a> {
 
     fn is_alphabetic_or_underscore(&self, name: char) -> bool {
         name.is_alphabetic() || name == '_'
-    }
-
-    fn is_numeric(&self, s: &str) -> bool {
-        s.chars().all(|c| c.is_ascii_digit())
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

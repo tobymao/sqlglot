@@ -1,6 +1,6 @@
 [package]
 name = "sqlglotrs"
-version = "0.7.3"
+version = "0.10.0"
 edition = "2021"
 license = "MIT"
 

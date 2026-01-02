@@ -51,11 +51,11 @@ x << 1
 x >> 1
 x >> 1 | 1 & 1 ^ 1
 x || y
-x[ : ]
-x[1 : ]
-x[ : 2]
-x[1 : 2]
-x[-4 : -1]
+x[:]
+x[1:]
+x[:2]
+x[1:2]
+x[-4:-1]
 1 - -1
 - -5
 dec.x + y
@@ -947,3 +947,9 @@ SELECT * FROM tbl GROUP BY GROUPING SETS ((a + 1, b * 1), c, CUBE (a, b), ROLLUP
 SELECT * FROM tbl GROUP BY GROUPING SETS (GROUPING SETS (course), GROUPING SETS (type), CUBE (a), ROLLUP (b))
 SELECT analyze FROM (SELECT 1 AS analyze)
 SELECT 'Ac' ILIKE 'a%c' ESCAPE NULL
+SELECT CURRENT_DATABASE()
+SELECT CURRENT_SCHEMAS(arg_bool)
+SELECT UNIFORM(1, 10, 5)
+SELECT UNIFORM(1, 10)
+SELECT CURRENT_TIMEZONE()
+SELECT NUMRANGE(1.1, 2.2) -|- NUMRANGE(2.2, 3.3)

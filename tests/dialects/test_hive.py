@@ -1,5 +1,4 @@
 from tests.dialects.test_dialect import Validator
-
 from sqlglot import exp
 
 
@@ -418,7 +417,7 @@ class TestHive(Validator):
         self.validate_all(
             "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
             write={
-                "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', CAST('2020-01-01' AS DATETIME))",
+                "bigquery": "FORMAT_DATE('%F %T', CAST('2020-01-01' AS DATETIME))",
                 "duckdb": "STRFTIME(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT('2020-01-01', 'yyyy-MM-dd HH:mm:ss')",
@@ -685,14 +684,19 @@ class TestHive(Validator):
                 "spark": "LOCATE('a', x, 3)",
             },
         )
+
         self.validate_all(
             "INITCAP('new york')",
             write={
-                "duckdb": "INITCAP('new york')",
-                "presto": r"REGEXP_REPLACE('new york', '(\w)(\w*)', x -> UPPER(x[1]) || LOWER(x[2]))",
                 "hive": "INITCAP('new york')",
                 "spark": "INITCAP('new york')",
             },
+        )
+        expression = self.parse_one("INITCAP('new york')")
+        self.assert_duckdb_sql(
+            expression,
+            includes=("REGEXP_MATCHES(", "ARRAY_TO_STRING("),
+            chr_chars=("\u000b", "\u001c", "\u001d", "\u001e", "\u001f"),
         )
         self.validate_all(
             "SELECT * FROM x.z TABLESAMPLE(10 PERCENT) y",
@@ -929,6 +933,7 @@ class TestHive(Validator):
         self.validate_identity(
             "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
         )
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

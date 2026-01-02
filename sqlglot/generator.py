@@ -80,7 +80,7 @@ class Generator(metaclass=_Generator):
             Default: False.
         identify: Determines when an identifier should be quoted. Possible values are:
             False (default): Never quote, except in cases where it's mandatory by the dialect.
-            True or 'always': Always quote.
+            True: Always quote except for specials cases.
             'safe': Only quote identifiers that are case insensitive.
         normalize: Whether to normalize identifiers to lowercase.
             Default: False.
@@ -112,6 +112,7 @@ class Generator(metaclass=_Generator):
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
+        exp.Adjacent: lambda self, e: self.binary(e, "-|-"),
         exp.AllowedValuesProperty: lambda self,
         e: f"ALLOWED_VALUES {self.expressions(e, flat=True)}",
         exp.AnalyzeColumns: lambda self, e: self.sql(e, "this"),
@@ -137,6 +138,8 @@ class Generator(metaclass=_Generator):
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
         exp.CredentialsProperty: lambda self,
         e: f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})",
+        exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG",
+        exp.SessionUser: lambda *_: "SESSION_USER",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.DynamicProperty: lambda *_: "DYNAMIC",
@@ -177,6 +180,8 @@ class Generator(metaclass=_Generator):
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.Operator: lambda self, e: self.binary(e, ""),  # The operator is produced in `binary`
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
+        exp.ExtendsLeft: lambda self, e: self.binary(e, "&<"),
+        exp.ExtendsRight: lambda self, e: self.binary(e, "&>"),
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
         exp.PartitionedByBucket: lambda self, e: self.func("BUCKET", e.this, e.expression),
         exp.PartitionByTruncate: lambda self, e: self.func("TRUNCATE", e.this, e.expression),
@@ -184,6 +189,7 @@ class Generator(metaclass=_Generator):
         exp.PositionalColumn: lambda self, e: f"#{self.sql(e, 'this')}",
         exp.ProjectionPolicyColumnConstraint: lambda self,
         e: f"PROJECTION POLICY {self.sql(e, 'this')}",
+        exp.ZeroFillColumnConstraint: lambda self, e: "ZEROFILL",
         exp.Put: lambda self, e: self.get_put_sql(e),
         exp.RemoteWithConnectionModelProperty: lambda self,
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
@@ -216,7 +222,6 @@ class Generator(metaclass=_Generator):
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.UsingTemplateProperty: lambda self, e: f"USING TEMPLATE {self.sql(e, 'this')}",
         exp.UsingData: lambda self, e: f"USING DATA {self.sql(e, 'this')}",
-        exp.Uuid: lambda *_: "UUID()",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.UtcDate: lambda self, e: self.sql(exp.CurrentDate(this=exp.Literal.string("UTC"))),
         exp.UtcTime: lambda self, e: self.sql(exp.CurrentTime(this=exp.Literal.string("UTC"))),
@@ -226,7 +231,6 @@ class Generator(metaclass=_Generator):
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
-        exp.WeekStart: lambda self, e: f"WEEK({self.sql(e, 'this')})",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
@@ -1307,7 +1311,7 @@ class Generator(metaclass=_Generator):
         return f"${tag}${self.sql(expression, 'this')}${tag}$"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
-        with_ = self.sql(expression, "with")
+        with_ = self.sql(expression, "with_")
         if with_:
             sql = f"{with_}{self.sep()}{sql}"
         return sql
@@ -1505,13 +1509,14 @@ class Generator(metaclass=_Generator):
         cluster = f" {cluster}" if cluster else ""
         where = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
+        order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         tables = self.expressions(expression, key="tables")
         tables = f" {tables}" if tables else ""
         if self.RETURNING_END:
-            expression_sql = f"{this}{using}{cluster}{where}{returning}{limit}"
+            expression_sql = f"{this}{using}{cluster}{where}{returning}{order}{limit}"
         else:
-            expression_sql = f"{returning}{this}{using}{cluster}{where}{limit}"
+            expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
         return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -1678,7 +1683,7 @@ class Generator(metaclass=_Generator):
         text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
             expression.quoted
-            or self.dialect.can_identify(text, self.identify)
+            or self.dialect.can_quote(expression, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
@@ -1945,7 +1950,7 @@ class Generator(metaclass=_Generator):
 
         sql = f"SYSTEM_VERSIONING={on_sql}"
 
-        return f"WITH({sql})" if expression.args.get("with") else sql
+        return f"WITH({sql})" if expression.args.get("with_") else sql
 
     def insert_sql(self, expression: exp.Insert) -> str:
         hint = self.sql(expression, "hint")
@@ -2118,7 +2123,13 @@ class Generator(metaclass=_Generator):
         if rows_from:
             table = f"ROWS FROM {self.wrap(rows_from)}"
 
-        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
+        indexed = expression.args.get("indexed")
+        if indexed is not None:
+            indexed = f" INDEXED BY {self.sql(indexed)}" if indexed else " NOT INDEXED"
+        else:
+            indexed = ""
+
+        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{indexed}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
 
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)
@@ -2169,14 +2180,15 @@ class Generator(metaclass=_Generator):
         if expression.this:
             this = self.sql(expression, "this")
             if not expressions:
-                return f"UNPIVOT {this}"
-
-            on = f"{self.seg('ON')} {expressions}"
-            into = self.sql(expression, "into")
-            into = f"{self.seg('INTO')} {into}" if into else ""
-            using = self.expressions(expression, key="using", flat=True)
-            using = f"{self.seg('USING')} {using}" if using else ""
-            return f"{direction} {this}{on}{into}{using}{group}"
+                sql = f"UNPIVOT {this}"
+            else:
+                on = f"{self.seg('ON')} {expressions}"
+                into = self.sql(expression, "into")
+                into = f"{self.seg('INTO')} {into}" if into else ""
+                using = self.expressions(expression, key="using", flat=True)
+                using = f"{self.seg('USING')} {using}" if using else ""
+                sql = f"{direction} {this}{on}{into}{using}{group}"
+            return self.prepend_ctes(expression, sql)
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
@@ -2199,7 +2211,8 @@ class Generator(metaclass=_Generator):
 
         default_on_null = self.sql(expression, "default_on_null")
         default_on_null = f" DEFAULT ON NULL ({default_on_null})" if default_on_null else ""
-        return f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        sql = f"{self.seg(direction)}{nulls}({expressions} FOR {fields}{default_on_null}{group}){alias}"
+        return self.prepend_ctes(expression, sql)
 
     def version_sql(self, expression: exp.Version) -> str:
         this = f"FOR {expression.name}"
@@ -2213,7 +2226,7 @@ class Generator(metaclass=_Generator):
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")
         set_sql = self.expressions(expression, flat=True)
-        from_sql = self.sql(expression, "from")
+        from_sql = self.sql(expression, "from_")
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")
@@ -2352,7 +2365,7 @@ class Generator(metaclass=_Generator):
             op
             for op in (
                 expression.method,
-                "GLOBAL" if expression.args.get("global") else None,
+                "GLOBAL" if expression.args.get("global_") else None,
                 side,
                 expression.kind,
                 expression.hint if self.JOIN_HINTS else None,
@@ -2467,7 +2480,7 @@ class Generator(metaclass=_Generator):
         expressions = self.expressions(expression)
         collate = self.sql(expression, "collate")
         collate = f" COLLATE {collate}" if collate else ""
-        global_ = "GLOBAL " if expression.args.get("global") else ""
+        global_ = "GLOBAL " if expression.args.get("global_") else ""
         return f"{global_}{kind}{this}{expressions}{collate}"
 
     def set_sql(self, expression: exp.Set) -> str:
@@ -2565,7 +2578,7 @@ class Generator(metaclass=_Generator):
         return self.op_expressions(f"{this}ORDER {siblings}BY", expression, flat=this or flat)  # type: ignore
 
     def withfill_sql(self, expression: exp.WithFill) -> str:
-        from_sql = self.sql(expression, "from")
+        from_sql = self.sql(expression, "from_")
         from_sql = f" FROM {from_sql}" if from_sql else ""
         to_sql = self.sql(expression, "to")
         to_sql = f" TO {to_sql}" if to_sql else ""
@@ -2726,7 +2739,7 @@ class Generator(metaclass=_Generator):
         return f" {options}" if options else ""
 
     def for_modifiers(self, expression: exp.Expression) -> str:
-        for_modifiers = self.expressions(expression, key="for")
+        for_modifiers = self.expressions(expression, key="for_")
         return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
@@ -2797,11 +2810,11 @@ class Generator(metaclass=_Generator):
             expression,
             f"SELECT{top_distinct}{operation_modifiers}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
-            self.sql(expression, "from", comment=False),
+            self.sql(expression, "from_", comment=False),
         )
 
         # If both the CTE and SELECT clauses have comments, generate the latter earlier
-        if expression.args.get("with"):
+        if expression.args.get("with_"):
             sql = self.maybe_comment(sql, expression)
             expression.pop_comments()
 
@@ -2829,7 +2842,7 @@ class Generator(metaclass=_Generator):
         return ""
 
     def star_sql(self, expression: exp.Star) -> str:
-        except_ = self.expressions(expression, key="except", flat=True)
+        except_ = self.expressions(expression, key="except_", flat=True)
         except_ = f"{self.seg(self.STAR_EXCEPT)} ({except_})" if except_ else ""
         replace = self.expressions(expression, key="replace", flat=True)
         replace = f"{self.seg('REPLACE')} ({replace})" if replace else ""
@@ -3128,11 +3141,13 @@ class Generator(metaclass=_Generator):
         return f"FOREIGN KEY{expressions}{reference}{delete}{update}{options}"
 
     def primarykey_sql(self, expression: exp.PrimaryKey) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         expressions = self.expressions(expression, flat=True)
         include = self.sql(expression, "include")
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"PRIMARY KEY ({expressions}){include}{options}"
+        return f"PRIMARY KEY{this} ({expressions}){include}{options}"
 
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
@@ -3495,6 +3510,10 @@ class Generator(metaclass=_Generator):
         default = f" DEFAULT {default} ON CONVERSION ERROR" if default else ""
         return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{default}{format_sql}{action})"
 
+    # Base implementation that excludes safe, zone, and target_type metadata args
+    def strtotime_sql(self, expression: exp.StrToTime) -> str:
+        return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
+
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
@@ -3830,6 +3849,10 @@ class Generator(metaclass=_Generator):
             for expr in exprs[1:]:
                 like_expr = connective(like_expr, exp_class(this=this, expression=expr))
 
+            parent = expression.parent
+            if not isinstance(parent, type(like_expr)) and isinstance(parent, exp.Condition):
+                like_expr = exp.paren(like_expr, copy=False)
+
             return self.sql(like_expr)
 
         return self.binary(expression, op)
@@ -3839,6 +3862,9 @@ class Generator(metaclass=_Generator):
 
     def ilike_sql(self, expression: exp.ILike) -> str:
         return self._like_sql(expression)
+
+    def match_sql(self, expression: exp.Match) -> str:
+        return self.binary(expression, "MATCH")
 
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
         return self.binary(expression, "SIMILAR TO")
@@ -3863,9 +3889,6 @@ class Generator(metaclass=_Generator):
 
     def nullsafeneq_sql(self, expression: exp.NullSafeNEQ) -> str:
         return self.binary(expression, "IS DISTINCT FROM")
-
-    def slice_sql(self, expression: exp.Slice) -> str:
-        return self.binary(expression, ":")
 
     def sub_sql(self, expression: exp.Sub) -> str:
         return self.binary(expression, "-")
@@ -4094,7 +4117,9 @@ class Generator(metaclass=_Generator):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
                 then = f"UPDATE {self.sql(then_expression, 'expressions')}"
             else:
-                then = f"UPDATE SET{self.sep()}{self.expressions(then_expression)}"
+                expressions_sql = self.expressions(then_expression)
+                then = f"UPDATE SET{self.sep()}{expressions_sql}" if expressions_sql else "UPDATE"
+
         else:
             then = self.sql(then_expression)
         return f"WHEN {matched}{source}{condition} THEN {then}"
@@ -4365,8 +4390,8 @@ class Generator(metaclass=_Generator):
 
     def refresh_sql(self, expression: exp.Refresh) -> str:
         this = self.sql(expression, "this")
-        table = "" if isinstance(expression.this, exp.Literal) else "TABLE "
-        return f"REFRESH {table}{this}"
+        kind = "" if isinstance(expression.this, exp.Literal) else f"{expression.text('kind')} "
+        return f"REFRESH {kind}{this}"
 
     def toarray_sql(self, expression: exp.ToArray) -> str:
         arg = expression.this
@@ -4824,7 +4849,7 @@ class Generator(metaclass=_Generator):
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        _with = expression.args.get("with")
+        _with = expression.args.get("with_")
 
         if _with is None:
             with_sql = ""
@@ -4934,6 +4959,14 @@ class Generator(metaclass=_Generator):
 
         return array_agg
 
+    def slice_sql(self, expression: exp.Slice) -> str:
+        step = self.sql(expression, "step")
+        end = self.sql(expression.expression)
+        begin = self.sql(expression.this)
+
+        sql = f"{end}:{step}" if step else end
+        return f"{begin}:{sql}" if sql else f"{begin}:"
+
     def apply_sql(self, expression: exp.Apply) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
@@ -5008,8 +5041,8 @@ class Generator(metaclass=_Generator):
     def overlay_sql(self, expression: exp.Overlay):
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
-        from_sql = self.sql(expression, "from")
-        for_sql = self.sql(expression, "for")
+        from_sql = self.sql(expression, "from_")
+        for_sql = self.sql(expression, "for_")
         for_sql = f" FOR {for_sql}" if for_sql else ""
 
         return f"OVERLAY({this} PLACING {expr} FROM {from_sql}{for_sql})"
@@ -5340,9 +5373,11 @@ class Generator(metaclass=_Generator):
             expression, "metrics", dynamic=True, skip_first=True, skip_last=True
         )
         metrics = self.seg(f"METRICS {metrics}") if metrics else ""
+        facts = self.expressions(expression, "facts", dynamic=True, skip_first=True, skip_last=True)
+        facts = self.seg(f"FACTS {facts}") if facts else ""
         where = self.sql(expression, "where")
         where = self.seg(f"WHERE {where}") if where else ""
-        body = self.indent(this + metrics + dimensions + where, skip_first=True)
+        body = self.indent(this + metrics + dimensions + facts + where, skip_first=True)
         return f"SEMANTIC_VIEW({body}{self.seg(')', sep='')}"
 
     def getextract_sql(self, expression: exp.GetExtract) -> str:
@@ -5394,3 +5429,52 @@ class Generator(metaclass=_Generator):
 
     def directorystage_sql(self, expression: exp.DirectoryStage) -> str:
         return self.func("DIRECTORY", expression.this)
+
+    def uuid_sql(self, expression: exp.Uuid) -> str:
+        is_string = expression.args.get("is_string", False)
+        uuid_func_sql = self.func("UUID")
+
+        if is_string and not self.dialect.UUID_IS_STRING_TYPE:
+            return self.sql(
+                exp.cast(uuid_func_sql, exp.DataType.Type.VARCHAR, dialect=self.dialect)
+            )
+
+        return uuid_func_sql
+
+    def initcap_sql(self, expression: exp.Initcap) -> str:
+        delimiters = expression.expression
+
+        if delimiters:
+            # do not generate delimiters arg if we are round-tripping from default delimiters
+            if (
+                delimiters.is_string
+                and delimiters.this == self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS
+            ):
+                delimiters = None
+            elif not self.dialect.INITCAP_SUPPORTS_CUSTOM_DELIMITERS:
+                self.unsupported("INITCAP does not support custom delimiters")
+                delimiters = None
+
+        return self.func("INITCAP", expression.this, delimiters)
+
+    def localtime_sql(self, expression: exp.Localtime) -> str:
+        this = expression.this
+        return self.func("LOCALTIME", this) if this else "LOCALTIME"
+
+    def localtimestamp_sql(self, expression: exp.Localtime) -> str:
+        this = expression.this
+        return self.func("LOCALTIMESTAMP", this) if this else "LOCALTIMESTAMP"
+
+    def weekstart_sql(self, expression: exp.WeekStart) -> str:
+        this = expression.this.name.upper()
+        if self.dialect.WEEK_OFFSET == -1 and this == "SUNDAY":
+            # BigQuery specific optimization since WEEK(SUNDAY) == WEEK
+            return "WEEK"
+
+        return self.func("WEEK", expression.this)
+
+    def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
+        this = self.expressions(expression)
+        charset = self.sql(expression, "charset")
+        using = f" USING {charset}" if charset else ""
+        return self.func(name, this + using)

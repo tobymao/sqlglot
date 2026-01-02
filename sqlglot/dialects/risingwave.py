@@ -8,6 +8,9 @@ from sqlglot import exp
 
 
 class RisingWave(Postgres):
+    REQUIRES_PARENTHESIZED_STRUCT_ACCESS = True
+    SUPPORTS_STRUCT_STAR_EXPANSION = True
+
     class Tokenizer(Postgres.Tokenizer):
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,

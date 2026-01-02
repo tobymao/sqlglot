@@ -16,6 +16,12 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
 
+    class Tokenizer(Presto.Tokenizer):
+        KEYWORDS = {
+            **Presto.Tokenizer.KEYWORDS,
+            "REFRESH": TokenType.REFRESH,
+        }
+
     class Parser(Presto.Parser):
         FUNCTION_PARSERS = {
             **Presto.Parser.FUNCTION_PARSERS,
@@ -63,6 +69,7 @@ class Trino(Presto):
             )
 
     class Generator(Presto.Generator):
+        EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
         PROPERTIES_LOCATION = {
             **Presto.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.POST_WITH,

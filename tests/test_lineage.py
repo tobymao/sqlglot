@@ -40,7 +40,13 @@ class TestLineage(unittest.TestCase):
             "SELECT x.a AS a FROM x AS x",
         )
         self.assertEqual(downstream.source_name, "y")
-        self.assertGreater(len(node.to_html()._repr_html_()), 1000)
+
+        graph_html = node.to_html()
+        self.assertGreater(len(graph_html._repr_html_()), 1000)
+
+        for edge in graph_html.edges:
+            self.assertIn("from", edge)
+            self.assertIn("to", edge)
 
         # test that sql is not modified
         sql = "SELECT a FROM x"
@@ -413,8 +419,8 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "a")
         self.assertEqual(len(node.downstream), 1)
         node = node.downstream[0]
-        self.assertEqual(node.name, "_q_0.a")
-        self.assertEqual(node.reference_node_name, "_q_0")
+        self.assertEqual(node.name, "_0.a")
+        self.assertEqual(node.reference_node_name, "_0")
 
     def test_lineage_cte_union(self) -> None:
         query = """
@@ -480,7 +486,7 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "x")
 
         downstream = node.downstream[0]
-        self.assertEqual(downstream.name, "_q_0.x")
+        self.assertEqual(downstream.name, "_0.x")
         self.assertEqual(downstream.source.sql(), "SELECT * FROM table_a AS table_a")
 
         downstream = downstream.downstream[0]
@@ -555,7 +561,7 @@ class TestLineage(unittest.TestCase):
 
     def test_pivot_without_alias(self) -> None:
         sql = """
-        SELECT 
+        SELECT
             a as other_a
         FROM (select value,category from sample_data)
         PIVOT (
@@ -565,12 +571,12 @@ class TestLineage(unittest.TestCase):
         """
         node = lineage("other_a", sql)
 
-        self.assertEqual(node.downstream[0].name, "_q_0.value")
+        self.assertEqual(node.downstream[0].name, "_0.value")
         self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
 
     def test_pivot_with_alias(self) -> None:
         sql = """
-            SELECT 
+            SELECT
                 cat_a_s as other_as
             FROM sample_data
             PIVOT (
@@ -586,7 +592,7 @@ class TestLineage(unittest.TestCase):
     def test_pivot_with_cte(self) -> None:
         sql = """
         WITH t as (
-            SELECT 
+            SELECT
                 a as other_a
             FROM sample_data
             PIVOT (
@@ -691,13 +697,13 @@ class TestLineage(unittest.TestCase):
         sql = """
         WITH cte AS (
             SELECT * FROM (
-                SELECT product_type, month, loan_id 
+                SELECT product_type, month, loan_id
                 FROM loan_ledger
             ) PIVOT (
                 COUNT(loan_id) FOR month IN ('2024-10', '2024-11')
             )
         )
-        SELECT 
+        SELECT
             cte.product_type AS product_type,
             cte."2024-10" AS "2024-10"
         FROM cte
@@ -705,7 +711,7 @@ class TestLineage(unittest.TestCase):
 
         node = lineage("product_type", sql, dialect="duckdb", schema=schema)
         self.assertEqual(node.downstream[0].name, "cte.product_type")
-        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.product_type")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_0.product_type")
         self.assertEqual(
             node.downstream[0].downstream[0].downstream[0].name,
             "loan_ledger.product_type",
@@ -713,7 +719,7 @@ class TestLineage(unittest.TestCase):
 
         node = lineage('"2024-10"', sql, dialect="duckdb", schema=schema)
         self.assertEqual(node.downstream[0].name, "cte.2024-10")
-        self.assertEqual(node.downstream[0].downstream[0].name, "_q_0.loan_id")
+        self.assertEqual(node.downstream[0].downstream[0].name, "_0.loan_id")
         self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.loan_id")
 
     def test_copy_flag(self) -> None:

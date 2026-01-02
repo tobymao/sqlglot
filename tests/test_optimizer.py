@@ -8,7 +8,7 @@ from pandas.testing import assert_frame_equal
 
 import sqlglot
 from sqlglot import exp, optimizer, parse_one
-from sqlglot.errors import OptimizeError, SchemaError
+from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
@@ -46,7 +46,10 @@ def pushdown_projections(expression, **kwargs):
 
 
 def normalize(expression, **kwargs):
+    schema = kwargs.get("schema")
+
     expression = optimizer.normalize.normalize(expression, dnf=False)
+    expression = annotate_types(expression, schema=schema)
     return optimizer.simplify.simplify(expression)
 
 
@@ -58,6 +61,11 @@ def simplify(expression, **kwargs):
     return optimizer.simplify.simplify(
         expression, constant_propagation=True, coalesce_simplification=True, dialect=dialect
     )
+
+
+def pushdown_ctes(expression, **kwargs):
+    optimizer.qualify_columns.pushdown_cte_alias_columns(build_scope(expression))
+    return expression
 
 
 def annotate_functions(expression, **kwargs):
@@ -155,11 +163,14 @@ class TestOptimizer(unittest.TestCase):
                 title = meta.get("title") or f"{i}, {sql}"
                 if only and title != only:
                     continue
+
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
+                canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
 
-                func_kwargs = {**kwargs}
+                func_kwargs = kwargs.copy()
+
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
@@ -167,9 +178,10 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["validate_qualify_columns"] = string_to_bool(
                         validate_qualify_columns
                     )
-
                 if dialect:
                     func_kwargs["dialect"] = dialect
+                if canonicalize_table_aliases:
+                    func_kwargs["canonicalize_table_aliases"] = canonicalize_table_aliases
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -232,6 +244,14 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_tables(self):
+        tables = set()
+        optimizer.qualify.qualify(
+            parse_one("with foo AS (select * from bar) select * from foo join baz"),
+            qualify_columns=False,
+            on_qualify=lambda t: tables.add(t.name),
+        )
+        self.assertEqual(tables, {"bar", "baz"})
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),
@@ -251,7 +271,7 @@ class TestOptimizer(unittest.TestCase):
                 db="db",
                 catalog="catalog",
             ).sql(),
-            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _q_0",
+            "WITH cte AS (SELECT * FROM catalog.db.t AS t) SELECT * FROM cte AS cte PIVOT(SUM(c) FOR v IN ('x', 'y')) AS _0",
         )
 
         self.assertEqual(
@@ -300,7 +320,7 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
-        self.check_file("normalize", normalize)
+        self.check_file("normalize", normalize, schema=self.schema)
 
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
@@ -426,7 +446,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
-                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS _q_0",
+                    "SELECT id, dt, v FROM (SELECT t1.id, t1.dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp USING (id) LEFT JOIN t2 AS t2 USING (other_id, dt, common) WHERE t1.id > 10 GROUP BY 1, 2) AS `_0`",
                     dialect="bigquery",
                 ),
                 schema=MappingSchema(
@@ -438,7 +458,7 @@ class TestOptimizer(unittest.TestCase):
                     dialect="bigquery",
                 ),
             ).sql(dialect="bigquery"),
-            "SELECT _q_0.id AS id, _q_0.dt AS dt, _q_0.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS _q_0",
+            "SELECT `_0`.id AS id, `_0`.dt AS dt, `_0`.v AS v FROM (SELECT t1.id AS id, t1.dt AS dt, sum(coalesce(t2.v, 0)) AS v FROM t1 AS t1 LEFT JOIN lkp AS lkp ON t1.id = lkp.id LEFT JOIN t2 AS t2 ON lkp.other_id = t2.other_id AND t1.dt = t2.dt AND COALESCE(t1.common, lkp.common) = t2.common WHERE t1.id > 10 GROUP BY t1.id, t1.dt) AS `_0`",
         )
 
         # Detection of correlation where columns are referenced in derived tables nested within subqueries
@@ -504,6 +524,48 @@ class TestOptimizer(unittest.TestCase):
             "SELECT a.b_id AS b_id FROM a AS a JOIN b AS b ON a.b_id = b.b_id JOIN c AS c ON b.b_id = c.b_id JOIN d AS d ON b.d_id = d.d_id",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT
+                      (SELECT SUM(c.amount)
+                       FROM UNNEST(credits) AS c
+                       WHERE type != 'promotion') as total
+                    FROM billing
+                    """,
+                    read="bigquery",
+                ),
+                schema={"billing": {"credits": "ARRAY<STRUCT<amount FLOAT64, type STRING>>"}},
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT (SELECT SUM(`c`.`amount`) AS `_col_0` FROM UNNEST(`billing`.`credits`) AS `c` WHERE `type` <> 'promotion') AS `total` FROM `billing` AS `billing`",
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    WITH cte AS (SELECT * FROM base_table)
+                    SELECT
+                      (SELECT SUM(item.price)
+                       FROM UNNEST(items) AS item
+                       WHERE category = 'electronics') as electronics_total
+                    FROM cte
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "base_table": {
+                        "id": "INT64",
+                        "items": "ARRAY<STRUCT<price FLOAT64, category STRING>>",
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `cte` AS (SELECT `base_table`.`id` AS `id`, `base_table`.`items` AS `items` FROM `base_table` AS `base_table`) SELECT (SELECT SUM(`item`.`price`) AS `_col_0` FROM UNNEST(`cte`.`items`) AS `item` WHERE `category` = 'electronics') AS `electronics_total` FROM `cte` AS `cte`",
+        )
+
         self.check_file(
             "qualify_columns",
             qualify_columns,
@@ -512,6 +574,25 @@ class TestOptimizer(unittest.TestCase):
         )
         self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
+    def test_validate_columns(self):
+        with self.assertRaisesRegex(
+            OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"
+        ):
+            optimizer.qualify.qualify(
+                parse_one("select foo from x"),
+                schema={"foo": {"y": "int"}},
+            )
+
+        # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
+        with self.assertRaisesRegex(OptimizeError, "Ambiguous column 'a'"):
+            expression = parse_one(
+                "SELECT * FROM (SELECT a, b, c FROM x) PIVOT (SUM(b) FOR c IN ('x', 'y'))"
+            )
+            qualified = optimizer.qualify_columns.qualify_columns(
+                expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
+            )
+            optimizer.qualify_columns.validate_qualify_columns(qualified)
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
@@ -519,7 +600,7 @@ class TestOptimizer(unittest.TestCase):
     def test_pushdown_cte_alias_columns(self):
         self.check_file(
             "pushdown_cte_alias_columns",
-            optimizer.qualify_columns.pushdown_cte_alias_columns,
+            pushdown_ctes,
         )
 
     def test_qualify_columns__invalid(self):
@@ -530,6 +611,55 @@ class TestOptimizer(unittest.TestCase):
                         parse_one(sql), schema=self.schema
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
+
+        # this makes sure the fallback scenario in get_table in resolver is covered
+        # and the error message is column cannot be resolved instead of unknown table
+        sql = """
+            SELECT
+            INLINE_VIEW.a AS ACCOUNT
+            FROM (
+            (
+                SELECT
+                a
+                FROM table1
+            ) inline_view
+            LEFT JOIN table2
+                ON a = table2.id
+            )
+            LEFT JOIN table3
+            ON inline_view.a = table3.a
+        """
+
+        with self.assertRaises(OptimizeError) as ctx:
+            schema = MappingSchema()
+            schema.add_table("table3", ["a"])
+
+            expression = optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=schema)
+            optimizer.qualify_columns.validate_qualify_columns(expression)
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Column 'a' could not be resolved", error_msg)
+
+    def test_optimize_error_highlighting(self):
+        # highlighting works with sql parameter
+        sql = "SELECT nonexistent FROM x"
+
+        with self.assertRaises(OptimizeError) as ctx:
+            optimizer.optimize(sql, schema=self.schema, sql=sql)
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Column 'nonexistent' could not be resolved", error_msg)
+        self.assertIn(f"{ANSI_UNDERLINE}nonexistent{ANSI_RESET}", error_msg)
+
+        # no highlighting when sql is None
+        sql = "SELECT nonexistent FROM x"
+
+        with self.assertRaises(OptimizeError) as ctx:
+            optimizer.optimize(sql, schema=self.schema, sql=None)
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Column 'nonexistent' could not be resolved", error_msg)
+        self.assertNotIn(f"{ANSI_UNDERLINE}nonexistent{ANSI_RESET}", error_msg)
 
     def test_normalize_identifiers(self):
         self.check_file(
@@ -566,7 +696,6 @@ class TestOptimizer(unittest.TestCase):
 
         expression = parse_one("TRUE AND TRUE AND TRUE")
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))
-        self.assertEqual(exp.true(), optimizer.simplify.simplify(expression.this))
 
         # CONCAT in (e.g.) Presto is parsed as Concat instead of SafeConcat which is the default type
         # This test checks that simplify_concat preserves the corresponding expression types.
@@ -624,12 +753,32 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.simplify.gen(sql),
             """
-SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
+SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
         self.assertEqual(
             optimizer.simplify.gen(parse_one("select item_id /* description */"), comments=True),
             "SELECT :expressions,item_id /* description */",
+        )
+
+    def test_simplify_nested(self):
+        sql = """
+        SELECT x, 1 + 1
+        FROM foo
+        WHERE x > (((select x + 1 + 1, sum(y + 1 + 1) FROM bar GROUP BY x + 1 + 1)))
+        """
+
+        self.assertEqual(
+            parse_one("""
+            SELECT x, 2
+            FROM foo
+            WHERE x > (((
+                select x + 1 + 1, sum(y + 2)
+                FROM bar
+                GROUP BY x + 1 + 1
+            )))
+            """).sql(pretty=True),
+            optimizer.simplify.simplify(parse_one(sql)).sql(pretty=True),
         )
 
     def test_unnest_subqueries(self):
@@ -908,7 +1057,10 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             result = parse_and_optimize(annotate_types, sql, dialect, dialect=dialect)
 
             with self.subTest(title):
-                self.assertEqual(result.type.sql(), exp.DataType.build(expected).sql())
+                self.assertEqual(
+                    result.type.sql(dialect),
+                    exp.DataType.build(expected, dialect=dialect).sql(dialect),
+                )
 
     def test_annotate_funcs(self):
         test_schema = {
@@ -917,9 +1069,12 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
                 "str_col": "STRING",
                 "bignum_col": "BIGNUMERIC",
                 "date_col": "DATE",
+                "decfloat_col": "DECFLOAT",
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",
+                "obj_col": "OBJECT",
+                "int_col": "INT",
                 "bool_col": "BOOLEAN",
                 "bytes_col": "BYTES",
                 "interval_col": "INTERVAL",
@@ -1128,7 +1283,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             expression.expressions[0].type.this, exp.DataType.Type.FLOAT
         )  # a.cola AS cola
 
-        addition_alias = expression.args["from"].this.this.expressions[0]
+        addition_alias = expression.args["from_"].this.this.expressions[0]
         self.assertEqual(
             addition_alias.type.this, exp.DataType.Type.FLOAT
         )  # x.cola + y.cola AS cola
@@ -1174,7 +1329,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         # WHERE tbl.colc = True
         self.assertEqual(expression.args["where"].this.type.this, exp.DataType.Type.BOOLEAN)
 
-        cte_select = expression.args["with"].expressions[0].this
+        cte_select = expression.args["with_"].expressions[0].this
         self.assertEqual(
             cte_select.expressions[0].type.this, exp.DataType.Type.VARCHAR
         )  # x.cola + 'bla' AS cola
@@ -1404,6 +1559,43 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             exp.DataType.build("timestamp"),
         )
 
+    def test_unnest_struct_field_annotation(self):
+        """Test that UNNEST of struct array without column aliases exposes struct fields with proper types"""
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    WITH data AS (
+                      SELECT [STRUCT('Bob' AS first_name, 'Smith' AS last_name)] AS users
+                    )
+                    SELECT first_name, last_name
+                    FROM data, UNNEST(users)
+                    """,
+                    read="bigquery",
+                )
+            )
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("VARCHAR"))
+        self.assertEqual(expression.selects[1].type, exp.DataType.build("VARCHAR"))
+
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT person
+                    FROM UNNEST([STRUCT('Charlie' AS name, 40 AS age)]) AS person
+                    """,
+                    read="bigquery",
+                )
+            )
+        )
+        select_type = expression.selects[0].type
+        self.assertTrue(select_type.is_type(exp.DataType.Type.STRUCT))
+        self.assertEqual(len(select_type.expressions), 2)
+        fields = {col_def.name: col_def.kind for col_def in select_type.expressions}
+        self.assertEqual(fields.get("name"), exp.DataType.build("VARCHAR"))
+        self.assertEqual(fields.get("age"), exp.DataType.build("INT"))
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
@@ -1422,6 +1614,7 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
     def test_union_annotation(self):
         for left, right, expected_type in (
             ("SELECT 1::INT AS c", "SELECT 2::BIGINT AS c", "BIGINT"),
+            ("SELECT 1::INT AS c", "SELECT 2::BIGDECIMAL AS c", "BIGDECIMAL"),
             ("SELECT 1 AS c", "SELECT NULL AS c", "INT"),
             ("SELECT FOO() AS c", "SELECT 1 AS c", "UNKNOWN"),
             ("SELECT FOO() AS c", "SELECT BAR() AS c", "UNKNOWN"),
@@ -1479,6 +1672,40 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
             SELECT col FROM t;
         """
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # BigQuery: STRING coerces to temporal types in UNION
+        for left, right, expected_type in (
+            ("SELECT '2010-01-01' AS c", "SELECT DATE '2020-02-02' AS c", "DATE"),
+            (
+                "SELECT '2010-01-01 00:00:00' AS c",
+                "SELECT DATETIME '2020-02-02 00:00:00' AS c",
+                "DATETIME",
+            ),
+            ("SELECT '00:00:00' AS c", "SELECT TIME '00:01:00' AS c", "TIME"),
+            (
+                "SELECT '2010-01-01 00:00:00' AS c",
+                "SELECT TIMESTAMP '2020-02-02 00:00:00' AS c",
+                "TIMESTAMP",
+            ),
+        ):
+            with self.subTest(f"left: {left}, right: {right}, expected: {expected_type}"):
+                lr = annotate_types(
+                    parse_one(
+                        f"SELECT t.c FROM ({left} UNION ALL {right}) t(c)", dialect="bigquery"
+                    ),
+                    dialect="bigquery",
+                )
+                rl = annotate_types(
+                    parse_one(
+                        f"SELECT t.c FROM ({right} UNION ALL {left}) t(c)", dialect="bigquery"
+                    ),
+                    dialect="bigquery",
+                )
+                assert (
+                    lr.selects[0].type
+                    == rl.selects[0].type
+                    == exp.DataType.build(expected_type, dialect="bigquery")
+                )
 
     def test_udtf_annotation(self):
         table_udtf = parse_one(
@@ -1761,3 +1988,80 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
         annotated = annotate_types(qualified_query, schema=ch_schema, dialect="clickhouse")
         assert annotated.selects[0].meta.get("nonnull") is True
         assert annotated.selects[1].meta.get("nonnull") is None
+
+    def test_case_sensitive_json_dot_access(self):
+        schema = {
+            "t": {
+                "col": "JSON",
+                "struct_col": "STRUCT<STRUCT<STRUCT<VARCHAR>>>",
+            }
+        }
+
+        def _parse_and_optimize(query: str, dialect: str) -> exp.Expression:
+            query = parse_one(query, dialect=dialect)
+            optimized = optimizer.optimize(query, schema=schema, dialect=dialect)
+            return optimized.sql(dialect=dialect)
+
+        # BigQuery
+        for dot_access in ("col.fOo.BaR.BaZ", "t.col.fOo.BaR.BaZ"):
+            with self.subTest(f"Test case sensitive JSON dot access for BigQuery: {dot_access}"):
+                dot_access_normalized = "`t`.`col`.`fOo`.`BaR`.`BaZ`"
+
+                sql = _parse_and_optimize(
+                    f"SELECT JSON_VALUE({dot_access}, '$') AS col FROM t", dialect="bigquery"
+                )
+                assert (
+                    sql
+                    == f"SELECT JSON_VALUE({dot_access_normalized}, '$') AS `col` FROM `t` AS `t`"
+                )
+
+                sql = _parse_and_optimize(f"SELECT {dot_access} AS col FROM t", dialect="bigquery")
+                assert sql == f"SELECT {dot_access_normalized} AS `col` FROM `t` AS `t`"
+
+        # BigQuery: STRUCT field accesses are still normalized
+        sql = _parse_and_optimize(
+            "SELECT struct_col.FlD1.flD2.FLD3 AS col FROM t", dialect="bigquery"
+        )
+        assert sql == "SELECT `t`.`struct_col`.`fld1`.`fld2`.`fld3` AS `col` FROM `t` AS `t`"
+
+        # Databricks
+        sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="databricks")
+        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `A` FROM `t` AS `t`"
+
+        # Clickhouse
+        sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="clickhouse")
+        assert sql == 'SELECT "t"."col"."A"."a" AS "a", "t"."col"."a"."A" AS "A" FROM "t" AS "t"'
+
+        # DuckDB
+        sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="duckdb")
+        assert sql == 'SELECT "t"."col"."A"."a" AS "a", "t"."col"."a"."A" AS "a" FROM "t" AS "t"'
+
+        # Snowflake
+        sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="snowflake")
+        assert (
+            sql
+            == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
+        )
+
+    def test_deep_ast_type_annotation(self):
+        union_sql = "SELECT 1 UNION ALL " * 2000 + "SELECT 1"
+        annotated = annotate_types(parse_one(union_sql))
+        self.assertEqual(annotated.sql(), union_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.INT)
+
+        binary_sql = "SELECT " + "t.a + " * 2000 + "t.a FROM t"
+        annotated = annotate_types(parse_one(binary_sql), schema={"t": {"a": "INT"}})
+        self.assertEqual(annotated.sql(), binary_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.INT)
+
+    def test_null_coerce_annotation(self):
+        null_sql = "SELECT t.foo FROM (SELECT CAST(1 AS BIGDECIMAL) AS foo UNION ALL SELECT NULL AS foo) AS t"
+        annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
+
+        self.assertEqual(annotated.sql(), null_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)
+
+        null_sql = "SELECT t.foo FROM (SELECT NULL AS foo UNION ALL SELECT CAST(1 AS BIGDECIMAL) AS foo) AS t"
+        annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
+        self.assertEqual(annotated.sql(), null_sql)
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)

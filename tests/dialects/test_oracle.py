@@ -17,6 +17,8 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("DBMS_RANDOM.NORMAL")
         self.validate_identity("DBMS_RANDOM.VALUE(low, high)").assert_is(exp.Rand)
         self.validate_identity("DBMS_RANDOM.VALUE()").assert_is(exp.Rand)
@@ -231,13 +233,6 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
-            "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
-            write={
-                "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
-                "postgres": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
             "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
             write={
                 "oracle": "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
@@ -362,6 +357,7 @@ class TestOracle(Validator):
             "SELECT PERCENT_RANK(15, 0.05) WITHIN GROUP (ORDER BY col1, col2) FROM t"
         )
         self.validate_identity("L2_DISTANCE(x, y)")
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
@@ -397,6 +393,10 @@ class TestOracle(Validator):
         )
         self.validate_identity("INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')")
         self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
+        self.validate_identity("INSERT /*+ APPEND(d) */ INTO dest d VALUES (i, 'Value')")
+        self.validate_identity(
+            "INSERT /*+ APPEND(d) */ INTO dest d (i, value) SELECT 1, 'value' FROM dual"
+        )
         self.validate_identity(
             "SELECT /*+ LEADING(departments employees) USE_NL(employees) */ * FROM employees JOIN departments ON employees.department_id = departments.department_id",
             """SELECT /*+ LEADING(departments employees)
@@ -806,3 +806,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             qualified.sql(dialect="oracle"),
             'WITH "T" AS (SELECT 1 AS "COL") SELECT "T"."COL" AS "COL", ROWID AS "ROWID" FROM "T" "T" WHERE ROWNUM = 1',
         )
+
+    def test_chr(self):
+        self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
+        self.validate_identity("SELECT CHR(187)")

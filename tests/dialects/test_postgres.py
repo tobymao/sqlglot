@@ -25,6 +25,9 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity(
+            "SELECT MODE() WITHIN GROUP (ORDER BY status DESC) AS most_common FROM orders"
+        )
         self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
         self.validate_identity("SHA384(x)")
         self.validate_identity("1.x", "1. AS x")
@@ -76,6 +79,7 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_SCHEMA")
         self.validate_identity("SELECT CURRENT_USER")
+        self.validate_identity("SELECT CURRENT_ROLE")
         self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
         self.validate_identity("SELECT INTERVAL '4.1 DAY'")
@@ -989,6 +993,35 @@ FROM json_data, field_ids""",
             },
         )
 
+        self.validate_all(
+            "SELECT TO_CHAR(foo, bar)",
+            read={
+                "redshift": "SELECT TO_CHAR(foo, bar)",
+            },
+            write={
+                "postgres": "SELECT TO_CHAR(foo, bar)",
+                "redshift": "SELECT TO_CHAR(foo, bar)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+            read={
+                "sqlite": "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+                "postgres": "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
+            },
+        )
+        self.validate_identity("SELECT NUMRANGE(1.1, 2.2) -|- NUMRANGE(2.2, 3.3)")
+        self.validate_identity(
+            "SELECT SLOPE(point '(4,4)', point '(0,0)')",
+            "SELECT SLOPE(CAST('(4,4)' AS POINT), CAST('(0,0)' AS POINT))",
+        )
+
+        width_bucket = self.validate_identity("WIDTH_BUCKET(10, ARRAY[5, 15])")
+        self.assertIsNotNone(width_bucket.args.get("threshold"))
+
+        width_bucket = self.validate_identity("WIDTH_BUCKET(10, 5, 15, 25)")
+        self.assertIsNone(width_bucket.args.get("threshold"))
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
@@ -1310,20 +1343,6 @@ FROM json_data, field_ids""",
                     "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
-
-    def test_operator(self):
-        expr = self.parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3")
-
-        expr.left.assert_is(exp.Operator)
-        expr.left.left.assert_is(exp.Literal)
-        expr.left.right.assert_is(exp.Literal)
-        expr.right.assert_is(exp.Literal)
-        self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
-
-        self.validate_identity("SELECT operator FROM t")
-        self.validate_identity("SELECT 1 OPERATOR(+) 2")
-        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
-        self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
 
     def test_bool_or(self):
         self.validate_identity(

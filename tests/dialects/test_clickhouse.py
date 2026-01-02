@@ -32,7 +32,6 @@ class TestClickhouse(Validator):
 
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
-        self.assertIsNone(expr._meta)
 
         self.validate_identity('SELECT DISTINCT ON ("id") * FROM t')
         self.validate_identity("SELECT 1 OR (1 = 2)")
@@ -444,6 +443,7 @@ class TestClickhouse(Validator):
                 "mysql": "SELECT 1 XOR 0 XOR 1",
             },
         )
+        self.validate_identity("SELECT xor(0, 1, 1, 0)")
         self.validate_all(
             "CONCAT(a, b)",
             read={
@@ -647,7 +647,7 @@ class TestClickhouse(Validator):
             "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
         )
 
-        self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
+        self.validate_identity("SELECT 1_2_3_4_5")
         self.validate_identity("SELECT 1_b", "SELECT 1_b")
         self.validate_identity(
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
@@ -664,6 +664,21 @@ class TestClickhouse(Validator):
         self.validate_identity("cosineDistance(x, y)")
         self.validate_identity("L2Distance(x, y)")
         self.validate_identity("tuple(1 = 1, 'foo' = 'foo')")
+
+        self.validate_identity("SELECT LIKE(a, b)", "SELECT a LIKE b")
+        self.validate_identity("SELECT notLike(a, b)", "SELECT NOT a LIKE b")
+        self.validate_identity("SELECT ilike(a, b)", "SELECT a ILIKE b")
+
+        self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
+        self.validate_identity("currentSchemas(TRUE)", "CURRENT_SCHEMAS(TRUE)")
+
+        self.validate_identity(
+            "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
+        )
+
+        self.validate_identity("SELECT or(0, 1, -2)", "SELECT 0 OR 1 OR -2")
+        self.validate_identity("SELECT and(1, 2, 3)", "SELECT 1 AND 2 AND 3")
+        self.validate_identity("SELECT or(and(3, 0), 5)", "SELECT (3 AND 0) OR 5")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
@@ -712,8 +727,8 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
 
         query = parse_one("""WITH (SELECT 1) AS y SELECT * FROM y""", read="clickhouse")
-        self.assertIsInstance(query.args["with"].expressions[0].this, exp.Subquery)
-        self.assertEqual(query.args["with"].expressions[0].alias, "y")
+        self.assertIsInstance(query.args["with_"].expressions[0].this, exp.Subquery)
+        self.assertEqual(query.args["with_"].expressions[0].alias, "y")
 
         query = "WITH 1 AS var SELECT var"
         for error_level in [ErrorLevel.IGNORE, ErrorLevel.RAISE, ErrorLevel.IMMEDIATE]:

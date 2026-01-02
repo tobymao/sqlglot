@@ -192,6 +192,11 @@ class TestDiff(unittest.TestCase):
             ],
         )
 
+        expr_src = parse_one("SELECT a.x FROM a INNER JOIN b ON a.x = b.y LEFT JOIN c ON a.p = c.q")
+        expr_tgt = parse_one("SELECT a.x FROM a inner JOIN b ON a.x = b.y left JOIN c ON a.p = c.q")
+
+        self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
+
     def test_window_functions(self):
         expr_src = parse_one("SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)")
         expr_tgt = parse_one("SELECT RANK() OVER (PARTITION BY a ORDER BY b)")
@@ -339,6 +344,15 @@ class TestDiff(unittest.TestCase):
                 Move(source=expr_src.selects[0], target=expr_tgt.selects[1]),
             ],
         )
+
+    def test_none_args_are_not_treated_as_leaves(self):
+        expr_src = parse_one("a.b")
+        expr_tgt = exp.Column(this=exp.to_identifier("b"), table=exp.to_identifier("a"))
+
+        self.assertEqual(set(expr_src.args), {"this", "table", "db", "catalog"})
+        self.assertEqual(set(expr_tgt.args), {"this", "table"})
+
+        self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
 
     def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))

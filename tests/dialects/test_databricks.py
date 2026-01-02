@@ -12,7 +12,12 @@ class TestDatabricks(Validator):
         self.assertEqual(null_type.sql(), "NULL")
         self.assertEqual(null_type.sql("databricks"), "VOID")
 
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
         self.validate_identity("REGEXP_LIKE(x, y)")
         self.validate_identity("SELECT CAST(NULL AS VOID)")
         self.validate_identity("SELECT void FROM t")
@@ -40,6 +45,8 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
         self.validate_identity("SELECT PARSE_JSON('{}')")
+        self.validate_identity("SELECT RANDSTR(123)")
+        self.validate_identity("SELECT RANDSTR(123, 456)")
 
         self.validate_identity("PARSE_URL('https://example.com/path')")
         self.validate_identity("PARSE_URL('https://example.com/path', 'HOST')")
@@ -91,6 +98,7 @@ class TestDatabricks(Validator):
         )
 
         self.validate_identity("SELECT SUBSTRING_INDEX(str, delim, count)")
+        self.validate_identity("BITMAP_OR_AGG(x)")
 
         self.validate_all(
             "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
@@ -212,6 +220,28 @@ class TestDatabricks(Validator):
             "WITH t AS (SELECT * FROM VALUES ('foo_val') AS t(foo1)) SELECT foo1 FROM t",
         )
         self.validate_identity("NTILE() OVER (ORDER BY 1)")
+        self.validate_identity("CURRENT_VERSION()")
+        self.validate_all(
+            "UNIFORM(1, 10, 5)",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM(5))",
+                "databricks": "UNIFORM(1, 10, 5)",
+            },
+        )
+        self.validate_all(
+            "UNIFORM(1, 10)",
+            write={
+                "databricks": "UNIFORM(1, 10)",
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+            },
+        )
+        self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
+        self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("NOW()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("CURRENT_TIMEZONE()")
+        self.validate_identity("CURDATE()", "CURRENT_DATE")
+        self.validate_identity("CURDATE", "CURRENT_DATE")
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
@@ -414,3 +444,21 @@ class TestDatabricks(Validator):
 
         result = transpile(sql, read="dremio", write="databricks")[0]
         assert "CAST(12345 AS STRING)" in result
+
+    def test_qdcolon(self):
+        self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")
+
+    def test_overlay(self):
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL', 'ANSI ', 7, 0)",
+            "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL' PLACING 'CORE' FROM 7)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY(ENCODE('Spark SQL', 'utf-8') PLACING ENCODE('_', 'utf-8') FROM 6)",
+        )
+        self.validate_identity(
+            "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
+        )

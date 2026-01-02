@@ -219,6 +219,10 @@ class Hive(Dialect):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=27362046#LanguageManualUDF-StringFunctions
+    # https://github.com/apache/hive/blob/master/ql/src/java/org/apache/hadoop/hive/ql/exec/Utilities.java#L266-L269
+    INITCAP_DEFAULT_DELIMITER_CHARS = " \t\n\r\f\u000b\u001c\u001d\u001e\u001f"
+
     # Support only the non-ANSI mode (default for Hive, Spark2, Spark)
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for target_type in {
@@ -834,7 +838,7 @@ class Hive(Dialect):
             return f"SET{serde}{exprs}{location}{file_format}{tags}"
 
         def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
-            prefix = "WITH " if expression.args.get("with") else ""
+            prefix = "WITH " if expression.args.get("with_") else ""
             exprs = self.expressions(expression, flat=True)
 
             return f"{prefix}SERDEPROPERTIES ({exprs})"

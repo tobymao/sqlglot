@@ -10,14 +10,18 @@ if t.TYPE_CHECKING:
 
 
 @t.overload
-def normalize_identifiers(expression: E, dialect: DialectType = None) -> E: ...
+def normalize_identifiers(
+    expression: E, dialect: DialectType = None, store_original_column_identifiers: bool = False
+) -> E: ...
 
 
 @t.overload
-def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Identifier: ...
+def normalize_identifiers(
+    expression: str, dialect: DialectType = None, store_original_column_identifiers: bool = False
+) -> exp.Identifier: ...
 
 
-def normalize_identifiers(expression, dialect=None):
+def normalize_identifiers(expression, dialect=None, store_original_column_identifiers=False):
     """
     Normalize identifiers by converting them to either lower or upper case,
     ensuring the semantics are preserved in each case (e.g. by respecting
@@ -48,6 +52,8 @@ def normalize_identifiers(expression, dialect=None):
     Args:
         expression: The expression to transform.
         dialect: The dialect to use in order to decide how to normalize identifiers.
+        store_original_column_identifiers: Whether to store the original column identifiers in
+            the meta data of the expression in case we want to undo the normalization at a later point.
 
     Returns:
         The transformed expression.
@@ -59,6 +65,14 @@ def normalize_identifiers(expression, dialect=None):
 
     for node in expression.walk(prune=lambda n: n.meta.get("case_sensitive")):
         if not node.meta.get("case_sensitive"):
+            if store_original_column_identifiers and isinstance(node, exp.Column):
+                # TODO: This does not handle non-column cases, e.g PARSE_JSON(...).key
+                parent = node
+                while parent and isinstance(parent.parent, exp.Dot):
+                    parent = parent.parent
+
+                node.meta["dot_parts"] = [p.name for p in parent.parts]
+
             dialect.normalize_identifier(node)
 
     return expression

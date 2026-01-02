@@ -31,6 +31,7 @@ from sqlglot.dialects.dialect import (
     sequence_sql,
     build_regexp_extract,
     explode_to_unnest_sql,
+    sha2_digest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -45,6 +46,12 @@ DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
 
 def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
+    delimiters = expression.expression
+    if delimiters and not (
+        delimiters.is_string and delimiters.this == self.dialect.INITCAP_DEFAULT_DELIMITER_CHARS
+    ):
+        self.unsupported("INITCAP does not support custom delimiters")
+
     regex = r"(\w)(\w*)"
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
@@ -260,6 +267,7 @@ class Presto(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
     SUPPORTS_VALUES_DEFAULT = False
+    LEAST_GREATEST_IGNORES_NULLS = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 
@@ -366,6 +374,7 @@ class Presto(Dialect):
             "MD5": exp.MD5Digest.from_arg_list,
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "WEEK": exp.WeekOfYear.from_arg_list,
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
@@ -414,18 +423,22 @@ class Presto(Dialect):
             exp.DataType.Type.TIMETZ: "TIME",
         }
 
-        def _array_sql_with_struct_inheritance(self, expression: exp.Array) -> str:
-            """Generate ARRAY[...] SQL with struct field name inheritance preprocessing."""
-            transformed = transforms.inherit_struct_field_names(expression)
-            return f"ARRAY[{self.expressions(transformed, flat=True)}]"
-
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("ARBITRARY"),
-            exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
+            exp.ApproxQuantile: lambda self, e: self.func(
+                "APPROX_PERCENTILE",
+                e.this,
+                e.args.get("weight"),
+                e.args.get("quantile"),
+                e.args.get("accuracy"),
+            ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
-            exp.Array: lambda self, e: self._array_sql_with_struct_inheritance(e),
+            exp.Array: transforms.preprocess(
+                [transforms.inherit_struct_field_names],
+                generator=lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            ),
             exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
@@ -535,7 +548,9 @@ class Presto(Dialect):
             exp.Xor: bool_xor_sql,
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
+            exp.SHA1Digest: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.SHA2Digest: sha2_digest_sql,
         }
 
         RESERVED_KEYWORDS = {
@@ -598,6 +613,31 @@ class Presto(Dialect):
             "where",
             "with",
         }
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            date_part = expression.name
+
+            if not date_part.startswith("EPOCH"):
+                return super().extract_sql(expression)
+
+            if date_part == "EPOCH_MILLISECOND":
+                scale = 10**3
+            elif date_part == "EPOCH_MICROSECOND":
+                scale = 10**6
+            elif date_part == "EPOCH_NANOSECOND":
+                scale = 10**9
+            else:
+                scale = None
+
+            value = expression.expression
+
+            ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
+            to_unix: exp.Expression = exp.TimeToUnix(this=ts)
+
+            if scale:
+                to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
+
+            return self.sql(to_unix)
 
         def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
             this = expression.this

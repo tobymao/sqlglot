@@ -1368,7 +1368,7 @@ class MySQL(Dialect):
         def update_sql(self, expression: exp.Update) -> str:
             this = self.sql(expression, "this")
             set_sql = self.expressions(expression, flat=True)
-            from_expression = expression.args.get("from")
+            from_expression = expression.args.get("from_") or expression.args.get("from")
             join_sql = self._update_join_clauses_sql(from_expression) if from_expression else ""
             where_sql = self.sql(expression, "where")
             returning = self.sql(expression, "returning")

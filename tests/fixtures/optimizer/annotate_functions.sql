@@ -2892,6 +2892,14 @@ LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+LOCALTIMESTAMP();
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+LOCALTIMESTAMP(3);
+TIMESTAMPLTZ;
+
+# dialect: snowflake
 OCTET_LENGTH(tbl.str_col);
 INT;
 

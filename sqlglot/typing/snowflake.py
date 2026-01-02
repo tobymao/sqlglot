@@ -442,6 +442,13 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DataType.Type.TIMESTAMPLTZ}
+        for expr_type in {
+            exp.CurrentTimestamp,
+            exp.Localtimestamp,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
             exp.AIAgg,

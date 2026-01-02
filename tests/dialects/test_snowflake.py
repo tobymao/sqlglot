@@ -468,6 +468,27 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")
+        self.validate_all(
+            "SELECT YEAROFWEEK('2024-12-31'::DATE)",
+            write={
+                "snowflake": "SELECT YEAROFWEEK(CAST('2024-12-31' AS DATE))",
+                "duckdb": "SELECT CAST(EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE)) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT YEAROFWEEKISO('2024-12-31'::DATE)",
+            write={
+                "snowflake": "SELECT YEAROFWEEKISO(CAST('2024-12-31' AS DATE))",
+                "duckdb": "SELECT CAST(EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE)) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "SELECT YEAR(NULL)",
+            write={
+                "snowflake": "SELECT YEAR(NULL)",
+                "duckdb": "SELECT YEAR(CAST(NULL AS DATE))",
+            },
+        )
         self.validate_identity("SELECT WEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT WEEKISO(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT MONTH(CURRENT_TIMESTAMP())")

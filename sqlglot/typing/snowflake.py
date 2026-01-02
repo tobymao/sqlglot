@@ -335,6 +335,8 @@ EXPRESSION_METADATA = {
             exp.Cbrt,
             exp.Cosh,
             exp.CosineDistance,
+            exp.CovarPop,
+            exp.CovarSamp,
             exp.DotProduct,
             exp.EuclideanDistance,
             exp.ManhattanDistance,

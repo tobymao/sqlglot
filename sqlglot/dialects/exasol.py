@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     no_last_day_sql,
     DATE_ADD_OR_SUB,
+    build_timetostr_or_tochar,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -368,7 +369,7 @@ class Exasol(Dialect):
             "TRUNCATE": _build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
-            "TO_CHAR": build_formatted_time(exp.ToChar, "exasol"),
+            "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/convert_tz.htm
             "CONVERT_TZ": lambda args: exp.ConvertTimezone(
@@ -438,6 +439,9 @@ class Exasol(Dialect):
             exp.DataType.Type.DECIMAL128: "DECIMAL",
             exp.DataType.Type.DECIMAL256: "DECIMAL",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:

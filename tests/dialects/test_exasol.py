@@ -424,6 +424,21 @@ class TestExasol(Validator):
                 )
 
         self.validate_all(
+            "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'DY')",
+            write={
+                "exasol": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'DY')",
+                "oracle": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'DY')",
+                "postgres": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'TMDy')",
+                "databricks": "SELECT DATE_FORMAT(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'EEE')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_CHAR(CAST('2024-07-14 02:40:00' AS TIMESTAMP), 'DY')",
+            read={
+                "databricks": "SELECT date_format(TIMESTAMP '2024-07-14 02:40:00', 'EEE')",
+            },
+        )
+        self.validate_all(
             "TO_DATE(x, 'YYYY-MM-DD')",
             write={
                 "exasol": "TO_DATE(x, 'YYYY-MM-DD')",
@@ -481,7 +496,7 @@ class TestExasol(Validator):
         )
         units = ["MM", "QUARTER", "WEEK", "MINUTE", "YEAR"]
         for unit in units:
-            with self.subTest(f"Testing TO_CHAR with format '{unit}'"):
+            with self.subTest(f"Testing DATE_TRUNC with format '{unit}'"):
                 self.validate_all(
                     f"SELECT TRUNC(CAST('2006-12-31' AS DATE), '{unit}') AS TRUNC",
                     write={

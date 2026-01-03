@@ -1941,6 +1941,49 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "ON `production_tier`.`timeline_date` = `timeline_date`",
         )
 
+    def test_struct_field_case_sensitivity_annotation(self):
+        schema = {"t": {"struct_col": "STRUCT<fooBar STRING>"}}
+
+        # BigQuery is case-insensitive: exact field name match
+        query = parse_one("SELECT struct_col.fooBar FROM t", dialect="bigquery")
+        qualified = optimizer.qualify.qualify(query, schema=schema, dialect="bigquery")
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema=schema, dialect="bigquery"
+        )
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.TEXT)
+
+        # BigQuery: lower case
+        query = parse_one("SELECT struct_col.foobar FROM t", dialect="bigquery")
+        qualified = optimizer.qualify.qualify(query, schema=schema, dialect="bigquery")
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema=schema, dialect="bigquery"
+        )
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.TEXT)
+
+        # BigQuery: different case
+        query = parse_one("SELECT struct_col.Foobar FROM t", dialect="bigquery")
+        qualified = optimizer.qualify.qualify(query, schema=schema, dialect="bigquery")
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema=schema, dialect="bigquery"
+        )
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.TEXT)
+
+        # ClickHouse is case-sensitive: exact field name match
+        query = parse_one("SELECT struct_col.fooBar FROM t", dialect="clickhouse")
+        qualified = optimizer.qualify.qualify(query, schema=schema, dialect="clickhouse")
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema=schema, dialect="clickhouse"
+        )
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.TEXT)
+
+        # ClickHouse: lower case
+        query = parse_one("SELECT struct_col.foobar FROM t", dialect="clickhouse")
+        qualified = optimizer.qualify.qualify(query, schema=schema, dialect="clickhouse")
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema=schema, dialect="clickhouse"
+        )
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.UNKNOWN)
+
     def test_annotate_object_construct(self):
         sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"
 

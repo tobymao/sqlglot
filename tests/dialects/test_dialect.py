@@ -4751,10 +4751,16 @@ FROM subquery2""",
                 if func == "LOCALTIMESTAMP":
                     dialects["oracle"] = f"SELECT {func}"
 
+                write_dialects = dialects.copy()
+
+                if func == "LOCALTIMESTAMP":
+                    del dialects["snowflake"]
+                    write_dialects["snowflake"] = "SELECT CURRENT_TIMESTAMP"
+
                 self.validate_all(
                     f"SELECT {func}",
                     read=dialects,
-                    write=dialects,
+                    write=write_dialects,
                 )
 
             with self.subTest(f"Testing {func} with precision"):
@@ -4763,6 +4769,7 @@ FROM subquery2""",
                     "duckdb": f"SELECT {func}(2)",
                     "redshift": f"SELECT {func}(2)",
                     "presto": f"SELECT {func}(2)",
+                    "snowflake": f"SELECT {func}(2)",
                     "trino": f"SELECT {func}(2)",
                     "mysql": f"SELECT {func}(2)",
                     "singlestore": f"SELECT {func}(2)",
@@ -4770,11 +4777,16 @@ FROM subquery2""",
 
                 if func == "LOCALTIMESTAMP":
                     dialects["oracle"] = f"SELECT {func}(2)"
+                write_dialects = dialects.copy()
+
+                if func == "LOCALTIMESTAMP":
+                    del dialects["snowflake"]
+                    write_dialects["snowflake"] = "SELECT CURRENT_TIMESTAMP(2)"
 
                 self.validate_all(
                     f"SELECT {func}(2)",
                     read=dialects,
-                    write=dialects,
+                    write=write_dialects,
                 )
 
             exp_type = exp.Localtime if func == "LOCALTIME" else exp.Localtimestamp

@@ -1465,6 +1465,9 @@ class Snowflake(Dialect):
             exp.CurrentTimestamp: lambda self, e: self.func("SYSDATE")
             if e.args.get("sysdate")
             else self.function_fallback_sql(e),
+            exp.Localtimestamp: lambda self, e: self.func("CURRENT_TIMESTAMP", e.this)
+            if e.this
+            else "CURRENT_TIMESTAMP",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: date_delta_sql("TIMESTAMPADD"),

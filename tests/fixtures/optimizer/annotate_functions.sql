@@ -1753,6 +1753,10 @@ ARRAY_PREPEND([2, 3, 4], 1);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_REMOVE([1, 2, 3], 2);
+ARRAY;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 

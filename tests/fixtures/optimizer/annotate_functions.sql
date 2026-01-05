@@ -1777,6 +1777,22 @@ CBRT(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_POP(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_SAMP(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
 AI_AGG('foo', 'bar');
 VARCHAR;
 

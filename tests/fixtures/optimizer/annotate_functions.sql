@@ -2892,6 +2892,10 @@ LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+LOCALTIMESTAMP;
+TIMESTAMPLTZ;
+
+# dialect: snowflake
 LOCALTIMESTAMP();
 TIMESTAMPLTZ;
 

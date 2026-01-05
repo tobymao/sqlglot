@@ -22,6 +22,9 @@ DOUBLE;
 CURRENT_TIME();
 TIME;
 
+LOCALTIME();
+TIME;
+
 TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR);
 TIME;
 
@@ -1753,6 +1756,10 @@ ARRAY_PREPEND([2, 3, 4], 1);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_REMOVE([1, 2, 3], 2);
+ARRAY;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 
@@ -1774,6 +1781,22 @@ DOUBLE;
 
 # dialect: snowflake
 CBRT(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_POP(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+COVAR_SAMP(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
 DOUBLE;
 
 # dialect: snowflake
@@ -4811,3 +4834,11 @@ TIMESTAMPTZ;
 # dialect: tsql
 RADIANS(90);
 INT;
+
+--------------------------------------
+-- MySQL
+--------------------------------------
+
+# dialect: mysql
+LOCALTIME;
+DATETIME;

@@ -1686,7 +1686,7 @@ class DuckDB(Dialect):
             n = expression.args["elementcount"]
             gen = expression.args["gen"]
 
-            if gen and not isinstance(gen, exp.Rand):
+            if not isinstance(gen, exp.Rand):
                 # (ABS(HASH(seed)) % 1000000) / 1000000.0
                 random_expr: exp.Expression = exp.Div(
                     this=exp.Paren(
@@ -1862,6 +1862,55 @@ class DuckDB(Dialect):
 
             replacements = {"mean": mean, "stddev": stddev, "u1": u1, "u2": u2}
             return self.sql(exp.replace_placeholders(self.NORMAL_TEMPLATE, **replacements))
+
+        def uniform_sql(self, expression: exp.Uniform) -> str:
+            """
+            Transpile Snowflake's UNIFORM(min, max, gen) to DuckDB.
+
+            UNIFORM returns a random value in [min, max]:
+            - Integer result if both min and max are integers
+            - Float result if either min or max is a float
+            """
+            min_val = expression.this
+            max_val = expression.expression
+            gen = expression.args.get("gen")
+
+            # Determine if result should be integer (both bounds are integers).
+            # We do this to emulate Snowflake's behavior, INT -> INT, FLOAT -> FLOAT
+            is_int_result = min_val.is_int and max_val.is_int
+
+            # Build the random value expression [0, 1)
+            if not isinstance(gen, exp.Rand):
+                # Seed value: (ABS(HASH(seed)) % 1000000) / 1000000.0
+                random_expr: exp.Expression = exp.Div(
+                    this=exp.Paren(
+                        this=exp.Mod(
+                            this=exp.Abs(this=exp.Anonymous(this="HASH", expressions=[gen])),
+                            expression=exp.Literal.number(1000000),
+                        )
+                    ),
+                    expression=exp.Literal.number(1000000.0),
+                )
+            else:
+                random_expr = exp.Rand()
+
+            # Build: min + random * (max - min [+ 1 for int])
+            range_expr: exp.Expression = exp.Sub(this=max_val, expression=min_val)
+            if is_int_result:
+                range_expr = exp.Add(this=range_expr, expression=exp.Literal.number(1))
+
+            result: exp.Expression = exp.Add(
+                this=min_val,
+                expression=exp.Mul(this=random_expr, expression=exp.Paren(this=range_expr)),
+            )
+
+            if is_int_result:
+                result = exp.Cast(
+                    this=exp.Floor(this=result),
+                    to=exp.DataType.build("BIGINT"),
+                )
+
+            return self.sql(result)
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

@@ -443,6 +443,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
+        self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")
         self.validate_identity("SELECT AI_SUMMARIZE_AGG(review)")
         self.validate_identity("SELECT AI_CLASSIFY('text', ['travel', 'cooking'])")
@@ -2147,22 +2148,23 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "UNIFORM(1, 10, RANDOM(5))",
                 "databricks": "UNIFORM(1, 10, 5)",
+                "duckdb": "CAST(FLOOR(1 + RANDOM() * (10 - 1 + 1)) AS BIGINT)",
             },
         )
-        (
-            self.validate_all(
-                "UNIFORM(1, 10, RANDOM())",
-                write={
-                    "snowflake": "UNIFORM(1, 10, RANDOM())",
-                    "databricks": "UNIFORM(1, 10)",
-                },
-            ),
+        self.validate_all(
+            "UNIFORM(1, 10, RANDOM())",
+            write={
+                "snowflake": "UNIFORM(1, 10, RANDOM())",
+                "databricks": "UNIFORM(1, 10)",
+                "duckdb": "CAST(FLOOR(1 + RANDOM() * (10 - 1 + 1)) AS BIGINT)",
+            },
         )
         self.validate_all(
             "UNIFORM(1, 10, 5)",
             write={
                 "snowflake": "UNIFORM(1, 10, 5)",
                 "databricks": "UNIFORM(1, 10, 5)",
+                "duckdb": "CAST(FLOOR(1 + (ABS(HASH(5)) % 1000000) / 1000000.0 * (10 - 1 + 1)) AS BIGINT)",
             },
         )
         self.validate_all(

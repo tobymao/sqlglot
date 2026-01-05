@@ -5,7 +5,6 @@ from itertools import groupby
 import re
 import typing as t
 
-import sqlglot
 from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
@@ -1848,7 +1847,8 @@ class DuckDB(Dialect):
             function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
             return self.sql(
                 exp.cast(
-                    self.func(function_name, expression.this, formatted_time), exp.DataType(this=exp.DataType.Type.DATE)
+                    self.func(function_name, expression.this, formatted_time),
+                    exp.DataType(this=exp.DataType.Type.DATE),
                 )
             )
 

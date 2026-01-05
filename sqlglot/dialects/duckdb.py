@@ -1409,6 +1409,7 @@ class DuckDB(Dialect):
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.ToBoolean: _to_boolean_sql,
+            exp.ToDouble: lambda self, e: self._to_double_sql(e),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
@@ -1733,6 +1734,41 @@ class DuckDB(Dialect):
 
             # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
             return self.func("TO_BINARY", value)
+
+        def _to_double_sql(self: DuckDB.Generator, expression: exp.ToDouble) -> str:
+            """
+            Transpile TO_DOUBLE to DuckDB with comprehensive format handling.
+
+            Handles Snowflake number format models by cleaning input strings based on format patterns.
+            """
+            value = expression.this
+            format_arg = expression.args.get("format")
+
+            if format_arg and isinstance(format_arg, exp.Literal):
+
+                # Use REGEXP_REPLACE to remove commas, dollar signs, and spaces
+                cleaned_value = exp.func("REGEXP_REPLACE",
+                    value,
+                    exp.Literal.string(r'[,$\s]'),
+                    exp.Literal.string("")
+                )
+
+                # Handle trailing signs (MI and S formats) - move '+' or '-' from end to beginning
+                format_upper = format_arg.this.upper()
+                if 'MI' in format_upper or 'S' in format_upper:
+                    cleaned_value = exp.case().when(
+                        exp.func("RIGHT", cleaned_value, exp.Literal.number(1)).eq(exp.Literal.string("-")),
+                        exp.func("CONCAT",
+                                exp.Literal.string("-"),
+                                exp.func("RTRIM", cleaned_value, exp.Literal.string("-")))
+                    ).when(
+                        exp.func("RIGHT", cleaned_value, exp.Literal.number(1)).eq(exp.Literal.string("+")),
+                        exp.func("RTRIM", cleaned_value, exp.Literal.string("+"))
+                    ).else_(cleaned_value)
+
+                value = cleaned_value
+                        
+            return self.sql(exp.cast(value, exp.DataType.Type.DOUBLE))
 
         def _greatest_least_sql(
             self: DuckDB.Generator, expression: exp.Greatest | exp.Least

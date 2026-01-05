@@ -2339,17 +2339,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "TO_DOUBLE(expr)",
+            "TO_DOUBLE('123.45')",
             write={
-                "snowflake": "TO_DOUBLE(expr)",
-                "duckdb": "CAST(expr AS DOUBLE)",
+                "snowflake": "TO_DOUBLE('123.45')",
+                "duckdb": "CAST('123.45' AS DOUBLE)",
             },
         )
         self.validate_all(
-            "TO_DOUBLE(expr, fmt)",
+            "TO_DOUBLE('$1,234.56', '$9,999.99')",
             write={
-                "snowflake": "TO_DOUBLE(expr, fmt)",
-                "duckdb": UnsupportedError,
+                "snowflake": "TO_DOUBLE('$1,234.56', '$9,999.99')",
+                "duckdb": "CAST(REGEXP_REPLACE('$1,234.56', '[,$\s]', '', 'g') AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
+            write={
+                "snowflake": "TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
+                "duckdb": "CAST(CASE WHEN RIGHT(REGEXP_REPLACE('-4.56E-03', '[,$\s]', '', 'g'), 1) = '-' THEN '-' || RTRIM(REGEXP_REPLACE('-4.56E-03', '[,$\s]', '', 'g'), '-') WHEN RIGHT(REGEXP_REPLACE('-4.56E-03', '[,$\s]', '', 'g'), 1) = '+' THEN RTRIM(REGEXP_REPLACE('-4.56E-03', '[,$\s]', '', 'g'), '+') ELSE REGEXP_REPLACE('-4.56E-03', '[,$\s]', '', 'g') END AS DOUBLE)",
             },
         )
 

@@ -4814,3 +4814,11 @@ TIMESTAMPTZ;
 # dialect: tsql
 RADIANS(90);
 INT;
+
+--------------------------------------
+-- MySQL
+--------------------------------------
+
+# dialect: mysql
+LOCALTIME;
+DATETIME;

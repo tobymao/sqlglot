@@ -30,6 +30,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.typing.mysql import EXPRESSION_METADATA
 
 
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQL.Parser], exp.Show]:
@@ -165,6 +166,8 @@ class MySQL(Dialect):
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
     LEAST_GREATEST_IGNORES_NULLS = False
+
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {

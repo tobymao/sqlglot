@@ -22,6 +22,9 @@ DOUBLE;
 CURRENT_TIME();
 TIME;
 
+LOCALTIME();
+TIME;
+
 TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR);
 TIME;
 
@@ -4831,3 +4834,11 @@ TIMESTAMPTZ;
 # dialect: tsql
 RADIANS(90);
 INT;
+
+--------------------------------------
+-- MySQL
+--------------------------------------
+
+# dialect: mysql
+LOCALTIME;
+DATETIME;

@@ -144,6 +144,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         expr_type: {"returns": exp.DataType.Type.TIME}
         for expr_type in {
             exp.CurrentTime,
+            exp.Localtime,
             exp.Time,
             exp.TimeAdd,
             exp.TimeSub,

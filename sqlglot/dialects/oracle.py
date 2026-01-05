@@ -174,10 +174,10 @@ class Oracle(Dialect):
                 exp.DateStrToDate, this=this
             ),
             exp.DataType.Type.TIMESTAMP: lambda self, this, _: self.expression(
-                exp.Timestamp, this=this, with_tz=False
+                exp.Timestamp, this=this
             ),
             exp.DataType.Type.TIMESTAMPTZ: lambda self, this, _: self.expression(
-                exp.Timestamp, this=this, with_tz=True
+                exp.Timestamp, this=this
             ),
         }
 
@@ -294,10 +294,7 @@ class Oracle(Dialect):
                 to_unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
 
                 if to_unit:
-                    unit = exp.IntervalSpan(
-                        this=exp.Var(this=unit) if isinstance(unit, str) else unit,
-                        expression=exp.Var(this=to_unit) if isinstance(to_unit, str) else to_unit,
-                    )
+                    unit = exp.IntervalSpan(this=unit, expression=to_unit)
                     return self.expression(exp.Interval, this=this, unit=unit)
 
             self._retreat(index)
@@ -453,4 +450,4 @@ class Oracle(Dialect):
             return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
 
         def timestamp_sql(self, expression: exp.Timestamp) -> str:
-            return f"{'TIMESTAMP WITH TIME ZONE' if expression.args.get('with_tz') else 'TIMESTAMP'} {self.sql(expression, 'this')}"
+            return f"TIMESTAMP {self.sql(expression, 'this')}"

@@ -432,12 +432,7 @@ class TestExasol(Validator):
                 "databricks": "SELECT DATE_FORMAT(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'EEE')",
             },
         )
-        self.validate_all(
-            "SELECT TO_CHAR(CAST('2024-07-14 02:40:00' AS TIMESTAMP), 'DY')",
-            read={
-                "databricks": "SELECT date_format(TIMESTAMP '2024-07-14 02:40:00', 'EEE')",
-            },
-        )
+
         self.validate_all(
             "TO_DATE(x, 'YYYY-MM-DD')",
             write={

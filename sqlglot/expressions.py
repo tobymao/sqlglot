@@ -8332,11 +8332,11 @@ class WidthBucket(Func):
 
 
 class CovarSamp(Binary, AggFunc):
-    pass
+    arg_types = {"this": True, "x": False}
 
 
 class CovarPop(Binary, AggFunc):
-    pass
+    arg_types = {"this": True, "x": False}
 
 
 class Week(Func):

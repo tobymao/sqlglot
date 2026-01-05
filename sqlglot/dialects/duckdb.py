@@ -2456,7 +2456,12 @@ class DuckDB(Dialect):
             date = expression.this
             result = self.func("DATE_TRUNC", unit, date)
 
-            if expression.args.get("cast_to_granularity_type") and date.type:
+            if not date.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                date = annotate_types(date, dialect=self.dialect)
+
+            if date.type and expression.args.get("cast_to_granularity_type"):
                 return self.sql(exp.Cast(this=result, to=date.type))
             return result
 
@@ -2475,7 +2480,23 @@ class DuckDB(Dialect):
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
 
             result = self.func("DATE_TRUNC", unit, timestamp)
-            if expression.args.get("cast_to_granularity_type") and timestamp.type:
+            if not timestamp.type:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                timestamp = annotate_types(timestamp, dialect=self.dialect)
+
+            if timestamp.type and timestamp.is_type(
+                exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
+            ):
+                dummy_date = exp.Cast(
+                    this=exp.Literal.string("1970-01-01"),
+                    to=exp.DataType(this=exp.DataType.Type.DATE),
+                )
+                date_time = exp.Add(this=dummy_date, expression=timestamp)
+                result = self.func("DATE_TRUNC", unit, date_time)
+                return self.sql(exp.Cast(this=result, to=timestamp.type))
+
+            if timestamp.type and expression.args.get("cast_to_granularity_type"):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
             return result
 

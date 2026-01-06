@@ -1829,7 +1829,7 @@ class DuckDB(Dialect):
                     exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
                 )
                 return self.sql(
-                    exp.cast(self.func('TRY_STRPTIME', expression.this, formatted_time), cast_type)
+                    exp.cast(self.func("TRY_STRPTIME", expression.this, formatted_time), cast_type)
                 )
 
             base_sql = str_to_time_sql(self, expression)

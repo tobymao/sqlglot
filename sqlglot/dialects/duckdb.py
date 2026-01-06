@@ -251,19 +251,29 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
 def _date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
-    """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
+    """
+    Generate date/time delta operations that cast NULL arguments to appropriate types.
+
+    DuckDB's binary INTERVAL operations require explicit type casts when the argument
+    is NULL, as the + operator has multiple overloads (DATE, TIME, TIMESTAMP + INTERVAL).
+    """
     base_impl = date_delta_to_binary_interval_op(cast=cast)
 
     def _duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
+        arg = expression.this
         unit = expression.unit
 
         # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
         if _is_nanosecond_unit(unit):
+            # Return NULL directly if arg is NULL
+            if isinstance(arg, exp.Null):
+                return self.sql(exp.Null())
+
             interval_value = expression.expression
             if isinstance(interval_value, exp.Interval):
                 interval_value = interval_value.this
 
-            timestamp_ns = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
+            timestamp_ns = exp.cast(arg, exp.DataType.Type.TIMESTAMP_NS)
 
             return self.sql(
                 exp.func(
@@ -271,6 +281,12 @@ def _date_delta_to_binary_interval_op(
                     exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=interval_value),
                 )
             )
+
+        # Cast NULL to appropriate type for DuckDB type inference
+        to_type = "TIME" if isinstance(expression, (exp.TimeAdd, exp.TimeSub)) else "TIMESTAMP"
+        if isinstance(arg, exp.Null):
+            arg = exp.Cast(this=arg, to=exp.DataType.build(to_type))
+            expression.set("this", arg)
 
         return base_impl(self, expression)
 

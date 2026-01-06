@@ -2557,6 +2557,37 @@ class TestSnowflake(Validator):
 
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
+
+        # Test NULL handling for date/time add operations
+        self.validate_all(
+            "SELECT TIMESTAMPADD(DAY, 5, NULL)",
+            write={
+                "duckdb": "SELECT CAST(NULL AS TIMESTAMP) + INTERVAL 5 DAY",
+                "snowflake": "SELECT DATEADD(DAY, 5, NULL)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEADD(DAY, 5, NULL)",
+            write={
+                "duckdb": "SELECT CAST(NULL AS TIMESTAMP) + INTERVAL 5 DAY",
+                "snowflake": "SELECT DATEADD(DAY, 5, NULL)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMEADD(HOUR, 2, NULL)",
+            write={
+                "duckdb": "SELECT CAST(NULL AS TIME) + INTERVAL 2 HOUR",
+                "snowflake": "SELECT TIMEADD(HOUR, 2, NULL)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPADD(NANOSECOND, 100, NULL)",
+            write={
+                "duckdb": "SELECT NULL",
+                "snowflake": "SELECT DATEADD(NANOSECOND, 100, NULL)",
+            },
+        )
+
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
 

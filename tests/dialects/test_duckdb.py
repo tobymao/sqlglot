@@ -548,27 +548,55 @@ class TestDuckDB(Validator):
             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
             "x ->> '$.family'",
         )
-        # NOT with JSON extraction operators - precedence fix for DuckDB
+        
         self.validate_identity(
+            "SELECT NOT key -> '$.value'",
             "SELECT NOT (key -> '$.value')",
         )
         self.validate_identity(
+            "SELECT NOT key ->> '$.value'",
             "SELECT NOT (key ->> '$.value')",
         )
         self.validate_identity(
+            "SELECT * FROM t WHERE NOT data -> '$.active'",
             "SELECT * FROM t WHERE NOT (data -> '$.active')",
         )
+        
         self.validate_identity(
+            "SELECT NOT (key -> '$.value')",
+        )
+        
+        self.validate_identity(
+            "SELECT NOT key -> '$.value' -> '$.nested'",
             "SELECT NOT (key -> '$.value' -> '$.nested')",
         )
+        
         self.validate_identity(
-            "SELECT NOT (key -> '$.value') = 'test'",
-        )
-        self.validate_identity(
+            "SELECT NOT NOT key -> '$.value'",
             "SELECT NOT NOT (key -> '$.value')",
         )
+        
         self.validate_identity(
             "SELECT NOT (key -> '$.a') AND (key -> '$.b')",
+        )
+        
+        self.validate_all(
+            "SELECT NOT (data -> '$.value')",
+            read={
+                "snowflake": "SELECT NOT data:value",
+            },
+        )
+        self.validate_all(
+            "SELECT NOT (data -> '$.value.nested')",
+            read={
+                "snowflake": "SELECT NOT data:value:nested",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE NOT (data -> '$.active')",
+            read={
+                "snowflake": "SELECT * FROM t WHERE NOT data:active",
+            },
         )
         self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"

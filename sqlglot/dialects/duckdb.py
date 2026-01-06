@@ -1523,25 +1523,25 @@ class DuckDB(Dialect):
             exp.WeekOfYear: _date_part_sql("WEEKOFYEAR"),
             exp.Year: _date_part_sql("YEAR"),
             exp.YearOfWeek: lambda self, e: self.sql(
-                exp.Cast(
-                    this=exp.Extract(
+                exp.cast(
+                    exp.Extract(
                         this=exp.Var(this="ISOYEAR"),
-                        expression=exp.Cast(this=e.this, to=exp.DataType.build("DATE"))
+                        expression=exp.cast(e.this, exp.DataType.build("DATE"))
                         if isinstance(e.this, exp.Null)
                         else e.this,
                     ),
-                    to=exp.DataType.build("BIGINT"),
+                    exp.DataType.build("BIGINT"),
                 )
             ),
             exp.YearOfWeekIso: lambda self, e: self.sql(
-                exp.Cast(
-                    this=exp.Extract(
+                exp.cast(
+                    exp.Extract(
                         this=exp.Var(this="ISOYEAR"),
-                        expression=exp.Cast(this=e.this, to=exp.DataType.build("DATE"))
+                        expression=exp.cast(e.this, exp.DataType.build("DATE"))
                         if isinstance(e.this, exp.Null)
                         else e.this,
                     ),
-                    to=exp.DataType.build("BIGINT"),
+                    exp.DataType.build("BIGINT"),
                 )
             ),
             exp.Xor: bool_xor_sql,

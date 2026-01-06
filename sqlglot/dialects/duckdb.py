@@ -107,27 +107,19 @@ def _bitmap_bucket_number_sql(self: DuckDB.Generator, expression: exp.BitmapBuck
     # For positive values: ((value - 1) // 32768) + 1
     positive_formula = exp.Add(
         this=exp.IntDiv(
-            this=exp.Paren(
-                this=exp.Sub(this=value, expression=exp.Literal.number(1))
-            ),
-            expression=exp.Literal.number(32768)
+            this=exp.Paren(this=exp.Sub(this=value, expression=exp.Literal.number(1))),
+            expression=exp.Literal.number(32768),
         ),
-        expression=exp.Literal.number(1)
+        expression=exp.Literal.number(1),
     )
 
     # For non-positive values: value // 32768
-    non_positive_formula = exp.IntDiv(
-        this=value,
-        expression=exp.Literal.number(32768)
-    )
+    non_positive_formula = exp.IntDiv(this=value, expression=exp.Literal.number(32768))
 
     # CASE WHEN value > 0 THEN ((value - 1) // 32768) + 1 ELSE value // 32768 END
     case_expr = (
         exp.case()
-        .when(
-            exp.GT(this=value, expression=exp.Literal.number(0)),
-            positive_formula
-        )
+        .when(exp.GT(this=value, expression=exp.Literal.number(0)), positive_formula)
         .else_(non_positive_formula)
     )
 

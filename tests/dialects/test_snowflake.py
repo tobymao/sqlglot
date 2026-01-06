@@ -465,9 +465,24 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CURRENT_REGION()")
         self.validate_identity("SELECT CURRENT_ROLE()")
         self.validate_identity("SELECT CURRENT_ROLE_TYPE()")
+        self.validate_identity("SELECT DAY(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT MONTH(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT WEEK(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT WEEKISO(CURRENT_TIMESTAMP())")
+        self.validate_identity("WEEKOFYEAR(tstamp)", "WEEK(tstamp)")
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")
+        self.validate_all(
+            "SELECT DAYOFWEEKISO('2024-01-15'::DATE)",
+            write={
+                "snowflake": "SELECT DAYOFWEEKISO(CAST('2024-01-15' AS DATE))",
+                "duckdb": "SELECT ISODOW(CAST('2024-01-15' AS DATE))",
+            },
+        )
         self.validate_all(
             "SELECT YEAROFWEEK('2024-12-31'::DATE)",
             write={
@@ -483,20 +498,12 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT YEAR(NULL)",
+            "SELECT WEEKISO('2024-01-15'::DATE)",
             write={
-                "snowflake": "SELECT YEAR(NULL)",
-                "duckdb": "SELECT YEAR(CAST(NULL AS DATE))",
+                "snowflake": "SELECT WEEKISO(CAST('2024-01-15' AS DATE))",
+                "duckdb": "SELECT WEEKOFYEAR(CAST('2024-01-15' AS DATE))",
             },
         )
-        self.validate_identity("SELECT WEEK(CURRENT_TIMESTAMP())")
-        self.validate_identity("SELECT WEEKISO(CURRENT_TIMESTAMP())")
-        self.validate_identity("SELECT MONTH(CURRENT_TIMESTAMP())")
-        self.validate_identity("SELECT DAY(CURRENT_TIMESTAMP())")
-        self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
-        self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
-        self.validate_identity("WEEKOFYEAR(tstamp)", "WEEK(tstamp)")
-        self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("SELECT STDDEV(x)")
         self.validate_identity("SELECT STDDEV(x) OVER (PARTITION BY 1)")

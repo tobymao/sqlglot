@@ -548,6 +548,28 @@ class TestDuckDB(Validator):
             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
             "x ->> '$.family'",
         )
+        # NOT with JSON extraction operators - precedence fix for DuckDB
+        self.validate_identity(
+            "SELECT NOT (key -> '$.value')",
+        )
+        self.validate_identity(
+            "SELECT NOT (key ->> '$.value')",
+        )
+        self.validate_identity(
+            "SELECT * FROM t WHERE NOT (data -> '$.active')",
+        )
+        self.validate_identity(
+            "SELECT NOT (key -> '$.value' -> '$.nested')",
+        )
+        self.validate_identity(
+            "SELECT NOT (key -> '$.value') = 'test'",
+        )
+        self.validate_identity(
+            "SELECT NOT NOT (key -> '$.value')",
+        )
+        self.validate_identity(
+            "SELECT NOT (key -> '$.a') AND (key -> '$.b')",
+        )
         self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
         )

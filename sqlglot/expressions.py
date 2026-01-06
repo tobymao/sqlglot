@@ -7259,6 +7259,16 @@ class ObjectInsert(Func):
     }
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/object_keys
+class ObjectKeys(Func):
+    pass
+
+
+# https://duckdb.org/docs/extensions/json#json-extraction-functions
+class JsonKeys(Func):
+    _sql_names = ["JSON_KEYS"]
+
+
 class OpenJSONColumnDef(Expression):
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 

@@ -1000,6 +1000,7 @@ class DuckDB(Dialect):
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+            "JSON_KEYS": exp.JsonKeys.from_arg_list,
             "LIST_APPEND": exp.ArrayAppend.from_arg_list,
             "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
             "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
@@ -1360,6 +1361,7 @@ class DuckDB(Dialect):
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
             exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
             exp.MonthsBetween: months_between_sql,
+            exp.ObjectKeys: rename_func("JSON_KEYS"),
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.

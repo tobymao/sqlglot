@@ -788,6 +788,7 @@ class Snowflake(Dialect):
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
+            "OBJECT_KEYS": exp.ObjectKeys.from_arg_list,
             "OCTET_LENGTH": exp.ByteLength.from_arg_list,
             "PARSE_URL": lambda args: exp.ParseUrl(
                 this=seq_get(args, 0), permissive=seq_get(args, 1)

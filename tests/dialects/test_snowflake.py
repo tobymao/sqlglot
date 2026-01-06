@@ -2195,6 +2195,64 @@ class TestSnowflake(Validator):
         self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
 
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 1, 100)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 1, 100)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (1 - 1) MONTH + INTERVAL (100 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 14, 32)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 14, 32)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (14 - 1) MONTH + INTERVAL (32 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 0, 0)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 0, 0)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (0 - 1) MONTH + INTERVAL (0 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, -14, -32)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, -14, -32)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (-14 - 1) MONTH + INTERVAL (-32 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2024, 1, 60)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2024, 1, 60)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2024, 1, 1) + INTERVAL (1 - 1) MONTH + INTERVAL (60 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, NULL, 100)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, NULL, 100)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (NULL - 1) MONTH + INTERVAL (100 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2024 + 2, 1 + 2, 2 + 3)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2024 + 2, 1 + 2, 2 + 3)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2024 + 2, 1, 1) + INTERVAL ((1 + 2) - 1) MONTH + INTERVAL ((2 + 3) - 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(year, month, date)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(year, month, date)",
+                "duckdb": "SELECT CAST(MAKE_DATE(year, 1, 1) + INTERVAL (month - 1) MONTH + INTERVAL (date - 1) DAY AS DATE)",
+            },
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

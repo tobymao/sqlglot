@@ -174,8 +174,7 @@ def qualify_tables(
                     if on_qualify:
                         on_qualify(source)
             elif isinstance(source, Scope) and source.is_udtf:
-                udtf = source.expression
-                _set_alias(udtf, canonical_aliases)
+                _set_alias(udtf := source.expression, canonical_aliases)
 
                 table_alias = udtf.args["alias"]
 

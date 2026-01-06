@@ -548,7 +548,6 @@ class TestDuckDB(Validator):
             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
             "x ->> '$.family'",
         )
-        
         self.validate_identity(
             "SELECT NOT key -> '$.value'",
             "SELECT NOT (key -> '$.value')",
@@ -561,25 +560,20 @@ class TestDuckDB(Validator):
             "SELECT * FROM t WHERE NOT data -> '$.active'",
             "SELECT * FROM t WHERE NOT (data -> '$.active')",
         )
-        
         self.validate_identity(
             "SELECT NOT (key -> '$.value')",
         )
-        
         self.validate_identity(
             "SELECT NOT key -> '$.value' -> '$.nested'",
             "SELECT NOT (key -> '$.value' -> '$.nested')",
         )
-        
         self.validate_identity(
             "SELECT NOT NOT key -> '$.value'",
             "SELECT NOT NOT (key -> '$.value')",
         )
-        
         self.validate_identity(
             "SELECT NOT (key -> '$.a') AND (key -> '$.b')",
         )
-        
         self.validate_all(
             "SELECT NOT (data ->> '$.value')",
             read={

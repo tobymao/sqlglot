@@ -581,19 +581,19 @@ class TestDuckDB(Validator):
         )
         
         self.validate_all(
-            "SELECT NOT (data -> '$.value')",
+            "SELECT NOT (data ->> '$.value')",
             read={
                 "snowflake": "SELECT NOT data:value",
             },
         )
         self.validate_all(
-            "SELECT NOT (data -> '$.value.nested')",
+            "SELECT NOT (data ->> '$.value.nested')",
             read={
                 "snowflake": "SELECT NOT data:value:nested",
             },
         )
         self.validate_all(
-            "SELECT * FROM t WHERE NOT (data -> '$.active')",
+            "SELECT * FROM t WHERE NOT (data ->> '$.active')",
             read={
                 "snowflake": "SELECT * FROM t WHERE NOT data:active",
             },

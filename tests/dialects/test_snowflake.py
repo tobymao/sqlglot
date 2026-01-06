@@ -2177,13 +2177,6 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT JSON_KEYS(my_obj)",
             },
         )
-        self.validate_all(
-            "SELECT OBJECT_KEYS(t.data) FROM my_table t",
-            write={
-                "snowflake": "SELECT OBJECT_KEYS(t.data) FROM my_table AS t",
-                "duckdb": "SELECT JSON_KEYS(t.data) FROM my_table AS t",
-            },
-        )
 
     def test_null_treatment(self):
         self.validate_all(

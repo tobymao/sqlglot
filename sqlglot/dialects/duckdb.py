@@ -1346,7 +1346,12 @@ class DuckDB(Dialect):
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),
-            exp.JSONExtract: _arrow_json_extract_sql,
+            exp.JSONExtract: lambda self, e: _arrow_json_extract_sql(
+                self,
+                exp.JSONExtractScalar(**e.args)
+                if e.args.get("requires_json") or e.args.get("variant_extract")
+                else e,
+            ),
             exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,

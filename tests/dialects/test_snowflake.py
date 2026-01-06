@@ -969,7 +969,7 @@ class TestSnowflake(Validator):
             """WITH vartab(v) AS (select parse_json('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
             write={
                 "bigquery": """WITH vartab AS (SELECT PARSE_JSON('[{"attr": [{"name": "banana"}]}]') AS v) SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
-                "duckdb": """WITH vartab(v) AS (SELECT JSON('[{"attr": [{"name": "banana"}]}]')) SELECT v -> '$[0].attr[0].name' FROM vartab""",
+                "duckdb": """WITH vartab(v) AS (SELECT JSON('[{"attr": [{"name": "banana"}]}]')) SELECT v ->> '$[0].attr[0].name' FROM vartab""",
                 "mysql": """WITH vartab(v) AS (SELECT '[{"attr": [{"name": "banana"}]}]') SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
                 "presto": """WITH vartab(v) AS (SELECT JSON_PARSE('[{"attr": [{"name": "banana"}]}]')) SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
                 "snowflake": """WITH vartab(v) AS (SELECT PARSE_JSON('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
@@ -980,7 +980,7 @@ class TestSnowflake(Validator):
             """WITH vartab(v) AS (select parse_json('{"attr": [{"name": "banana"}]}')) SELECT GET_PATH(v, 'attr[0].name') FROM vartab""",
             write={
                 "bigquery": """WITH vartab AS (SELECT PARSE_JSON('{"attr": [{"name": "banana"}]}') AS v) SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
-                "duckdb": """WITH vartab(v) AS (SELECT JSON('{"attr": [{"name": "banana"}]}')) SELECT v -> '$.attr[0].name' FROM vartab""",
+                "duckdb": """WITH vartab(v) AS (SELECT JSON('{"attr": [{"name": "banana"}]}')) SELECT v ->> '$.attr[0].name' FROM vartab""",
                 "mysql": """WITH vartab(v) AS (SELECT '{"attr": [{"name": "banana"}]}') SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
                 "presto": """WITH vartab(v) AS (SELECT JSON_PARSE('{"attr": [{"name": "banana"}]}')) SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
                 "snowflake": """WITH vartab(v) AS (SELECT PARSE_JSON('{"attr": [{"name": "banana"}]}')) SELECT GET_PATH(v, 'attr[0].name') FROM vartab""",
@@ -992,7 +992,7 @@ class TestSnowflake(Validator):
             write={
                 "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"fruit":"banana"}'), '$.fruit')""",
                 "databricks": """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
-                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') ->> '$.fruit'""",
                 "mysql": """SELECT JSON_EXTRACT('{"fruit":"banana"}', '$.fruit')""",
                 "presto": """SELECT JSON_EXTRACT(JSON_PARSE('{"fruit":"banana"}'), '$.fruit')""",
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"fruit":"banana"}'), 'fruit')""",
@@ -1322,7 +1322,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             '''SELECT PARSE_JSON('{"a": {"b c": "foo"}}'):a:"b c"''',
             write={
-                "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') -> '$.a."b c"'""",
+                "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') ->> '$.a."b c"'""",
                 "mysql": """SELECT JSON_EXTRACT('{"a": {"b c": "foo"}}', '$.a."b c"')""",
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a["b c"]')""",
             },

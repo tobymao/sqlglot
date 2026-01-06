@@ -1917,6 +1917,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         assert annotated.selects[0].type == exp.DataType.build("VARCHAR")
 
+    def test_bigquery_unnest_alias_shadowing(self):
+        """Test that BigQuery UNNEST table alias shadows column names from other tables."""
+        sql = """
+            SELECT timeline_date
+            FROM UNNEST(GENERATE_DATE_ARRAY('2020-01-01', '2020-01-03')) AS timeline_date
+            LEFT JOIN production_tier ON production_tier.timeline_date = timeline_date
+        """
+        schema = {"production_tier": {"timeline_date": "DATE", "id": "INT"}}
+
+        # This should not raise an ambiguous column error
+        result = optimizer.qualify.qualify(
+            parse_one(sql, dialect="bigquery"),
+            schema=schema,
+            dialect="bigquery",
+        )
+
+        result_sql = result.sql(dialect="bigquery")
+        # Verify the UNNEST alias is preserved as 'timeline_date'
+        self.assertIn("AS `timeline_date`", result_sql)
+        # Verify the unqualified timeline_date in SELECT is NOT qualified to production_tier
+        self.assertNotIn("`production_tier`.`timeline_date` AS", result_sql)
+
     def test_annotate_object_construct(self):
         sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"
 

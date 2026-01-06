@@ -78,7 +78,12 @@ class Resolver:
 
         node_alias = node.args.get("alias")
         if node_alias:
-            return exp.to_identifier(node_alias.this)
+            # For BigQuery UNNEST with UNNEST_COLUMN_ONLY, alias.this is None but
+            # the alias name is stored in alias.columns[0]
+            alias_name = node_alias.this
+            if alias_name is None and len(node_alias.columns) == 1:
+                alias_name = node_alias.columns[0]
+            return exp.to_identifier(alias_name)
 
         return exp.to_identifier(table_name)
 
@@ -305,6 +310,18 @@ class Resolver:
             # Performance optimization - avoid copying first_columns if there is only one table.
             return SingleValuedMapping(first_columns, first_table)
 
+        # For BigQuery (UNNEST_COLUMN_ONLY), build a mapping of original UNNEST aliases
+        # (from alias.columns[0]) to their source names. This is used to resolve shadowing
+        # where an UNNEST alias shadows a column name from another table.
+        unnest_original_aliases: t.Dict[str, str] = {}
+        if self.dialect.UNNEST_COLUMN_ONLY:
+            for source_name, source in self.scope.sources.items():
+                if isinstance(source, Scope) and isinstance(source.expression, exp.Unnest):
+                    alias_arg = source.expression.args.get("alias")
+                    if alias_arg and alias_arg.columns:
+                        original_alias = alias_arg.columns[0].name
+                        unnest_original_aliases[original_alias] = source_name
+
         unambiguous_columns = {col: first_table for col in first_columns}
         all_columns = set(unambiguous_columns)
 
@@ -314,6 +331,11 @@ class Resolver:
             all_columns.update(columns)
 
             for column in ambiguous:
+                # In BigQuery (UNNEST_COLUMN_ONLY), source/table aliases shadow column names.
+                # If the column name matches an UNNEST's original alias, map it to that source.
+                if column in unnest_original_aliases:
+                    unambiguous_columns[column] = unnest_original_aliases[column]
+                    continue
                 unambiguous_columns.pop(column, None)
             for column in unique.difference(ambiguous):
                 unambiguous_columns[column] = table

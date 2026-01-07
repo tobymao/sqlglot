@@ -208,6 +208,7 @@ class TokenType(AutoName):
     LINESTRING = auto()
     LOCALTIME = auto()
     LOCALTIMESTAMP = auto()
+    SYSTIMESTAMP = auto()
     MULTILINESTRING = auto()
     POLYGON = auto()
     MULTIPOLYGON = auto()

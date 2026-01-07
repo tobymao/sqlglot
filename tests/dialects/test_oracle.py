@@ -28,6 +28,8 @@ class TestOracle(Validator):
         self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
         self.validate_identity("REGEXP_REPLACE('source', 'search')")
         self.validate_identity("TIMESTAMP(3) WITH TIME ZONE")
+        self.validate_identity("SELECT SYSTIMESTAMP AT TIME ZONE 'UTC'")
+        self.validate_identity("SELECT SYSTIMESTAMP")
         self.validate_identity("CURRENT_TIMESTAMP(precision)")
         self.validate_identity("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol")
         self.validate_identity("ALTER TABLE Payments ADD Stock NUMBER NOT NULL")

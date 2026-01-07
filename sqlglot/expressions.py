@@ -6694,7 +6694,7 @@ class TimeTrunc(Func, TimeUnit):
 
 class DateFromParts(Func):
     _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
-    arg_types = {"year": True, "month": False, "day": False}
+    arg_types = {"year": True, "month": False, "day": False, "allow_overflow": False}
 
 
 class TimeFromParts(Func):
@@ -8234,6 +8234,7 @@ class UnixToTime(Func):
         "hours": False,
         "minutes": False,
         "format": False,
+        "target_type": False,
     }
 
     SECONDS = Literal.number(0)
@@ -8309,8 +8310,8 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
-class Corr(Binary, AggFunc):
-    pass
+class Corr(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CUME_DIST.html
@@ -8341,12 +8342,12 @@ class WidthBucket(Func):
     }
 
 
-class CovarSamp(Binary, AggFunc):
-    arg_types = {"this": True, "x": False}
+class CovarSamp(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
-class CovarPop(Binary, AggFunc):
-    arg_types = {"this": True, "x": False}
+class CovarPop(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
 class Week(Func):

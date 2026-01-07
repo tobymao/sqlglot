@@ -181,7 +181,7 @@ class ChangeDistiller:
     def __init__(self, f: float = 0.6, t: float = 0.6, dialect: DialectType = None) -> None:
         self.f = f
         self.t = t
-        self._sql_generator = Dialect.get_or_raise(dialect).generator()
+        self._sql_generator = Dialect.get_or_raise(dialect).generator(comments=False)
 
     def diff(
         self,

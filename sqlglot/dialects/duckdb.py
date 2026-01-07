@@ -396,15 +396,31 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
+    target_type = expression.args.get("target_type")
 
-    if scale in (None, exp.UnixToTime.SECONDS):
-        return self.func("TO_TIMESTAMP", timestamp)
+    # Check if we need NTZ (naive timestamp in UTC)
+    is_ntz = target_type and target_type.this in (
+        exp.DataType.Type.TIMESTAMP,
+        exp.DataType.Type.TIMESTAMPNTZ,
+    )
+
     if scale == exp.UnixToTime.MILLIS:
+        # EPOCH_MS already returns TIMESTAMP (naive, UTC)
         return self.func("EPOCH_MS", timestamp)
     if scale == exp.UnixToTime.MICROS:
+        # MAKE_TIMESTAMP already returns TIMESTAMP (naive, UTC)
         return self.func("MAKE_TIMESTAMP", timestamp)
 
-    return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
+    # Other scales: divide and use TO_TIMESTAMP
+    if scale not in (None, exp.UnixToTime.SECONDS):
+        timestamp = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+
+    to_timestamp: exp.Expression = exp.Anonymous(this="TO_TIMESTAMP", expressions=[timestamp])
+
+    if is_ntz:
+        to_timestamp = exp.AtTimeZone(this=to_timestamp, zone=exp.Literal.string("UTC"))
+
+    return self.sql(to_timestamp)
 
 
 WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)
@@ -853,6 +869,37 @@ def _regr_val_sql(
             false=return_value.copy(),
         )
     )
+
+
+def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
+    """
+    Snowflake's DATE_FROM_PARTS allows out-of-range values for the month and day input.
+    E.g., larger values (month=13, day=100), zero-values (month=0, day=0), negative values (month=-13, day=-100).
+
+    DuckDB's MAKE_DATE does not support out-of-range values, but DuckDB's INTERVAL type does.
+
+    We convert to date arithmetic:
+    DATE_FROM_PARTS(year, month, day)
+    - MAKE_DATE(year, 1, 1) + INTERVAL (month-1) MONTH + INTERVAL (day-1) DAY
+    """
+    year_expr = expression.args.get("year")
+    month_expr = expression.args.get("month")
+    day_expr = expression.args.get("day")
+
+    if expression.args.get("allow_overflow"):
+        base_date: exp.Expression = exp.func(
+            "MAKE_DATE", year_expr, exp.Literal.number(1), exp.Literal.number(1)
+        )
+
+        if month_expr:
+            base_date = base_date + exp.Interval(this=month_expr - 1, unit=exp.var("MONTH"))
+
+        if day_expr:
+            base_date = base_date + exp.Interval(this=day_expr - 1, unit=exp.var("DAY"))
+
+        return self.sql(exp.cast(expression=base_date, to=exp.DataType.Type.DATE))
+
+    return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
 
 
 class DuckDB(Dialect):
@@ -1322,7 +1369,7 @@ class DuckDB(Dialect):
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
             exp.DateAdd: _date_delta_to_binary_interval_op(),
-            exp.DateFromParts: rename_func("MAKE_DATE"),
+            exp.DateFromParts: _date_from_parts_sql,
             exp.DateSub: _date_delta_to_binary_interval_op(),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
@@ -1470,6 +1517,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMPTZ",
             exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
@@ -1600,6 +1648,17 @@ class DuckDB(Dialect):
             """
         )
 
+        # Template for NORMAL transpilation using Box-Muller transform
+        # mean + (stddev * sqrt(-2 * ln(u1)) * cos(2 * pi * u2))
+        NORMAL_TEMPLATE: exp.Expression = exp.maybe_parse(
+            ":mean + (:stddev * SQRT(-2 * LN(GREATEST(:u1, 1e-10))) * COS(2 * PI() * :u2))"
+        )
+
+        # Template for generating a seeded pseudo-random value in [0, 1) from a hash
+        SEEDED_RANDOM_TEMPLATE: exp.Expression = exp.maybe_parse(
+            "(ABS(HASH(:seed)) % 1000000) / 1000000.0"
+        )
+
         # Template for RANDSTR transpilation - placeholders get replaced with actual parameters
         RANDSTR_TEMPLATE: exp.Expression = exp.maybe_parse(
             f"""
@@ -1617,6 +1676,33 @@ class DuckDB(Dialect):
             )
             """,
         )
+
+        def bitmapbucketnumber_sql(
+            self: DuckDB.Generator, expression: exp.BitmapBucketNumber
+        ) -> str:
+            """
+            Transpile BITMAP_BUCKET_NUMBER function from Snowflake to DuckDB equivalent.
+
+            Snowflake's BITMAP_BUCKET_NUMBER returns a 1-based bucket identifier where:
+            - Each bucket covers 32,768 values
+            - Bucket numbering starts at 1
+            - Formula: ((value - 1) // 32768) + 1 for positive values
+
+            For non-positive values (0 and negative), we use value // 32768 to avoid
+            producing bucket 0 or positive bucket IDs for negative inputs.
+            """
+            value = expression.this
+
+            positive_formula = ((value - 1) // 32768) + 1
+            non_positive_formula = value // 32768
+
+            # CASE WHEN value > 0 THEN ((value - 1) // 32768) + 1 ELSE value // 32768 END
+            case_expr = (
+                exp.case()
+                .when(exp.GT(this=value, expression=exp.Literal.number(0)), positive_formula)
+                .else_(non_positive_formula)
+            )
+            return self.sql(case_expr)
 
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """
@@ -1801,16 +1887,41 @@ class DuckDB(Dialect):
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
+            # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)
+            target_type = expression.args.get("target_type")
+            needs_tz = target_type and target_type.this in (
+                exp.DataType.Type.TIMESTAMPLTZ,
+                exp.DataType.Type.TIMESTAMPTZ,
+            )
+
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS TIMESTAMP)"
-            return str_to_time_sql(self, expression)
+                cast_type = (
+                    exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
+                )
+                return self.sql(
+                    exp.cast(self.func("TRY_STRPTIME", expression.this, formatted_time), cast_type)
+                )
+
+            base_sql = str_to_time_sql(self, expression)
+            if needs_tz:
+                return self.sql(
+                    exp.cast(
+                        base_sql,
+                        exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
+                    )
+                )
+            return base_sql
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
-            if expression.args.get("safe"):
-                formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
-            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
+            formatted_time = self.format_time(expression)
+            function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
+            return self.sql(
+                exp.cast(
+                    self.func(function_name, expression.this, formatted_time),
+                    exp.DataType(this=exp.DataType.Type.DATE),
+                )
+            )
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
             if not expression.this:
@@ -1827,6 +1938,32 @@ class DuckDB(Dialect):
             if expression.args.get("safe"):
                 return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
             return self.func("JSON", arg)
+
+        def normal_sql(self, expression: exp.Normal) -> str:
+            """
+            Transpile Snowflake's NORMAL(mean, stddev, gen) to DuckDB.
+
+            Uses the Box-Muller transform via NORMAL_TEMPLATE.
+            """
+            mean = expression.this
+            stddev = expression.args["stddev"]
+            gen: exp.Expression = expression.args["gen"]
+
+            # Build two uniform random values [0, 1) for Box-Muller transform
+            if isinstance(gen, exp.Rand) and gen.this is None:
+                u1: exp.Expression = exp.Rand()
+                u2: exp.Expression = exp.Rand()
+            else:
+                # Seeded: derive two values using HASH with different inputs
+                seed = gen.this if isinstance(gen, exp.Rand) else gen
+                u1 = exp.replace_placeholders(self.SEEDED_RANDOM_TEMPLATE, seed=seed)
+                u2 = exp.replace_placeholders(
+                    self.SEEDED_RANDOM_TEMPLATE,
+                    seed=exp.Add(this=seed.copy(), expression=exp.Literal.number(1)),
+                )
+
+            replacements = {"mean": mean, "stddev": stddev, "u1": u1, "u2": u2}
+            return self.sql(exp.replace_placeholders(self.NORMAL_TEMPLATE, **replacements))
 
         def uniform_sql(self, expression: exp.Uniform) -> str:
             """

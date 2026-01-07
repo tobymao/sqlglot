@@ -1388,7 +1388,7 @@ class TestSnowflake(Validator):
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
                 "bigquery": "SELECT TIMESTAMP_SECONDS(CAST(1659981729000000000 / POWER(10, 9) AS INT64))",
-                "duckdb": "SELECT TO_TIMESTAMP(1659981729000000000 / POWER(10, 9))",
+                "duckdb": "SELECT TO_TIMESTAMP(1659981729000000000 / POWER(10, 9)) AT TIME ZONE 'UTC'",
                 "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / POW(10, 9))",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
                 "spark": "SELECT TIMESTAMP_SECONDS(1659981729000000000 / POWER(10, 9))",
@@ -1413,6 +1413,34 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT PARSE_TIMESTAMP('%m/%d/%Y %T', '04/05/2013 01:02:03')",
                 "snowflake": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
                 "spark": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'MM/dd/yyyy HH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 AM', 'YYYY-MM-DD HH12:MI PM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 AM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 AM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 PM', 'YYYY-MM-DD HH12:MI AM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 PM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 PM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 PM', 'YYYY-MM-DD HH12:MI PM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 PM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 PM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 AM', 'YYYY-MM-DD HH12:MI AM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 AM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 AM', 'yyyy-mm-DD hh12:mi pm')",
             },
         )
         self.validate_all(
@@ -2167,6 +2195,27 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(FLOOR(1 + (ABS(HASH(5)) % 1000000) / 1000000.0 * (10 - 1 + 1)) AS BIGINT)",
             },
         )
+        self.validate_all(
+            "NORMAL(0, 1, 42)",
+            write={
+                "snowflake": "NORMAL(0, 1, 42)",
+                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(42 + 1)) % 1000000) / 1000000.0))",
+            },
+        )
+        self.validate_all(
+            "NORMAL(10.5, 2.5, RANDOM())",
+            write={
+                "snowflake": "NORMAL(10.5, 2.5, RANDOM())",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST(RANDOM(), 1e-10))) * COS(2 * PI() * RANDOM()))",
+            },
+        )
+        self.validate_all(
+            "NORMAL(10.5, 2.5, RANDOM(5))",
+            write={
+                "snowflake": "NORMAL(10.5, 2.5, RANDOM(5))",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(5 + 1)) % 1000000) / 1000000.0))",
+            },
+        )
         self.validate_identity("SYSDATE()")
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
@@ -2175,6 +2224,65 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT OBJECT_KEYS(my_obj)",
                 "duckdb": "SELECT JSON_KEYS(my_obj)",
+        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")
+        self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
+
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 1, 100)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 1, 100)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (1 - 1) MONTH + INTERVAL (100 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 14, 32)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 14, 32)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (14 - 1) MONTH + INTERVAL (32 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, 0, 0)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, 0, 0)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (0 - 1) MONTH + INTERVAL (0 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, -14, -32)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, -14, -32)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (-14 - 1) MONTH + INTERVAL (-32 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2024, 1, 60)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2024, 1, 60)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2024, 1, 1) + INTERVAL (1 - 1) MONTH + INTERVAL (60 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2026, NULL, 100)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2026, NULL, 100)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2026, 1, 1) + INTERVAL (NULL - 1) MONTH + INTERVAL (100 - 1) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(2024 + 2, 1 + 2, 2 + 3)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(2024 + 2, 1 + 2, 2 + 3)",
+                "duckdb": "SELECT CAST(MAKE_DATE(2024 + 2, 1, 1) + INTERVAL ((1 + 2) - 1) MONTH + INTERVAL ((2 + 3) - 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT DATE_FROM_PARTS(year, month, date)",
+            write={
+                "snowflake": "SELECT DATE_FROM_PARTS(year, month, date)",
+                "duckdb": "SELECT CAST(MAKE_DATE(year, 1, 1) + INTERVAL (month - 1) MONTH + INTERVAL (date - 1) DAY AS DATE)",
             },
         )
 

@@ -2892,6 +2892,18 @@ LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake
+LOCALTIMESTAMP;
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+LOCALTIMESTAMP();
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+LOCALTIMESTAMP(3);
+TIMESTAMPLTZ;
+
+# dialect: snowflake
 OCTET_LENGTH(tbl.str_col);
 INT;
 
@@ -3842,6 +3854,30 @@ TIMESTAMP;
 # dialect: snowflake
 TRY_TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO');
 TIMESTAMP;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_LTZ('2024-01-15 12:30:00');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_LTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPLTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_NTZ('2024-01-15 12:30:00');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_NTZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPNTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_TZ('2024-01-15 12:30:00');
+TIMESTAMPTZ;
+
+# dialect: snowflake
+TRY_TO_TIMESTAMP_TZ('2024-01-15 12:30:00', 'AUTO');
+TIMESTAMPTZ;
 
 # dialect: snowflake
 ABS(CAST(-123.456 AS DECFLOAT));
@@ -4842,3 +4878,7 @@ INT;
 # dialect: mysql
 LOCALTIME;
 DATETIME;
+
+# dialect: mysql
+ELT(1, 'a', 'b');
+VARCHAR;

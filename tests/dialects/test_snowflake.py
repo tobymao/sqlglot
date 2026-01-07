@@ -2170,6 +2170,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SYSDATE()")
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")
+        self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
+        self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
 
     def test_null_treatment(self):
         self.validate_all(

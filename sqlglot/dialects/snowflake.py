@@ -786,6 +786,7 @@ class Snowflake(Dialect):
             ),
             "LEN": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LOCALTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "OCTET_LENGTH": exp.ByteLength.from_arg_list,
@@ -1464,6 +1465,9 @@ class Snowflake(Dialect):
             exp.CurrentTimestamp: lambda self, e: self.func("SYSDATE")
             if e.args.get("sysdate")
             else self.function_fallback_sql(e),
+            exp.Localtimestamp: lambda self, e: self.func("CURRENT_TIMESTAMP", e.this)
+            if e.this
+            else "CURRENT_TIMESTAMP",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: date_delta_sql("TIMESTAMPADD"),

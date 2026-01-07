@@ -1366,7 +1366,6 @@ class DuckDB(Dialect):
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.Day: rename_func("DAY"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("ISODOW"),
@@ -1497,12 +1496,8 @@ class DuckDB(Dialect):
             ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
-            exp.Month: rename_func("MONTH"),
-            exp.Quarter: rename_func("QUARTER"),
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.Week: rename_func("WEEK"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
-            exp.Year: rename_func("YEAR"),
             exp.YearOfWeek: lambda self, e: self.sql(
                 exp.cast(
                     exp.Extract(

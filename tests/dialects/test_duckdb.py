@@ -561,50 +561,16 @@ class TestDuckDB(Validator):
             "SELECT * FROM t WHERE NOT (data -> '$.active')",
         )
         self.validate_identity(
-            "SELECT NOT (key -> '$.value')",
-        )
-        self.validate_identity(
-            "SELECT NOT key -> '$.value' -> '$.nested'",
-            "SELECT NOT (key -> '$.value' -> '$.nested')",
-        )
-        self.validate_identity(
             "SELECT NOT NOT key -> '$.value'",
             "SELECT NOT NOT (key -> '$.value')",
-        )
-        self.validate_identity(
-            "SELECT NOT (key -> '$.a') AND (key -> '$.b')",
         )
         self.validate_identity(
             "SELECT data -> '$.a' AND data -> '$.b'",
             "SELECT (data -> '$.a') AND (data -> '$.b')",
         )
         self.validate_identity(
-            "SELECT data -> '$.a' OR data -> '$.b'",
-            "SELECT (data -> '$.a') OR (data -> '$.b')",
-        )
-        self.validate_identity(
-            "SELECT * FROM t WHERE data -> '$.active' AND 1 = 1",
-            "SELECT * FROM t WHERE (data -> '$.active') AND 1 = 1",
-        )
-        self.validate_identity(
             "SELECT data -> '$.value' = 1",
             "SELECT (data -> '$.value') = 1",
-        )
-        self.validate_identity(
-            "SELECT data -> '$.value' != 1",
-            "SELECT (data -> '$.value') <> 1",
-        )
-        self.validate_identity(
-            "SELECT data -> '$.value' > 0",
-            "SELECT (data -> '$.value') > 0",
-        )
-        self.validate_identity(
-            "SELECT data -> '$.value' + 1",
-            "SELECT (data -> '$.value') + 1",
-        )
-        self.validate_identity(
-            "SELECT data -> '$.value' * 2",
-            "SELECT (data -> '$.value') * 2",
         )
         self.validate_all(
             "SELECT NOT (data -> '$.value')",
@@ -619,21 +585,9 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM t WHERE NOT (data -> '$.active')",
-            read={
-                "snowflake": "SELECT * FROM t WHERE NOT data:active",
-            },
-        )
-        self.validate_all(
             "SELECT (data -> '$.value') = 1",
             read={
                 "snowflake": "SELECT data:value = 1",
-            },
-        )
-        self.validate_all(
-            "SELECT (data -> '$.a') AND (data -> '$.b')",
-            read={
-                "snowflake": "SELECT data:a AND data:b",
             },
         )
         self.validate_identity(

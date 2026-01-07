@@ -874,8 +874,7 @@ def _regr_val_sql(
 def _maybe_corr_null_to_false(
     expression: t.Union[exp.Filter, exp.Window, exp.Corr],
 ) -> t.Optional[t.Union[exp.Filter, exp.Window, exp.Corr]]:
-    expr = expression.copy()
-    corr = expr
+    corr = expression
     while isinstance(corr, (exp.Window, exp.Filter)):
         corr = corr.this
 
@@ -883,7 +882,7 @@ def _maybe_corr_null_to_false(
         return None
 
     corr.set("null_on_zero_variance", False)
-    return expr
+    return expression
 
 
 def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:

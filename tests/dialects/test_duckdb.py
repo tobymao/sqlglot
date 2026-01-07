@@ -548,6 +548,24 @@ class TestDuckDB(Validator):
             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
             "x ->> '$.family'",
         )
+        self.validate_all(
+            "SELECT NOT (data -> '$.value')",
+            read={
+                "snowflake": "SELECT NOT data:value",
+            },
+        )
+        self.validate_all(
+            "SELECT NOT (data -> '$.value.nested')",
+            read={
+                "snowflake": "SELECT NOT data:value:nested",
+            },
+        )
+        self.validate_all(
+            "SELECT (data -> '$.value') = 1",
+            read={
+                "snowflake": "SELECT data:value = 1",
+            },
+        )
         self.validate_identity(
             "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
         )

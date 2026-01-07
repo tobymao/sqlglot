@@ -4878,3 +4878,7 @@ INT;
 # dialect: mysql
 LOCALTIME;
 DATETIME;
+
+# dialect: mysql
+ELT(1, 'a', 'b');
+VARCHAR;

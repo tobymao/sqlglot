@@ -678,10 +678,6 @@ class Snowflake(Dialect):
         "ss": "%S",
         "FF6": "%f",
         "ff6": "%f",
-        "AM": "%p",
-        "am": "%p",
-        "PM": "%p",
-        "pm": "%p",
     }
 
     DATE_PART_MAPPING = {

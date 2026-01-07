@@ -264,7 +264,7 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit)) or (
         isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
     ):
-        trunc.set("cast_to_granularity_type", True)
+        trunc.set("input_type_preserved", True)
     return trunc
 
 

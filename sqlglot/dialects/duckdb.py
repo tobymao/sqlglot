@@ -2456,13 +2456,14 @@ class DuckDB(Dialect):
             date = expression.this
             result = self.func("DATE_TRUNC", unit, date)
 
-            if not date.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
+            if expression.args.get("input_type_preserved"):
+                if not date.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
 
-                date = annotate_types(date, dialect=self.dialect)
+                    date = annotate_types(date, dialect=self.dialect)
 
-            if date.type and expression.args.get("cast_to_granularity_type"):
-                return self.sql(exp.Cast(this=result, to=date.type))
+                if date.type:
+                    return self.sql(exp.Cast(this=result, to=date.type))
             return result
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
@@ -2496,7 +2497,7 @@ class DuckDB(Dialect):
                 result = self.func("DATE_TRUNC", unit, date_time)
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-            if timestamp.type and expression.args.get("cast_to_granularity_type"):
+            if timestamp.type and expression.args.get("input_type_preserved"):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
             return result
 

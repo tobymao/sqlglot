@@ -176,9 +176,6 @@ class Oracle(Dialect):
             exp.DataType.Type.TIMESTAMP: lambda self, this, _: self.expression(
                 exp.Timestamp, this=this
             ),
-            exp.DataType.Type.TIMESTAMPTZ: lambda self, this, _: self.expression(
-                exp.Timestamp, this=this
-            ),
         }
 
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..

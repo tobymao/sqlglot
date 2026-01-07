@@ -1502,9 +1502,7 @@ class DuckDB(Dialect):
                 exp.cast(
                     exp.Extract(
                         this=exp.Var(this="ISOYEAR"),
-                        expression=exp.cast(e.this, exp.DataType.build("DATE"))
-                        if isinstance(e.this, exp.Null)
-                        else e.this,
+                        expression=e.this,
                     ),
                     exp.DataType.build("BIGINT"),
                 )
@@ -1513,9 +1511,7 @@ class DuckDB(Dialect):
                 exp.cast(
                     exp.Extract(
                         this=exp.Var(this="ISOYEAR"),
-                        expression=exp.cast(e.this, exp.DataType.build("DATE"))
-                        if isinstance(e.this, exp.Null)
-                        else e.this,
+                        expression=e.this,
                     ),
                     exp.DataType.build("BIGINT"),
                 )

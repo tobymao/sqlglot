@@ -2481,24 +2481,25 @@ class DuckDB(Dialect):
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
 
             result = self.func("DATE_TRUNC", unit, timestamp)
-            if not timestamp.type:
-                from sqlglot.optimizer.annotate_types import annotate_types
+            if expression.args.get("input_type_preserved"):
+                if not timestamp.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
 
-                timestamp = annotate_types(timestamp, dialect=self.dialect)
+                    timestamp = annotate_types(timestamp, dialect=self.dialect)
 
-            if timestamp.type and timestamp.is_type(
-                exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
-            ):
-                dummy_date = exp.Cast(
-                    this=exp.Literal.string("1970-01-01"),
-                    to=exp.DataType(this=exp.DataType.Type.DATE),
-                )
-                date_time = exp.Add(this=dummy_date, expression=timestamp)
-                result = self.func("DATE_TRUNC", unit, date_time)
-                return self.sql(exp.Cast(this=result, to=timestamp.type))
+                if timestamp.type and timestamp.is_type(
+                    exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
+                ):
+                    dummy_date = exp.Cast(
+                        this=exp.Literal.string("1970-01-01"),
+                        to=exp.DataType(this=exp.DataType.Type.DATE),
+                    )
+                    date_time = exp.Add(this=dummy_date, expression=timestamp)
+                    result = self.func("DATE_TRUNC", unit, date_time)
+                    return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-            if timestamp.type and expression.args.get("input_type_preserved"):
-                return self.sql(exp.Cast(this=result, to=timestamp.type))
+                if timestamp.type:
+                    return self.sql(exp.Cast(this=result, to=timestamp.type))
             return result
 
         def trim_sql(self, expression: exp.Trim) -> str:

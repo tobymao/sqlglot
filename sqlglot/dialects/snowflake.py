@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import find_new_name, flatten, is_float, is_int, seq_get
+from sqlglot.helper import find_new_name, flatten, is_int, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.typing.snowflake import EXPRESSION_METADATA
@@ -87,7 +87,7 @@ def _build_datetime(
         int_value = value is not None and is_int(value.name)
         int_scale_or_fmt = scale_or_fmt is not None and scale_or_fmt.is_int
 
-        if isinstance(value, exp.Literal) or (value and scale_or_fmt):
+        if isinstance(value, (exp.Literal, exp.Neg)) or (value and scale_or_fmt):
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
@@ -99,15 +99,20 @@ def _build_datetime(
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special
             # cases so we can transpile them, since they're relatively common
             if kind in TIMESTAMP_TYPES:
-                if not safe and (int_value or int_scale_or_fmt):
+                if not safe and (int_scale_or_fmt or (int_value and scale_or_fmt is None)):
                     # TRY_TO_TIMESTAMP('integer') is not parsed into exp.UnixToTime as
-                    # it's not easily transpilable
-                    return exp.UnixToTime(this=value, scale=scale_or_fmt)
-                if not int_scale_or_fmt and not is_float(value.name):
-                    expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
-                    expr.set("safe", safe)
-                    expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
-                    return expr
+                    # it's not easily transpilable. Also, numeric-looking strings with
+                    # format strings (e.g., TO_TIMESTAMP('20240115', 'YYYYMMDD')) should
+                    # use StrToTime, not UnixToTime.
+                    unix_expr = exp.UnixToTime(this=value, scale=scale_or_fmt)
+                    unix_expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
+                    return unix_expr
+                if scale_or_fmt and not int_scale_or_fmt:
+                    # Format string provided (e.g., 'YYYY-MM-DD'), use StrToTime
+                    strtotime_expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
+                    strtotime_expr.set("safe", safe)
+                    strtotime_expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
+                    return strtotime_expr
 
         if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and not int_value:
             klass = exp.TsOrDsToDate if kind == exp.DataType.Type.DATE else exp.TsOrDsToTime
@@ -664,6 +669,10 @@ class Snowflake(Dialect):
         "ss": "%S",
         "FF6": "%f",
         "ff6": "%f",
+        "AM": "%p",
+        "am": "%p",
+        "PM": "%p",
+        "pm": "%p",
     }
 
     DATE_PART_MAPPING = {
@@ -851,6 +860,15 @@ class Snowflake(Dialect):
             "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),
             "TRY_TO_TIMESTAMP": _build_datetime(
                 "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
+            ),
+            "TRY_TO_TIMESTAMP_LTZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_LTZ", exp.DataType.Type.TIMESTAMPLTZ, safe=True
+            ),
+            "TRY_TO_TIMESTAMP_NTZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMPNTZ, safe=True
+            ),
+            "TRY_TO_TIMESTAMP_TZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ, safe=True
             ),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
@@ -1620,7 +1638,7 @@ class Snowflake(Dialect):
                 f"{'TRY_' if e.args.get('safe') else ''}TO_TIME", e.this, self.format_time(e)
             ),
             exp.Unhex: rename_func("HEX_DECODE_BINARY"),
-            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
+            exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, e.args.get("scale")),
             exp.Uuid: rename_func("UUID_STRING"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.Booland: rename_func("BOOLAND"),

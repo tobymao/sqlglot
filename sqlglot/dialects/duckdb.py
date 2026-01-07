@@ -396,15 +396,31 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
+    target_type = expression.args.get("target_type")
 
-    if scale in (None, exp.UnixToTime.SECONDS):
-        return self.func("TO_TIMESTAMP", timestamp)
+    # Check if we need NTZ (naive timestamp in UTC)
+    is_ntz = target_type and target_type.this in (
+        exp.DataType.Type.TIMESTAMP,
+        exp.DataType.Type.TIMESTAMPNTZ,
+    )
+
     if scale == exp.UnixToTime.MILLIS:
+        # EPOCH_MS already returns TIMESTAMP (naive, UTC)
         return self.func("EPOCH_MS", timestamp)
     if scale == exp.UnixToTime.MICROS:
+        # MAKE_TIMESTAMP already returns TIMESTAMP (naive, UTC)
         return self.func("MAKE_TIMESTAMP", timestamp)
 
-    return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
+    # Other scales: divide and use TO_TIMESTAMP
+    if scale not in (None, exp.UnixToTime.SECONDS):
+        timestamp = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+
+    to_timestamp: exp.Expression = exp.Anonymous(this="TO_TIMESTAMP", expressions=[timestamp])
+
+    if is_ntz:
+        to_timestamp = exp.AtTimeZone(this=to_timestamp, zone=exp.Literal.string("UTC"))
+
+    return self.sql(to_timestamp)
 
 
 WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In)
@@ -1468,6 +1484,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMPTZ",
             exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
@@ -1810,16 +1827,41 @@ class DuckDB(Dialect):
             return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
+            # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)
+            target_type = expression.args.get("target_type")
+            needs_tz = target_type and target_type.this in (
+                exp.DataType.Type.TIMESTAMPLTZ,
+                exp.DataType.Type.TIMESTAMPTZ,
+            )
+
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS TIMESTAMP)"
-            return str_to_time_sql(self, expression)
+                cast_type = (
+                    exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
+                )
+                return self.sql(
+                    exp.cast(self.func("TRY_STRPTIME", expression.this, formatted_time), cast_type)
+                )
+
+            base_sql = str_to_time_sql(self, expression)
+            if needs_tz:
+                return self.sql(
+                    exp.cast(
+                        base_sql,
+                        exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
+                    )
+                )
+            return base_sql
 
         def strtodate_sql(self, expression: exp.StrToDate) -> str:
-            if expression.args.get("safe"):
-                formatted_time = self.format_time(expression)
-                return f"CAST({self.func('TRY_STRPTIME', expression.this, formatted_time)} AS DATE)"
-            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
+            formatted_time = self.format_time(expression)
+            function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
+            return self.sql(
+                exp.cast(
+                    self.func(function_name, expression.this, formatted_time),
+                    exp.DataType(this=exp.DataType.Type.DATE),
+                )
+            )
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
             if not expression.this:

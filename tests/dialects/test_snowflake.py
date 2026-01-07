@@ -1170,7 +1170,6 @@ class TestSnowflake(Validator):
                 },
             )
             for func in (
-                "CORR",
                 "COVAR_POP",
                 "COVAR_SAMP",
             ):
@@ -4556,6 +4555,45 @@ FROM SEMANTIC_VIEW(
             "SELECT CEIL(1.234, 1.5)",
             write={
                 "duckdb": "SELECT ROUND(CEIL(1.234 * POWER(10, CAST(1.5 AS INT))) / POWER(10, CAST(1.5 AS INT)), CAST(1.5 AS INT))"
+            },
+        )
+
+    def test_corr(self):
+        self.validate_all(
+            "SELECT CORR(a, b)",
+            read={
+                "snowflake": "SELECT CORR(a, b)",
+                "postgres": "SELECT CORR(a, b)",
+            },
+            write={
+                "snowflake": "SELECT CORR(a, b)",
+                "postgres": "SELECT CORR(a, b)",
+                "duckdb": "SELECT CASE WHEN ISNAN(CORR(a, b)) THEN NULL ELSE CORR(a, b) END",
+            },
+        )
+        self.validate_all(
+            "SELECT CORR(a, b) OVER (PARTITION BY c)",
+            read={
+                "snowflake": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+                "postgres": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+            },
+            write={
+                "snowflake": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+                "postgres": "SELECT CORR(a, b) OVER (PARTITION BY c)",
+                "duckdb": "SELECT CASE WHEN ISNAN(CORR(a, b) OVER (PARTITION BY c)) THEN NULL ELSE CORR(a, b) OVER (PARTITION BY c) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT CORR(a, b) FILTER(WHERE c > 0)",
+            write={
+                "duckdb": "SELECT CASE WHEN ISNAN(CORR(a, b) FILTER(WHERE c > 0)) THEN NULL ELSE CORR(a, b) FILTER(WHERE c > 0) END",
+            },
+        )
+        self.validate_all(
+            "SELECT CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d)",
+            write={
+                "duckdb": "SELECT CASE WHEN ISNAN(CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d)) THEN NULL ELSE CORR(a, b) FILTER(WHERE c > 0) OVER (PARTITION BY d) END",
             },
         )
 

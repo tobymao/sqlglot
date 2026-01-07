@@ -77,6 +77,15 @@ def _build_approx_top_k(args: t.List) -> exp.ApproxTopK:
     return exp.ApproxTopK.from_arg_list(args)
 
 
+def _build_date_from_parts(args: t.List) -> exp.DateFromParts:
+    return exp.DateFromParts(
+        year=seq_get(args, 0),
+        month=seq_get(args, 1),
+        day=seq_get(args, 2),
+        allow_overflow=True,
+    )
+
+
 def _build_datetime(
     name: str, kind: exp.DataType.Type, safe: bool = False
 ) -> t.Callable[[t.List], exp.Func]:
@@ -759,6 +768,8 @@ class Snowflake(Dialect):
             "BITMAP_OR_AGG": exp.BitmapOrAgg.from_arg_list,
             "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
+            "DATEFROMPARTS": _build_date_from_parts,
+            "DATE_FROM_PARTS": _build_date_from_parts,
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,

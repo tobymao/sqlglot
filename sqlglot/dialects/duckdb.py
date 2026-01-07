@@ -583,7 +583,7 @@ def _cast_to_boolean(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
 
 
 def _is_binary(arg: exp.Expression) -> bool:
-    return isinstance(arg, exp.HexString) or arg.is_type(
+    return arg.is_type(
         exp.DataType.Type.BINARY,
         exp.DataType.Type.VARBINARY,
         exp.DataType.Type.BLOB,

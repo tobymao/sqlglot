@@ -17,4 +17,5 @@ class Druid(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.Mod: rename_func("MOD"),
+            exp.Array: lambda self, e: f"ARRAY[{self.expressions(e)}]",
         }

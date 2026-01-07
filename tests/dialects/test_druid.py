@@ -14,6 +14,7 @@ class TestDruid(Validator):
         self.validate_identity("SELECT FLOOR(col) FROM t")
         self.validate_identity("SELECT FLOOR(price, 2) AS rounded_price FROM t")
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]")
 
         # validate across all dialects
         write = {dialect.value: "FLOOR(__time TO WEEK)" for dialect in Dialects}

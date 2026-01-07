@@ -374,6 +374,7 @@ class Oracle(Dialect):
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
             exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
             exp.UtcTime: rename_func("UTC_TIME"),
+            exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {

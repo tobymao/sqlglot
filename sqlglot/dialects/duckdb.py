@@ -2462,7 +2462,7 @@ class DuckDB(Dialect):
 
                     date = annotate_types(date, dialect=self.dialect)
 
-                if date.type:
+                if date.type and date.is_type(*exp.DataType.TEMPORAL_TYPES):
                     return self.sql(exp.Cast(this=result, to=date.type))
             return result
 
@@ -2498,7 +2498,7 @@ class DuckDB(Dialect):
                     result = self.func("DATE_TRUNC", unit, date_time)
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-                if timestamp.type:
+                if timestamp.type and timestamp.is_type(*exp.DataType.TEMPORAL_TYPES):
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
             return result
 

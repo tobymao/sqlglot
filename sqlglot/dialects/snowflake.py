@@ -261,7 +261,8 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
     unit = map_date_part(trunc.args["unit"])
     trunc.set("unit", unit)
-    if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit)) or (
+    is_time_input = trunc.this.is_type(exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ)
+    if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit) or is_time_input) or (
         isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
     ):
         trunc.set("input_type_preserved", True)

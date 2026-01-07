@@ -90,25 +90,6 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 
-def _date_part_sql(
-    func_name: str,
-) -> t.Callable[[DuckDB.Generator, exp.Func], str]:
-    """
-    Generate a date part function that casts NULL arguments to DATE.
-
-    DuckDB's date functions (YEAR, MONTH, DAY, etc.) require explicit type casts
-    when the argument is NULL, as they have multiple overloads (DATE and INTERVAL).
-    """
-
-    def _sql(self: DuckDB.Generator, expression: exp.Func) -> str:
-        arg = expression.this
-        if isinstance(arg, exp.Null):
-            arg = exp.Cast(this=arg, to=exp.DataType.build("DATE"))
-        return self.func(func_name, arg)
-
-    return _sql
-
-
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
     DuckDB's LAST_DAY only supports finding the last day of a month.
@@ -1385,11 +1366,11 @@ class DuckDB(Dialect):
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.Day: _date_part_sql("DAY"),
-            exp.DayOfMonth: _date_part_sql("DAYOFMONTH"),
-            exp.DayOfWeek: _date_part_sql("DAYOFWEEK"),
-            exp.DayOfWeekIso: _date_part_sql("ISODOW"),
-            exp.DayOfYear: _date_part_sql("DAYOFYEAR"),
+            exp.Day: rename_func("DAY"),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfWeekIso: rename_func("ISODOW"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Dayname: lambda self, e: (
                 self.func("STRFTIME", e.this, exp.Literal.string("%a"))
                 if e.args.get("abbreviated")
@@ -1516,12 +1497,12 @@ class DuckDB(Dialect):
             ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
-            exp.Month: _date_part_sql("MONTH"),
-            exp.Quarter: _date_part_sql("QUARTER"),
+            exp.Month: rename_func("MONTH"),
+            exp.Quarter: rename_func("QUARTER"),
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.Week: _date_part_sql("WEEK"),
-            exp.WeekOfYear: _date_part_sql("WEEKOFYEAR"),
-            exp.Year: _date_part_sql("YEAR"),
+            exp.Week: rename_func("WEEK"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Year: rename_func("YEAR"),
             exp.YearOfWeek: lambda self, e: self.sql(
                 exp.cast(
                     exp.Extract(

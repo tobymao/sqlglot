@@ -1416,6 +1416,34 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 AM', 'YYYY-MM-DD HH12:MI PM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 AM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 AM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 PM', 'YYYY-MM-DD HH12:MI AM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 PM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 PM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 PM', 'YYYY-MM-DD HH12:MI PM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 PM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 PM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-15 3:00 AM', 'YYYY-MM-DD HH12:MI AM')",
+            write={
+                "duckdb": "STRPTIME('2024-01-15 3:00 AM', '%Y-%m-%d %I:%M %p')",
+                "snowflake": "TO_TIMESTAMP('2024-01-15 3:00 AM', 'yyyy-mm-DD hh12:mi pm')",
+            },
+        )
+        self.validate_all(
             "SELECT IFF(TRUE, 'true', 'false')",
             write={
                 "snowflake": "SELECT IFF(TRUE, 'true', 'false')",

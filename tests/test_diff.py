@@ -354,5 +354,12 @@ class TestDiff(unittest.TestCase):
 
         self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
 
+    def test_comments_do_not_affect_diff(self):
+        expr_src = parse_one("select a from tbl")
+        expr_tgt = parse_one("select a from tbl -- this is comment")
+
+        self.assertEqual(expr_tgt.args["from_"].this.comments, [" this is comment"])
+        self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
+
     def _validate_delta_only(self, actual_delta, expected_delta):
         self.assertEqual(set(actual_delta), set(expected_delta))

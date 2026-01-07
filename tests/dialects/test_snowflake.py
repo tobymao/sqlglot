@@ -2668,7 +2668,56 @@ class TestSnowflake(Validator):
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+        self.validate_all(
+            "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+            write={
+                "snowflake": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+                "duckdb": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+            write={
+                "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+            },
+        )
+        # Snowflake's DATE_TRUNC return type matches type of the expresison
+        # DuckDB's DATE_TRUNC return type matches type of granularity part.
+        # In Snowflake --> DuckDB, DATE_TRUNC(date_part, timestamp) should be cast to timestamp to preserve Snowflake behavior.
+        self.validate_all(
+            "DATE_TRUNC(YEAR, TIMESTAMP '2026-01-01 00:00:00')",
+            write={
+                "snowflake": "DATE_TRUNC('YEAR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+                "duckdb": "CAST(DATE_TRUNC('YEAR', CAST('2026-01-01 00:00:00' AS TIMESTAMP)) AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "DATE_TRUNC(MONTH, CAST('2024-06-15 14:23:45' AS TIMESTAMPTZ))",
+            write={
+                "snowflake": "DATE_TRUNC('MONTH', CAST('2024-06-15 14:23:45' AS TIMESTAMPTZ))",
+                "duckdb": "CAST(DATE_TRUNC('MONTH', CAST('2024-06-15 14:23:45' AS TIMESTAMPTZ)) AS TIMESTAMPTZ)",
+            },
+        )
 
+        # In Snowflake --> DuckDB, DATE_TRUNC(time_part, date) should be cast to date to preserve Snowflake behavior.
+        self.validate_all(
+            "DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE))",
+            write={
+                "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE))",
+                "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('2026-01-01' AS DATE)) AS DATE)",
+            },
+        )
+
+        # DuckDB does not support DATE_TRUNC(time_part, time), so we add a dummy date to generate DATE_TRUNC(time_part, date) --> DATE in DuckDB
+        # Then it is casted to a time (HH:MM:SS) to match Snowflake.
+        self.validate_all(
+            "DATE_TRUNC('HOUR', CAST('14:23:45.123456' AS TIME))",
+            write={
+                "snowflake": "DATE_TRUNC('HOUR', CAST('14:23:45.123456' AS TIME))",
+                "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('1970-01-01' AS DATE) + CAST('14:23:45.123456' AS TIME)) AS TIME)",
+            },
+        )
         self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
 
         self.validate_identity(

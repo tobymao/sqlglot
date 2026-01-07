@@ -1409,7 +1409,6 @@ class DuckDB(Dialect):
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.ToBoolean: _to_boolean_sql,
-            exp.ToDouble: lambda self, e: self._to_double_sql(e),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
@@ -1735,7 +1734,7 @@ class DuckDB(Dialect):
             # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
             return self.func("TO_BINARY", value)
 
-        def _to_double_sql(self: DuckDB.Generator, expression: exp.ToDouble) -> str:
+        def todouble_sql(self, expression: exp.ToDouble) -> str:
             """
             Transpile TO_DOUBLE to DuckDB with comprehensive format handling.
 

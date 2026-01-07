@@ -678,6 +678,8 @@ class Snowflake(Dialect):
         "ss": "%S",
         "FF6": "%f",
         "ff6": "%f",
+        # Seems like Snowflake treats AM/PM in the format string as equivalent,
+        # only the time (stamp) value's AM/PM affects the output
         "AM": "%p",
         "am": "%p",
         "PM": "%p",

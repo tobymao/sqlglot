@@ -2223,10 +2223,19 @@ class Generator(metaclass=_Generator):
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, dynamic=True, new_line=True, skip_first=True, skip_last=True)})"
 
+    def _update_from_joins_sql(self, expression: exp.Update) -> t.Tuple[str, str]:
+        """
+        Returns (join_sql, from_sql) for UPDATE statements.
+        - join_sql: placed after UPDATE table, before SET
+        - from_sql: placed after SET clause (standard position)
+        Dialects like MySQL override to convert FROM to JOIN syntax.
+        """
+        return ("", self.sql(expression, "from_"))
+
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")
         set_sql = self.expressions(expression, flat=True)
-        from_sql = self.sql(expression, "from_")
+        join_sql, from_sql = self._update_from_joins_sql(expression)
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")
@@ -2237,7 +2246,7 @@ class Generator(metaclass=_Generator):
             expression_sql = f"{returning}{from_sql}{where_sql}"
         options = self.expressions(expression, key="options")
         options = f" OPTION({options})" if options else ""
-        sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}{options}"
+        sql = f"UPDATE {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:

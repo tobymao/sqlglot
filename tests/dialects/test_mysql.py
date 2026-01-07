@@ -199,8 +199,6 @@ class TestMySQL(Validator):
             "UPDATE foo JOIN bar ON TRUE SET a = bar.a WHERE foo.id = bar.id",
             read={
                 "postgres": "UPDATE foo SET a = bar.a FROM bar WHERE foo.id = bar.id",
-            },
-            write={
                 "mysql": "UPDATE foo JOIN bar ON TRUE SET a = bar.a WHERE foo.id = bar.id",
             },
         )

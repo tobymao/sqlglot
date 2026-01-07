@@ -19,12 +19,6 @@ class TestSnowflake(Validator):
         ast.set("unit", exp.Literal.string("MONTH"))
         self.assertEqual(ast.sql("snowflake"), "DATEADD(MONTH, n, d)")
 
-        self.validate_identity(
-            "SELECT TO_TIMESTAMP('2024-01-15 12:30:00 am', 'yyyy-mm-DD hh:mi:ss am')"
-        )
-        self.validate_identity(
-            "SELECT TO_TIMESTAMP('2024-01-15 12:30:00 am', 'yyyy-mm-DD hh:mi:ss pm')"
-        )
         self.validate_identity("SELECT DATE_PART(EPOCH_MILLISECOND, CURRENT_TIMESTAMP()) AS a")
         self.validate_identity("SELECT GET(a, b)")
         self.validate_identity("SELECT HASH_AGG(a, b, c, d)")

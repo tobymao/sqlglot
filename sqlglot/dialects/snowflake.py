@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import find_new_name, flatten, is_int, seq_get
+from sqlglot.helper import find_new_name, flatten, is_date_unit, is_int, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.typing.snowflake import EXPRESSION_METADATA
@@ -259,7 +259,13 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
 def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
-    trunc.set("unit", map_date_part(trunc.args["unit"]))
+    unit = map_date_part(trunc.args["unit"])
+    trunc.set("unit", unit)
+    is_time_input = trunc.this.is_type(exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ)
+    if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit) or is_time_input) or (
+        isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
+    ):
+        trunc.set("input_type_preserved", True)
     return trunc
 
 

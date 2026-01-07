@@ -2450,6 +2450,21 @@ class DuckDB(Dialect):
 
             return self.sql(to_hex)
 
+        def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+            unit = unit_to_str(expression)
+            date = expression.this
+            result = self.func("DATE_TRUNC", unit, date)
+
+            if expression.args.get("input_type_preserved"):
+                if not date.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    date = annotate_types(date, dialect=self.dialect)
+
+                if date.type and date.is_type(*exp.DataType.TEMPORAL_TYPES):
+                    return self.sql(exp.Cast(this=result, to=date.type))
+            return result
+
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = unit_to_str(expression)
             zone = expression.args.get("zone")
@@ -2464,7 +2479,27 @@ class DuckDB(Dialect):
                 result_sql = self.func("DATE_TRUNC", unit, timestamp)
                 return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
 
-            return self.func("DATE_TRUNC", unit, timestamp)
+            result = self.func("DATE_TRUNC", unit, timestamp)
+            if expression.args.get("input_type_preserved"):
+                if not timestamp.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    timestamp = annotate_types(timestamp, dialect=self.dialect)
+
+                if timestamp.type and timestamp.is_type(
+                    exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
+                ):
+                    dummy_date = exp.Cast(
+                        this=exp.Literal.string("1970-01-01"),
+                        to=exp.DataType(this=exp.DataType.Type.DATE),
+                    )
+                    date_time = exp.Add(this=dummy_date, expression=timestamp)
+                    result = self.func("DATE_TRUNC", unit, date_time)
+                    return self.sql(exp.Cast(this=result, to=timestamp.type))
+
+                if timestamp.type and timestamp.is_type(*exp.DataType.TEMPORAL_TYPES):
+                    return self.sql(exp.Cast(this=result, to=timestamp.type))
+            return result
 
         def trim_sql(self, expression: exp.Trim) -> str:
             expression.this.replace(_cast_to_varchar(expression.this))

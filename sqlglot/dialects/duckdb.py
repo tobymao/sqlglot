@@ -1598,6 +1598,17 @@ class DuckDB(Dialect):
             """
         )
 
+        # Template for NORMAL transpilation using Box-Muller transform
+        # mean + (stddev * sqrt(-2 * ln(u1)) * cos(2 * pi * u2))
+        NORMAL_TEMPLATE: exp.Expression = exp.maybe_parse(
+            ":mean + (:stddev * SQRT(-2 * LN(GREATEST(:u1, 1e-10))) * COS(2 * PI() * :u2))"
+        )
+
+        # Template for generating a seeded pseudo-random value in [0, 1) from a hash
+        SEEDED_RANDOM_TEMPLATE: exp.Expression = exp.maybe_parse(
+            "(ABS(HASH(:seed)) % 1000000) / 1000000.0"
+        )
+
         # Template for RANDSTR transpilation - placeholders get replaced with actual parameters
         RANDSTR_TEMPLATE: exp.Expression = exp.maybe_parse(
             f"""
@@ -1825,6 +1836,32 @@ class DuckDB(Dialect):
             if expression.args.get("safe"):
                 return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
             return self.func("JSON", arg)
+
+        def normal_sql(self, expression: exp.Normal) -> str:
+            """
+            Transpile Snowflake's NORMAL(mean, stddev, gen) to DuckDB.
+
+            Uses the Box-Muller transform via NORMAL_TEMPLATE.
+            """
+            mean = expression.this
+            stddev = expression.args["stddev"]
+            gen: exp.Expression = expression.args["gen"]
+
+            # Build two uniform random values [0, 1) for Box-Muller transform
+            if isinstance(gen, exp.Rand) and gen.this is None:
+                u1: exp.Expression = exp.Rand()
+                u2: exp.Expression = exp.Rand()
+            else:
+                # Seeded: derive two values using HASH with different inputs
+                seed = gen.this if isinstance(gen, exp.Rand) else gen
+                u1 = exp.replace_placeholders(self.SEEDED_RANDOM_TEMPLATE, seed=seed)
+                u2 = exp.replace_placeholders(
+                    self.SEEDED_RANDOM_TEMPLATE,
+                    seed=exp.Add(this=seed.copy(), expression=exp.Literal.number(1)),
+                )
+
+            replacements = {"mean": mean, "stddev": stddev, "u1": u1, "u2": u2}
+            return self.sql(exp.replace_placeholders(self.NORMAL_TEMPLATE, **replacements))
 
         def uniform_sql(self, expression: exp.Uniform) -> str:
             """

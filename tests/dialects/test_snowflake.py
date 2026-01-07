@@ -2167,6 +2167,27 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(FLOOR(1 + (ABS(HASH(5)) % 1000000) / 1000000.0 * (10 - 1 + 1)) AS BIGINT)",
             },
         )
+        self.validate_all(
+            "NORMAL(0, 1, 42)",
+            write={
+                "snowflake": "NORMAL(0, 1, 42)",
+                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(42 + 1)) % 1000000) / 1000000.0))",
+            },
+        )
+        self.validate_all(
+            "NORMAL(10.5, 2.5, RANDOM())",
+            write={
+                "snowflake": "NORMAL(10.5, 2.5, RANDOM())",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST(RANDOM(), 1e-10))) * COS(2 * PI() * RANDOM()))",
+            },
+        )
+        self.validate_all(
+            "NORMAL(10.5, 2.5, RANDOM(5))",
+            write={
+                "snowflake": "NORMAL(10.5, 2.5, RANDOM(5))",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(5 + 1)) % 1000000) / 1000000.0))",
+            },
+        )
         self.validate_identity("SYSDATE()")
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")

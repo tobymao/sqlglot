@@ -90,6 +90,42 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 
+def _bitmap_bucket_number_sql(self: DuckDB.Generator, expression: exp.BitmapBucketNumber) -> str:
+    """
+    Transpile BITMAP_BUCKET_NUMBER function from Snowflake to DuckDB equivalent.
+
+    Snowflake's BITMAP_BUCKET_NUMBER returns a 1-based bucket identifier where:
+    - Each bucket covers 32,768 values
+    - Bucket numbering starts at 1
+    - Formula: ((value - 1) // 32768) + 1 for positive values
+
+    For non-positive values (0 and negative), we use value // 32768 to avoid
+    producing bucket 0 or positive bucket IDs for negative inputs.
+    """
+    value = expression.this
+
+    # For positive values: ((value - 1) // 32768) + 1
+    positive_formula = exp.Add(
+        this=exp.IntDiv(
+            this=exp.Paren(this=exp.Sub(this=value, expression=exp.Literal.number(1))),
+            expression=exp.Literal.number(32768),
+        ),
+        expression=exp.Literal.number(1),
+    )
+
+    # For non-positive values: value // 32768
+    non_positive_formula = exp.IntDiv(this=value, expression=exp.Literal.number(32768))
+
+    # CASE WHEN value > 0 THEN ((value - 1) // 32768) + 1 ELSE value // 32768 END
+    case_expr = (
+        exp.case()
+        .when(exp.GT(this=value, expression=exp.Literal.number(0)), positive_formula)
+        .else_(non_positive_formula)
+    )
+
+    return self.sql(case_expr)
+
+
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
     DuckDB's LAST_DAY only supports finding the last day of a month.
@@ -1347,6 +1383,7 @@ class DuckDB(Dialect):
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
+            exp.BitmapBucketNumber: _bitmap_bucket_number_sql,
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",

@@ -1279,6 +1279,32 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT 20_000 AS literal")
         self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(1_2E+1_0 AS REAL)")
 
+        # Test BITMAP_BUCKET_NUMBER transpilation from Snowflake to DuckDB
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(2500)", read="snowflake").sql("duckdb"),
+            "CASE WHEN 2500 > 0 THEN (2500 - 1) // 32768 + 1 ELSE 2500 // 32768 END",
+        )
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(32768)", read="snowflake").sql("duckdb"),
+            "CASE WHEN 32768 > 0 THEN (32768 - 1) // 32768 + 1 ELSE 32768 // 32768 END",
+        )
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(32769)", read="snowflake").sql("duckdb"),
+            "CASE WHEN 32769 > 0 THEN (32769 - 1) // 32768 + 1 ELSE 32769 // 32768 END",
+        )
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(-100)", read="snowflake").sql("duckdb"),
+            "CASE WHEN -100 > 0 THEN (-100 - 1) // 32768 + 1 ELSE -100 // 32768 END",
+        )
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(NULL)", read="snowflake").sql("duckdb"),
+            "CASE WHEN NULL > 0 THEN (NULL - 1) // 32768 + 1 ELSE NULL // 32768 END",
+        )
+        self.assertEqual(
+            parse_one("BITMAP_BUCKET_NUMBER(2500)", read="snowflake").sql("snowflake"),
+            "BITMAP_BUCKET_NUMBER(2500)",
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

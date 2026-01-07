@@ -8300,8 +8300,8 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
-class Corr(Binary, AggFunc):
-    pass
+class Corr(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CUME_DIST.html
@@ -8332,12 +8332,12 @@ class WidthBucket(Func):
     }
 
 
-class CovarSamp(Binary, AggFunc):
-    pass
+class CovarSamp(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
-class CovarPop(Binary, AggFunc):
-    pass
+class CovarPop(AggFunc):
+    arg_types = {"this": True, "expression": True}
 
 
 class Week(Func):

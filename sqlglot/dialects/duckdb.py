@@ -871,6 +871,37 @@ def _regr_val_sql(
     )
 
 
+def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
+    """
+    Snowflake's DATE_FROM_PARTS allows out-of-range values for the month and day input.
+    E.g., larger values (month=13, day=100), zero-values (month=0, day=0), negative values (month=-13, day=-100).
+
+    DuckDB's MAKE_DATE does not support out-of-range values, but DuckDB's INTERVAL type does.
+
+    We convert to date arithmetic:
+    DATE_FROM_PARTS(year, month, day)
+    - MAKE_DATE(year, 1, 1) + INTERVAL (month-1) MONTH + INTERVAL (day-1) DAY
+    """
+    year_expr = expression.args.get("year")
+    month_expr = expression.args.get("month")
+    day_expr = expression.args.get("day")
+
+    if expression.args.get("allow_overflow"):
+        base_date: exp.Expression = exp.func(
+            "MAKE_DATE", year_expr, exp.Literal.number(1), exp.Literal.number(1)
+        )
+
+        if month_expr:
+            base_date = base_date + exp.Interval(this=month_expr - 1, unit=exp.var("MONTH"))
+
+        if day_expr:
+            base_date = base_date + exp.Interval(this=day_expr - 1, unit=exp.var("DAY"))
+
+        return self.sql(exp.cast(expression=base_date, to=exp.DataType.Type.DATE))
+
+    return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1337,7 +1368,7 @@ class DuckDB(Dialect):
             exp.DataType: _datatype_sql,
             exp.Date: _date_sql,
             exp.DateAdd: _date_delta_to_binary_interval_op(),
-            exp.DateFromParts: rename_func("MAKE_DATE"),
+            exp.DateFromParts: _date_from_parts_sql,
             exp.DateSub: _date_delta_to_binary_interval_op(),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,

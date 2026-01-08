@@ -174,6 +174,12 @@ class Spark(Spark2):
                 return self.expression(exp.ComputedColumnConstraint, this=this.expression)
             return this
 
+        def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
+            # Spark 3+ and Databricks support non aggregate functions in PIVOT too, e.g
+            # PIVOT (..., 'foo' AS bar FOR col_to_pivot IN (...))
+            aggregate_expr = self._parse_function() or self._parse_disjunction()
+            return self._parse_alias(aggregate_expr)
+
     class Generator(Spark2.Generator):
         SUPPORTS_TO_NUMBER = True
         PAD_FILL_PATTERN_IS_REQUIRED = False

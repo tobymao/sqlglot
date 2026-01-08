@@ -297,9 +297,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     exp.HexString: {
         "annotator": lambda self, e: self._set_type(
             e,
-            exp.DataType.Type.BIGINT
-            if self.dialect.HEX_STRING_IS_INTEGER_TYPE
-            else exp.DataType.Type.BINARY,
+            exp.DataType.Type.BIGINT if e.args.get("is_integer") else exp.DataType.Type.BINARY,
         )
     },
     exp.GenerateSeries: {

@@ -785,10 +785,10 @@ def _bitshift_sql(
     this = expression.this
 
     # Ensure type annotation is available for nested expressions
-    if not this.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        this = annotate_types(this, dialect=self.dialect)
+    #    if not this.type:
+    #        from sqlglot.optimizer.annotate_types import annotate_types
+    #
+    #        this = annotate_types(this, dialect=self.dialect)
 
     # Deal with binary separately, remember the original type, cast back later
     if _is_binary(this):

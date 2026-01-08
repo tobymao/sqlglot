@@ -2010,18 +2010,19 @@ class DuckDB(Dialect):
             this = expression.this
             time_format = self.format_time(expression)
             safe = expression.args.get("safe")
+            time_type = exp.DataType.build("TIME", dialect="duckdb")
 
             if time_format:
                 func_name = "TRY_STRPTIME" if safe else "STRPTIME"
-                cast_type = "TRY_CAST" if safe else "CAST"
-                return f"{cast_type}({self.func(func_name, this, time_format)} AS TIME)"
+                strptime = exp.Anonymous(this=func_name, expressions=[this, time_format])
+                cast_expr = exp.TryCast if safe else exp.Cast
+                return self.sql(cast_expr(this=strptime, to=time_type))
 
             if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
                 return self.sql(this)
 
-            if safe:
-                return f"TRY_CAST({self.sql(this)} AS TIME)"
-            return f"CAST({self.sql(this)} AS TIME)"
+            cast_expr = exp.TryCast if safe else exp.Cast
+            return self.sql(cast_expr(this=this, to=time_type))
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
             if not expression.this:

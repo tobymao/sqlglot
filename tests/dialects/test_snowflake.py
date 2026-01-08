@@ -4480,6 +4480,24 @@ FROM SEMANTIC_VIEW(
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "NULL")
 
+        # Test transpile() without annotate_types - should wrap with HEX() to match Snowflake display
+        self.validate_all(
+            "TO_BINARY('TEST', 'UTF-8')",
+            write={
+                "duckdb": "HEX(ENCODE('TEST'))",
+                "snowflake": "TO_BINARY('TEST', 'UTF-8')",
+            },
+        )
+
+        # Test ANY_VALUE with TO_BINARY - integration test
+        self.validate_all(
+            "SELECT ANY_VALUE(binary_col) FROM (SELECT TO_BINARY('test1', 'UTF-8') AS binary_col) t",
+            write={
+                "duckdb": "SELECT ANY_VALUE(binary_col) FROM (SELECT HEX(ENCODE('test1')) AS binary_col) AS t",
+                "snowflake": "SELECT ANY_VALUE(binary_col) FROM (SELECT TO_BINARY('test1', 'UTF-8') AS binary_col) AS t",
+            },
+        )
+
     def test_transpile_bitwise_ops(self):
         # Binary bitwise operations
         expr = self.parse_one("SELECT BITOR(x'FF', x'0F')", dialect="snowflake")

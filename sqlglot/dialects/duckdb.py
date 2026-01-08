@@ -1797,7 +1797,10 @@ class DuckDB(Dialect):
             if format_arg:
                 fmt = format_arg.name.upper()
 
-            if expression.is_type(exp.DataType.Type.BINARY):
+            # Check type annotation OR explicit format parameter (for transpile() without annotate_types)
+            if expression.is_type(exp.DataType.Type.BINARY) or (
+                format_arg and fmt in ("UTF-8", "HEX", "BASE64")
+            ):
                 if fmt == "UTF-8":
                     result = self.func("ENCODE", value)
                 elif fmt == "BASE64":
@@ -1810,6 +1813,14 @@ class DuckDB(Dialect):
                     else:
                         self.unsupported(f"format {fmt} is not supported")
                         result = self.func("TO_BINARY", value)
+
+                # Wrap with HEX() if no type annotation but has format (to match Snowflake hex display)
+                if (
+                    not expression.is_type(exp.DataType.Type.BINARY)
+                    and format_arg
+                    and fmt in ("UTF-8", "HEX", "BASE64")
+                ):
+                    result = self.func("HEX", result)
 
                 # Wrap with TRY() for TRY_TO_BINARY
                 if is_safe:

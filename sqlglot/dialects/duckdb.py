@@ -1499,21 +1499,15 @@ class DuckDB(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.YearOfWeek: lambda self, e: self.sql(
-                exp.cast(
-                    exp.Extract(
-                        this=exp.Var(this="ISOYEAR"),
-                        expression=e.this,
-                    ),
-                    exp.DataType.build("BIGINT"),
+                exp.Extract(
+                    this=exp.Var(this="ISOYEAR"),
+                    expression=e.this,
                 )
             ),
             exp.YearOfWeekIso: lambda self, e: self.sql(
-                exp.cast(
-                    exp.Extract(
-                        this=exp.Var(this="ISOYEAR"),
-                        expression=e.this,
-                    ),
-                    exp.DataType.build("BIGINT"),
+                exp.Extract(
+                    this=exp.Var(this="ISOYEAR"),
+                    expression=e.this,
                 )
             ),
             exp.Xor: bool_xor_sql,

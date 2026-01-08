@@ -2148,8 +2148,8 @@ class DuckDB(Dialect):
                         "this",
                         exp.Order(
                             this=func.this.copy(),
-                            expressions=order.expressions.copy() if order.expressions else []
-                        )
+                            expressions=order.expressions.copy() if order.expressions else [],
+                        ),
                     )
 
                     # Generate the ARRAY_AGG function with ORDER BY
@@ -2162,7 +2162,9 @@ class DuckDB(Dialect):
                         if isinstance(parent, exp.Filter):
                             # Already has FILTER, modify it
                             parent_cond = parent.expression.this
-                            parent_cond.replace(parent_cond.and_(original_this.is_(exp.null()).not_()))
+                            parent_cond.replace(
+                                parent_cond.and_(original_this.is_(exp.null()).not_())
+                            )
                         else:
                             # Add FILTER clause using original column
                             if original_this.find(exp.Column):

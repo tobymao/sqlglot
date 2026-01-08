@@ -2234,8 +2234,8 @@ class Generator(metaclass=_Generator):
 
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")
-        set_sql = self.expressions(expression, flat=True)
         join_sql, from_sql = self._update_from_joins_sql(expression)
+        set_sql = self.expressions(expression, flat=True)
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")

@@ -1340,7 +1340,17 @@ class MySQL(Dialect):
             if not from_expr:
                 return ("", "")
 
-            table = from_expr.this.copy()
+            # Qualify unqualified columns in SET clause with the target table
+            # MySQL requires qualified column names in multi-table UPDATE to avoid ambiguity
+            target_table = expression.this
+            if isinstance(target_table, exp.Table):
+                target_name = target_table.alias_or_name
+                for eq in expression.expressions:
+                    col = eq.this
+                    if isinstance(col, exp.Column) and not col.table:
+                        col.set("table", exp.to_identifier(target_name))
+
+            table = from_expr.this
             nested_joins = table.args.get("joins") or []
             if nested_joins:
                 table.set("joins", None)
@@ -1348,7 +1358,6 @@ class MySQL(Dialect):
             join_sql = self.sql(exp.Join(this=table, on=exp.true()))
             for nested in nested_joins:
                 if not nested.args.get("on") and not nested.args.get("using"):
-                    nested = nested.copy()
                     nested.set("on", exp.true())
                 join_sql += self.sql(nested)
 

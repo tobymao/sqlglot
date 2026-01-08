@@ -1498,6 +1498,18 @@ class DuckDB(Dialect):
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.YearOfWeek: lambda self, e: self.sql(
+                exp.Extract(
+                    this=exp.Var(this="ISOYEAR"),
+                    expression=e.this,
+                )
+            ),
+            exp.YearOfWeekIso: lambda self, e: self.sql(
+                exp.Extract(
+                    this=exp.Var(this="ISOYEAR"),
+                    expression=e.this,
+                )
+            ),
             exp.Xor: bool_xor_sql,
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN")

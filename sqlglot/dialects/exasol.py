@@ -556,9 +556,6 @@ class Exasol(Dialect):
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
             exp.LastDay: no_last_day_sql,
-            exp.Systimestamp: lambda self, e: self.func("SYSTIMESTAMP", e.this)
-            if e.this
-            else "SYSTIMESTAMP",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

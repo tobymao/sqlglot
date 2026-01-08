@@ -2869,7 +2869,7 @@ class TestSnowflake(Validator):
             "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
             write={
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
-                "duckdb": "SELECT CAST(STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
         )
 

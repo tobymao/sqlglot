@@ -4467,18 +4467,22 @@ class Generator(metaclass=_Generator):
     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
         this = expression.this
         time_format = self.format_time(expression)
+        safe = expression.args.get("safe")
 
         if time_format:
-            return self.sql(
-                exp.cast(
-                    exp.StrToTime(this=this, format=expression.args["format"]),
-                    exp.DataType.Type.TIME,
-                )
+            str_to_time = exp.StrToTime(this=this, format=expression.args["format"], safe=safe)
+            cast_expr = (
+                exp.TryCast(this=str_to_time, to=exp.DataType.build(exp.DataType.Type.TIME))
+                if safe
+                else exp.cast(str_to_time, exp.DataType.Type.TIME)
             )
+            return self.sql(cast_expr)
 
         if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
             return self.sql(this)
 
+        if safe:
+            return self.sql(exp.TryCast(this=this, to=exp.DataType.build(exp.DataType.Type.TIME)))
         return self.sql(exp.cast(this, exp.DataType.Type.TIME))
 
     def tsordstotimestamp_sql(self, expression: exp.TsOrDsToTimestamp) -> str:

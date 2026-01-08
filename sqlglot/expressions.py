@@ -6425,7 +6425,7 @@ class Localtimestamp(Func):
 
 
 class Systimestamp(Func):
-    arg_types = {}
+    arg_types = {"this": False}
 
 
 class CurrentTimestamp(Func):

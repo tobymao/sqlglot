@@ -487,14 +487,14 @@ class TestSnowflake(Validator):
             "SELECT YEAROFWEEK('2024-12-31'::DATE)",
             write={
                 "snowflake": "SELECT YEAROFWEEK(CAST('2024-12-31' AS DATE))",
-                "duckdb": "SELECT CAST(EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE)) AS BIGINT)",
+                "duckdb": "SELECT EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE))",
             },
         )
         self.validate_all(
             "SELECT YEAROFWEEKISO('2024-12-31'::DATE)",
             write={
                 "snowflake": "SELECT YEAROFWEEKISO(CAST('2024-12-31' AS DATE))",
-                "duckdb": "SELECT CAST(EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE)) AS BIGINT)",
+                "duckdb": "SELECT EXTRACT(ISOYEAR FROM CAST('2024-12-31' AS DATE))",
             },
         )
         self.validate_all(

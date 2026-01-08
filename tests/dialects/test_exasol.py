@@ -10,7 +10,8 @@ class TestExasol(Validator):
             "SELECT 1 AS [x]",
             'SELECT 1 AS "x"',
         )
-        self.validate_identity("SELECT SYSTIMESTAMP")
+        self.validate_identity("SYSTIMESTAMP", "SYSTIMESTAMP()")
+        self.validate_identity("SELECT SYSTIMESTAMP()")
         self.validate_identity("SELECT SYSTIMESTAMP(6)")
 
     def test_qualify_unscoped_star(self):

@@ -7,7 +7,7 @@
     - [Matching text](#matching-text)
     - [Utility methods](#utility-methods)
     - [Command fallback](#command-fallback)
-    - [Expression parsing](#expression-parsing)
+    - [Dialect-specific parsing](#dialect-specific-parsing)
   - [Generator](#generator)
     - [Generating queries](#generating-queries)
     - [Utility methods](#utility-methods-1)

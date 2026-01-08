@@ -1926,7 +1926,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         """
         schema = {"production_tier": {"timeline_date": "DATE", "id": "INT"}}
 
-        # This should not raise an ambiguous column error
         result = optimizer.qualify.qualify(
             parse_one(sql, dialect="bigquery"),
             schema=schema,

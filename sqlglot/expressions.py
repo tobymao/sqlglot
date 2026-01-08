@@ -7566,7 +7566,11 @@ class MD5(Func):
 
 
 # Represents the variant of the MD5 function that returns a binary value
+# Var len args due to Exasol:
+# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hashtype_md5.htm
 class MD5Digest(Func):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
     _sql_names = ["MD5_DIGEST"]
 
 

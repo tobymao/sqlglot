@@ -320,6 +320,7 @@ class Exasol(Dialect):
             "ENDIF": TokenType.END,
             "LONG VARCHAR": TokenType.TEXT,
             "SEPARATOR": TokenType.SEPARATOR,
+            "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
         }
         KEYWORDS.pop("DIV")
 
@@ -388,6 +389,17 @@ class Exasol(Dialect):
                 this=self._match(TokenType.IS) and self._parse_string(),
             ),
         }
+
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.SYSTIMESTAMP,
+        }
+
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.SYSTIMESTAMP: exp.Systimestamp,
+        }
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
@@ -544,6 +556,9 @@ class Exasol(Dialect):
             exp.Timestamp: rename_func("TO_TIMESTAMP"),
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
             exp.LastDay: no_last_day_sql,
+            exp.Systimestamp: lambda self, e: self.func("SYSTIMESTAMP", e.this)
+            if e.this
+            else "SYSTIMESTAMP",
         }
 
         def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:

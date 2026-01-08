@@ -108,6 +108,7 @@ class Oracle(Dialect):
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
+            "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
         }
 
     class Parser(parser.Parser):
@@ -137,6 +138,11 @@ class Oracle(Dialect):
             "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
             "DBMS_RANDOM": lambda self: self._parse_dbms_random(),
+        }
+
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.SYSTIMESTAMP: exp.Systimestamp,
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -368,6 +374,7 @@ class Oracle(Dialect):
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
             exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
             exp.UtcTime: rename_func("UTC_TIME"),
+            exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {

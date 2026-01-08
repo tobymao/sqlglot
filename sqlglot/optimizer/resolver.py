@@ -78,16 +78,7 @@ class Resolver:
 
         node_alias = node.args.get("alias")
         if node_alias:
-            alias_name = node_alias.this
-            if (
-                not alias_name
-                and isinstance(node_alias, exp.TableAlias)
-                and len(node_alias.columns) == 1
-            ):
-                # For BigQuery UNNEST_COLUMN_ONLY, alias.this is None and
-                # the actual alias is stored in alias.columns[0]
-                alias_name = node_alias.columns[0]
-            return exp.to_identifier(alias_name)
+            return exp.to_identifier(node_alias.this)
 
         return exp.to_identifier(table_name)
 

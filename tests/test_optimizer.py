@@ -1934,10 +1934,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
         result_sql = result.sql(dialect="bigquery")
-        # Verify the UNNEST alias is preserved as 'timeline_date'
-        self.assertIn("AS `timeline_date`", result_sql)
-        # Verify the unqualified timeline_date in SELECT is NOT qualified to production_tier
-        self.assertNotIn("`production_tier`.`timeline_date` AS", result_sql)
+        self.assertEqual(
+            result_sql,
+            "SELECT `timeline_date` AS `timeline_date` "
+            "FROM UNNEST(GENERATE_DATE_ARRAY('2020-01-01', '2020-01-03', INTERVAL '1' DAY)) AS `timeline_date` "
+            "LEFT JOIN `production_tier` AS `production_tier` "
+            "ON `production_tier`.`timeline_date` = `timeline_date`",
+        )
 
     def test_annotate_object_construct(self):
         sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"

@@ -649,6 +649,17 @@ TBLPROPERTIES (
             },
         )
 
+        self.validate_all(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) AS amount, 'dummy' AS bar FOR quarter IN ('2023_Q1'))",
+            read={
+                "spark": "SELECT * FROM quarterly_sales PIVOT(SUM(amount) amount, 'dummy' bar FOR quarter IN ('2023_Q1'))",
+                "databricks": "SELECT * FROM quarterly_sales PIVOT(SUM(amount) amount, 'dummy' bar FOR quarter IN ('2023_Q1'))",
+            },
+            write={
+                "databricks": "SELECT * FROM quarterly_sales PIVOT(SUM(amount) AS amount, 'dummy' AS bar FOR quarter IN ('2023_Q1'))",
+            },
+        )
+
         for data_type in (
             "BOOLEAN",
             "DATE",

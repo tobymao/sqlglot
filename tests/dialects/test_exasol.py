@@ -715,6 +715,8 @@ class TestExasol(Validator):
             "SELECT name, age, IF age < 18 THEN 'underaged' ELSE 'adult' ENDIF AS LEGALITY FROM persons"
         )
 
+        self.validate_identity("SELECT HASHTYPE_MD5(a, b, c, d)")
+
     def test_odbc_date_literals(self):
         self.validate_identity("SELECT {d'2024-01-01'}", "SELECT TO_DATE('2024-01-01')")
         self.validate_identity(

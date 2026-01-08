@@ -2223,6 +2223,7 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+<<<<<<< Updated upstream
             "NORMAL(0, 1, 42)",
             write={
                 "snowflake": "NORMAL(0, 1, 42)",
@@ -2244,6 +2245,14 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("SYSDATE()")
+=======
+            "SYSDATE()",
+            write={
+                "snowflake": "SYS1DATE()",
+                "duckdb": "TIMEZONE('UTC', CURRENT_TIMESTAMP)",
+            },
+        )
+>>>>>>> Stashed changes
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")

@@ -701,9 +701,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if this_type and this_type.is_type(exp.DataType.Type.STRUCT):
             for e in this_type.expressions:
-                # Normalize for comparison, but create a copy instead of mutating the original
-                normalized_field = self.dialect.normalize_identifier(e.copy().this)
-                if normalized_field.name == expression.expression.name:
+                if e.name == expression.expression.name:
                     self._set_type(expression, e.kind)
                     break
 

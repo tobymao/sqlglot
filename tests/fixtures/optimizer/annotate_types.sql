@@ -186,3 +186,31 @@ FLOAT64;
 # dialect: bigquery
 CASE WHEN x < y THEN CAST(3.5 AS BIGNUMERIC) WHEN x > y THEN 3/10 ELSE 2 END;
 FLOAT64;
+
+# dialect: bigquery
+CAST(1 AS BIGNUMERIC) + 1.5;
+BIGNUMERIC;
+
+# dialect: bigquery
+1.5 + CAST(1 AS BIGNUMERIC);
+BIGNUMERIC;
+
+# dialect: bigquery
+1.5 + CAST(1 AS FLOAT64);
+FLOAT64;
+
+# dialect: bigquery
+CAST(1 AS FLOAT64) + 1.5;
+FLOAT64;
+
+# dialect: bigquery
+CAST(1 AS INT) + 1.5;
+FLOAT64;
+
+# dialect: bigquery
+1.5 + CAST(1 AS INT);
+FLOAT64;
+
+# dialect: bigquery
+IF(1 = 1, CAST(1 AS BIGNUMERIC) * 1.5, CAST(2 AS BIGNUMERIC));
+BIGNUMERIC;

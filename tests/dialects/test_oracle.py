@@ -54,7 +54,8 @@ class TestOracle(Validator):
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
-            "SELECT (TIMESTAMP '2025-12-30 20:00:00' - TIMESTAMP '2025-12-29 14:30:00') DAY TO SECOND"
+            "SELECT (TIMESTAMP '2025-12-30 20:00:00' - TIMESTAMP '2025-12-29 14:30:00') DAY TO SECOND",
+            "SELECT (TO_TIMESTAMP('2025-12-30 20:00:00', 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP('2025-12-29 14:30:00', 'YYYY-MM-DD HH24:MI:SS')) DAY TO SECOND",
         )
         self.validate_identity("SELECT (SYSTIMESTAMP - order_date) DAY(9) TO SECOND FROM orders")
         self.validate_identity("SELECT (SYSTIMESTAMP - order_date) DAY(9) TO SECOND(3) FROM orders")

@@ -174,7 +174,11 @@ class Oracle(Dialect):
                 exp.DateStrToDate, this=this
             ),
             exp.DataType.Type.TIMESTAMP: lambda self, this, _: self.expression(
-                exp.Timestamp, this=this
+                exp.StrToTime,
+                this=this,
+                format=exp.Literal.string(
+                    "%Y-%m-%d %H:%M:%S.%f" if "." in this.name else "%Y-%m-%d %H:%M:%S"
+                ),
             ),
         }
 

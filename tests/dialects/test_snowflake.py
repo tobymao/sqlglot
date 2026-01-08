@@ -976,6 +976,7 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT GETBIT(11, 3)",
                 "databricks": "SELECT GETBIT(11, 3)",
                 "redshift": "SELECT GETBIT(11, 3)",
+                "duckdb": "SELECT GET_BIT(CAST(CAST(11 AS INT128) AS BIT), 127 - 3)",
             },
         )
         self.validate_identity(

@@ -1848,6 +1848,41 @@ class DuckDB(Dialect):
             replacements = {"s": s, "n": n, "random_expr": random_expr}
             return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
 
+        def getbit_sql(self: DuckDB.Generator, expression: exp.Getbit) -> str:
+            """
+            Transpile GETBIT to DuckDB with comprehensive compatibility handling.
+
+            Handles potential differences:
+            1. Bit indexing: DuckDB counts from the most significant bit, while dialects like Snowflake counts from the least significant bit
+            2. Bit length: Snowflake treat input as 128-bit, so when transpiling to DuckDB we need to cast to HUGEINT
+            """
+            value = expression.this
+            position = expression.expression
+            lsb_first = expression.args.get("lsb_first", False)
+            fix_bit_length = expression.args.get("fix_bit_length")
+
+
+            # Cast to appropriate integer type first to ensure enough bits, then to BIT
+            # For 128-bit compatibility, we need at least HUGEINT (128-bit integer in DuckDB)
+            if fix_bit_length and fix_bit_length > 64:
+                 value = exp.cast(value, exp.DataType.Type.INT128)
+                 #value = exp.Cast(this=expression.this, to=exp.DataType(this=exp.DataType.Type.INT128))
+            
+            # Then cast the appropriately-sized integer to BIT
+            bit_value = exp.cast(value, exp.DataType.Type.BIT)
+
+            # Handle bit position conversion if coming from LSB-first system
+            adjusted_position = position
+
+            if lsb_first:
+                # Convert LSB-first position to MSB-first position: MSB_pos = (width - 1) - LSB_pos
+                adjusted_position = exp.Sub(
+                    this=exp.Literal.number(fix_bit_length - 1),
+                    expression=position
+                )
+                
+            return self.func("GET_BIT", bit_value, adjusted_position)
+
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """
             TO_BINARY and TRY_TO_BINARY transpilation:

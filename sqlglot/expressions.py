@@ -6939,7 +6939,7 @@ class GetExtract(Func):
 
 
 class Getbit(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "lsb_first": False, "fix_bit_length": False}
 
 
 class Greatest(Func):

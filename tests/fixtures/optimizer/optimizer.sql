@@ -1536,3 +1536,16 @@ FROM "t1" AS "t1"
 RIGHT JOIN "t2" AS "t2"
   ON "t1"."id1" = "t2"."id2"
 CROSS JOIN "t3" AS "t3";
+
+# title: unnested subquery show before the reference
+# execute: false
+WITH t2 AS (SELECT t1.c1::bigint AS ref1 FROM GENERATE_SERIES((SELECT MAX(a) FROM x), 10, 1) AS t1(c1)) SELECT * FROM t2;
+WITH "_u_0" AS (
+  SELECT
+    MAX("x"."a") AS "_col_0"
+  FROM "x" AS "x"
+)
+SELECT
+  CAST("t1"."c1" AS BIGINT) AS "ref1"
+FROM "_u_0" AS "_u_0"
+CROSS JOIN GENERATE_SERIES("_u_0"."_col_0", 10, 1) AS "t1"("c1");

@@ -946,7 +946,7 @@ TBLPROPERTIES (
             write={
                 "spark2": "TRIM(LEADING 'a' FROM 'ab')",
                 "spark": "TRIM(LEADING 'a' FROM 'ab')",
-                "databricks": "TRIM(LEADING 'a' FROM 'ab')"
+                "databricks": "TRIM(LEADING 'a' FROM 'ab')",
             },
         )
         self.validate_all(
@@ -954,7 +954,7 @@ TBLPROPERTIES (
             write={
                 "spark2": "TRIM(TRAILING 'a' FROM 'ba')",
                 "spark": "TRIM(TRAILING 'a' FROM 'ba')",
-                "databricks": "TRIM(TRAILING 'a' FROM 'ba')"
+                "databricks": "TRIM(TRAILING 'a' FROM 'ba')",
             },
         )
 

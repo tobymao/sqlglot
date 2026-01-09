@@ -820,6 +820,14 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.TIME)
         elif part == "DATE":
             self._set_type(expression, exp.DataType.Type.DATE)
+        elif part in (
+            "EPOCH_SECOND",
+            "EPOCH_MILLISECOND",
+            "EPOCH_MICROSECOND",
+            "EPOCH_NANOSECOND",
+            "NANOSECOND",
+        ):
+            self._set_type(expression, exp.DataType.Type.BIGINT)
         else:
             self._set_type(expression, exp.DataType.Type.INT)
         return expression

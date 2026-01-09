@@ -2247,7 +2247,7 @@ class TestSnowflake(Validator):
             "SYSDATE()",
             write={
                 "snowflake": "SYSDATE()",
-                "duckdb": "TIMEZONE('UTC', CURRENT_TIMESTAMP)",
+                "duckdb": "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'",
             },
         )
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")

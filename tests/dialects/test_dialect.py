@@ -3474,10 +3474,16 @@ FROM subquery2""",
             read={
                 "bigquery": "TRIM('abc', 'a')",
                 "snowflake": "TRIM('abc', 'a')",
+                "spark2": "TRIM('a', 'abc')",
+                "spark": "TRIM('a', 'abc')",
+                "databricks": "TRIM('a', 'abc')",
             },
             write={
                 "bigquery": "TRIM('abc', 'a')",
                 "snowflake": "TRIM('abc', 'a')",
+                "spark2": "TRIM('a' FROM 'abc')",
+                "spark": "TRIM('a' FROM 'abc')",
+                "databricks": "TRIM('a' FROM 'abc')",
             },
         )
 

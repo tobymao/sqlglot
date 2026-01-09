@@ -8365,7 +8365,7 @@ class NextDay(Func):
 
 class XMLElement(Func):
     _sql_names = ["XMLELEMENT"]
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "evalname": False}
 
 
 class XMLGet(Func):

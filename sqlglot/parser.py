@@ -1300,11 +1300,7 @@ class Parser(metaclass=_Parser):
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
         "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
-        "XMLELEMENT": lambda self: self.expression(
-            exp.XMLElement,
-            this=self._match_text_seq("NAME") and self._parse_id_var(),
-            expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_expression),
-        ),
+        "XMLELEMENT": lambda self: self._parse_xml_element(),
         "XMLTABLE": lambda self: self._parse_xml_table(),
     }
 
@@ -6897,6 +6893,22 @@ class Parser(metaclass=_Parser):
             to = None
 
         return self.build_cast(strict=strict, this=this, to=to, safe=safe)
+
+    def _parse_xml_element(self) -> exp.XMLElement:
+        if self._match_text_seq("EVALNAME"):
+            evalname = True
+            this = self._parse_bitwise()
+        else:
+            evalname = None
+            self._match_text_seq("NAME")
+            this = self._parse_id_var()
+
+        return self.expression(
+            exp.XMLElement,
+            this=this,
+            expressions=self._match(TokenType.COMMA) and self._parse_csv(self._parse_bitwise),
+            evalname=evalname,
+        )
 
     def _parse_xml_table(self) -> exp.XMLTable:
         namespaces = None

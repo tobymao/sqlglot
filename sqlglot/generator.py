@@ -5168,7 +5168,8 @@ class Generator(metaclass=_Generator):
         return include
 
     def xmlelement_sql(self, expression: exp.XMLElement) -> str:
-        name = f"NAME {self.sql(expression, 'this')}"
+        prefix = "EVALNAME" if expression.args.get("evalname") else "NAME"
+        name = f"{prefix} {self.sql(expression, 'this')}"
         return self.func("XMLELEMENT", name, *expression.expressions)
 
     def xmlkeyvalueoption_sql(self, expression: exp.XMLKeyValueOption) -> str:

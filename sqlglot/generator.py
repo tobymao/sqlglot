@@ -515,6 +515,11 @@ class Generator(metaclass=_Generator):
     # Whether to include the VARIABLE keyword for SET assignments
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = False
 
+    # Whether FROM is supported in UPDATE statements or if joins must be generated instead, e.g:
+    # Supported (Postgres, Doris etc): UPDATE t1 SET t1.a = t2.b FROM t2
+    # Unsupported (MySQL, SingleStore): UPDATE t1 JOIN t2 ON TRUE SET t1.a = t2.b
+    UPDATE_STATEMENT_SUPPORTS_FROM = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2228,9 +2233,32 @@ class Generator(metaclass=_Generator):
         Returns (join_sql, from_sql) for UPDATE statements.
         - join_sql: placed after UPDATE table, before SET
         - from_sql: placed after SET clause (standard position)
-        Dialects like MySQL override to convert FROM to JOIN syntax.
+        Dialects like MySQL need to convert FROM to JOIN syntax.
         """
-        return ("", self.sql(expression, "from_"))
+        if self.UPDATE_STATEMENT_SUPPORTS_FROM or not (from_expr := expression.args.get("from_")):
+            return ("", self.sql(expression, "from_"))
+
+        # Qualify unqualified columns in SET clause with the target table
+        # MySQL requires qualified column names in multi-table UPDATE to avoid ambiguity
+        target_table = expression.this
+        if isinstance(target_table, exp.Table):
+            target_name = exp.to_identifier(target_table.alias_or_name)
+            for eq in expression.expressions:
+                col = eq.this
+                if isinstance(col, exp.Column) and not col.table:
+                    col.set("table", target_name)
+
+        table = from_expr.this
+        if nested_joins := table.args.get("joins", []):
+            table.set("joins", None)
+
+        join_sql = self.sql(exp.Join(this=table, on=exp.true()))
+        for nested in nested_joins:
+            if not nested.args.get("on") and not nested.args.get("using"):
+                nested.set("on", exp.true())
+            join_sql += self.sql(nested)
+
+        return (join_sql, "")
 
     def update_sql(self, expression: exp.Update) -> str:
         this = self.sql(expression, "this")

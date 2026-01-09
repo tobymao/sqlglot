@@ -178,6 +178,7 @@ class Doris(MySQL):
         VARCHAR_REQUIRES_SIZE = False
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
         RENAME_TABLE_WITH_DB = False
+        UPDATE_STATEMENT_SUPPORTS_FROM = True
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,

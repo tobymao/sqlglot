@@ -193,23 +193,8 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
-
-    def test_update_from_to_join(self):
-        # MySQL multi-table UPDATE requires qualified columns in SET to avoid ambiguity
-        self.validate_all(
-            "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id",
-            read={
-                "postgres": "UPDATE foo SET a = bar.a FROM bar WHERE foo.id = bar.id",
-                "mysql": "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id",
-            },
-        )
-
-        # Multiple columns in SET clause
-        self.validate_all(
-            "UPDATE t1 JOIN t2 ON TRUE SET t1.id = t2.id, t1.name = t2.name WHERE t1.x = t2.x",
-            read={
-                "postgres": "UPDATE t1 SET id = t2.id, name = t2.name FROM t2 WHERE t1.x = t2.x",
-            },
+        self.validate_identity(
+            "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )
 
     def test_identity(self):

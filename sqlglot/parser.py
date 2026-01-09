@@ -155,12 +155,13 @@ def build_convert_timezone(
     return exp.ConvertTimezone.from_arg_list(args)
 
 
-def build_trim(args: t.List, is_left: bool = True):
-    return exp.Trim(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        position="LEADING" if is_left else "TRAILING",
-    )
+def build_trim(args: t.List, is_left: bool = True, reverse_args: bool = False):
+    this, expression = seq_get(args, 0), seq_get(args, 1)
+
+    if expression and reverse_args:
+        this, expression = expression, this
+
+    return exp.Trim(this=this, expression=expression, position="LEADING" if is_left else "TRAILING")
 
 
 def build_coalesce(

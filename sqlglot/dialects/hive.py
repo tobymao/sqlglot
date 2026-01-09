@@ -30,6 +30,7 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     time_format,
     timestrtotime_sql,
+    trim_sql,
     unit_to_str,
     var_map_sql,
     sequence_sql,
@@ -660,6 +661,7 @@ class Hive(Dialect):
             exp.TsOrDsDiff: _date_diff_sql,
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
+            exp.Trim: trim_sql,
             exp.Unicode: rename_func("ASCII"),
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("hive")(self, e)

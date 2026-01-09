@@ -471,8 +471,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
             try:
                 expression = exp.DataType.build(schema_type, dialect=dialect, udt=udt)
-                if expression.is_type(exp.DataType.Type.STRUCT):
-                    expression.transform(dialect.normalize_identifier, copy=False)
+                expression.transform(dialect.normalize_identifier, copy=False)
                 self._type_mapping_cache[schema_type] = expression
             except AttributeError:
                 in_dialect = f" in dialect {dialect}" if dialect else ""

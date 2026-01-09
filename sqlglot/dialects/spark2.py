@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     is_parse_json,
     pivot_column_names,
     rename_func,
-    trim_sql,
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
@@ -291,7 +290,6 @@ class Spark2(Hive):
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
-            exp.Trim: trim_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

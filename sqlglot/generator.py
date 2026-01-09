@@ -1461,7 +1461,15 @@ class Generator(metaclass=_Generator):
     def datatype_sql(self, expression: exp.DataType) -> str:
         nested = ""
         values = ""
-        interior = self.expressions(expression, flat=True)
+
+        expr_nested = expression.args.get("nested")
+        interior = (
+            self.expressions(
+                expression, dynamic=True, new_line=True, skip_first=True, skip_last=True
+            )
+            if expr_nested and self.pretty
+            else self.expressions(expression, flat=True)
+        )
 
         type_value = expression.this
         if type_value in self.UNSUPPORTED_TYPES:
@@ -1479,7 +1487,7 @@ class Generator(metaclass=_Generator):
             )
 
         if interior:
-            if expression.args.get("nested"):
+            if expr_nested:
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
                 if expression.args.get("values") is not None:
                     delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")

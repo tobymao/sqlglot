@@ -2322,7 +2322,7 @@ class TestSnowflake(Validator):
 
         self.validate_identity(
             "SELECT a, b FROM t1 GROUP BY ALL MINUS SELECT a, b FROM t1 GROUP BY ALL",
-            "SELECT a, b FROM t1 GROUP BY ALL EXCEPT SELECT a, b FROM t1 GROUP BY ALL"
+            "SELECT a, b FROM t1 GROUP BY ALL EXCEPT SELECT a, b FROM t1 GROUP BY ALL",
         )
 
         self.validate_identity(

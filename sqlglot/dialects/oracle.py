@@ -449,6 +449,3 @@ class Oracle(Dialect):
 
         def interval_sql(self, expression: exp.Interval) -> str:
             return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
-
-        def timestamp_sql(self, expression: exp.Timestamp) -> str:
-            return f"TIMESTAMP {self.sql(expression, 'this')}"

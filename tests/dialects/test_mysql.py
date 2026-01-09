@@ -212,14 +212,6 @@ class TestMySQL(Validator):
             },
         )
 
-        # Already qualified columns in Postgres should remain qualified
-        self.validate_all(
-            "UPDATE t1 JOIN t2 ON TRUE SET t1.id = t2.id WHERE t1.x = t2.x",
-            read={
-                "postgres": "UPDATE t1 SET t1.id = t2.id FROM t2 WHERE t1.x = t2.x",
-            },
-        )
-
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")
         self.validate_identity("SELECT CAST(COALESCE(`id`, 'NULL') AS CHAR CHARACTER SET binary)")

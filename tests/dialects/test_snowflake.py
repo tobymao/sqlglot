@@ -1778,24 +1778,10 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT BITSHIFTLEFT(X'FF', 4)",
-            write={
-                "snowflake": "SELECT BITSHIFTLEFT(x'FF', 4)",
-                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) << 4 AS BLOB)",
-            },
-        )
-        self.validate_all(
             "SELECT BITSHIFTRIGHT(255, 4)",
             write={
                 "snowflake": "SELECT BITSHIFTRIGHT(255, 4)",
                 "duckdb": "SELECT CAST(255 AS INT128) >> 4",
-            },
-        )
-        self.validate_all(
-            "SELECT BITSHIFTRIGHT(X'FF', 4)",
-            write={
-                "snowflake": "SELECT BITSHIFTRIGHT(x'FF', 4)",
-                "duckdb": "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)",
             },
         )
         self.validate_all(
@@ -3957,8 +3943,6 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             "SELECT TRY_CAST(FOO() AS TEXT)", "SELECT TRY_CAST(FOO() AS VARCHAR)"
         )
 
-        from sqlglot.optimizer.annotate_types import annotate_types
-
         expression = parse_one("SELECT CAST(t.x AS STRING) FROM t", read="hive")
 
         for value_type in ("string", "int"):
@@ -4775,3 +4759,10 @@ FROM SEMANTIC_VIEW(
             "UPDATE sometesttable u FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' query_id ) b SET qry_hash_count = new_count WHERE u.sample_query_id  = b.query_id",
             "UPDATE sometesttable AS u SET qry_hash_count = new_count FROM (SELECT 5195 AS new_count, '01bee1e5-0000-d31e-0000-e80ef02b9f27' AS query_id) AS b WHERE u.sample_query_id = b.query_id",
         )
+
+    def test_type_sensitive_bitshift_transpilation(self):
+        ast = annotate_types(self.parse_one("SELECT BITSHIFTLEFT(X'FF', 4)"), dialect="snowflake")
+        self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) << 4 AS BLOB)")
+
+        ast = annotate_types(self.parse_one("SELECT BITSHIFTRIGHT(X'FF', 4)"), dialect="snowflake")
+        self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)")

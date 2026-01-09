@@ -781,18 +781,11 @@ def _bitshift_sql(
     Note: Assumes type annotation has been applied with the source dialect.
     """
     operator = "<<" if isinstance(expression, exp.BitwiseLeftShift) else ">>"
-    original_type = None
+    result_is_blob = False
     this = expression.this
 
-    # Ensure type annotation is available for nested expressions
-    if not this.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        this = annotate_types(this, dialect=self.dialect)
-
-    # Deal with binary separately, remember the original type, cast back later
     if _is_binary(this):
-        original_type = this.to if isinstance(this, exp.Cast) else exp.DataType.build("BLOB")
+        result_is_blob = True
         expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
     elif expression.args.get("requires_int128"):
         this.replace(exp.cast(this, exp.DataType.Type.INT128))
@@ -804,9 +797,10 @@ def _bitshift_sql(
     if isinstance(expression.parent, exp.Binary):
         result_sql = self.sql(exp.Paren(this=result_sql))
 
-    # Cast the result back to the original type
-    if original_type:
-        result_sql = self.sql(exp.Cast(this=result_sql, to=original_type))
+    if result_is_blob:
+        result_sql = self.sql(
+            exp.Cast(this=result_sql, to=exp.DataType.build("BLOB", dialect="duckdb"))
+        )
 
     return result_sql
 

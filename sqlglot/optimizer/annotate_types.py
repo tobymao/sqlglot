@@ -593,7 +593,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
                     break
-                
+
                 if isinstance(expr, exp.Literal):
                     literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
                 else:

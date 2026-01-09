@@ -3474,44 +3474,118 @@ FROM subquery2""",
             read={
                 "bigquery": "TRIM('abc', 'a')",
                 "snowflake": "TRIM('abc', 'a')",
+                "hive": "TRIM('abc', 'a')",
+                "spark2": "TRIM('a', 'abc')",
+                "spark": "TRIM('a', 'abc')",
+                "databricks": "TRIM('a', 'abc')",
             },
             write={
                 "bigquery": "TRIM('abc', 'a')",
                 "snowflake": "TRIM('abc', 'a')",
+                "hive": "TRIM('a' FROM 'abc')",
+                "spark2": "TRIM('a' FROM 'abc')",
+                "spark": "TRIM('a' FROM 'abc')",
+                "databricks": "TRIM('a' FROM 'abc')",
             },
         )
 
         self.validate_all(
             "LTRIM('Hello World', 'H')",
             read={
+                "": "LTRIM('Hello World', 'H')",
                 "oracle": "LTRIM('Hello World', 'H')",
                 "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
                 "snowflake": "LTRIM('Hello World', 'H')",
                 "bigquery": "LTRIM('Hello World', 'H')",
-                "": "LTRIM('Hello World', 'H')",
+                "hive": "LTRIM('Hello World', 'H')",
+                "spark2": "LTRIM('H', 'Hello World')",
+                "spark": "LTRIM('H', 'Hello World')",
+                "databricks": "LTRIM('H', 'Hello World')",
             },
             write={
                 "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
                 "oracle": "LTRIM('Hello World', 'H')",
                 "snowflake": "LTRIM('Hello World', 'H')",
                 "bigquery": "LTRIM('Hello World', 'H')",
+                "hive": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "spark2": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "spark": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "databricks": "TRIM(LEADING 'H' FROM 'Hello World')",
             },
         )
 
         self.validate_all(
             "RTRIM('Hello World', 'd')",
             read={
+                "": "RTRIM('Hello World', 'd')",
                 "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
                 "oracle": "RTRIM('Hello World', 'd')",
                 "snowflake": "RTRIM('Hello World', 'd')",
                 "bigquery": "RTRIM('Hello World', 'd')",
-                "": "RTRIM('Hello World', 'd')",
+                "hive": "RTRIM('Hello World', 'd')",
+                "spark2": "RTRIM('d', 'Hello World')",
+                "spark": "RTRIM('d', 'Hello World')",
+                "databricks": "RTRIM('d', 'Hello World')",
             },
             write={
                 "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
                 "oracle": "RTRIM('Hello World', 'd')",
                 "snowflake": "RTRIM('Hello World', 'd')",
                 "bigquery": "RTRIM('Hello World', 'd')",
+                "hive": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "spark2": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "spark": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "databricks": "TRIM(TRAILING 'd' FROM 'Hello World')",
+            },
+        )
+
+        self.validate_all(
+            "LTRIM('Hello World')",
+            read={
+                "": "LTRIM('Hello World')",
+                "clickhouse": "LTRIM('Hello World')",
+                "oracle": "LTRIM('Hello World')",
+                "snowflake": "LTRIM('Hello World')",
+                "bigquery": "LTRIM('Hello World')",
+                "hive": "LTRIM('Hello World')",
+                "spark2": "LTRIM('Hello World')",
+                "spark": "LTRIM('Hello World')",
+                "databricks": "LTRIM('Hello World')",
+            },
+            write={
+                "clickhouse": "LTRIM('Hello World')",
+                "oracle": "LTRIM('Hello World')",
+                "snowflake": "LTRIM('Hello World')",
+                "bigquery": "LTRIM('Hello World')",
+                "hive": "LTRIM('Hello World')",
+                "spark2": "LTRIM('Hello World')",
+                "spark": "LTRIM('Hello World')",
+                "databricks": "LTRIM('Hello World')",
+            },
+        )
+
+        self.validate_all(
+            "RTRIM('Hello World')",
+            read={
+                "": "RTRIM('Hello World')",
+                "clickhouse": "RTRIM('Hello World')",
+                "oracle": "RTRIM('Hello World')",
+                "snowflake": "RTRIM('Hello World')",
+                "bigquery": "RTRIM('Hello World')",
+                "hive": "RTRIM('Hello World')",
+                "spark2": "RTRIM('Hello World')",
+                "spark": "RTRIM('Hello World')",
+                "databricks": "RTRIM('Hello World')",
+            },
+            write={
+                "clickhouse": "RTRIM('Hello World')",
+                "oracle": "RTRIM('Hello World')",
+                "snowflake": "RTRIM('Hello World')",
+                "bigquery": "RTRIM('Hello World')",
+                "hive": "RTRIM('Hello World')",
+                "spark2": "RTRIM('Hello World')",
+                "spark": "RTRIM('Hello World')",
+                "databricks": "RTRIM('Hello World')",
             },
         )
 

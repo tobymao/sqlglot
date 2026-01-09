@@ -9,11 +9,11 @@ from sqlglot.dialects.dialect import (
     is_parse_json,
     pivot_column_names,
     rename_func,
-    trim_sql,
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
+from sqlglot.parser import build_trim
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
     preprocess,
@@ -159,9 +159,11 @@ class Spark2(Hive):
                 ),
                 zone=seq_get(args, 1),
             ),
+            "LTRIM": lambda args: build_trim(args, reverse_args=True),
             "INT": _build_as_cast("int"),
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
+            "RTRIM": lambda args: build_trim(args, is_left=False, reverse_args=True),
             "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _build_as_cast("string"),
@@ -288,7 +290,6 @@ class Spark2(Hive):
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
-            exp.Trim: trim_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

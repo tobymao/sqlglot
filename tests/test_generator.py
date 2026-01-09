@@ -65,10 +65,13 @@ class TestGenerator(unittest.TestCase):
             datatype: exp.DataType,
             single_line: str,
             pretty: str,
+            max_text_width: int = 10,
             **kwargs,
         ) -> None:
             self.assertEqual(datatype.sql(), single_line)
-            self.assertEqual(datatype.sql(pretty=True, max_text_width=10, **kwargs), pretty)
+            self.assertEqual(
+                datatype.sql(pretty=True, max_text_width=max_text_width, **kwargs), pretty
+            )
 
         # STRUCT
         type_str = "STRUCT<a INT, b TEXT>"
@@ -76,6 +79,14 @@ class TestGenerator(unittest.TestCase):
             exp.DataType.build(type_str),
             type_str,
             "STRUCT<\n  a INT,\n  b TEXT\n>",
+        )
+
+        # STRUCT - type def shorter than max text width so stays one line
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "STRUCT<a INT, b TEXT>",
+            max_text_width=50,
         )
 
         # STRUCT, leading_comma = True

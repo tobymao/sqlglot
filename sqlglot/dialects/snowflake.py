@@ -123,7 +123,11 @@ def _build_datetime(
                     strtotime_expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
                     return strtotime_expr
 
-        if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and not int_value:
+        # Handle DATE/TIME with format strings - allow int_value if a format string is provided
+        has_format_string = scale_or_fmt and not int_scale_or_fmt
+        if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and (
+            not int_value or has_format_string
+        ):
             klass = exp.TsOrDsToDate if kind == exp.DataType.Type.DATE else exp.TsOrDsToTime
             formatted_exp = build_formatted_time(klass, "snowflake")(args)
             formatted_exp.set("safe", safe)

@@ -3484,34 +3484,46 @@ FROM subquery2""",
         self.validate_all(
             "LTRIM('Hello World', 'H')",
             read={
+                "": "LTRIM('Hello World', 'H')",
                 "oracle": "LTRIM('Hello World', 'H')",
                 "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
                 "snowflake": "LTRIM('Hello World', 'H')",
                 "bigquery": "LTRIM('Hello World', 'H')",
-                "": "LTRIM('Hello World', 'H')",
+                "spark2": "LTRIM('H', 'Hello World')",
+                "spark": "LTRIM('H', 'Hello World')",
+                "databricks": "LTRIM('H', 'Hello World')",
             },
             write={
                 "clickhouse": "TRIM(LEADING 'H' FROM 'Hello World')",
                 "oracle": "LTRIM('Hello World', 'H')",
                 "snowflake": "LTRIM('Hello World', 'H')",
                 "bigquery": "LTRIM('Hello World', 'H')",
+                "spark2": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "spark": "TRIM(LEADING 'H' FROM 'Hello World')",
+                "databricks": "TRIM(LEADING 'H' FROM 'Hello World')",
             },
         )
 
         self.validate_all(
             "RTRIM('Hello World', 'd')",
             read={
+                "": "RTRIM('Hello World', 'd')",
                 "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
                 "oracle": "RTRIM('Hello World', 'd')",
                 "snowflake": "RTRIM('Hello World', 'd')",
                 "bigquery": "RTRIM('Hello World', 'd')",
-                "": "RTRIM('Hello World', 'd')",
+                "spark2": "RTRIM('d', 'Hello World')",
+                "spark": "RTRIM('d', 'Hello World')",
+                "databricks": "RTRIM('d', 'Hello World')",
             },
             write={
                 "clickhouse": "TRIM(TRAILING 'd' FROM 'Hello World')",
                 "oracle": "RTRIM('Hello World', 'd')",
                 "snowflake": "RTRIM('Hello World', 'd')",
                 "bigquery": "RTRIM('Hello World', 'd')",
+                "spark2": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "spark": "TRIM(TRAILING 'd' FROM 'Hello World')",
+                "databricks": "TRIM(TRAILING 'd' FROM 'Hello World')",
             },
         )
 

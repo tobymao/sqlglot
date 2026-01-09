@@ -1094,6 +1094,11 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
+            "GET_BIT": lambda args: exp.Getbit(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                lsb_first=False,
+            ),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
@@ -1854,34 +1859,24 @@ class DuckDB(Dialect):
 
             Handles potential differences:
             1. Bit indexing: DuckDB counts from the most significant bit, while dialects like Snowflake counts from the least significant bit
-            2. Bit length: Snowflake treat input as 128-bit, so when transpiling to DuckDB we need to cast to HUGEINT
+            2. Input type: DuckDB's GET_BIT takes BITSTRING as input, while Snowflake's input is of integer types
             """
             value = expression.this
             position = expression.expression
             lsb_first = expression.args.get("lsb_first", False)
-            fix_bit_length = expression.args.get("fix_bit_length")
 
+            if (
+                expression.is_type(exp.DataType.Type.INT)
+                or expression.is_type(exp.DataType.Type.BIGINT)
+                or expression.is_type(exp.DataType.Type.TINYINT)
+            ):
+                if lsb_first:
+                    # Use bitwise operations: (value >> position) & 1
+                    shifted = exp.BitwiseRightShift(this=value, expression=position)
+                    masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))
+                    return self.sql(masked)
 
-            # Cast to appropriate integer type first to ensure enough bits, then to BIT
-            # For 128-bit compatibility, we need at least HUGEINT (128-bit integer in DuckDB)
-            if fix_bit_length and fix_bit_length > 64:
-                 value = exp.cast(value, exp.DataType.Type.INT128)
-                 #value = exp.Cast(this=expression.this, to=exp.DataType(this=exp.DataType.Type.INT128))
-            
-            # Then cast the appropriately-sized integer to BIT
-            bit_value = exp.cast(value, exp.DataType.Type.BIT)
-
-            # Handle bit position conversion if coming from LSB-first system
-            adjusted_position = position
-
-            if lsb_first:
-                # Convert LSB-first position to MSB-first position: MSB_pos = (width - 1) - LSB_pos
-                adjusted_position = exp.Sub(
-                    this=exp.Literal.number(fix_bit_length - 1),
-                    expression=position
-                )
-                
-            return self.func("GET_BIT", bit_value, adjusted_position)
+            return self.func("GET_BIT", value, position)
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """

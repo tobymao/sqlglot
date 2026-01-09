@@ -904,7 +904,6 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
                 lsb_first=True,
-                fix_bit_length=128
             ),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),

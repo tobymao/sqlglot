@@ -970,15 +970,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             },
         )
-        self.validate_all(
-            "SELECT GETBIT(11, 3)",
-            write={
-                "snowflake": "SELECT GETBIT(11, 3)",
-                "databricks": "SELECT GETBIT(11, 3)",
-                "redshift": "SELECT GETBIT(11, 3)",
-                "duckdb": "SELECT GET_BIT(CAST(CAST(11 AS INT128) AS BIT), 127 - 3)",
-            },
-        )
         self.validate_identity(
             "SELECT TIMESTAMPNTZFROMPARTS(2013, 4, 5, 12, 00, 00)",
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
@@ -4560,6 +4551,19 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SELECT ROUND(2.256, CAST(CAST(1.8 AS DECIMAL(38, 0)) AS INT)) AS value",
             },
         )
+
+    def test_get_bit(self):
+        self.validate_all(
+            "SELECT GETBIT(11, 3)",
+            write={
+                "snowflake": "SELECT GETBIT(11, 3)",
+                "databricks": "SELECT GETBIT(11, 3)",
+                "redshift": "SELECT GETBIT(11, 3)",
+            },
+        )
+        expr = self.validate_identity("GETBIT(11, 3)")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "11 >> 3 & 1")
 
     def test_to_binary(self):
         expr = self.validate_identity("TO_BINARY('48454C50', 'HEX')")

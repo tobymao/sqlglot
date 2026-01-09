@@ -17,6 +17,7 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("XMLELEMENT(EVALNAME foo + bar)")
         self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
         self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
         self.validate_identity("DBMS_RANDOM.NORMAL")
@@ -90,6 +91,10 @@ class TestOracle(Validator):
         )
         self.validate_identity(
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
+        )
+        self.validate_identity(
+            'XMLELEMENT("ImageID", image.id)',
+            'XMLELEMENT(NAME "ImageID", image.id)',
         )
         self.validate_identity(
             "SELECT CAST('January 15, 1989, 11:00 A.M.' AS DATE DEFAULT NULL ON CONVERSION ERROR, 'Month dd, YYYY, HH:MI A.M.') FROM DUAL",

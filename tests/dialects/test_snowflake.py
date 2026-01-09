@@ -2314,6 +2314,21 @@ class TestSnowflake(Validator):
             },
         )
 
+        for set_op in ("UNION", "INTERSECT", "EXCEPT"):
+            with self.subTest(f"Testing parsing of {set_op} with GROUP BY ALL"):
+                self.validate_identity(
+                    f"SELECT a, b FROM t1 GROUP BY ALL {set_op} SELECT a, b FROM t1 GROUP BY ALL"
+                )
+
+        self.validate_identity(
+            "SELECT a, b FROM t1 GROUP BY ALL MINUS SELECT a, b FROM t1 GROUP BY ALL",
+            "SELECT a, b FROM t1 GROUP BY ALL EXCEPT SELECT a, b FROM t1 GROUP BY ALL"
+        )
+
+        self.validate_identity(
+            "SELECT EXCEPT FROM t1 GROUP BY EXCEPT EXCEPT SELECT EXCEPT FROM t1 GROUP BY EXCEPT"
+        )
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",

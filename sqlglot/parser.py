@@ -4659,7 +4659,9 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.DISTINCT):
             elements["all"] = False
 
-        if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
+        if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False) or (
+            elements.get("all") and self._match(TokenType.EXCEPT, advance=False)
+        ):
             return self.expression(exp.Group, comments=comments, **elements)  # type: ignore
 
         while True:

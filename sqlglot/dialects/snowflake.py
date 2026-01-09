@@ -177,7 +177,13 @@ def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | 
                 )
             return exp.Anonymous(this=name, expressions=args)
 
-        return binary_from_function(expr_type)(args)
+        result = binary_from_function(expr_type)(args)
+
+        # Snowflake specifies INT128 for bitwise shifts
+        if expr_type in (exp.BitwiseLeftShift, exp.BitwiseRightShift):
+            result.set("requires_int128", True)
+
+        return result
 
     return _builder
 

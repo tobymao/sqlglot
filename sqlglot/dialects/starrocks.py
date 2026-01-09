@@ -126,6 +126,7 @@ class StarRocks(MySQL):
         VARCHAR_REQUIRES_SIZE = False
         PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
+        UPDATE_STATEMENT_SUPPORTS_FROM = True
 
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False

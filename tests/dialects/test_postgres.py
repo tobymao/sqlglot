@@ -1022,6 +1022,17 @@ FROM json_data, field_ids""",
         width_bucket = self.validate_identity("WIDTH_BUCKET(10, 5, 15, 25)")
         self.assertIsNone(width_bucket.args.get("threshold"))
 
+        self.validate_all(
+            "UPDATE foo SET a = bar.a, b = bar.b FROM bar WHERE foo.id = bar.id",
+            write={
+                "postgres": "UPDATE foo SET a = bar.a, b = bar.b FROM bar WHERE foo.id = bar.id",
+                "doris": "UPDATE foo SET a = bar.a, b = bar.b FROM bar WHERE foo.id = bar.id",
+                "starrocks": "UPDATE foo SET a = bar.a, b = bar.b FROM bar WHERE foo.id = bar.id",
+                "mysql": "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a, foo.b = bar.b WHERE foo.id = bar.id",
+                "singlestore": "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a, foo.b = bar.b WHERE foo.id = bar.id",
+            },
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

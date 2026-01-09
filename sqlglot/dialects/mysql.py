@@ -752,6 +752,7 @@ class MySQL(Dialect):
         WRAP_DERIVED_VALUES = False
         VARCHAR_REQUIRES_SIZE = True
         SUPPORTS_MEDIAN = False
+        UPDATE_STATEMENT_SUPPORTS_FROM = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1337,31 +1338,3 @@ class MySQL(Dialect):
         @unsupported_args("this")
         def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
             return self.func("SCHEMA")
-
-        def _update_from_joins_sql(self, expression: exp.Update) -> t.Tuple[str, str]:
-            from_expr = expression.args.get("from_")
-            if not from_expr:
-                return ("", "")
-
-            # Qualify unqualified columns in SET clause with the target table
-            # MySQL requires qualified column names in multi-table UPDATE to avoid ambiguity
-            target_table = expression.this
-            if isinstance(target_table, exp.Table):
-                target_name = target_table.alias_or_name
-                for eq in expression.expressions:
-                    col = eq.this
-                    if isinstance(col, exp.Column) and not col.table:
-                        col.set("table", exp.to_identifier(target_name))
-
-            table = from_expr.this
-            nested_joins = table.args.get("joins") or []
-            if nested_joins:
-                table.set("joins", None)
-
-            join_sql = self.sql(exp.Join(this=table, on=exp.true()))
-            for nested in nested_joins:
-                if not nested.args.get("on") and not nested.args.get("using"):
-                    nested.set("on", exp.true())
-                join_sql += self.sql(nested)
-
-            return (join_sql, "")

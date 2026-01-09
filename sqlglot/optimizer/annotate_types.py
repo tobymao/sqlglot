@@ -535,8 +535,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.BOOLEAN)
         elif (left_type, right_type) in self.binary_coercions:
             self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
-        elif left_type == exp.DataType.Type.UNKNOWN or right_type == exp.DataType.Type.UNKNOWN:
-            self._set_type(expression, exp.DataType.Type.UNKNOWN)
         else:
             self._annotate_by_args(expression, left, right)
 
@@ -595,14 +593,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
                     break
-
-                if not expr_type.is_type(exp.DataType.Type.UNKNOWN):
-                    if isinstance(expr, exp.Literal):
-                        literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
-                    else:
-                        non_literal_type = self._maybe_coerce(
-                            non_literal_type or expr_type, expr_type
-                        )
+                
+                if isinstance(expr, exp.Literal):
+                    literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
+                else:
+                    non_literal_type = self._maybe_coerce(non_literal_type or expr_type, expr_type)
 
             if nested_type:
                 break

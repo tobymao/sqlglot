@@ -4563,7 +4563,7 @@ FROM SEMANTIC_VIEW(
         )
         expr = self.validate_identity("GETBIT(11, 3)")
         annotated = annotate_types(expr, dialect="snowflake")
-        self.assertEqual(annotated.sql("duckdb"), "11 >> 3 & 1")
+        self.assertEqual(annotated.sql("duckdb"), "(11 >> 3) & 1")
 
     def test_to_binary(self):
         expr = self.validate_identity("TO_BINARY('48454C50', 'HEX')")

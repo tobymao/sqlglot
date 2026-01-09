@@ -59,3 +59,80 @@ class TestGenerator(unittest.TestCase):
                 ast = parse_one(input_sql, read="postgres")
                 self.assertEqual(ast.sql(), expected_sql)
                 self.assertEqual(ast.sql("postgres"), expected_sql)
+
+    def test_pretty_nested_types(self):
+        def assert_pretty_nested(
+            datatype: exp.DataType,
+            single_line: str,
+            pretty: str,
+            max_text_width: int = 10,
+            **kwargs,
+        ) -> None:
+            self.assertEqual(datatype.sql(), single_line)
+            self.assertEqual(
+                datatype.sql(pretty=True, max_text_width=max_text_width, **kwargs), pretty
+            )
+
+        # STRUCT
+        type_str = "STRUCT<a INT, b TEXT>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "STRUCT<\n  a INT,\n  b TEXT\n>",
+        )
+
+        # STRUCT - type def shorter than max text width so stays one line
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "STRUCT<a INT, b TEXT>",
+            max_text_width=50,
+        )
+
+        # STRUCT, leading_comma = True
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "STRUCT<\n  a INT\n  , b TEXT\n>",
+            leading_comma=True,
+        )
+
+        # ARRAY
+        type_str = "ARRAY<DECIMAL(38, 9)>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "ARRAY<\n  DECIMAL(38, 9)\n>",
+        )
+
+        # ARRAY nested STRUCT
+        type_str = "ARRAY<STRUCT<a INT, b TEXT>>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "ARRAY<\n  STRUCT<\n    a INT,\n    b TEXT\n  >\n>",
+        )
+
+        # RANGE
+        type_str = "RANGE<DECIMAL(38, 9)>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "RANGE<\n  DECIMAL(38, 9)\n>",
+        )
+
+        # LIST
+        type_str = "LIST<INT, INT, TEXT>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "LIST<\n  INT,\n  INT,\n  TEXT\n>",
+        )
+
+        # MAP
+        type_str = "MAP<INT, DECIMAL(38, 9)>"
+        assert_pretty_nested(
+            exp.DataType.build(type_str),
+            type_str,
+            "MAP<\n  INT,\n  DECIMAL(38, 9)\n>",
+        )

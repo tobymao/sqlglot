@@ -941,6 +941,23 @@ TBLPROPERTIES (
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
 
+        self.validate_all(
+            "LTRIM('a', 'ab')",
+            write={
+                "spark2": "TRIM(LEADING 'a' FROM 'ab')",
+                "spark": "TRIM(LEADING 'a' FROM 'ab')",
+                "databricks": "TRIM(LEADING 'a' FROM 'ab')"
+            },
+        )
+        self.validate_all(
+            "RTRIM('a', 'ba')",
+            write={
+                "spark2": "TRIM(TRAILING 'a' FROM 'ba')",
+                "spark": "TRIM(TRAILING 'a' FROM 'ba')",
+                "databricks": "TRIM(TRAILING 'a' FROM 'ba')"
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

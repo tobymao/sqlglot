@@ -114,6 +114,14 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def build_trim(args: t.List, is_left: bool = True):
+    return exp.Trim(
+        this=seq_get(args, 1),
+        expression=seq_get(args, 0),
+        position="LEADING" if is_left else "TRAILING",
+    )
+
+
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
 
@@ -159,9 +167,11 @@ class Spark2(Hive):
                 ),
                 zone=seq_get(args, 1),
             ),
+            "LTRIM": lambda args: build_trim(args),
             "INT": _build_as_cast("int"),
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
+            "RTRIM": lambda args: build_trim(args, is_left=False),
             "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
             "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _build_as_cast("string"),

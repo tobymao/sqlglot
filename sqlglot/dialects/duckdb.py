@@ -1365,8 +1365,8 @@ class DuckDB(Dialect):
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
-            exp.CurrentTimestamp: lambda self, e: self.func(
-                "TIMEZONE", exp.Literal.string("UTC"), exp.CurrentTimestamp()
+            exp.CurrentTimestamp: lambda self, e: self.sql(
+                exp.AtTimeZone(this=exp.var("CURRENT_TIMESTAMP"), zone=exp.Literal.string("UTC"))
             )
             if e.args.get("sysdate")
             else "CURRENT_TIMESTAMP",

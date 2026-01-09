@@ -1094,6 +1094,11 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
+            "GET_BIT": lambda args: exp.Getbit(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                lsb_first=False,
+            ),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
@@ -1847,6 +1852,31 @@ class DuckDB(Dialect):
 
             replacements = {"s": s, "n": n, "random_expr": random_expr}
             return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
+
+        def getbit_sql(self: DuckDB.Generator, expression: exp.Getbit) -> str:
+            """
+            Transpile GETBIT to DuckDB with comprehensive compatibility handling.
+
+            Handles potential differences:
+            1. Bit indexing: DuckDB counts from the most significant bit, while dialects like Snowflake counts from the least significant bit
+            2. Input type: DuckDB's GET_BIT takes BITSTRING as input, while Snowflake's input is of integer types
+            """
+            value = expression.this
+            position = expression.expression
+            lsb_first = expression.args.get("lsb_first", False)
+
+            if (
+                expression.is_type(exp.DataType.Type.INT)
+                or expression.is_type(exp.DataType.Type.BIGINT)
+                or expression.is_type(exp.DataType.Type.TINYINT)
+            ):
+                if lsb_first:
+                    # Use bitwise operations: (value >> position) & 1
+                    shifted = exp.BitwiseRightShift(this=value, expression=position)
+                    masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))
+                    return self.sql(masked)
+
+            return self.func("GET_BIT", value, position)
 
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """

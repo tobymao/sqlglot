@@ -308,16 +308,17 @@ class Resolver:
         # For BigQuery UNNEST_COLUMN_ONLY, build a mapping of original UNNEST aliases
         # from alias.columns[0] to their source names. This is used to resolve shadowing
         # where an UNNEST alias shadows a column name from another table.
-        unnest_original_aliases: t.Dict[str, str] = {
-            source.expression.args["alias"].columns[0].name: source_name
-            for source_name, source in self.scope.sources.items()
-            if (
-                self.dialect.UNNEST_COLUMN_ONLY
-                and isinstance(source.expression, exp.Unnest)
-                and (alias_arg := source.expression.args.get("alias"))
-                and alias_arg.columns
-            )
-        }
+        unnest_original_aliases: t.Dict[str, str] = {}
+        if self.dialect.UNNEST_COLUMN_ONLY:
+            unnest_original_aliases = {
+                alias_arg.columns[0].name: source_name
+                for source_name, source in self.scope.sources.items()
+                if (
+                    isinstance(source.expression, exp.Unnest)
+                    and (alias_arg := source.expression.args.get("alias"))
+                    and alias_arg.columns
+                )
+            }
 
         unambiguous_columns = {col: first_table for col in first_columns}
         all_columns = set(unambiguous_columns)

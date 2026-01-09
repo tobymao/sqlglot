@@ -2337,7 +2337,8 @@ class DuckDB(Dialect):
                 if part_name in strftime_mappings:
                     fmt, cast_type = strftime_mappings[part_name]
 
-                    # strftime doesn't accept TIME; for NANOSECOND use MICROSECOND * 1000
+                    # Problem: strftime doesn't accept TIME and there's no NANOSECOND function
+                    # So, for NANOSECOND with TIME, use MICROSECOND * 1000
                     is_nano_time = (
                         part_name == "NANOSECOND"
                         and isinstance(datetime_expr, exp.Cast)
@@ -2356,7 +2357,7 @@ class DuckDB(Dialect):
                                     ),
                                     expression=exp.Literal.number(1000),
                                 ),
-                                exp.DataType.build(cast_type),
+                                exp.DataType.build(cast_type, dialect="duckdb"),
                             )
                         )
 
@@ -2366,7 +2367,7 @@ class DuckDB(Dialect):
                                 this="STRFTIME",
                                 expressions=[datetime_expr, exp.Literal.string(fmt)],
                             ),
-                            exp.DataType.build(cast_type),
+                            exp.DataType.build(cast_type, dialect="duckdb"),
                         )
                     )
 
@@ -2385,7 +2386,7 @@ class DuckDB(Dialect):
                     )
                     # EPOCH returns float, cast to BIGINT for integer result
                     if part_name == "EPOCH_SECOND":
-                        result = exp.cast(result, exp.DataType.build("BIGINT"))
+                        result = exp.cast(result, exp.DataType.build("BIGINT", dialect="duckdb"))
                     return self.sql(result)
 
             return super().extract_sql(expression)

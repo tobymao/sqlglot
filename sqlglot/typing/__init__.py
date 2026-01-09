@@ -294,6 +294,12 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     exp.Dot: {"annotator": lambda self, e: self._annotate_dot(e)},
     exp.Explode: {"annotator": lambda self, e: self._annotate_explode(e)},
     exp.Extract: {"annotator": lambda self, e: self._annotate_extract(e)},
+    exp.HexString: {
+        "annotator": lambda self, e: self._set_type(
+            e,
+            exp.DataType.Type.BIGINT if e.args.get("is_integer") else exp.DataType.Type.BINARY,
+        )
+    },
     exp.GenerateSeries: {
         "annotator": lambda self, e: self._annotate_by_args(e, "start", "end", "step", array=True)
     },

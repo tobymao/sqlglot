@@ -5143,7 +5143,7 @@ class BitwiseAnd(Binary):
 
 
 class BitwiseLeftShift(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
 class BitwiseOr(Binary):
@@ -5151,7 +5151,7 @@ class BitwiseOr(Binary):
 
 
 class BitwiseRightShift(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
 class BitwiseXor(Binary):

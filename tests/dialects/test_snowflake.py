@@ -2289,6 +2289,13 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
+        self.validate_all(
+            "SELECT OBJECT_KEYS(my_obj)",
+            write={
+                "snowflake": "SELECT OBJECT_KEYS(my_obj)",
+                "duckdb": "SELECT JSON_KEYS(my_obj)",
+            },
+        )
         self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")
         self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")

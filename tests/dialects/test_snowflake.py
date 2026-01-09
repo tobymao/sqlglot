@@ -2243,7 +2243,13 @@ class TestSnowflake(Validator):
                 "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(5 + 1)) % 1000000) / 1000000.0))",
             },
         )
-        self.validate_identity("SYSDATE()")
+        self.validate_all(
+            "SYSDATE()",
+            write={
+                "snowflake": "SYSDATE()",
+                "duckdb": "TIMEZONE('UTC', CURRENT_TIMESTAMP)",
+            },
+        )
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")

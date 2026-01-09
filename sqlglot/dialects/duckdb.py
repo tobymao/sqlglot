@@ -1365,7 +1365,11 @@ class DuckDB(Dialect):
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
-            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentTimestamp: lambda self, e: self.func(
+                "TIMEZONE", exp.Literal.string("UTC"), exp.CurrentTimestamp()
+            )
+            if e.args.get("sysdate")
+            else "CURRENT_TIMESTAMP",
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("ISODOW"),

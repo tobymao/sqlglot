@@ -705,6 +705,10 @@ class Snowflake(Dialect):
     DATE_PART_MAPPING = {
         **Dialect.DATE_PART_MAPPING,
         "ISOWEEK": "WEEKISO",
+        # Preserve EPOCH_SECOND separately from EPOCH for accurate transpilation
+        # (Snowflake returns integer for EPOCH_SECOND, but EPOCH in other dialects may return float)
+        "EPOCH_SECOND": "EPOCH_SECOND",
+        "EPOCH_SECONDS": "EPOCH_SECOND",
     }
 
     PSEUDOCOLUMNS = {"LEVEL"}
@@ -1151,7 +1155,9 @@ class Snowflake(Dialect):
             expression = (
                 self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
             )
-            return self.expression(exp.Extract, this=map_date_part(this), expression=expression)
+            return self.expression(
+                exp.Extract, this=map_date_part(this, self.dialect), expression=expression
+            )
 
         def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
             if is_map:

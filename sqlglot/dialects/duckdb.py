@@ -2313,6 +2313,83 @@ class DuckDB(Dialect):
 
             return rename_func("MAKE_TIME")(self, expression)
 
+        def extract_sql(self, expression: exp.Extract) -> str:
+            """
+            Transpile EXTRACT/DATE_PART for DuckDB, handling specifiers not natively supported.
+
+            DuckDB doesn't support: WEEKISO, YEAROFWEEK, YEAROFWEEKISO, NANOSECOND,
+            EPOCH_SECOND (as integer), EPOCH_MILLISECOND, EPOCH_MICROSECOND, EPOCH_NANOSECOND
+            """
+            this = expression.this
+            datetime_expr = expression.expression
+
+            part_name = this.name.upper() if isinstance(this, exp.Var) else None
+
+            if part_name:
+                # Map specifiers to strftime format codes for Snowflake specifiers unsupported in DuckDB
+                strftime_mappings = {
+                    "WEEKISO": ("%V", "INTEGER"),
+                    "YEAROFWEEK": ("%G", "INTEGER"),
+                    "YEAROFWEEKISO": ("%G", "INTEGER"),
+                    "NANOSECOND": ("%n", "BIGINT"),
+                }
+
+                if part_name in strftime_mappings:
+                    fmt, cast_type = strftime_mappings[part_name]
+
+                    # strftime doesn't accept TIME; for NANOSECOND use MICROSECOND * 1000
+                    is_nano_time = (
+                        part_name == "NANOSECOND"
+                        and isinstance(datetime_expr, exp.Cast)
+                        and datetime_expr.to.this
+                        in (
+                            exp.DataType.Type.TIME,
+                            exp.DataType.Type.TIMETZ,
+                        )
+                    )
+                    if is_nano_time:
+                        return self.sql(
+                            exp.cast(
+                                exp.Mul(
+                                    this=exp.Extract(
+                                        this=exp.var("MICROSECOND"), expression=datetime_expr
+                                    ),
+                                    expression=exp.Literal.number(1000),
+                                ),
+                                exp.DataType.build(cast_type),
+                            )
+                        )
+
+                    return self.sql(
+                        exp.cast(
+                            exp.Anonymous(
+                                this="STRFTIME",
+                                expressions=[datetime_expr, exp.Literal.string(fmt)],
+                            ),
+                            exp.DataType.build(cast_type),
+                        )
+                    )
+
+                # Map epoch-based specifiers to DuckDB epoch functions
+                epoch_mappings = {
+                    "EPOCH_SECOND": "EPOCH",
+                    "EPOCH_MILLISECOND": "EPOCH_MS",
+                    "EPOCH_MICROSECOND": "EPOCH_US",
+                    "EPOCH_NANOSECOND": "EPOCH_NS",
+                }
+
+                if part_name in epoch_mappings:
+                    func_name = epoch_mappings[part_name]
+                    result: exp.Expression = exp.Anonymous(
+                        this=func_name, expressions=[datetime_expr]
+                    )
+                    # EPOCH returns float, cast to BIGINT for integer result
+                    if part_name == "EPOCH_SECOND":
+                        result = exp.cast(result, exp.DataType.build("BIGINT"))
+                    return self.sql(result)
+
+            return super().extract_sql(expression)
+
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             sec = expression.args["sec"]
 

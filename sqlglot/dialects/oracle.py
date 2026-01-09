@@ -178,7 +178,14 @@ class Oracle(Dialect):
         TYPE_LITERAL_PARSERS = {
             exp.DataType.Type.DATE: lambda self, this, _: self.expression(
                 exp.DateStrToDate, this=this
-            )
+            ),
+            exp.DataType.Type.TIMESTAMP: lambda self, this, _: self.expression(
+                exp.StrToTime,
+                this=this,
+                format=exp.Literal.string(
+                    "%Y-%m-%d %H:%M:%S.%f" if "." in this.name else "%Y-%m-%d %H:%M:%S"
+                ),
+            ),
         }
 
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
@@ -280,6 +287,25 @@ class Oracle(Dialect):
 
         def _parse_connect_with_prior(self):
             return self._parse_assignment()
+
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            if not this:
+                return this
+
+            index = self._index
+            unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
+
+            if unit and self._match_text_seq("TO"):
+                to_unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
+
+                if to_unit:
+                    unit = exp.IntervalSpan(this=unit, expression=to_unit)
+                    return self.expression(exp.Interval, this=this, unit=unit)
+
+            self._retreat(index)
+            return this
 
         def _parse_insert_table(self) -> t.Optional[exp.Expression]:
             # Oracle does not use AS for INSERT INTO alias
@@ -427,3 +453,6 @@ class Oracle(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"NVL(REGEXP_LIKE({self.sql(expression.this)}, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)"
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"

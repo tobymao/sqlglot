@@ -305,6 +305,21 @@ class Resolver:
             # Performance optimization - avoid copying first_columns if there is only one table.
             return SingleValuedMapping(first_columns, first_table)
 
+        # For BigQuery UNNEST_COLUMN_ONLY, build a mapping of original UNNEST aliases
+        # from alias.columns[0] to their source names. This is used to resolve shadowing
+        # where an UNNEST alias shadows a column name from another table.
+        unnest_original_aliases: t.Dict[str, str] = {}
+        if self.dialect.UNNEST_COLUMN_ONLY:
+            unnest_original_aliases = {
+                alias_arg.columns[0].name: source_name
+                for source_name, source in self.scope.sources.items()
+                if (
+                    isinstance(source.expression, exp.Unnest)
+                    and (alias_arg := source.expression.args.get("alias"))
+                    and alias_arg.columns
+                )
+            }
+
         unambiguous_columns = {col: first_table for col in first_columns}
         all_columns = set(unambiguous_columns)
 
@@ -314,6 +329,10 @@ class Resolver:
             all_columns.update(columns)
 
             for column in ambiguous:
+                if column in unnest_original_aliases:
+                    unambiguous_columns[column] = unnest_original_aliases[column]
+                    continue
+
                 unambiguous_columns.pop(column, None)
             for column in unique.difference(ambiguous):
                 unambiguous_columns[column] = table

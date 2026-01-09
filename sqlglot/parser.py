@@ -155,10 +155,10 @@ def build_convert_timezone(
     return exp.ConvertTimezone.from_arg_list(args)
 
 
-def build_trim(args: t.List, is_left: bool = True):
+def build_trim(args: t.List, is_left: bool = True, reverse_args: bool = False):
     return exp.Trim(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
+        this=seq_get(args, 0 if not reverse_args else 1),
+        expression=seq_get(args, 1 if not reverse_args else 0),
         position="LEADING" if is_left else "TRAILING",
     )
 

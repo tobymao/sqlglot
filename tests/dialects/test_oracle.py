@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError, ParseError, parse_one
+from sqlglot import exp, UnsupportedError, ParseError, parse_one, parse
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.qualify import qualify
 
@@ -823,3 +823,43 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
     def test_chr(self):
         self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
         self.validate_identity("SELECT CHR(187)")
+
+    def test_full_procedure(self):
+        sql = """
+        CREATE OR REPLACE PROCEDURE query_emp(
+            p_id     IN  VARCHAR2,
+            p_name   OUT VARCHAR2,
+            p_salary OUT NUMBER
+        ) AS
+        BEGIN
+            SELECT last_name, salary 
+            INTO p_name, p_salary
+            FROM employees
+            WHERE employee_id = p_id;
+        END;
+        """
+
+        expected_sqls = [
+            "CREATE OR REPLACE PROCEDURE query_emp(p_id IN VARCHAR2, p_name OUT VARCHAR2, p_salary OUT NUMBER) AS BEGIN SELECT last_name, salary INTO p_name, p_salary FROM employees WHERE employee_id = p_id",
+            "END",
+        ]
+
+        for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="oracle"), expected_sql)
+
+        sql = """
+        CREATE OR REPLACE PROCEDURE square(
+	        num IN OUT FLOAT
+        ) AS
+        BEGIN
+	        SELECT num * num INTO num;
+        END;
+        """
+
+        expected_sqls = [
+            "CREATE OR REPLACE PROCEDURE square(num IN OUT FLOAT) AS BEGIN SELECT num * num INTO num",
+            "END",
+        ]
+
+        for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="oracle"), expected_sql)

@@ -323,6 +323,10 @@ INTERVAL;
 COALESCE(tbl.bin_col, tbl.str_col);
 BINARY;
 
+# dialect: spark2, spark, databricks
+CURRENT_TIMEZONE();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

@@ -848,16 +848,21 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             self.assertEqual(expr.sql(dialect="oracle"), expected_sql)
 
         sql = """
-        CREATE OR REPLACE PROCEDURE square(
-	        num IN OUT FLOAT
+        CREATE OR REPLACE PROCEDURE test_proc (
+            a NUMBER,
+            b IN NUMBER,
+            c IN OUT NUMBER,
+            d OUT NUMBER
         ) AS
         BEGIN
-	        SELECT num * num INTO num;
+            c := c + a + b;
+            d := 42 + c;
         END;
         """
 
         expected_sqls = [
-            "CREATE OR REPLACE PROCEDURE square(num IN OUT FLOAT) AS BEGIN SELECT num * num INTO num",
+            "CREATE OR REPLACE PROCEDURE test_proc(a NUMBER, b IN NUMBER, c IN OUT NUMBER, d OUT NUMBER) AS BEGIN c := c + a + b",
+            "d := 42 + c",
             "END",
         ]
 

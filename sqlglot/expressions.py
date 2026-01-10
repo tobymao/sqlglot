@@ -1835,6 +1835,7 @@ class ColumnDef(Expression):
         "exists": False,
         "position": False,
         "default": False,
+        "input": False,
         "output": False,
     }
 

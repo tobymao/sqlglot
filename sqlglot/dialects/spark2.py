@@ -116,6 +116,7 @@ def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
 
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
+    SUPPORTS_NULL_TYPE = True
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

@@ -42,6 +42,18 @@ def _annotate_by_similar_args(
     return expression
 
 
+def _annotate_encode(self: TypeAnnotator, expression: exp.Encode) -> exp.Encode:
+    charset = expression.args.get("charset")
+    if expression.this.is_type(exp.DataType.Type.NULL) or (
+        charset and charset.is_type(exp.DataType.Type.NULL)
+    ):
+        self._set_type(expression, exp.DataType.Type.NULL)
+    else:
+        self._set_type(expression, exp.DataType.Type.BINARY)
+
+    return expression
+
+
 EXPRESSION_METADATA: ExpressionMetadataType = {
     **HIVE_EXPRESSION_METADATA,
     exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
@@ -55,4 +67,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
+    exp.Encode: {"annotator": lambda self, e: _annotate_encode(self, e)},
 }

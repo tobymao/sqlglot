@@ -323,6 +323,18 @@ INTERVAL;
 COALESCE(tbl.bin_col, tbl.str_col);
 BINARY;
 
+# dialect: spark2, spark, databricks
+ENCODE(tbl.str_col, tbl.str_col);
+BINARY;
+ 
+# dialect: spark2, spark, databricks 
+ENCODE(tbl.str_col, NULL);
+NULL;
+
+# dialect: spark2, spark, databricks
+ENCODE(NULL, tbl.str_col);
+NULL;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

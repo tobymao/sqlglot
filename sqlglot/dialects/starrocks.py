@@ -127,9 +127,9 @@ class StarRocks(MySQL):
         PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
         UPDATE_STATEMENT_SUPPORTS_FROM = True
-
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False
+        RENAME_TABLE_WITH_DB = False
 
         CAST_MAPPING = {}
 
@@ -144,8 +144,13 @@ class StarRocks(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
+            exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,  # for expression partitioning
+            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -348,4 +353,134 @@ class StarRocks(MySQL):
                     engine_index = (engine.index or 0) if engine else -1
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
+            # Save the creating view flag for some special cases:
+            # 1. partitionedbyproperty_sql: need parentheses for MVs
+            self._creating_view = expression.kind == "VIEW"
             return super().create_sql(expression)
+
+        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
+            """Override alterrename_sql to avoid TO keyword in ALTER RENAME statements."""
+            return super().alterrename_sql(expression, include_to=False)
+
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            """Generate StarRocks PARTITION BY clause for expression partitioning.
+
+            Converts PartitionedByProperty to PARTITION BY (...) syntax.
+            Supports both single columns and function expressions for both normal tables and MVs
+
+            Example:
+                exp.PartitionedByProperty(this=Schema(expressions=[Column(event_date)]))
+                → "PARTITION BY (event_date)"
+
+                exp.PartitionedByProperty(this=Tuple(expressions=[from_unixtime(ts), region]))
+                → "PARTITION BY FROM_UNIXTIME(ts), region" (for tables without outer parentheses)
+                → "PARTITION BY (FROM_UNIXTIME(ts), region)" (for MVs: with outer parentheses)
+            """
+            node = expression.this
+            partition_colmns_str = None
+            any_func_column = False  # no parentheses for normal tables if there is any funcs
+            if isinstance(node, exp.Schema):
+                partition_colmns_str = ", ".join(self.sql(e) for e in node.expressions)
+            elif isinstance(node, exp.Tuple):
+                part_list = []
+                for expr in node.expressions:
+                    if isinstance(expr, exp.Column):
+                        part_list.append(expr.name)
+                    elif isinstance(expr, (exp.Func, exp.Anonymous)):
+                        part_list.append(self.sql(expr))
+                        any_func_column = True
+                    else:
+                        part_list.append(str(expr))
+                partition_colmns_str = ", ".join(part_list)
+            if partition_colmns_str:
+                # SR needs `(...)` for MVs, with parens.
+                if getattr(self, "_creating_view", False) or not any_func_column:
+                    return f"PARTITION BY ({partition_colmns_str})"
+                else:
+                    # SR doesn't support `(func(...), col2)` with parens for normal tables
+                    return f"PARTITION BY {partition_colmns_str}"
+            return f"PARTITION BY ({self.sql(node)})"
+
+        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
+            """Generate StarRocks PARTITION BY RANGE clause for RANGE partitioning.
+
+            Converts PartitionByRangeProperty to PARTITION BY RANGE (...) (...) syntax.
+
+            Example:
+                exp.PartitionByRangeProperty(partition_expressions=[col1, col2],
+                    create_expressions=["START('2025-01-01') END('2025-12-31') EVERY (INTERVAL 1 DAY)"])
+                → "PARTITION BY RANGE (col1, col2) (START('2025-01-01') END('2025-12-31') EVERY (INTERVAL 1 DAY))"
+            """
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
+            )
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
+            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
+            """Generate StarRocks PARTITION BY LIST clause for LIST partitioning.
+
+            Converts PartitionByListProperty to PARTITION BY LIST (...) (...) syntax.
+
+            Example:
+                exp.PartitionByListProperty(partition_expressions=[col1, col2],
+                    create_expressions=["PARTITION p_top VALUES IN ('China', 'US')"])
+                → "PARTITION BY LIST (col1, col2) (PARTITION p_top VALUES IN ('China', 'US'))"
+            """
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
+            )
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
+            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
+
+        def cluster_sql(self, expression: exp.Cluster) -> str:
+            """Generate StarRocks ORDER BY clause for clustering.
+
+            StarRocks uses ORDER BY instead of CLUSTER BY for table clustering.
+            This override ensures exp.Cluster generates the correct syntax.
+
+            Example:
+                exp.Cluster(expressions=[id, name]) → "ORDER BY (id, name)"
+            """
+            expressions = self.expressions(expression, flat=True)
+            return f"ORDER BY ({expressions})" if expressions else ""
+
+        def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
+            """Generate StarRocks REFRESH clause for materialized views.
+
+            StarRocks syntax:
+              REFRESH [IMMEDIATE | DEFERRED] [<refresh_scheme>]
+
+            We reuse exp.RefreshTriggerProperty, but render it in StarRocks form:
+            - method: refresh_moment (IMMEDIATE/DEFERRED) or a placeholder (ignored)
+            - kind: refresh_scheme (ASYNC/MANUAL), which can be:
+              - a raw string (Literal -> emitted without quotes)
+              - an Expression (Var/Identifier/etc)
+            - starts/every/unit: optional structured pieces (can be used for ASYNC)
+            """
+            parts = ["REFRESH"]
+
+            # method is required by RefreshTriggerProperty, but StarRocks refresh_moment is optional.
+            # Only render it when it matches StarRocks keywords.
+            method_sql = self.sql(expression, "method")
+            if method_sql and method_sql.upper() != "UNSPECIFIED":
+                parts.append(method_sql)
+
+            if kind := expression.args.get("kind"):
+                if isinstance(kind, (exp.Literal, exp.Var)):
+                    parts.append(str(kind.this))
+                elif isinstance(kind, exp.Expression):
+                    parts.append(self.sql(kind))
+                else:
+                    parts.append(str(kind))
+
+            # Optional structured fields (mostly for ASYNC START/EVERY)
+            if starts := self.sql(expression, "starts"):
+                parts.append(f"START ({starts})")
+
+            every = self.sql(expression, "every")
+            unit = self.sql(expression, "unit")
+            if every and unit:
+                parts.append(f"EVERY (INTERVAL {every} {unit})")
+
+            return " ".join(p for p in parts if p and str(p).strip())

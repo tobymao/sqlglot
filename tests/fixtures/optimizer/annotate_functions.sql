@@ -1772,6 +1772,10 @@ ARRAY_APPEND([1, 2, 3], 4);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_CAT([1, 2], [3, 4]);
+ARRAY;
+
+# dialect: snowflake
 ARRAY_PREPEND([2, 3, 4], 1);
 ARRAY;
 

@@ -6251,6 +6251,9 @@ class Parser(metaclass=_Parser):
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
+        elif (not kind and self._match_set({TokenType.IN, TokenType.OUT}, advance=False)):
+            constraints.append(self._parse_in_out())
+            kind = self._parse_types()
         elif (
             kind
             and self._match(TokenType.ALIAS, advance=False)
@@ -6443,6 +6446,21 @@ class Parser(metaclass=_Parser):
             self.raise_error(f"No parser found for schema constraint {constraint}.")
 
         return self.CONSTRAINT_PARSERS[constraint](self)
+
+    def _parse_in_out(self) -> t.Optional[exp.Expression]:
+        input_ = None
+        if self._match(TokenType.IN):
+            input_ = self._prev.text
+
+        output = None
+        if self._match(TokenType.OUT):
+            output = self._prev.text
+
+        return self.expression(
+            exp.InOutColumnConstraint,
+            input_=input_,
+            output=output,
+        ) 
 
     def _parse_unique_key(self) -> t.Optional[exp.Expression]:
         return self._parse_id_var(any_token=False)

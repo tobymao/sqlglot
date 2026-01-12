@@ -372,6 +372,7 @@ class TokenType(AutoName):
     ORDER_SIBLINGS_BY = auto()
     ORDERED = auto()
     ORDINALITY = auto()
+    OUT = auto()
     OUTER = auto()
     OVER = auto()
     OVERLAPS = auto()
@@ -842,6 +843,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "XOR": TokenType.XOR,
         "ORDER BY": TokenType.ORDER_BY,
         "ORDINALITY": TokenType.ORDINALITY,
+        "OUT": TokenType.OUT,
         "OUTER": TokenType.OUTER,
         "OVER": TokenType.OVER,
         "OVERLAPS": TokenType.OVERLAPS,

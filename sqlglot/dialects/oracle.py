@@ -319,33 +319,6 @@ class Oracle(Dialect):
 
             return this
 
-        def _parse_column_def(
-            self, this: t.Optional[exp.Expression], computed_column: bool = True
-        ) -> t.Optional[exp.Expression]:
-            # Oracle-specific: parse IN/OUT keywords for stored procedure parameters
-            # https://docs.oracle.com/en/database/other-databases/timesten/22.1/plsql-developer/examples-using-input-and-output-parameters-and-bind-variables.html#GUID-4B20426E-F93F-4835-88CB-6A79829A8D7F
-            if isinstance(this, exp.Column):
-                this = this.this
-
-            if not computed_column:
-                self._match(TokenType.ALIAS)
-
-            input_: t.Optional[str] = None
-            if self._match(TokenType.IN):
-                input_ = self._prev.text
-
-            output: t.Optional[str] = None
-            if self._match_text_seq("OUT"):
-                output = self._prev.text
-
-            result = super()._parse_column_def(this, computed_column=False)
-
-            if isinstance(result, exp.ColumnDef) and (input_ or output):
-                result.set("input", input_)
-                result.set("output", output)
-
-            return result
-
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
@@ -479,9 +452,8 @@ class Oracle(Dialect):
             return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            if isinstance(expression.parent, exp.UserDefinedFunction):
-                if expression.args.get("input"):
-                    sep += "IN "
-                if expression.args.get("output"):
-                    sep += "OUT "
+            param_constraint = expression.find(exp.InOutColumnConstraint)
+            if param_constraint:
+                sep = f" {self.sql(param_constraint)} "
+                param_constraint.replace(None)
             return super().columndef_sql(expression, sep)

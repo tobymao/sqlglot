@@ -1941,6 +1941,42 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "ON `production_tier`.`timeline_date` = `timeline_date`",
         )
 
+    def test_struct_field_case_sensitivity_annotation(self):
+        schema = {"t": {"struct_col": "STRUCT<fooBar STRING>"}}
+
+        def _assert_dot_annotation(query: str, dialect: str, expected: exp.DataType.Type):
+            parsed = parse_one(query, dialect=dialect)
+            qualified = optimizer.qualify.qualify(parsed, schema=schema, dialect=dialect)
+            annotated = optimizer.annotate_types.annotate_types(
+                qualified, schema=schema, dialect=dialect
+            )
+            self.assertEqual(annotated.selects[0].type.this, expected)
+
+        # BigQuery is case-insensitive: exact field name match
+        _assert_dot_annotation(
+            "SELECT struct_col.fooBar FROM t", "bigquery", exp.DataType.Type.TEXT
+        )
+
+        # BigQuery: lower case
+        _assert_dot_annotation(
+            "SELECT struct_col.foobar FROM t", "bigquery", exp.DataType.Type.TEXT
+        )
+
+        # BigQuery: different case
+        _assert_dot_annotation(
+            "SELECT struct_col.Foobar FROM t", "bigquery", exp.DataType.Type.TEXT
+        )
+
+        # ClickHouse is case-sensitive: exact field name match
+        _assert_dot_annotation(
+            "SELECT struct_col.fooBar FROM t", "clickhouse", exp.DataType.Type.TEXT
+        )
+
+        # ClickHouse: lower case
+        _assert_dot_annotation(
+            "SELECT struct_col.foobar FROM t", "clickhouse", exp.DataType.Type.UNKNOWN
+        )
+
     def test_annotate_object_construct(self):
         sql = "SELECT OBJECT_CONSTRUCT('foo', 'bar', 'a b', 'c d') AS c"
 

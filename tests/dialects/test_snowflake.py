@@ -2874,6 +2874,20 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_TIME('093000', 'HH24MISS')",
+            write={
+                "duckdb": "SELECT CAST(STRPTIME('093000', '%H%M%S') AS TIME)",
+                "snowflake": "SELECT TO_TIME('093000', 'hh24miss')",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('093000', 'HH24MISS')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIME('093000', 'hh24miss')",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('093000', '%H%M%S') AS TIME)",
+            },
+        )
+        self.validate_all(
             "SELECT TRY_TO_TIME('2024-01-15 14:30:00'::TIMESTAMP)",
             write={
                 "bigquery": "SELECT TIME(CAST('2024-01-15 14:30:00' AS DATETIME))",

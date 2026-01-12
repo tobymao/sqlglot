@@ -1498,6 +1498,20 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT ARRAY_AGG(col) WITHIN GROUP (ORDER BY sort_col)",
+            write={
+                "snowflake": "SELECT ARRAY_AGG(col) WITHIN GROUP (ORDER BY sort_col)",
+                "duckdb": "SELECT ARRAY_AGG(col ORDER BY sort_col) FILTER(WHERE col IS NOT NULL)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT col) WITHIN GROUP (ORDER BY col DESC)",
+            write={
+                "snowflake": "SELECT ARRAY_AGG(DISTINCT col) WITHIN GROUP (ORDER BY col DESC)",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT col ORDER BY col DESC NULLS FIRST) FILTER(WHERE col IS NOT NULL)",
+            },
+        )
+        self.validate_all(
             "ARRAY_TO_STRING(x, '')",
             read={
                 "duckdb": "ARRAY_TO_STRING(x, '')",

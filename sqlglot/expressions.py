@@ -7120,7 +7120,6 @@ class Format(Func):
 class JSONKeys(Func):
     arg_types = {"this": True, "expression": False, "expressions": False}
     is_var_len_args = True
-    _sql_names = ["JSON_KEYS"]
 
 
 class JSONKeyValue(Expression):

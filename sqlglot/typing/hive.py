@@ -9,4 +9,5 @@ EXPRESSION_METADATA = {
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
+    exp.Encode: {"returns": exp.DataType.Type.BINARY},
 }

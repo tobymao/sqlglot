@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
+from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -112,6 +113,7 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_NULL_TYPE = True
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False

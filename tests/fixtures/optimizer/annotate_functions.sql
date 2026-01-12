@@ -323,6 +323,18 @@ INTERVAL;
 COALESCE(tbl.bin_col, tbl.str_col);
 BINARY;
 
+# dialect: spark, databricks
+LOCALTIMESTAMP();
+TIMESTAMPNTZ;
+
+# dialect: hive, spark2, spark, databricks
+ENCODE(tbl.str_col, tbl.str_col);
+BINARY;
+
+# dialect: hive, spark2, spark, databricks
+ENCODE(tbl.bin_col, tbl.bin_col);
+BINARY;
+
 # dialect: spark2, spark, databricks
 CURRENT_TIMEZONE();
 STRING;

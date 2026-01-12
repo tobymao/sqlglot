@@ -5198,27 +5198,7 @@ class Parser(metaclass=_Parser):
             exp.Escape, this=this, expression=self._parse_string() or self._parse_null()
         )
 
-    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Add | exp.Interval]:
-        index = self._index
-
-        if not self._match(TokenType.INTERVAL) and match_interval:
-            return None
-
-        if self._match(TokenType.STRING, advance=False):
-            this = self._parse_primary()
-        else:
-            this = self._parse_term()
-
-        if not this or (
-            isinstance(this, exp.Column)
-            and not this.table
-            and not this.this.quoted
-            and self._curr
-            and self._curr.text.upper() not in self.dialect.VALID_INTERVAL_UNITS
-        ):
-            self._retreat(index)
-            return None
-
+    def _parse_interval_span(self, this: exp.Expression) -> exp.Interval:
         # handle day-time format interval span with omitted units:
         #   INTERVAL '<number days> hh[:][mm[:ss[.ff]]]' <maybe `unit TO unit`>
         interval_span_units_omitted = None
@@ -5269,10 +5249,35 @@ class Parser(metaclass=_Parser):
 
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
-                exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)
+                exp.IntervalSpan,
+                this=unit,
+                expression=self._parse_function() or self._parse_var(any_token=True, upper=True),
             )
 
-        interval = self.expression(exp.Interval, this=this, unit=unit)
+        return self.expression(exp.Interval, this=this, unit=unit)
+
+    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Add | exp.Interval]:
+        index = self._index
+
+        if not self._match(TokenType.INTERVAL) and match_interval:
+            return None
+
+        if self._match(TokenType.STRING, advance=False):
+            this = self._parse_primary()
+        else:
+            this = self._parse_term()
+
+        if not this or (
+            isinstance(this, exp.Column)
+            and not this.table
+            and not this.this.quoted
+            and self._curr
+            and self._curr.text.upper() not in self.dialect.VALID_INTERVAL_UNITS
+        ):
+            self._retreat(index)
+            return None
+
+        interval = self._parse_interval_span(this)
 
         index = self._index
         self._match(TokenType.PLUS)
@@ -5604,8 +5609,8 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            unit = self._parse_var(upper=True)
-            if unit:
+            if self._curr and self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS:
+                unit = self._parse_var(upper=True)
                 if self._match_text_seq("TO"):
                     unit = exp.IntervalSpan(this=unit, expression=self._parse_var(upper=True))
 

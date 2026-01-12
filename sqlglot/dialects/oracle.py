@@ -178,7 +178,11 @@ class Oracle(Dialect):
         TYPE_LITERAL_PARSERS = {
             exp.DataType.Type.DATE: lambda self, this, _: self.expression(
                 exp.DateStrToDate, this=this
-            )
+            ),
+            # https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/NLS_TIMESTAMP_FORMAT.html
+            exp.DataType.Type.TIMESTAMP: lambda self, this, _: _build_to_timestamp(
+                [this, '"%Y-%m-%d %H:%M:%S.%f"']
+            ),
         }
 
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
@@ -280,6 +284,22 @@ class Oracle(Dialect):
 
         def _parse_connect_with_prior(self):
             return self._parse_assignment()
+
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            if not this:
+                return this
+
+            index = self._index
+
+            # https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Expressions.html
+            interval_span = self._parse_interval_span(this)
+            if isinstance(interval_span.args.get("unit"), exp.IntervalSpan):
+                return interval_span
+
+            self._retreat(index)
+            return this
 
         def _parse_insert_table(self) -> t.Optional[exp.Expression]:
             # Oracle does not use AS for INSERT INTO alias
@@ -427,3 +447,6 @@ class Oracle(Dialect):
 
         def isascii_sql(self, expression: exp.IsAscii) -> str:
             return f"NVL(REGEXP_LIKE({self.sql(expression.this)}, '^[' || CHR(1) || '-' || CHR(127) || ']*$'), TRUE)"
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"

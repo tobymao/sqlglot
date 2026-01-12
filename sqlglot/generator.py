@@ -4962,16 +4962,15 @@ class Generator(metaclass=_Generator):
         if isinstance(parent, exp.Filter):
             parent_cond = parent.expression.this
             parent_cond.replace(parent_cond.and_(column_expr.is_(exp.null()).not_()))
-        else:
+        elif column_expr.find(exp.Column):
             # Do not add the filter if the input is not a column (e.g. literal, struct etc)
-            if column_expr.find(exp.Column):
-                # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
-                this_sql = (
-                    self.expressions(column_expr)
-                    if isinstance(column_expr, exp.Distinct)
-                    else self.sql(column_expr)
-                )
-                array_agg_sql = f"{array_agg_sql} FILTER(WHERE {this_sql} IS NOT NULL)"
+            # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
+            this_sql = (
+                self.expressions(column_expr)
+                if isinstance(column_expr, exp.Distinct)
+                else self.sql(column_expr)
+            )
+            array_agg_sql = f"{array_agg_sql} FILTER(WHERE {this_sql} IS NOT NULL)"
 
         return array_agg_sql
 

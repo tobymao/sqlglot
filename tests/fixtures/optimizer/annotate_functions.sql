@@ -335,7 +335,7 @@ BINARY;
 ENCODE(tbl.bin_col, tbl.bin_col);
 BINARY;
 
-# dialect: spark2, spark, databricks
+# dialect: spark, databricks
 CURRENT_TIMEZONE();
 STRING;
 

@@ -55,7 +55,4 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
-    exp.CurrentTimezone: {
-        "returns": exp.DataType.Type.VARCHAR,
-    },
 }

@@ -335,6 +335,10 @@ BINARY;
 ENCODE(tbl.bin_col, tbl.bin_col);
 BINARY;
 
+# dialect: spark, databricks
+CURRENT_TIMEZONE();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

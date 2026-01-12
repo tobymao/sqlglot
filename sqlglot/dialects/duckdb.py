@@ -1094,11 +1094,7 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
-            "GET_BIT": lambda args: exp.Getbit(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                lsb_first=False,
-            ),
+            "GET_BIT": lambda args: exp.Getbit(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
@@ -1863,14 +1859,12 @@ class DuckDB(Dialect):
             """
             value = expression.this
             position = expression.expression
-            lsb_first = expression.args.get("lsb_first", False)
+            zero_is_lsb = expression.args.get("zero_is_lsb", False)
 
-            if (
-                expression.is_type(exp.DataType.Type.INT)
-                or expression.is_type(exp.DataType.Type.BIGINT)
-                or expression.is_type(exp.DataType.Type.TINYINT)
+            if expression.is_type(*exp.DataType.SIGNED_INTEGER_TYPES) or expression.is_type(
+                *exp.DataType.UNSIGNED_INTEGER_TYPES
             ):
-                if lsb_first:
+                if zero_is_lsb:
                     # Use bitwise operations: (value >> position) & 1
                     shifted = exp.BitwiseRightShift(this=value, expression=position)
                     masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))

@@ -5432,9 +5432,6 @@ class Generator(metaclass=_Generator):
 
         return self.sql(exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expr)))
 
-    def getbit_sql(self, expression: exp.Getbit) -> str:
-        return self.func("GETBIT", expression.this, expression.expression)
-
     def datefromunixdate_sql(self, expression: exp.DateFromUnixDate) -> str:
         return self.sql(
             exp.DateAdd(

@@ -2185,9 +2185,35 @@ class DuckDB(Dialect):
             return bracket
 
         def withingroup_sql(self, expression: exp.WithinGroup) -> str:
+            func = expression.this
+
+            # For ARRAY_AGG, DuckDB requires ORDER BY inside the function, not in WITHIN GROUP
+            # Transform: ARRAY_AGG(x) WITHIN GROUP (ORDER BY y) -> ARRAY_AGG(x ORDER BY y)
+            if isinstance(func, exp.ArrayAgg):
+                if not isinstance(order := expression.expression, exp.Order):
+                    return self.sql(func)
+
+                # Save the original column for FILTER clause (before wrapping with Order)
+                original_this = func.this
+
+                # Move ORDER BY inside ARRAY_AGG by wrapping its argument with Order
+                # ArrayAgg.this should become Order(this=ArrayAgg.this, expressions=order.expressions)
+                func.set(
+                    "this",
+                    exp.Order(
+                        this=func.this.copy(),
+                        expressions=order.expressions,
+                    ),
+                )
+
+                # Generate the ARRAY_AGG function with ORDER BY and add FILTER clause if needed
+                # Use original_this (not the Order-wrapped version) for the FILTER condition
+                array_agg_sql = self.function_fallback_sql(func)
+                return self._add_arrayagg_null_filter(array_agg_sql, func, original_this)
+
+            # For other functions (like PERCENTILES), use existing logic
             expression_sql = self.sql(expression, "expression")
 
-            func = expression.this
             if isinstance(func, exp.PERCENTILES):
                 # Make the order key the first arg and slide the fraction to the right
                 # https://duckdb.org/docs/sql/aggregates#ordered-set-aggregate-functions

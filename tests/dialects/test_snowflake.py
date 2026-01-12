@@ -4554,16 +4554,16 @@ FROM SEMANTIC_VIEW(
 
     def test_get_bit(self):
         self.validate_all(
-            "SELECT GETBIT(11, 3)",
+            "SELECT GETBIT(11, 1)",
             write={
-                "snowflake": "SELECT GETBIT(11, 3)",
-                "databricks": "SELECT GETBIT(11, 3)",
-                "redshift": "SELECT GETBIT(11, 3)",
+                "snowflake": "SELECT GETBIT(11, 1)",
+                "databricks": "SELECT GETBIT(11, 1)",
+                "redshift": "SELECT GETBIT(11, 1)",
             },
         )
-        expr = self.validate_identity("GETBIT(11, 3)")
+        expr = self.validate_identity("GETBIT(11, 1)")
         annotated = annotate_types(expr, dialect="snowflake")
-        self.assertEqual(annotated.sql("duckdb"), "(11 >> 3) & 1")
+        self.assertEqual(annotated.sql("duckdb"), "(11 >> 1) & 1")
 
     def test_to_binary(self):
         expr = self.validate_identity("TO_BINARY('48454C50', 'HEX')")

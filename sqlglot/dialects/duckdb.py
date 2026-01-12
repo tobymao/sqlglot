@@ -1094,7 +1094,6 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
-            "GET_BIT": lambda args: exp.Getbit(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
@@ -1869,6 +1868,10 @@ class DuckDB(Dialect):
                     shifted = exp.BitwiseRightShift(this=value, expression=position)
                     masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))
                     return self.sql(masked)
+                else:
+                    self.unsupported(
+                        "Getbit: The most significant bit is at index 0. This is unsupported"
+                    )
 
             return self.func("GET_BIT", value, position)
 

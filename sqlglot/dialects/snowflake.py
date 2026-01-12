@@ -828,6 +828,7 @@ class Snowflake(Dialect):
             "LOCALTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
+            "OBJECT_KEYS": exp.JSONKeys.from_arg_list,
             "OCTET_LENGTH": exp.ByteLength.from_arg_list,
             "PARSE_URL": lambda args: exp.ParseUrl(
                 this=seq_get(args, 0), permissive=seq_get(args, 1)
@@ -1563,6 +1564,7 @@ class Snowflake(Dialect):
             exp.JSONExtractScalar: lambda self, e: self.func(
                 "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
             ),
+            exp.JSONKeys: rename_func("OBJECT_KEYS"),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONValueArray: _json_extract_value_array_sql,

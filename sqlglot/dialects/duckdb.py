@@ -1794,6 +1794,36 @@ class DuckDB(Dialect):
                 )
             )
 
+        def bitmapconstructagg_sql(
+            self: DuckDB.Generator, expression: exp.BitmapConstructAgg
+        ) -> str:
+            """
+            Transpile Snowflake's BITMAP_CONSTRUCT_AGG to DuckDB equivalent.
+
+            Snowflake bitmap format:
+            - Small (< 5 unique values): 2-byte count (big-endian) + values (little-endian) + padding to 10 bytes
+            - Large (>= 5 unique values): 10-byte header (0x08 + 9 zeros) + values (little-endian)
+            """
+            arg = self.sql(expression.this)
+
+            # Build the aggregated list of sorted distinct values
+            list_expr = f"LIST_SORT(LIST_DISTINCT(LIST({arg}) FILTER (WHERE {arg} IS NOT NULL)))"
+
+            # Transform each value to little-endian hex (2 bytes per value)
+            value_transform = f"LIST_TRANSFORM({list_expr}, __x -> PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255))"
+
+            # Reduce the list to a concatenated hex string
+            values_hex = f"COALESCE(LIST_REDUCE({value_transform}, (__a, __b) -> __a || __b), '')"
+
+            # Small format: 2-byte count (big-endian) + values + padding to 10 bytes total
+            # Total = 2 (count) + count*2 (values) + padding = 10, so padding = (4 - count) * 2
+            small_format = f"UNHEX(PRINTF('%04X', LEN({list_expr})) || {values_hex} || REPEAT('00', GREATEST(0, 4 - LEN({list_expr})) * 2))"
+
+            # Large format: 10-byte header + values
+            large_format = f"UNHEX('08000000000000000000' || {values_hex})"
+
+            return f"CASE WHEN {list_expr} IS NULL OR LEN({list_expr}) = 0 THEN NULL WHEN LEN({list_expr}) < 5 THEN {small_format} ELSE {large_format} END"
+
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """
             Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.

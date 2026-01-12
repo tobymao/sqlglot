@@ -177,6 +177,10 @@ class SingleStore(MySQL):
                 expression=seq_get(args, 0),
                 json_type="JSON",
             ),
+            "JSON_KEYS": lambda args: exp.JSONKeys(
+                this=seq_get(args, 0),
+                expressions=args[1:],
+            ),
             "JSON_PRETTY": exp.JSONFormat.from_arg_list,
             "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
             "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),

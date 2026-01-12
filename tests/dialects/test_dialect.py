@@ -4964,3 +4964,48 @@ FROM subquery2""",
         self.validate_identity("SELECT 1 OPERATOR(+) 2")
         self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
         self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
+
+    def test_json_keys(self):
+        self.validate_all(
+            "JSON_KEYS(foo)",
+            read={
+                "": "JSON_KEYS(foo)",
+                "spark": "JSON_OBJECT_KEYS(foo)",
+                "databricks": "JSON_OBJECT_KEYS(foo)",
+                "mysql": "JSON_KEYS(foo)",
+                "starrocks": "JSON_KEYS(foo)",
+                "duckdb": "JSON_KEYS(foo)",
+                "snowflake": "OBJECT_KEYS(foo)",
+                "doris": "JSON_KEYS(foo)",
+                "singlestore": "JSON_KEYS(foo)",
+            },
+            write={
+                "spark": "JSON_OBJECT_KEYS(foo)",
+                "databricks": "JSON_OBJECT_KEYS(foo)",
+                "mysql": "JSON_KEYS(foo)",
+                "starrocks": "JSON_KEYS(foo)",
+                "duckdb": "JSON_KEYS(foo)",
+                "snowflake": "OBJECT_KEYS(foo)",
+                "doris": "JSON_KEYS(foo)",
+                "singlestore": "JSON_KEYS(foo)",
+            },
+        )
+
+        self.validate_all(
+            "JSON_KEYS(foo, p)",
+            read={
+                "": "JSON_KEYS(foo, p)",
+                "mysql": "JSON_KEYS(foo, p)",
+                "starrocks": "JSON_KEYS(foo, p)",
+                "duckdb": "JSON_KEYS(foo, p)",
+                "doris": "JSON_KEYS(foo, p)",
+                "singlestore": "JSON_KEYS(foo, p)",
+            },
+            write={
+                "mysql": "JSON_KEYS(foo, p)",
+                "starrocks": "JSON_KEYS(foo, p)",
+                "duckdb": "JSON_KEYS(foo, p)",
+                "doris": "JSON_KEYS(foo, p)",
+                "singlestore": "JSON_KEYS(foo, p)",
+            },
+        )

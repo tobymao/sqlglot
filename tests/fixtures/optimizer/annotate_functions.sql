@@ -2868,6 +2868,10 @@ KURTOSIS(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+KURTOSIS(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

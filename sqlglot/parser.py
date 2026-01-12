@@ -6251,7 +6251,7 @@ class Parser(metaclass=_Parser):
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
-        elif (not kind and self._match_set({TokenType.IN, TokenType.OUT}, advance=False)):
+        elif not kind and self._match_set({TokenType.IN, TokenType.OUT}, advance=False):
             constraints.append(self._parse_in_out())
             kind = self._parse_types()
         elif (
@@ -6447,7 +6447,7 @@ class Parser(metaclass=_Parser):
 
         return self.CONSTRAINT_PARSERS[constraint](self)
 
-    def _parse_in_out(self) -> t.Optional[exp.Expression]:
+    def _parse_in_out(self) -> exp.Expression:
         input_ = None
         if self._match(TokenType.IN):
             input_ = self._prev.text
@@ -6460,7 +6460,7 @@ class Parser(metaclass=_Parser):
             exp.InOutColumnConstraint,
             input_=input_,
             output=output,
-        ) 
+        )
 
     def _parse_unique_key(self) -> t.Optional[exp.Expression]:
         return self._parse_id_var(any_token=False)

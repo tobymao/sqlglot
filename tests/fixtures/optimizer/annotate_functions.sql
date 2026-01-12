@@ -2864,6 +2864,10 @@ INSERT(tbl.bin_col, 1, 2, tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+KURTOSIS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

@@ -340,6 +340,7 @@ EXPRESSION_METADATA = {
             exp.CovarSamp,
             exp.DotProduct,
             exp.EuclideanDistance,
+            exp.Kurtosis,
             exp.ManhattanDistance,
             exp.MonthsBetween,
             exp.Normal,

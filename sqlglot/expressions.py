@@ -8058,7 +8058,7 @@ class StrToTime(Func):
 
 
 # Spark allows unix_timestamp()
-# https://spark.apache.org/docs/3.1.3/api/python/reference/api/pyspark.sql.functions.unix_timestamp.html
+# https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.unix_timestamp.html
 class StrToUnix(Func):
     arg_types = {"this": False, "format": False}
 

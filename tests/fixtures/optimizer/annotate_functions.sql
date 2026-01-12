@@ -339,6 +339,10 @@ BINARY;
 CURRENT_TIMEZONE();
 STRING;
 
+# dialect: spark2, spark, databricks
+UNIX_TIMESTAMP();
+BIGINT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

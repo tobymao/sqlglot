@@ -4934,30 +4934,50 @@ class Generator(metaclass=_Generator):
 
         return self.func("JSON_EXISTS", this, path)
 
-    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
-        array_agg = self.function_fallback_sql(expression)
+    def _add_arrayagg_null_filter(
+        self,
+        array_agg_sql: str,
+        array_agg_expr: exp.ArrayAgg,
+        column_expr: exp.Expression,
+    ) -> str:
+        """
+        Add NULL filter to ARRAY_AGG if dialect requires it.
 
+        Args:
+            array_agg_sql: The generated ARRAY_AGG SQL string
+            array_agg_expr: The ArrayAgg expression node
+            column_expr: The column/expression to filter (before ORDER BY wrapping)
+
+        Returns:
+            SQL string with FILTER clause added if needed
+        """
         # Add a NULL FILTER on the column to mimic the results going from a dialect that excludes nulls
         # on ARRAY_AGG (e.g Spark) to one that doesn't (e.g. DuckDB)
-        if self.dialect.ARRAY_AGG_INCLUDES_NULLS and expression.args.get("nulls_excluded"):
-            parent = expression.parent
-            if isinstance(parent, exp.Filter):
-                parent_cond = parent.expression.this
-                parent_cond.replace(parent_cond.and_(expression.this.is_(exp.null()).not_()))
-            else:
-                this = expression.this
-                # Do not add the filter if the input is not a column (e.g. literal, struct etc)
-                if this.find(exp.Column):
-                    # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
-                    this_sql = (
-                        self.expressions(this)
-                        if isinstance(this, exp.Distinct)
-                        else self.sql(expression, "this")
-                    )
+        if not (
+            self.dialect.ARRAY_AGG_INCLUDES_NULLS and array_agg_expr.args.get("nulls_excluded")
+        ):
+            return array_agg_sql
 
-                    array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
+        parent = array_agg_expr.parent
+        if isinstance(parent, exp.Filter):
+            parent_cond = parent.expression.this
+            parent_cond.replace(parent_cond.and_(column_expr.is_(exp.null()).not_()))
+        else:
+            # Do not add the filter if the input is not a column (e.g. literal, struct etc)
+            if column_expr.find(exp.Column):
+                # DISTINCT is already present in the agg function, do not propagate it to FILTER as well
+                this_sql = (
+                    self.expressions(column_expr)
+                    if isinstance(column_expr, exp.Distinct)
+                    else self.sql(column_expr)
+                )
+                array_agg_sql = f"{array_agg_sql} FILTER(WHERE {this_sql} IS NOT NULL)"
 
-        return array_agg
+        return array_agg_sql
+
+    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+        array_agg = self.function_fallback_sql(expression)
+        return self._add_arrayagg_null_filter(array_agg, expression, expression.this)
 
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")

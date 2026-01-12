@@ -2137,48 +2137,26 @@ class DuckDB(Dialect):
             # For ARRAY_AGG, DuckDB requires ORDER BY inside the function, not in WITHIN GROUP
             # Transform: ARRAY_AGG(x) WITHIN GROUP (ORDER BY y) -> ARRAY_AGG(x ORDER BY y)
             if isinstance(func, exp.ArrayAgg):
-                order = expression.args.get("expression")
-                if order and isinstance(order, exp.Order):
-                    # Save the original column for FILTER clause (before wrapping with Order)
-                    original_this = func.this
+                if not isinstance(order := expression.expression, exp.Order):
+                    return self.sql(func)
 
-                    # Move ORDER BY inside ARRAY_AGG by wrapping its argument with Order
-                    # ArrayAgg.this should become Order(this=ArrayAgg.this, expressions=order.expressions)
-                    func.set(
-                        "this",
-                        exp.Order(
-                            this=func.this.copy(),
-                            expressions=order.expressions.copy() if order.expressions else [],
-                        ),
-                    )
+                # Save the original column for FILTER clause (before wrapping with Order)
+                original_this = func.this
 
-                    # Generate the ARRAY_AGG function with ORDER BY
-                    array_agg = self.function_fallback_sql(func)
+                # Move ORDER BY inside ARRAY_AGG by wrapping its argument with Order
+                # ArrayAgg.this should become Order(this=ArrayAgg.this, expressions=order.expressions)
+                func.set(
+                    "this",
+                    exp.Order(
+                        this=func.this.copy(),
+                        expressions=order.expressions,
+                    ),
+                )
 
-                    # Add FILTER clause if needed (same logic as base arrayagg_sql)
-                    # Use original_this (not the Order-wrapped version) for the FILTER condition
-                    if self.dialect.ARRAY_AGG_INCLUDES_NULLS and func.args.get("nulls_excluded"):
-                        parent = func.parent
-                        if isinstance(parent, exp.Filter):
-                            # Already has FILTER, modify it
-                            parent_cond = parent.expression.this
-                            parent_cond.replace(
-                                parent_cond.and_(original_this.is_(exp.null()).not_())
-                            )
-                        else:
-                            # Add FILTER clause using original column
-                            if original_this.find(exp.Column):
-                                this_sql = (
-                                    self.expressions(original_this)
-                                    if isinstance(original_this, exp.Distinct)
-                                    else self.sql(original_this)
-                                )
-                                array_agg = f"{array_agg} FILTER(WHERE {this_sql} IS NOT NULL)"
-
-                    return array_agg
-
-                # Generate the ArrayAgg (which will add FILTER if needed via base arrayagg_sql)
-                return self.sql(func)
+                # Generate the ARRAY_AGG function with ORDER BY and add FILTER clause if needed
+                # Use original_this (not the Order-wrapped version) for the FILTER condition
+                array_agg_sql = self.function_fallback_sql(func)
+                return self._add_arrayagg_null_filter(array_agg_sql, func, original_this)
 
             # For other functions (like PERCENTILES), use existing logic
             expression_sql = self.sql(expression, "expression")

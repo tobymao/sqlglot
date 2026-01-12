@@ -166,7 +166,6 @@ class Generator(metaclass=_Generator):
         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
-        exp.JSONKeys: lambda self, e: self.func("JSON_KEYS", e.this, e.expression, *e.expressions),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",

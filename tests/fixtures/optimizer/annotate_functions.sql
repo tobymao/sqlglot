@@ -323,9 +323,10 @@ INTERVAL;
 COALESCE(tbl.bin_col, tbl.str_col);
 BINARY;
 
-# dialect: spark2, spark, databricks
+# dialect: spark, databricks
 LOCALTIMESTAMP();
-TIMESTAMP;
+TIMESTAMPNTZ;
+
 # dialect: hive, spark2, spark, databricks
 ENCODE(tbl.str_col, tbl.str_col);
 BINARY;

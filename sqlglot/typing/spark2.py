@@ -55,5 +55,4 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
-    exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMP},
 }

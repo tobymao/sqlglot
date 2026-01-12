@@ -2735,6 +2735,33 @@ class TestSnowflake(Validator):
             },
         )
 
+        # Test TIMEADD with float interval value - DuckDB INTERVAL requires integers
+        self.validate_all(
+            "TIMEADD(HOUR, 2.5, CAST('10:30:00' AS TIME))",
+            write={
+                "duckdb": "CAST('10:30:00' AS TIME) + INTERVAL (CAST(ROUND(2.5) AS INT)) HOUR",
+                "snowflake": "TIMEADD(HOUR, 2.5, CAST('10:30:00' AS TIME))",
+            },
+        )
+
+        # Test DATEADD with decimal interval value
+        self.validate_all(
+            "DATEADD(HOUR, CAST(3.8 AS DECIMAL(10, 2)), CAST('2024-01-01 10:00:00' AS TIMESTAMP))",
+            write={
+                "duckdb": "CAST('2024-01-01 10:00:00' AS TIMESTAMP) + INTERVAL (CAST(ROUND(CAST(3.8 AS DECIMAL(10, 2))) AS INT)) HOUR",
+                "snowflake": "DATEADD(HOUR, CAST(3.8 AS DECIMAL(10, 2)), CAST('2024-01-01 10:00:00' AS TIMESTAMP))",
+            },
+        )
+
+        # Test TIMESTAMPADD with float interval value - Snowflake parser converts to DATEADD
+        self.validate_all(
+            "TIMESTAMPADD(MINUTE, 30.9, CAST('2024-01-01 10:00:00' AS TIMESTAMP))",
+            write={
+                "duckdb": "CAST('2024-01-01 10:00:00' AS TIMESTAMP) + INTERVAL (CAST(ROUND(30.9) AS INT)) MINUTE",
+                "snowflake": "DATEADD(MINUTE, 30.9, CAST('2024-01-01 10:00:00' AS TIMESTAMP))",
+            },
+        )
+
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")

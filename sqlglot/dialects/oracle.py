@@ -179,12 +179,9 @@ class Oracle(Dialect):
             exp.DataType.Type.DATE: lambda self, this, _: self.expression(
                 exp.DateStrToDate, this=this
             ),
-            exp.DataType.Type.TIMESTAMP: lambda self, this, _: self.expression(
-                exp.StrToTime,
-                this=this,
-                format=exp.Literal.string(
-                    "%Y-%m-%d %H:%M:%S.%f" if "." in this.name else "%Y-%m-%d %H:%M:%S"
-                ),
+            # https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/NLS_TIMESTAMP_FORMAT.html
+            exp.DataType.Type.TIMESTAMP: lambda self, this, _: _build_to_timestamp(
+                [this, '"%Y-%m-%d %H:%M:%S.%f"']
             ),
         }
 
@@ -295,14 +292,11 @@ class Oracle(Dialect):
                 return this
 
             index = self._index
-            unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
 
-            if unit and self._match_text_seq("TO"):
-                to_unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
-
-                if to_unit:
-                    unit = exp.IntervalSpan(this=unit, expression=to_unit)
-                    return self.expression(exp.Interval, this=this, unit=unit)
+            # https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Expressions.html
+            interval_span = self._parse_interval_span(this)
+            if isinstance(interval_span.args.get("unit"), exp.IntervalSpan):
+                return interval_span
 
             self._retreat(index)
             return this

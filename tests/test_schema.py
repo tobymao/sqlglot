@@ -241,6 +241,36 @@ class TestSchema(unittest.TestCase):
         schema = MappingSchema(schema={"X": {"y": "int"}}, normalize=False, dialect="snowflake")
         self.assertEqual(schema.column_names("x", normalize=True), ["y"])
 
+        # Check that identifiers in nested data types are normalized
+        # BigQuery: STRUCT field names should be lowercased
+        schema = MappingSchema({"t": {"col": "STRUCT<FooBar INT>"}}, dialect="bigquery")
+        col_type = schema.get_column_type("t", "col")
+        self.assertEqual(col_type.expressions[0].name, "foobar")
+
+        # Snowflake: STRUCT field names should be uppercased
+        schema = MappingSchema({"t": {"col": "STRUCT<FooBar INT>"}}, dialect="snowflake")
+        col_type = schema.get_column_type("T", "COL")
+        self.assertEqual(col_type.expressions[0].name, "FOOBAR")
+
+        # ClickHouse: STRUCT field names should preserve case (case-sensitive)
+        schema = MappingSchema({"t": {"col": "STRUCT<FooBar INT>"}}, dialect="clickhouse")
+        col_type = schema.get_column_type("t", "col")
+        self.assertEqual(col_type.expressions[0].name, "FooBar")
+
+        # Nested STRUCT field names should also be normalized
+        schema = MappingSchema(
+            {"t": {"col": "STRUCT<Outer STRUCT<Inner INT>>"}}, dialect="bigquery"
+        )
+        col_type = schema.get_column_type("t", "col")
+        self.assertEqual(col_type.expressions[0].name, "outer")
+        self.assertEqual(col_type.expressions[0].kind.expressions[0].name, "inner")
+
+        # ARRAY of STRUCT field names should also be normalized
+        schema = MappingSchema({"t": {"col": "ARRAY<STRUCT<FooBar INT>>"}}, dialect="bigquery")
+        col_type = schema.get_column_type("t", "col")
+        struct_type = col_type.expressions[0]
+        self.assertEqual(struct_type.expressions[0].name, "foobar")
+
     def test_same_number_of_qualifiers(self):
         schema = MappingSchema({"x": {"y": {"c1": "int"}}})
 

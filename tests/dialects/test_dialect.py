@@ -4992,20 +4992,18 @@ FROM subquery2""",
         )
 
         self.validate_all(
-            "JSON_KEYS(foo, p)",
+            "JSON_KEYS(foo, '$.a')",
             read={
-                "": "JSON_KEYS(foo, p)",
-                "mysql": "JSON_KEYS(foo, p)",
-                "starrocks": "JSON_KEYS(foo, p)",
-                "duckdb": "JSON_KEYS(foo, p)",
-                "doris": "JSON_KEYS(foo, p)",
-                "singlestore": "JSON_KEYS(foo, p)",
+                "": "JSON_KEYS(foo, '$.a')",
+                "mysql": "JSON_KEYS(foo, '$.a')",
+                "starrocks": "JSON_KEYS(foo, '$.a')",
+                "duckdb": "JSON_KEYS(foo, '$.a')",
+                "doris": "JSON_KEYS(foo, '$.a')",
             },
             write={
-                "mysql": "JSON_KEYS(foo, p)",
-                "starrocks": "JSON_KEYS(foo, p)",
-                "duckdb": "JSON_KEYS(foo, p)",
-                "doris": "JSON_KEYS(foo, p)",
-                "singlestore": "JSON_KEYS(foo, p)",
+                "mysql": "JSON_KEYS(foo, '$.a')",
+                "starrocks": "JSON_KEYS(foo, '$.a')",
+                "duckdb": "JSON_KEYS(foo, '$.a')",
+                "doris": "JSON_KEYS(foo, '$.a')",
             },
         )

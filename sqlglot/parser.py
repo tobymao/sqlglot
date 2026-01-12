@@ -252,6 +252,7 @@ class Parser(metaclass=_Parser):
         "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
+        "JSON_KEYS": build_extract_json_with_path(exp.JSONKeys),
         "LIKE": build_like,
         "LOG": build_logarithm,
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),

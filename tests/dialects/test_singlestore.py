@@ -23,7 +23,7 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
         self.validate_identity("SELECT TO_JSON(ROW(1, 2) :> RECORD(a INT, b INT))")
 
-        self.validate_identity("JSON_KEYS(json_doc, keypath_1, keypath_2)")
+        self.validate_identity("JSON_KEYS(json_doc, 1, 'a')")
 
     def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")

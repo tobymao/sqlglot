@@ -6448,13 +6448,8 @@ class Parser(metaclass=_Parser):
         return self.CONSTRAINT_PARSERS[constraint](self)
 
     def _parse_in_out(self) -> exp.Expression:
-        input_ = None
-        if self._match(TokenType.IN):
-            input_ = self._prev.text
-
-        output = None
-        if self._match(TokenType.OUT):
-            output = self._prev.text
+        input_ = self._match(TokenType.IN)
+        output = self._match(TokenType.OUT)
 
         return self.expression(
             exp.InOutColumnConstraint,

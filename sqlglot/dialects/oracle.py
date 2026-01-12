@@ -455,5 +455,5 @@ class Oracle(Dialect):
             param_constraint = expression.find(exp.InOutColumnConstraint)
             if param_constraint:
                 sep = f" {self.sql(param_constraint)} "
-                param_constraint.replace(None)
+                param_constraint.pop()
             return super().columndef_sql(expression, sep)

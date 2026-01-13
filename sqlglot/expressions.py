@@ -8342,6 +8342,10 @@ class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
 
 
+class Kurtosis(AggFunc):
+    pass
+
+
 class Skewness(AggFunc):
     pass
 

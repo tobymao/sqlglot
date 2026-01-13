@@ -1859,6 +1859,33 @@ class DuckDB(Dialect):
             replacements = {"s": s, "n": n, "random_expr": random_expr}
             return f"({self.sql(exp.replace_placeholders(self.ZIPF_TEMPLATE, **replacements))})"
 
+        def getbit_sql(self: DuckDB.Generator, expression: exp.Getbit) -> str:
+            """
+            Transpile GETBIT to DuckDB with comprehensive compatibility handling.
+
+            Handles potential differences:
+            1. Bit indexing: DuckDB counts from the most significant bit, while dialects like Snowflake counts from the least significant bit
+            2. Input type: DuckDB's GET_BIT takes BITSTRING as input, while Snowflake's input is of integer types
+            """
+            value = expression.this
+            position = expression.expression
+            zero_is_lsb = expression.args.get("zero_is_lsb", False)
+
+            if expression.is_type(*exp.DataType.SIGNED_INTEGER_TYPES) or expression.is_type(
+                *exp.DataType.UNSIGNED_INTEGER_TYPES
+            ):
+                if zero_is_lsb:
+                    # Use bitwise operations: (value >> position) & 1
+                    shifted = exp.BitwiseRightShift(this=value, expression=position)
+                    masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))
+                    return self.sql(masked)
+                else:
+                    self.unsupported(
+                        "Getbit: The most significant bit is at index 0. This is unsupported"
+                    )
+
+            return self.func("GET_BIT", value, position)
+
         def tobinary_sql(self: DuckDB.Generator, expression: exp.ToBinary) -> str:
             """
             TO_BINARY and TRY_TO_BINARY transpilation:

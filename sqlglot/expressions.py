@@ -2486,6 +2486,7 @@ class OnConflict(Expression):
         "expressions": False,
         "action": False,
         "conflict_keys": False,
+        "index_predicate": False,
         "constraint": False,
         "where": False,
     }

@@ -935,7 +935,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST(CAST(x AS DATE) AS DATE) + INTERVAL 1 DAY",
+            "SELECT CAST(TRY_CAST(x AS DATE) AS DATE) + INTERVAL 1 DAY",
             read={
                 "hive": "SELECT DATE_ADD(TO_DATE(x), 1)",
             },

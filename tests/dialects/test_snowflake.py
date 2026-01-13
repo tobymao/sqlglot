@@ -3188,7 +3188,7 @@ class TestSnowflake(Validator):
             "TRY_TO_DATE('01-01-2000', 'MM-DD-YYYY')",
             write={
                 "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
-                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('01-01-2000', '%m-%d-%Y') AS TIMESTAMP) AS DATE)",
             },
         )
 

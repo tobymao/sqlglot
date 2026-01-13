@@ -4505,11 +4505,11 @@ class Generator(metaclass=_Generator):
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this
         time_format = self.format_time(expression)
-
+        safe = expression.args.get("safe")
         if time_format and time_format not in (self.dialect.TIME_FORMAT, self.dialect.DATE_FORMAT):
             return self.sql(
                 exp.cast(
-                    exp.StrToTime(this=this, format=expression.args["format"]),
+                    exp.StrToTime(this=this, format=expression.args["format"], safe=safe),
                     exp.DataType.Type.DATE,
                 )
             )
@@ -4517,7 +4517,10 @@ class Generator(metaclass=_Generator):
         if isinstance(this, exp.TsOrDsToDate) or this.is_type(exp.DataType.Type.DATE):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
+        if safe:
+            return self.sql(exp.TryCast(this=this, to=exp.DataType(this=exp.DataType.Type.DATE)))
+        else:
+            return self.sql(exp.cast(this, exp.DataType.Type.DATE))
 
     def unixdate_sql(self, expression: exp.UnixDate) -> str:
         return self.sql(

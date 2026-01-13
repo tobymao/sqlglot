@@ -460,11 +460,11 @@ class TestHive(Validator):
         self.validate_all(
             "DATEDIFF(TO_DATE(y), x)",
             write={
-                "duckdb": "DATE_DIFF('DAY', CAST(x AS DATE), CAST(y AS DATE))",
+                "duckdb": "DATE_DIFF('DAY', CAST(x AS DATE), TRY_CAST(y AS DATE))",
                 "presto": "DATE_DIFF('DAY', CAST(CAST(x AS TIMESTAMP) AS DATE), CAST(CAST(CAST(CAST(y AS TIMESTAMP) AS DATE) AS TIMESTAMP) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(y), x)",
                 "spark": "DATEDIFF(TO_DATE(y), x)",
-                "": "DATEDIFF(CAST(y AS DATE), CAST(x AS DATE))",
+                "": "DATEDIFF(TRY_CAST(y AS DATE), CAST(x AS DATE))",
             },
         )
         self.validate_all(

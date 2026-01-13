@@ -330,6 +330,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("ALTER TABLE table_name ALTER COLUMN bla TYPE VARCHAR")
         self.validate_identity("SELECT CAST(value AS FLOAT(8))")

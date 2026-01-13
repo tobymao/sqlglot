@@ -22,6 +22,7 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity("SELECT GET_BIT(CAST(44 AS BIT(10)), 6)")
         self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT EXP(1)")

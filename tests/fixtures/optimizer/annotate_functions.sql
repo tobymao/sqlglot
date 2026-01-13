@@ -343,6 +343,19 @@ STRING;
 UNIX_TIMESTAMP();
 BIGINT;
 
+# dialect: spark2, spark, databricks
+ATAN2(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+ATAN2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+ATAN2(tbl.double_col, tbl.int_col);
+DOUBLE;
+
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

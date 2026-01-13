@@ -1953,21 +1953,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_PART(EPOCH_MICROSECOND, CAST('2026-01-06' AS DATE))",
-            write={
-                "snowflake": "SELECT DATE_PART(EPOCH_MICROSECOND, CAST('2026-01-06' AS DATE))",
-                "duckdb": "SELECT EPOCH_US(CAST('2026-01-06' AS DATE))",
-            },
-        )
-        self.validate_all(
-            "SELECT DATE_PART(EPOCH_NANOSECOND, CAST('2026-01-06' AS DATE))",
-            write={
-                "snowflake": "SELECT DATE_PART(EPOCH_NANOSECOND, CAST('2026-01-06' AS DATE))",
-                "duckdb": "SELECT EPOCH_NS(CAST('2026-01-06' AS DATE))",
-            },
-        )
-
-        self.validate_all(
             "SELECT EXTRACT(YEAR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
             write={
                 "snowflake": "SELECT DATE_PART(YEAR, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",

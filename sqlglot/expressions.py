@@ -6944,7 +6944,9 @@ class GetExtract(Func):
 
 
 class Getbit(Func):
-    arg_types = {"this": True, "expression": True}
+    _sql_names = ["GETBIT", "GET_BIT"]
+    # zero_is_lsb means the least significant bit is at index 0
+    arg_types = {"this": True, "expression": True, "zero_is_lsb": False}
 
 
 class Greatest(Func):

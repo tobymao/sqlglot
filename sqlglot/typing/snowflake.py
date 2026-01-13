@@ -483,7 +483,6 @@ EXPRESSION_METADATA = {
             exp.DecompressString,
             exp.HexDecodeString,
             exp.HexEncode,
-            exp.Initcap,
             exp.MD5,
             exp.Monthname,
             exp.Randstr,

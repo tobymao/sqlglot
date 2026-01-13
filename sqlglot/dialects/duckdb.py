@@ -144,6 +144,80 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     return self.function_fallback_sql(expression)
 
 
+def _next_day_sql(self: DuckDB.Generator, expression: exp.NextDay) -> str:
+    """
+    Transpile Snowflake's NEXT_DAY to DuckDB using date arithmetic.
+
+    Returns the DATE of the next occurrence of the specified weekday.
+
+    Formula: (target_dow - current_dow + 6) % 7 + 1
+
+    The +6 normalizes negative differences and the final +1 prevents zero results.
+
+    Examples:
+        NEXT_DAY('2024-01-01' (Monday), 'Monday')
+          → (1 - 1 + 6) % 7 + 1 = 6 % 7 + 1 = 7 days → 2024-01-08
+
+        NEXT_DAY('2024-01-01' (Monday), 'Friday')
+          → (5 - 1 + 6) % 7 + 1 = 10 % 7 + 1 = 4 days → 2024-01-05
+
+    """
+    date_expr = expression.this
+    day_name_expr = expression.expression
+
+    # Handle NULL inputs - return CAST(NULL AS DATE)
+    if isinstance(date_expr, exp.Null) or isinstance(day_name_expr, exp.Null):
+        return self.sql(exp.cast(exp.Null(), exp.DataType.Type.DATE))
+
+    # Only support literal day names (not columns/expressions)
+    if not isinstance(day_name_expr, exp.Literal):
+        self.unsupported("NEXT_DAY with non-literal day name not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
+    # Extract and normalize day name
+    day_name_str = str(day_name_expr.this).upper()
+    if len(day_name_str) < 2:
+        self.unsupported("Day name must be at least 2 characters")
+        return self.function_fallback_sql(expression)
+
+    # Find matching day in WEEK_START_DAY_TO_DOW (handles both full names and abbreviations)
+    # e.g., "MONDAY" matches "MONDAY", "MO" matches "MONDAY", "FRI" matches "FRIDAY"
+    matching_day = next(
+        (day for day in WEEK_START_DAY_TO_DOW if day.startswith(day_name_str)), None
+    )
+    if not matching_day:
+        self.unsupported(f"Invalid day name or abbreviation: {day_name_str}")
+        return self.function_fallback_sql(expression)
+
+    target_dow = WEEK_START_DAY_TO_DOW[matching_day]
+
+    # Build the calculation: (target - ISODOW(date) + 6) % 7 + 1
+    isodow_call = exp.func("ISODOW", date_expr)
+
+    # Step 1: target - ISODOW(date) + 6
+    days_expr = exp.Add(
+        this=exp.Sub(this=exp.Literal.number(target_dow), expression=isodow_call),
+        expression=exp.Literal.number(6),
+    )
+
+    # Step 2: (...) % 7
+    mod_expr = exp.Mod(this=exp.Paren(this=days_expr), expression=exp.Literal.number(7))
+
+    # Step 3: ... + 1
+    days_to_add = exp.Add(this=mod_expr, expression=exp.Literal.number(1))
+
+    # Build final: CAST(date + INTERVAL (days_to_add) DAY AS DATE)
+    result = exp.cast(
+        exp.Add(
+            this=date_expr,
+            expression=exp.Interval(this=days_to_add, unit=exp.var("DAY")),
+        ),
+        exp.DataType.Type.DATE,
+    )
+
+    return self.sql(result)
+
+
 def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
     return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
 
@@ -1576,6 +1650,7 @@ class DuckDB(Dialect):
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
             exp.LastDay: _last_day_sql,
+            exp.NextDay: _next_day_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

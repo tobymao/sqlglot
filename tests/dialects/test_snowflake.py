@@ -1931,6 +1931,54 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "NEXT_DAY(CAST('2024-01-01' AS DATE), 'Monday')",
+            write={
+                "snowflake": "NEXT_DAY(CAST('2024-01-01' AS DATE), 'Monday')",
+                "duckdb": "CAST(CAST('2024-01-01' AS DATE) + INTERVAL ((1 - ISODOW(CAST('2024-01-01' AS DATE)) + 6) % 7 + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "NEXT_DAY(CAST('2024-01-05' AS DATE), 'Friday')",
+            write={
+                "snowflake": "NEXT_DAY(CAST('2024-01-05' AS DATE), 'Friday')",
+                "duckdb": "CAST(CAST('2024-01-05' AS DATE) + INTERVAL ((5 - ISODOW(CAST('2024-01-05' AS DATE)) + 6) % 7 + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "NEXT_DAY(CAST('2024-01-05' AS DATE), 'WE')",
+            write={
+                "snowflake": "NEXT_DAY(CAST('2024-01-05' AS DATE), 'WE')",
+                "duckdb": "CAST(CAST('2024-01-05' AS DATE) + INTERVAL ((3 - ISODOW(CAST('2024-01-05' AS DATE)) + 6) % 7 + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "NEXT_DAY(CAST('2024-01-01 10:30:45' AS TIMESTAMP), 'Friday')",
+            write={
+                "snowflake": "NEXT_DAY(CAST('2024-01-01 10:30:45' AS TIMESTAMP), 'Friday')",
+                "duckdb": "CAST(CAST('2024-01-01 10:30:45' AS TIMESTAMP) + INTERVAL ((5 - ISODOW(CAST('2024-01-01 10:30:45' AS TIMESTAMP)) + 6) % 7 + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "NEXT_DAY(NULL, 'Monday')",
+            write={
+                "snowflake": "NEXT_DAY(NULL, 'Monday')",
+                "duckdb": "CAST(NULL AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "NEXT_DAY(CAST('2024-01-01' AS DATE), NULL)",
+            write={
+                "snowflake": "NEXT_DAY(CAST('2024-01-01' AS DATE), NULL)",
+                "duckdb": "CAST(NULL AS DATE)",
+            },
+        )
+
+        self.validate_all(
             "SELECT ST_DISTANCE(a, b)",
             write={
                 "snowflake": "SELECT ST_DISTANCE(a, b)",

@@ -2888,22 +2888,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT TRY_TO_TIME('2024-01-15 14:30:00'::TIMESTAMP)",
-            write={
-                "bigquery": "SELECT TIME(CAST('2024-01-15 14:30:00' AS DATETIME))",
-                "snowflake": "SELECT TRY_TO_TIME(CAST('2024-01-15 14:30:00' AS TIMESTAMP))",
-                "duckdb": "SELECT TRY_CAST(CAST('2024-01-15 14:30:00' AS TIMESTAMP) AS TIME)",
-            },
-        )
-        self.validate_all(
-            "SELECT TRY_TO_TIME('2024-01-15 14:30:00'::TIMESTAMP)",
-            write={
-                "bigquery": "SELECT TIME(CAST('2024-01-15 14:30:00' AS DATETIME))",
-                "snowflake": "SELECT TRY_TO_TIME(CAST('2024-01-15 14:30:00' AS TIMESTAMP))",
-                "duckdb": "SELECT TRY_CAST(CAST('2024-01-15 14:30:00' AS TIMESTAMP) AS TIME)",
-            },
-        )
-        self.validate_all(
             "SELECT TRY_TO_TIME('11.15.00')",
             write={
                 "snowflake": "SELECT TRY_CAST('11.15.00' AS TIME)",

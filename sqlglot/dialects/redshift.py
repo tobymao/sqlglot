@@ -82,6 +82,7 @@ class Redshift(Postgres):
             ),
             "STRTOL": exp.FromBase.from_arg_list,
         }
+        FUNCTIONS.pop("GET_BIT")
 
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
@@ -243,6 +244,9 @@ class Redshift(Postgres):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.LastDay)
         TRANSFORMS.pop(exp.SHA2)
+
+        # Postgres and Redshift have different semantics for Getbit
+        TRANSFORMS.pop(exp.Getbit)
 
         # Postgres does not permit a double precision argument in ROUND; Redshift does
         TRANSFORMS.pop(exp.Round)

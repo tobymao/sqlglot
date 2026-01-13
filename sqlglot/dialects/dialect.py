@@ -2267,3 +2267,24 @@ def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Express
             modifiers = exp.Literal.string(value + "g")
 
     return modifiers
+
+
+def getbit_sql(self: Generator, expression: exp.Getbit) -> str:
+    """
+    Generates SQL for Getbit according to DuckDB and Postgres, transpiling it if either:
+
+    1. The zero index corresponds to the least-significant bit
+    2. The input type is an integer value
+    """
+    value = expression.this
+    position = expression.expression
+
+    if not expression.args.get("zero_is_msb") and expression.is_type(
+        *exp.DataType.SIGNED_INTEGER_TYPES, *exp.DataType.UNSIGNED_INTEGER_TYPES
+    ):
+        # Use bitwise operations: (value >> position) & 1
+        shifted = exp.BitwiseRightShift(this=value, expression=position)
+        masked = exp.BitwiseAnd(this=shifted, expression=exp.Literal.number(1))
+        return self.sql(masked)
+
+    return self.func("GET_BIT", value, position)

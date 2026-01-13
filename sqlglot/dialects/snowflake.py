@@ -901,11 +901,6 @@ class Snowflake(Dialect):
             "TRY_TO_TIMESTAMP_TZ": _build_datetime(
                 "TRY_TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ, safe=True
             ),
-            "GETBIT": lambda args: exp.Getbit(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                zero_is_lsb=True,
-            ),
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
             **dict.fromkeys(

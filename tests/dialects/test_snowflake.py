@@ -442,6 +442,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
+        self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
         self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")

@@ -1739,6 +1739,14 @@ STRING;
 r'a';
 STRING;
 
+# dialect: bigquery
+INITCAP('foo');
+STRING;
+
+# dialect: bigquery
+INITCAP('foo', 'f');
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

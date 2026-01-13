@@ -302,6 +302,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.CodePointsToString,
             exp.Format,
+            exp.Initcap,
             exp.JSONExtractScalar,
             exp.JSONType,
             exp.LaxString,

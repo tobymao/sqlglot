@@ -242,6 +242,7 @@ EXPRESSION_METADATA = {
             exp.Array,
             exp.ArrayAgg,
             exp.ArrayAppend,
+            exp.ArrayConcat,
             exp.ArrayConstructCompact,
             exp.ArrayPrepend,
             exp.ArrayRemove,

@@ -1735,6 +1735,10 @@ STRING;
 ANY_VALUE(c2::STRING HAVING MAX c1::INT64);
 STRING;
 
+# dialect: bigquery
+r'a';
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------

@@ -56,4 +56,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         )
     },
     exp.Atan2: {"returns": exp.DataType.Type.DOUBLE},
+    exp.Tanh: {"returns": exp.DataType.Type.DOUBLE},
 }

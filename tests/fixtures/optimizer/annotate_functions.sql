@@ -355,6 +355,14 @@ DOUBLE;
 ATAN2(tbl.double_col, tbl.int_col);
 DOUBLE;
 
+# dialect: spark2, spark, databricks
+TANH(tbl.double_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+TANH(tbl.int_col);
+DOUBLE;
+
 
 --------------------------------------
 -- BigQuery

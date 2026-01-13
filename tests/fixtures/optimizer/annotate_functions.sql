@@ -3865,6 +3865,14 @@ TRY_TO_TIME('12:30:00', 'AUTO');
 TIME;
 
 # dialect: snowflake
+TO_TIME('093000', 'HH24MISS');
+TIME;
+
+# dialect: snowflake
+TRY_TO_TIME('093000', 'HH24MISS');
+TIME;
+
+# dialect: snowflake
 TO_TIMESTAMP('2024-01-15 12:30:00');
 TIMESTAMP;
 

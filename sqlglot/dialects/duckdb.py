@@ -280,13 +280,7 @@ def _date_delta_to_binary_interval_op(
         if not interval_value or isinstance(interval_value, exp.Interval):
             return base_impl(self, expression)
 
-        # Lazy annotate types if not already present
-        if not interval_value.type:
-            from sqlglot.optimizer.annotate_types import annotate_types
-
-            interval_value = annotate_types(interval_value, dialect=self.dialect)
-
-        if interval_value.type and interval_value.type.is_type(*exp.DataType.REAL_TYPES):
+        if interval_value.is_type(*exp.DataType.REAL_TYPES):
             expression.set("expression", exp.cast(exp.func("ROUND", interval_value), "INT"))
 
         return base_impl(self, expression)

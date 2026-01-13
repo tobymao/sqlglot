@@ -193,9 +193,7 @@ def _annotate_kurtosis(self: TypeAnnotator, expression: exp.Kurtosis) -> exp.Kur
 
     if input_type.is_type(exp.DataType.Type.DECFLOAT):
         self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
-    elif input_type.is_type(exp.DataType.Type.DOUBLE) or input_type.is_type(
-        exp.DataType.Type.FLOAT
-    ):
+    elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
         self._set_type(expression, exp.DataType.Type.DOUBLE)
     else:
         self._set_type(

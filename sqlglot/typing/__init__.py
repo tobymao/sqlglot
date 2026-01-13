@@ -204,6 +204,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.UnixToStr,
             exp.UnixToTimeStr,
             exp.Upper,
+            exp.RawString,
         }
     },
     **{

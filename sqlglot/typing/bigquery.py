@@ -312,7 +312,6 @@ EXPRESSION_METADATA = {
             exp.SafeConvertBytesToString,
             exp.Soundex,
             exp.Uuid,
-            exp.RawString,
         }
     },
     **{

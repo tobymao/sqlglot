@@ -2872,6 +2872,30 @@ KURTOSIS(tbl.double_col) OVER (PARTITION BY 1);
 DOUBLE;
 
 # dialect: snowflake
+KURTOSIS(tbl.float_col);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.float_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col) OVER (PARTITION BY 1);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col) OVER (PARTITION BY 1);
+DECFLOAT;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 

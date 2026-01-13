@@ -251,15 +251,19 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
 def _date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
-    """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
+    """
+    DuckDB override to handle:
+    1. NANOSECOND operations (DuckDB doesn't support INTERVAL ... NANOSECOND)
+    2. Float/decimal interval values (DuckDB INTERVAL requires integers)
+    """
     base_impl = date_delta_to_binary_interval_op(cast=cast)
 
     def _duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
         unit = expression.unit
+        interval_value = expression.expression
 
         # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
         if _is_nanosecond_unit(unit):
-            interval_value = expression.expression
             if isinstance(interval_value, exp.Interval):
                 interval_value = interval_value.this
 
@@ -271,6 +275,19 @@ def _date_delta_to_binary_interval_op(
                     exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=interval_value),
                 )
             )
+
+        # Handle float/decimal interval values as duckDB INTERVAL requires integer expressions
+        if not interval_value or isinstance(interval_value, exp.Interval):
+            return base_impl(self, expression)
+
+        # Lazy annotate types if not already present
+        if not interval_value.type:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            interval_value = annotate_types(interval_value, dialect=self.dialect)
+
+        if interval_value.type and interval_value.type.is_type(*exp.DataType.REAL_TYPES):
+            expression.set("expression", exp.cast(exp.func("ROUND", interval_value), "INT"))
 
         return base_impl(self, expression)
 

@@ -32,6 +32,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 * [Used By](#used-by)
 * [Documentation](#documentation)
 * [Run Tests and Lint](#run-tests-and-lint)
+* [Deployment](#deployment)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
 * [Supported Dialects](#supported-dialects)
@@ -525,6 +526,19 @@ make unit   # Only unit tests (or unit-rs, to use the Rust tokenizer)
 make test   # Unit and integration tests (or test-rs, to use the Rust tokenizer)
 make check  # Full test suite & linter checks
 ```
+
+## Deployment
+
+To deploy a new SQLGlot version, follow these steps:
+
+1. Run `git pull` to make sure the local git repo is at the head of the main branch
+2. If there was a breaking change since the last version release (commit marked with `!`), bump to the next minor or major version
+3. If the Rust tokenizer code hasn't changed since the last version release, go to step 7, otherwise continue to 4
+4. Bump the `version` attribute under the `package` header in `sqlglotrs/Cargo.toml`, taking breaking changes into account
+5. Run `make install-dev`. This will update the `Cargo.lock` file
+6. Commit the changes made to `Cargo.toml` and `Cargo.lock`
+7. Determine what the next SQLGlot version is and do a `git tag` operation, e.g. `git tag v28.5.0`
+8. Finally, run `git push && git push --tags` to deploy the new SQLGlot version
 
 ## Benchmarks
 

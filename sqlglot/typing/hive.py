@@ -11,4 +11,5 @@ EXPRESSION_METADATA = {
     },
     exp.Encode: {"returns": exp.DataType.Type.BINARY},
     exp.StrToUnix: {"returns": exp.DataType.Type.BIGINT},
+    exp.Tanh: {"returns": exp.DataType.Type.DOUBLE},
 }

@@ -6254,6 +6254,14 @@ class Parser(metaclass=_Parser):
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
+        elif not kind and self._match_set({TokenType.IN, TokenType.OUT}, advance=False):
+            in_out_constraint = self.expression(
+                exp.InOutColumnConstraint,
+                input_=self._match(TokenType.IN),
+                output=self._match(TokenType.OUT),
+            )
+            constraints.append(in_out_constraint)
+            kind = self._parse_types()
         elif (
             kind
             and self._match(TokenType.ALIAS, advance=False)

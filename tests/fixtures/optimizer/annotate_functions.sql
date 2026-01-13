@@ -359,7 +359,7 @@ DOUBLE;
 TANH(tbl.double_col);
 DOUBLE;
 
-# dialect: spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks
 TANH(tbl.int_col);
 DOUBLE;
 

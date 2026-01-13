@@ -1727,28 +1727,21 @@ class DuckDB(Dialect):
         )
 
         # Template for BITMAP_CONSTRUCT_AGG transpilation
-        # Uses a subquery to define list_expr once and reference it multiple times
+        # Uses nested subqueries to compute list (l) and hex string (h) once each
         BITMAP_CONSTRUCT_AGG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             SELECT CASE
                 WHEN l IS NULL OR LENGTH(l) = 0 THEN NULL
-                WHEN LENGTH(l) < 5 THEN UNHEX(
-                    PRINTF('%04X', LENGTH(l)) ||
-                    COALESCE(LIST_REDUCE(
-                        LIST_TRANSFORM(l, __x -> PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255)),
-                        (__a, __b) -> __a || __b, ''
-                    ), '') ||
-                    REPEAT('00', GREATEST(0, 4 - LENGTH(l)) * 2)
-                )
-                ELSE UNHEX(
-                    '08000000000000000000' ||
-                    COALESCE(LIST_REDUCE(
-                        LIST_TRANSFORM(l, __x -> PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255)),
-                        (__a, __b) -> __a || __b, ''
-                    ), '')
-                )
+                WHEN LENGTH(l) < 5 THEN UNHEX(PRINTF('%04X', LENGTH(l)) || h || REPEAT('00', GREATEST(0, 4 - LENGTH(l)) * 2))
+                ELSE UNHEX('08000000000000000000' || h)
             END
-            FROM (SELECT LIST_SORT(LIST_DISTINCT(LIST(:arg) FILTER(NOT :arg IS NULL))) AS l)
+            FROM (
+                SELECT l, COALESCE(LIST_REDUCE(
+                    LIST_TRANSFORM(l, __x -> PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255)),
+                    (__a, __b) -> __a || __b, ''
+                ), '') AS h
+                FROM (SELECT LIST_SORT(LIST_DISTINCT(LIST(:arg) FILTER(NOT :arg IS NULL))) AS l)
+            )
             """
         )
 

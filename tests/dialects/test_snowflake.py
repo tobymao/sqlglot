@@ -4852,3 +4852,48 @@ FROM SEMANTIC_VIEW(
 
         ast = annotate_types(self.parse_one("SELECT BITSHIFTRIGHT(X'FF', 4)"), dialect="snowflake")
         self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)")
+
+    def test_previous_day(self):
+        # Test basic PREVIOUS_DAY transpilation to DuckDB
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', 'Monday')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15' AS DATE) - INTERVAL ((ISODOW(CAST('2024-01-15' AS DATE)) - 1 + 6) % 7 + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), 'Monday')",
+            },
+        )
+
+        # Test with abbreviated day name
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', 'Fr')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15' AS DATE) - INTERVAL ((ISODOW(CAST('2024-01-15' AS DATE)) - 5 + 6) % 7 + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), 'Fr')",
+            },
+        )
+
+        # Test with TIMESTAMP input
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(TIMESTAMP '2024-01-15 10:30:45', 'Monday')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15 10:30:45' AS TIMESTAMP) - INTERVAL ((ISODOW(CAST('2024-01-15 10:30:45' AS TIMESTAMP)) - 1 + 6) % 7 + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15 10:30:45' AS TIMESTAMP), 'Monday')",
+            },
+        )
+
+        # Test with NULL inputs
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(NULL, 'Monday')",
+            write={
+                "duckdb": "SELECT CAST(NULL AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(NULL, 'Monday')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', NULL)",
+            write={
+                "duckdb": "SELECT CAST(NULL AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), NULL)",
+            },
+        )

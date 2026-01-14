@@ -628,6 +628,76 @@ def _prepare_binary_bitwise_args(expression: exp.Binary) -> None:
         expression.set("expression", _cast_to_bit(expression.expression))
 
 
+def _day_navigation_sql(
+    self: DuckDB.Generator, expression: t.Union[exp.NextDay, exp.PreviousDay]
+) -> str:
+    """
+    Transpile Snowflake's NEXT_DAY / PREVIOUS_DAY to DuckDB using date arithmetic.
+
+    Returns the DATE of the next/previous occurrence of the specified weekday.
+
+    Formulas:
+    - NEXT_DAY: (target_dow - current_dow + 6) % 7 + 1
+    - PREVIOUS_DAY: (current_dow - target_dow + 6) % 7 + 1
+
+    Supports both literal and non-literal day names:
+    - Literal: Direct lookup (e.g., 'Monday' → 1)
+    - Non-literal: CASE statement for runtime evaluation
+
+    Examples:
+        NEXT_DAY('2024-01-01' (Monday), 'Monday')
+          → (1 - 1 + 6) % 7 + 1 = 6 % 7 + 1 = 7 days → 2024-01-08
+
+        PREVIOUS_DAY('2024-01-15' (Monday), 'Friday')
+          → (1 - 5 + 6) % 7 + 1 = 2 % 7 + 1 = 3 days → 2024-01-12
+    """
+    date_expr = expression.this
+    day_name_expr = expression.expression
+
+    # Build ISODOW call for current day of week
+    isodow_call = exp.func("ISODOW", date_expr)
+
+    # Determine target day of week
+    if isinstance(day_name_expr, exp.Literal):
+        # Literal day name: lookup target_dow directly
+        day_name_str = day_name_expr.name.upper()
+        matching_day = next(
+            (day for day in WEEK_START_DAY_TO_DOW if day.startswith(day_name_str)), None
+        )
+        if matching_day:
+            target_dow: exp.Expression = exp.Literal.number(WEEK_START_DAY_TO_DOW[matching_day])
+        else:
+            # Unrecognized day name, use fallback
+            return self.function_fallback_sql(expression)
+    else:
+        # Non-literal day name: build CASE statement for runtime mapping
+        upper_day_name = exp.Upper(this=day_name_expr)
+        target_dow = exp.Case(
+            ifs=[
+                exp.If(
+                    this=exp.func(
+                        "STARTS_WITH", upper_day_name.copy(), exp.Literal.string(day[:2])
+                    ),
+                    true=exp.Literal.number(dow_num),
+                )
+                for day, dow_num in WEEK_START_DAY_TO_DOW.items()
+            ]
+        )
+
+    # Calculate days offset and apply interval based on direction
+    if isinstance(expression, exp.NextDay):
+        # NEXT_DAY: (target_dow - current_dow + 6) % 7 + 1
+        days_offset = exp.paren(target_dow - isodow_call + 6, copy=False) % 7 + 1
+        date_with_offset = date_expr + exp.Interval(this=days_offset, unit=exp.var("DAY"))
+    else:  # exp.PreviousDay
+        # PREVIOUS_DAY: (current_dow - target_dow + 6) % 7 + 1
+        days_offset = exp.paren(isodow_call - target_dow + 6, copy=False) % 7 + 1
+        date_with_offset = date_expr - exp.Interval(this=days_offset, unit=exp.var("DAY"))
+
+    # Build final: CAST(date_with_offset AS DATE)
+    return self.sql(exp.cast(date_with_offset, exp.DataType.Type.DATE))
+
+
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
     # Transform ANY_VALUE(expr HAVING MAX/MIN having_expr) to ARG_MAX_NULL/ARG_MIN_NULL
     having = expression.this
@@ -1480,11 +1550,13 @@ class DuckDB(Dialect):
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
             exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
             exp.MonthsBetween: months_between_sql,
+            exp.NextDay: _day_navigation_sql,
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
+            exp.PreviousDay: _day_navigation_sql,
             exp.RegexpReplace: lambda self, e: self.func(
                 "REGEXP_REPLACE",
                 e.this,

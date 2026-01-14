@@ -2189,3 +2189,22 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT BITXORAGG(CAST(val AS DECIMAL(18, 3))) FROM t",
             },
         )
+
+    def test_approx_percentile(self):
+        self.validate_all(
+            "SELECT APPROX_QUANTILE(a, 0.5) FROM t",
+            read={
+                "snowflake": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            },
+            write={
+                "duckdb": "SELECT APPROX_QUANTILE(a, 0.5) FROM t",
+                "snowflake": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            },
+        )
+        expr = annotate_types(
+            parse_one("SELECT APPROX_PERCENTILE(CAST(a AS DOUBLE), 0.5) FROM t", read="snowflake")
+        )
+        self.assertEqual(
+            expr.sql(dialect="duckdb"),
+            "SELECT CAST(APPROX_QUANTILE(CAST(a AS DOUBLE), 0.5) AS DOUBLE) FROM t",
+        )

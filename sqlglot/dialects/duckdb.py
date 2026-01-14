@@ -2637,6 +2637,15 @@ class DuckDB(Dialect):
 
             return self.func(func, this, decimals, truncate)
 
+        def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+            result = self.func("APPROX_QUANTILE", expression.this, expression.args.get("quantile"))
+
+            # DuckDB returns integers for APPROX_QUANTILE, cast to DOUBLE if the expected type is a real type
+            if expression.is_type(*exp.DataType.REAL_TYPES):
+                result = f"CAST({result} AS DOUBLE)"
+
+            return result
+
         def approxquantiles_sql(self, expression: exp.ApproxQuantiles) -> str:
             """
             BigQuery's APPROX_QUANTILES(expr, n) returns an array of n+1 approximate quantile values

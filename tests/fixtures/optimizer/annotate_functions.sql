@@ -364,6 +364,14 @@ COT(tbl.double_col);
 DOUBLE;
 
 # dialect: hive, spark2, spark, databricks
+COSH(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+COSH(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
 TANH(tbl.double_col);
 DOUBLE;
 

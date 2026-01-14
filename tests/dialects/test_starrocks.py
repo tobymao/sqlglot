@@ -172,6 +172,7 @@ class TestStarrocks(Validator):
             "ANALYZE TABLE TBL UPDATE HISTOGRAM ON c1, c2 WITH ASYNC MODE WITH 5 BUCKETS PROPERTIES ('prop1'=val1)"
         )
 
+
 class TestStarRocksGenerator(Validator):
     dialect = "starrocks"
 
@@ -185,13 +186,16 @@ class TestStarRocksGenerator(Validator):
         )
         range_prop = exp.PartitionByRangeProperty(
             partition_expressions=[exp.column("c1")],
-            create_expressions=[range_dynamic
-                # exp.Var(this="PARTITIONS START ('2024-01-01') END ('2024-01-31') EVERY (INTERVAL 1 DAY)"),
+            create_expressions=[
+                range_dynamic,
+                exp.Var(
+                    this="PARTITIONS START ('2024-02-01') END ('2024-02-28') EVERY (INTERVAL 1 DAY)"
+                ),
             ],
         )
         self.assertEqual(
             range_prop.sql(dialect="starrocks"),
-            "PARTITION BY RANGE (c1) (START ('2024-01-01') END ('2024-01-31') EVERY (INTERVAL 1 DAY))",
+            "PARTITION BY RANGE (c1) (START ('2024-01-01') END ('2024-01-31') EVERY (INTERVAL 1 DAY), PARTITIONS START ('2024-02-01') END ('2024-02-28') EVERY (INTERVAL 1 DAY))",
         )
 
         # LIST partitioning

@@ -44,7 +44,13 @@ def _annotate_by_similar_args(
 
 EXPRESSION_METADATA: ExpressionMetadataType = {
     **HIVE_EXPRESSION_METADATA,
-    exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    **{
+        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        for expr_type in {
+            exp.Atan2,
+            exp.Cot,
+        }
+    },
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
             self, e, "expressions", target_type=exp.DataType.Type.TEXT
@@ -55,11 +61,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
-    **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
-        for expr_type in {
-            exp.Atan2,
-            exp.Cot,
-        }
-    },
+    exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

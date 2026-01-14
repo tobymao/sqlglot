@@ -367,16 +367,16 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     for i, expr in enumerate(expression.expressions):
         is_property_eq = isinstance(expr, exp.PropertyEQ)
+        this = expr.this
         value = expr.expression if is_property_eq else expr
 
         if is_bq_inline_struct:
             args.append(self.sql(value))
         else:
-            if is_property_eq:
-                if isinstance(expr.this, exp.Identifier):
-                    key = self.sql(exp.Literal.string(expr.name))
-                else:
-                    key = self.sql(expr.this)
+            if isinstance(this, exp.Identifier):
+                key = self.sql(exp.Literal.string(expr.name))
+            elif is_property_eq:
+                key = self.sql(this)
             else:
                 key = self.sql(exp.Literal.string(f"_{i}"))
 

@@ -59,6 +59,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
             exp.Atan2,
+            exp.Cot,
         }
     },
 }

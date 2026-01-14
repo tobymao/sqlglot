@@ -1817,6 +1817,10 @@ ARRAY_CONSTRUCT_COMPACT(1, null, 2);
 ARRAY;
 
 # dialect: snowflake
+ARRAY_COMPACT([1, null, 2]);
+ARRAY;
+
+# dialect: snowflake
 ARRAY_APPEND([1, 2, 3], 4);
 ARRAY;
 

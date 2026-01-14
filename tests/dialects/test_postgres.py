@@ -224,6 +224,8 @@ class TestPostgres(Validator):
             "x !~* 'y'",
             "NOT x ~* 'y'",
         )
+        self.validate_identity("SELECT ~1")
+        self.validate_identity("SELECT ~col FROM t")
 
         self.validate_identity(
             "x ~~ 'y'",

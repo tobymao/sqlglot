@@ -499,6 +499,11 @@ class Postgres(Dialect):
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
+        UNARY_PARSERS = {
+            **parser.Parser.UNARY_PARSERS,
+            TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
+        }
+
         JSON_ARROWS_REQUIRE_JSON_TYPE = True
 
         COLUMN_OPERATORS = {

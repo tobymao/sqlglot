@@ -15,6 +15,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
             exp.Cosh,
+            exp.Tanh,
         }
     },
 }

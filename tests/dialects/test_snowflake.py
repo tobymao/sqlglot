@@ -514,6 +514,8 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT STDDEV_SAMP(x) OVER (PARTITION BY 1)", "SELECT STDDEV(x) OVER (PARTITION BY 1)"
         )
+        self.validate_identity("SELECT KURTOSIS(x)")
+        self.validate_identity("SELECT KURTOSIS(x) OVER (PARTITION BY 1)")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
@@ -2852,6 +2854,14 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_TIME('2024-01-15 14:30:00'::TIMESTAMP)",
+            write={
+                "bigquery": "SELECT TIME(CAST('2024-01-15 14:30:00' AS DATETIME))",
+                "snowflake": "SELECT TO_TIME(CAST('2024-01-15 14:30:00' AS TIMESTAMP))",
+                "duckdb": "SELECT CAST(CAST('2024-01-15 14:30:00' AS TIMESTAMP) AS TIME)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
             write={
                 "snowflake": "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
@@ -2866,10 +2876,31 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_TIME('093000', 'HH24MISS')",
+            write={
+                "duckdb": "SELECT CAST(STRPTIME('093000', '%H%M%S') AS TIME)",
+                "snowflake": "SELECT TO_TIME('093000', 'hh24miss')",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('093000', 'HH24MISS')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIME('093000', 'hh24miss')",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('093000', '%H%M%S') AS TIME)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('11.15.00')",
+            write={
+                "snowflake": "SELECT TRY_CAST('11.15.00' AS TIME)",
+                "duckdb": "SELECT TRY_CAST('11.15.00' AS TIME)",
+            },
+        )
+        self.validate_all(
             "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
             write={
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
-                "duckdb": "SELECT CAST(STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
         )
 

@@ -1728,6 +1728,9 @@ class DuckDB(Dialect):
 
         # Template for BITMAP_CONSTRUCT_AGG transpilation
         # Uses nested subqueries to compute list (l) and hex string (h) once each
+        # Phase 1: Data Preparation (SELECT LIST_SORT): removes nulls, deduplicates, sorts the input list
+        # Phase 2: Hex String Construction (LIST_TRANSFORM): builds hex representation of values
+        # Phase 3: Final Assembly (CASE): constructs final bitmap based on size of unique values
         BITMAP_CONSTRUCT_AGG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             SELECT CASE

@@ -2323,9 +2323,11 @@ class DuckDB(Dialect):
             this = expression.this
             datetime_expr = expression.expression
 
-            part_name = this.name.upper() if isinstance(this, exp.Var) else None
+            # Handle both identifier (exp.Var) and string literal (exp.Literal) date parts
+            # e.g., EXTRACT(day FROM ...) vs EXTRACT('day' FROM ...)
+            if isinstance(this, exp.Var) or (isinstance(this, exp.Literal) and this.is_string):
+                part_name = this.name.upper()
 
-            if part_name:
                 # Map specifiers to strftime format codes for Snowflake specifiers unsupported in DuckDB
                 strftime_mappings = {
                     "WEEKISO": ("%V", "INTEGER"),

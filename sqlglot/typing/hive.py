@@ -5,18 +5,18 @@ from sqlglot.typing import EXPRESSION_METADATA
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
-    exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
+    **{
+        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        for expr_type in {
+            exp.Cosh,
+            exp.Sinh,
+            exp.Tanh,
+        }
+    },
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.Encode: {"returns": exp.DataType.Type.BINARY},
+    exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
     exp.StrToUnix: {"returns": exp.DataType.Type.BIGINT},
-    **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
-        for expr_type in {
-            exp.Sinh,
-            exp.Cosh,
-            exp.Tanh,
-        }
-    },
 }

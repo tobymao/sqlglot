@@ -501,6 +501,7 @@ class Postgres(Dialect):
 
         UNARY_PARSERS = {
             **parser.Parser.UNARY_PARSERS,
+            # The `~` token is remapped from TILDE to RLIKE in Postgres due to the binary REGEXP LIKE operator
             TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
         }
 

@@ -73,6 +73,7 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
         self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
+        self.validate_identity("SELECT ~x")
         self.validate_identity("x ~ 'y'")
         self.validate_identity("x ~* 'y'")
         self.validate_identity("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
@@ -224,9 +225,6 @@ class TestPostgres(Validator):
             "x !~* 'y'",
             "NOT x ~* 'y'",
         )
-        self.validate_identity("SELECT ~1")
-        self.validate_identity("SELECT ~col FROM t")
-
         self.validate_identity(
             "x ~~ 'y'",
             "x LIKE 'y'",

@@ -1065,7 +1065,7 @@ class DuckDB(Dialect):
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
-            TokenType.TILDA: binary_range_parser(exp.RegexpFullMatch),
+            TokenType.TILDE: binary_range_parser(exp.RegexpFullMatch),
         }
 
         EXPONENT = {

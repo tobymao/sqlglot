@@ -363,6 +363,15 @@ DOUBLE;
 COT(tbl.double_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
+TANH(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+TANH(tbl.int_col);
+DOUBLE;
+
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -2892,6 +2901,38 @@ INSERT(tbl.bin_col, 1, 2, tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+KURTOSIS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.float_col);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.float_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col) OVER (PARTITION BY 1);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col) OVER (PARTITION BY 1);
+DECFLOAT;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 
@@ -3861,6 +3902,14 @@ TIME;
 
 # dialect: snowflake
 TRY_TO_TIME('12:30:00', 'AUTO');
+TIME;
+
+# dialect: snowflake
+TO_TIME('093000', 'HH24MISS');
+TIME;
+
+# dialect: snowflake
+TRY_TO_TIME('093000', 'HH24MISS');
 TIME;
 
 # dialect: snowflake

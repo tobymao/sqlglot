@@ -68,7 +68,7 @@ class TokenType(AutoName):
     DPIPE_SLASH = auto()
     CARET = auto()
     CARET_AT = auto()
-    TILDA = auto()
+    TILDE = auto()
     ARROW = auto()
     DARROW = auto()
     FARROW = auto()
@@ -658,7 +658,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "/": TokenType.SLASH,
         "\\": TokenType.BACKSLASH,
         "*": TokenType.STAR,
-        "~": TokenType.TILDA,
+        "~": TokenType.TILDE,
         "?": TokenType.PLACEHOLDER,
         "@": TokenType.PARAMETER,
         "#": TokenType.HASH,

@@ -180,6 +180,29 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
     return expression
 
 
+def _annotate_kurtosis(self: TypeAnnotator, expression: exp.Kurtosis) -> exp.Kurtosis:
+    """Annotate KURTOSIS with correct return type.
+
+    Based on Snowflake behavior:
+    - DECFLOAT input -> DECFLOAT
+    - DOUBLE or FLOAT input -> DOUBLE
+    - Other numeric types (INT, NUMBER) -> NUMBER(38, 12)
+    """
+    expression = self._annotate_by_args(expression, "this")
+    input_type = expression.this.type
+
+    if input_type.is_type(exp.DataType.Type.DECFLOAT):
+        self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
+    elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
+        self._set_type(expression, exp.DataType.Type.DOUBLE)
+    else:
+        self._set_type(
+            expression, exp.DataType.build(f"NUMBER({MAX_PRECISION}, 12)", dialect="snowflake")
+        )
+
+    return expression
+
+
 def _annotate_math_with_float_decfloat(
     self: TypeAnnotator, expression: exp.Expression
 ) -> exp.Expression:
@@ -242,6 +265,7 @@ EXPRESSION_METADATA = {
             exp.Array,
             exp.ArrayAgg,
             exp.ArrayAppend,
+            exp.ArrayConcat,
             exp.ArrayConstructCompact,
             exp.ArrayPrepend,
             exp.ArrayRemove,
@@ -346,6 +370,7 @@ EXPRESSION_METADATA = {
             exp.Sinh,
         }
     },
+    exp.Kurtosis: {"annotator": _annotate_kurtosis},
     **{
         expr_type: {"returns": exp.DataType.Type.DECFLOAT}
         for expr_type in {
@@ -482,7 +507,6 @@ EXPRESSION_METADATA = {
             exp.DecompressString,
             exp.HexDecodeString,
             exp.HexEncode,
-            exp.Initcap,
             exp.MD5,
             exp.Monthname,
             exp.Randstr,

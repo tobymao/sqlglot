@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     filter_array_using_unnest,
+    getbit_sql,
     inline_array_sql,
     json_extract_segments,
     json_path_key_only_name,
@@ -433,6 +434,9 @@ class Postgres(Dialect):
                 binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
             ),
             "GENERATE_SERIES": _build_generate_series,
+            "GET_BIT": lambda args: exp.Getbit(
+                this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
+            ),
             "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
             "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
             "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
@@ -631,6 +635,7 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
+            exp.Getbit: getbit_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="STRING_AGG", within_group=False
             ),

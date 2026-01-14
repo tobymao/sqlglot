@@ -343,6 +343,27 @@ STRING;
 UNIX_TIMESTAMP();
 BIGINT;
 
+# dialect: spark2, spark, databricks
+ATAN2(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+ATAN2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+ATAN2(tbl.double_col, tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+TANH(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+TANH(tbl.int_col);
+DOUBLE;
+
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -1735,6 +1756,10 @@ STRING;
 ANY_VALUE(c2::STRING HAVING MAX c1::INT64);
 STRING;
 
+# dialect: bigquery
+r'a';
+STRING;
+
 --------------------------------------
 -- Snowflake
 --------------------------------------
@@ -1769,6 +1794,10 @@ ARRAY;
 
 # dialect: snowflake
 ARRAY_APPEND([1, 2, 3], 4);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_CAT([1, 2], [3, 4]);
 ARRAY;
 
 # dialect: snowflake
@@ -2864,6 +2893,38 @@ INSERT(tbl.bin_col, 1, 2, tbl.bin_col);
 BINARY;
 
 # dialect: snowflake
+KURTOSIS(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.float_col);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.float_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.int_col) OVER (PARTITION BY 1);
+NUMBER(38, 12);
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+KURTOSIS(tbl.decfloat_col) OVER (PARTITION BY 1);
+DECFLOAT;
+
+# dialect: snowflake
 LEAST(x::DECIMAL(18, 2));
 DECIMAL(18, 2);
 
@@ -3833,6 +3894,14 @@ TIME;
 
 # dialect: snowflake
 TRY_TO_TIME('12:30:00', 'AUTO');
+TIME;
+
+# dialect: snowflake
+TO_TIME('093000', 'HH24MISS');
+TIME;
+
+# dialect: snowflake
+TRY_TO_TIME('093000', 'HH24MISS');
 TIME;
 
 # dialect: snowflake

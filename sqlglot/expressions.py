@@ -2134,6 +2134,11 @@ class ComputedColumnConstraint(ColumnConstraintKind):
     arg_types = {"this": True, "persisted": False, "not_null": False, "data_type": False}
 
 
+# https://docs.oracle.com/en/database/other-databases/timesten/22.1/plsql-developer/examples-using-input-and-output-parameters-and-bind-variables.html#GUID-4B20426E-F93F-4835-88CB-6A79829A8D7F
+class InOutColumnConstraint(ColumnConstraintKind):
+    arg_types = {"input_": False, "output": False}
+
+
 class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
@@ -2481,6 +2486,7 @@ class OnConflict(Expression):
         "expressions": False,
         "action": False,
         "conflict_keys": False,
+        "index_predicate": False,
         "constraint": False,
         "where": False,
     }
@@ -6939,7 +6945,9 @@ class GetExtract(Func):
 
 
 class Getbit(Func):
-    arg_types = {"this": True, "expression": True}
+    _sql_names = ["GETBIT", "GET_BIT"]
+    # zero_is_msb means the most significant bit is indexed 0
+    arg_types = {"this": True, "expression": True, "zero_is_msb": False}
 
 
 class Greatest(Func):
@@ -8333,6 +8341,10 @@ class Variance(AggFunc):
 
 class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
+
+
+class Kurtosis(AggFunc):
+    pass
 
 
 class Skewness(AggFunc):

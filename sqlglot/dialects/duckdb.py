@@ -17,32 +17,33 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     build_default_decimal_type,
+    build_formatted_time,
+    build_regexp_extract,
     count_if_to_sum,
     date_delta_to_binary_interval_op,
     date_trunc_to_time,
     datestrtodate_sql,
-    no_datetime_sql,
     encode_decode_sql,
-    build_formatted_time,
+    explode_to_unnest_sql,
+    getbit_sql,
+    groupconcat_sql,
+    inline_array_unless_query,
     months_between_sql,
+    no_datetime_sql,
     no_comment_column_constraint_sql,
+    no_make_interval_sql,
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
+    regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
+    sha2_digest_sql,
+    sha256_sql,
     strposition_sql,
     str_to_time_sql,
     timestrtotime_sql,
     unit_to_str,
-    sha256_sql,
-    build_regexp_extract,
-    explode_to_unnest_sql,
-    no_make_interval_sql,
-    groupconcat_sql,
-    inline_array_unless_query,
-    regexp_replace_global_modifier,
-    sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_date_unit, seq_get
@@ -251,15 +252,19 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
 def _date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
-    """DuckDB override to handle NANOSECOND operations; delegates other units to base."""
+    """
+    DuckDB override to handle:
+    1. NANOSECOND operations (DuckDB doesn't support INTERVAL ... NANOSECOND)
+    2. Float/decimal interval values (DuckDB INTERVAL requires integers)
+    """
     base_impl = date_delta_to_binary_interval_op(cast=cast)
 
     def _duckdb_date_delta_sql(self: DuckDB.Generator, expression: DATETIME_DELTA) -> str:
         unit = expression.unit
+        interval_value = expression.expression
 
         # Handle NANOSECOND unit (DuckDB doesn't support INTERVAL ... NANOSECOND)
         if _is_nanosecond_unit(unit):
-            interval_value = expression.expression
             if isinstance(interval_value, exp.Interval):
                 interval_value = interval_value.this
 
@@ -271,6 +276,13 @@ def _date_delta_to_binary_interval_op(
                     exp.Add(this=exp.func("EPOCH_NS", timestamp_ns), expression=interval_value),
                 )
             )
+
+        # Handle float/decimal interval values as duckDB INTERVAL requires integer expressions
+        if not interval_value or isinstance(interval_value, exp.Interval):
+            return base_impl(self, expression)
+
+        if interval_value.is_type(*exp.DataType.REAL_TYPES):
+            expression.set("expression", exp.cast(exp.func("ROUND", interval_value), "INT"))
 
         return base_impl(self, expression)
 
@@ -1094,6 +1106,9 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
+            "GET_BIT": lambda args: exp.Getbit(
+                this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
+            ),
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
@@ -1442,6 +1457,7 @@ class DuckDB(Dialect):
             exp.EuclideanDistance: rename_func("LIST_DISTANCE"),
             exp.GenerateDateArray: _generate_datetime_array_sql,
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
+            exp.Getbit: getbit_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
@@ -1989,6 +2005,23 @@ class DuckDB(Dialect):
                     exp.DataType(this=exp.DataType.Type.DATE),
                 )
             )
+
+        def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+            this = expression.this
+            time_format = self.format_time(expression)
+            safe = expression.args.get("safe")
+            time_type = exp.DataType.build("TIME", dialect="duckdb")
+            cast_expr = exp.TryCast if safe else exp.Cast
+
+            if time_format:
+                func_name = "TRY_STRPTIME" if safe else "STRPTIME"
+                strptime = exp.Anonymous(this=func_name, expressions=[this, time_format])
+                return self.sql(cast_expr(this=strptime, to=time_type))
+
+            if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
+                return self.sql(this)
+
+            return self.sql(cast_expr(this=this, to=time_type))
 
         def currentdate_sql(self, expression: exp.CurrentDate) -> str:
             if not expression.this:

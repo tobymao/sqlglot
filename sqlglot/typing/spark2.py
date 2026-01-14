@@ -55,4 +55,10 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        for expr_type in {
+            exp.Atan2,
+        }
+    },
 }

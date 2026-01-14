@@ -450,3 +450,10 @@ class Oracle(Dialect):
 
         def interval_sql(self, expression: exp.Interval) -> str:
             return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
+
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            param_constraint = expression.find(exp.InOutColumnConstraint)
+            if param_constraint:
+                sep = f" {self.sql(param_constraint)} "
+                param_constraint.pop()
+            return super().columndef_sql(expression, sep)

@@ -22,6 +22,7 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity("SELECT GET_BIT(CAST(44 AS BIT(10)), 6)")
         self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT EXP(1)")
@@ -1084,6 +1085,9 @@ FROM json_data, field_ids""",
         self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
         self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
+        self.validate_identity(
+            "INSERT INTO book (isbn, title) VALUES ($1, $2) ON CONFLICT(isbn) WHERE deleted_at IS NULL DO UPDATE SET title = EXCLUDED.title RETURNING id, isbn"
+        )
         self.validate_identity(
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
         )

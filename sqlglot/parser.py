@@ -3054,6 +3054,8 @@ class Parser(metaclass=_Parser):
                 conflict_keys = self._parse_csv(self._parse_id_var)
                 self._match_r_paren()
 
+        index_predicate = self._parse_where()
+
         action = self._parse_var_from_options(self.CONFLICT_ACTIONS)
         if self._prev.token_type == TokenType.UPDATE:
             self._match(TokenType.SET)
@@ -3067,6 +3069,7 @@ class Parser(metaclass=_Parser):
             expressions=expressions,
             action=action,
             conflict_keys=conflict_keys,
+            index_predicate=index_predicate,
             constraint=constraint,
             where=self._parse_where(),
         )
@@ -6254,6 +6257,14 @@ class Parser(metaclass=_Parser):
                 not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
             )
             constraints.append(self.expression(exp.ColumnConstraint, kind=constraint_kind))
+        elif not kind and self._match_set({TokenType.IN, TokenType.OUT}, advance=False):
+            in_out_constraint = self.expression(
+                exp.InOutColumnConstraint,
+                input_=self._match(TokenType.IN),
+                output=self._match(TokenType.OUT),
+            )
+            constraints.append(in_out_constraint)
+            kind = self._parse_types()
         elif (
             kind
             and self._match(TokenType.ALIAS, advance=False)

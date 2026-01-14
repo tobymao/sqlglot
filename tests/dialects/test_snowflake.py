@@ -442,6 +442,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
+        self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
         self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")
@@ -513,6 +514,8 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT STDDEV_SAMP(x) OVER (PARTITION BY 1)", "SELECT STDDEV(x) OVER (PARTITION BY 1)"
         )
+        self.validate_identity("SELECT KURTOSIS(x)")
+        self.validate_identity("SELECT KURTOSIS(x) OVER (PARTITION BY 1)")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
@@ -968,14 +971,6 @@ class TestSnowflake(Validator):
             write={
                 "duckdb": "SELECT MAKE_TIME(12, 34, 56 + (987654321 / 1000000000.0))",
                 "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
-            },
-        )
-        self.validate_all(
-            "SELECT GETBIT(11, 3)",
-            write={
-                "snowflake": "SELECT GETBIT(11, 3)",
-                "databricks": "SELECT GETBIT(11, 3)",
-                "redshift": "SELECT GETBIT(11, 3)",
             },
         )
         self.validate_identity(
@@ -2859,6 +2854,14 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_TIME('2024-01-15 14:30:00'::TIMESTAMP)",
+            write={
+                "bigquery": "SELECT TIME(CAST('2024-01-15 14:30:00' AS DATETIME))",
+                "snowflake": "SELECT TO_TIME(CAST('2024-01-15 14:30:00' AS TIMESTAMP))",
+                "duckdb": "SELECT CAST(CAST('2024-01-15 14:30:00' AS TIMESTAMP) AS TIME)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
             write={
                 "snowflake": "SELECT TO_TIME(CONVERT_TIMEZONE('UTC', 'US/Pacific', '2024-08-06 09:10:00.000')) AS pst_time",
@@ -2873,10 +2876,31 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TO_TIME('093000', 'HH24MISS')",
+            write={
+                "duckdb": "SELECT CAST(STRPTIME('093000', '%H%M%S') AS TIME)",
+                "snowflake": "SELECT TO_TIME('093000', 'hh24miss')",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('093000', 'HH24MISS')",
+            write={
+                "snowflake": "SELECT TRY_TO_TIME('093000', 'hh24miss')",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('093000', '%H%M%S') AS TIME)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_TO_TIME('11.15.00')",
+            write={
+                "snowflake": "SELECT TRY_CAST('11.15.00' AS TIME)",
+                "duckdb": "SELECT TRY_CAST('11.15.00' AS TIME)",
+            },
+        )
+        self.validate_all(
             "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
             write={
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
-                "duckdb": "SELECT CAST(STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
+                "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
         )
 
@@ -4574,6 +4598,21 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_get_bit(self):
+        self.validate_all(
+            "SELECT GETBIT(11, 1)",
+            write={
+                "snowflake": "SELECT GETBIT(11, 1)",
+                "databricks": "SELECT GETBIT(11, 1)",
+                "redshift": "SELECT GETBIT(11, 1)",
+            },
+        )
+        expr = self.validate_identity("GETBIT(11, 1)")
+        annotated = annotate_types(expr, dialect="snowflake")
+
+        self.assertEqual(annotated.sql("duckdb"), "(11 >> 1) & 1")
+        self.assertEqual(annotated.sql("postgres"), "11 >> 1 & 1")
+
     def test_to_binary(self):
         expr = self.validate_identity("TO_BINARY('48454C50', 'HEX')")
         annotated = annotate_types(expr, dialect="snowflake")
@@ -4610,6 +4649,39 @@ FROM SEMANTIC_VIEW(
         expr = self.validate_identity("TRY_TO_BINARY('Hello', 'UTF-16')")
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "NULL")
+
+    def test_float_interval(self):
+        # Test TIMEADD with float interval value - DuckDB INTERVAL requires integers
+        expr = self.validate_identity("TIMEADD(HOUR, 2.5, CAST('10:30:00' AS TIME))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST('10:30:00' AS TIME) + INTERVAL (CAST(ROUND(2.5) AS INT)) HOUR",
+        )
+
+        # Test DATEADD with decimal interval value
+        expr = self.validate_identity(
+            "DATEADD(HOUR, CAST(3.8 AS DECIMAL(10, 2)), CAST('2024-01-01 10:00:00' AS TIMESTAMP))"
+        )
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST('2024-01-01 10:00:00' AS TIMESTAMP) + INTERVAL (CAST(ROUND(CAST(3.8 AS DECIMAL(10, 2))) AS INT)) HOUR",
+        )
+
+        # Test TIMESTAMPADD with float interval value - Snowflake parser converts to DATEADD
+        expr = self.parse_one(
+            "TIMESTAMPADD(MINUTE, 30.9, CAST('2024-01-01 10:00:00' AS TIMESTAMP))",
+            dialect="snowflake",
+        )
+        self.assertEqual(
+            expr.sql("snowflake"), "DATEADD(MINUTE, 30.9, CAST('2024-01-01 10:00:00' AS TIMESTAMP))"
+        )
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST('2024-01-01 10:00:00' AS TIMESTAMP) + INTERVAL (CAST(ROUND(30.9) AS INT)) MINUTE",
+        )
 
     def test_transpile_bitwise_ops(self):
         # Binary bitwise operations

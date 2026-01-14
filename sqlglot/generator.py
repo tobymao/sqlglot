@@ -1158,6 +1158,19 @@ class Generator(metaclass=_Generator):
         options = f" {options}" if options else ""
         return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}{options}"
 
+    def inoutcolumnconstraint_sql(self, expression: exp.InOutColumnConstraint) -> str:
+        input_ = expression.args.get("input_")
+        output = expression.args.get("output")
+
+        if input_ and output:
+            return "IN OUT"
+        if input_:
+            return "IN"
+        if output:
+            return "OUT"
+
+        return ""
+
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
 
@@ -2033,7 +2046,12 @@ class Generator(metaclass=_Generator):
         constraint = f" ON CONSTRAINT {constraint}" if constraint else ""
 
         conflict_keys = self.expressions(expression, key="conflict_keys", flat=True)
-        conflict_keys = f"({conflict_keys}) " if conflict_keys else " "
+        if conflict_keys:
+            conflict_keys = f"({conflict_keys})"
+
+        index_predicate = self.sql(expression, "index_predicate")
+        conflict_keys = f"{conflict_keys}{index_predicate} "
+
         action = self.sql(expression, "action")
 
         expressions = self.expressions(expression, flat=True)

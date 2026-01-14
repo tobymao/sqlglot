@@ -2641,7 +2641,7 @@ class DuckDB(Dialect):
             result = self.func("APPROX_QUANTILE", expression.this, expression.args.get("quantile"))
 
             # DuckDB returns integers for APPROX_QUANTILE, cast to DOUBLE if the expected type is a real type
-            if expression.type and expression.type.this in exp.DataType.REAL_TYPES:
+            if expression.is_type(*exp.DataType.REAL_TYPES):
                 result = f"CAST({result} AS DOUBLE)"
 
             return result

@@ -387,6 +387,17 @@ DOUBLE;
 TANH(tbl.int_col);
 DOUBLE;
 
+# dialect: spark, databricks
+TO_BINARY(tbl.str_col, tbl.str_col);
+BINARY;
+
+# dialect: spark, databricks
+TO_BINARY(tbl.int_col, tbl.str_col);
+BINARY;
+
+# dialect: spark, databricks
+TO_BINARY(tbl.double_col, tbl.str_col);
+BINARY;
 
 --------------------------------------
 -- BigQuery

@@ -1086,6 +1086,9 @@ FROM json_data, field_ids""",
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
         self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
         self.validate_identity(
+            "INSERT INTO book (isbn, title) VALUES ($1, $2) ON CONFLICT(isbn) WHERE deleted_at IS NULL DO UPDATE SET title = EXCLUDED.title RETURNING id, isbn"
+        )
+        self.validate_identity(
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
         )
         self.validate_identity(

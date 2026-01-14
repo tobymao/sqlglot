@@ -2046,7 +2046,12 @@ class Generator(metaclass=_Generator):
         constraint = f" ON CONSTRAINT {constraint}" if constraint else ""
 
         conflict_keys = self.expressions(expression, key="conflict_keys", flat=True)
-        conflict_keys = f"({conflict_keys}) " if conflict_keys else " "
+        if conflict_keys:
+            conflict_keys = f"({conflict_keys})"
+
+        index_predicate = self.sql(expression, "index_predicate")
+        conflict_keys = f"{conflict_keys}{index_predicate} "
+
         action = self.sql(expression, "action")
 
         expressions = self.expressions(expression, flat=True)

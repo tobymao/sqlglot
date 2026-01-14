@@ -2486,6 +2486,7 @@ class OnConflict(Expression):
         "expressions": False,
         "action": False,
         "conflict_keys": False,
+        "index_predicate": False,
         "constraint": False,
         "where": False,
     }
@@ -8340,6 +8341,10 @@ class Variance(AggFunc):
 
 class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
+
+
+class Kurtosis(AggFunc):
+    pass
 
 
 class Skewness(AggFunc):

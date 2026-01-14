@@ -1070,6 +1070,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "bignum_col": "BIGNUMERIC",
                 "date_col": "DATE",
                 "decfloat_col": "DECFLOAT",
+                "float_col": "FLOAT",
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",

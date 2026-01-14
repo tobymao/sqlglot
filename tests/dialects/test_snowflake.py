@@ -2944,6 +2944,80 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_next_day(self):
+        self.validate_all(
+            "SELECT NEXT_DAY(CAST('2024-01-01' AS DATE), 'Monday')",
+            write={
+                "snowflake": "SELECT NEXT_DAY(CAST('2024-01-01' AS DATE), 'Monday')",
+                "duckdb": "SELECT CAST(CAST('2024-01-01' AS DATE) + INTERVAL ((((1 - ISODOW(CAST('2024-01-01' AS DATE))) + 6) % 7) + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NEXT_DAY(CAST('2024-01-05' AS DATE), 'Friday')",
+            write={
+                "snowflake": "SELECT NEXT_DAY(CAST('2024-01-05' AS DATE), 'Friday')",
+                "duckdb": "SELECT CAST(CAST('2024-01-05' AS DATE) + INTERVAL ((((5 - ISODOW(CAST('2024-01-05' AS DATE))) + 6) % 7) + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NEXT_DAY(CAST('2024-01-05' AS DATE), 'WE')",
+            write={
+                "snowflake": "SELECT NEXT_DAY(CAST('2024-01-05' AS DATE), 'WE')",
+                "duckdb": "SELECT CAST(CAST('2024-01-05' AS DATE) + INTERVAL ((((3 - ISODOW(CAST('2024-01-05' AS DATE))) + 6) % 7) + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NEXT_DAY(CAST('2024-01-01 10:30:45' AS TIMESTAMP), 'Friday')",
+            write={
+                "snowflake": "SELECT NEXT_DAY(CAST('2024-01-01 10:30:45' AS TIMESTAMP), 'Friday')",
+                "duckdb": "SELECT CAST(CAST('2024-01-01 10:30:45' AS TIMESTAMP) + INTERVAL ((((5 - ISODOW(CAST('2024-01-01 10:30:45' AS TIMESTAMP))) + 6) % 7) + 1) DAY AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NEXT_DAY(CAST('2024-01-01' AS DATE), day_column)",
+            write={
+                "snowflake": "SELECT NEXT_DAY(CAST('2024-01-01' AS DATE), day_column)",
+                "duckdb": "SELECT CAST(CAST('2024-01-01' AS DATE) + INTERVAL ((((CASE WHEN STARTS_WITH(UPPER(day_column), 'MO') THEN 1 WHEN STARTS_WITH(UPPER(day_column), 'TU') THEN 2 WHEN STARTS_WITH(UPPER(day_column), 'WE') THEN 3 WHEN STARTS_WITH(UPPER(day_column), 'TH') THEN 4 WHEN STARTS_WITH(UPPER(day_column), 'FR') THEN 5 WHEN STARTS_WITH(UPPER(day_column), 'SA') THEN 6 WHEN STARTS_WITH(UPPER(day_column), 'SU') THEN 7 END - ISODOW(CAST('2024-01-01' AS DATE))) + 6) % 7) + 1) DAY AS DATE)",
+            },
+        )
+
+    def test_previous_day(self):
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', 'Monday')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15' AS DATE) - INTERVAL ((((ISODOW(CAST('2024-01-15' AS DATE)) - 1) + 6) % 7) + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), 'Monday')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', 'Fr')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15' AS DATE) - INTERVAL ((((ISODOW(CAST('2024-01-15' AS DATE)) - 5) + 6) % 7) + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), 'Fr')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(TIMESTAMP '2024-01-15 10:30:45', 'Monday')",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15 10:30:45' AS TIMESTAMP) - INTERVAL ((((ISODOW(CAST('2024-01-15 10:30:45' AS TIMESTAMP)) - 1) + 6) % 7) + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15 10:30:45' AS TIMESTAMP), 'Monday')",
+            },
+        )
+
+        self.validate_all(
+            "SELECT PREVIOUS_DAY(DATE '2024-01-15', day_column)",
+            write={
+                "duckdb": "SELECT CAST(CAST('2024-01-15' AS DATE) - INTERVAL ((((ISODOW(CAST('2024-01-15' AS DATE)) - CASE WHEN STARTS_WITH(UPPER(day_column), 'MO') THEN 1 WHEN STARTS_WITH(UPPER(day_column), 'TU') THEN 2 WHEN STARTS_WITH(UPPER(day_column), 'WE') THEN 3 WHEN STARTS_WITH(UPPER(day_column), 'TH') THEN 4 WHEN STARTS_WITH(UPPER(day_column), 'FR') THEN 5 WHEN STARTS_WITH(UPPER(day_column), 'SA') THEN 6 WHEN STARTS_WITH(UPPER(day_column), 'SU') THEN 7 END) + 6) % 7) + 1) DAY AS DATE)",
+                "snowflake": "SELECT PREVIOUS_DAY(CAST('2024-01-15' AS DATE), day_column)",
+            },
+        )
+
     def test_historical_data(self):
         self.validate_identity("SELECT * FROM my_table AT (STATEMENT => $query_id_var)")
         self.validate_identity("SELECT * FROM my_table AT (OFFSET => -60 * 5)")

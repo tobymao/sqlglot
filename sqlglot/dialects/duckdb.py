@@ -144,80 +144,6 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     return self.function_fallback_sql(expression)
 
 
-def _previous_day_sql(self: DuckDB.Generator, expression: exp.PreviousDay) -> str:
-    """
-    Transpile Snowflake's PREVIOUS_DAY to DuckDB using date arithmetic.
-
-    Returns the DATE of the previous occurrence of the specified weekday.
-
-    Formula: (current_dow - target_dow + 6) % 7 + 1
-
-    The +6 normalizes negative differences and the final +1 prevents zero results.
-
-    Examples:
-        PREVIOUS_DAY('2024-01-15' (Monday), 'Monday')
-          → (1 - 1 + 6) % 7 + 1 = 6 % 7 + 1 = 7 days → 2024-01-08
-
-        PREVIOUS_DAY('2024-01-15' (Monday), 'Friday')
-          → (1 - 5 + 6) % 7 + 1 = 2 % 7 + 1 = 3 days → 2024-01-12
-
-    """
-    date_expr = expression.this
-    day_name_expr = expression.expression
-
-    # Handle NULL inputs - return CAST(NULL AS DATE)
-    if isinstance(date_expr, exp.Null) or isinstance(day_name_expr, exp.Null):
-        return self.sql(exp.cast(exp.Null(), exp.DataType.Type.DATE))
-
-    # Only support literal day names (not columns/expressions)
-    if not isinstance(day_name_expr, exp.Literal):
-        self.unsupported("PREVIOUS_DAY with non-literal day name not supported in DuckDB")
-        return self.function_fallback_sql(expression)
-
-    # Extract and normalize day name
-    day_name_str = str(day_name_expr.this).upper()
-    if len(day_name_str) < 2:
-        self.unsupported("Day name must be at least 2 characters")
-        return self.function_fallback_sql(expression)
-
-    # Find matching day in WEEK_START_DAY_TO_DOW (handles both full names and abbreviations)
-    # e.g., "MONDAY" matches "MONDAY", "MO" matches "MONDAY", "FRI" matches "FRIDAY"
-    matching_day = next(
-        (day for day in WEEK_START_DAY_TO_DOW if day.startswith(day_name_str)), None
-    )
-    if not matching_day:
-        self.unsupported(f"Invalid day name or abbreviation: {day_name_str}")
-        return self.function_fallback_sql(expression)
-
-    target_dow = WEEK_START_DAY_TO_DOW[matching_day]
-
-    # Build the calculation: (ISODOW(date) - target + 6) % 7 + 1
-    isodow_call = exp.func("ISODOW", date_expr)
-
-    # Step 1: ISODOW(date) - target + 6
-    days_expr = exp.Add(
-        this=exp.Sub(this=isodow_call, expression=exp.Literal.number(target_dow)),
-        expression=exp.Literal.number(6),
-    )
-
-    # Step 2: (...) % 7
-    mod_expr = exp.Mod(this=exp.Paren(this=days_expr), expression=exp.Literal.number(7))
-
-    # Step 3: ... + 1
-    days_to_subtract = exp.Add(this=mod_expr, expression=exp.Literal.number(1))
-
-    # Build final: CAST(date - INTERVAL (days_to_subtract) DAY AS DATE)
-    result = exp.cast(
-        exp.Sub(
-            this=date_expr,
-            expression=exp.Interval(this=days_to_subtract, unit=exp.var("DAY")),
-        ),
-        exp.DataType.Type.DATE,
-    )
-
-    return self.sql(result)
-
-
 def _is_nanosecond_unit(unit: t.Optional[exp.Expression]) -> bool:
     return isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "NANOSECOND"
 
@@ -1650,7 +1576,6 @@ class DuckDB(Dialect):
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
             exp.LastDay: _last_day_sql,
-            exp.PreviousDay: _previous_day_sql,
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -1861,6 +1786,75 @@ class DuckDB(Dialect):
                 .else_(non_positive_formula)
             )
             return self.sql(case_expr)
+
+        def previousday_sql(self: DuckDB.Generator, expression: exp.PreviousDay) -> str:
+            """
+            Transpile Snowflake's PREVIOUS_DAY to DuckDB using date arithmetic.
+
+            Returns the DATE of the previous occurrence of the specified weekday.
+
+            Formula: (current_dow - target_dow + 6) % 7 + 1
+
+            Supports both literal and non-literal day names:
+            - Literal: Direct lookup (e.g., 'Monday' → 1)
+            - Non-literal: CASE statement for runtime evaluation
+
+            Examples:
+                PREVIOUS_DAY('2024-01-15' (Monday), 'Monday')
+                  → (1 - 1 + 6) % 7 + 1 = 6 % 7 + 1 = 7 days → 2024-01-08
+
+                PREVIOUS_DAY('2024-01-15' (Monday), 'Friday')
+                  → (1 - 5 + 6) % 7 + 1 = 2 % 7 + 1 = 3 days → 2024-01-12
+            """
+            date_expr = expression.this
+            day_name_expr = expression.expression
+
+            # Build ISODOW call for current day of week
+            isodow_call = exp.func("ISODOW", date_expr)
+
+            # Determine target day of week
+            target_dow: exp.Expression
+            if isinstance(day_name_expr, exp.Literal):
+                # Literal day name: lookup target_dow directly
+                day_name_str = str(day_name_expr.this).upper()
+                matching_day = next(
+                    (day for day in WEEK_START_DAY_TO_DOW if day.startswith(day_name_str)), None
+                )
+                if matching_day:
+                    target_dow = exp.Literal.number(WEEK_START_DAY_TO_DOW[matching_day])
+                else:
+                    # Unrecognized day name, use fallback
+                    return self.function_fallback_sql(expression)
+            else:
+                # Non-literal day name: build CASE statement for runtime mapping
+                # CASE
+                #   WHEN STARTS_WITH(UPPER(day_name), 'MO') THEN 1
+                #   WHEN STARTS_WITH(UPPER(day_name), 'TU') THEN 2
+                #   ...
+                # END
+                upper_day_name = exp.Upper(this=day_name_expr.copy())
+                target_dow = exp.Case(
+                    ifs=[
+                        exp.If(
+                            this=exp.func(
+                                "STARTS_WITH", upper_day_name.copy(), exp.Literal.string(day[:2])
+                            ),
+                            true=exp.Literal.number(dow_num),
+                        )
+                        for day, dow_num in WEEK_START_DAY_TO_DOW.items()
+                    ]
+                )
+
+            # Build formula: (ISODOW(date) - target_dow + 6) % 7 + 1
+            days_to_subtract = exp.paren(isodow_call - target_dow + 6, copy=False) % 7 + 1
+
+            # Build final: CAST(date - INTERVAL (days_to_subtract) DAY AS DATE)
+            result = exp.cast(
+                date_expr - exp.Interval(this=days_to_subtract, unit=exp.var("DAY")),
+                exp.DataType.Type.DATE,
+            )
+
+            return self.sql(result)
 
         def bitmapbitposition_sql(self: DuckDB.Generator, expression: exp.BitmapBitPosition) -> str:
             """

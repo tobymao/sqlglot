@@ -355,6 +355,22 @@ DOUBLE;
 ATAN2(tbl.double_col, tbl.int_col);
 DOUBLE;
 
+# dialect: spark2, spark, databricks
+COT(tbl.int_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+COT(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+COSH(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+COSH(tbl.int_col);
+DOUBLE;
+
 # dialect: hive, spark2, spark, databricks
 SINH(tbl.double_col);
 DOUBLE;

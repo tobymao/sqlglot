@@ -443,7 +443,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
-        self.validate_identity("SELECT ARRAY_COMPACT([1, NULL, 2, NULL, 3])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
         self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")
@@ -953,6 +952,18 @@ class TestSnowflake(Validator):
             write={
                 "spark": "ARRAY_COMPACT(ARRAY(1, NULL, 2))",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, NULL, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_COMPACT(arr)",
+            read={
+                "spark": "ARRAY_COMPACT(arr)",
+                "databricks": "ARRAY_COMPACT(arr)",
+                "snowflake": "ARRAY_COMPACT(arr)",
+            },
+            write={
+                "spark": "ARRAY_COMPACT(arr)",
+                "databricks": "ARRAY_COMPACT(arr)",
             },
         )
         self.validate_all(

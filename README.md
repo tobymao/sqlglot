@@ -600,10 +600,13 @@ x + interval '1' month
 | Teradata | Community |
 | Trino | Official |
 | TSQL | Official |
+| YDB | [Plugin](https://pypi.org/project/ydb-sqlglot-plugin) |
 
 **Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
 
 **Community Dialects** are developed and maintained primarily through community contributions. These are fully functional but may receive lower priority for issue resolution compared to officially supported dialects. We welcome and encourage community contributions to improve these dialects.
+
+**Plugin Dialects** (supported since v28.6.0) are third-party dialects developed and maintained in external repositories by independent contributors. These dialects are not part of the SQLGlot codebase and are distributed as separate packages. The SQLGlot team does not provide support or maintenance for plugin dialects — please direct any issues or feature requests to their respective repositories. See [Creating a Dialect Plugin](#creating-a-dialect-plugin) below for information on how to build your own.
 
 ### Creating a Dialect Plugin
 

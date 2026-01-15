@@ -90,6 +90,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.ApproxQuantile,
             exp.Avg,
             exp.Exp,
+            exp.Kurtosis,
             exp.Ln,
             exp.Log,
             exp.Pi,

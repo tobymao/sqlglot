@@ -131,6 +131,12 @@ BIGINT;
 UNIX_MILLIS(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP));
 BIGINT;
 
+KURTOSIS(tbl.double_col);
+DOUBLE;
+
+KURTOSIS(tbl.int_col);
+DOUBLE;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

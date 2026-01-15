@@ -112,6 +112,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
             exp.Ascii,
+            exp.BitLength,
             exp.Ceil,
             exp.DatetimeDiff,
             exp.TimestampDiff,

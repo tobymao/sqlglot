@@ -239,6 +239,12 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DataType.Type.DATE}
+        for expr_type in {
+            exp.StrToDate,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DataType.Type.DATETIME}
         for expr_type in {
             exp.ParseDatetime,

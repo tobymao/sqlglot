@@ -415,6 +415,18 @@ BINARY;
 TO_BINARY(tbl.double_col, tbl.str_col);
 BINARY;
 
+# dialect: hive, spark2, spark, databricks
+SHA(tbl.str_col);
+VARCHAR;
+
+# dialect: hive, spark2, spark, databricks
+SHA1(tbl.str_col);
+VARCHAR;
+
+# dialect: hive, spark2, spark, databricks
+SHA2(tbl.str_col, tbl.int_col);
+VARCHAR;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

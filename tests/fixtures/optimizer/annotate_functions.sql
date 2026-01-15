@@ -427,6 +427,10 @@ VARCHAR;
 SHA2(tbl.str_col, tbl.int_col);
 VARCHAR;
 
+# dialect: hive, spark2, spark, databricks
+SPACE(tbl.int_col);
+VARCHAR;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

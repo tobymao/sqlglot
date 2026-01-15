@@ -2188,7 +2188,44 @@ class DuckDB(Dialect):
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
-            if nano is not None:
+            overflow = expression.args.get("overflow")
+
+            # Snowflake's TIME_FROM_PARTS supports overflow
+            if overflow:
+                hour = expression.args["hour"]
+                minute = expression.args["min"]
+                sec = expression.args["sec"]
+
+                # Check if values are within normal ranges - use MAKE_TIME for efficiency
+                if not nano and all(isinstance(arg, exp.Literal) for arg in [hour, minute, sec]):
+                    try:
+                        h_val = int(hour.this)
+                        m_val = int(minute.this)
+                        s_val = int(sec.this)
+                        if 0 <= h_val <= 23 and 0 <= m_val <= 59 and 0 <= s_val <= 59:
+                            return rename_func("MAKE_TIME")(self, expression)
+                    except (ValueError, AttributeError):
+                        pass
+
+                # Overflow or nanoseconds detected - use INTERVAL arithmetic
+                if nano:
+                    sec = sec + nano.pop() / exp.Literal.number(1000000000.0)
+
+                total_seconds = (
+                    hour * exp.Literal.number(3600) + minute * exp.Literal.number(60) + sec
+                )
+
+                return self.sql(
+                    exp.Add(
+                        this=exp.Cast(
+                            this=exp.Literal.string("00:00:00"), to=exp.DataType.build("TIME")
+                        ),
+                        expression=exp.Interval(this=total_seconds, unit=exp.var("SECOND")),
+                    )
+                )
+
+            # Default: MAKE_TIME
+            if nano:
                 expression.set(
                     "sec", expression.args["sec"] + nano.pop() / exp.Literal.number(1000000000.0)
                 )

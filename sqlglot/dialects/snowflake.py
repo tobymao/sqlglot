@@ -597,6 +597,17 @@ def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _build_time_from_parts(args: t.List) -> exp.TimeFromParts:
+    """Build TimeFromParts with overflow flag set for Snowflake's documented overflow behavior."""
+    return exp.TimeFromParts(
+        hour=seq_get(args, 0),
+        min=seq_get(args, 1),
+        sec=seq_get(args, 2),
+        nano=seq_get(args, 3),
+        overflow=True,
+    )
+
+
 def _build_timestamp_from_parts(args: t.List) -> exp.Func:
     """Build TimestampFromParts with support for both syntaxes:
     1. TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second [, nanosecond] [, time_zone])
@@ -855,6 +866,7 @@ class Snowflake(Dialect):
             "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
             "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
+            "TIME_FROM_PARTS": _build_time_from_parts,
             "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,

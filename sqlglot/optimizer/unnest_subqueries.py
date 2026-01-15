@@ -40,11 +40,16 @@ def unnest(select, parent_select, next_alias_name):
     if len(select.selects) > 1:
         return
 
+    # Expressions that cannot be safely converted by unnesting
+    # exp.GenerateSeries: skipped as unnesting will change semantics if join with other tables.
+    skip_expressions = (exp.GenerateSeries,)
+
     predicate = select.find_ancestor(exp.Condition)
     if (
         not predicate
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
+        or isinstance(predicate, skip_expressions)
     ):
         return
 
@@ -83,6 +88,7 @@ def unnest(select, parent_select, next_alias_name):
 
         _replace(select.parent, column)
         parent_select.join(select, on=on_clause, join_type=join_type, join_alias=alias, copy=False)
+
         return
 
     if select.find(exp.Limit, exp.Offset):

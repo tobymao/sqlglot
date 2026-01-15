@@ -1342,6 +1342,20 @@ def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
     )
 
 
+def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
+    """
+    Builds ArrayAppend with null_propagation=True for Databricks/Spark/Snowflake semantics.
+
+    ARRAY_APPEND returns NULL when array is NULL (NULL propagation).
+    This differs from DuckDB/PostgreSQL which create a new array.
+    """
+    return exp.ArrayAppend(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        null_propagation=True,
+    )
+
+
 def var_map_sql(
     self: Generator, expression: exp.Map | exp.VarMap, map_func_name: str = "MAP"
 ) -> str:

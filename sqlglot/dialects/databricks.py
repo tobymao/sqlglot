@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
+    build_array_append_with_null_propagation,
     date_delta_sql,
     build_date_delta,
     timestamptrunc_sql,
@@ -23,6 +24,17 @@ def _jsonextract_sql(
     this = self.sql(expression, "this")
     expr = self.sql(expression, "expression")
     return f"{this}:{expr}"
+
+
+def _arrayappend_sql(self: Databricks.Generator, expression: exp.ArrayAppend) -> str:
+    if expression.args.get("null_propagation"):
+        return self.func("ARRAY_APPEND", expression.this, expression.expression)
+
+    return self.func(
+        "ARRAY_APPEND",
+        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
+        expression.expression,
+    )
 
 
 class Databricks(Spark):
@@ -55,6 +67,7 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
+            "ARRAY_APPEND": build_array_append_with_null_propagation,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
@@ -102,6 +115,7 @@ class Databricks(Spark):
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
+            exp.ArrayAppend: _arrayappend_sql,
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(

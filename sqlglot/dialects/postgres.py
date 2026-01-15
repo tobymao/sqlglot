@@ -269,6 +269,22 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
     return rename_func("ANY_VALUE")(self, expression)
 
 
+def _arrayappend_sql(self: Postgres.Generator, expression: exp.ArrayAppend) -> str:
+    if expression.args.get("null_propagation"):
+        return self.sql(
+            exp.Case(
+                ifs=[
+                    exp.If(
+                        this=exp.Is(this=expression.this, expression=exp.Null()), true=exp.Null()
+                    )
+                ],
+                default=self.func("ARRAY_APPEND", expression.this, expression.expression),
+            )
+        )
+
+    return self.func("ARRAY_APPEND", expression.this, expression.expression)
+
+
 def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
     this = self.sql(expression, "this")
     decimals = self.sql(expression, "decimals")
@@ -626,6 +642,7 @@ class Postgres(Dialect):
             exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
+            exp.ArrayAppend: _arrayappend_sql,
             exp.ArrayPrepend: lambda self, e: self.func("ARRAY_PREPEND", e.expression, e.this),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),

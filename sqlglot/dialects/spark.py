@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
+    build_array_append_with_null_propagation,
     rename_func,
     build_like,
     unit_to_var,
@@ -75,6 +76,17 @@ def _normalize_partition(e: exp.Expression) -> exp.Expression:
     return e
 
 
+def _arrayappend_sql(self: Spark.Generator, expression: exp.ArrayAppend) -> str:
+    if expression.args.get("null_propagation"):
+        return self.func("ARRAY_APPEND", expression.this, expression.expression)
+
+    return self.func(
+        "ARRAY_APPEND",
+        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
+        expression.expression,
+    )
+
+
 def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.TimestampAdd) -> str:
     if not expression.unit or (
         isinstance(expression, exp.TsOrDsAdd) and expression.text("unit").upper() == "DAY"
@@ -127,6 +139,7 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
+            "ARRAY_APPEND": build_array_append_with_null_propagation,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -205,6 +218,7 @@ class Spark(Spark2):
             exp.ArrayConstructCompact: lambda self, e: self.func(
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
+            exp.ArrayAppend: _arrayappend_sql,
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),

@@ -6054,7 +6054,7 @@ class ArrayAny(Func):
 
 
 class ArrayAppend(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "null_propagation": False}
 
 
 class ArrayPrepend(Func):

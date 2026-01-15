@@ -421,7 +421,6 @@ EXPRESSION_METADATA = {
             exp.Grouping,
             exp.Hour,
             exp.JarowinklerSimilarity,
-            exp.Length,
             exp.Levenshtein,
             exp.MapSize,
             exp.Minute,

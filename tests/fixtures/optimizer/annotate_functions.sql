@@ -363,6 +363,14 @@ DOUBLE;
 ATAN2(tbl.double_col, tbl.int_col);
 DOUBLE;
 
+# dialect: spark, databricks
+ACOSH(tbl.double_col);
+DOUBLE;
+
+# dialect: spark, databricks
+ACOSH(tbl.int_col);
+DOUBLE;
+
 # dialect: spark2, spark, databricks
 COT(tbl.int_col);
 DOUBLE;

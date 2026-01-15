@@ -49,6 +49,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         for expr_type in {
             exp.Atan2,
             exp.Cot,
+            exp.Randn,
         }
     },
     exp.Concat: {

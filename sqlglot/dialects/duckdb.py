@@ -1727,14 +1727,60 @@ class DuckDB(Dialect):
         )
 
         # Template for BITMAP_CONSTRUCT_AGG transpilation
-        # Uses nested subqueries to compute list (l) and hex string (h) once each
-        # Phase 1: Data Preparation (SELECT LIST_SORT): removes nulls, deduplicates, sorts the input list
-        # Phase 2: Hex String Construction (LIST_TRANSFORM): builds hex representation of values
-        # Phase 3: Final Assembly (CASE): constructs final bitmap based on size of unique values
+        #
+        # BACKGROUND:
+        # Snowflake's BITMAP_CONSTRUCT_AGG aggregates integers into a compact binary bitmap.
+        # The binary format is not fully documented, so the implementation below was
+        # determined via experimentation with Snowflake's actual output.
+        # See: https://docs.snowflake.com/en/sql-reference/functions/bitmap_construct_agg
+        # See: https://docs.snowflake.com/en/user-guide/querying-bitmaps-for-distinct-counts
+        #
+        # SNOWFLAKE BITMAP BINARY FORMAT:
+        # Snowflake uses two different formats based on the number of unique values:
+        #
+        # Format 1 - Small bitmap (< 5 unique values):
+        #   Bytes 0-1: Count of values as 2-byte big-endian integer (e.g., 3 values = 0x0003)
+        #   Bytes 2-9: Up to 4 values, each as 2-byte little-endian integers, zero-padded to 8 bytes
+        #   Total: Always 10 bytes
+        #   Example: Values [1, 2, 3] -> 0x0003 0100 0200 0300 0000 (hex)
+        #                                count  v1   v2   v3   pad
+        #
+        # Format 2 - Large bitmap (>= 5 unique values):
+        #   Bytes 0-9: Fixed header 0x08 followed by 9 zero bytes
+        #   Bytes 10+: Each value as 2-byte little-endian integer (no padding)
+        #   Total: 10 + (2 * count) bytes
+        #   Example: Values [1,2,3,4,5] -> 0x08 00000000 00000000 00 0100 0200 0300 0400 0500
+        #                                  hdr  ----9 zero bytes----  v1   v2   v3   v4   v5
+        #
+        # TEMPLATE STRUCTURE (inside-out):
+        #
+        # Phase 1 - Innermost subquery: Data preparation
+        #   SELECT LIST_SORT(...) AS l
+        #   - Aggregates all input values into a list, remove NULLs, duplicates and sorts
+        #   Result: Clean, sorted list of unique non-null integers stored as 'l'
+        #
+        # Phase 2 - Middle subquery: Hex string construction
+        #   LIST_TRANSFORM(...)
+        #   - Converts each integer to 2-byte little-endian hex representation
+        #   - & 255 extracts low byte, >> 8 extracts high byte
+        #   - LIST_REDUCE: Concatenates all hex pairs into single string 'h'
+        #   Result: Hex string of all values
+        #
+        # Phase 3 - Outer SELECT: Final bitmap assembly
+        #   LENGTH(l) < 5:
+        #   - Small format: 2-byte count (big-endian via %04X) + values + zero padding
+        #   LENGTH(l) >= 5:
+        #   - Large format: Fixed 10-byte header + values (no padding needed)
+        #   Result: Complete binary bitmap as BLOB
+        #
+        # RANGE VALIDATION:
+        #   Supports values in range 0-32767, returns NULL if any value is out of range
+        #
         BITMAP_CONSTRUCT_AGG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             SELECT CASE
                 WHEN l IS NULL OR LENGTH(l) = 0 THEN NULL
+                WHEN LENGTH(l) != LENGTH(LIST_FILTER(l, __v -> __v BETWEEN 0 AND 32767)) THEN NULL
                 WHEN LENGTH(l) < 5 THEN UNHEX(PRINTF('%04X', LENGTH(l)) || h || REPEAT('00', GREATEST(0, 4 - LENGTH(l)) * 2))
                 ELSE UNHEX('08000000000000000000' || h)
             END

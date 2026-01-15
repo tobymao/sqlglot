@@ -1043,32 +1043,20 @@ def _is_null_value_sql(self: DuckDB.Generator, expression: exp.IsNullValue) -> s
     - JSON null literal: Returns TRUE
     - Non-null JSON values: Returns FALSE
 
-    DuckDB equivalent logic:
-    CASE
-        WHEN var IS NULL THEN NULL
-        WHEN JSON_TYPE(var) = 'NULL' THEN TRUE
-        ELSE FALSE
-    END
+    DuckDB equivalent: JSON_TYPE(var) = 'NULL'
+    This simple expression naturally handles all three cases because:
+    - JSON_TYPE(NULL) returns NULL, so NULL = 'NULL' evaluates to NULL
+    - JSON_TYPE(var) where var contains JSON null returns 'NULL', so 'NULL' = 'NULL' evaluates to TRUE
+    - JSON_TYPE(var) where var contains other JSON values returns other types, so comparison evaluates to FALSE
     """
     arg = expression.this
 
-    case_expr = (
-        exp.case()
-        .when(
-            exp.Is(this=arg.copy(), expression=exp.Null()),
-            exp.Null(),
-        )
-        .when(
-            exp.EQ(
-                this=exp.func("JSON_TYPE", arg.copy()),
-                expression=exp.Literal.string("NULL"),
-            ),
-            exp.true(),
-        )
-        .else_(exp.false())
+    eq_expr = exp.EQ(
+        this=exp.func("JSON_TYPE", arg),
+        expression=exp.Literal.string("NULL"),
     )
 
-    return self.sql(case_expr)
+    return self.sql(eq_expr)
 
 
 class DuckDB(Dialect):

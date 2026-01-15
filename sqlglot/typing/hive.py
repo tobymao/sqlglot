@@ -19,7 +19,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.SHA,
             exp.SHA2,
-            exp.Space,
         }
     },
     exp.Coalesce: {

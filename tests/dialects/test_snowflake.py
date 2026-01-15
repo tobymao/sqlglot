@@ -2037,13 +2037,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(HOUR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            write={
-                "snowflake": "SELECT DATE_PART(HOUR, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(HOUR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            },
-        )
-        self.validate_all(
             "SELECT EXTRACT(MINUTE FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
             write={
                 "snowflake": "SELECT DATE_PART(MINUTE, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",

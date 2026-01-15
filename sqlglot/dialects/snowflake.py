@@ -705,8 +705,13 @@ class Snowflake(Dialect):
     DATE_PART_MAPPING = {
         **Dialect.DATE_PART_MAPPING,
         "ISOWEEK": "WEEKISO",
-        # Preserve EPOCH_SECOND separately from EPOCH for accurate transpilation
-        # (Snowflake returns integer for EPOCH_SECOND, but EPOCH in other dialects may return float)
+        # The base Dialect maps EPOCH_SECOND -> EPOCH, but we need to preserve
+        # EPOCH_SECOND as a distinct value for two reasons:
+        # 1. Type annotation: EPOCH_SECOND returns BIGINT, while EPOCH returns DOUBLE
+        # 2. Transpilation: DuckDB's EPOCH() returns float, so we cast EPOCH_SECOND
+        #    to BIGINT to match Snowflake's integer behavior
+        # Without this override, EXTRACT(EPOCH_SECOND FROM ts) would be normalized
+        # to EXTRACT(EPOCH FROM ts) and lose the integer semantics.
         "EPOCH_SECOND": "EPOCH_SECOND",
         "EPOCH_SECONDS": "EPOCH_SECOND",
     }

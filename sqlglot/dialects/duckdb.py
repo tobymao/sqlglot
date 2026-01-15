@@ -2340,6 +2340,13 @@ class DuckDB(Dialect):
             this = expression.this
             datetime_expr = expression.expression
 
+            # TIMESTAMPTZ extractions may produce different results between Snowflake and DuckDB
+            # because Snowflake applies server timezone while DuckDB uses UTC
+            if datetime_expr.is_type(exp.DataType.Type.TIMESTAMPTZ, exp.DataType.Type.TIMESTAMPLTZ):
+                self.unsupported(
+                    "EXTRACT from TIMESTAMPTZ may produce different results due to timezone handling differences"
+                )
+
             part_name = this.name.upper()
 
             if part_name:

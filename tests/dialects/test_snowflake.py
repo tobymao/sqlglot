@@ -1949,154 +1949,141 @@ class TestSnowflake(Validator):
             "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP))",
             write={
                 "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP))",
-                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP), '%n') AS BIGINT)",
+                "duckdb": "SELECT CAST(STRFTIME(CAST(CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP) AS TIMESTAMP_NS), '%n') AS BIGINT)",
+            },
+        )
+        # TIMESTAMP_NTZ tests - using NTZ for consistent behavior across timezones
+        self.validate_all(
+            "SELECT EXTRACT(YEAR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
+            write={
+                "snowflake": "SELECT DATE_PART(YEAR, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(YEAR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(YEAR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(QUARTER FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(YEAR, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(YEAR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(QUARTER, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(QUARTER FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(QUARTER FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(MONTH FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(QUARTER, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(QUARTER FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(MONTH, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(MONTH FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(MONTH FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(WEEK FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(MONTH, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(MONTH FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(WEEK, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(WEEK FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(WEEK FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(WEEKISO FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(WEEK, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(WEEK FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(WEEKISO, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00' AS TIMESTAMP), '%V') AS INT)",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(WEEKISO FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(WEEKISO, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ), '%V') AS INT)",
+                "snowflake": "SELECT DATE_PART(DAY, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(DAYOFMONTH FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(DAY, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(DAY, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(DAYOFMONTH FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(DAYOFWEEK FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(DAY, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(DAY FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(DAYOFWEEK, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(DAYOFWEEK FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(DAYOFWEEK FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(DAYOFWEEKISO FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(DAYOFWEEK, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(DAYOFWEEK FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(DAYOFWEEKISO, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(ISODOW FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(DAYOFWEEKISO FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(DAYOFYEAR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(DAYOFWEEKISO, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(ISODOW FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(DAYOFYEAR, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(DAYOFYEAR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(DAYOFYEAR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(YEAROFWEEK FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(DAYOFYEAR, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(DAYOFYEAR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(YEAROFWEEK, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00' AS TIMESTAMP), '%G') AS INT)",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(YEAROFWEEK FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(YEAROFWEEKISO FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(YEAROFWEEK, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ), '%G') AS INT)",
+                "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00' AS TIMESTAMP), '%G') AS INT)",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(YEAROFWEEKISO FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(MINUTE FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ), '%G') AS INT)",
+                "snowflake": "SELECT DATE_PART(MINUTE, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(MINUTE FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(MINUTE FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(SECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(MINUTE, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(MINUTE FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(SECOND, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(SECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(SECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(NANOSECOND FROM CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(SECOND, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(SECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT CAST(STRFTIME(CAST(CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP) AS TIMESTAMP_NS), '%n') AS BIGINT)",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(NANOSECOND FROM CAST('2026-01-06 11:45:00.123456789-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(EPOCH_SECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00.123456789-05:00' AS TIMESTAMPTZ), '%n') AS BIGINT)",
+                "snowflake": "SELECT DATE_PART(EPOCH_SECOND, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT CAST(EPOCH(CAST('2026-01-06 11:45:00' AS TIMESTAMP)) AS BIGINT)",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(EPOCH_SECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(EPOCH_MILLISECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(EPOCH_SECOND, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT CAST(EPOCH(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ)) AS BIGINT)",
+                "snowflake": "SELECT DATE_PART(EPOCH_MILLISECOND, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EPOCH_MS(CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(EPOCH_MILLISECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(EPOCH_MICROSECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(EPOCH_MILLISECOND, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EPOCH_MS(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(EPOCH_MICROSECOND, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EPOCH_US(CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT EXTRACT(EPOCH_MICROSECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+            "SELECT EXTRACT(EPOCH_NANOSECOND FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(EPOCH_MICROSECOND, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EPOCH_US(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            },
-        )
-        self.validate_all(
-            "SELECT EXTRACT(EPOCH_NANOSECOND FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            write={
-                "snowflake": "SELECT DATE_PART(EPOCH_NANOSECOND, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EPOCH_NS(CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            },
-        )
-        self.validate_all(
-            "SELECT EXTRACT(TIMEZONE_HOUR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            write={
-                "snowflake": "SELECT DATE_PART(TIMEZONE_HOUR, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(TIMEZONE_HOUR FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            },
-        )
-        self.validate_all(
-            "SELECT EXTRACT(TIMEZONE_MINUTE FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-            write={
-                "snowflake": "SELECT DATE_PART(TIMEZONE_MINUTE, CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
-                "duckdb": "SELECT EXTRACT(TIMEZONE_MINUTE FROM CAST('2026-01-06 11:45:00-05:00' AS TIMESTAMPTZ))",
+                "snowflake": "SELECT DATE_PART(EPOCH_NANOSECOND, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EPOCH_NS(CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         # EXTRACT from DATE - exhaustive tests
@@ -2210,13 +2197,6 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT DATE_PART(SECOND, CAST('11:45:00.123456789' AS TIME))",
                 "duckdb": "SELECT EXTRACT(SECOND FROM CAST('11:45:00.123456789' AS TIME))",
-            },
-        )
-        self.validate_all(
-            "SELECT EXTRACT(NANOSECOND FROM CAST('11:45:00.123456789' AS TIME))",
-            write={
-                "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('11:45:00.123456789' AS TIME))",
-                "duckdb": "SELECT CAST(EXTRACT(MICROSECOND FROM CAST('11:45:00.123456789' AS TIME)) * 1000 AS BIGINT)",
             },
         )
 

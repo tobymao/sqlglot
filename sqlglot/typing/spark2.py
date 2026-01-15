@@ -63,4 +63,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         )
     },
     exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.BitLength: {"returns": exp.DataType.Type.INT},
 }

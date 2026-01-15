@@ -435,6 +435,10 @@ VARCHAR;
 RANDN();
 DOUBLE;
 
+# dialect: spark2, spark, databricks
+BIT_LENGTH(tbl.str_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

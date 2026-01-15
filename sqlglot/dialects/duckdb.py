@@ -1034,6 +1034,43 @@ def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
     return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
 
 
+def _is_null_value_sql(self: DuckDB.Generator, expression: exp.IsNullValue) -> str:
+    """
+    Transpile Snowflake's IS_NULL_VALUE to DuckDB equivalent.
+
+    Snowflake's IS_NULL_VALUE distinguishes between SQL NULL and JSON null in VARIANT types:
+    - SQL NULL: Returns NULL
+    - JSON null literal: Returns TRUE
+    - Non-null JSON values: Returns FALSE
+
+    DuckDB equivalent logic:
+    CASE
+        WHEN var IS NULL THEN NULL
+        WHEN JSON_TYPE(var) = 'NULL' THEN TRUE
+        ELSE FALSE
+    END
+    """
+    arg = expression.this
+
+    case_expr = (
+        exp.case()
+        .when(
+            exp.Is(this=arg.copy(), expression=exp.Null()),
+            exp.Null(),
+        )
+        .when(
+            exp.EQ(
+                this=exp.func("JSON_TYPE", arg.copy()),
+                expression=exp.Literal.string("NULL"),
+            ),
+            exp.true(),
+        )
+        .else_(exp.false())
+    )
+
+    return self.sql(case_expr)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1533,6 +1570,7 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.IsNullValue: _is_null_value_sql,
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),

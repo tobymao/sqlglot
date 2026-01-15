@@ -1840,6 +1840,181 @@ class TestDuckDB(Validator):
             write={"bigquery": "IS_INF(x)", "duckdb": "ISINF(x)"},
         )
 
+    def test_is_null_value(self):
+        # Test IS_NULL_VALUE transpilation from Snowflake to DuckDB
+        # Snowflake keeps IS_NULL_VALUE as-is, DuckDB transpiles to CASE expression
+
+        # Basic variable test
+        self.validate_all(
+            "IS_NULL_VALUE(var)",
+            write={
+                "duckdb": "CASE WHEN var IS NULL THEN NULL WHEN JSON_TYPE(var) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(var)",
+            },
+        )
+
+        # Test with PARSE_JSON/JSON - null literal
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('null'))",
+            write={
+                "duckdb": "CASE WHEN JSON('null') IS NULL THEN NULL WHEN JSON_TYPE(JSON('null')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('null'))",
+            },
+        )
+
+        # Test with JSON string
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('\"test\"'))",
+            write={
+                "duckdb": "CASE WHEN JSON('\"test\"') IS NULL THEN NULL WHEN JSON_TYPE(JSON('\"test\"')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('\"test\"'))",
+            },
+        )
+
+        # Test with JSON number
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('42'))",
+            write={
+                "duckdb": "CASE WHEN JSON('42') IS NULL THEN NULL WHEN JSON_TYPE(JSON('42')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('42'))",
+            },
+        )
+
+        # Test with JSON boolean true
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('true'))",
+            write={
+                "duckdb": "CASE WHEN JSON('true') IS NULL THEN NULL WHEN JSON_TYPE(JSON('true')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('true'))",
+            },
+        )
+
+        # Test with JSON boolean false
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('false'))",
+            write={
+                "duckdb": "CASE WHEN JSON('false') IS NULL THEN NULL WHEN JSON_TYPE(JSON('false')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('false'))",
+            },
+        )
+
+        # Test with JSON object
+        self.validate_all(
+            'IS_NULL_VALUE(PARSE_JSON(\'{"key": "value"}\'))',
+            write={
+                "duckdb": 'CASE WHEN JSON(\'{"key": "value"}\') IS NULL THEN NULL WHEN JSON_TYPE(JSON(\'{"key": "value"}\')) = \'NULL\' THEN TRUE ELSE FALSE END',
+                "snowflake": 'IS_NULL_VALUE(PARSE_JSON(\'{"key": "value"}\'))',
+            },
+        )
+
+        # Test with JSON array
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('[1, 2, 3]'))",
+            write={
+                "duckdb": "CASE WHEN JSON('[1, 2, 3]') IS NULL THEN NULL WHEN JSON_TYPE(JSON('[1, 2, 3]')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('[1, 2, 3]'))",
+            },
+        )
+
+        # Test with empty JSON object
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('{}'))",
+            write={
+                "duckdb": "CASE WHEN JSON('{}') IS NULL THEN NULL WHEN JSON_TYPE(JSON('{}')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('{}'))",
+            },
+        )
+
+        # Test with empty JSON array
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('[]'))",
+            write={
+                "duckdb": "CASE WHEN JSON('[]') IS NULL THEN NULL WHEN JSON_TYPE(JSON('[]')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('[]'))",
+            },
+        )
+
+        # Test with JSON array containing null
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('[null, 1, 2]'))",
+            write={
+                "duckdb": "CASE WHEN JSON('[null, 1, 2]') IS NULL THEN NULL WHEN JSON_TYPE(JSON('[null, 1, 2]')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('[null, 1, 2]'))",
+            },
+        )
+
+        # Test with JSON object containing null value
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('{\"x\": null}'))",
+            write={
+                "duckdb": "CASE WHEN JSON('{\"x\": null}') IS NULL THEN NULL WHEN JSON_TYPE(JSON('{\"x\": null}')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('{\"x\": null}'))",
+            },
+        )
+
+        # Test with nested JSON object
+        self.validate_all(
+            'IS_NULL_VALUE(PARSE_JSON(\'{"a": {"b": "c"}}\'))',
+            write={
+                "duckdb": 'CASE WHEN JSON(\'{"a": {"b": "c"}}\') IS NULL THEN NULL WHEN JSON_TYPE(JSON(\'{"a": {"b": "c"}}\')) = \'NULL\' THEN TRUE ELSE FALSE END',
+                "snowflake": 'IS_NULL_VALUE(PARSE_JSON(\'{"a": {"b": "c"}}\'))',
+            },
+        )
+
+        # Test with zero
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('0'))",
+            write={
+                "duckdb": "CASE WHEN JSON('0') IS NULL THEN NULL WHEN JSON_TYPE(JSON('0')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('0'))",
+            },
+        )
+
+        # Test with negative number
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('-123.45'))",
+            write={
+                "duckdb": "CASE WHEN JSON('-123.45') IS NULL THEN NULL WHEN JSON_TYPE(JSON('-123.45')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('-123.45'))",
+            },
+        )
+
+        # Test with empty string
+        self.validate_all(
+            "IS_NULL_VALUE(PARSE_JSON('\"\"'))",
+            write={
+                "duckdb": "CASE WHEN JSON('\"\"') IS NULL THEN NULL WHEN JSON_TYPE(JSON('\"\"')) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "IS_NULL_VALUE(PARSE_JSON('\"\"'))",
+            },
+        )
+
+        # Test in SELECT with multiple columns
+        self.validate_all(
+            "SELECT col1, IS_NULL_VALUE(col2) AS result FROM table1",
+            write={
+                "duckdb": "SELECT col1, CASE WHEN col2 IS NULL THEN NULL WHEN JSON_TYPE(col2) = 'NULL' THEN TRUE ELSE FALSE END AS result FROM table1",
+                "snowflake": "SELECT col1, IS_NULL_VALUE(col2) AS result FROM table1",
+            },
+        )
+
+        # Test in WHERE clause
+        self.validate_all(
+            "SELECT * FROM table1 WHERE IS_NULL_VALUE(json_col)",
+            write={
+                "duckdb": "SELECT * FROM table1 WHERE CASE WHEN json_col IS NULL THEN NULL WHEN JSON_TYPE(json_col) = 'NULL' THEN TRUE ELSE FALSE END",
+                "snowflake": "SELECT * FROM table1 WHERE IS_NULL_VALUE(json_col)",
+            },
+        )
+
+        # Test nested within another function
+        self.validate_all(
+            "SELECT NOT IS_NULL_VALUE(var) AS result",
+            write={
+                "duckdb": "SELECT NOT CASE WHEN var IS NULL THEN NULL WHEN JSON_TYPE(var) = 'NULL' THEN TRUE ELSE FALSE END AS result",
+                "snowflake": "SELECT NOT IS_NULL_VALUE(var) AS result",
+            },
+        )
+
     def test_parameter_token(self):
         self.validate_all(
             "SELECT $foo",

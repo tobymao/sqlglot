@@ -129,6 +129,8 @@ class StarRocks(MySQL):
         UPDATE_STATEMENT_SUPPORTS_FROM = True
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False
+
+        # StarRocks doesn't support renaming a table with a database
         RENAME_TABLE_WITH_DB = False
 
         CAST_MAPPING = {}
@@ -144,13 +146,11 @@ class StarRocks(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
-            exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,  # for expression partitioning
             exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -400,38 +400,6 @@ class StarRocks(MySQL):
                     # SR doesn't support `(func(...), col2)` with parens for normal tables
                     return f"PARTITION BY {partition_colmns_str}"
             return f"PARTITION BY ({self.sql(node)})"
-
-        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-            """Generate StarRocks PARTITION BY RANGE clause for RANGE partitioning.
-
-            Converts PartitionByRangeProperty to PARTITION BY RANGE (...) (...) syntax.
-
-            Example:
-                exp.PartitionByRangeProperty(partition_expressions=[col1, col2],
-                    create_expressions=["START('2025-01-01') END('2025-12-31') EVERY (INTERVAL 1 DAY)"])
-                → "PARTITION BY RANGE (col1, col2) (START('2025-01-01') END('2025-12-31') EVERY (INTERVAL 1 DAY))"
-            """
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
-
-        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
-            """Generate StarRocks PARTITION BY LIST clause for LIST partitioning.
-
-            Converts PartitionByListProperty to PARTITION BY LIST (...) (...) syntax.
-
-            Example:
-                exp.PartitionByListProperty(partition_expressions=[col1, col2],
-                    create_expressions=["PARTITION p_top VALUES IN ('China', 'US')"])
-                → "PARTITION BY LIST (col1, col2) (PARTITION p_top VALUES IN ('China', 'US'))"
-            """
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             """Generate StarRocks ORDER BY clause for clustering.

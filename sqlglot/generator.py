@@ -5252,9 +5252,9 @@ class Generator(metaclass=_Generator):
         return f"{this}{expr}"
 
     def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-        partitions = self.expressions(expression, "partition_expressions")
-        create = self.expressions(expression, "create_expressions")
-        return f"PARTITION BY RANGE {self.wrap(partitions)} {self.wrap(create)}"
+        partition_expressions = self.expressions(expression, "partition_expressions")
+        pre_create_partitions = self.expressions(expression, "create_expressions")
+        return f"PARTITION BY RANGE {self.wrap(partition_expressions)} {self.wrap(pre_create_partitions)}"
 
     def partitionbyrangepropertydynamic_sql(
         self, expression: exp.PartitionByRangePropertyDynamic
@@ -5267,6 +5267,13 @@ class Generator(metaclass=_Generator):
             every.this.replace(exp.Literal.number(every.name))
 
         return f"START {self.wrap(start)} END {self.wrap(end)} EVERY {self.wrap(self.sql(every))}"
+
+    def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
+        partition_expressions = self.expressions(
+            expression, key="partition_expressions", indent=False
+        )
+        pre_create_partitions = self.expressions(expression, key="create_expressions", indent=False)
+        return f"PARTITION BY LIST {self.wrap(partition_expressions)} {self.wrap(pre_create_partitions)}"
 
     def unpivotcolumns_sql(self, expression: exp.UnpivotColumns) -> str:
         name = self.sql(expression, "this")

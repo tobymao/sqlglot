@@ -431,6 +431,10 @@ VARCHAR;
 SPACE(tbl.int_col);
 VARCHAR;
 
+# dialect: spark2, spark, databricks
+RANDN();
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

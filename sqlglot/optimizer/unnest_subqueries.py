@@ -40,11 +40,16 @@ def unnest(select, parent_select, next_alias_name):
     if len(select.selects) > 1:
         return
 
+    # Expressions that cannot be safely converted by unnesting
+    # exp.GenerateSeries: skipped as unnesting will change semantics if join with other tables.
+    skip_expressions = (exp.GenerateSeries,)
+
     predicate = select.find_ancestor(exp.Condition)
     if (
         not predicate
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
+        or isinstance(predicate, skip_expressions)
     ):
         return
 
@@ -83,21 +88,6 @@ def unnest(select, parent_select, next_alias_name):
 
         _replace(select.parent, column)
         parent_select.join(select, on=on_clause, join_type=join_type, join_alias=alias, copy=False)
-
-        if isinstance(predicate, exp.GenerateSeries):
-            # If a subquery is unnested from GenerateSeries function, it should
-            # appear before that function. Otherwise, the subquery reference
-            # used in the function will be invalid.
-            parent_select_from = parent_select.args.get("from_")
-            parent_select_joins = parent_select.args.get("joins")
-
-            unnested_subquery = parent_select_joins.pop()
-
-            # The unnested subquery only emits constant value, so declare it first
-            parent_select.args["from_"].replace(exp.From(this=unnested_subquery.this))
-            parent_select.args["joins"].insert(
-                0, exp.Join(this=parent_select_from.this, kind="CROSS")
-            )
 
         return
 

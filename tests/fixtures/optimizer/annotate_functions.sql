@@ -343,6 +343,14 @@ STRING;
 UNIX_TIMESTAMP();
 BIGINT;
 
+# dialect: hive, spark2, spark, databricks
+ACOS(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+ACOS(tbl.double_col);
+DOUBLE;
+
 # dialect: spark2, spark, databricks
 ATAN2(tbl.int_col, tbl.int_col);
 DOUBLE;

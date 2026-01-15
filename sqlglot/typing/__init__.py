@@ -193,6 +193,8 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,
+            exp.SHA,
+            exp.SHA2,
             exp.Substring,
             exp.String,
             exp.TimeToStr,

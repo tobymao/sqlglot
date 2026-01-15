@@ -3,6 +3,11 @@ from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 
 
+# Expressions that cannot be safely converted by unnesting
+# exp.GenerateSeries: skipped as unnesting will change semantics if join with other tables.
+SKIP_UNNEST_EXPRESSIONS = (exp.GenerateSeries,)
+
+
 def unnest_subqueries(expression):
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
@@ -40,16 +45,12 @@ def unnest(select, parent_select, next_alias_name):
     if len(select.selects) > 1:
         return
 
-    # Expressions that cannot be safely converted by unnesting
-    # exp.GenerateSeries: skipped as unnesting will change semantics if join with other tables.
-    skip_expressions = (exp.GenerateSeries,)
-
     predicate = select.find_ancestor(exp.Condition)
     if (
         not predicate
+        or isinstance(predicate, SKIP_UNNEST_EXPRESSIONS)
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
-        or isinstance(predicate, skip_expressions)
     ):
         return
 

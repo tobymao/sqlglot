@@ -129,7 +129,6 @@ class StarRocks(MySQL):
         UPDATE_STATEMENT_SUPPORTS_FROM = True
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False
-
         # StarRocks doesn't support renaming a table with a database
         RENAME_TABLE_WITH_DB = False
 

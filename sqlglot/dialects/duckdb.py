@@ -2325,12 +2325,7 @@ class DuckDB(Dialect):
 
             # Handle both identifier (exp.Var) and string literal (exp.Literal) date parts
             # e.g., EXTRACT(day FROM ...) vs EXTRACT('day' FROM ...)
-            if isinstance(this, exp.Var):
-                part_name = this.name.upper()
-            elif isinstance(this, exp.Literal) and this.is_string:
-                part_name = this.this.upper()
-            else:
-                part_name = None
+            part_name = this.name.upper()
 
             if part_name:
                 # Map specifiers to strftime format codes for Snowflake specifiers unsupported in DuckDB
@@ -2356,16 +2351,8 @@ class DuckDB(Dialect):
                         )
                     )
                     if is_nano_time:
-                        return self.sql(
-                            exp.cast(
-                                exp.Mul(
-                                    this=exp.Extract(
-                                        this=exp.var("MICROSECOND"), expression=datetime_expr
-                                    ),
-                                    expression=exp.Literal.number(1000),
-                                ),
-                                exp.DataType.build(cast_type, dialect="duckdb"),
-                            )
+                        self.unsupported(
+                            "Parameter NANOSECOND is not supported with TIME type in DuckDB"
                         )
 
                     return self.sql(

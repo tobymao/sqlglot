@@ -555,6 +555,11 @@ EXPRESSION_METADATA = {
             e, exp.DataType.build("NUMBER(19, 0)", dialect="snowflake")
         )
     },
+    exp.Length: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DataType.build("NUMBER(18, 0)", dialect="snowflake")
+        )
+    },
     exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.StrToTime: {"annotator": _annotate_str_to_time},

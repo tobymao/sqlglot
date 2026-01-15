@@ -3049,11 +3049,19 @@ DATE;
 
 # dialect: snowflake
 LEN(tbl.str_col);
-INT;
+NUMBER(18, 0);
 
 # dialect: snowflake
 LEN(tbl.bin_col);
-INT;
+NUMBER(18, 0);
+
+# dialect: snowflake
+LENGTH(tbl.str_col);
+NUMBER(18, 0);
+
+# dialect: snowflake
+LENGTH(tbl.bin_col);
+NUMBER(18, 0);
 
 # dialect: snowflake
 LOCALTIMESTAMP;

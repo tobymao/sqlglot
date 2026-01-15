@@ -515,8 +515,6 @@ EXPRESSION_METADATA = {
             exp.RegexpReplace,
             exp.Repeat,
             exp.Replace,
-            exp.SHA,
-            exp.SHA2,
             exp.Soundex,
             exp.SoundexP123,
             exp.Space,

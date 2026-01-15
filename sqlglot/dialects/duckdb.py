@@ -1730,29 +1730,25 @@ class DuckDB(Dialect):
         #
         # BACKGROUND:
         # Snowflake's BITMAP_CONSTRUCT_AGG aggregates integers into a compact binary bitmap.
-        # The binary format is not fully documented, so the implementation below was
-        # determined via experimentation with Snowflake's actual output.
+        # Supports values in range 0-32767, this version returns NULL if any value is out of range
         # See: https://docs.snowflake.com/en/sql-reference/functions/bitmap_construct_agg
         # See: https://docs.snowflake.com/en/user-guide/querying-bitmaps-for-distinct-counts
         #
-        # SNOWFLAKE BITMAP BINARY FORMAT:
         # Snowflake uses two different formats based on the number of unique values:
         #
-        # Format 1 - Small bitmap (< 5 unique values):
+        # Format 1 - Small bitmap (< 5 unique values): Length of 10 bytes
         #   Bytes 0-1: Count of values as 2-byte big-endian integer (e.g., 3 values = 0x0003)
         #   Bytes 2-9: Up to 4 values, each as 2-byte little-endian integers, zero-padded to 8 bytes
-        #   Total: Always 10 bytes
         #   Example: Values [1, 2, 3] -> 0x0003 0100 0200 0300 0000 (hex)
         #                                count  v1   v2   v3   pad
         #
-        # Format 2 - Large bitmap (>= 5 unique values):
+        # Format 2 - Large bitmap (>= 5 unique values): Length of 10 + (2 * count) bytes
         #   Bytes 0-9: Fixed header 0x08 followed by 9 zero bytes
         #   Bytes 10+: Each value as 2-byte little-endian integer (no padding)
-        #   Total: 10 + (2 * count) bytes
         #   Example: Values [1,2,3,4,5] -> 0x08 00000000 00000000 00 0100 0200 0300 0400 0500
         #                                  hdr  ----9 zero bytes----  v1   v2   v3   v4   v5
         #
-        # TEMPLATE STRUCTURE (inside-out):
+        # TEMPLATE STRUCTURE
         #
         # Phase 1 - Innermost subquery: Data preparation
         #   SELECT LIST_SORT(...) AS l
@@ -1772,9 +1768,6 @@ class DuckDB(Dialect):
         #   LENGTH(l) >= 5:
         #   - Large format: Fixed 10-byte header + values (no padding needed)
         #   Result: Complete binary bitmap as BLOB
-        #
-        # RANGE VALIDATION:
-        #   Supports values in range 0-32767, returns NULL if any value is out of range
         #
         BITMAP_CONSTRUCT_AGG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """

@@ -427,6 +427,10 @@ VARCHAR;
 SHA2(tbl.str_col, tbl.int_col);
 VARCHAR;
 
+# dialect: spark2, spark, databricks
+RANDN();
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

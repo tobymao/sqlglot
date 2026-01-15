@@ -137,6 +137,12 @@ DOUBLE;
 KURTOSIS(tbl.int_col);
 DOUBLE;
 
+LENGTH(tbl.str_col);
+INT;
+
+LENGTH(tbl.bin_col);
+INT;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -3047,14 +3053,6 @@ INT;
 
 # dialect: snowflake
 LEN(tbl.bin_col);
-INT;
-
-# dialect: snowflake
-LENGTH(tbl.str_col);
-INT;
-
-# dialect: snowflake
-LENGTH(tbl.bin_col);
 INT;
 
 # dialect: snowflake

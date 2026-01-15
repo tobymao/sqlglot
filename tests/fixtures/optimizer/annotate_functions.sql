@@ -5038,3 +5038,15 @@ DATETIME;
 # dialect: mysql
 ELT(1, 'a', 'b');
 VARCHAR;
+
+--------------------------------------
+-- DuckDB
+--------------------------------------
+
+# dialect: duckdb
+SHA1(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
+SHA256(tbl.str_col);
+VARCHAR;

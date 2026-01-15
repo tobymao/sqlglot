@@ -213,7 +213,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         # When set to False, this enables partial annotation by skipping already-annotated nodes
         self._overwrite_types = overwrite_types
 
-        # Maps Scope with the corresponding selected sources
+        # Maps Scope to its corresponding selected sources
         self._scope_selects: t.Dict[Scope, t.Dict[str, t.Dict[str, t.Any]]] = {}
 
     def clear(self) -> None:

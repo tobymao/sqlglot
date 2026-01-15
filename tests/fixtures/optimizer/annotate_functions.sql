@@ -451,6 +451,30 @@ DOUBLE;
 BIT_LENGTH(tbl.str_col);
 INT;
 
+# dialect: hive, spark2, spark, databricks
+SIN(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+SIN(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+COS(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+COS(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+TAN(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+TAN(tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

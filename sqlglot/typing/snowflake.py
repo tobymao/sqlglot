@@ -519,7 +519,6 @@ EXPRESSION_METADATA = {
             exp.SHA2,
             exp.Soundex,
             exp.SoundexP123,
-            exp.Space,
             exp.SplitPart,
             exp.Translate,
             exp.TryBase64DecodeString,

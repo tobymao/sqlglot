@@ -476,6 +476,13 @@ TAN(tbl.double_col);
 DOUBLE;
 
 # dialect: spark, databricks
+ATANH(tbl.double_col);
+DOUBLE;
+
+# dialect: spark, databricks
+ATANH(tbl.int_col);
+DOUBLE;
+
 SEC(tbl.int_col);
 DOUBLE;
 

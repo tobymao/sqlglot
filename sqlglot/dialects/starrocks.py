@@ -352,9 +352,7 @@ class StarRocks(MySQL):
                     engine_index = (engine.index or 0) if engine else -1
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
-            # Save the creating view flag for some special cases:
-            # 1. partitionedbyproperty_sql: need parentheses for MVs
-            self._creating_view = expression.kind == "VIEW"
+
             return super().create_sql(expression)
 
         def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
@@ -383,22 +381,21 @@ class StarRocks(MySQL):
             elif isinstance(node, exp.Tuple):
                 part_list = []
                 for expr in node.expressions:
-                    if isinstance(expr, exp.Column):
-                        part_list.append(expr.name)
-                    elif isinstance(expr, (exp.Func, exp.Anonymous)):
-                        part_list.append(self.sql(expr))
+                    part_list.append(self.sql(expr))
+                    if isinstance(expr, (exp.Func, exp.Anonymous)):
                         any_func_column = True
-                    else:
-                        part_list.append(str(expr))
                 partition_colmns_str = ", ".join(part_list)
+
             if partition_colmns_str:
-                # SR needs `(...)` for MVs, with parens.
-                if getattr(self, "_creating_view", False) or not any_func_column:
+                create = expression.find_ancestor(exp.Create)
+                # SR needs `(...)` for MVs, with parens, and columns only
+                if create and create.kind == "VIEW" or not any_func_column:
                     return f"PARTITION BY ({partition_colmns_str})"
                 else:
                     # SR doesn't support `(func(...), col2)` with parens for normal tables
                     return f"PARTITION BY {partition_colmns_str}"
-            return f"PARTITION BY ({self.sql(node)})"
+            else:
+                return f"PARTITION BY {self.sql(expression)}"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             """Generate StarRocks ORDER BY clause for clustering.

@@ -220,6 +220,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._visited.clear()
         self._null_expressions.clear()
         self._setop_column_types.clear()
+        self._scope_selects.clear()
 
     def _set_type(
         self, expression: E, target_type: t.Optional[exp.DataType | exp.DataType.Type]

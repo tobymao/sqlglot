@@ -26,4 +26,5 @@ EXPRESSION_METADATA = {
     exp.Encode: {"returns": exp.DataType.Type.BINARY},
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
     exp.StrToUnix: {"returns": exp.DataType.Type.BIGINT},
+    exp.CurrentCatalog: {"returns": exp.DataType.Type.VARCHAR},
 }

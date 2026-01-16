@@ -491,6 +491,7 @@ DOUBLE;
 ATANH(tbl.int_col);
 DOUBLE;
 
+# dialect: spark, databricks
 SEC(tbl.int_col);
 DOUBLE;
 
@@ -656,6 +657,30 @@ TIMESTAMPTZ;
 
 # dialect: bigquery
 TIMESTAMP(tbl.str_col);
+TIMESTAMPTZ;
+
+# dialect: bigquery
+SAFE.PARSE_DATE('%Y-%m-%d', '2024-01-15');
+DATE;
+
+# dialect: bigquery
+PARSE_DATE('%Y-%m-%d', '2024-01-15');
+DATE;
+
+# dialect: bigquery
+SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2024-01-15 10:30:00');
+DATETIME;
+
+# dialect: bigquery
+SAFE.PARSE_TIME('%H:%M:%S', '10:30:00');
+TIME;
+
+# dialect: bigquery
+SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', '2024-01-15 10:30:00');
+TIMESTAMPTZ;
+
+# dialect: bigquery
+PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', '2024-01-15 10:30:00');
 TIMESTAMPTZ;
 
 # dialect: bigquery

@@ -10,6 +10,7 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.Acosh,
             exp.Atanh,
+            exp.Sec,
         }
     },
     exp.CurrentTimezone: {"returns": exp.DataType.Type.VARCHAR},

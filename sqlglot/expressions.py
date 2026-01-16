@@ -5569,6 +5569,12 @@ class Func(Condition):
         return {name: cls.from_arg_list for name in cls.sql_names()}
 
 
+# Function returns NULL instead of error
+# https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#safe_prefix
+class SafeFunc(Func):
+    pass
+
+
 class Typeof(Func):
     pass
 
@@ -6668,7 +6674,7 @@ class Elt(Func):
 
 
 class Timestamp(Func):
-    arg_types = {"this": False, "zone": False, "with_tz": False, "safe": False}
+    arg_types = {"this": False, "zone": False, "with_tz": False}
 
 
 class TimestampAdd(Func, TimeUnit):
@@ -7425,11 +7431,11 @@ class ParseIp(Func):
 
 
 class ParseTime(Func):
-    arg_types = {"this": True, "format": True, "safe": False}
+    arg_types = {"this": True, "format": True}
 
 
 class ParseDatetime(Func):
-    arg_types = {"this": True, "format": False, "zone": False, "safe": False}
+    arg_types = {"this": True, "format": False, "zone": False}
 
 
 class Least(Func):

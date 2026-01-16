@@ -306,6 +306,7 @@ EXPRESSION_METADATA = {
             exp.LowerHex,
             exp.MD5,
             exp.NetHost,
+            exp.NetRegDomain,
             exp.Normalize,
             exp.SafeConvertBytesToString,
             exp.Soundex,

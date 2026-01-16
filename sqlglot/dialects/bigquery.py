@@ -1076,6 +1076,8 @@ class BigQuery(Dialect):
                 if prefix == "NET":
                     if func.name.upper() == "HOST":
                         this = self.expression(exp.NetHost, this=seq_get(func.expressions, 0))
+                    if func.name.upper() == "REG_DOMAIN":
+                        this = self.expression(exp.NetRegDomain, this=seq_get(func.expressions, 0))
                 elif prefix == "SAFE":
                     # Retreat to try and parse a known function instead of an anonymous one,
                     # which is parsed by the base column ops parser due to anonymous_func=true

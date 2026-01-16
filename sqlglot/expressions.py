@@ -7660,6 +7660,9 @@ class Normal(Func):
 class NetHost(Func):
     _sql_names = ["NET.HOST"]
 
+class NetRegDomain(Func):
+    _sql_names = ["NET.REG_DOMAIN"]
+
 
 class Overlay(Func):
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}

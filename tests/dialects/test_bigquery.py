@@ -78,6 +78,7 @@ class TestBigQuery(Validator):
 
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("NET.HOST('http://example.com')").assert_is(exp.NetHost)
+        self.validate_identity("NET.REG_DOMAIN('http://example.com')").assert_is(exp.NetRegDomain)
         self.validate_identity("DATE_TRUNC(x, @foo)").unit.assert_is(exp.Parameter)
         self.validate_identity("ARRAY_CONCAT_AGG(x ORDER BY ARRAY_LENGTH(x) LIMIT 2)")
         self.validate_identity("ARRAY_CONCAT_AGG(x LIMIT 2)")

@@ -1067,39 +1067,20 @@ class BigQuery(Dialect):
             )
 
         def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            func_index = self._index + 1
             this = super()._parse_column_ops(this)
 
-            if isinstance(this, exp.Dot):
-                prefix_name = this.this.name.upper()
-                func_name = this.name.upper()
-                if prefix_name == "NET":
-                    if func_name == "HOST":
-                        this = self.expression(
-                            exp.NetHost, this=seq_get(this.expression.expressions, 0)
-                        )
-                elif prefix_name == "SAFE":
-                    args = this.expression.expressions
-                    if func_name == "TIMESTAMP":
-                        this = _build_timestamp(args)
-                        this.set("safe", True)
-                    elif func_name == "PARSE_DATE":
-                        this = build_formatted_time(exp.StrToDate, "bigquery")(
-                            [seq_get(args, 1), seq_get(args, 0)]
-                        )
-                        this.set("safe", True)
-                    elif func_name == "PARSE_DATETIME":
-                        this = build_formatted_time(exp.ParseDatetime, "bigquery")(
-                            [seq_get(args, 1), seq_get(args, 0)]
-                        )
-                        this.set("safe", True)
-                    elif func_name == "PARSE_TIME":
-                        this = build_formatted_time(exp.ParseTime, "bigquery")(
-                            [seq_get(args, 1), seq_get(args, 0)]
-                        )
-                        this.set("safe", True)
-                    elif func_name == "PARSE_TIMESTAMP":
-                        this = _build_parse_timestamp(args)
-                        this.set("safe", True)
+            if isinstance(this, exp.Dot) and isinstance(func := this.expression, exp.Func):
+                prefix = this.this.name.upper()
+
+                if prefix == "NET":
+                    if func.name.upper() == "HOST":
+                        this = self.expression(exp.NetHost, this=seq_get(func.expressions, 0))
+                elif prefix == "SAFE":
+                    # Retreat to try and parse a known function instead of an anonymous one,
+                    # which is parsed by the base column ops parser due to anonymous_func=true
+                    self._retreat(func_index)
+                    this = exp.SafeFunc(this=self._parse_function(any_token=True))
 
             return this
 
@@ -1226,6 +1207,7 @@ class BigQuery(Dialect):
             exp.ParseDatetime: lambda self, e: self.func(
                 "PARSE_DATETIME", self.format_time(e), e.this
             ),
+            exp.SafeFunc: lambda self, e: f"SAFE.{self.sql(e, 'this')}",
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_projection_to_unnest(),
@@ -1568,7 +1550,3 @@ class BigQuery(Dialect):
             kind = f" {kind}" if kind else ""
 
             return f"{variables}{kind}{default}"
-
-        def timestamp_sql(self, expression: exp.Timestamp) -> str:
-            prefix = "SAFE." if expression.args.get("safe") else ""
-            return self.func(f"{prefix}TIMESTAMP", expression.this, expression.args.get("zone"))

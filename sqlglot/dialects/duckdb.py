@@ -2197,7 +2197,7 @@ class DuckDB(Dialect):
                 sec = expression.args["sec"]
 
                 # Check if values are within normal ranges - use MAKE_TIME for efficiency
-                if not nano and all(isinstance(arg, exp.Literal) for arg in [hour, minute, sec]):
+                if not nano and all(arg.is_int for arg in [hour, minute, sec]):
                     try:
                         h_val = int(hour.this)
                         m_val = int(minute.this)

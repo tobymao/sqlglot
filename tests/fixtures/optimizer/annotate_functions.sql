@@ -471,6 +471,7 @@ DOUBLE;
 ATAN(tbl.int_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
 ATAN(tbl.double_col);
 DOUBLE;
 

@@ -2126,3 +2126,63 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotated = parse_and_optimize(annotate_types, null_sql, "bigquery", dialect="bigquery")
         self.assertEqual(annotated.sql(), null_sql)
         self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.BIGDECIMAL)
+
+    def test_correlated_subqueries_annotation(self):
+        correlated_sql = "SELECT (SELECT col) FROM t"
+
+        query = parse_one(correlated_sql, dialect="bigquery")
+        qualified = optimizer.qualify.qualify(
+            query, dialect="bigquery", schema={"t": {"col": "BIGNUMERIC"}}
+        )
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, dialect="bigquery", schema={"t": {"col": "BIGNUMERIC"}}
+        )
+
+        self.assertEqual(
+            annotated.sql("bigquery"),
+            "SELECT (SELECT `t`.`col` AS `col`) AS `_col_0` FROM `t` AS `t`",
+        )
+        assert annotated.selects[0].type == exp.DataType.build("BIGNUMERIC", dialect="bigquery")
+
+        correlated_sql = """
+        SELECT
+        (
+            SELECT
+            MAX(u_x)
+            FROM UNNEST([1, d_x]) AS u_x
+            WHERE
+            u_x < d_z
+        ) AS c_i
+        FROM (
+        SELECT
+            CAST(20 AS BIGNUMERIC) AS d_x,
+            30 AS d_z
+        ) AS d_t
+        """
+
+        query = parse_one(correlated_sql, dialect="bigquery")
+        qualified = optimizer.qualify.qualify(
+            query, dialect="bigquery", schema={"d_t": {"d_x": "STRING"}}
+        )
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, dialect="bigquery", schema={"d_t": {"d_x": "STRING"}}
+        )
+
+        self.assertEqual(
+            annotated.sql("bigquery"),
+            "SELECT (SELECT MAX(`u_x`) AS `_col_0` FROM UNNEST([1, `d_t`.`d_x`]) AS `u_x` WHERE `u_x` < `d_t`.`d_z`) AS `c_i` FROM (SELECT CAST(20 AS BIGNUMERIC) AS `d_x`, 30 AS `d_z`) AS `d_t`",
+        )
+        assert annotated.selects[0].type == exp.DataType.build("BIGNUMERIC", dialect="bigquery")
+
+        correlated_sql = "SELECT (SELECT col FROM t) as u FROM (SELECT 1 AS col) AS t"
+        query = parse_one(correlated_sql)
+        qualified = optimizer.qualify.qualify(query, schema={"t": {"col": "TEXT"}})
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema={"t": {"col": "TEXT"}}
+        )
+
+        self.assertEqual(
+            annotated.sql(),
+            'SELECT (SELECT "t"."col" AS "col" FROM "t" AS "t") AS "u" FROM (SELECT 1 AS "col") AS "t"',
+        )
+        assert annotated.selects[0].type == exp.DataType.build("TEXT")

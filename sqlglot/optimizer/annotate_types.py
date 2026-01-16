@@ -273,6 +273,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _get_scope_selects(self, scope: Scope) -> t.Dict[str, t.Dict[str, t.Any]]:
+        if scope in self._scope_selects:
+            return self._scope_selects[scope]
+
         selects = {}
 
         for name, source in scope.sources.items():
@@ -318,6 +321,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
+        self._scope_selects[scope] = selects
         return selects
 
     def annotate_scope(self, scope: Scope) -> None:
@@ -410,10 +414,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 if isinstance(source, exp.Table):
                     self._set_type(expr, self.schema.get_column_type(source, expr))
                 elif source:
-                    if source_scope not in self._scope_selects:
-                        self._scope_selects[source_scope] = self._get_scope_selects(source_scope)
-
-                    col_type = self._scope_selects[source_scope].get(expr.table, {}).get(expr.name)
+                    col_type = (
+                        self._get_scope_selects(source_scope).get(expr.table, {}).get(expr.name)
+                    )
                     if col_type:
                         self._set_type(expr, col_type)
                     elif isinstance(source.expression, exp.Unnest):

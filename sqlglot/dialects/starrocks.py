@@ -418,12 +418,7 @@ class StarRocks(MySQL):
                 parts.append(method_sql)
 
             if kind := expression.args.get("kind"):
-                if isinstance(kind, (exp.Literal, exp.Var)):
-                    parts.append(str(kind.this))
-                elif isinstance(kind, exp.Expression):
-                    parts.append(self.sql(kind))
-                else:
-                    parts.append(str(kind))
+                parts.append(self.sql(kind))
 
             # Optional structured fields (mostly for ASYNC START/EVERY)
             if starts := self.sql(expression, "starts"):

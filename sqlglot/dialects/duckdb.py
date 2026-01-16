@@ -1058,7 +1058,7 @@ class DuckDB(Dialect):
 
     INVERSE_TIME_MAPPING = {
         "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
-        "%:z": "%z",
+        "%:z": "%z", # In DuckDB %z	can represent ±HH:MM, ±HHMM, or ±HH.
         "%-z": "%z",
     }
 

@@ -723,9 +723,9 @@ class Snowflake(Dialect):
         "TZHTZM": "%z",
         "tzhtzm": "%z",
         "TZH:TZM": "%:z",  # internal representation for ±HH:MM
-        "tzh:tzm": "%:z",  
+        "tzh:tzm": "%:z",
         "TZH": "%-z",  # internal representation ±HH
-        "tzh": "%-z",  
+        "tzh": "%-z",
         '"T"': "T",  # remove the optional double quotes around the separator between the date and time
         # Seems like Snowflake treats AM/PM in the format string as equivalent,
         # only the time (stamp) value's AM/PM affects the output

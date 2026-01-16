@@ -1058,6 +1058,8 @@ class DuckDB(Dialect):
 
     INVERSE_TIME_MAPPING = {
         "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
+        "%:z": "%z",
+        "%-z": "%z",
     }
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

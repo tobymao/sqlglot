@@ -611,7 +611,7 @@ class TestSnowflake(Validator):
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
-            """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DD"T"hh24:mi:ss.ff3TZHTZM')"""
+            """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DDThh24:mi:ss.fftzhtzm')"""
         )
         self.validate_identity(
             "SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t",
@@ -958,8 +958,8 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff6')",
             write={
-                "": "SELECT STR_TO_TIME('2025-01-16 14:45:30.123', '%Y-%m-%d %H:%M:%S.%f')",
-                "snowflake": "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff6')",
+                "": "SELECT STR_TO_TIME('2025-01-16 14:45:30.123', '%Y-%m-%d %H:%M:%S.%n')",
+                "snowflake": "SELECT TO_TIMESTAMP('2025-01-16 14:45:30.123', 'yyyy-mm-DD hh24:mi:ss.ff')",
             },
         )
         self.validate_all(
@@ -3185,10 +3185,26 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "TRY_TO_DATE('01-01-2000', 'MM-DD-YYYY')",
+            """TRY_TO_DATE('2013-04-28T20:57:01.123456789+07:00', 'YYYY-MM-DD"T"HH24:MI:SS.FFTZH:TZM')""",
             write={
-                "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
-                "duckdb": "CAST(CAST(TRY_STRPTIME('01-01-2000', '%m-%d-%Y') AS TIMESTAMP) AS DATE)",
+                "snowflake": "TRY_TO_DATE('2013-04-28T20:57:01.123456789+07:00', 'yyyy-mm-DDThh24:mi:ss.fftzh:tzm')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28T20:57:01.123456789+07:00', '%Y-%m-%dT%H:%M:%S.%n%z') AS TIMESTAMP) AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            """TRY_TO_DATE('2013-04-28 20:57 +0700', 'YYYY-MM-DD HH24:MI TZHTZM')""",
+            write={
+                "snowflake": "TRY_TO_DATE('2013-04-28 20:57 +0700', 'yyyy-mm-DD hh24:mi tzhtzm')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28 20:57 +0700', '%Y-%m-%d %H:%M %z') AS TIMESTAMP) AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            """TRY_TO_DATE('2013-04-28 20:57 +07', 'YYYY-MM-DD HH24:MI TZH')""",
+            write={
+                "snowflake": "TRY_TO_DATE('2013-04-28 20:57 +07', 'yyyy-mm-DD hh24:mi tzh')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28 20:57 +07', '%Y-%m-%d %H:%M %z') AS TIMESTAMP) AS DATE)",
             },
         )
 

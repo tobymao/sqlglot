@@ -671,6 +671,10 @@ class Snowflake(Dialect):
     # https://docs.snowflake.com/en/en/sql-reference/functions/initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v!?@"^#$&~_,.:;+\\-*%/|\\[\\](){}<>'
 
+    INVERSE_TIME_MAPPING = {
+        "T": "T",
+    }
+
     TIME_MAPPING = {
         "YYYY": "%Y",
         "yyyy": "%Y",
@@ -694,8 +698,35 @@ class Snowflake(Dialect):
         "mi": "%M",
         "SS": "%S",
         "ss": "%S",
-        "FF6": "%f",
-        "ff6": "%f",
+        "FF0": "%n",  # %n, which is the internal representation of nanoseconds
+        "ff0": "%n",
+        "FF1": "%n",
+        "ff1": "%n",
+        "FF2": "%n",
+        "ff2": "%n",
+        "FF3": "%n",
+        "ff3": "%n",
+        "FF4": "%n",
+        "ff4": "%n",
+        "FF5": "%n",
+        "ff5": "%n",
+        "FF6": "%n",
+        "ff6": "%n",
+        "FF7": "%n",
+        "ff7": "%n",
+        "FF8": "%n",
+        "ff8": "%n",
+        "FF9": "%n",
+        "ff9": "%n",
+        "FF": "%n",
+        "ff": "%n",
+        "TZHTZM": "%z",
+        "tzhtzm": "%z",
+        "TZH:TZM": "%:z",  # internal representation
+        "tzh:tzm": "%:z",  # internal representation
+        "TZH": "%-z",  # internal representation
+        "tzh": "%-z",  # internal representation
+        '"T"': "T",  # remove the optional double quotes around the separator between the date and time
         # Seems like Snowflake treats AM/PM in the format string as equivalent,
         # only the time (stamp) value's AM/PM affects the output
         "AM": "%p",

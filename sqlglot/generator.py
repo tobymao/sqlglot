@@ -4519,8 +4519,8 @@ class Generator(metaclass=_Generator):
 
         if safe:
             return self.sql(exp.TryCast(this=this, to=exp.DataType(this=exp.DataType.Type.DATE)))
-        else:
-            return self.sql(exp.cast(this, exp.DataType.Type.DATE))
+
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
 
     def unixdate_sql(self, expression: exp.UnixDate) -> str:
         return self.sql(

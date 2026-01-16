@@ -1356,6 +1356,22 @@ def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
     )
 
 
+def array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+    """
+    Transpile ARRAY_APPEND to dialects that propagate NULL values by default.
+    When transpiling from a dialect that does not propagate NULLs like DuckDB/Postgres,
+    explicitly handle the NULL case using COALESCE.
+    """
+    if expression.args.get("null_propagation"):
+        return self.func("ARRAY_APPEND", expression.this, expression.expression)
+
+    return self.func(
+        "ARRAY_APPEND",
+        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
+        expression.expression,
+    )
+
+
 def var_map_sql(
     self: Generator, expression: exp.Map | exp.VarMap, map_func_name: str = "MAP"
 ) -> str:

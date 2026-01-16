@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
+    array_append_sql,
     build_array_append_with_null_propagation,
     rename_func,
     build_like,
@@ -74,17 +75,6 @@ def _normalize_partition(e: exp.Expression) -> exp.Expression:
     if isinstance(e, exp.Literal):
         return exp.to_identifier(e.name)
     return e
-
-
-def _arrayappend_sql(self: Spark.Generator, expression: exp.ArrayAppend) -> str:
-    if expression.args.get("null_propagation"):
-        return self.func("ARRAY_APPEND", expression.this, expression.expression)
-
-    return self.func(
-        "ARRAY_APPEND",
-        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
-        expression.expression,
-    )
 
 
 def _dateadd_sql(self: Spark.Generator, expression: exp.TsOrDsAdd | exp.TimestampAdd) -> str:
@@ -218,7 +208,7 @@ class Spark(Spark2):
             exp.ArrayConstructCompact: lambda self, e: self.func(
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
-            exp.ArrayAppend: _arrayappend_sql,
+            exp.ArrayAppend: array_append_sql,
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),

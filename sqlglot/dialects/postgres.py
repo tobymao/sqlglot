@@ -269,7 +269,7 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
     return rename_func("ANY_VALUE")(self, expression)
 
 
-def _arrayappend_sql(self: Postgres.Generator, expression: exp.ArrayAppend) -> str:
+def _array_append_sql(self: Postgres.Generator, expression: exp.ArrayAppend) -> str:
     if expression.args.get("null_propagation"):
         return self.sql(
             exp.Case(
@@ -642,7 +642,7 @@ class Postgres(Dialect):
             exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
-            exp.ArrayAppend: _arrayappend_sql,
+            exp.ArrayAppend: _array_append_sql,
             exp.ArrayPrepend: lambda self, e: self.func("ARRAY_PREPEND", e.expression, e.this),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),

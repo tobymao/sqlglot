@@ -289,7 +289,7 @@ def _date_delta_to_binary_interval_op(
     return _duckdb_date_delta_sql
 
 
-def _arrayappend_sql(self: DuckDB.Generator, expression: exp.ArrayAppend) -> str:
+def _array_append_sql(self: DuckDB.Generator, expression: exp.ArrayAppend) -> str:
     if expression.args.get("null_propagation"):
         return self.func(
             "IF",
@@ -1480,7 +1480,7 @@ class DuckDB(Dialect):
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
             ),
-            exp.ArrayAppend: _arrayappend_sql,
+            exp.ArrayAppend: _array_append_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

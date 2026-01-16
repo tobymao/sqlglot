@@ -6,6 +6,7 @@ from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    array_append_sql,
     build_array_append_with_null_propagation,
     build_timetostr_or_tochar,
     build_like,
@@ -239,17 +240,6 @@ def _build_search(args: t.List) -> exp.Search:
 def _build_if_from_nullifzero(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
-
-
-def _arrayappend_sql(self: Snowflake.Generator, expression: exp.ArrayAppend) -> str:
-    if expression.args.get("null_propagation"):
-        return self.func("ARRAY_APPEND", expression.this, expression.expression)
-
-    return self.func(
-        "ARRAY_APPEND",
-        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
-        expression.expression,
-    )
 
 
 def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> str:
@@ -1507,7 +1497,7 @@ class Snowflake(Dialect):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
-            exp.ArrayAppend: _arrayappend_sql,
+            exp.ArrayAppend: array_append_sql,
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
                 e.expression

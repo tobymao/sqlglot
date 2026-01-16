@@ -184,6 +184,7 @@ EXPRESSION_METADATA = {
             exp.RespectNulls,
             exp.Reverse,
             exp.Right,
+            exp.SafeFunc,
             exp.SafeNegate,
             exp.Sign,
             exp.Substring,

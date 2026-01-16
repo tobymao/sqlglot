@@ -196,6 +196,7 @@ class Generator(metaclass=_Generator):
         exp.ReturnsProperty: lambda self, e: (
             "RETURNS NULL ON NULL INPUT" if e.args.get("null") else self.naked_property(e)
         ),
+        exp.SafeFunc: lambda self, e: f"SAFE.{self.sql(e, 'this')}",
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SecureProperty: lambda *_: "SECURE",
         exp.SecurityProperty: lambda self, e: f"SECURITY {self.sql(e, 'this')}",

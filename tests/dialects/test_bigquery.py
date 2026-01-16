@@ -42,8 +42,26 @@ class TestBigQuery(Validator):
         self.assertEqual(table.db, "x-0")
         self.assertEqual(table.name, "_y")
 
-        self.validate_identity("SAFE.SUBSTR('foo', 0, -2)").assert_is(exp.Dot)
-        self.validate_identity("SAFE.TIMESTAMP(foo, zone)").assert_is(exp.Timestamp)
+        self.validate_identity("SAFE.SOME_RANDOM_FUNC(a, b, c)").assert_is(exp.SafeFunc)
+        self.validate_identity(
+            "SAFE.SUBSTR('foo', 0, -2)",
+        ).assert_is(exp.SafeFunc).this.assert_is(exp.Substring)
+        self.validate_identity("SAFE.TIMESTAMP(foo, zone)").assert_is(exp.SafeFunc).this.assert_is(
+            exp.Timestamp
+        )
+        self.validate_identity(
+            "SAFE.PARSE_DATE('%Y-%m-%d', '2024-01-15')",
+            "SAFE.PARSE_DATE('%F', '2024-01-15')",
+        ).assert_is(exp.SafeFunc).this.assert_is(exp.StrToDate)
+        self.validate_identity(
+            "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2024-01-15 10:30:00')",
+            "SAFE.PARSE_DATETIME('%F %T', '2024-01-15 10:30:00')",
+        ).assert_is(exp.SafeFunc).this.assert_is(exp.ParseDatetime)
+        self.validate_identity(
+            "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', '2024-01-15 10:30:00')",
+            "SAFE.PARSE_TIMESTAMP('%F %T', '2024-01-15 10:30:00')",
+        ).assert_is(exp.SafeFunc).this.assert_is(exp.StrToTime)
+
         self.validate_identity("TIMESTAMP(foo, zone)").assert_is(exp.Timestamp)
         self.validate_identity("SELECT * FROM x-0.y")
         self.assertEqual(exp.to_table("`a.b`.`c.d`", dialect="bigquery").sql(), '"a"."b"."c"."d"')

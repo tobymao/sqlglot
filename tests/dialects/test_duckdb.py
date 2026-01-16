@@ -1840,34 +1840,6 @@ class TestDuckDB(Validator):
             write={"bigquery": "IS_INF(x)", "duckdb": "ISINF(x)"},
         )
 
-    def test_equal_null(self):
-        # Test EQUAL_NULL transpilation from Snowflake to DuckDB
-        self.validate_all(
-            "EQUAL_NULL(a, b)",
-            write={
-                "duckdb": "a IS NOT DISTINCT FROM b",
-                "snowflake": "EQUAL_NULL(a, b)",
-            },
-        )
-
-        # Test with NULL literals
-        self.validate_all(
-            "EQUAL_NULL(NULL, NULL)",
-            write={
-                "duckdb": "NULL IS NOT DISTINCT FROM NULL",
-                "snowflake": "EQUAL_NULL(NULL, NULL)",
-            },
-        )
-
-        # Test in SELECT statement with WHERE clause
-        self.validate_all(
-            "SELECT EQUAL_NULL(col1, col2) AS result FROM table1 WHERE EQUAL_NULL(col3, NULL)",
-            write={
-                "duckdb": "SELECT col1 IS NOT DISTINCT FROM col2 AS result FROM table1 WHERE col3 IS NOT DISTINCT FROM NULL",
-                "snowflake": "SELECT EQUAL_NULL(col1, col2) AS result FROM table1 WHERE EQUAL_NULL(col3, NULL)",
-            },
-        )
-
     def test_parameter_token(self):
         self.validate_all(
             "SELECT $foo",

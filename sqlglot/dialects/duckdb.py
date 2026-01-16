@@ -1820,6 +1820,23 @@ class DuckDB(Dialect):
             "(ABS(HASH(:seed)) % 1000000) / 1000000.0"
         )
 
+        # Mappings for EXTRACT/DATE_PART transpilation
+        # Maps Snowflake specifiers unsupported in DuckDB to strftime format codes
+        EXTRACT_STRFTIME_MAPPINGS: t.Dict[str, t.Tuple[str, str]] = {
+            "WEEKISO": ("%V", "INTEGER"),
+            "YEAROFWEEK": ("%G", "INTEGER"),
+            "YEAROFWEEKISO": ("%G", "INTEGER"),
+            "NANOSECOND": ("%n", "BIGINT"),
+        }
+
+        # Maps epoch-based specifiers to DuckDB epoch functions
+        EXTRACT_EPOCH_MAPPINGS: t.Dict[str, str] = {
+            "EPOCH_SECOND": "EPOCH",
+            "EPOCH_MILLISECOND": "EPOCH_MS",
+            "EPOCH_MICROSECOND": "EPOCH_US",
+            "EPOCH_NANOSECOND": "EPOCH_NS",
+        }
+
         # Template for BITMAP_CONSTRUCT_AGG transpilation
         #
         # BACKGROUND:
@@ -2312,6 +2329,75 @@ class DuckDB(Dialect):
                 )
 
             return rename_func("MAKE_TIME")(self, expression)
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            """
+            Transpile EXTRACT/DATE_PART for DuckDB, handling specifiers not natively supported.
+
+            DuckDB doesn't support: WEEKISO, YEAROFWEEK, YEAROFWEEKISO, NANOSECOND,
+            EPOCH_SECOND (as integer), EPOCH_MILLISECOND, EPOCH_MICROSECOND, EPOCH_NANOSECOND
+            """
+            this = expression.this
+            datetime_expr = expression.expression
+
+            # TIMESTAMPTZ extractions may produce different results between Snowflake and DuckDB
+            # because Snowflake applies server timezone while DuckDB uses local timezone
+            if datetime_expr.is_type(exp.DataType.Type.TIMESTAMPTZ, exp.DataType.Type.TIMESTAMPLTZ):
+                self.unsupported(
+                    "EXTRACT from TIMESTAMPTZ / TIMESTAMPLTZ may produce different results due to timezone handling differences"
+                )
+
+            part_name = this.name.upper()
+
+            if part_name in self.EXTRACT_STRFTIME_MAPPINGS:
+                fmt, cast_type = self.EXTRACT_STRFTIME_MAPPINGS[part_name]
+
+                # Problem: strftime doesn't accept TIME and there's no NANOSECOND function
+                # So, for NANOSECOND with TIME, fallback to MICROSECOND * 1000
+                is_nano_time = part_name == "NANOSECOND" and datetime_expr.is_type(
+                    exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
+                )
+
+                if is_nano_time:
+                    self.unsupported(
+                        "Parameter NANOSECOND is not supported with TIME type in DuckDB"
+                    )
+                    return self.sql(
+                        exp.cast(
+                            exp.Mul(
+                                this=exp.Extract(
+                                    this=exp.var("MICROSECOND"), expression=datetime_expr
+                                ),
+                                expression=exp.Literal.number(1000),
+                            ),
+                            exp.DataType.build(cast_type, dialect="duckdb"),
+                        )
+                    )
+
+                # For NANOSECOND, cast to TIMESTAMP_NS to preserve nanosecond precision
+                strftime_input = datetime_expr
+                if part_name == "NANOSECOND":
+                    strftime_input = exp.cast(datetime_expr, exp.DataType.Type.TIMESTAMP_NS)
+
+                return self.sql(
+                    exp.cast(
+                        exp.Anonymous(
+                            this="STRFTIME",
+                            expressions=[strftime_input, exp.Literal.string(fmt)],
+                        ),
+                        exp.DataType.build(cast_type, dialect="duckdb"),
+                    )
+                )
+
+            if part_name in self.EXTRACT_EPOCH_MAPPINGS:
+                func_name = self.EXTRACT_EPOCH_MAPPINGS[part_name]
+                result: exp.Expression = exp.Anonymous(this=func_name, expressions=[datetime_expr])
+                # EPOCH returns float, cast to BIGINT for integer result
+                if part_name == "EPOCH_SECOND":
+                    result = exp.cast(result, exp.DataType.build("BIGINT", dialect="duckdb"))
+                return self.sql(result)
+
+            return super().extract_sql(expression)
 
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             sec = expression.args["sec"]

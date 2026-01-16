@@ -705,6 +705,15 @@ class Snowflake(Dialect):
     DATE_PART_MAPPING = {
         **Dialect.DATE_PART_MAPPING,
         "ISOWEEK": "WEEKISO",
+        # The base Dialect maps EPOCH_SECOND -> EPOCH, but we need to preserve
+        # EPOCH_SECOND as a distinct value for two reasons:
+        # 1. Type annotation: EPOCH_SECOND returns BIGINT, while EPOCH returns DOUBLE
+        # 2. Transpilation: DuckDB's EPOCH() returns float, so we cast EPOCH_SECOND
+        #    to BIGINT to match Snowflake's integer behavior
+        # Without this override, EXTRACT(EPOCH_SECOND FROM ts) would be normalized
+        # to EXTRACT(EPOCH FROM ts) and lose the integer semantics.
+        "EPOCH_SECOND": "EPOCH_SECOND",
+        "EPOCH_SECONDS": "EPOCH_SECOND",
     }
 
     PSEUDOCOLUMNS = {"LEVEL"}
@@ -1151,7 +1160,9 @@ class Snowflake(Dialect):
             expression = (
                 self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
             )
-            return self.expression(exp.Extract, this=map_date_part(this), expression=expression)
+            return self.expression(
+                exp.Extract, this=map_date_part(this, self.dialect), expression=expression
+            )
 
         def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
             if is_map:

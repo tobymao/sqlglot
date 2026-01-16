@@ -30,6 +30,15 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+# EXTRACT/DATE_PART specifiers that return BIGINT instead of INT
+BIGINT_EXTRACT_DATE_PARTS = {
+    "EPOCH_SECOND",
+    "EPOCH_MILLISECOND",
+    "EPOCH_MICROSECOND",
+    "EPOCH_NANOSECOND",
+    "NANOSECOND",
+}
+
 
 def annotate_types(
     expression: E,
@@ -837,6 +846,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.TIME)
         elif part == "DATE":
             self._set_type(expression, exp.DataType.Type.DATE)
+        elif part in BIGINT_EXTRACT_DATE_PARTS:
+            self._set_type(expression, exp.DataType.Type.BIGINT)
         else:
             self._set_type(expression, exp.DataType.Type.INT)
         return expression

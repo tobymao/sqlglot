@@ -507,6 +507,14 @@ DOUBLE;
 CORR(tbl.int_col, tbl.int_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
+CBRT(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+CBRT(tbl.int_col);
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

@@ -1356,20 +1356,39 @@ def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
     )
 
 
-def array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+def array_append_with_null_propagation_sql(self: Generator, expression: exp.ArrayAppend) -> str:
     """
     Transpile ARRAY_APPEND to dialects that propagate NULL values by default.
     When transpiling from a dialect that does not propagate NULLs like DuckDB/Postgres,
     explicitly handle the NULL case using COALESCE.
     """
-    if expression.args.get("null_propagation"):
-        return self.func("ARRAY_APPEND", expression.this, expression.expression)
+    this = expression.this
+    if not expression.args.get("null_propagation"):
+        this = exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])])
 
     return self.func(
         "ARRAY_APPEND",
-        exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])]),
+        this,
         expression.expression,
     )
+
+
+def array_append_without_null_propagation_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+    """
+    Transpile ARRAY_APPEND to dialects that do not propagate NULL values by default.
+    When transpiling from a dialect that propagates NULLs like Databricks/Spark/Snowflake,
+    explicitly handle the NULL case using CASE.
+    """
+    func_sql = self.func("LIST_APPEND", expression.this, expression.expression)
+
+    if not expression.args.get("null_propagation"):
+        return func_sql
+
+    if_expr = exp.If(
+        this=exp.Is(this=expression.this, expression=exp.Null()), true=exp.Null(), false=func_sql
+    )
+
+    return self.sql(if_expr)
 
 
 def var_map_sql(

@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
-    array_append_sql,
+    array_append_with_null_propagation_sql,
     build_array_append_with_null_propagation,
     rename_func,
     build_like,
@@ -208,7 +208,7 @@ class Spark(Spark2):
             exp.ArrayConstructCompact: lambda self, e: self.func(
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
-            exp.ArrayAppend: array_append_sql,
+            exp.ArrayAppend: array_append_with_null_propagation_sql,
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),

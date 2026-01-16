@@ -5,8 +5,6 @@ from collections import defaultdict
 
 from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
-    array_append_sql,
-    build_array_append_with_null_propagation,
     date_delta_sql,
     build_date_delta,
     timestamptrunc_sql,
@@ -57,7 +55,6 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
-            "ARRAY_APPEND": build_array_append_with_null_propagation,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
@@ -105,7 +102,6 @@ class Databricks(Spark):
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
-            exp.ArrayAppend: array_append_sql,
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(

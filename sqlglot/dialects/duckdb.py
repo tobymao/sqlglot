@@ -2199,9 +2199,9 @@ class DuckDB(Dialect):
                 # Check if values are within normal ranges - use MAKE_TIME for efficiency
                 if not nano and all(arg.is_int for arg in [hour, minute, sec]):
                     try:
-                        h_val = int(hour.this)
-                        m_val = int(minute.this)
-                        s_val = int(sec.this)
+                        h_val = hour.to_py()
+                        m_val = minute.to_py()
+                        s_val = sec.to_py()
                         if 0 <= h_val <= 23 and 0 <= m_val <= 59 and 0 <= s_val <= 59:
                             return rename_func("MAKE_TIME")(self, expression)
                     except (ValueError, AttributeError):

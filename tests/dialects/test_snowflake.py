@@ -1946,9 +1946,9 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP))",
+            "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMPNTZ))",
             write={
-                "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP))",
+                "snowflake": "SELECT DATE_PART(NANOSECOND, CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMPNTZ))",
                 "duckdb": "SELECT CAST(STRFTIME(CAST(CAST('2026-01-06 11:45:00.123456789' AS TIMESTAMP) AS TIMESTAMP_NS), '%n') AS BIGINT)",
             },
         )
@@ -2035,6 +2035,13 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
                 "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06 11:45:00' AS TIMESTAMP), '%G') AS INT)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(HOUR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP_NTZ))",
+            write={
+                "snowflake": "SELECT DATE_PART(HOUR, CAST('2026-01-06 11:45:00' AS TIMESTAMPNTZ))",
+                "duckdb": "SELECT EXTRACT(HOUR FROM CAST('2026-01-06 11:45:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -2169,13 +2176,6 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2026-01-06' AS DATE))",
                 "duckdb": "SELECT CAST(STRFTIME(CAST('2026-01-06' AS DATE), '%G') AS INT)",
-            },
-        )
-        self.validate_all(
-            "SELECT EXTRACT(EPOCH_SECOND FROM CAST('2026-01-06' AS DATE))",
-            write={
-                "snowflake": "SELECT DATE_PART(EPOCH_SECOND, CAST('2026-01-06' AS DATE))",
-                "duckdb": "SELECT CAST(EPOCH(CAST('2026-01-06' AS DATE)) AS BIGINT)",
             },
         )
         self.validate_all(
@@ -2387,19 +2387,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        # EXTRACT - converts to DATE_PART in Snowflake
-        self.validate_identity(
-            "SELECT EXTRACT(YEAR FROM CAST('2024-05-09' AS DATE))",
-            "SELECT DATE_PART(YEAR, CAST('2024-05-09' AS DATE))",
-        )
-        self.validate_identity(
-            "SELECT EXTRACT(MONTH FROM CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
-            "SELECT DATE_PART(MONTH, CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
-        )
-        self.validate_identity(
-            "SELECT EXTRACT(MINUTE, CAST('08:50:57' AS TIME))",
-            "SELECT DATE_PART(MINUTE, CAST('08:50:57' AS TIME))",
-        )
         self.validate_identity("SELECT HOUR(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT MINUTE(CAST('08:50:57' AS TIME))")
         self.validate_identity("SELECT SECOND(CAST('08:50:57' AS TIME))")

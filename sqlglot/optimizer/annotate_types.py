@@ -303,7 +303,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         and expression.type.is_type(exp.DataType.Type.STRUCT)
                     ):
                         selects[name] = {
-                            col_def.name: t.cast(t.Union[exp.DataType, exp.DataType.Type], col_def.kind)
+                            col_def.name: t.cast(
+                                t.Union[exp.DataType, exp.DataType.Type], col_def.kind
+                            )
                             for col_def in expression.type.expressions
                             if isinstance(col_def, exp.ColumnDef) and col_def.kind
                         }
@@ -311,9 +313,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         selects[name] = {
                             alias: column.type for alias, column in zip(alias_column_names, values)
                         }
-                elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
-                    expression.right.selects
-                ):
+                elif isinstance(expression, exp.SetOperation) and len(
+                    expression.left.selects
+                ) == len(expression.right.selects):
                     selects[name] = self._get_setop_column_types(expression)
                 else:
                     selects[name] = {s.alias_or_name: s.type for s in expression.selects}

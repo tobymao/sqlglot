@@ -515,6 +515,10 @@ DOUBLE;
 CBRT(tbl.int_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
+CURRENT_CATALOG();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

@@ -1207,7 +1207,6 @@ class BigQuery(Dialect):
             exp.ParseDatetime: lambda self, e: self.func(
                 "PARSE_DATETIME", self.format_time(e), e.this
             ),
-            exp.SafeFunc: lambda self, e: f"SAFE.{self.sql(e, 'this')}",
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_projection_to_unnest(),

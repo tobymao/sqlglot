@@ -7660,6 +7660,7 @@ class Normal(Func):
 class NetHost(Func):
     _sql_names = ["NET.HOST"]
 
+
 class NetRegDomain(Func):
     _sql_names = ["NET.REG_DOMAIN"]
 

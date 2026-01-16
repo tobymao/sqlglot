@@ -468,6 +468,13 @@ COS(tbl.double_col);
 DOUBLE;
 
 # dialect: hive, spark2, spark, databricks
+ATAN(tbl.int_col);
+DOUBLE;
+
+ATAN(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
 TAN(tbl.int_col);
 DOUBLE;
 

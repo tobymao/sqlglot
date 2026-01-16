@@ -178,6 +178,27 @@ def build_locate_strposition(args: t.List):
     )
 
 
+def build_array_append(args: t.List, dialect: Dialect) -> exp.ArrayAppend:
+    """
+    Builds ArrayAppend with NULL propagation semantics based on the dialect configuration.
+
+    Some dialects (Databricks, Spark, Snowflake) return NULL when the input array is NULL.
+    Others (DuckDB, PostgreSQL) create a new single-element array instead.
+
+    Args:
+        args: Function arguments [array, element]
+        dialect: The dialect to read ARRAY_APPEND_PROPAGATES_NULLS from
+
+    Returns:
+        ArrayAppend expression with appropriate null_propagation flag
+    """
+    return exp.ArrayAppend(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -213,6 +234,7 @@ class Parser(metaclass=_Parser):
         "ARRAY_AGG": lambda args, dialect: exp.ArrayAgg(
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
         ),
+        "ARRAY_APPEND": build_array_append,
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,

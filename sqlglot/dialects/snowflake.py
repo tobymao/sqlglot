@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     array_append_sql,
-    build_array_append_with_null_propagation,
     build_timetostr_or_tochar,
     build_like,
     binary_from_function,
@@ -661,6 +660,7 @@ class Snowflake(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False
     ARRAY_AGG_INCLUDES_NULLS = None
+    ARRAY_APPEND_PROPAGATES_NULLS = True
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
@@ -751,7 +751,6 @@ class Snowflake(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
-            "ARRAY_APPEND": build_array_append_with_null_propagation,
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False
             ),
@@ -1483,7 +1482,6 @@ class Snowflake(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         SUPPORTS_EXPLODING_PROJECTIONS = False
         ARRAY_CONCAT_IS_VAR_LEN = False
-        ARRAY_APPEND_PROPAGATES_NULLS = True
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = True

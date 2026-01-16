@@ -696,6 +696,9 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
+    ARRAY_APPEND_PROPAGATES_NULLS = False
+    """Whether ARRAY_APPEND returns NULL when the input array is NULL."""
+
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """
     This flag is used in the optimizer's canonicalize rule and determines whether x will be promoted
@@ -1342,20 +1345,6 @@ def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
     )
 
 
-def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
-    """
-    Builds ArrayAppend with null_propagation=True for Databricks/Spark/Snowflake semantics.
-
-    ARRAY_APPEND returns NULL when array is NULL (NULL propagation).
-    This differs from DuckDB/PostgreSQL which create a new array.
-    """
-    return exp.ArrayAppend(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        null_propagation=True,
-    )
-
-
 def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]:
     """
     Transpile ARRAY_APPEND between dialects with different NULL propagation semantics.
@@ -1374,7 +1363,7 @@ def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]
         this = expression.this
         func_sql = self.func(name, this, expression.expression)
         source_null_propagation = bool(expression.args.get("null_propagation"))
-        target_null_propagation = self.ARRAY_APPEND_PROPAGATES_NULLS
+        target_null_propagation = self.dialect.ARRAY_APPEND_PROPAGATES_NULLS
 
         # No transpilation needed when source and target have matching NULL semantics
         if source_null_propagation == target_null_propagation:

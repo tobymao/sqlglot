@@ -5,7 +5,6 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     array_append_sql,
-    build_array_append_with_null_propagation,
     rename_func,
     build_like,
     unit_to_var,
@@ -115,6 +114,7 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_NULL_TYPE = True
+    ARRAY_APPEND_PROPAGATES_NULLS = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     class Tokenizer(Spark2.Tokenizer):
@@ -129,7 +129,6 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
-            "ARRAY_APPEND": build_array_append_with_null_propagation,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -193,7 +192,6 @@ class Spark(Spark2):
         SUPPORTS_MEDIAN = True
         SUPPORTS_UNIX_SECONDS = True
         SUPPORTS_DECODE_CASE = True
-        ARRAY_APPEND_PROPAGATES_NULLS = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

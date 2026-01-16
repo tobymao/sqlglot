@@ -6722,6 +6722,7 @@ class TimeFromParts(Func):
         "nano": False,
         "fractions": False,
         "precision": False,
+        "overflow": False,
     }
 
 

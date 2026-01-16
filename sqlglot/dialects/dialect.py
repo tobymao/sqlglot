@@ -1356,7 +1356,7 @@ def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
     )
 
 
-def array_append_sql(self: Generator, expression: exp.ArrayAppend, name: str) -> str:
+def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]:
     """
     Transpile ARRAY_APPEND between dialects with different NULL propagation semantics.
 
@@ -1364,34 +1364,37 @@ def array_append_sql(self: Generator, expression: exp.ArrayAppend, name: str) ->
     Others (DuckDB, Postgres) create a new single-element array instead.
 
     Args:
-        expression: ArrayAppend expression to transpile
         name: Target dialect's function name (e.g., "ARRAY_APPEND", "LIST_APPEND")
 
     Returns:
-        SQL string with appropriate NULL handling for the target dialect
+        A callable that generates SQL with appropriate NULL handling for the target dialect
     """
-    this = expression.this
-    func_sql = self.func(name, this, expression.expression)
-    source_null_propagation = bool(expression.args.get("null_propagation"))
-    target_null_propagation = self.ARRAY_APPEND_PROPAGATES_NULLS
 
-    # No transpilation needed when source and target have matching NULL semantics
-    if source_null_propagation == target_null_propagation:
-        return func_sql
+    def _array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+        this = expression.this
+        func_sql = self.func(name, this, expression.expression)
+        source_null_propagation = bool(expression.args.get("null_propagation"))
+        target_null_propagation = self.ARRAY_APPEND_PROPAGATES_NULLS
 
-    # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
-    if source_null_propagation:
-        return self.sql(
-            exp.If(
-                this=exp.Is(this=this, expression=exp.Null()),
-                true=exp.Null(),
-                false=func_sql,
+        # No transpilation needed when source and target have matching NULL semantics
+        if source_null_propagation == target_null_propagation:
+            return func_sql
+
+        # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
+        if source_null_propagation:
+            return self.sql(
+                exp.If(
+                    this=exp.Is(this=this, expression=exp.Null()),
+                    true=exp.Null(),
+                    false=func_sql,
+                )
             )
-        )
 
-    # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
-    this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
-    return self.func(name, this, expression.expression)
+        # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
+        this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
+        return self.func(name, this, expression.expression)
+
+    return _array_append_sql
 
 
 def var_map_sql(

@@ -280,6 +280,8 @@ class Expression(metaclass=_Expression):
 
     @property
     def type(self) -> t.Optional[DataType]:
+        if isinstance(self, Cast):
+            return self._type or self.to
         return self._type
 
     @type.setter

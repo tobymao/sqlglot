@@ -20,11 +20,17 @@ EXPRESSION_METADATA = {
             exp.Tanh,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        for expr_type in {
+            exp.CurrentCatalog,
+            exp.CurrentDatabase,
+        }
+    },
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.Encode: {"returns": exp.DataType.Type.BINARY},
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
     exp.StrToUnix: {"returns": exp.DataType.Type.BIGINT},
-    exp.CurrentCatalog: {"returns": exp.DataType.Type.VARCHAR},
 }

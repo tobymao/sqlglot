@@ -519,6 +519,10 @@ DOUBLE;
 CURRENT_CATALOG();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+CURRENT_DATABASE();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

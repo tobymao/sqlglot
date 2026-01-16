@@ -2806,6 +2806,13 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(DATE_TRUNC('MONTH', CAST('2024-06-15 14:23:45' AS TIMESTAMPTZ)) AS TIMESTAMPTZ)",
             },
         )
+        self.validate_all(
+            "DATE_TRUNC('WEEK', CURRENT_DATE)",
+            write={
+                "snowflake": "DATE_TRUNC('WEEK', CURRENT_DATE)",
+                "duckdb": "DATE_TRUNC('WEEK', CURRENT_DATE)",
+            },
+        )
 
         # In Snowflake --> DuckDB, DATE_TRUNC(time_part, date) should be cast to date to preserve Snowflake behavior.
         self.validate_all(

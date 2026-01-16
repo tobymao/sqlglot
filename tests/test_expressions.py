@@ -477,6 +477,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(table.alias_column_names, ["a", "b"])
 
     def test_cast(self):
+        expression = parse_one("CAST(x AS DATE)")
+        self.assertIs(expression.type, expression.to)
+
         expression = parse_one("select cast(x as DATE)")
         casts = list(expression.find_all(exp.Cast))
         self.assertEqual(len(casts), 1)

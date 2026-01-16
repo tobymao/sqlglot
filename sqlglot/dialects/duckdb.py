@@ -583,7 +583,7 @@ def _json_extract_value_array_sql(
 
 
 def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    if arg and arg.type and not arg.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.UNKNOWN):
+    if arg and arg.type and not arg.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
         return exp.cast(arg, exp.DataType.Type.VARCHAR)
     return arg
 
@@ -2710,22 +2710,22 @@ class DuckDB(Dialect):
             date = expression.this
             result = self.func("DATE_TRUNC", unit, date)
 
-            if expression.args.get("input_type_preserved"):
-                if not date.type:
-                    from sqlglot.optimizer.annotate_types import annotate_types
+            if (
+                expression.args.get("input_type_preserved")
+                and date.is_type(*exp.DataType.TEMPORAL_TYPES)
+                and not (is_date_unit(unit) and date.is_type(exp.DataType.Type.DATE))
+            ):
+                return self.sql(exp.Cast(this=result, to=date.type))
 
-                    date = annotate_types(date, dialect=self.dialect)
-
-                if date.type and date.is_type(*exp.DataType.TEMPORAL_TYPES):
-                    return self.sql(exp.Cast(this=result, to=date.type))
             return result
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             unit = unit_to_str(expression)
             zone = expression.args.get("zone")
             timestamp = expression.this
+            date_unit = is_date_unit(unit)
 
-            if is_date_unit(unit) and zone:
+            if date_unit and zone:
                 # BigQuery's TIMESTAMP_TRUNC with timezone truncates in the target timezone and returns as UTC.
                 # Double AT TIME ZONE needed for BigQuery compatibility:
                 # 1. First AT TIME ZONE: ensures truncation happens in the target timezone
@@ -2736,11 +2736,6 @@ class DuckDB(Dialect):
 
             result = self.func("DATE_TRUNC", unit, timestamp)
             if expression.args.get("input_type_preserved"):
-                if not timestamp.type:
-                    from sqlglot.optimizer.annotate_types import annotate_types
-
-                    timestamp = annotate_types(timestamp, dialect=self.dialect)
-
                 if timestamp.type and timestamp.is_type(
                     exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
                 ):
@@ -2752,8 +2747,11 @@ class DuckDB(Dialect):
                     result = self.func("DATE_TRUNC", unit, date_time)
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-                if timestamp.type and timestamp.is_type(*exp.DataType.TEMPORAL_TYPES):
+                if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES) and not (
+                    date_unit and timestamp.is_type(exp.DataType.Type.DATE)
+                ):
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
+
             return result
 
         def trim_sql(self, expression: exp.Trim) -> str:

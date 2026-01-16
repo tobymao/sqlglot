@@ -10,6 +10,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Acos,
             exp.Atan,
+            exp.Cbrt,
             exp.Corr,
             exp.Cos,
             exp.Cosh,

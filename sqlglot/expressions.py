@@ -7422,11 +7422,11 @@ class ParseIp(Func):
 
 
 class ParseTime(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": True, "safe": False}
 
 
 class ParseDatetime(Func):
-    arg_types = {"this": True, "format": False, "zone": False}
+    arg_types = {"this": True, "format": False, "zone": False, "safe": False}
 
 
 class Least(Func):

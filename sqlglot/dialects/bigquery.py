@@ -1078,8 +1078,27 @@ class BigQuery(Dialect):
                             exp.NetHost, this=seq_get(this.expression.expressions, 0)
                         )
                 elif prefix_name == "SAFE":
+                    args = this.expression.expressions
                     if func_name == "TIMESTAMP":
-                        this = _build_timestamp(this.expression.expressions)
+                        this = _build_timestamp(args)
+                        this.set("safe", True)
+                    elif func_name == "PARSE_DATE":
+                        this = build_formatted_time(exp.StrToDate, "bigquery")(
+                            [seq_get(args, 1), seq_get(args, 0)]
+                        )
+                        this.set("safe", True)
+                    elif func_name == "PARSE_DATETIME":
+                        this = build_formatted_time(exp.ParseDatetime, "bigquery")(
+                            [seq_get(args, 1), seq_get(args, 0)]
+                        )
+                        this.set("safe", True)
+                    elif func_name == "PARSE_TIME":
+                        this = build_formatted_time(exp.ParseTime, "bigquery")(
+                            [seq_get(args, 1), seq_get(args, 0)]
+                        )
+                        this.set("safe", True)
+                    elif func_name == "PARSE_TIMESTAMP":
+                        this = _build_parse_timestamp(args)
                         this.set("safe", True)
 
             return this

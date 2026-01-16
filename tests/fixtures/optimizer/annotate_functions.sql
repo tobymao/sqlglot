@@ -475,6 +475,14 @@ DOUBLE;
 TAN(tbl.double_col);
 DOUBLE;
 
+# dialect: spark, databricks
+SEC(tbl.int_col);
+DOUBLE;
+
+# dialect: spark, databricks
+SEC(tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

@@ -2204,7 +2204,7 @@ class DuckDB(Dialect):
                         s_val = sec.to_py()
                         if 0 <= h_val <= 23 and 0 <= m_val <= 59 and 0 <= s_val <= 59:
                             return rename_func("MAKE_TIME")(self, expression)
-                    except (ValueError, AttributeError):
+                    except ValueError:
                         pass
 
                 # Overflow or nanoseconds detected - use INTERVAL arithmetic

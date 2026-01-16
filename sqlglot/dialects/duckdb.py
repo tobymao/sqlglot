@@ -583,7 +583,7 @@ def _json_extract_value_array_sql(
 
 
 def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    if arg and not arg.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
+    if arg and arg.type and not arg.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
         return exp.cast(arg, exp.DataType.Type.VARCHAR)
     return arg
 

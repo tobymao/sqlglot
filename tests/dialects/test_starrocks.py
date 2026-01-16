@@ -120,6 +120,15 @@ class TestStarrocks(Validator):
         create_sql = create.sql(dialect="starrocks")
         self.assertTrue("PARTITION BY (FROM_UNIXTIME(ts), region)" in create_sql)
 
+        # tuple partitioning (only columns)
+        columns_only_partition = exp.PartitionedByProperty(
+            this=exp.Tuple(expressions=[exp.column("c1"), exp.column("c2")])
+        )
+        self.assertEqual(
+            columns_only_partition.sql(dialect="starrocks"),
+            "PARTITION BY (c1, c2)",
+        )
+
         # ORDER BY
         multi_column_cluster = exp.Cluster(
             expressions=[

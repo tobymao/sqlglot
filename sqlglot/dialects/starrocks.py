@@ -352,7 +352,6 @@ class StarRocks(MySQL):
                     engine_index = (engine.index or 0) if engine else -1
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
-
             return super().create_sql(expression)
 
         def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
@@ -374,28 +373,16 @@ class StarRocks(MySQL):
                 → "PARTITION BY (FROM_UNIXTIME(ts), region)" (for MVs: with outer parentheses)
             """
             node = expression.this
-            partition_colmns_str = None
-            any_func_column = False  # no parentheses for normal tables if there is any funcs
-            if isinstance(node, exp.Schema):
-                partition_colmns_str = ", ".join(self.sql(e) for e in node.expressions)
-            elif isinstance(node, exp.Tuple):
-                part_list = []
-                for expr in node.expressions:
-                    part_list.append(self.sql(expr))
-                    if isinstance(expr, (exp.Func, exp.Anonymous)):
-                        any_func_column = True
-                partition_colmns_str = ", ".join(part_list)
-
-            if partition_colmns_str:
-                create = expression.find_ancestor(exp.Create)
-                # SR needs `(...)` for MVs, with parens, and columns only
-                if create and create.kind == "VIEW" or not any_func_column:
-                    return f"PARTITION BY ({partition_colmns_str})"
-                else:
-                    # SR doesn't support `(func(...), col2)` with parens for normal tables
-                    return f"PARTITION BY {partition_colmns_str}"
+            partition_columns_str = self.expressions(node, flat=True)
+            any_func_expr = any(isinstance(e, (exp.Func, exp.Anonymous)) for e in node.expressions) \
+                if isinstance(node, exp.Tuple) else False
+            create = expression.find_ancestor(exp.Create)
+            # SR needs `(...)` for MVs, with parens, and columns only
+            if create and create.kind == "VIEW" or not any_func_expr:
+                return f"PARTITION BY ({partition_columns_str})"
             else:
-                return f"PARTITION BY {self.sql(expression)}"
+                # SR doesn't support `(func(...), col2)` with parens for normal tables
+                return f"PARTITION BY {partition_columns_str}"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             """Generate StarRocks ORDER BY clause for clustering.

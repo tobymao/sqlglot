@@ -2173,3 +2173,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT (SELECT MAX(`u_x`) AS `_col_0` FROM UNNEST([1, `d_t`.`d_x`]) AS `u_x` WHERE `u_x` < `d_t`.`d_z`) AS `c_i` FROM (SELECT CAST(20 AS BIGNUMERIC) AS `d_x`, 30 AS `d_z`) AS `d_t`",
         )
         assert annotated.selects[0].type == exp.DataType.build("BIGNUMERIC", dialect="bigquery")
+
+        correlated_sql = "SELECT (SELECT col FROM t) as u FROM (SELECT 1 AS col) AS t"
+        query = parse_one(correlated_sql)
+        qualified = optimizer.qualify.qualify(query, schema={"t": {"col": "TEXT"}})
+        annotated = optimizer.annotate_types.annotate_types(
+            qualified, schema={"t": {"col": "TEXT"}}
+        )
+
+        self.assertEqual(
+            annotated.sql(),
+            'SELECT (SELECT "t"."col" AS "col" FROM "t" AS "t") AS "u" FROM (SELECT 1 AS "col") AS "t"',
+        )
+        assert annotated.selects[0].type == exp.DataType.build("TEXT")

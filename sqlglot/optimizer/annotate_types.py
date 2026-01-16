@@ -412,9 +412,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     if source_scope not in self._scope_selects:
                         self._scope_selects[source_scope] = self._get_scope_selects(source_scope)
 
-                    table = self._scope_selects[source_scope].get(expr.table)
-                    if table and expr.name in table:
-                        self._set_type(expr, table[expr.name])
+                    col_type = self._scope_selects[source_scope].get(expr.table, {}).get(expr.name)
+                    if col_type:
+                        self._set_type(expr, col_type)
                     elif isinstance(source.expression, exp.Unnest):
                         self._set_type(expr, source.expression.type)
                     else:

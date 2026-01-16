@@ -697,7 +697,7 @@ class Dialect(metaclass=_Dialect):
     """Whether ArrayAgg needs to filter NULL values."""
 
     ARRAY_APPEND_PROPAGATES_NULLS = False
-    """Whether ARRAY_APPEND returns NULL when the input array is NULL."""
+    """Whether ArrayAppend returns NULL when the input array is NULL."""
 
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """
@@ -1356,7 +1356,8 @@ def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]
         name: Target dialect's function name (e.g., "ARRAY_APPEND", "LIST_APPEND")
 
     Returns:
-        A callable that generates SQL with appropriate NULL handling for the target dialect
+        A callable that generates SQL with appropriate NULL handling for the target dialect.
+        Dialects that propagate NULLs need to set `ARRAY_APPEND_PROPAGATES_NULLS` to True.
     """
 
     def _array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:

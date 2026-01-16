@@ -414,20 +414,15 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
-            exp.Ascii,
-            exp.BitLength,
             exp.ByteLength,
             exp.Getbit,
             exp.Grouping,
             exp.Hour,
             exp.JarowinklerSimilarity,
-            exp.Levenshtein,
             exp.MapSize,
             exp.Minute,
             exp.RtrimmedLength,
             exp.Second,
-            exp.StrPosition,
-            exp.Unicode,
             exp.WidthBucket,
         }
     },
@@ -483,7 +478,6 @@ EXPRESSION_METADATA = {
             exp.Base64Encode,
             exp.CheckJson,
             exp.CheckXml,
-            exp.Chr,
             exp.Collate,
             exp.Collation,
             exp.CurrentAccount,

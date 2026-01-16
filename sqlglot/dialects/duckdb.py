@@ -1533,6 +1533,9 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.IsNullValue: lambda self, e: self.sql(
+                exp.func("JSON_TYPE", e.this).eq(exp.Literal.string("NULL"))
+            ),
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),

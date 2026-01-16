@@ -255,6 +255,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")
 
+        self.validate_all(
+            "IS_NULL_VALUE(x)",
+            write={
+                "duckdb": "JSON_TYPE(x) = 'NULL'",
+                "snowflake": "IS_NULL_VALUE(x)",
+            },
+        )
+
         # Test RANDSTR transpilation to DuckDB
         self.validate_all(
             "SELECT RANDSTR(10, 123)",

@@ -475,6 +475,14 @@ DOUBLE;
 TAN(tbl.double_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
+CORR(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+CORR(tbl.int_col, tbl.int_col);
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

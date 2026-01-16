@@ -993,11 +993,28 @@ class TestSnowflake(Validator):
                 "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
             },
         )
+        # Test simple case - uses MAKE_TIME (values within normal ranges)
+        self.validate_all(
+            "SELECT TIME_FROM_PARTS(12, 34, 56)",
+            write={
+                "duckdb": "SELECT MAKE_TIME(12, 34, 56)",
+                "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56)",
+            },
+        )
+        # Test with nanoseconds - uses INTERVAL arithmetic
         self.validate_all(
             "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             write={
-                "duckdb": "SELECT MAKE_TIME(12, 34, 56 + (987654321 / 1000000000.0))",
+                "duckdb": "SELECT CAST('00:00:00' AS TIME) + INTERVAL ((12 * 3600) + (34 * 60) + 56 + (987654321 / 1000000000.0)) SECOND",
                 "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
+            },
+        )
+        # Test overflow normalization - documented Snowflake feature with INTERVAL arithmetic
+        self.validate_all(
+            "SELECT TIME_FROM_PARTS(0, 100, 0)",
+            write={
+                "duckdb": "SELECT CAST('00:00:00' AS TIME) + INTERVAL ((0 * 3600) + (100 * 60) + 0) SECOND",
+                "snowflake": "SELECT TIME_FROM_PARTS(0, 100, 0)",
             },
         )
         self.validate_identity(

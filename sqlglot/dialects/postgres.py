@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
+    array_append_sql,
     binary_from_function,
     bool_xor_sql,
     datestrtodate_sql,
@@ -267,22 +268,6 @@ def _versioned_anyvalue_sql(self: Postgres.Generator, expression: exp.AnyValue) 
         return any_value_to_max_sql(self, expression)
 
     return rename_func("ANY_VALUE")(self, expression)
-
-
-def _array_append_sql(self: Postgres.Generator, expression: exp.ArrayAppend) -> str:
-    if expression.args.get("null_propagation"):
-        return self.sql(
-            exp.Case(
-                ifs=[
-                    exp.If(
-                        this=exp.Is(this=expression.this, expression=exp.Null()), true=exp.Null()
-                    )
-                ],
-                default=self.func("ARRAY_APPEND", expression.this, expression.expression),
-            )
-        )
-
-    return self.func("ARRAY_APPEND", expression.this, expression.expression)
 
 
 def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
@@ -642,7 +627,7 @@ class Postgres(Dialect):
             exp.AnyValue: _versioned_anyvalue_sql,
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
-            exp.ArrayAppend: _array_append_sql,
+            exp.ArrayAppend: lambda self, e: array_append_sql(self, e, "ARRAY_APPEND"),
             exp.ArrayPrepend: lambda self, e: self.func("ARRAY_PREPEND", e.expression, e.this),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),

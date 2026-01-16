@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     NormalizationStrategy,
     approx_count_distinct_sql,
+    array_append_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -287,18 +288,6 @@ def _date_delta_to_binary_interval_op(
         return base_impl(self, expression)
 
     return _duckdb_date_delta_sql
-
-
-def _array_append_sql(self: DuckDB.Generator, expression: exp.ArrayAppend) -> str:
-    if expression.args.get("null_propagation"):
-        return self.func(
-            "IF",
-            exp.Is(this=expression.this, expression=exp.Null()),
-            exp.Null(),
-            self.func("LIST_APPEND", expression.this, expression.expression),
-        )
-
-    return self.func("LIST_APPEND", expression.this, expression.expression)
 
 
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
@@ -1480,7 +1469,7 @@ class DuckDB(Dialect):
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
             ),
-            exp.ArrayAppend: _array_append_sql,
+            exp.ArrayAppend: lambda self, e: array_append_sql(self, e, "LIST_APPEND"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

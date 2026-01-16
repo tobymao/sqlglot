@@ -6,7 +6,7 @@ from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    array_append_with_null_propagation_sql,
+    array_append_sql,
     build_array_append_with_null_propagation,
     build_timetostr_or_tochar,
     build_like,
@@ -1483,6 +1483,7 @@ class Snowflake(Dialect):
         STAR_EXCEPT = "EXCLUDE"
         SUPPORTS_EXPLODING_PROJECTIONS = False
         ARRAY_CONCAT_IS_VAR_LEN = False
+        ARRAY_APPEND_PROPAGATES_NULLS = True
         SUPPORTS_CONVERT_TIMEZONE = True
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_MEDIAN = True
@@ -1497,7 +1498,7 @@ class Snowflake(Dialect):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
-            exp.ArrayAppend: array_append_with_null_propagation_sql,
+            exp.ArrayAppend: lambda self, e: array_append_sql(self, e, "ARRAY_APPEND"),
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
                 e.expression

@@ -1356,39 +1356,42 @@ def build_array_append_with_null_propagation(args: t.List) -> exp.ArrayAppend:
     )
 
 
-def array_append_with_null_propagation_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+def array_append_sql(self: Generator, expression: exp.ArrayAppend, name: str) -> str:
     """
-    Transpile ARRAY_APPEND to dialects that propagate NULL values by default.
-    When transpiling from a dialect that does not propagate NULLs like DuckDB/Postgres,
-    explicitly handle the NULL case using COALESCE.
+    Transpile ARRAY_APPEND between dialects with different NULL propagation semantics.
+
+    Some dialects (Databricks, Spark, Snowflake) return NULL when the input array is NULL.
+    Others (DuckDB, Postgres) create a new single-element array instead.
+
+    Args:
+        expression: ArrayAppend expression to transpile
+        name: Target dialect's function name (e.g., "ARRAY_APPEND", "LIST_APPEND")
+
+    Returns:
+        SQL string with appropriate NULL handling for the target dialect
     """
     this = expression.this
-    if not expression.args.get("null_propagation"):
-        this = exp.Coalesce(expressions=[expression.this, exp.Array(expressions=[])])
+    func_sql = self.func(name, this, expression.expression)
+    source_null_propagation = bool(expression.args.get("null_propagation"))
+    target_null_propagation = self.ARRAY_APPEND_PROPAGATES_NULLS
 
-    return self.func(
-        "ARRAY_APPEND",
-        this,
-        expression.expression,
-    )
-
-
-def array_append_without_null_propagation_sql(self: Generator, expression: exp.ArrayAppend) -> str:
-    """
-    Transpile ARRAY_APPEND to dialects that do not propagate NULL values by default.
-    When transpiling from a dialect that propagates NULLs like Databricks/Spark/Snowflake,
-    explicitly handle the NULL case using CASE.
-    """
-    func_sql = self.func("LIST_APPEND", expression.this, expression.expression)
-
-    if not expression.args.get("null_propagation"):
+    # No transpilation needed when source and target have matching NULL semantics
+    if source_null_propagation == target_null_propagation:
         return func_sql
 
-    if_expr = exp.If(
-        this=exp.Is(this=expression.this, expression=exp.Null()), true=exp.Null(), false=func_sql
-    )
+    # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
+    if source_null_propagation:
+        return self.sql(
+            exp.If(
+                this=exp.Is(this=this, expression=exp.Null()),
+                true=exp.Null(),
+                false=func_sql,
+            )
+        )
 
-    return self.sql(if_expr)
+    # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
+    this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
+    return self.func(name, this, expression.expression)
 
 
 def var_map_sql(

@@ -468,6 +468,9 @@ class Generator(metaclass=_Generator):
     # Whether ARRAY_CONCAT can be generated with varlen args or if it should be reduced to 2-arg version
     ARRAY_CONCAT_IS_VAR_LEN = True
 
+    # Whether ARRAY_APPEND returns NULL for a NULL input array
+    ARRAY_APPEND_PROPAGATES_NULLS = False
+
     # Whether CONVERT_TIMEZONE() is supported; if not, it will be generated as exp.AtTimeZone
     SUPPORTS_CONVERT_TIMEZONE = False
 

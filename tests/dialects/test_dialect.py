@@ -1511,7 +1511,7 @@ class TestDialect(Validator):
                 expr = parse_one("ARRAY_APPEND(arr, x)", dialect=source_dialect)
                 self.assertEqual(
                     expr.sql("duckdb"),
-                    "IF(arr IS NULL, NULL, LIST_APPEND(arr, x))",
+                    "CASE WHEN arr IS NULL THEN NULL ELSE LIST_APPEND(arr, x) END",
                 )
                 self.assertEqual(
                     expr.sql("postgres"),

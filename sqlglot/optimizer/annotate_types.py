@@ -273,56 +273,54 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _get_scope_selects(self, scope: Scope) -> t.Dict[str, t.Dict[str, t.Any]]:
-        if scope in self._scope_selects:
-            return self._scope_selects[scope]
-
-        selects = {}
-
-        for name, source in scope.sources.items():
-            if not isinstance(source, Scope):
-                continue
-
-            expression = source.expression
-            if isinstance(expression, exp.UDTF):
-                values = []
-
-                if isinstance(expression, exp.Lateral):
-                    if isinstance(expression.this, exp.Explode):
-                        values = [expression.this.this]
-                elif isinstance(expression, exp.Unnest):
-                    values = [expression]
-                elif not isinstance(expression, exp.TableFromRows):
-                    values = expression.expressions[0].expressions
-
-                if not values:
+        if scope not in self._scope_selects:
+            selects = {}
+            for name, source in scope.sources.items():
+                if not isinstance(source, Scope):
                     continue
 
-                alias_column_names = expression.alias_column_names
+                expression = source.expression
+                if isinstance(expression, exp.UDTF):
+                    values = []
 
-                if (
-                    isinstance(expression, exp.Unnest)
-                    and not alias_column_names
-                    and expression.type
-                    and expression.type.is_type(exp.DataType.Type.STRUCT)
+                    if isinstance(expression, exp.Lateral):
+                        if isinstance(expression.this, exp.Explode):
+                            values = [expression.this.this]
+                    elif isinstance(expression, exp.Unnest):
+                        values = [expression]
+                    elif not isinstance(expression, exp.TableFromRows):
+                        values = expression.expressions[0].expressions
+
+                    if not values:
+                        continue
+
+                    alias_column_names = expression.alias_column_names
+
+                    if (
+                        isinstance(expression, exp.Unnest)
+                        and not alias_column_names
+                        and expression.type
+                        and expression.type.is_type(exp.DataType.Type.STRUCT)
+                    ):
+                        selects[name] = {
+                            col_def.name: t.cast(t.Union[exp.DataType, exp.DataType.Type], col_def.kind)
+                            for col_def in expression.type.expressions
+                            if isinstance(col_def, exp.ColumnDef) and col_def.kind
+                        }
+                    else:
+                        selects[name] = {
+                            alias: column.type for alias, column in zip(alias_column_names, values)
+                        }
+                elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
+                    expression.right.selects
                 ):
-                    selects[name] = {
-                        col_def.name: t.cast(t.Union[exp.DataType, exp.DataType.Type], col_def.kind)
-                        for col_def in expression.type.expressions
-                        if isinstance(col_def, exp.ColumnDef) and col_def.kind
-                    }
+                    selects[name] = self._get_setop_column_types(expression)
                 else:
-                    selects[name] = {
-                        alias: column.type for alias, column in zip(alias_column_names, values)
-                    }
-            elif isinstance(expression, exp.SetOperation) and len(expression.left.selects) == len(
-                expression.right.selects
-            ):
-                selects[name] = self._get_setop_column_types(expression)
-            else:
-                selects[name] = {s.alias_or_name: s.type for s in expression.selects}
+                    selects[name] = {s.alias_or_name: s.type for s in expression.selects}
 
-        self._scope_selects[scope] = selects
-        return selects
+            self._scope_selects[scope] = selects
+
+        return self._scope_selects[scope]
 
     def annotate_scope(self, scope: Scope) -> None:
         if isinstance(self.schema, MappingSchema):

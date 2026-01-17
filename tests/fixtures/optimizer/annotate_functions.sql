@@ -523,6 +523,14 @@ STRING;
 CURRENT_DATABASE();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+MONTHS_BETWEEN(tbl.timestamp_col, tbl.timestamp_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+MONTHS_BETWEEN(tbl.timestamp_col, tbl.timestamp_col, tbl.bool_col);
+DOUBLE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

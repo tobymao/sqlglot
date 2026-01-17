@@ -14,6 +14,7 @@ EXPRESSION_METADATA = {
             exp.Corr,
             exp.Cos,
             exp.Cosh,
+            exp.MonthsBetween,
             exp.Sin,
             exp.Sinh,
             exp.Tan,

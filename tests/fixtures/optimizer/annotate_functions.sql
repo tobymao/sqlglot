@@ -523,6 +523,10 @@ STRING;
 CURRENT_DATABASE();
 STRING;
 
+# dialect: spark, databricks
+MONTHNAME(tbl.date_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

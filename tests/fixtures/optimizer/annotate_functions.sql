@@ -523,6 +523,10 @@ STRING;
 CURRENT_DATABASE();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+MONTH(tbl.date_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

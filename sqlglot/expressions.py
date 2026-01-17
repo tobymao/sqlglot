@@ -5843,7 +5843,7 @@ class Grouping(AggFunc):
 
 
 class GroupingId(AggFunc):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 

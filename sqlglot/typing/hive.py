@@ -25,6 +25,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.CurrentCatalog,
             exp.CurrentDatabase,
+            exp.CurrentSchema,
         }
     },
     exp.Coalesce: {

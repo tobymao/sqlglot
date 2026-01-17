@@ -523,6 +523,10 @@ STRING;
 CURRENT_DATABASE();
 STRING;
 
+# dialect: spark, databricks
+DATE_FROM_UNIX_DATE(tbl.int_col);
+DATE;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

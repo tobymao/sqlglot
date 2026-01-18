@@ -108,7 +108,14 @@ class TestDatabricks(Validator):
                 "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
             },
         )
-
+        self.validate_identity(
+            "SELECT SUBSTR('Spark' FROM 5 FOR 1)", "SELECT SUBSTRING('Spark', 5, 1)"
+        )
+        self.validate_identity("SELECT SUBSTR('Spark SQL', 5)", "SELECT SUBSTRING('Spark SQL', 5)")
+        self.validate_identity(
+            "SELECT SUBSTR(ENCODE('Spark SQL', 'utf-8'), 5)",
+            "SELECT SUBSTRING(ENCODE('Spark SQL', 'utf-8'), 5)",
+        )
         self.validate_all(
             "SELECT TYPEOF(1)",
             read={

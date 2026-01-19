@@ -1492,24 +1492,63 @@ class TestDialect(Validator):
             },
         )
 
+        # Test basic syntax transpilation for array creation semantics
         self.validate_all(
             "ARRAY_APPEND(arr, x)",
             read={
-                "": "ARRAY_APPEND(arr, x)",
                 "duckdb": "LIST_APPEND(arr, x)",
                 "postgres": "ARRAY_APPEND(arr, x)",
-                "spark": "ARRAY_APPEND(arr, x)",
-                "databricks": "ARRAY_APPEND(arr, x)",
-                "snowflake": "ARRAY_APPEND(arr, x)",
             },
             write={
                 "duckdb": "LIST_APPEND(arr, x)",
                 "postgres": "ARRAY_APPEND(arr, x)",
-                "spark": "ARRAY_APPEND(arr, x)",
-                "databricks": "ARRAY_APPEND(arr, x)",
-                "snowflake": "ARRAY_APPEND(arr, x)",
             },
         )
+
+        # Test NULL propagation semantics: NULL-propagating dialects → array-creating dialects
+        for source_dialect in ("snowflake", "databricks", "spark"):
+            with self.subTest(f"NULL propagation: {source_dialect} → DuckDB/PostgreSQL"):
+                expr = parse_one("ARRAY_APPEND(arr, x)", dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("duckdb"),
+                    "CASE WHEN arr IS NULL THEN NULL ELSE LIST_APPEND(arr, x) END",
+                )
+                self.assertEqual(
+                    expr.sql("postgres"),
+                    "CASE WHEN arr IS NULL THEN NULL ELSE ARRAY_APPEND(arr, x) END",
+                )
+
+        # Test array creation semantics: array-creating dialects → NULL-propagating dialects
+        for source_dialect, source_sql in (
+            ("duckdb", "LIST_APPEND(arr, x)"),
+            ("postgres", "ARRAY_APPEND(arr, x)"),
+        ):
+            with self.subTest(f"Array creation: {source_dialect} → Snowflake/Databricks/Spark"):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("snowflake"),
+                    "ARRAY_APPEND(COALESCE(arr, []), x)",
+                )
+                self.assertEqual(
+                    expr.sql("databricks"),
+                    "ARRAY_APPEND(COALESCE(arr, ARRAY()), x)",
+                )
+                self.assertEqual(
+                    expr.sql("spark"),
+                    "ARRAY_APPEND(COALESCE(arr, ARRAY()), x)",
+                )
+
+        # Test identity transpilation (should NOT add wrappers)
+        for dialect, sql in (
+            ("duckdb", "LIST_APPEND(arr, x)"),
+            ("postgres", "ARRAY_APPEND(arr, x)"),
+            ("snowflake", "ARRAY_APPEND(arr, x)"),
+            ("databricks", "ARRAY_APPEND(arr, x)"),
+            ("spark", "ARRAY_APPEND(arr, x)"),
+        ):
+            with self.subTest(f"Identity: {dialect} → {dialect}"):
+                expr = parse_one(sql, dialect=dialect)
+                self.assertEqual(expr.sql(dialect), sql)
 
     def test_order_by(self):
         self.validate_identity(

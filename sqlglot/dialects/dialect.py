@@ -696,6 +696,9 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
+    ARRAY_APPEND_PROPAGATES_NULLS = False
+    """Whether ArrayAppend returns NULL when the input array is NULL."""
+
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """
     This flag is used in the optimizer's canonicalize rule and determines whether x will be promoted
@@ -1340,6 +1343,48 @@ def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
     return (
         f"{self.sql(expression, 'this')}.{self.sql(exp.to_identifier(expression.expression.name))}"
     )
+
+
+def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]:
+    """
+    Transpile ARRAY_APPEND between dialects with different NULL propagation semantics.
+
+    Some dialects (Databricks, Spark, Snowflake) return NULL when the input array is NULL.
+    Others (DuckDB, Postgres) create a new single-element array instead.
+
+    Args:
+        name: Target dialect's function name (e.g., "ARRAY_APPEND", "LIST_APPEND")
+
+    Returns:
+        A callable that generates SQL with appropriate NULL handling for the target dialect.
+        Dialects that propagate NULLs need to set `ARRAY_APPEND_PROPAGATES_NULLS` to True.
+    """
+
+    def _array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:
+        this = expression.this
+        func_sql = self.func(name, this, expression.expression)
+        source_null_propagation = bool(expression.args.get("null_propagation"))
+        target_null_propagation = self.dialect.ARRAY_APPEND_PROPAGATES_NULLS
+
+        # No transpilation needed when source and target have matching NULL semantics
+        if source_null_propagation == target_null_propagation:
+            return func_sql
+
+        # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
+        if source_null_propagation:
+            return self.sql(
+                exp.If(
+                    this=exp.Is(this=this, expression=exp.Null()),
+                    true=exp.Null(),
+                    false=func_sql,
+                )
+            )
+
+        # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
+        this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
+        return self.func(name, this, expression.expression)
+
+    return _array_append_sql
 
 
 def var_map_sql(

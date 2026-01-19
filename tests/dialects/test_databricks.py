@@ -108,7 +108,14 @@ class TestDatabricks(Validator):
                 "mysql": "SELECT SUBSTRING_INDEX('a.b.c.d', '.', 2)",
             },
         )
-
+        self.validate_identity(
+            "SELECT SUBSTR('Spark' FROM 5 FOR 1)", "SELECT SUBSTRING('Spark', 5, 1)"
+        )
+        self.validate_identity("SELECT SUBSTR('Spark SQL', 5)", "SELECT SUBSTRING('Spark SQL', 5)")
+        self.validate_identity(
+            "SELECT SUBSTR(ENCODE('Spark SQL', 'utf-8'), 5)",
+            "SELECT SUBSTRING(ENCODE('Spark SQL', 'utf-8'), 5)",
+        )
         self.validate_all(
             "SELECT TYPEOF(1)",
             read={
@@ -242,6 +249,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CURDATE()", "CURRENT_DATE")
         self.validate_identity("CURDATE", "CURRENT_DATE")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
+        self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

@@ -208,3 +208,53 @@ class TestStarrocks(Validator):
             "DELETE FROM t WHERE a BETWEEN 1 AND 10 AND b BETWEEN 20 AND 30 OR c BETWEEN 'x' AND 'z'",
             "DELETE FROM t WHERE a >= 1 AND a <= 10 AND b >= 20 AND b <= 30 OR c >= 'x' AND c <= 'z'",
         )
+
+    def test_partition(self):
+        # Column-based partitioning
+        self.validate_identity("CREATE TABLE test_table (col1 STRING) PARTITION BY (col1)")
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY (col1, col2)"
+        )
+
+        # Expression-based partitioning
+        self.validate_identity(
+            "CREATE TABLE test_table (col2 DATE) PARTITION BY DATE_TRUNC('DAY', col2)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col2 BIGINT) PARTITION BY FROM_UNIXTIME(col2, '%Y%m%d')"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 STRING, col2 BIGINT) PARTITION BY FROM_UNIXTIME(col2, '%Y%m%d'), col1"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 BIGINT, col2 DATE) PARTITION BY FROM_UNIXTIME(col2, '%Y%m%d'), DATE_TRUNC('DAY', col1)"
+        )
+
+        # LIST partitioning
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 STRING) PARTITION BY LIST (col1) (PARTITION pLos_Angeles VALUES IN ('Los Angeles'), PARTITION pSan_Francisco VALUES IN ('San Francisco'))"
+        )
+
+        # Multi-column LIST partitioning
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 DATE, col2 STRING) PARTITION BY LIST (col1, col2) (PARTITION p1 VALUES IN (('2022-04-01', 'LA'), ('2022-04-01', 'SF')))"
+        )
+
+        # RANGE partitioning with explicit values
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (PARTITION p1 VALUES LESS THAN ('2020-01-31'), PARTITION p2 VALUES LESS THAN ('2020-02-29'), PARTITION p3 VALUES LESS THAN ('2020-03-31'))"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 STRING) PARTITION BY RANGE (STR2DATE(col1, '%Y-%m-%d')) (PARTITION p1 VALUES LESS THAN ('2021-01-01'), PARTITION p2 VALUES LESS THAN ('2021-01-02'), PARTITION p3 VALUES LESS THAN ('2021-01-03'))"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (PARTITION p1 VALUES LESS THAN ('2020-01-31'), PARTITION p_max VALUES LESS THAN (MAXVALUE))"
+        )
+
+        # RANGE partitioning with START/END/EVERY
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 BIGINT) PARTITION BY RANGE (col1) (START ('1') END ('10') EVERY (1), START ('10') END ('100') EVERY (10))"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
+        )

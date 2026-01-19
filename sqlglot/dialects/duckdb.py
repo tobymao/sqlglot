@@ -250,6 +250,45 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     return self.func("DATE_DIFF", unit_to_str(expression), expr, this)
 
 
+def _timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
+    """
+    Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
+
+    Snowflake: TIME_SLICE(date_expr, slice_length, 'UNIT' [, 'START'|'END'])
+    DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr)
+
+    For 'END' kind, add the interval to get the end of the slice.
+    For DATE type with 'END', cast result back to DATE to preserve type.
+    """
+    date_expr = expression.this
+    slice_length = expression.expression
+    unit = expression.unit
+    kind = expression.args.get("kind")
+
+    # Create INTERVAL expression: INTERVAL 'N' UNIT
+    interval_expr = exp.Interval(this=slice_length, unit=unit)
+
+    # Create base time_bucket expression
+    time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr)
+
+    # Check if we need the end of the slice (default is start)
+    is_end = kind and kind.name.upper() == "END"
+
+    if not is_end:
+        # For 'START', return time_bucket directly
+        return self.sql(time_bucket_expr)
+
+    # For 'END', add the interval to get end of slice
+    add_expr = exp.Add(this=time_bucket_expr, expression=interval_expr.copy())
+
+    # If input is DATE type, cast result back to DATE to preserve type
+    # DuckDB converts DATE to TIMESTAMP when adding intervals
+    if date_expr.is_type(exp.DataType.Type.DATE):
+        return self.sql(exp.cast(add_expr, exp.DataType.Type.DATE))
+
+    return self.sql(add_expr)
+
+
 def _date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[DuckDB.Generator, DATETIME_DELTA], str]:
@@ -1595,6 +1634,7 @@ class DuckDB(Dialect):
             exp.TimeSub: _date_delta_to_binary_interval_op(),
             exp.Time: no_time_sql,
             exp.TimeDiff: _timediff_sql,
+            exp.TimeSlice: _timeslice_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampAdd: _date_delta_to_binary_interval_op(),
             exp.TimestampDiff: lambda self, e: self.func(

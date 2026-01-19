@@ -2439,6 +2439,57 @@ class TestSnowflake(Validator):
             "SELECT TIME_SLICE(CAST('2024-05-09 08:50:57.891' AS TIMESTAMP), 1, 'HOUR', 'start')"
         )
 
+        # TIME_SLICE transpilation to DuckDB
+        self.validate_all(
+            "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'HOUR')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'HOUR')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'HOUR', 'END')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'HOUR', 'END')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP)) + INTERVAL 1 HOUR",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'DAY')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'DAY')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'DAY', 'END')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'DAY', 'END')",
+                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE)) + INTERVAL 1 DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 15, 'MINUTE')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 15, 'MINUTE')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 15 MINUTE, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'QUARTER')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'QUARTER')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 QUARTER, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'WEEK', 'END')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'WEEK', 'END')",
+                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 WEEK, CAST('2024-03-15' AS DATE)) + INTERVAL 1 WEEK AS DATE)",
+            },
+        )
+
         for join in ("FULL OUTER", "LEFT", "RIGHT", "LEFT OUTER", "RIGHT OUTER", "INNER"):
             with self.subTest(f"Testing transpilation of {join} from Snowflake to DuckDB"):
                 self.validate_all(

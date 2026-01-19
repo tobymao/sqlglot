@@ -1033,6 +1033,34 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT TIMESTAMP_FROM_PARTS(TO_DATE('2023-06-15'), TO_TIME('14:30:45'))",
+            write={
+                "duckdb": "SELECT CAST('2023-06-15' AS DATE) + CAST('14:30:45' AS TIME)",
+                "snowflake": "SELECT TIMESTAMP_FROM_PARTS(CAST('2023-06-15' AS DATE), CAST('14:30:45' AS TIME))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_NTZ_FROM_PARTS(TO_DATE('2023-06-15'), TO_TIME('14:30:45'))",
+            write={
+                "duckdb": "SELECT CAST('2023-06-15' AS DATE) + CAST('14:30:45' AS TIME)",
+                "snowflake": "SELECT TIMESTAMP_FROM_PARTS(CAST('2023-06-15' AS DATE), CAST('14:30:45' AS TIME))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_LTZ_FROM_PARTS(2023, 6, 15, 14, 30, 45)",
+            write={
+                "duckdb": "SELECT CAST(MAKE_TIMESTAMP(2023, 6, 15, 14, 30, 45) AS TIMESTAMPTZ)",
+                "snowflake": "SELECT TIMESTAMP_LTZ_FROM_PARTS(2023, 6, 15, 14, 30, 45)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_TZ_FROM_PARTS(2023, 6, 15, 14, 30, 45, 0, 'America/Los_Angeles')",
+            write={
+                "duckdb": "SELECT MAKE_TIMESTAMP(2023, 6, 15, 14, 30, 45) AT TIME ZONE 'America/Los_Angeles'",
+                "snowflake": "SELECT TIMESTAMP_TZ_FROM_PARTS(2023, 6, 15, 14, 30, 45, 0, 'America/Los_Angeles')",
+            },
+        )
+        self.validate_all(
             """WITH vartab(v) AS (select parse_json('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
             write={
                 "bigquery": """WITH vartab AS (SELECT PARSE_JSON('[{"attr": [{"name": "banana"}]}]') AS v) SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",

@@ -167,6 +167,11 @@ class Spark(Spark2):
             self._match(TokenType.R_BRACE)
             return self.expression(exp.Placeholder, this=this, widget=True)
 
+        FUNCTION_PARSERS = {
+            **Spark2.Parser.FUNCTION_PARSERS,
+            "SUBSTR": lambda self: self._parse_substring(),
+        }
+
         def _parse_generated_as_identity(
             self,
         ) -> (

@@ -531,6 +531,21 @@ DOUBLE;
 MONTHS_BETWEEN(tbl.timestamp_col, tbl.timestamp_col, tbl.bool_col);
 DOUBLE;
 
+MONTH(tbl.date_col);
+INT;
+
+# dialect: spark, databricks
+MONTHNAME(tbl.date_col);
+STRING;
+
+# dialect: hive, spark, databricks
+CURRENT_SCHEMA();
+STRING;
+
+# dialect: hive, spark2, spark, databricks
+CURRENT_USER();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -1341,6 +1356,10 @@ STRING;
 
 # dialect: bigquery
 NET.HOST('http://example.com');
+STRING;
+
+# dialect: bigquery
+NET.REG_DOMAIN('http://example.com');
 STRING;
 
 # dialect: bigquery

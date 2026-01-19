@@ -262,6 +262,36 @@ class TestSnowflake(Validator):
                 "snowflake": "IS_NULL_VALUE(x)",
             },
         )
+        # String literal - uses ENCODE
+        self.validate_all(
+            "BASE64_ENCODE('hello')",
+            write={
+                "duckdb": "TO_BASE64(ENCODE('hello'))",
+                "snowflake": "BASE64_ENCODE('hello')",
+            },
+        )
+        # Column reference - no ENCODE (type unknown, assumes BLOB)
+        self.validate_all(
+            "BASE64_ENCODE(x)",
+            write={
+                "duckdb": "TO_BASE64(x)",
+                "snowflake": "BASE64_ENCODE(x)",
+            },
+        )
+        self.validate_all(
+            "BASE64_ENCODE(x, 5)",
+            write={
+                "duckdb": "RTRIM(REGEXP_REPLACE(TO_BASE64(x), '(.{5})', '\\1' || CHR(10), 'g'), CHR(10))",
+                "snowflake": "BASE64_ENCODE(x, 5)",
+            },
+        )
+        self.validate_all(
+            "BASE64_ENCODE(x, 5, '-_=')",
+            write={
+                "duckdb": "RTRIM(REGEXP_REPLACE(REPLACE(REPLACE(TO_BASE64(x), '+', '-'), '/', '_'), '(.{5})', '\\1' || CHR(10), 'g'), CHR(10))",
+                "snowflake": "BASE64_ENCODE(x, 5, '-_=')",
+            },
+        )
 
         # Test RANDSTR transpilation to DuckDB
         self.validate_all(

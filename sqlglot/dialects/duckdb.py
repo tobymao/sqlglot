@@ -1497,6 +1497,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
+            exp.Base64Encode: lambda self, e: self._base64_encode_sql(e),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -2661,6 +2662,73 @@ class DuckDB(Dialect):
         def upper_sql(self, expression: exp.Upper) -> str:
             result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
             return _gen_with_cast_to_blob(self, expression, result_sql)
+
+        def _base64_encode_sql(self, expression: exp.Base64Encode) -> str:
+            # DuckDB BASE64 requires BLOB input
+            # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly
+            # encodes UTF-8 bytes. We add ENCODE unless the input is a binary type.
+            input_expr = expression.this
+
+            # Check if input is a string type - ENCODE only accepts VARCHAR
+            is_string = input_expr.is_string or (
+                input_expr.type and input_expr.type.this in exp.DataType.TEXT_TYPES
+            )
+
+            if is_string:
+                result: exp.Expression = exp.ToBase64(this=exp.Encode(this=input_expr))
+            else:
+                result = exp.ToBase64(this=input_expr)
+
+            max_line_length = expression.args.get("max_line_length")
+            alphabet = expression.args.get("alphabet")
+
+            # Handle custom alphabet by replacing characters (applied before line breaks)
+            # Alphabet: 1st char = index 62 (default '+'), 2nd = index 63 (default '/'), 3rd = padding (default '=')
+            if alphabet and isinstance(alphabet, exp.Literal):
+                alphabet_str = alphabet.this.strip("'")
+                if len(alphabet_str) >= 1 and alphabet_str[0] != "+":
+                    result = exp.Replace(
+                        this=result,
+                        expression=exp.Literal.string("+"),
+                        replacement=exp.Literal.string(alphabet_str[0]),
+                    )
+                if len(alphabet_str) >= 2 and alphabet_str[1] != "/":
+                    result = exp.Replace(
+                        this=result,
+                        expression=exp.Literal.string("/"),
+                        replacement=exp.Literal.string(alphabet_str[1]),
+                    )
+                if len(alphabet_str) >= 3 and alphabet_str[2] != "=":
+                    result = exp.Replace(
+                        this=result,
+                        expression=exp.Literal.string("="),
+                        replacement=exp.Literal.string(alphabet_str[2]),
+                    )
+
+            # Handle max_line_length by inserting newlines every N characters
+            if max_line_length and isinstance(max_line_length, exp.Literal):
+                line_len = max_line_length.this
+                if line_len != "0":
+                    result = exp.Anonymous(
+                        this="RTRIM",
+                        expressions=[
+                            exp.RegexpReplace(
+                                this=result,
+                                expression=exp.Literal.string(f"(.{{{line_len}}})"),
+                                replacement=exp.Concat(
+                                    expressions=[
+                                        exp.Literal.string("\\1"),
+                                        exp.Anonymous(
+                                            this="CHR", expressions=[exp.Literal.number(10)]
+                                        ),
+                                    ]
+                                ),
+                            ),
+                            exp.Anonymous(this="CHR", expressions=[exp.Literal.number(10)]),
+                        ],
+                    )
+
+            return self.sql(result)
 
         def replace_sql(self, expression: exp.Replace) -> str:
             result_sql = self.func(

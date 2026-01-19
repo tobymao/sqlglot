@@ -91,6 +91,8 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
+SEQ_TYPES = (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8)
+
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
@@ -1102,10 +1104,7 @@ def _regr_val_sql(
 
 def _find_all_seq(node: exp.Expression) -> t.List[exp.Expression]:
     """Find all SEQ1/2/4/8 functions in an expression."""
-    result: t.List[exp.Expression] = []
-    for seq_type in (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8):
-        result.extend(node.find_all(seq_type))
-    return result
+    return list(node.find_all(*SEQ_TYPES))
 
 
 def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
@@ -1264,6 +1263,40 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
         outer_query.set(key, clause)
 
     return outer_query
+
+
+def _maybe_wrap_seq_in_select(expression: exp.Expression) -> exp.Expression:
+    """
+    Transform to wrap SEQ functions in subqueries when needed.
+
+    Used with transforms.preprocess for exp.Select. Does a quick check for
+    SEQ presence before doing detailed context analysis.
+    """
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    # Quick check: does this SELECT have any SEQ at all?
+    if not any(expression.find_all(*SEQ_TYPES)):
+        return expression
+
+    # Only do detailed context checks if SEQ exists
+    # Check WHERE clause
+    where = expression.args.get("where")
+    if where and _find_all_seq(where):
+        return _wrap_seq_in_subquery(expression)
+
+    # Check inside aggregates
+    for agg in expression.find_all(exp.AggFunc):
+        if _find_all_seq(agg):
+            return _wrap_seq_in_subquery(expression)
+
+    # Check window ORDER BY
+    for window in expression.find_all(exp.Window):
+        order = window.args.get("order")
+        if order and _find_all_seq(order):
+            return _wrap_seq_in_subquery(expression)
+
+    return expression
 
 
 def _maybe_corr_null_to_false(
@@ -1876,6 +1909,7 @@ class DuckDB(Dialect):
             exp.Rand: rename_func("RANDOM"),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
+            exp.Select: transforms.preprocess([_maybe_wrap_seq_in_select]),
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -2459,43 +2493,6 @@ class DuckDB(Dialect):
             from_clause = expression.args.get("from_")
             from_clause = f" FROM {from_clause}" if from_clause else ""
             return f"{force}INSTALL {this}{from_clause}"
-
-        def select_sql(self, expression: exp.Select) -> str:
-            """
-            Override select_sql to wrap queries with SEQ in restricted contexts.
-
-            SEQ functions must be wrapped in a subquery if they appear in:
-            - WHERE clauses (window functions not allowed)
-            - Inside aggregate functions (window functions not allowed)
-            - Window ORDER BY clauses (window functions not allowed in window definitions)
-            """
-            needs_wrapping = False
-
-            # Check WHERE clause
-            where = expression.args.get("where")
-            if where and _find_all_seq(where):
-                needs_wrapping = True
-
-            # Check inside aggregates
-            if not needs_wrapping:
-                for agg in expression.find_all(exp.AggFunc):
-                    if _find_all_seq(agg):
-                        needs_wrapping = True
-                        break
-
-            # Check window ORDER BY
-            if not needs_wrapping:
-                for window in expression.find_all(exp.Window):
-                    order = window.args.get("order")
-                    if order and _find_all_seq(order):
-                        needs_wrapping = True
-                        break
-
-            if needs_wrapping:
-                expression = _wrap_seq_in_subquery(expression)
-
-            # Continue with normal SELECT generation
-            return super().select_sql(expression)
 
         def approxtopk_sql(self, expression: exp.ApproxTopK) -> str:
             self.unsupported(

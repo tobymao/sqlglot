@@ -17,4 +17,5 @@ EXPRESSION_METADATA = {
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
+    exp.Monthname: {"returns": exp.DataType.Type.VARCHAR},
 }

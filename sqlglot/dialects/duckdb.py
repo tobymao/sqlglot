@@ -2402,8 +2402,8 @@ class DuckDB(Dialect):
 
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             # Check if this is the date/time expression form: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
-            date_expr = expression.args.get("this")
-            time_expr = expression.args.get("expression")
+            date_expr = expression.this
+            time_expr = expression.expression
 
             if date_expr is not None and time_expr is not None:
                 # In DuckDB, DATE + TIME produces TIMESTAMP
@@ -2428,42 +2428,33 @@ class DuckDB(Dialect):
 
             return rename_func("MAKE_TIMESTAMP")(self, expression)
 
+        @unsupported_args("nano")
         def timestampltzfromparts_sql(self, expression: exp.TimestampLtzFromParts) -> str:
-            # TIMESTAMP_LTZ uses session/local timezone
-            # Create timestamp and cast to TIMESTAMPTZ (DuckDB treats this as local time zone)
-            timestamp = self.func(
-                "MAKE_TIMESTAMP",
-                expression.args.get("year"),
-                expression.args.get("month"),
-                expression.args.get("day"),
-                expression.args.get("hour"),
-                expression.args.get("min"),
-                expression.args.get("sec"),
-            )
-            return self.sql(exp.cast(timestamp, exp.DataType.Type.TIMESTAMPTZ))
+            # Pop nano so rename_func only passes args that MAKE_TIMESTAMP accepts
+            if nano := expression.args.get("nano"):
+                nano.pop()
 
+            timestamp = rename_func("MAKE_TIMESTAMP")(self, expression)
+            return f"CAST({timestamp} AS TIMESTAMPTZ)"
+
+        @unsupported_args("nano")
         def timestamptzfromparts_sql(self, expression: exp.TimestampTzFromParts) -> str:
-            # TIMESTAMP_TZ has an explicit timezone parameter
+            # Extract zone before popping
             zone = expression.args.get("zone")
+            # Pop zone and nano so rename_func only passes args that MAKE_TIMESTAMP accepts
+            if zone:
+                zone = zone.pop()
 
-            # Create the base timestamp expression
-            timestamp_expr = exp.Anonymous(
-                this="MAKE_TIMESTAMP",
-                expressions=[
-                    expression.args.get("year"),
-                    expression.args.get("month"),
-                    expression.args.get("day"),
-                    expression.args.get("hour"),
-                    expression.args.get("min"),
-                    expression.args.get("sec"),
-                ],
-            )
+            if nano := expression.args.get("nano"):
+                nano.pop()
+
+            timestamp = rename_func("MAKE_TIMESTAMP")(self, expression)
 
             if zone:
                 # Use AT TIME ZONE to apply the explicit timezone
-                return self.sql(exp.AtTimeZone(this=timestamp_expr, zone=zone))
+                return f"{timestamp} AT TIME ZONE {self.sql(zone)}"
 
-            return self.sql(timestamp_expr)
+            return timestamp
 
         def tablesample_sql(
             self,

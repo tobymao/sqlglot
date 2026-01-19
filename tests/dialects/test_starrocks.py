@@ -28,6 +28,7 @@ class TestStarrocks(Validator):
         self.validate_identity("CURRENT_VERSION()")
 
     def test_ddl(self):
+        self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
         ddl_sqls = [

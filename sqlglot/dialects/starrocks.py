@@ -127,6 +127,7 @@ class StarRocks(MySQL):
         PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
         WITH_PROPERTIES_PREFIX = "PROPERTIES"
         UPDATE_STATEMENT_SUPPORTS_FROM = True
+        INSERT_OVERWRITE = " OVERWRITE"
 
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False

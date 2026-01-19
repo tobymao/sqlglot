@@ -527,6 +527,10 @@ STRING;
 CURRENT_SCHEMA();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+CURRENT_USER();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

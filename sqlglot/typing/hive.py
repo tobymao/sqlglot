@@ -26,6 +26,7 @@ EXPRESSION_METADATA = {
             exp.CurrentCatalog,
             exp.CurrentDatabase,
             exp.CurrentSchema,
+            exp.CurrentUser,
         }
     },
     exp.Coalesce: {

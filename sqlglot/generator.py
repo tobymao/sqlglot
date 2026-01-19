@@ -170,6 +170,7 @@ class Generator(metaclass=_Generator):
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda *_: "MATERIALIZED",
+        exp.NetFunc: lambda self, e: f"NET.{self.sql(e, 'this')}",
         exp.NonClusteredColumnConstraint: lambda self,
         e: f"NONCLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.NoPrimaryIndexProperty: lambda *_: "NO PRIMARY INDEX",

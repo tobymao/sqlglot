@@ -7656,9 +7656,19 @@ class Normal(Func):
     arg_types = {"this": True, "stddev": True, "gen": True}
 
 
+# https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/net_functions
+class NetFunc(Func):
+    pass
+
+
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
-class NetHost(Func):
-    _sql_names = ["NET.HOST"]
+class Host(Func):
+    pass
+
+
+# https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#netreg_domain
+class RegDomain(Func):
+    pass
 
 
 class Overlay(Func):

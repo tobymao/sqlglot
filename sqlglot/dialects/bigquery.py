@@ -1070,19 +1070,20 @@ class BigQuery(Dialect):
             func_index = self._index + 1
             this = super()._parse_column_ops(this)
 
-            if isinstance(this, exp.Dot) and isinstance(func := this.expression, exp.Func):
+            if isinstance(this, exp.Dot):
                 prefix = this.this.name.upper()
 
+                func: t.Optional[t.Type[exp.Func]] = None
                 if prefix == "NET":
-                    if func.name.upper() == "HOST":
-                        this = self.expression(exp.NetHost, this=seq_get(func.expressions, 0))
-                    elif func.name.upper() == "REG_DOMAIN":
-                        this = self.expression(exp.NetRegDomain, this=seq_get(func.expressions, 0))
+                    func = exp.NetFunc
                 elif prefix == "SAFE":
+                    func = exp.SafeFunc
+
+                if func:
                     # Retreat to try and parse a known function instead of an anonymous one,
                     # which is parsed by the base column ops parser due to anonymous_func=true
                     self._retreat(func_index)
-                    this = exp.SafeFunc(this=self._parse_function(any_token=True))
+                    this = func(this=self._parse_function(any_token=True))
 
             return this
 

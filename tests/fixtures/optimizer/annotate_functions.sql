@@ -523,6 +523,10 @@ STRING;
 CURRENT_DATABASE();
 STRING;
 
+# dialect: hive, spark, databricks
+CURRENT_SCHEMA();
+STRING;
+
 # dialect: hive, spark2, spark, databricks
 CURRENT_USER();
 STRING;

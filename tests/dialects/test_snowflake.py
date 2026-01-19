@@ -5285,6 +5285,128 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_seq_functions(self):
+        # SEQ1 - 1-byte sequences
+        self.validate_all(
+            "SELECT SEQ1() FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) FROM test",
+                "snowflake": "SELECT SEQ1() FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ1(0) FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) FROM test",
+                "snowflake": "SELECT SEQ1(0) FROM test",
+            },
+        )
+        # 1 means it's signed parameter, which affects wrap-around behavior
+        self.validate_all(
+            "SELECT SEQ1(1) FROM test",
+            write={
+                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) >= 128 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) - 256 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) END) FROM test",
+                "snowflake": "SELECT SEQ1(1) FROM test",
+            },
+        )
+
+        # SEQ2 - 2-byte sequences
+        self.validate_all(
+            "SELECT SEQ2() FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) FROM test",
+                "snowflake": "SELECT SEQ2() FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ2(0) FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) FROM test",
+                "snowflake": "SELECT SEQ2(0) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ2(1) FROM test",
+            write={
+                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) >= 32768 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) - 65536 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) END) FROM test",
+                "snowflake": "SELECT SEQ2(1) FROM test",
+            },
+        )
+
+        # SEQ4 - 4-byte sequences
+        self.validate_all(
+            "SELECT SEQ4() FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) FROM test",
+                "snowflake": "SELECT SEQ4() FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ4(0) FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) FROM test",
+                "snowflake": "SELECT SEQ4(0) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ4(1) FROM test",
+            write={
+                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) >= 2147483648 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) - 4294967296 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) END) FROM test",
+                "snowflake": "SELECT SEQ4(1) FROM test",
+            },
+        )
+
+        # SEQ8 - 8-byte sequences
+        self.validate_all(
+            "SELECT SEQ8() FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM test",
+                "snowflake": "SELECT SEQ8() FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ8(0) FROM test",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM test",
+                "snowflake": "SELECT SEQ8(0) FROM test",
+            },
+        )
+        self.validate_all(
+            "SELECT SEQ8(1) FROM test",
+            write={
+                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) >= 9223372036854775808 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) - 18446744073709551616 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) END) FROM test",
+                "snowflake": "SELECT SEQ8(1) FROM test",
+            },
+        )
+
+    def test_generator(self):
+        # Basic ROWCOUNT transpilation
+        self.validate_all(
+            "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+            write={
+                "duckdb": "SELECT * FROM range(5)",
+                "snowflake": "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+            },
+        )
+
+        # GENERATOR with SEQ functions - the common use case
+        self.validate_all(
+            "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM range(5)",
+                "snowflake": "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+            },
+        )
+
+        # Multiple columns with GENERATOR
+        self.validate_all(
+            "SELECT SEQ4() AS id, RANDOM() AS val FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            write={
+                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS id, RANDOM() AS val FROM range(100)",
+                "snowflake": "SELECT SEQ4() AS id, RANDOM() AS val FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            },
+        )
+
     def test_ceil(self):
         self.validate_all(
             "SELECT CEIL(1.753, 2)",

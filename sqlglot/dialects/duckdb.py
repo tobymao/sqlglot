@@ -47,7 +47,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import is_date_unit, seq_get
+from sqlglot.helper import is_date_unit, seq_get, find_new_name
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
 
@@ -404,6 +404,116 @@ def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
 def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
+
+
+def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> str:
+    """
+    Transpile Snowflake SEQ1/SEQ2/SEQ4/SEQ8 to DuckDB.
+
+    Generates monotonically increasing integers starting from 0.
+    The signed parameter (0 or 1) affects wrap-around behavior:
+    - Unsigned (0): wraps at 2^(bits) - 1
+    - Signed (1): wraps at 2^(bits-1) - 1, then goes negative
+
+    Args:
+        expression: The SEQ function expression (may have 'this' arg for signed param)
+        byte_width: 1, 2, 4, or 8 bytes
+
+    Returns:
+        SQL string using ROW_NUMBER() with modulo for wrap-around
+    """
+    # Check if signed parameter is 1
+    signed_arg = expression.this
+    is_signed = signed_arg and signed_arg.this == "1"
+
+    # Calculate values based on byte width
+    bits = byte_width * 8
+    max_val = exp.Literal.number(2**bits)
+
+    # (ROW_NUMBER() OVER (ORDER BY 1) - 1)
+    row_num = exp.Paren(
+        this=exp.Sub(
+            this=exp.Window(
+                this=exp.RowNumber(), order=exp.Order(expressions=[exp.Literal.number(1)])
+            ),
+            expression=exp.Literal.number(1),
+        )
+    )
+
+    # (row_num % max_val)
+    mod_expr = exp.Paren(this=exp.Mod(this=row_num, expression=max_val))
+
+    if is_signed:
+        # Signed: 0 to 2^(bits-1)-1, then -2^(bits-1) to -1
+        # CASE WHEN (mod_expr) >= half_max THEN (mod_expr) - max_val ELSE (mod_expr) END
+        half_max = exp.Literal.number(2 ** (bits - 1))
+        result = exp.Paren(
+            this=exp.Case(
+                ifs=[
+                    exp.If(
+                        this=exp.GTE(this=mod_expr, expression=half_max),
+                        true=exp.Sub(this=mod_expr.copy(), expression=max_val),
+                    )
+                ],
+                default=mod_expr.copy(),
+            )
+        )
+    else:
+        # Unsigned: 0 to 2^bits - 1
+        result = mod_expr
+
+    return self.sql(result)
+
+
+def _generator_sql(self: DuckDB.Generator, expression: exp.Generator) -> str:
+    """
+    Transpile Snowflake GENERATOR to DuckDB range().
+
+    GENERATOR(ROWCOUNT => n) -> range(n)
+    GENERATOR(TIMELIMIT => t) -> Not supported (non-deterministic)
+    GENERATOR(ROWCOUNT => n, TIMELIMIT => t) -> range(n) with comment
+
+    Args:
+        expression: The Generator expression
+
+    Returns:
+        SQL string using range(n) for row generation
+    """
+    # GENERATOR uses named parameters with => syntax, parsed as Kwargs
+    # These can be in any order, so we need to check the Kwarg names
+    rowcount_value = None
+    timelimit_value = None
+
+    # Check both possible argument positions
+    for arg_key in ["rowcount", "timelimit"]:
+        arg = expression.args.get(arg_key)
+        if arg and isinstance(arg, exp.Kwarg):
+            kwarg_name = (
+                arg.this.name.upper() if isinstance(arg.this, exp.Var) else str(arg.this).upper()
+            )
+            if kwarg_name == "ROWCOUNT":
+                rowcount_value = arg.expression
+            elif kwarg_name == "TIMELIMIT":
+                timelimit_value = arg.expression
+
+    # Generate SQL based on what we found
+    if timelimit_value:
+        if rowcount_value:
+            # If both ROWCOUNT and TIMELIMIT, use ROWCOUNT and ignore TIMELIMIT
+            self.unsupported(
+                "GENERATOR TIMELIMIT parameter is not supported in DuckDB, using ROWCOUNT only"
+            )
+        else:
+            # If only TIMELIMIT, we can't transpile this
+            self.unsupported("GENERATOR with only TIMELIMIT is not supported in DuckDB")
+            return self.func("range", exp.Literal.number(0), normalize=False)
+
+    if not rowcount_value:
+        # No ROWCOUNT specified
+        self.unsupported("GENERATOR without ROWCOUNT is not supported in DuckDB")
+        rowcount_value = exp.Literal.number(0)  # Fallback
+
+    return self.func("range", rowcount_value, normalize=False)
 
 
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
@@ -990,6 +1100,172 @@ def _regr_val_sql(
     )
 
 
+def _find_all_seq(node: exp.Expression) -> t.List[exp.Expression]:
+    """Find all SEQ1/2/4/8 functions in an expression."""
+    result: t.List[exp.Expression] = []
+    for seq_type in (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8):
+        result.extend(node.find_all(seq_type))
+    return result
+
+
+def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
+    """
+    Wrap SELECT in subquery if SEQ functions appear in restricted contexts.
+
+    Window functions (including transpiled SEQ functions) can't be used in:
+    - WHERE clauses
+    - Inside aggregate functions (MIN, MAX, AVG, etc.)
+    - In window ORDER BY clauses
+
+    This transformation wraps the query in a subquery with SEQ functions
+    computed in the inner query and referenced in the outer query.
+
+    Based on SQLGlot's eliminate_qualify transformation pattern.
+
+    Args:
+        expression: SELECT expression to potentially wrap
+
+    Returns:
+        Original expression or wrapped subquery
+    """
+    # Find all SEQ functions that need to be moved to subquery
+    seq_functions: t.List[exp.Expression] = []
+
+    # 1. Check WHERE clause
+    where = expression.args.get("where")
+    if where:
+        seq_functions.extend(_find_all_seq(where))
+
+    # 2. Check inside aggregate functions (MIN, MAX, AVG, etc.)
+    for agg in expression.find_all(exp.AggFunc):
+        seq_functions.extend(_find_all_seq(agg))
+
+    # 3. Check window ORDER BY clauses
+    for window in expression.find_all(exp.Window):
+        order = window.args.get("order")
+        if order:
+            seq_functions.extend(_find_all_seq(order))
+
+    if not seq_functions:
+        return expression
+
+    taken = set(expression.named_selects)
+
+    # Separate SEQ functions by context
+    seq_in_where_having: t.List[exp.Expression] = []
+    seq_in_select: t.List[exp.Expression] = []
+    seq_in_agg_window: t.List[exp.Expression] = []
+
+    # Find SEQ in WHERE/HAVING (evaluated over input rows)
+    where = expression.args.get("where")
+    if where:
+        seq_in_where_having.extend(_find_all_seq(where))
+
+    having = expression.args.get("having")
+    if having:
+        seq_in_where_having.extend(_find_all_seq(having))
+
+    # Find SEQ in aggregates and window ORDER BY (evaluated over input rows)
+    for agg in expression.find_all(exp.AggFunc):
+        seq_in_agg_window.extend(_find_all_seq(agg))
+
+    for window in expression.find_all(exp.Window):
+        order = window.args.get("order")
+        if order:
+            seq_in_agg_window.extend(_find_all_seq(order))
+
+    # Find SEQ in SELECT list (evaluated over output rows)
+    for select in expression.selects:
+        # Only include SEQ that are directly in SELECT, not inside aggregates/windows
+        # (those are already in seq_in_agg_window)
+        for seq_func in _find_all_seq(select):
+            # Check if this SEQ is inside an aggregate or window
+            parent_agg_or_window = False
+            for agg in select.find_all(exp.AggFunc):
+                if seq_func in _find_all_seq(agg):
+                    parent_agg_or_window = True
+                    break
+            if not parent_agg_or_window:
+                for window in select.find_all(exp.Window):
+                    order = window.args.get("order")
+                    if order and seq_func in _find_all_seq(order):
+                        parent_agg_or_window = True
+                        break
+            if not parent_agg_or_window:
+                seq_in_select.append(seq_func)
+
+    # Build mapping of SEQ SQL string to alias for replacement
+    # (since we'll be working with copied clauses, we can't use object IDs)
+    seq_sql_to_alias: t.Dict[str, t.List[t.Tuple[exp.Expression, str]]] = {}
+    for seq_func in seq_in_where_having + seq_in_agg_window:
+        seq_sql = seq_func.sql()
+        # Create unique alias for each SEQ occurrence
+        alias = find_new_name(taken, "_seq_input")
+        taken.add(alias)
+        expression.select(exp.alias_(seq_func.copy(), alias, copy=False), copy=False)
+        # Map this specific SEQ instance
+        if seq_sql not in seq_sql_to_alias:
+            seq_sql_to_alias[seq_sql] = []
+        seq_sql_to_alias[seq_sql].append((seq_func, alias))
+
+    # Save original selects (these will be evaluated over output rows)
+    original_selects = list(
+        expression.selects[
+            : len(expression.selects) - len(seq_in_where_having) - len(seq_in_agg_window)
+        ]
+    )
+
+    # Remove all original SELECT items - they will be added to outer query
+    # Inner query should only have the input-row sequences
+    expression.set("expressions", expression.selects[len(original_selects) :])
+
+    # Copy and remove clauses, replacing SEQ with column refs
+    clauses_to_move: t.Dict[str, exp.Expression] = {}
+    for key in ("where", "group", "having", "order", "limit", "offset"):
+        clause = expression.args.get(key)
+        if clause is not None:
+            clause_copy = clause.copy()
+            # Replace each SEQ in the clause with its corresponding alias
+            for seq_func in _find_all_seq(clause_copy):
+                seq_sql = seq_func.sql()
+                if seq_sql in seq_sql_to_alias:
+                    # Find the corresponding original SEQ and get its alias
+                    for orig_seq, alias in seq_sql_to_alias[seq_sql]:
+                        # For now, just use the first matching alias
+                        # TODO: match by position/context for perfect fidelity
+                        seq_func.replace(exp.column(alias))
+                        break
+            clauses_to_move[key] = clause_copy
+            expression.args.pop(key)
+
+    # Build outer SELECT from original selects
+    # SEQ in aggregates/windows must be replaced with column references
+    # SEQ directly in SELECT (not in aggregates/windows) are kept and evaluated over output rows
+    outer_selects: t.List[exp.Expression] = []
+    for select in original_selects:
+        select_copy = select.copy()
+        # Replace SEQ functions that are inside aggregates or window ORDER BY
+        for seq_func in _find_all_seq(select_copy):
+            seq_sql = seq_func.sql()
+            if seq_sql in seq_sql_to_alias:
+                # This SEQ is in an aggregate/window and should be replaced
+                for orig_seq, alias in seq_sql_to_alias[seq_sql]:
+                    seq_func.replace(exp.column(alias))
+                    break
+        outer_selects.append(select_copy)
+
+    # Create outer query with same structure as original
+    outer_query = exp.select(*outer_selects, copy=False).from_(
+        expression.subquery(alias="_t", copy=False), copy=False
+    )
+
+    # Add moved clauses (already have SEQ replaced with column refs)
+    for key, clause in clauses_to_move.items():
+        outer_query.set(key, clause)
+
+    return outer_query
+
+
 def _maybe_corr_null_to_false(
     expression: t.Union[exp.Filter, exp.Window, exp.Corr],
 ) -> t.Optional[t.Union[exp.Filter, exp.Window, exp.Corr]]:
@@ -1562,6 +1838,11 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
             exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
+            exp.Seq1: lambda self, e: _seq_sql(self, e, 1),
+            exp.Seq2: lambda self, e: _seq_sql(self, e, 2),
+            exp.Seq4: lambda self, e: _seq_sql(self, e, 4),
+            exp.Seq8: lambda self, e: _seq_sql(self, e, 8),
+            exp.Generator: _generator_sql,
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
@@ -2179,6 +2460,43 @@ class DuckDB(Dialect):
             from_clause = f" FROM {from_clause}" if from_clause else ""
             return f"{force}INSTALL {this}{from_clause}"
 
+        def select_sql(self, expression: exp.Select) -> str:
+            """
+            Override select_sql to wrap queries with SEQ in restricted contexts.
+
+            SEQ functions must be wrapped in a subquery if they appear in:
+            - WHERE clauses (window functions not allowed)
+            - Inside aggregate functions (window functions not allowed)
+            - Window ORDER BY clauses (window functions not allowed in window definitions)
+            """
+            needs_wrapping = False
+
+            # Check WHERE clause
+            where = expression.args.get("where")
+            if where and _find_all_seq(where):
+                needs_wrapping = True
+
+            # Check inside aggregates
+            if not needs_wrapping:
+                for agg in expression.find_all(exp.AggFunc):
+                    if _find_all_seq(agg):
+                        needs_wrapping = True
+                        break
+
+            # Check window ORDER BY
+            if not needs_wrapping:
+                for window in expression.find_all(exp.Window):
+                    order = window.args.get("order")
+                    if order and _find_all_seq(order):
+                        needs_wrapping = True
+                        break
+
+            if needs_wrapping:
+                expression = _wrap_seq_in_subquery(expression)
+
+            # Continue with normal SELECT generation
+            return super().select_sql(expression)
+
         def approxtopk_sql(self, expression: exp.ApproxTopK) -> str:
             self.unsupported(
                 "APPROX_TOP_K cannot be transpiled to DuckDB due to incompatible return types. "
@@ -2702,6 +3020,24 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.this),
                 _cast_to_varchar(expression.expression),
             )
+
+        def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
+            # Check if this is a GENERATOR function - if so, unwrap TABLE()
+            if isinstance(expression.this, exp.Generator):
+                # For GENERATOR, we want just range(n), not TABLE(range(n))
+                # Create a Table expression and preserve alias, sample, pivots
+                table = exp.Table(
+                    this=expression.this,
+                    alias=expression.args.get("alias"),
+                    sample=expression.args.get("sample"),
+                )
+                # Copy pivots if they exist
+                if "pivots" in expression.args:
+                    table.set("pivots", expression.args.get("pivots"))
+                return self.sql(table)
+
+            # For other table functions, use parent's default behavior
+            return super().tablefromrows_sql(expression)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")

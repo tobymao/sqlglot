@@ -6040,6 +6040,11 @@ class ExplodingGenerateSeries(GenerateSeries):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/generator
+class Generator(Func, UDTF):
+    arg_types = {"rowcount": False, "timelimit": False}
+
+
 class ArrayAgg(AggFunc):
     arg_types = {"this": True, "nulls_excluded": False}
 
@@ -7963,6 +7968,22 @@ class Round(Func):
 
 
 class RowNumber(Func):
+    arg_types = {"this": False}
+
+
+class Seq1(Func):
+    arg_types = {"this": False}
+
+
+class Seq2(Func):
+    arg_types = {"this": False}
+
+
+class Seq4(Func):
+    arg_types = {"this": False}
+
+
+class Seq8(Func):
     arg_types = {"this": False}
 
 

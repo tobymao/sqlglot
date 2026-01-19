@@ -316,6 +316,11 @@ class Hive(Dialect):
         CHANGE_COLUMN_ALTER_SYNTAX = False
         # Whether the dialect supports using ALTER COLUMN syntax with CHANGE COLUMN.
 
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "PERCENTILE": lambda self: self._parse_percentile(),
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "BASE64": exp.ToBase64.from_arg_list,
@@ -346,7 +351,6 @@ class Hive(Dialect):
             "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
             "MAP": parser.build_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-            "PERCENTILE": exp.Quantile.from_arg_list,
             "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
             "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
             "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
@@ -423,6 +427,19 @@ class Hive(Dialect):
                 row_format_after=row_format_after,
                 record_reader=record_reader,
             )
+
+        def _parse_percentile(self) -> exp.Quantile:
+            this: t.Optional[exp.Expression]
+
+            if self._match(TokenType.DISTINCT):
+                this = self.expression(exp.Distinct, expressions=[self._parse_lambda()])
+            else:
+                self._match(TokenType.ALL)
+                this = self._parse_lambda()
+
+            self._match(TokenType.COMMA)
+
+            return self.expression(exp.Quantile, this=this, quantile=self._parse_lambda())
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True

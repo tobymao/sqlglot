@@ -1107,6 +1107,19 @@ def _find_all_seq(node: exp.Expression) -> t.List[exp.Expression]:
     return list(node.find_all(*SEQ_TYPES))
 
 
+def _maybe_wrap_seq_in_select(expression: exp.Expression) -> exp.Expression:
+    """
+    Preprocessing function for SELECT expressions with SEQ functions.
+
+    Only processes SELECT expressions that were flagged by Snowflake's parser
+    as containing SEQ functions. This avoids traversing all SELECT expressions
+    during generation.
+    """
+    if isinstance(expression, exp.Select) and expression.meta.get("has_seq"):
+        return _wrap_seq_in_subquery(expression)
+    return expression
+
+
 def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
     """
     Wrap SELECT in subquery if SEQ functions appear in restricted contexts.
@@ -1214,9 +1227,12 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
         ]
     )
 
-    # Remove all original SELECT items - they will be added to outer query
-    # Inner query should only have the input-row sequences
-    expression.set("expressions", expression.selects[len(original_selects) :])
+    # Inner query needs both:
+    # 1. SELECT * to pass through all columns needed by outer query
+    # 2. The computed SEQ aliases
+    # We prepend SELECT * and keep the SEQ aliases
+    seq_aliases = expression.selects[len(original_selects) :]
+    expression.set("expressions", [exp.Star()] + seq_aliases)
 
     # Copy and remove clauses, replacing SEQ with column refs
     clauses_to_move: t.Dict[str, exp.Expression] = {}
@@ -1263,40 +1279,6 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
         outer_query.set(key, clause)
 
     return outer_query
-
-
-def _maybe_wrap_seq_in_select(expression: exp.Expression) -> exp.Expression:
-    """
-    Transform to wrap SEQ functions in subqueries when needed.
-
-    Used with transforms.preprocess for exp.Select. Does a quick check for
-    SEQ presence before doing detailed context analysis.
-    """
-    if not isinstance(expression, exp.Select):
-        return expression
-
-    # Quick check: does this SELECT have any SEQ at all?
-    if not any(expression.find_all(*SEQ_TYPES)):
-        return expression
-
-    # Only do detailed context checks if SEQ exists
-    # Check WHERE clause
-    where = expression.args.get("where")
-    if where and _find_all_seq(where):
-        return _wrap_seq_in_subquery(expression)
-
-    # Check inside aggregates
-    for agg in expression.find_all(exp.AggFunc):
-        if _find_all_seq(agg):
-            return _wrap_seq_in_subquery(expression)
-
-    # Check window ORDER BY
-    for window in expression.find_all(exp.Window):
-        order = window.args.get("order")
-        if order and _find_all_seq(order):
-            return _wrap_seq_in_subquery(expression)
-
-    return expression
 
 
 def _maybe_corr_null_to_false(
@@ -1907,9 +1889,9 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
+            exp.Select: transforms.preprocess([_maybe_wrap_seq_in_select]),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
-            exp.Select: transforms.preprocess([_maybe_wrap_seq_in_select]),
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,

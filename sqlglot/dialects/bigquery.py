@@ -1070,7 +1070,7 @@ class BigQuery(Dialect):
             func_index = self._index + 1
             this = super()._parse_column_ops(this)
 
-            if isinstance(this, exp.Dot):
+            if isinstance(this, exp.Dot) and isinstance(this.expression, exp.Func):
                 prefix = this.this.name.upper()
 
                 func: t.Optional[t.Type[exp.Func]] = None

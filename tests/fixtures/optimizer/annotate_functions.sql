@@ -551,6 +551,10 @@ STRING;
 CURRENT_USER();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+UNHEX(tbl.str_col);
+BINARY;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

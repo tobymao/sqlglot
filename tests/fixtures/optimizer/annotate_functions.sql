@@ -535,6 +535,7 @@ DOUBLE;
 MONTHS_BETWEEN(tbl.timestamp_col, tbl.timestamp_col, tbl.bool_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
 MONTH(tbl.date_col);
 INT;
 

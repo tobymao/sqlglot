@@ -2401,7 +2401,19 @@ class DuckDB(Dialect):
             return super().extract_sql(expression)
 
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
-            sec = expression.args["sec"]
+            # Check if this is the date/time expression form: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
+            date_expr = expression.args.get("this")
+            time_expr = expression.args.get("expression")
+
+            if date_expr is not None and time_expr is not None:
+                # In DuckDB, DATE + TIME produces TIMESTAMP
+                return self.sql(exp.Add(this=date_expr, expression=time_expr))
+
+            # Component-based form: TIMESTAMP_FROM_PARTS(year, month, day, hour, minute, second, ...)
+            sec = expression.args.get("sec")
+            if sec is None:
+                # This shouldn't happen with valid input, but handle gracefully
+                return rename_func("MAKE_TIMESTAMP")(self, expression)
 
             milli = expression.args.get("milli")
             if milli is not None:
@@ -2415,6 +2427,43 @@ class DuckDB(Dialect):
                 expression.set("sec", sec)
 
             return rename_func("MAKE_TIMESTAMP")(self, expression)
+
+        def timestampltzfromparts_sql(self, expression: exp.TimestampLtzFromParts) -> str:
+            # TIMESTAMP_LTZ uses session/local timezone
+            # Create timestamp and cast to TIMESTAMPTZ (DuckDB treats this as local time zone)
+            timestamp = self.func(
+                "MAKE_TIMESTAMP",
+                expression.args.get("year"),
+                expression.args.get("month"),
+                expression.args.get("day"),
+                expression.args.get("hour"),
+                expression.args.get("min"),
+                expression.args.get("sec"),
+            )
+            return self.sql(exp.cast(timestamp, exp.DataType.Type.TIMESTAMPTZ))
+
+        def timestamptzfromparts_sql(self, expression: exp.TimestampTzFromParts) -> str:
+            # TIMESTAMP_TZ has an explicit timezone parameter
+            zone = expression.args.get("zone")
+
+            # Create the base timestamp expression
+            timestamp_expr = exp.Anonymous(
+                this="MAKE_TIMESTAMP",
+                expressions=[
+                    expression.args.get("year"),
+                    expression.args.get("month"),
+                    expression.args.get("day"),
+                    expression.args.get("hour"),
+                    expression.args.get("min"),
+                    expression.args.get("sec"),
+                ],
+            )
+
+            if zone:
+                # Use AT TIME ZONE to apply the explicit timezone
+                return self.sql(exp.AtTimeZone(this=timestamp_expr, zone=zone))
+
+            return self.sql(timestamp_expr)
 
         def tablesample_sql(
             self,

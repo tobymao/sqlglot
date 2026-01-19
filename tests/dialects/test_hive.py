@@ -1006,7 +1006,7 @@ class TestHive(Validator):
         quantile_expr.this.assert_is(exp.Distinct)
         quantile_expr.args.get("quantile").assert_is(exp.Literal)
 
-        quantile_expr = self.validate_identity("PERCENTILE(ALL x, 0.5)")
+        quantile_expr = self.validate_identity("PERCENTILE(ALL x, 0.5)", "PERCENTILE(ALL x, 0.5)")
         quantile_expr.assert_is(exp.Quantile)
         quantile_expr.this.assert_is(exp.Column)
         quantile_expr.args.get("quantile").assert_is(exp.Literal)

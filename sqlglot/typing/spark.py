@@ -16,4 +16,5 @@ EXPRESSION_METADATA = {
     exp.CurrentTimezone: {"returns": exp.DataType.Type.VARCHAR},
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
+    exp.Monthname: {"returns": exp.DataType.Type.VARCHAR},
 }

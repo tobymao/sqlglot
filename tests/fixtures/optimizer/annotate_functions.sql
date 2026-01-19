@@ -527,6 +527,10 @@ STRING;
 MONTH(tbl.date_col);
 INT;
 
+# dialect: spark, databricks
+MONTHNAME(tbl.date_col);
+STRING;
+
 # dialect: hive, spark, databricks
 CURRENT_SCHEMA();
 STRING;

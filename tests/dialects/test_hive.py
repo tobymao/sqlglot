@@ -609,15 +609,6 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "PERCENTILE(x, 0.5)",
-            write={
-                "duckdb": "QUANTILE(x, 0.5)",
-                "presto": "APPROX_PERCENTILE(x, 0.5)",
-                "hive": "PERCENTILE(x, 0.5)",
-                "spark": "PERCENTILE(x, 0.5)",
-            },
-        )
-        self.validate_all(
             "PERCENTILE_APPROX(x, 0.5)",
             read={
                 "hive": "PERCENTILE_APPROX(x, 0.5)",
@@ -973,3 +964,49 @@ class TestHive(Validator):
                         "duckdb": f"SELECT * FROM t1 {join} JOIN t2 ON TRUE",
                     },
                 )
+
+    def test_percentile(self):
+        self.validate_all(
+            "PERCENTILE(x, 0.5)",
+            write={
+                "duckdb": "QUANTILE(x, 0.5)",
+                "presto": "APPROX_PERCENTILE(x, 0.5)",
+                "hive": "PERCENTILE(x, 0.5)",
+                "spark2": "PERCENTILE(x, 0.5)",
+                "spark": "PERCENTILE(x, 0.5)",
+                "databricks": "PERCENTILE(x, 0.5)",
+            },
+        )
+
+        self.validate_all(
+            "PERCENTILE(DISTINCT x, 0.5)",
+            read={
+                "hive": "PERCENTILE(DISTINCT x, 0.5)",
+                "spark": "PERCENTILE(DISTINCT x, 0.5)",
+                "databricks": "PERCENTILE(DISTINCT x, 0.5)",
+            },
+            write={
+                "spark": "PERCENTILE(DISTINCT x, 0.5)",
+                "databricks": "PERCENTILE(DISTINCT x, 0.5)",
+            },
+        )
+
+        self.validate_all(
+            "PERCENTILE(x, 0.5)",
+            read={
+                "hive": "PERCENTILE(ALL x, 0.5)",
+                "spark2": "PERCENTILE(ALL x, 0.5)",
+                "spark": "PERCENTILE(ALL x, 0.5)",
+                "databricks": "PERCENTILE(ALL x, 0.5)",
+            },
+        )
+
+        quantile_expr = self.validate_identity("PERCENTILE(DISTINCT x, 0.5)")
+        quantile_expr.assert_is(exp.Quantile)
+        quantile_expr.this.assert_is(exp.Distinct)
+        quantile_expr.args.get("quantile").assert_is(exp.Literal)
+
+        quantile_expr = self.validate_identity("PERCENTILE(ALL x, 0.5)")
+        quantile_expr.assert_is(exp.Quantile)
+        quantile_expr.this.assert_is(exp.Column)
+        quantile_expr.args.get("quantile").assert_is(exp.Literal)

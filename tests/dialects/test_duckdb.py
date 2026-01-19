@@ -1217,6 +1217,8 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT row")
 
+        self.validate_identity("SELECT TRY_STRPTIME('2013-04-28T20:57:01.123456789+07:00', '%Y-%m-%dT%H:%M:%S.%n%z')")
+
         self.validate_identity(
             "DELETE FROM t USING (VALUES (1)) AS t1(c), (VALUES (1), (2)) AS t2(c) WHERE t.c = t1.c AND t.c = t2.c"
         )

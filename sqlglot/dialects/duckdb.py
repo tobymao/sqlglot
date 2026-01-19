@@ -1060,6 +1060,15 @@ class DuckDB(Dialect):
         "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
         "%:z": "%z",  # In DuckDB %z	can represent ±HH:MM, ±HHMM, or ±HH.
         "%-z": "%z",
+        "%f_one": "%n",
+        "%f_two": "%n",
+        "%f_three": "%n",
+        "%f_four": "%n",
+        "%f_five": "%n",
+        "%f_six": "%n",
+        "%f_seven": "%n",
+        "%f_eight": "%n",
+        "%f_nine": "%n",
     }
 
     def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

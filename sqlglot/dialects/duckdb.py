@@ -1125,156 +1125,81 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
     Wrap SELECT in subquery if SEQ functions appear in restricted contexts.
 
     Window functions (including transpiled SEQ functions) can't be used in:
-    - WHERE clauses
+    - WHERE/HAVING clauses
     - Inside aggregate functions (MIN, MAX, AVG, etc.)
     - In window ORDER BY clauses
 
-    This transformation wraps the query in a subquery with SEQ functions
-    computed in the inner query and referenced in the outer query.
-
-    Based on SQLGlot's eliminate_qualify transformation pattern.
-
-    Args:
-        expression: SELECT expression to potentially wrap
-
-    Returns:
-        Original expression or wrapped subquery
+    This transformation wraps the query so SEQ is computed in the inner query
+    and referenced by alias in the outer query.
     """
-    # Find all SEQ functions that need to be moved to subquery
-    seq_functions: t.List[exp.Expression] = []
+    # Find SEQ in restricted contexts (WHERE, HAVING, aggregates, window ORDER BY)
+    restricted_seqs: t.List[exp.Expression] = []
 
-    # 1. Check WHERE clause
-    where = expression.args.get("where")
-    if where:
-        seq_functions.extend(_find_all_seq(where))
+    for key in ("where", "having"):
+        clause = expression.args.get(key)
+        if clause:
+            restricted_seqs.extend(_find_all_seq(clause))
 
-    # 2. Check inside aggregate functions (MIN, MAX, AVG, etc.)
     for agg in expression.find_all(exp.AggFunc):
-        seq_functions.extend(_find_all_seq(agg))
+        restricted_seqs.extend(_find_all_seq(agg))
 
-    # 3. Check window ORDER BY clauses
     for window in expression.find_all(exp.Window):
         order = window.args.get("order")
         if order:
-            seq_functions.extend(_find_all_seq(order))
+            restricted_seqs.extend(_find_all_seq(order))
 
-    if not seq_functions:
+    if not restricted_seqs:
         return expression
 
+    # Build SEQ -> alias mapping and add aliased SEQ to inner SELECT
     taken = set(expression.named_selects)
+    seq_to_alias: t.Dict[int, str] = {}
 
-    # Separate SEQ functions by context
-    seq_in_where_having: t.List[exp.Expression] = []
-    seq_in_select: t.List[exp.Expression] = []
-    seq_in_agg_window: t.List[exp.Expression] = []
-
-    # Find SEQ in WHERE/HAVING (evaluated over input rows)
-    where = expression.args.get("where")
-    if where:
-        seq_in_where_having.extend(_find_all_seq(where))
-
-    having = expression.args.get("having")
-    if having:
-        seq_in_where_having.extend(_find_all_seq(having))
-
-    # Find SEQ in aggregates and window ORDER BY (evaluated over input rows)
-    for agg in expression.find_all(exp.AggFunc):
-        seq_in_agg_window.extend(_find_all_seq(agg))
-
-    for window in expression.find_all(exp.Window):
-        order = window.args.get("order")
-        if order:
-            seq_in_agg_window.extend(_find_all_seq(order))
-
-    # Find SEQ in SELECT list (evaluated over output rows)
-    for select in expression.selects:
-        # Only include SEQ that are directly in SELECT, not inside aggregates/windows
-        # (those are already in seq_in_agg_window)
-        for seq_func in _find_all_seq(select):
-            # Check if this SEQ is inside an aggregate or window
-            parent_agg_or_window = False
-            for agg in select.find_all(exp.AggFunc):
-                if seq_func in _find_all_seq(agg):
-                    parent_agg_or_window = True
-                    break
-            if not parent_agg_or_window:
-                for window in select.find_all(exp.Window):
-                    order = window.args.get("order")
-                    if order and seq_func in _find_all_seq(order):
-                        parent_agg_or_window = True
-                        break
-            if not parent_agg_or_window:
-                seq_in_select.append(seq_func)
-
-    # Build mapping of SEQ SQL string to alias for replacement
-    # (since we'll be working with copied clauses, we can't use object IDs)
-    seq_sql_to_alias: t.Dict[str, t.List[t.Tuple[exp.Expression, str]]] = {}
-    for seq_func in seq_in_where_having + seq_in_agg_window:
-        seq_sql = seq_func.sql()
-        # Create unique alias for each SEQ occurrence
-        alias = find_new_name(taken, "_seq_input")
+    for seq in restricted_seqs:
+        alias = find_new_name(taken, "_seq")
         taken.add(alias)
-        expression.select(exp.alias_(seq_func.copy(), alias, copy=False), copy=False)
-        # Map this specific SEQ instance
-        if seq_sql not in seq_sql_to_alias:
-            seq_sql_to_alias[seq_sql] = []
-        seq_sql_to_alias[seq_sql].append((seq_func, alias))
+        seq_to_alias[id(seq)] = alias
+        expression.select(exp.alias_(seq.copy(), alias, copy=False), copy=False)
 
-    # Save original selects (these will be evaluated over output rows)
-    original_selects = list(
-        expression.selects[
-            : len(expression.selects) - len(seq_in_where_having) - len(seq_in_agg_window)
-        ]
-    )
+    original_selects = expression.selects[: -len(restricted_seqs)]
 
-    # Inner query needs both:
-    # 1. SELECT * to pass through all columns needed by outer query
-    # 2. The computed SEQ aliases
-    # We prepend SELECT * and keep the SEQ aliases
-    seq_aliases = expression.selects[len(original_selects) :]
-    expression.set("expressions", [exp.Star()] + seq_aliases)
+    # Inner query: SELECT *, _seq aliases FROM ...
+    expression.set("expressions", [exp.Star()] + expression.selects[len(original_selects) :])
 
-    # Copy and remove clauses, replacing SEQ with column refs
+    # Move clauses to outer query, replacing SEQ with column refs
     clauses_to_move: t.Dict[str, exp.Expression] = {}
     for key in ("where", "group", "having", "order", "limit", "offset"):
         clause = expression.args.get(key)
         if clause is not None:
             clause_copy = clause.copy()
-            # Replace each SEQ in the clause with its corresponding alias
-            for seq_func in _find_all_seq(clause_copy):
-                seq_sql = seq_func.sql()
-                if seq_sql in seq_sql_to_alias:
-                    # Find the corresponding original SEQ and get its alias
-                    for orig_seq, alias in seq_sql_to_alias[seq_sql]:
-                        # For now, just use the first matching alias
-                        # TODO: match by position/context for perfect fidelity
-                        seq_func.replace(exp.column(alias))
+            for seq in _find_all_seq(clause_copy):
+                # Find matching original SEQ by comparing SQL representation
+                for orig_seq, alias in (
+                    (s, seq_to_alias[id(s)]) for s in restricted_seqs if id(s) in seq_to_alias
+                ):
+                    if seq.sql() == orig_seq.sql():
+                        seq.replace(exp.column(alias))
                         break
             clauses_to_move[key] = clause_copy
             expression.args.pop(key)
 
-    # Build outer SELECT from original selects
-    # SEQ in aggregates/windows must be replaced with column references
-    # SEQ directly in SELECT (not in aggregates/windows) are kept and evaluated over output rows
+    # Outer query: original selects (with SEQ in aggs/windows replaced)
     outer_selects: t.List[exp.Expression] = []
     for select in original_selects:
         select_copy = select.copy()
-        # Replace SEQ functions that are inside aggregates or window ORDER BY
-        for seq_func in _find_all_seq(select_copy):
-            seq_sql = seq_func.sql()
-            if seq_sql in seq_sql_to_alias:
-                # This SEQ is in an aggregate/window and should be replaced
-                for orig_seq, alias in seq_sql_to_alias[seq_sql]:
-                    seq_func.replace(exp.column(alias))
+        for seq in _find_all_seq(select_copy):
+            for orig_seq, alias in (
+                (s, seq_to_alias[id(s)]) for s in restricted_seqs if id(s) in seq_to_alias
+            ):
+                if seq.sql() == orig_seq.sql():
+                    seq.replace(exp.column(alias))
                     break
         outer_selects.append(select_copy)
 
-    # Create outer query with same structure as original
     outer_query = exp.select(*outer_selects, copy=False).from_(
         expression.subquery(alias="_t", copy=False), copy=False
     )
 
-    # Add moved clauses (already have SEQ replaced with column refs)
     for key, clause in clauses_to_move.items():
         outer_query.set(key, clause)
 

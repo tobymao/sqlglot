@@ -1,4 +1,5 @@
-from setuptools import setup
+from pathlib import Path
+from setuptools import Extension, setup
 
 
 def sqlglotrs_version():
@@ -8,6 +9,19 @@ def sqlglotrs_version():
                 return line.split("=")[1].strip().strip('"')
     raise ValueError("Could not find version in Cargo.toml")
 
+
+c_path = Path("sqlglot/_c_ext")
+sources = list(c_path.rglob("*.c"))
+
+extra_compile_args = [
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Wno-unused-parameter",
+    "-std=c11",
+    "-march=native",
+]
 
 # Everything is defined in pyproject.toml except the extras because for the [rs] extra we need to dynamically
 # read the sqlglotrs version. [dev] has to be specified here as well because you cant specify some extras groups
@@ -33,4 +47,11 @@ setup(
         ],
         "rs": [f"sqlglotrs=={sqlglotrs_version()}"],
     },
+    ext_modules=[
+        Extension(
+            name="cql",
+            sources=sources,
+            extra_compile_args=extra_compile_args,
+        ),
+    ],
 )

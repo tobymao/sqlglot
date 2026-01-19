@@ -7,6 +7,26 @@ import typing as t
 import sqlglot
 from sqlglot.helper import to_bool
 
+import time
+import cql
+
+now = time.time()
+
+x = 0
+
+y = x
+print("py")
+for i in range(10000000):
+    y += i
+print(i)
+print(time.time() - now)
+
+now = time.time()
+
+print("c")
+print(cql.test(x))
+print(time.time() - now)
+
 parser = argparse.ArgumentParser(description="Transpile SQL")
 parser.add_argument(
     "sql",

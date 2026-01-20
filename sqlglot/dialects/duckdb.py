@@ -5,7 +5,7 @@ from itertools import groupby
 import re
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, parse_one, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
     DATETIME_DELTA,
@@ -92,6 +92,9 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 SEQ_TYPES = (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8)
+
+# Base expression for SEQ functions: (ROW_NUMBER() OVER (ORDER BY 1) - 1)
+SEQ_ROW_NUM = parse_one("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
@@ -424,6 +427,13 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     Returns:
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
+    # Warn if SEQ is used with JOINs or LATERAL - results may differ between Snowflake and DuckDB
+    parent = expression.parent
+    while parent:
+        if isinstance(parent, exp.Select) and parent.args.get("joins"):
+            self.unsupported("SEQ with JOINs produces different results than Snowflake")
+        parent = parent.parent
+
     # Check if signed parameter is 1
     signed_arg = expression.this
     is_signed = signed_arg and signed_arg.this == "1"
@@ -432,33 +442,21 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     bits = byte_width * 8
     max_val = exp.Literal.number(2**bits)
 
-    # (ROW_NUMBER() OVER (ORDER BY 1) - 1)
-    row_num = exp.Paren(
-        this=exp.Sub(
-            this=exp.Window(
-                this=exp.RowNumber(), order=exp.Order(expressions=[exp.Literal.number(1)])
-            ),
-            expression=exp.Literal.number(1),
-        )
-    )
+    # row_num % max_val (% operator copies operands and handles precedence)
+    mod_expr = SEQ_ROW_NUM % max_val
 
-    # (row_num % max_val)
-    mod_expr = exp.Paren(this=exp.Mod(this=row_num, expression=max_val))
-
+    result: exp.Expression
     if is_signed:
         # Signed: 0 to 2^(bits-1)-1, then -2^(bits-1) to -1
         # CASE WHEN (mod_expr) >= half_max THEN (mod_expr) - max_val ELSE (mod_expr) END
         half_max = exp.Literal.number(2 ** (bits - 1))
         result = exp.Paren(
-            this=exp.Case(
-                ifs=[
-                    exp.If(
-                        this=exp.GTE(this=mod_expr, expression=half_max),
-                        true=exp.Sub(this=mod_expr.copy(), expression=max_val),
-                    )
-                ],
-                default=mod_expr.copy(),
+            this=exp.case()
+            .when(
+                exp.GTE(this=mod_expr, expression=half_max),
+                exp.Sub(this=mod_expr.copy(), expression=max_val),
             )
+            .else_(mod_expr.copy())
         )
     else:
         # Unsigned: 0 to 2^bits - 1
@@ -481,41 +479,20 @@ def _generator_sql(self: DuckDB.Generator, expression: exp.Generator) -> str:
     Returns:
         SQL string using range(n) for row generation
     """
-    # GENERATOR uses named parameters with => syntax, parsed as Kwargs
-    # These can be in any order, so we need to check the Kwarg names
-    rowcount_value = None
-    timelimit_value = None
+    rowcount = expression.args.get("rowcount")
+    timelimit = expression.args.get("time_limit")
 
-    # Check both possible argument positions
-    for arg_key in ["rowcount", "timelimit"]:
-        arg = expression.args.get(arg_key)
-        if arg and isinstance(arg, exp.Kwarg):
-            kwarg_name = (
-                arg.this.name.upper() if isinstance(arg.this, exp.Var) else str(arg.this).upper()
-            )
-            if kwarg_name == "ROWCOUNT":
-                rowcount_value = arg.expression
-            elif kwarg_name == "TIMELIMIT":
-                timelimit_value = arg.expression
+    if timelimit:
+        self.unsupported("GENERATOR TIMELIMIT parameter is not supported in DuckDB")
 
-    # Generate SQL based on what we found
-    if timelimit_value:
-        if rowcount_value:
-            # If both ROWCOUNT and TIMELIMIT, use ROWCOUNT and ignore TIMELIMIT
-            self.unsupported(
-                "GENERATOR TIMELIMIT parameter is not supported in DuckDB, using ROWCOUNT only"
-            )
-        else:
-            # If only TIMELIMIT, we can't transpile this
-            self.unsupported("GENERATOR with only TIMELIMIT is not supported in DuckDB")
-            return self.func("range", exp.Literal.number(0), normalize=False)
-
-    if not rowcount_value:
-        # No ROWCOUNT specified
+    if not rowcount:
         self.unsupported("GENERATOR without ROWCOUNT is not supported in DuckDB")
-        rowcount_value = exp.Literal.number(0)  # Fallback
+        return self.func("range", exp.Literal.number(0))
 
-    return self.func("range", rowcount_value, normalize=False)
+    if isinstance(rowcount, exp.Kwarg):
+        rowcount = rowcount.expression
+
+    return self.func("range", rowcount)
 
 
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
@@ -1160,8 +1137,18 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
             if alias := sql_to_alias.get(seq.sql()):
                 seq.replace(exp.column(alias))
 
-    # Move clauses to outer query with SEQ replaced
-    outer_query = exp.select(*[s.copy() for s in expression.selects], copy=False).from_(
+    def strip_table_qualifiers(node: exp.Expression) -> None:
+        """Strip table qualifiers from columns since they're now in a subquery."""
+        for col in node.find_all(exp.Column):
+            if col.table:
+                col.set("table", None)
+
+    # Move clauses to outer query with SEQ replaced and table qualifiers stripped
+    outer_selects = [s.copy() for s in expression.selects]
+    for s in outer_selects:
+        strip_table_qualifiers(s)
+
+    outer_query = exp.select(*outer_selects, copy=False).from_(
         expression.subquery(alias="_t", copy=False), copy=False
     )
 
@@ -1169,6 +1156,7 @@ def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
         if clause := expression.args.pop(key, None):
             clause_copy = clause.copy()
             replace_seqs(clause_copy)
+            strip_table_qualifiers(clause_copy)
             outer_query.set(key, clause_copy)
 
     # Replace SEQ only inside aggregates/window ORDER BY in outer SELECT
@@ -2908,15 +2896,8 @@ class DuckDB(Dialect):
             # Check if this is a GENERATOR function - if so, unwrap TABLE()
             if isinstance(expression.this, exp.Generator):
                 # For GENERATOR, we want just range(n), not TABLE(range(n))
-                # Create a Table expression and preserve alias, sample, pivots
-                table = exp.Table(
-                    this=expression.this,
-                    alias=expression.args.get("alias"),
-                    sample=expression.args.get("sample"),
-                )
-                # Copy pivots if they exist
-                if "pivots" in expression.args:
-                    table.set("pivots", expression.args.get("pivots"))
+                # Create a Table expression and preserve all args (e.g. alias, joins, pivots, sample)
+                table = exp.Table(**{k: v for k, v in expression.args.items() if v is not None})
                 return self.sql(table)
 
             # For other table functions, use parent's default behavior

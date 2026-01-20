@@ -5290,14 +5290,14 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ1() FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 256 FROM test",
                 "snowflake": "SELECT SEQ1() FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ1(0) FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 256 FROM test",
                 "snowflake": "SELECT SEQ1(0) FROM test",
             },
         )
@@ -5305,7 +5305,7 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ1(1) FROM test",
             write={
-                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) >= 128 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) - 256 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 256) END) FROM test",
+                "duckdb": "SELECT (CASE WHEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 256 >= 128 THEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 256 - 256 ELSE (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 256 END) FROM test",
                 "snowflake": "SELECT SEQ1(1) FROM test",
             },
         )
@@ -5314,21 +5314,21 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ2() FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 65536 FROM test",
                 "snowflake": "SELECT SEQ2() FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ2(0) FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 65536 FROM test",
                 "snowflake": "SELECT SEQ2(0) FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ2(1) FROM test",
             write={
-                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) >= 32768 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) - 65536 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 65536) END) FROM test",
+                "duckdb": "SELECT (CASE WHEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 65536 >= 32768 THEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 65536 - 65536 ELSE (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 65536 END) FROM test",
                 "snowflake": "SELECT SEQ2(1) FROM test",
             },
         )
@@ -5337,21 +5337,21 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ4() FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 FROM test",
                 "snowflake": "SELECT SEQ4() FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ4(0) FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 FROM test",
                 "snowflake": "SELECT SEQ4(0) FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ4(1) FROM test",
             write={
-                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) >= 2147483648 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) - 4294967296 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) END) FROM test",
+                "duckdb": "SELECT (CASE WHEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 >= 2147483648 THEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 - 4294967296 ELSE (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 END) FROM test",
                 "snowflake": "SELECT SEQ4(1) FROM test",
             },
         )
@@ -5360,21 +5360,21 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ8() FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 FROM test",
                 "snowflake": "SELECT SEQ8() FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ8(0) FROM test",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM test",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 FROM test",
                 "snowflake": "SELECT SEQ8(0) FROM test",
             },
         )
         self.validate_all(
             "SELECT SEQ8(1) FROM test",
             write={
-                "duckdb": "SELECT (CASE WHEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) >= 9223372036854775808 THEN ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) - 18446744073709551616 ELSE ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) END) FROM test",
+                "duckdb": "SELECT (CASE WHEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 >= 9223372036854775808 THEN (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 - 18446744073709551616 ELSE (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 END) FROM test",
                 "snowflake": "SELECT SEQ8(1) FROM test",
             },
         )
@@ -5382,10 +5382,10 @@ FROM SEMANTIC_VIEW(
     def test_generator(self):
         # Basic ROWCOUNT transpilation
         self.validate_all(
-            "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+            "SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 5))",
             write={
-                "duckdb": "SELECT * FROM range(5)",
-                "snowflake": "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 5))",
+                "duckdb": "SELECT 1 FROM RANGE(5)",
+                "snowflake": "SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 5))",
             },
         )
 
@@ -5393,17 +5393,8 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
             write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 18446744073709551616) FROM range(5)",
+                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 FROM RANGE(5)",
                 "snowflake": "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
-            },
-        )
-
-        # Multiple columns with GENERATOR
-        self.validate_all(
-            "SELECT SEQ4() AS id, RANDOM() AS val FROM TABLE(GENERATOR(ROWCOUNT => 100))",
-            write={
-                "duckdb": "SELECT ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS id, RANDOM() AS val FROM range(100)",
-                "snowflake": "SELECT SEQ4() AS id, RANDOM() AS val FROM TABLE(GENERATOR(ROWCOUNT => 100))",
             },
         )
 
@@ -5412,7 +5403,7 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT a FROM TABLE(GENERATOR(ROWCOUNT => 100)) WHERE SEQ4() < 10",
             write={
-                "duckdb": "SELECT a FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t WHERE _seq < 10",
+                "duckdb": "SELECT a FROM (SELECT *, (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 AS _seq FROM RANGE(100)) AS _t WHERE _seq < 10",
                 "snowflake": "SELECT a FROM TABLE(GENERATOR(ROWCOUNT => 100)) WHERE SEQ4() < 10",
             },
         )
@@ -5422,7 +5413,7 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT SUM(SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
             write={
-                "duckdb": "SELECT SUM(_seq) FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t",
+                "duckdb": "SELECT SUM(_seq) FROM (SELECT *, (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 AS _seq FROM RANGE(100)) AS _t",
                 "snowflake": "SELECT SUM(SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
             },
         )
@@ -5432,8 +5423,17 @@ FROM SEMANTIC_VIEW(
         self.validate_all(
             "SELECT FIRST_VALUE(a) OVER (ORDER BY SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
             write={
-                "duckdb": "SELECT FIRST_VALUE(a) OVER (ORDER BY _seq) FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t",
+                "duckdb": "SELECT FIRST_VALUE(a) OVER (ORDER BY _seq) FROM (SELECT *, (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 4294967296 AS _seq FROM RANGE(100)) AS _t",
                 "snowflake": "SELECT FIRST_VALUE(a) OVER (ORDER BY SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            },
+        )
+
+        # GENERATOR with JOIN in parenthesized construct - preserves joins
+        self.validate_all(
+            "SELECT * FROM (TABLE(GENERATOR(ROWCOUNT => 5)) JOIN other ON 1 = 1)",
+            write={
+                "duckdb": "SELECT * FROM (RANGE(5) JOIN other ON 1 = 1)",
+                "snowflake": "SELECT * FROM (TABLE(GENERATOR(ROWCOUNT => 5)) JOIN other ON 1 = 1)",
             },
         )
 

@@ -9,6 +9,7 @@ EXPRESSION_METADATA = {
         exp_type: {"returns": exp.DataType.Type.DOUBLE}
         for exp_type in {
             exp.Acosh,
+            exp.Asinh,
             exp.Atanh,
             exp.Sec,
         }

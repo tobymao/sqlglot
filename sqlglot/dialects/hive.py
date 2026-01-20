@@ -318,8 +318,8 @@ class Hive(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "PERCENTILE": lambda self: self._parse_func_with_distinct(exp.Quantile),
-            "PERCENTILE_APPROX": lambda self: self._parse_func_with_distinct(exp.ApproxQuantile),
+            "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
+            "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
         }
 
         FUNCTIONS = {
@@ -428,7 +428,7 @@ class Hive(Dialect):
                 record_reader=record_reader,
             )
 
-        def _parse_func_with_distinct(self, func_class: t.Type[exp.Func]) -> exp.Func:
+        def _parse_quantile_function(self, func: t.Type[exp.Func]) -> exp.Func:
             first_arg: t.Optional[exp.Expression]
 
             if self._match(TokenType.DISTINCT):
@@ -439,9 +439,9 @@ class Hive(Dialect):
 
             args = [first_arg]
             if self._match(TokenType.COMMA):
-                args.extend(self._parse_csv(lambda: self._parse_lambda()))
+                args.extend(self._parse_function_args())
 
-            return func_class.from_arg_list(args)
+            return func.from_arg_list(args)
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True

@@ -20,7 +20,7 @@ profiling = ["serde", "serde_json"]
 
 [dependencies]
 # https://www.maturin.rs/distribution.html#cross-compile-to-windows - explains `features`
-pyo3 = { version ="0.25", features = ["extension-module", "generate-import-lib"] }
+pyo3 = { version ="0.25", features = ["generate-import-lib"] }
 rustc-hash = { version = "2.1" }
 
 # Optional dependencies used for profiling
@@ -28,7 +28,7 @@ serde = { version = "1", features = ["derive"] , optional = true }
 serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
-criterion = "0.7"
+criterion = "0.5"
 serde = { version = "1", features = ["derive"]  }
 serde_json = { version = "1" }
 sqlglotrs = { path = "." , features = ["profiling"] }

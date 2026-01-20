@@ -193,3 +193,9 @@ class TestStarrocks(Validator):
                 "starrocks": "DELETE FROM t WHERE a >= b AND a <= c",
             },
         )
+        self.validate_all(
+            "DELETE FROM t WHERE a BETWEEN 1 AND 10 AND b BETWEEN 20 AND 30 OR c BETWEEN 'x' AND 'z'",
+            write={
+                "starrocks": "DELETE FROM t WHERE a >= 1 AND a <= 10 AND b >= 20 AND b <= 30 OR c >= 'x' AND c <= 'z'",
+            },
+        )

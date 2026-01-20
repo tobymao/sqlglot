@@ -2,6 +2,7 @@ use crate::settings::TokenType;
 use crate::trie::{Trie, TrieResult};
 use crate::{Token, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings};
 use pyo3::prelude::*;
+use rustc_hash::FxHashSet as HashSet;
 use std::cmp::{max, min};
 
 #[derive(Debug)]
@@ -439,7 +440,7 @@ impl<'a> TokenizerState<'a> {
                 let tag = if self.current_char.to_string() == *end {
                     String::new()
                 } else {
-                    self.extract_string(end, false, true, !self.settings.heredoc_tag_is_identifier)?
+                    self.extract_string(end, false, None, true, !self.settings.heredoc_tag_is_identifier)?
                 };
 
                 if !tag.is_empty()
@@ -464,8 +465,13 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
+        let string_escapes = if token_type == self.token_types.byte_string {
+            Some(&self.settings.byte_string_escapes)
+        } else {
+            None
+        };
         let text =
-            self.extract_string(&end, false, token_type == self.token_types.raw_string, true)?;
+            self.extract_string(&end, false, string_escapes, token_type == self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
             if !text.is_empty() && u128::from_str_radix(&text, b).is_err() {
@@ -621,7 +627,7 @@ impl<'a> TokenizerState<'a> {
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
         self.advance(1)?;
-        let text = self.extract_string(identifier_end, true, false, true)?;
+        let text = self.extract_string(identifier_end, true, None, false, true)?;
         self.add(self.token_types.identifier, Some(text))
     }
 
@@ -629,6 +635,7 @@ impl<'a> TokenizerState<'a> {
         &mut self,
         delimiter: &str,
         use_identifier_escapes: bool,
+        string_escapes: Option<&HashSet<char>>,
         raw_string: bool,
         raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
@@ -639,16 +646,17 @@ impl<'a> TokenizerState<'a> {
             tmp.extend(delimiter.chars());
             combined_identifier_escapes = Some(tmp);
         }
+        let default_escapes = string_escapes.unwrap_or(&self.settings.string_escapes);
         let escapes = match combined_identifier_escapes {
             Some(ref v) => v,
-            None => &self.settings.string_escapes,
+            None => default_escapes,
         };
 
         loop {
             if !raw_string
                 && !self.dialect_settings.unescaped_sequences.is_empty()
                 && !self.peek_char.is_whitespace()
-                && self.settings.string_escapes.contains(&self.current_char)
+                && escapes.contains(&self.current_char)
             {
                 let sequence_key = format!("{}{}", self.current_char, self.peek_char);
                 if let Some(unescaped_sequence) =

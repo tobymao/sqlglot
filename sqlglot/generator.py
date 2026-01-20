@@ -1420,6 +1420,7 @@ class Generator(metaclass=_Generator):
                 escape_backslash=False,
                 delimiter=self.dialect.BYTE_END,
                 escaped_delimiter=self._escaped_byte_quote_end,
+                is_byte_string=True,
             )
             is_bytes = expression.args.get("is_bytes", False)
             delimited_byte_string = (
@@ -2618,11 +2619,17 @@ class Generator(metaclass=_Generator):
         escape_backslash: bool = True,
         delimiter: t.Optional[str] = None,
         escaped_delimiter: t.Optional[str] = None,
+        is_byte_string: bool = False,
     ) -> str:
-        if self.dialect.ESCAPED_SEQUENCES:
-            to_escaped = self.dialect.ESCAPED_SEQUENCES
+        if is_byte_string:
+            supports_escape_sequences = self.dialect.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES
+        else:
+            supports_escape_sequences = self.dialect.STRINGS_SUPPORT_ESCAPED_SEQUENCES
+
+        if supports_escape_sequences:
             text = "".join(
-                to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
+                self.dialect.ESCAPED_SEQUENCES.get(ch, ch) if escape_backslash or ch != "\\" else ch
+                for ch in text
             )
 
         delimiter = delimiter or self.dialect.QUOTE_END

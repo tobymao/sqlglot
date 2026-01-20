@@ -20,6 +20,12 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT str[0:1]")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT e'\\n'")
+        self.validate_identity("SELECT e'\\t'")
+        self.validate_identity(
+            "SELECT e'update table_name set a = \\'foo\\' where 1 = 0' AS x FROM tab",
+            "SELECT e'update table_name set a = ''foo'' where 1 = 0' AS x FROM tab",
+        )
         with self.assertRaises(ParseError):
             parse_one("1 //", read="duckdb")
 
@@ -1125,11 +1131,8 @@ class TestDuckDB(Validator):
 
         self.validate_all(
             "SELECT e'Hello\nworld'",
-            read={
-                "duckdb": "SELECT E'Hello\nworld'",
-            },
             write={
-                "duckdb": "SELECT e'Hello\nworld'",
+                "duckdb": "SELECT e'Hello\\nworld'",
                 "bigquery": "SELECT CAST(b'Hello\\nworld' AS STRING)",
             },
         )

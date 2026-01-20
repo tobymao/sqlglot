@@ -1074,6 +1074,7 @@ class DuckDB(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+        BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]
 
         HEREDOC_TAG_IS_IDENTIFIER = True

@@ -347,6 +347,7 @@ class Postgres(Dialect):
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+        BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]
 
         HEREDOC_TAG_IS_IDENTIFIER = True

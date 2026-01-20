@@ -167,6 +167,16 @@ class TestPostgres(Validator):
             "ORDER BY 2, 3"
         )
         self.validate_identity(
+            "SELECT e'foo \\' bar'",
+            "SELECT e'foo '' bar'",
+        )
+        self.validate_identity("SELECT e'\\n'")
+        self.validate_identity("SELECT e'\\t'")
+        self.validate_identity(
+            "SELECT e'update table_name set a = \\'foo\\' where 1 = 0' AS x FROM tab",
+            "SELECT e'update table_name set a = ''foo'' where 1 = 0' AS x FROM tab",
+        )
+        self.validate_identity(
             "select count() OVER(partition by a order by a range offset preceding exclude current row)",
             "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
         )

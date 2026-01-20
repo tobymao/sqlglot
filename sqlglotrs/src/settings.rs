@@ -9,6 +9,7 @@ pub type TokenType = u16;
 #[cfg_attr(feature = "profiling", derive(serde::Serialize, serde::Deserialize))]
 pub struct TokenTypeSettings {
     pub bit_string: TokenType,
+    pub byte_string: TokenType,
     pub break_: TokenType,
     pub dcolon: TokenType,
     pub heredoc_string: TokenType,
@@ -29,6 +30,7 @@ impl TokenTypeSettings {
     #[new]
     pub fn new(
         bit_string: TokenType,
+        byte_string: TokenType,
         break_: TokenType,
         dcolon: TokenType,
         heredoc_string: TokenType,
@@ -45,6 +47,7 @@ impl TokenTypeSettings {
     ) -> Self {
         let token_type_settings = TokenTypeSettings {
             bit_string,
+            byte_string,
             break_,
             dcolon,
             heredoc_string,
@@ -91,6 +94,7 @@ pub struct TokenizerSettings {
     pub identifiers: HashMap<char, char>,
     pub identifier_escapes: HashSet<char>,
     pub string_escapes: HashSet<char>,
+    pub byte_string_escapes: HashSet<char>,
     pub quotes: HashMap<String, String>,
     pub format_strings: HashMap<String, (String, TokenType)>,
     pub has_bit_strings: bool,
@@ -118,6 +122,7 @@ impl TokenizerSettings {
         identifiers: HashMap<String, String>,
         identifier_escapes: HashSet<String>,
         string_escapes: HashSet<String>,
+        byte_string_escapes: HashSet<String>,
         quotes: HashMap<String, String>,
         format_strings: HashMap<String, (String, TokenType)>,
         has_bit_strings: bool,
@@ -160,6 +165,7 @@ impl TokenizerSettings {
             identifier_escapes.iter().map(&to_char).collect();
 
         let string_escapes_native: HashSet<char> = string_escapes.iter().map(&to_char).collect();
+        let byte_string_escapes_native: HashSet<char> = byte_string_escapes.iter().map(&to_char).collect();
         let escape_follow_chars_native: HashSet<char> = escape_follow_chars.iter().map(&to_char).collect();
 
         let var_single_tokens_native: HashSet<char> =
@@ -173,6 +179,7 @@ impl TokenizerSettings {
             identifiers: identifiers_native,
             identifier_escapes: identifier_escapes_native,
             string_escapes: string_escapes_native,
+            byte_string_escapes: byte_string_escapes_native,
             quotes,
             format_strings,
             has_bit_strings,

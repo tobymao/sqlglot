@@ -281,7 +281,12 @@ class _Dialect(type):
         klass.BYTE_START, klass.BYTE_END = get_start_end(TokenType.BYTE_STRING)
         klass.UNICODE_START, klass.UNICODE_END = get_start_end(TokenType.UNICODE_STRING)
 
-        if "\\" in klass.tokenizer_class.STRING_ESCAPES:
+        klass.STRINGS_SUPPORT_ESCAPED_SEQUENCES = "\\" in klass.tokenizer_class.STRING_ESCAPES
+        klass.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES = (
+            "\\" in klass.tokenizer_class.BYTE_STRING_ESCAPES
+        )
+
+        if klass.STRINGS_SUPPORT_ESCAPED_SEQUENCES or klass.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES:
             klass.UNESCAPED_SEQUENCES = {
                 **UNESCAPED_SEQUENCES,
                 **klass.UNESCAPED_SEQUENCES,

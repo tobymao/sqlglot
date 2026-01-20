@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
@@ -15,6 +15,31 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+
+
+def _eliminate_between_in_delete(expression: exp.Expression) -> exp.Expression:
+    """
+    StarRocks doesn't support BETWEEN in DELETE statements, so we convert
+    BETWEEN expressions to explicit comparisons.
+
+    https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/DELETE/#parameters
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("DELETE FROM t WHERE x BETWEEN 1 AND 10")
+        >>> print(_eliminate_between_in_delete(expr).sql(dialect="starrocks"))
+        DELETE FROM t WHERE x >= 1 AND x <= 10
+    """
+    if where := expression.args.get("where"):
+        for between in where.find_all(exp.Between):
+            between.replace(
+                exp.and_(
+                    exp.GTE(this=between.this.copy(), expression=between.args["low"]),
+                    exp.LTE(this=between.this.copy(), expression=between.args["high"]),
+                    copy=False,
+                )
+            )
+    return expression
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-functions/spatial-functions/st_distance_sphere/
@@ -180,6 +205,7 @@ class StarRocks(MySQL):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),
+            exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
             exp.Flatten: rename_func("ARRAY_FLATTEN"),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,

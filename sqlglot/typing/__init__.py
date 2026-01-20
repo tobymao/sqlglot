@@ -115,6 +115,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.BitLength,
             exp.Ceil,
             exp.DatetimeDiff,
+            exp.Getbit,
             exp.TimestampDiff,
             exp.TimeDiff,
             exp.Unicode,

@@ -415,7 +415,6 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
             exp.ByteLength,
-            exp.Getbit,
             exp.Grouping,
             exp.Hour,
             exp.JarowinklerSimilarity,

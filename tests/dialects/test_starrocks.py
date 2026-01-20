@@ -45,6 +45,10 @@ class TestStarrocks(Validator):
             "DISTRIBUTED BY HASH (col1) ROLLUP (r1(event_day, siteid), r2(event_day, citycode), r3(event_day))",
             "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2))",
             "DISTRIBUTED BY HASH (col1) ROLLUP (`r1`(`col2`))",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2) FROM base_index)",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2) PROPERTIES ('storage_type'='column'))",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2) FROM base_index PROPERTIES ('k'='v'))",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2) PROPERTIES ('k1'='v1', 'k2'='v2'))",
         ]
 
         for properties in ddl_sqls:

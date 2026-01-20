@@ -63,11 +63,19 @@ class StarRocks(MySQL):
         }
 
         def _parse_rollup_property(self) -> exp.RollupProperty:
-            # ROLLUP (rollup_name1 (col1, col2), rollup_name2 (col3, col4), ...)
+            # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
             def parse_rollup_index() -> exp.RollupIndex:
-                name = self._parse_id_var()
-                columns = self._parse_wrapped_id_vars()
-                return self.expression(exp.RollupIndex, this=name, expressions=columns)
+                return self.expression(
+                    exp.RollupIndex,
+                    this=self._parse_id_var(),
+                    expressions=self._parse_wrapped_id_vars(),
+                    from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
+                    properties=self.expression(
+                        exp.Properties, expressions=self._parse_wrapped_properties()
+                    )
+                    if self._match_text_seq("PROPERTIES")
+                    else None,
+                )
 
             return self.expression(
                 exp.RollupProperty, expressions=self._parse_wrapped_csv(parse_rollup_index)
@@ -365,7 +373,19 @@ class StarRocks(MySQL):
             return super().create_sql(expression)
 
         def rollupindex_sql(self, expression: exp.RollupIndex) -> str:
-            return f"{self.sql(expression, 'this')}({self.expressions(expression, flat=True)})"
+            this = self.sql(expression, "this")
+
+            columns = self.expressions(expression, flat=True)
+
+            from_sql = self.sql(expression, "from_index")
+            from_sql = f" FROM {from_sql}" if from_sql else ""
+
+            properties = expression.args.get("properties")
+            properties_sql = (
+                f" {self.properties(properties, prefix='PROPERTIES')}" if properties else ""
+            )
+
+            return f"{this}({columns}){from_sql}{properties_sql}"
 
         def rollupproperty_sql(self, expression: exp.RollupProperty) -> str:
             return f"ROLLUP ({self.expressions(expression, flat=True)})"

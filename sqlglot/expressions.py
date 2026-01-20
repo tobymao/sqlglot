@@ -3130,7 +3130,7 @@ class RollupProperty(Property):
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/#rollup-index
 class RollupIndex(Expression):
-    arg_types = {"this": True, "expressions": True}
+    arg_types = {"this": True, "expressions": True, "from_index": False, "properties": False}
 
 
 # https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning

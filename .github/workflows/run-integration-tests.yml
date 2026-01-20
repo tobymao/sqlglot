@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Print debugging info
         run: |
-          cat <<EOF
+          cat <<'EOF'
             Github event name: ${{ github.event_name }}
 
             Github event ${{ toJSON(github.event) }}

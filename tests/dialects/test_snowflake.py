@@ -5407,6 +5407,36 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+        # SEQ in WHERE clause - requires subquery wrapping because window functions
+        # cannot appear in WHERE
+        self.validate_all(
+            "SELECT a FROM TABLE(GENERATOR(ROWCOUNT => 100)) WHERE SEQ4() < 10",
+            write={
+                "duckdb": "SELECT a FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t WHERE _seq < 10",
+                "snowflake": "SELECT a FROM TABLE(GENERATOR(ROWCOUNT => 100)) WHERE SEQ4() < 10",
+            },
+        )
+
+        # SEQ inside aggregate function - requires subquery wrapping because window
+        # functions cannot be nested inside aggregate functions
+        self.validate_all(
+            "SELECT SUM(SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            write={
+                "duckdb": "SELECT SUM(_seq) FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t",
+                "snowflake": "SELECT SUM(SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            },
+        )
+
+        # SEQ in window ORDER BY - requires subquery wrapping because window functions
+        # cannot appear in ORDER BY of another window function
+        self.validate_all(
+            "SELECT FIRST_VALUE(a) OVER (ORDER BY SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            write={
+                "duckdb": "SELECT FIRST_VALUE(a) OVER (ORDER BY _seq) FROM (SELECT *, ((ROW_NUMBER() OVER (ORDER BY 1) - 1) % 4294967296) AS _seq FROM range(100)) AS _t",
+                "snowflake": "SELECT FIRST_VALUE(a) OVER (ORDER BY SEQ4()) FROM TABLE(GENERATOR(ROWCOUNT => 100))",
+            },
+        )
+
     def test_ceil(self):
         self.validate_all(
             "SELECT CEIL(1.753, 2)",

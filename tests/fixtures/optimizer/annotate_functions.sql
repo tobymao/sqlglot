@@ -143,6 +143,9 @@ INT;
 LENGTH(tbl.bin_col);
 INT;
 
+DAYNAME(tbl.date_col);
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

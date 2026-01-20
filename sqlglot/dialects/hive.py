@@ -318,7 +318,8 @@ class Hive(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "PERCENTILE": lambda self: self._parse_percentile(),
+            "PERCENTILE": lambda self: self._parse_func_with_distinct(exp.Quantile),
+            "PERCENTILE_APPROX": lambda self: self._parse_func_with_distinct(exp.ApproxQuantile),
         }
 
         FUNCTIONS = {
@@ -351,7 +352,6 @@ class Hive(Dialect):
             "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
             "MAP": parser.build_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-            "PERCENTILE_APPROX": exp.ApproxQuantile.from_arg_list,
             "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
             "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
@@ -428,18 +428,20 @@ class Hive(Dialect):
                 record_reader=record_reader,
             )
 
-        def _parse_percentile(self) -> exp.Quantile:
-            this: t.Optional[exp.Expression]
+        def _parse_func_with_distinct(self, func_class: t.Type[exp.Func]) -> exp.Func:
+            first_arg: t.Optional[exp.Expression]
 
             if self._match(TokenType.DISTINCT):
-                this = self.expression(exp.Distinct, expressions=[self._parse_lambda()])
+                first_arg = self.expression(exp.Distinct, expressions=[self._parse_lambda()])
             else:
                 self._match(TokenType.ALL)
-                this = self._parse_lambda()
+                first_arg = self._parse_lambda()
 
-            self._match(TokenType.COMMA)
+            args = [first_arg]
+            if self._match(TokenType.COMMA):
+                args.extend(self._parse_csv(lambda: self._parse_lambda()))
 
-            return self.expression(exp.Quantile, this=this, quantile=self._parse_lambda())
+            return func_class.from_arg_list(args)
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True

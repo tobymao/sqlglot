@@ -624,6 +624,15 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
+            "PERCENTILE_APPROX(x, 0.5)",
+            read={
+                "hive": "PERCENTILE_APPROX(ALL x, 0.5)",
+                "spark2": "PERCENTILE_APPROX(ALL x, 0.5)",
+                "spark": "PERCENTILE_APPROX(ALL x, 0.5)",
+                "databricks": "PERCENTILE_APPROX(ALL x, 0.5)",
+            },
+        )
+        self.validate_all(
             "APPROX_COUNT_DISTINCT(a)",
             write={
                 "bigquery": "APPROX_COUNT_DISTINCT(a)",

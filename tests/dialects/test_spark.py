@@ -1175,3 +1175,30 @@ TBLPROPERTIES (
                     annotated.sql("presto"),
                     """WITH "test_table" AS (SELECT 12345 AS "id_column", ARRAY[CAST(ROW('John', 30) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mary', 20) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mike', 80) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Dan', 50) AS ROW("name" VARCHAR, "age" INTEGER))] AS "struct_column") SELECT "test_table"."id_column" AS "id_column", "explode_view"."name" AS "name", "explode_view"."age" AS "age" FROM "test_table" AS "test_table" CROSS JOIN UNNEST("test_table"."struct_column") AS "explode_view"("name", "age")""",
                 )
+
+    def test_approx_percentile(self):
+        self.validate_all(
+            "PERCENTILE_APPROX(DISTINCT col, 0.3)",
+            read={
+                "spark": "APPROX_PERCENTILE(DISTINCT col, 0.3)",
+                "databricks": "APPROX_PERCENTILE(DISTINCT col, 0.3)",
+            },
+        )
+        self.validate_all(
+            "PERCENTILE_APPROX(DISTINCT col, 0.3, 200)",
+            read={
+                "spark": "APPROX_PERCENTILE(DISTINCT col, 0.3, 200)",
+                "databricks": "APPROX_PERCENTILE(DISTINCT col, 0.3, 200)",
+            },
+        )
+
+        approx_quantile_expr = self.validate_identity("PERCENTILE_APPROX(DISTINCT col, 0.3)")
+        approx_quantile_expr.assert_is(exp.ApproxQuantile)
+        approx_quantile_expr.this.assert_is(exp.Distinct)
+        approx_quantile_expr.args.get("quantile").assert_is(exp.Literal)
+
+        approx_quantile_expr = self.validate_identity("PERCENTILE_APPROX(DISTINCT col, 0.3, 200)")
+        approx_quantile_expr.assert_is(exp.ApproxQuantile)
+        approx_quantile_expr.this.assert_is(exp.Distinct)
+        approx_quantile_expr.args.get("quantile").assert_is(exp.Literal)
+        approx_quantile_expr.args.get("accuracy").assert_is(exp.Literal)

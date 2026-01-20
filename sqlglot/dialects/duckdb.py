@@ -1060,6 +1060,7 @@ class DuckDB(Dialect):
         "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)
         "%:z": "%z",  # In DuckDB %z	can represent ±HH:MM, ±HHMM, or ±HH.
         "%-z": "%z",
+        "%f_zero": "%n",
         "%f_one": "%n",
         "%f_two": "%n",
         "%f_three": "%n",

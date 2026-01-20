@@ -385,6 +385,7 @@ EXPRESSION_METADATA = {
             exp.Asin,
             exp.Atan,
             exp.Atan2,
+            exp.Cbrt,
             exp.Cos,
             exp.Cot,
             exp.Degrees,

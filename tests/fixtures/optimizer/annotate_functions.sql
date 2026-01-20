@@ -2149,7 +2149,15 @@ BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=');
 VARCHAR;
 
 # dialect: snowflake
-BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', '+/=');
+VARCHAR;
+
+# dialect: snowflake
+BASE64_ENCODE(tbl.bin_col);
+VARCHAR;
+
+# dialect: snowflake
+BASE64_ENCODE('Hello World');
 VARCHAR;
 
 # dialect: snowflake
@@ -2157,7 +2165,7 @@ BASE64_ENCODE('Hello World', 76);
 VARCHAR;
 
 # dialect: snowflake
-BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/');
+BASE64_ENCODE('Hello World', 76, '+/=');
 VARCHAR;
 
 # dialect: snowflake

@@ -2081,6 +2081,14 @@ CBRT(tbl.double_col);
 DOUBLE;
 
 # dialect: snowflake
+CBRT(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+CBRT(tbl.int_col);
+DOUBLE;
+
+# dialect: snowflake
 COVAR_POP(tbl.double_col, tbl.double_col);
 DOUBLE;
 

@@ -139,7 +139,6 @@ class Spark2(Hive):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
             "AGGREGATE": exp.Reduce.from_arg_list,
-            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "BOOLEAN": _build_as_cast("boolean"),
             "DATE": _build_as_cast("date"),
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
@@ -189,6 +188,7 @@ class Spark2(Hive):
 
         FUNCTION_PARSERS = {
             **Hive.Parser.FUNCTION_PARSERS,
+            "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),

@@ -1917,6 +1917,42 @@ class DuckDB(Dialect):
             """,
         )
 
+        def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
+            """
+            Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
+
+            Snowflake: TIME_SLICE(date_expr, slice_length, 'UNIT' [, 'START'|'END'])
+            DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr)
+
+            For 'END' kind, add the interval to get the end of the slice.
+            For DATE type with 'END', cast result back to DATE to preserve type.
+            """
+            date_expr = expression.this
+            slice_length = expression.expression
+            unit = expression.unit
+            kind = expression.text("kind").upper()
+
+            # Create INTERVAL expression: INTERVAL 'N' UNIT
+            interval_expr = exp.Interval(this=slice_length, unit=unit)
+
+            # Create base time_bucket expression
+            time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr)
+
+            # Check if we need the end of the slice (default is start)
+            if not kind == "END":
+                # For 'START', return time_bucket directly
+                return self.sql(time_bucket_expr)
+
+            # For 'END', add the interval to get end of slice
+            add_expr = exp.Add(this=time_bucket_expr, expression=interval_expr.copy())
+
+            # If input is DATE type, cast result back to DATE to preserve type
+            # DuckDB converts DATE to TIMESTAMP when adding intervals
+            if date_expr.is_type(exp.DataType.Type.DATE):
+                return self.sql(exp.cast(add_expr, exp.DataType.Type.DATE))
+
+            return self.sql(add_expr)
+
         def bitmapbucketnumber_sql(
             self: DuckDB.Generator, expression: exp.BitmapBucketNumber
         ) -> str:

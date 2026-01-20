@@ -632,6 +632,7 @@ class Generator(metaclass=_Generator):
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.RemoteWithConnectionModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.RollupProperty: exp.Properties.Location.UNSUPPORTED,
         exp.RowFormatProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatDelimitedProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA,
@@ -2368,6 +2369,24 @@ class Generator(metaclass=_Generator):
     def rollup_sql(self, expression: exp.Rollup) -> str:
         expressions = self.expressions(expression, indent=False)
         return f"ROLLUP {self.wrap(expressions)}" if expressions else "WITH ROLLUP"
+
+    def rollupindex_sql(self, expression: exp.RollupIndex) -> str:
+        this = self.sql(expression, "this")
+
+        columns = self.expressions(expression, flat=True)
+
+        from_sql = self.sql(expression, "from_index")
+        from_sql = f" FROM {from_sql}" if from_sql else ""
+
+        properties = expression.args.get("properties")
+        properties_sql = (
+            f" {self.properties(properties, prefix='PROPERTIES')}" if properties else ""
+        )
+
+        return f"{this}({columns}){from_sql}{properties_sql}"
+
+    def rollupproperty_sql(self, expression: exp.RollupProperty) -> str:
+        return f"ROLLUP ({self.expressions(expression, flat=True)})"
 
     def cube_sql(self, expression: exp.Cube) -> str:
         expressions = self.expressions(expression, indent=False)

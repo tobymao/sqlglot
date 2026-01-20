@@ -59,7 +59,27 @@ class StarRocks(MySQL):
             "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
+            "ROLLUP": lambda self: self._parse_rollup_property(),
         }
+
+        def _parse_rollup_property(self) -> exp.RollupProperty:
+            # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
+            def parse_rollup_index() -> exp.RollupIndex:
+                return self.expression(
+                    exp.RollupIndex,
+                    this=self._parse_id_var(),
+                    expressions=self._parse_wrapped_id_vars(),
+                    from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
+                    properties=self.expression(
+                        exp.Properties, expressions=self._parse_wrapped_properties()
+                    )
+                    if self._match_text_seq("PROPERTIES")
+                    else None,
+                )
+
+            return self.expression(
+                exp.RollupProperty, expressions=self._parse_wrapped_csv(parse_rollup_index)
+            )
 
         def _parse_create(self) -> exp.Create | exp.Command:
             create = super()._parse_create()
@@ -147,6 +167,7 @@ class StarRocks(MySQL):
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {

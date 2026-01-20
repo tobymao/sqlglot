@@ -88,6 +88,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         for expr_type in {
             exp.ApproxQuantile,
             exp.Avg,
+            exp.Cbrt,
             exp.Exp,
             exp.Kurtosis,
             exp.Ln,

@@ -217,24 +217,6 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     return self.sql(case_expr)
 
 
-def _to_double_sql(self: DuckDB.Generator, expression: exp.ToDouble) -> str:
-    """
-    Transpile TO_DOUBLE and TRY_TO_DOUBLE functions from Snowflake to DuckDB equivalent.
-
-    For TO_DOUBLE (safe=False): Use regular CAST to DOUBLE.
-    For TRY_TO_DOUBLE (safe=True): Use TRY_CAST to DOUBLE, which returns NULL for invalid inputs.
-    """
-    arg = expression.this
-    is_safe = expression.args.get("safe", False)
-
-    if is_safe:
-        # TRY_TO_DOUBLE: use TRY_CAST
-        return self.sql(exp.func("TRY_CAST", arg, exp.DataType.build("DOUBLE")))
-    else:
-        # TO_DOUBLE: use regular CAST
-        return self.sql(exp.cast(arg, exp.DataType.Type.DOUBLE))
-
-
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     this = expression.this
@@ -1638,7 +1620,6 @@ class DuckDB(Dialect):
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.ToBoolean: _to_boolean_sql,
-            exp.ToDouble: _to_double_sql,
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
@@ -2466,6 +2447,15 @@ class DuckDB(Dialect):
                 return self.sql(result)
 
             return super().extract_sql(expression)
+
+        def todouble_sql(self: DuckDB.Generator, expression: exp.ToDouble) -> str:
+            arg = expression.this
+            is_safe = expression.args.get("safe", False)
+
+            if is_safe:
+                return self.sql(exp.func("TRY_CAST", arg, exp.DataType.build("DOUBLE")))
+            else:
+                return self.sql(exp.cast(arg, exp.DataType.Type.DOUBLE))
 
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             # Check if this is the date/time expression form: TIMESTAMP_FROM_PARTS(date_expr, time_expr)

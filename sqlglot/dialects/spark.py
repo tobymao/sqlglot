@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp
+from sqlglot import exp, parser
 from sqlglot.dialects.dialect import (
     array_append_sql,
+    array_prepend_sql,
     rename_func,
     build_like,
     unit_to_var,
@@ -130,6 +131,7 @@ class Spark(Spark2):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
+            "ARRAY_PREPEND": parser.build_array_prepend,
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
@@ -213,6 +215,7 @@ class Spark(Spark2):
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
+            exp.ArrayPrepend: array_prepend_sql("ARRAY_PREPEND"),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),

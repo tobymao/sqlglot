@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
     array_append_sql,
+    array_prepend_sql,
     binary_from_function,
     bool_xor_sql,
     datestrtodate_sql,
@@ -424,8 +425,10 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
-                this=seq_get(args, 1), expression=seq_get(args, 0)
+            "ARRAY_PREPEND": lambda args, dialect: exp.ArrayPrepend(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
             ),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -628,7 +631,7 @@ class Postgres(Dialect):
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
-            exp.ArrayPrepend: lambda self, e: self.func("ARRAY_PREPEND", e.expression, e.this),
+            exp.ArrayPrepend: array_prepend_sql("ARRAY_PREPEND", swap_params=True),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),

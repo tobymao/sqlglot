@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     array_append_sql,
+    array_prepend_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -304,8 +305,12 @@ def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _build_array_prepend(args: t.List) -> exp.Expression:
-    return exp.ArrayPrepend(this=seq_get(args, 1), expression=seq_get(args, 0))
+def _build_array_prepend(args: t.List, dialect: Dialect) -> exp.Expression:
+    return exp.ArrayPrepend(
+        this=seq_get(args, 1),
+        expression=seq_get(args, 0),
+        null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
+    )
 
 
 def _build_date_diff(args: t.List) -> exp.Expression:
@@ -1473,7 +1478,7 @@ class DuckDB(Dialect):
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
-            exp.ArrayPrepend: lambda self, e: self.func("LIST_PREPEND", e.expression, e.this),
+            exp.ArrayPrepend: array_prepend_sql("LIST_PREPEND", swap_params=True),
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])

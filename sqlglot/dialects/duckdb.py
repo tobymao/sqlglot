@@ -14,7 +14,6 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     array_append_sql,
-    array_prepend_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -1478,7 +1477,7 @@ class DuckDB(Dialect):
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
-            exp.ArrayPrepend: array_prepend_sql("LIST_PREPEND", swap_params=True),
+            exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])

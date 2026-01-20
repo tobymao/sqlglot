@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     array_append_sql,
-    array_prepend_sql,
     build_timetostr_or_tochar,
     build_like,
     binary_from_function,
@@ -761,7 +760,6 @@ class Snowflake(Dialect):
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
-            "ARRAY_PREPEND": parser.build_array_prepend,
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
                 this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False
             ),
@@ -1517,7 +1515,7 @@ class Snowflake(Dialect):
             exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
-            exp.ArrayPrepend: array_prepend_sql("ARRAY_PREPEND"),
+            exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
                 e.expression

@@ -1345,60 +1345,17 @@ def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
     )
 
 
-def array_append_sql(name: str) -> t.Callable[[Generator, exp.ArrayAppend], str]:
+def array_append_sql(
+    name: str, swap_params: bool = False
+) -> t.Callable[[Generator, exp.ArrayAppend | exp.ArrayPrepend], str]:
     """
-    Transpile ARRAY_APPEND between dialects with different NULL propagation semantics.
+    Transpile ARRAY_APPEND/ARRAY_PREPEND between dialects with different NULL propagation semantics.
 
     Some dialects (Databricks, Spark, Snowflake) return NULL when the input array is NULL.
     Others (DuckDB, Postgres) create a new single-element array instead.
 
     Args:
-        name: Target dialect's function name (e.g., "ARRAY_APPEND", "LIST_APPEND")
-
-    Returns:
-        A callable that generates SQL with appropriate NULL handling for the target dialect.
-        Dialects that propagate NULLs need to set `ARRAY_APPEND_PROPAGATES_NULLS` to True.
-    """
-
-    def _array_append_sql(self: Generator, expression: exp.ArrayAppend) -> str:
-        this = expression.this
-        func_sql = self.func(name, this, expression.expression)
-        source_null_propagation = bool(expression.args.get("null_propagation"))
-        target_null_propagation = self.dialect.ARRAY_APPEND_PROPAGATES_NULLS
-
-        # No transpilation needed when source and target have matching NULL semantics
-        if source_null_propagation == target_null_propagation:
-            return func_sql
-
-        # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
-        if source_null_propagation:
-            return self.sql(
-                exp.If(
-                    this=exp.Is(this=this, expression=exp.Null()),
-                    true=exp.Null(),
-                    false=func_sql,
-                )
-            )
-
-        # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
-        this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
-        return self.func(name, this, expression.expression)
-
-    return _array_append_sql
-
-
-def array_prepend_sql(
-    name: str,
-    swap_params: bool = False
-) -> t.Callable[[Generator, exp.ArrayPrepend], str]:
-    """
-    Transpile ARRAY_PREPEND between dialects with different NULL propagation semantics.
-
-    Some dialects (Databricks, Spark, Snowflake) return NULL when the input array is NULL.
-    Others (DuckDB, Postgres) create a new single-element array instead.
-
-    Args:
-        name: Target dialect's function name (e.g., "ARRAY_PREPEND", "LIST_PREPEND")
+        name: Target dialect's function name (e.g., "ARRAY_APPEND", "ARRAY_PREPEND")
         swap_params: If True, generate (element, array) order instead of (array, element).
                      DuckDB LIST_PREPEND and Postgres ARRAY_PREPEND use (element, array).
 
@@ -1407,14 +1364,11 @@ def array_prepend_sql(
         Dialects that propagate NULLs need to set `ARRAY_APPEND_PROPAGATES_NULLS` to True.
     """
 
-    def _array_prepend_sql(self: Generator, expression: exp.ArrayPrepend) -> str:
+    def _array_append_sql(self: Generator, expression: exp.ArrayAppend | exp.ArrayPrepend) -> str:
         this = expression.this
         element = expression.expression
-
-        if swap_params:
-            func_sql = self.func(name, element, this)
-        else:
-            func_sql = self.func(name, this, element)
+        args = [element, this] if swap_params else [this, element]
+        func_sql = self.func(name, *args)
 
         source_null_propagation = bool(expression.args.get("null_propagation"))
         target_null_propagation = self.dialect.ARRAY_APPEND_PROPAGATES_NULLS
@@ -1435,12 +1389,10 @@ def array_prepend_sql(
 
         # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
         this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
-        if swap_params:
-            return self.func(name, element, this)
-        else:
-            return self.func(name, this, element)
+        args = [element, this] if swap_params else [this, element]
+        return self.func(name, *args)
 
-    return _array_prepend_sql
+    return _array_append_sql
 
 
 def var_map_sql(

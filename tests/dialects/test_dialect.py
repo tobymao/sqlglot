@@ -1546,7 +1546,9 @@ class TestDialect(Validator):
 
         # Test NULL propagation semantics for ARRAY_PREPEND: NULL-propagating dialects → array-creating dialects
         for source_dialect in ("snowflake", "databricks", "spark"):
-            with self.subTest(f"ARRAY_PREPEND NULL propagation: {source_dialect} → DuckDB/PostgreSQL"):
+            with self.subTest(
+                f"ARRAY_PREPEND NULL propagation: {source_dialect} → DuckDB/PostgreSQL"
+            ):
                 expr = parse_one("ARRAY_PREPEND(arr, x)", dialect=source_dialect)
                 self.assertEqual(
                     expr.sql("duckdb"),
@@ -1562,7 +1564,9 @@ class TestDialect(Validator):
             ("duckdb", "LIST_PREPEND(x, arr)"),
             ("postgres", "ARRAY_PREPEND(x, arr)"),
         ):
-            with self.subTest(f"ARRAY_PREPEND array creation: {source_dialect} → Snowflake/Databricks/Spark"):
+            with self.subTest(
+                f"ARRAY_PREPEND array creation: {source_dialect} → Snowflake/Databricks/Spark"
+            ):
                 expr = parse_one(source_sql, dialect=source_dialect)
                 self.assertEqual(
                     expr.sql("snowflake"),

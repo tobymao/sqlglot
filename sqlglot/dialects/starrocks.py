@@ -352,7 +352,11 @@ class StarRocks(MySQL):
             return super().create_sql(expression)
 
         def between_sql(self, expression: exp.Between) -> str:
-            this = self.sql(expression, "this")
-            low = self.sql(expression, "low")
-            high = self.sql(expression, "high")
-            return f"{this} >= {low} AND {this} <= {high}"
+            # StarRocks doesn't support BETWEEN in DELETE.
+            # See: https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/DELETE/#parameters
+            if expression.find_ancestor(exp.Delete):
+                this = self.sql(expression, "this")
+                low = self.sql(expression, "low")
+                high = self.sql(expression, "high")
+                return f"{this} >= {low} AND {this} <= {high}"
+            return super().between_sql(expression)

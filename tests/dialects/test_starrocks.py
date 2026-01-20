@@ -177,19 +177,19 @@ class TestStarrocks(Validator):
         self.validate_all(
             "SELECT * FROM t WHERE a BETWEEN 1 AND 5",
             write={
-                "starrocks": "SELECT * FROM t WHERE a >= 1 AND a <= 5",
+                "starrocks": "SELECT * FROM t WHERE a BETWEEN 1 AND 5",
                 "mysql": "SELECT * FROM t WHERE a BETWEEN 1 AND 5",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM t WHERE a BETWEEN b AND c",
-            write={
-                "starrocks": "SELECT * FROM t WHERE a >= b AND a <= c",
             },
         )
         self.validate_all(
             "SELECT a BETWEEN 1 AND 5 FROM t",
             write={
-                "starrocks": "SELECT a >= 1 AND a <= 5 FROM t",
+                "starrocks": "SELECT a BETWEEN 1 AND 5 FROM t",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM t WHERE a BETWEEN b AND c",
+            write={
+                "starrocks": "DELETE FROM t WHERE a >= b AND a <= c",
             },
         )

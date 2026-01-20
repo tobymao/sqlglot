@@ -701,7 +701,7 @@ class Dialect(metaclass=_Dialect):
     ARRAY_AGG_INCLUDES_NULLS: t.Optional[bool] = True
     """Whether ArrayAgg needs to filter NULL values."""
 
-    ARRAY_APPEND_PROPAGATES_NULLS = False
+    ARRAY_FUNCS_PROPAGATES_NULLS = False
     """Whether ArrayAppend returns NULL when the input array is NULL."""
 
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
@@ -1366,7 +1366,7 @@ def array_append_sql(
 
     Returns:
         A callable that generates SQL with appropriate NULL handling for the target dialect.
-        Dialects that propagate NULLs need to set `ARRAY_APPEND_PROPAGATES_NULLS` to True.
+        Dialects that propagate NULLs need to set `ARRAY_FUNCS_PROPAGATES_NULLS` to True.
     """
 
     def _array_append_sql(self: Generator, expression: exp.ArrayAppend | exp.ArrayPrepend) -> str:
@@ -1376,7 +1376,7 @@ def array_append_sql(
         func_sql = self.func(name, *args)
 
         source_null_propagation = bool(expression.args.get("null_propagation"))
-        target_null_propagation = self.dialect.ARRAY_APPEND_PROPAGATES_NULLS
+        target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
 
         # No transpilation needed when source and target have matching NULL semantics
         if source_null_propagation == target_null_propagation:

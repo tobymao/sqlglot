@@ -3263,13 +3263,14 @@ class TestSnowflake(Validator):
 
         for i in range(1, 10):
             fractional_format = "ff" + str(i)
-            self.validate_all(
-                f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
-                write={
-                    "snowflake": f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
-                    "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28T20:57:01', '%Y-%m-%dT%H:%M:%S.%n') AS TIMESTAMP) AS DATE)",
-                },
-            )
+            with self.subTest(f"Testing snowflake {fractional_format} format"):
+                self.validate_all(
+                    f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
+                    write={
+                        "snowflake": f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
+                        "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28T20:57:01', '%Y-%m-%dT%H:%M:%S.%n') AS TIMESTAMP) AS DATE)",
+                    },
+                )
 
         self.validate_all(
             "TRY_TO_DATE('2013-04-28T20:57:01.888', 'yyyy-mm-DDThh24:mi:ss.ff')",

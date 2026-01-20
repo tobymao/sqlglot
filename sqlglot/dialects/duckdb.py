@@ -304,12 +304,8 @@ def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _build_array_prepend(args: t.List, dialect: Dialect) -> exp.Expression:
-    return exp.ArrayPrepend(
-        this=seq_get(args, 1),
-        expression=seq_get(args, 0),
-        null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
-    )
+def _build_array_prepend(args: t.List) -> exp.Expression:
+    return exp.ArrayPrepend(this=seq_get(args, 1), expression=seq_get(args, 0))
 
 
 def _build_date_diff(args: t.List) -> exp.Expression:

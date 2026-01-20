@@ -424,10 +424,8 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "ARRAY_PREPEND": lambda args, dialect: exp.ArrayPrepend(
-                this=seq_get(args, 1),
-                expression=seq_get(args, 0),
-                null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
+            "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
+                this=seq_get(args, 1), expression=seq_get(args, 0)
             ),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,

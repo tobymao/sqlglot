@@ -475,6 +475,14 @@ DOUBLE;
 COS(tbl.double_col);
 DOUBLE;
 
+# dialect: spark, databricks
+ASINH(tbl.int_col);
+DOUBLE;
+
+# dialect: spark, databricks
+ASINH(tbl.double_col);
+DOUBLE;
+
 # dialect: hive, spark2, spark, databricks
 ATAN(tbl.int_col);
 DOUBLE;

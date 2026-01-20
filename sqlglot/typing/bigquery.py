@@ -254,7 +254,6 @@ EXPRESSION_METADATA = {
             exp.Atan,
             exp.Atan2,
             exp.Atanh,
-            exp.Cbrt,
             exp.Corr,
             exp.CosineDistance,
             exp.Cot,

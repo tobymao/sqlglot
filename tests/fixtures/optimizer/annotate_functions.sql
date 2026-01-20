@@ -146,6 +146,12 @@ INT;
 DAYNAME(tbl.date_col);
 VARCHAR;
 
+CBRT(tbl.int_col);
+DOUBLE;
+
+CBRT(tbl.double_col);
+DOUBLE;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -2072,6 +2078,14 @@ DOUBLE;
 
 # dialect: snowflake
 CBRT(tbl.double_col);
+DOUBLE;
+
+# dialect: snowflake
+CBRT(tbl.decfloat_col);
+DECFLOAT;
+
+# dialect: snowflake
+CBRT(tbl.int_col);
 DOUBLE;
 
 # dialect: snowflake

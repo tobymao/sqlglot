@@ -5342,3 +5342,7 @@ VARCHAR;
 # dialect: duckdb
 SHA256(tbl.str_col);
 VARCHAR;
+
+# dialect: duckdb 
+GET_BIT(tbl.str_col, tbl.int_col);
+INT;

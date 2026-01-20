@@ -358,7 +358,6 @@ EXPRESSION_METADATA = {
             exp.ApproximateSimilarity,
             exp.Asinh,
             exp.Atanh,
-            exp.Cbrt,
             exp.Cosh,
             exp.CosineDistance,
             exp.CovarPop,

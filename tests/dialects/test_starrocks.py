@@ -42,6 +42,9 @@ class TestStarrocks(Validator):
             "DUPLICATE KEY (col1, col2) DISTRIBUTED BY HASH (col1)",
             "UNIQUE KEY (col1, col2) PARTITION BY RANGE (col1) (START ('2024-01-01') END ('2024-01-31') EVERY (INTERVAL 1 DAY)) DISTRIBUTED BY HASH (col1)",
             "UNIQUE KEY (col1, col2) PARTITION BY RANGE (col1, col2) (START ('1') END ('10') EVERY (1), START ('10') END ('100') EVERY (10)) DISTRIBUTED BY HASH (col1)",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(event_day, siteid), r2(event_day, citycode), r3(event_day))",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2))",
+            "DISTRIBUTED BY HASH (col1) ROLLUP (`r1`(`col2`))",
         ]
 
         for properties in ddl_sqls:
@@ -60,6 +63,17 @@ class TestStarrocks(Validator):
         )
         self.validate_identity(
             "CREATE VIEW foo (foo_col1) SECURITY NONE AS SELECT bar_col1 FROM bar"
+        )
+
+        # Test ROLLUP property
+        self.validate_all(
+            "CREATE TABLE foo (col1 BIGINT, col2 BIGINT) ROLLUP (r1(col1, col2), r2(col1))",
+            write={
+                "starrocks": "CREATE TABLE foo (col1 BIGINT, col2 BIGINT) ROLLUP (r1(col1, col2), r2(col1))",
+                "spark": "CREATE TABLE foo (col1 BIGINT, col2 BIGINT)",
+                "duckdb": "CREATE TABLE foo (col1 BIGINT, col2 BIGINT)",
+                "postgres": "CREATE TABLE foo (col1 BIGINT, col2 BIGINT)",
+            },
         )
 
     def test_identity(self):

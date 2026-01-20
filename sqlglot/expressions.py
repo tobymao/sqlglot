@@ -3123,6 +3123,16 @@ class PartitionByRangePropertyDynamic(Expression):
     arg_types = {"this": False, "start": True, "end": True, "every": True}
 
 
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/#rollup-index
+class RollupProperty(Property):
+    arg_types = {"expressions": True}
+
+
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/#rollup-index
+class RollupIndex(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 # https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
 class PartitionByListProperty(Property):
     arg_types = {"partition_expressions": True, "create_expressions": True}

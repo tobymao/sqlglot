@@ -272,9 +272,7 @@ def _timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
     time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr)
 
     # Check if we need the end of the slice (default is start)
-    is_end = kind and kind.name.upper() == "END"
-
-    if not is_end:
+    if not kind == "END":
         # For 'START', return time_bucket directly
         return self.sql(time_bucket_expr)
 

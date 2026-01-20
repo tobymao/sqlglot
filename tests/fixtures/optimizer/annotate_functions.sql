@@ -452,6 +452,14 @@ BIT_LENGTH(tbl.str_col);
 INT;
 
 # dialect: hive, spark2, spark, databricks
+ASIN(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+ASIN(tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
 SIN(tbl.int_col);
 DOUBLE;
 

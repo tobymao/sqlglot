@@ -375,14 +375,7 @@ class TestSnowflake(Validator):
                 "duckdb": "CASE WHEN UPPER(CAST('true' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('true' AS TEXT)) = 'OFF' THEN FALSE ELSE TRY_CAST('true' AS BOOLEAN) END",
             },
         )
-        self.validate_all(
-            "TRY_TO_DATE('2024-01-31')",
-            write={
-                "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
-                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
-            },
-        )
-        self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
+
         self.validate_identity("TRY_TO_DECIMAL('123.45')", "TRY_TO_NUMBER('123.45')")
         self.validate_identity(
             "TRY_TO_DECIMAL('123.45', '999.99')", "TRY_TO_NUMBER('123.45', '999.99')"
@@ -611,7 +604,7 @@ class TestSnowflake(Validator):
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
-            """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DD"T"hh24:mi:ss.ff3TZHTZM')"""
+            """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DDThh24:mi:ss.ff9tzhtzm')"""
         )
         self.validate_identity(
             "SELECT * REPLACE (CAST(col AS TEXT) AS scol) FROM t",
@@ -3197,15 +3190,6 @@ class TestSnowflake(Validator):
                 "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('1970-01-01' AS DATE) + CAST('14:23:45.123456' AS TIME)) AS TIME)",
             },
         )
-        self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
-
-        self.validate_identity(
-            "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
-            "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
-        )
-
-        self.validate_identity("TO_DATE(x)").assert_is(exp.TsOrDsToDate)
-        self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.TsOrDsToDate)
 
         self.validate_all(
             "DATE(x)",
@@ -3214,31 +3198,11 @@ class TestSnowflake(Validator):
                 "snowflake": "TO_DATE(x)",
             },
         )
-        self.validate_all(
-            "TO_DATE(x, 'MM-DD-YYYY')",
-            write={
-                "snowflake": "TO_DATE(x, 'mm-DD-yyyy')",
-                "duckdb": "CAST(STRPTIME(x, '%m-%d-%Y') AS DATE)",
-            },
-        )
+
         self.validate_all(
             "DATE('01-01-2000', 'MM-DD-YYYY')",
             write={
                 "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",
-                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
-            },
-        )
-        self.validate_all(
-            "TO_DATE('01-01-2000', 'MM-DD-YYYY')",
-            write={
-                "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",
-                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
-            },
-        )
-        self.validate_all(
-            "TRY_TO_DATE('01-01-2000', 'MM-DD-YYYY')",
-            write={
-                "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
                 "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
             },
         )
@@ -3300,6 +3264,99 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
                 "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
+            },
+        )
+
+    def test_to_date(self):
+        self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
+
+        self.validate_identity("TO_DATE(x)").assert_is(exp.TsOrDsToDate)
+
+        self.validate_all(
+            "TO_DATE('01-01-2000', 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+            },
+        )
+
+        self.validate_all(
+            "TO_DATE(x, 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE(x, 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME(x, '%m-%d-%Y') AS DATE)",
+            },
+        )
+
+        self.validate_identity(
+            "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
+            "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
+        )
+
+        self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.TsOrDsToDate)
+
+        self.validate_all(
+            "TRY_TO_DATE('2024-01-31')",
+            write={
+                "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
+                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
+            },
+        )
+        self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
+
+        self.validate_all(
+            "TRY_TO_DATE('01-01-2000', 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('01-01-2000', '%m-%d-%Y') AS TIMESTAMP) AS DATE)",
+            },
+        )
+
+        for i in range(1, 10):
+            fractional_format = "ff" + str(i)
+            duck_db_format = "%n"
+            if i == 3:
+                duck_db_format = "%g"
+            elif i == 6:
+                duck_db_format = "%f"
+            with self.subTest(f"Testing snowflake {fractional_format} format"):
+                self.validate_all(
+                    f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
+                    write={
+                        "snowflake": f"TRY_TO_DATE('2013-04-28T20:57:01', 'yyyy-mm-DDThh24:mi:ss.{fractional_format}')",
+                        "duckdb": f"CAST(CAST(TRY_STRPTIME('2013-04-28T20:57:01', '%Y-%m-%dT%H:%M:%S.{duck_db_format}') AS TIMESTAMP) AS DATE)",
+                    },
+                )
+
+        self.validate_all(
+            "TRY_TO_DATE('2013-04-28T20:57:01.888', 'yyyy-mm-DDThh24:mi:ss.ff')",
+            write={
+                "snowflake": "TRY_TO_DATE('2013-04-28T20:57:01.888', 'yyyy-mm-DDThh24:mi:ss.ff9')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28T20:57:01.888', '%Y-%m-%dT%H:%M:%S.%n') AS TIMESTAMP) AS DATE)",
+            },
+        )
+
+        tz_to_format = {
+            "tzh:tzm": "+07:00",
+            "tzhtzm": "+0700",
+            "tzh": "+07",
+        }
+
+        for tz_format, tz in tz_to_format.items():
+            with self.subTest(f"Testing snowflake {tz_format} timezone format"):
+                self.validate_all(
+                    f"TRY_TO_DATE('2013-04-28 20:57 {tz}', 'YYYY-MM-DD HH24:MI {tz_format}')",
+                    write={
+                        "snowflake": f"TRY_TO_DATE('2013-04-28 20:57 {tz}', 'yyyy-mm-DD hh24:mi {tz_format}')",
+                        "duckdb": f"CAST(CAST(TRY_STRPTIME('2013-04-28 20:57 {tz}', '%Y-%m-%d %H:%M %z') AS TIMESTAMP) AS DATE)",
+                    },
+                )
+
+        self.validate_all(
+            """TRY_TO_DATE('2013-04-28T20:57', 'YYYY-MM-DD"T"HH24:MI:SS')""",
+            write={
+                "snowflake": "TRY_TO_DATE('2013-04-28T20:57', 'yyyy-mm-DDThh24:mi:ss')",
+                "duckdb": "CAST(CAST(TRY_STRPTIME('2013-04-28T20:57', '%Y-%m-%dT%H:%M:%S') AS TIMESTAMP) AS DATE)",
             },
         )
 

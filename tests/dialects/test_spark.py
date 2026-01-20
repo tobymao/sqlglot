@@ -177,7 +177,7 @@ TBLPROPERTIES (
         self.validate_all(
             "TO_DATE(x, 'yyyy-MM-dd')",
             write={
-                "duckdb": "CAST(x AS DATE)",
+                "duckdb": "TRY_CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "spark": "TO_DATE(x)",
@@ -188,7 +188,7 @@ TBLPROPERTIES (
         self.validate_all(
             "TO_DATE(x, 'yyyy')",
             write={
-                "duckdb": "CAST(STRPTIME(x, '%Y') AS DATE)",
+                "duckdb": "CAST(CAST(TRY_STRPTIME(x, '%Y') AS TIMESTAMP) AS DATE)",
                 "hive": "TO_DATE(x, 'yyyy')",
                 "presto": "CAST(DATE_PARSE(x, '%Y') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy')",

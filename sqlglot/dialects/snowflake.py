@@ -671,6 +671,10 @@ class Snowflake(Dialect):
     # https://docs.snowflake.com/en/en/sql-reference/functions/initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v!?@"^#$&~_,.:;+\\-*%/|\\[\\](){}<>'
 
+    INVERSE_TIME_MAPPING = {
+        "T": "T",  # in TIME_MAPPING we map '"T"' with the double quotes to 'T', and we want to prevent 'T' from being mapped back to '"T"' so that 'AUTO' doesn't become 'AU"T"O'
+    }
+
     TIME_MAPPING = {
         "YYYY": "%Y",
         "yyyy": "%Y",
@@ -694,8 +698,35 @@ class Snowflake(Dialect):
         "mi": "%M",
         "SS": "%S",
         "ss": "%S",
+        "FF": "%f_nine",  # %f_ internal representation with precision specified
+        "ff": "%f_nine",
+        "FF0": "%f_zero",
+        "ff0": "%f_zero",
+        "FF1": "%f_one",
+        "ff1": "%f_one",
+        "FF2": "%f_two",
+        "ff2": "%f_two",
+        "FF3": "%f_three",
+        "ff3": "%f_three",
+        "FF4": "%f_four",
+        "ff4": "%f_four",
+        "FF5": "%f_five",
+        "ff5": "%f_five",
         "FF6": "%f",
         "ff6": "%f",
+        "FF7": "%f_seven",
+        "ff7": "%f_seven",
+        "FF8": "%f_eight",
+        "ff8": "%f_eight",
+        "FF9": "%f_nine",
+        "ff9": "%f_nine",
+        "TZHTZM": "%z",
+        "tzhtzm": "%z",
+        "TZH:TZM": "%:z",  # internal representation for ±HH:MM
+        "tzh:tzm": "%:z",
+        "TZH": "%-z",  # internal representation ±HH
+        "tzh": "%-z",
+        '"T"': "T",  # remove the optional double quotes around the separator between the date and time
         # Seems like Snowflake treats AM/PM in the format string as equivalent,
         # only the time (stamp) value's AM/PM affects the output
         "AM": "%p",

@@ -1515,6 +1515,7 @@ class Snowflake(Dialect):
             exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
+            exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
                 e.expression

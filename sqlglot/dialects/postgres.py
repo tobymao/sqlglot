@@ -628,7 +628,7 @@ class Postgres(Dialect):
             exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
-            exp.ArrayPrepend: lambda self, e: self.func("ARRAY_PREPEND", e.expression, e.this),
+            exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND", swap_params=True),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),

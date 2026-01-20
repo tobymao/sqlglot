@@ -1473,22 +1473,16 @@ class TestDialect(Validator):
             },
         )
 
+        # Test basic syntax transpilation for ARRAY_PREPEND
         self.validate_all(
             "ARRAY_PREPEND(arr, x)",
             read={
-                "": "ARRAY_PREPEND(arr, x)",
                 "duckdb": "LIST_PREPEND(x, arr)",
                 "postgres": "ARRAY_PREPEND(x, arr)",
-                "spark": "ARRAY_PREPEND(arr, x)",
-                "databricks": "ARRAY_PREPEND(arr, x)",
-                "snowflake": "ARRAY_PREPEND(arr, x)",
             },
             write={
                 "duckdb": "LIST_PREPEND(x, arr)",
                 "postgres": "ARRAY_PREPEND(x, arr)",
-                "spark": "ARRAY_PREPEND(arr, x)",
-                "databricks": "ARRAY_PREPEND(arr, x)",
-                "snowflake": "ARRAY_PREPEND(arr, x)",
             },
         )
 
@@ -1547,6 +1541,55 @@ class TestDialect(Validator):
             ("spark", "ARRAY_APPEND(arr, x)"),
         ):
             with self.subTest(f"Identity: {dialect} → {dialect}"):
+                expr = parse_one(sql, dialect=dialect)
+                self.assertEqual(expr.sql(dialect), sql)
+
+        # Test NULL propagation semantics for ARRAY_PREPEND: NULL-propagating dialects → array-creating dialects
+        for source_dialect in ("snowflake", "databricks", "spark"):
+            with self.subTest(
+                f"ARRAY_PREPEND NULL propagation: {source_dialect} → DuckDB/PostgreSQL"
+            ):
+                expr = parse_one("ARRAY_PREPEND(arr, x)", dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("duckdb"),
+                    "CASE WHEN arr IS NULL THEN NULL ELSE LIST_PREPEND(x, arr) END",
+                )
+                self.assertEqual(
+                    expr.sql("postgres"),
+                    "CASE WHEN arr IS NULL THEN NULL ELSE ARRAY_PREPEND(x, arr) END",
+                )
+
+        # Test ARRAY_PREPEND array creation semantics: array-creating dialects → NULL-propagating dialects
+        for source_dialect, source_sql in (
+            ("duckdb", "LIST_PREPEND(x, arr)"),
+            ("postgres", "ARRAY_PREPEND(x, arr)"),
+        ):
+            with self.subTest(
+                f"ARRAY_PREPEND array creation: {source_dialect} → Snowflake/Databricks/Spark"
+            ):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("snowflake"),
+                    "ARRAY_PREPEND(COALESCE(arr, []), x)",
+                )
+                self.assertEqual(
+                    expr.sql("databricks"),
+                    "ARRAY_PREPEND(COALESCE(arr, ARRAY()), x)",
+                )
+                self.assertEqual(
+                    expr.sql("spark"),
+                    "ARRAY_PREPEND(COALESCE(arr, ARRAY()), x)",
+                )
+
+        # Test ARRAY_PREPEND identity transpilation (should NOT add wrappers)
+        for dialect, sql in (
+            ("duckdb", "LIST_PREPEND(x, arr)"),
+            ("postgres", "ARRAY_PREPEND(x, arr)"),
+            ("snowflake", "ARRAY_PREPEND(arr, x)"),
+            ("databricks", "ARRAY_PREPEND(arr, x)"),
+            ("spark", "ARRAY_PREPEND(arr, x)"),
+        ):
+            with self.subTest(f"ARRAY_PREPEND identity: {dialect} → {dialect}"):
                 expr = parse_one(sql, dialect=dialect)
                 self.assertEqual(expr.sql(dialect), sql)
 

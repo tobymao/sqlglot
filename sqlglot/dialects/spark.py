@@ -213,6 +213,7 @@ class Spark(Spark2):
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
+            exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.BitwiseXorAgg: rename_func("BIT_XOR"),

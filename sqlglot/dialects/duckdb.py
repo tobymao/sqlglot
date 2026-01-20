@@ -1473,7 +1473,7 @@ class DuckDB(Dialect):
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
-            exp.ArrayPrepend: lambda self, e: self.func("LIST_PREPEND", e.expression, e.this),
+            exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])

@@ -350,3 +350,9 @@ class StarRocks(MySQL):
                     props.set("expressions", primary_key.pop(), engine_index + 1, overwrite=False)
 
             return super().create_sql(expression)
+
+        def between_sql(self, expression: exp.Between) -> str:
+            this = self.sql(expression, "this")
+            low = self.sql(expression, "low")
+            high = self.sql(expression, "high")
+            return f"{this} >= {low} AND {this} <= {high}"

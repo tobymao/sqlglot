@@ -263,7 +263,7 @@ def _timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
     date_expr = expression.this
     slice_length = expression.expression
     unit = expression.unit
-    kind = expression.args.get("kind")
+    kind = expression.text("kind").upper()
 
     # Create INTERVAL expression: INTERVAL 'N' UNIT
     interval_expr = exp.Interval(this=slice_length, unit=unit)

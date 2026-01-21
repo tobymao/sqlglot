@@ -580,6 +580,10 @@ STRING;
 UNHEX(tbl.str_col);
 BINARY;
 
+# dialect: hive, spark2, spark, databricks
+HEX(tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

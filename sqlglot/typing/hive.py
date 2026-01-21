@@ -35,6 +35,7 @@ EXPRESSION_METADATA = {
             exp.CurrentDatabase,
             exp.CurrentSchema,
             exp.CurrentUser,
+            exp.Hex,
         }
     },
     exp.Coalesce: {

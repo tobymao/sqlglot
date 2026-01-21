@@ -2936,7 +2936,7 @@ class TestSnowflake(Validator):
             "TO_DOUBLE(expr, fmt)",
             write={
                 "snowflake": "TO_DOUBLE(expr, fmt)",
-                "duckdb": "CAST(expr AS DOUBLE)",
+                "duckdb": UnsupportedError,
             },
         )
 

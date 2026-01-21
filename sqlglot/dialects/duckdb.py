@@ -2448,11 +2448,6 @@ class DuckDB(Dialect):
 
             return super().extract_sql(expression)
 
-        def todouble_sql(self: DuckDB.Generator, expression: exp.ToDouble) -> str:
-            this = expression.this
-            cast = exp.Cast if expression.args.get("safe") else exp.TryCast
-            return self.sql(cast(this=this, to=exp.DataType.build(exp.DataType.Type.DOUBLE)))
-
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             # Check if this is the date/time expression form: TIMESTAMP_FROM_PARTS(date_expr, time_expr)
             date_expr = expression.this

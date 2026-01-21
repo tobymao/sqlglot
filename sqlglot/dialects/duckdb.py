@@ -429,20 +429,13 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     Returns:
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
-    # Check for restricted contexts by walking up the parent chain
+    # Warn if SEQ is in a restricted context
     parent = expression.parent
     while parent:
-        # WHERE or HAVING clause
-        if isinstance(parent, (exp.Where, exp.Having)):
-            self.unsupported("SEQ in WHERE/HAVING is not supported - use CTE or subquery")
-            break
-        # Inside an aggregate function
-        if isinstance(parent, exp.AggFunc):
-            self.unsupported("SEQ inside aggregate function is not supported - use CTE or subquery")
-            break
-        # Inside window ORDER BY (but not query-level ORDER BY)
-        if isinstance(parent, exp.Order) and isinstance(parent.parent, exp.Window):
-            self.unsupported("SEQ in window ORDER BY is not supported - use CTE or subquery")
+        if isinstance(parent, (exp.Where, exp.Having, exp.AggFunc)) or (
+            isinstance(parent, exp.Order) and isinstance(parent.parent, exp.Window)
+        ):
+            self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
             break
         parent = parent.parent
 

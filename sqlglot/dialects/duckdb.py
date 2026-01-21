@@ -440,7 +440,7 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     bits = byte_width * 8
     max_val = exp.Literal.number(2**bits)
 
-    if expression.this and expression.this.this == "1":
+    if expression.name == "1":
         half = exp.Literal.number(2 ** (bits - 1))
         result = exp.replace_placeholders(self.SEQ_SIGNED.copy(), max_val=max_val, half=half)
     else:

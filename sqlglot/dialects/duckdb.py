@@ -2684,7 +2684,7 @@ class DuckDB(Dialect):
 
             # Handle custom alphabet by replacing characters (applied before line breaks)
             # Alphabet: 1st char = index 62 (default '+'), 2nd = index 63 (default '/'), 3rd = padding (default '=')
-            if alphabet and isinstance(alphabet, exp.Literal):
+            if isinstance(alphabet, exp.Literal):
                 for default_char, new_char in zip("+/=", alphabet.this):
                     if new_char != default_char:
                         result = exp.Replace(

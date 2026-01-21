@@ -395,7 +395,7 @@ class TestSnowflake(Validator):
             "TRY_TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
             write={
                 "snowflake": "TRY_TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
-                "duckdb": "TRY_CAST('-4.56E-03' AS DOUBLE)",
+                "duckdb": UnsupportedError,
             },
         )
         self.validate_identity("TO_FILE(object_col)")

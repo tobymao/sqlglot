@@ -702,7 +702,7 @@ class Dialect(metaclass=_Dialect):
     """Whether ArrayAgg needs to filter NULL values."""
 
     ARRAY_FUNCS_PROPAGATES_NULLS = False
-    """Whether ArrayAppend returns NULL when the input array is NULL."""
+    """Whether Array update functions return NULL when the input array is NULL."""
 
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """

@@ -430,10 +430,12 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     Returns:
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
-    # Warn if SEQ is in a restricted context
-    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED, exp.Order)
+    # Warn if SEQ is in a restricted context (Select stops search at current scope)
+    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED, exp.Order, exp.Select)
     if ancestor and (
-        not isinstance(ancestor, exp.Order) or isinstance(ancestor.parent, exp.Window)
+        (not isinstance(ancestor, (exp.Order, exp.Select)))
+        or isinstance(ancestor, exp.Order)
+        and isinstance(ancestor.parent, exp.Window)
     ):
         self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
 
@@ -447,36 +449,6 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
         result = exp.replace_placeholders(self.SEQ_UNSIGNED.copy(), max_val=max_val)
 
     return self.sql(result)
-
-
-def _generator_sql(self: DuckDB.Generator, expression: exp.Generator) -> str:
-    """
-    Transpile Snowflake GENERATOR to DuckDB range().
-
-    GENERATOR(ROWCOUNT => n) -> range(n)
-    GENERATOR(TIMELIMIT => t) -> Not supported (non-deterministic)
-    GENERATOR(ROWCOUNT => n, TIMELIMIT => t) -> range(n) with comment
-
-    Args:
-        expression: The Generator expression
-
-    Returns:
-        SQL string using range(n) for row generation
-    """
-    rowcount = expression.args.get("rowcount")
-    timelimit = expression.args.get("time_limit")
-
-    if timelimit:
-        self.unsupported("GENERATOR TIMELIMIT parameter is not supported in DuckDB")
-
-    if not rowcount:
-        self.unsupported("GENERATOR without ROWCOUNT is not supported in DuckDB")
-        return self.func("range", exp.Literal.number(0))
-
-    if isinstance(rowcount, exp.Kwarg):
-        rowcount = rowcount.expression
-
-    return self.func("range", rowcount)
 
 
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
@@ -1639,7 +1611,6 @@ class DuckDB(Dialect):
             exp.Seq2: lambda self, e: _seq_sql(self, e, 2),
             exp.Seq4: lambda self, e: _seq_sql(self, e, 4),
             exp.Seq8: lambda self, e: _seq_sql(self, e, 8),
-            exp.Generator: _generator_sql,
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
@@ -2236,6 +2207,20 @@ class DuckDB(Dialect):
             case_expr.set("default", fallback_sql)
             return self.sql(case_expr)
 
+        def generator_sql(self, expression: exp.Generator) -> str:
+            # Transpile Snowflake GENERATOR to DuckDB range()
+            rowcount = expression.args.get("rowcount")
+            time_limit = expression.args.get("time_limit")
+
+            if time_limit:
+                self.unsupported("GENERATOR TIMELIMIT parameter is not supported in DuckDB")
+
+            if not rowcount:
+                self.unsupported("GENERATOR without ROWCOUNT is not supported in DuckDB")
+                return self.func("range", exp.Literal.number(0))
+
+            return self.func("range", rowcount)
+
         def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
             return self._greatest_least_sql(expression)
 
@@ -2790,14 +2775,16 @@ class DuckDB(Dialect):
             )
 
         def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
-            # Check if this is a GENERATOR function - if so, unwrap TABLE()
+            # For GENERATOR, unwrap TABLE() - just emit the Generator (becomes RANGE)
             if isinstance(expression.this, exp.Generator):
-                # For GENERATOR, we want just range(n), not TABLE(range(n))
-                # Create a Table expression and preserve all args (e.g. alias, joins, pivots, sample)
-                table = exp.Table(**{k: v for k, v in expression.args.items() if v is not None})
+                # Preserve alias, joins, and other table-level args
+                table = exp.Table(
+                    this=expression.this,
+                    alias=expression.args.get("alias"),
+                    joins=expression.args.get("joins"),
+                )
                 return self.sql(table)
 
-            # For other table functions, use parent's default behavior
             return super().tablefromrows_sql(expression)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:

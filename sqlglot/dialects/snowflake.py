@@ -639,6 +639,25 @@ def _build_round(args: t.List) -> exp.Round:
     return expression
 
 
+def _build_generator(args: t.List) -> exp.Generator:
+    """
+    Build Generator expression, unwrapping Snowflake's named parameters.
+
+    Maps ROWCOUNT => rowcount, TIMELIMIT => time_limit.
+    """
+    kwarg_map = {"ROWCOUNT": "rowcount", "TIMELIMIT": "time_limit"}
+    gen_args = {}
+
+    for arg in args:
+        if isinstance(arg, exp.Kwarg):
+            key = arg.this.name.upper()
+            gen_key = kwarg_map.get(key)
+            if gen_key:
+                gen_args[gen_key] = arg.expression
+
+    return exp.Generator(**gen_args)
+
+
 def _build_try_to_number(args: t.List[exp.Expression]) -> exp.Expression:
     return exp.ToNumber(
         this=seq_get(args, 0),
@@ -846,6 +865,7 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
             ),
             "FLATTEN": exp.Explode.from_arg_list,
+            "GENERATOR": _build_generator,
             "GET": exp.GetExtract.from_arg_list,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "GET_PATH": lambda args, dialect: exp.JSONExtract(
@@ -1875,6 +1895,18 @@ class Snowflake(Dialect):
         def least_sql(self, expression: exp.Least) -> str:
             name = "LEAST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "LEAST"
             return self.func(name, expression.this, *expression.expressions)
+
+        def generator_sql(self, expression: exp.Generator) -> str:
+            args = []
+            rowcount = expression.args.get("rowcount")
+            time_limit = expression.args.get("time_limit")
+
+            if rowcount:
+                args.append(exp.Kwarg(this=exp.var("ROWCOUNT"), expression=rowcount))
+            if time_limit:
+                args.append(exp.Kwarg(this=exp.var("TIMELIMIT"), expression=time_limit))
+
+            return self.func("GENERATOR", *args)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             unnest_alias = expression.args.get("alias")

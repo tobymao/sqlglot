@@ -2706,27 +2706,19 @@ class DuckDB(Dialect):
                     )
 
             # Handle max_line_length by inserting newlines every N characters
-            if max_line_length and isinstance(max_line_length, exp.Literal):
-                line_len = max_line_length.this
-                if line_len != "0":
-                    result = exp.Anonymous(
-                        this="RTRIM",
-                        expressions=[
-                            exp.RegexpReplace(
-                                this=result,
-                                expression=exp.Literal.string(f"(.{{{line_len}}})"),
-                                replacement=exp.Concat(
-                                    expressions=[
-                                        exp.Literal.string("\\1"),
-                                        exp.Anonymous(
-                                            this="CHR", expressions=[exp.Literal.number(10)]
-                                        ),
-                                    ]
-                                ),
-                            ),
-                            exp.Anonymous(this="CHR", expressions=[exp.Literal.number(10)]),
-                        ],
-                    )
+            if max_line_length and int(max_line_length.this) > 0:
+                newline = exp.Chr(expressions=[exp.Literal.number(10)])
+                result = exp.Trim(
+                    this=exp.RegexpReplace(
+                        this=result,
+                        expression=exp.Literal.string(f"(.{{{max_line_length.this}}})"),
+                        replacement=exp.Concat(
+                            expressions=[exp.Literal.string("\\1"), newline.copy()]
+                        ),
+                    ),
+                    expression=newline,
+                    position="TRAILING",
+                )
 
             return self.sql(result)
 

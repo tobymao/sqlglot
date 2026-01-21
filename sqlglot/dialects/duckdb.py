@@ -91,8 +91,9 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
-# Templates for SEQ functions - placeholders replaced with max_val and half
+# SEQ function constants
 _SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
+_SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc)
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
@@ -430,14 +431,11 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
     # Warn if SEQ is in a restricted context
-    parent = expression.parent
-    while parent:
-        if isinstance(parent, (exp.Where, exp.Having, exp.AggFunc)) or (
-            isinstance(parent, exp.Order) and isinstance(parent.parent, exp.Window)
-        ):
-            self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
-            break
-        parent = parent.parent
+    order = expression.find_ancestor(exp.Order)
+    if expression.find_ancestor(*_SEQ_RESTRICTED) or (
+        order and isinstance(order.parent, exp.Window)
+    ):
+        self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
 
     bits = byte_width * 8
     max_val = exp.Literal.number(2**bits)

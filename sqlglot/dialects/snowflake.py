@@ -994,10 +994,6 @@ class Snowflake(Dialect):
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
             "LISTAGG": lambda self: self._parse_string_agg(),
             "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
-            "SEQ1": lambda self: self._parse_seq_function(exp.Seq1),
-            "SEQ2": lambda self: self._parse_seq_function(exp.Seq2),
-            "SEQ4": lambda self: self._parse_seq_function(exp.Seq4),
-            "SEQ8": lambda self: self._parse_seq_function(exp.Seq8),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -1468,11 +1464,6 @@ class Snowflake(Dialect):
                     if isinstance(expr, exp.SetItem):
                         expr.set("kind", "VARIABLE")
             return set
-
-        def _parse_seq_function(self, seq_class: t.Type[exp.Func]) -> exp.Func:
-            """Parse SEQ function with optional sign argument."""
-            args = self._parse_csv(self._parse_bitwise)
-            return seq_class(this=seq_get(args, 0))
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

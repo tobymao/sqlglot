@@ -5,7 +5,7 @@ from itertools import groupby
 import re
 import typing as t
 
-from sqlglot import exp, generator, parse_one, parser, tokens, transforms
+from sqlglot import exp, generator, parser, tokens, transforms
 
 from sqlglot.dialects.dialect import (
     DATETIME_DELTA,
@@ -91,8 +91,8 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
-# Base expression for SEQ functions: (ROW_NUMBER() OVER (ORDER BY 1) - 1)
-SEQ_ROW_NUM = parse_one("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
+# Templates for SEQ functions - placeholders replaced with max_val and half
+_SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
@@ -439,33 +439,14 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
             break
         parent = parent.parent
 
-    # Check if signed parameter is 1
-    signed_arg = expression.this
-    is_signed = signed_arg and signed_arg.this == "1"
-
-    # Calculate values based on byte width
     bits = byte_width * 8
     max_val = exp.Literal.number(2**bits)
 
-    # row_num % max_val (% operator copies operands and handles precedence)
-    mod_expr = SEQ_ROW_NUM % max_val
-
-    result: exp.Expression
-    if is_signed:
-        # Signed: 0 to 2^(bits-1)-1, then -2^(bits-1) to -1
-        # CASE WHEN (mod_expr) >= half_max THEN (mod_expr) - max_val ELSE (mod_expr) END
-        half_max = exp.Literal.number(2 ** (bits - 1))
-        result = exp.Paren(
-            this=exp.case()
-            .when(
-                exp.GTE(this=mod_expr, expression=half_max),
-                exp.Sub(this=mod_expr.copy(), expression=max_val),
-            )
-            .else_(mod_expr.copy())
-        )
+    if expression.this and expression.this.this == "1":
+        half = exp.Literal.number(2 ** (bits - 1))
+        result = exp.replace_placeholders(self.SEQ_SIGNED.copy(), max_val=max_val, half=half)
     else:
-        # Unsigned: 0 to 2^bits - 1
-        result = mod_expr
+        result = exp.replace_placeholders(self.SEQ_UNSIGNED.copy(), max_val=max_val)
 
     return self.sql(result)
 
@@ -1930,6 +1911,14 @@ class DuckDB(Dialect):
         # Template for generating a seeded pseudo-random value in [0, 1) from a hash
         SEEDED_RANDOM_TEMPLATE: exp.Expression = exp.maybe_parse(
             "(ABS(HASH(:seed)) % 1000000) / 1000000.0"
+        )
+
+        # Template for generating signed and unsigned SEQ values within a specified range
+        SEQ_UNSIGNED: exp.Expression = exp.maybe_parse(f"{_SEQ_BASE} % :max_val")
+        SEQ_SIGNED: exp.Expression = exp.maybe_parse(
+            f"(CASE WHEN {_SEQ_BASE} % :max_val >= :half "
+            f"THEN {_SEQ_BASE} % :max_val - :max_val "
+            f"ELSE {_SEQ_BASE} % :max_val END)"
         )
 
         # Mappings for EXTRACT/DATE_PART transpilation

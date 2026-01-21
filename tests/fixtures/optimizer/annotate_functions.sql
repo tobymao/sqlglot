@@ -582,7 +582,11 @@ BINARY;
 
 # dialect: hive, spark2, spark, databricks
 HEX(tbl.str_col);
-VARCHAR;
+STRING;
+
+# dialect: hive, spark2, spark, databricks
+HEX(tbl.int_col);
+STRING;
 
 --------------------------------------
 -- BigQuery

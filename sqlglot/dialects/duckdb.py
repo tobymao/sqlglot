@@ -441,7 +441,7 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     bits = byte_width * 8
     max_val = exp.Literal.number(2**bits)
 
-    if expression.this and expression.this.this == "1":
+    if expression.name == "1":
         half = exp.Literal.number(2 ** (bits - 1))
         result = exp.replace_placeholders(self.SEQ_SIGNED.copy(), max_val=max_val, half=half)
     else:
@@ -1882,8 +1882,8 @@ class DuckDB(Dialect):
         )
 
         # Template for generating signed and unsigned SEQ values within a specified range
-        SEQ_UNSIGNED: exp.Expression = exp.maybe_parse(f"{_SEQ_BASE} % :max_val")
-        SEQ_SIGNED: exp.Expression = exp.maybe_parse(
+        SEQ_UNSIGNED = exp.maybe_parse(f"{_SEQ_BASE} % :max_val")
+        SEQ_SIGNED = exp.maybe_parse(
             f"(CASE WHEN {_SEQ_BASE} % :max_val >= :half "
             f"THEN {_SEQ_BASE} % :max_val - :max_val "
             f"ELSE {_SEQ_BASE} % :max_val END)"

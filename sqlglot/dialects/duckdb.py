@@ -2674,10 +2674,11 @@ class DuckDB(Dialect):
                 input_expr.type and input_expr.type.this in exp.DataType.TEXT_TYPES
             )
 
+            result: exp.Expression = input_expr
             if is_string:
-                result: exp.Expression = exp.ToBase64(this=exp.Encode(this=input_expr))
-            else:
-                result = exp.ToBase64(this=input_expr)
+                result = exp.Encode(this=input_expr)
+            
+            result = exp.ToBase64(this=input_expr)
 
             max_line_length = expression.args.get("max_line_length")
             alphabet = expression.args.get("alphabet")

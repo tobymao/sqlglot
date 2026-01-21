@@ -307,7 +307,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
                     if (
                         isinstance(expression, exp.Unnest)
-                        and not alias_column_names
                         and expression.type
                         and expression.type.is_type(exp.DataType.Type.STRUCT)
                     ):

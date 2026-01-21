@@ -1572,12 +1572,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     SELECT first_name, last_name
                     FROM data, UNNEST(users)
                     """,
-                    read="bigquery",
-                )
-            )
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
         )
-        self.assertEqual(expression.selects[0].type, exp.DataType.build("VARCHAR"))
-        self.assertEqual(expression.selects[1].type, exp.DataType.build("VARCHAR"))
+        self.assertEqual(
+            expression.selects[0].type, exp.DataType.build("VARCHAR", dialect="bigquery")
+        )
+        self.assertEqual(
+            expression.selects[1].type, exp.DataType.build("VARCHAR", dialect="bigquery")
+        )
 
         expression = annotate_types(
             optimizer.qualify.qualify(
@@ -1586,16 +1592,57 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     SELECT person
                     FROM UNNEST([STRUCT('Charlie' AS name, 40 AS age)]) AS person
                     """,
-                    read="bigquery",
-                )
-            )
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
         )
         select_type = expression.selects[0].type
         self.assertTrue(select_type.is_type(exp.DataType.Type.STRUCT))
         self.assertEqual(len(select_type.expressions), 2)
         fields = {col_def.name: col_def.kind for col_def in select_type.expressions}
-        self.assertEqual(fields.get("name"), exp.DataType.build("VARCHAR"))
-        self.assertEqual(fields.get("age"), exp.DataType.build("INT"))
+        self.assertEqual(fields.get("name"), exp.DataType.build("VARCHAR", dialect="bigquery"))
+        self.assertEqual(fields.get("age"), exp.DataType.build("INT", dialect="bigquery"))
+
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    WITH data AS (
+                      SELECT [STRUCT('Bob' AS first_name, 'Smith' AS last_name)] AS users
+                    )
+                    SELECT first_name, last_name
+                    FROM data, UNNEST(users) AS p
+                    """,
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        self.assertEqual(
+            expression.selects[0].type, exp.DataType.build("VARCHAR", dialect="bigquery")
+        )
+        self.assertEqual(
+            expression.selects[1].type, exp.DataType.build("VARCHAR", dialect="bigquery")
+        )
+
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT name
+                    FROM UNNEST([STRUCT('Charlie' AS name, 40 AS age)]) AS person
+                    """,
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        select_type = expression.selects[0].type
+        self.assertTrue(select_type.is_type(exp.DataType.build("VARCHAR", dialect="bigquery")))
 
     def test_map_annotation(self):
         # ToMap annotation

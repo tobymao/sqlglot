@@ -1497,7 +1497,6 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
-            exp.Base64Encode: lambda self, e: self._base64_encode_sql(e),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -2663,8 +2662,8 @@ class DuckDB(Dialect):
             result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
-        def _base64_encode_sql(self, expression: exp.Base64Encode) -> str:
-            # DuckDB BASE64 requires BLOB input
+        def base64encode_sql(self, expression: exp.Base64Encode) -> str:
+            # DuckDB TO_BASE64 requires BLOB input
             # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly
             # encodes UTF-8 bytes. We add ENCODE unless the input is a binary type.
             input_expr = expression.this
@@ -2675,15 +2674,16 @@ class DuckDB(Dialect):
             result: exp.Expression = input_expr
             if is_string:
                 result = exp.Encode(this=input_expr)
-            
-            result = exp.ToBase64(this=input_expr)
+
+            result = exp.ToBase64(this=result)
 
             max_line_length = expression.args.get("max_line_length")
             alphabet = expression.args.get("alphabet")
 
             # Handle custom alphabet by replacing characters (applied before line breaks)
-            # Alphabet: 1st char = index 62 (default '+'), 2nd = index 63 (default '/'), 3rd = padding (default '=')
-            if isinstance(alphabet, exp.Literal):
+            # Alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=')
+            # zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/'
+            if isinstance(alphabet, exp.Literal) and alphabet.is_string:
                 for default_char, new_char in zip("+/=", alphabet.this):
                     if new_char != default_char:
                         result = exp.Replace(
@@ -2693,12 +2693,17 @@ class DuckDB(Dialect):
                         )
 
             # Handle max_line_length by inserting newlines every N characters
-            if max_line_length and int(max_line_length.this) > 0:
+            line_length = (
+                int(max_line_length.to_py())
+                if isinstance(max_line_length, exp.Literal) and max_line_length.is_number
+                else 0
+            )
+            if line_length > 0:
                 newline = exp.Chr(expressions=[exp.Literal.number(10)])
                 result = exp.Trim(
                     this=exp.RegexpReplace(
                         this=result,
-                        expression=exp.Literal.string(f"(.{{{max_line_length.this}}})"),
+                        expression=exp.Literal.string(f"(.{{{line_length}}})"),
                         replacement=exp.Concat(
                             expressions=[exp.Literal.string("\\1"), newline.copy()]
                         ),

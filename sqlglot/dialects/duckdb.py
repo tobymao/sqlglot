@@ -431,9 +431,9 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
     # Warn if SEQ is in a restricted context
-    order = expression.find_ancestor(exp.Order)
-    if expression.find_ancestor(*_SEQ_RESTRICTED) or (
-        order and isinstance(order.parent, exp.Window)
+    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED, exp.Order)
+    if ancestor and (
+        not isinstance(ancestor, exp.Order) or isinstance(ancestor.parent, exp.Window)
     ):
         self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
 

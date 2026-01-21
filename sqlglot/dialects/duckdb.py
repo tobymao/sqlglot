@@ -93,7 +93,7 @@ MAX_BIT_POSITION = exp.Literal.number(32768)
 
 # SEQ function constants
 _SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
-_SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc)
+_SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
@@ -431,11 +431,10 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
     # Warn if SEQ is in a restricted context (Select stops search at current scope)
-    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED, exp.Order, exp.Select)
+    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED)
     if ancestor and (
         (not isinstance(ancestor, (exp.Order, exp.Select)))
-        or isinstance(ancestor, exp.Order)
-        and isinstance(ancestor.parent, exp.Window)
+        or (isinstance(ancestor, exp.Order) and isinstance(ancestor.parent, exp.Window))
     ):
         self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
 

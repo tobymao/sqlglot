@@ -1633,7 +1633,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 parse_one(
                     """
                     SELECT name
-                    FROM UNNEST([STRUCT('Charlie' AS name, 40 AS age)])
+                    FROM UNNEST([STRUCT('Charlie' AS name, 40 AS age)]) AS person
                     """,
                     dialect="bigquery",
                 ),

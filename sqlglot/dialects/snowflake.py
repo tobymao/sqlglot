@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     array_append_sql,
+    array_concat_sql,
     build_timetostr_or_tochar,
     build_like,
     binary_from_function,
@@ -1544,7 +1545,7 @@ class Snowflake(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: transforms.preprocess([transforms.inherit_struct_field_names]),
-            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
+            exp.ArrayConcat: array_concat_sql("ARRAY_CAT"),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
             exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.ArrayContains: lambda self, e: self.func(

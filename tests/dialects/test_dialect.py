@@ -1593,6 +1593,67 @@ class TestDialect(Validator):
                 expr = parse_one(sql, dialect=dialect)
                 self.assertEqual(expr.sql(dialect), sql)
 
+        # Test NULL propagation semantics for ARRAY_CAT: NULL-propagating dialects → NULL-skipping dialects
+        for source_dialect, source_sql in (
+            ("snowflake", "ARRAY_CAT(arr1, arr2)"),
+            ("redshift", "ARRAY_CONCAT(arr1, arr2)"),
+        ):
+            with self.subTest(
+                f"ARRAY_CAT NULL propagation: {source_dialect} → DuckDB/PostgreSQL"
+            ):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("duckdb"),
+                    "CASE WHEN arr1 IS NULL THEN NULL ELSE ARRAY_CONCAT(arr1, arr2) END",
+                )
+                self.assertEqual(
+                    expr.sql("postgres"),
+                    "CASE WHEN arr1 IS NULL THEN NULL ELSE ARRAY_CAT(arr1, arr2) END",
+                )
+
+        # Test NULL skipping semantics: NULL-skipping dialects → NULL-propagating dialects
+        for source_dialect, source_sql in (
+            ("duckdb", "ARRAY_CONCAT(arr1, arr2)"),
+            ("postgres", "ARRAY_CAT(arr1, arr2)"),
+        ):
+            with self.subTest(
+                f"ARRAY_CAT NULL skipping: {source_dialect} → Snowflake/Redshift"
+            ):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                self.assertEqual(
+                    expr.sql("snowflake"),
+                    "ARRAY_CAT(COALESCE(arr1, []), arr2)",
+                )
+                self.assertEqual(
+                    expr.sql("redshift"),
+                    "ARRAY_CONCAT(COALESCE(arr1, ARRAY()), arr2)",
+                )
+
+        # Test ARRAY_CAT identity transpilation (should NOT add wrappers)
+        for dialect, sql in (
+            ("duckdb", "ARRAY_CONCAT(arr1, arr2)"),
+            ("postgres", "ARRAY_CAT(arr1, arr2)"),
+            ("snowflake", "ARRAY_CAT(arr1, arr2)"),
+            ("redshift", "ARRAY_CONCAT(arr1, arr2)"),
+        ):
+            with self.subTest(f"ARRAY_CAT identity: {dialect} → {dialect}"):
+                expr = parse_one(sql, dialect=dialect)
+                self.assertEqual(expr.sql(dialect), sql)
+
+        # Test ARRAY_CAT with variadic arguments (3+ arrays)
+        for source_dialect, source_sql in (
+            ("snowflake", "ARRAY_CAT(arr1, arr2, arr3)"),
+            ("redshift", "ARRAY_CONCAT(arr1, arr2, arr3)"),
+        ):
+            with self.subTest(
+                f"ARRAY_CAT variadic NULL propagation: {source_dialect} → DuckDB"
+            ):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                # With multiple args, the wrapper should still apply to the first arg
+                duckdb_sql = expr.sql("duckdb")
+                self.assertIn("CASE WHEN arr1 IS NULL THEN NULL", duckdb_sql)
+                self.assertIn("ARRAY_CONCAT", duckdb_sql)
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

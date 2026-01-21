@@ -1400,6 +1400,94 @@ def array_append_sql(
     return _array_append_sql
 
 
+def array_concat_sql(
+    name: str,
+) -> t.Callable[[Generator, exp.ArrayConcat], str]:
+    """
+    Transpile ARRAY_CONCAT/ARRAY_CAT between dialects with different NULL propagation semantics.
+
+    Some dialects (Redshift, Snowflake) return NULL when any input array is NULL.
+    Others (DuckDB, PostgreSQL) skip NULL arrays and continue concatenation.
+
+    Args:
+        name: Target dialect's function name (e.g., "ARRAY_CAT", "ARRAY_CONCAT")
+
+    Returns:
+        A callable that generates SQL with appropriate NULL handling for the target dialect.
+        Dialects that propagate NULLs need to set `ARRAY_FUNCS_PROPAGATES_NULLS` to True.
+    """
+    from functools import reduce
+
+    def _array_concat_sql(self: Generator, expression: exp.ArrayConcat) -> str:
+        this = expression.this
+        exprs = expression.expressions
+
+        # Handle variadic arguments (convert to nested binary calls if needed)
+        if not self.ARRAY_CONCAT_IS_VAR_LEN:
+            if len(exprs) == 0:
+                rhs: t.Union[str, exp.Expression] = exp.Array(expressions=[])
+            else:
+                rhs = reduce(
+                    lambda x, y: exp.ArrayConcat(
+                        this=x,
+                        expressions=[y],
+                        null_propagation=expression.args.get("null_propagation"),
+                    ),
+                    exprs,
+                )
+        else:
+            rhs = self.expressions(expression)  # type: ignore
+
+        # Build the base function SQL
+        func_sql = self.func(name, this, rhs or None)
+
+        source_null_propagation = bool(expression.args.get("null_propagation"))
+        target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
+
+        # No transpilation needed when source and target have matching NULL semantics,
+        # or when the first argument is an array literal (which can never be NULL),
+        # or when it's a single-argument call (empty array is added, preserving NULL semantics)
+        if (
+            source_null_propagation == target_null_propagation
+            or isinstance(this, exp.Array)
+            or len(exprs) == 0
+        ):
+            return func_sql
+
+        # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
+        if source_null_propagation:
+            return self.sql(
+                exp.If(
+                    this=exp.Is(this=this, expression=exp.Null()),
+                    true=exp.Null(),
+                    false=func_sql,
+                )
+            )
+
+        # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
+        this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
+
+        # Rebuild rhs with COALESCE-wrapped this
+        if not self.ARRAY_CONCAT_IS_VAR_LEN:
+            if len(exprs) == 0:
+                rhs = exp.Array(expressions=[])
+            else:
+                rhs = reduce(
+                    lambda x, y: exp.ArrayConcat(
+                        this=x,
+                        expressions=[y],
+                        null_propagation=expression.args.get("null_propagation"),
+                    ),
+                    exprs,
+                )
+        else:
+            rhs = self.expressions(expression)  # type: ignore
+
+        return self.func(name, this, rhs or None)
+
+    return _array_concat_sql
+
+
 def var_map_sql(
     self: Generator, expression: exp.Map | exp.VarMap, map_func_name: str = "MAP"
 ) -> str:

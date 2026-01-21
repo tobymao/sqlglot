@@ -147,6 +147,29 @@ def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_st
     return self.sql(input_expr)
 
 
+def _arrays_zip_sql(self: DuckDB.Generator, expression: exp.ArraysZip) -> str:
+    """
+    Transpile Snowflake ARRAYS_ZIP to DuckDB LIST_ZIP with NULL handling.
+
+    Snowflake returns NULL if any input array is NULL, while DuckDB's LIST_ZIP
+    treats NULL arrays differently. We wrap in CASE WHEN to match Snowflake behavior.
+    """
+    args = expression.expressions
+    if not args:
+        return self.func("LIST_ZIP")
+
+    # Build: CASE WHEN a IS NULL OR b IS NULL ... THEN NULL ELSE LIST_ZIP(a, b, ...) END
+    null_checks = [exp.Is(this=arg.copy(), expression=exp.Null()) for arg in args]
+    condition: exp.Expression = null_checks[0]
+    for check in null_checks[1:]:
+        condition = exp.Or(this=condition, expression=check)
+
+    list_zip = exp.Anonymous(this="LIST_ZIP", expressions=[arg.copy() for arg in args])
+
+    case = exp.Case(ifs=[exp.If(this=condition, true=exp.Null())], default=list_zip)
+    return self.sql(case)
+
+
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
     DuckDB's LAST_DAY only supports finding the last day of a month.
@@ -1629,6 +1652,7 @@ class DuckDB(Dialect):
             ),
             exp.Base64DecodeBinary: lambda self, e: _base64_decode_sql(self, e, to_string=False),
             exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
+            exp.ArraysZip: _arrays_zip_sql,
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
             exp.BitwiseLeftShift: _bitshift_sql,

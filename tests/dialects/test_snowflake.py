@@ -474,6 +474,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
         self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
+        self.validate_identity("SELECT ARRAYS_ZIP([1, 2, 3])")
+        self.validate_identity("SELECT ARRAYS_ZIP([1, 2, 3], ['a', 'b', 'c'], [10, 20, 30])")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")
         self.validate_identity("SELECT AI_SUMMARIZE_AGG(review)")
         self.validate_identity("SELECT AI_CLASSIFY('text', ['travel', 'cooking'])")
@@ -3471,6 +3473,13 @@ class TestSnowflake(Validator):
                 "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAYS_ZIP([1, 2], [3, 4])",
+            write={
+                "snowflake": "ARRAYS_ZIP([1, 2], [3, 4])",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL THEN NULL ELSE LIST_ZIP([1, 2], [3, 4]) END",
             },
         )
         self.validate_all(

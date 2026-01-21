@@ -404,6 +404,32 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], e
 
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
+    ancestor_cast = expression.find_ancestor(exp.Cast)
+    is_map_cast = ancestor_cast and ancestor_cast.to.is_type(exp.DataType.Type.MAP)
+
+    # Empty struct cast to MAP should use MAP() since DuckDB can't parse {}
+    if not expression.expressions:
+        if is_map_cast:
+            return "MAP()"
+
+    # Check for empty string keys - DuckDB struct literal can't handle them
+    # Use MAP([keys], [values]) syntax instead
+    if is_map_cast:
+        has_empty_key = any(
+            isinstance(expr, exp.PropertyEQ)
+            and isinstance(expr.this, exp.Identifier)
+            and expr.this.this == ""
+            for expr in expression.expressions
+        )
+        if has_empty_key:
+            keys = []
+            values = []
+            for expr in expression.expressions:
+                if isinstance(expr, exp.PropertyEQ):
+                    keys.append(self.sql(exp.Literal.string(expr.name)))
+                    values.append(self.sql(expr.expression))
+            return f"MAP([{', '.join(keys)}], [{', '.join(values)}])"
+
     args: t.List[str] = []
 
     # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
@@ -411,7 +437,6 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     # The transformation to ROW will take place if:
     #  1. The STRUCT itself does not have proper fields (key := value) as a "proper" STRUCT would
     #  2. A cast to STRUCT / ARRAY of STRUCTs is found
-    ancestor_cast = expression.find_ancestor(exp.Cast)
     is_bq_inline_struct = (
         (expression.find(exp.PropertyEQ) is None)
         and ancestor_cast
@@ -1707,6 +1732,7 @@ class DuckDB(Dialect):
             exp.Seq8: lambda self, e: _seq_sql(self, e, 8),
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
+            exp.MapCat: rename_func("MAP_CONCAT"),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),

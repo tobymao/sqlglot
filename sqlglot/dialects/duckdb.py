@@ -2685,25 +2685,13 @@ class DuckDB(Dialect):
             # Handle custom alphabet by replacing characters (applied before line breaks)
             # Alphabet: 1st char = index 62 (default '+'), 2nd = index 63 (default '/'), 3rd = padding (default '=')
             if alphabet and isinstance(alphabet, exp.Literal):
-                alphabet_str = alphabet.this.strip("'")
-                if len(alphabet_str) >= 1 and alphabet_str[0] != "+":
-                    result = exp.Replace(
-                        this=result,
-                        expression=exp.Literal.string("+"),
-                        replacement=exp.Literal.string(alphabet_str[0]),
-                    )
-                if len(alphabet_str) >= 2 and alphabet_str[1] != "/":
-                    result = exp.Replace(
-                        this=result,
-                        expression=exp.Literal.string("/"),
-                        replacement=exp.Literal.string(alphabet_str[1]),
-                    )
-                if len(alphabet_str) >= 3 and alphabet_str[2] != "=":
-                    result = exp.Replace(
-                        this=result,
-                        expression=exp.Literal.string("="),
-                        replacement=exp.Literal.string(alphabet_str[2]),
-                    )
+                for default_char, new_char in zip("+/=", alphabet.this):
+                    if new_char != default_char:
+                        result = exp.Replace(
+                            this=result,
+                            expression=exp.Literal.string(default_char),
+                            replacement=exp.Literal.string(new_char),
+                        )
 
             # Handle max_line_length by inserting newlines every N characters
             if max_line_length and int(max_line_length.this) > 0:

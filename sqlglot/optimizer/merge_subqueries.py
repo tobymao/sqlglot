@@ -326,14 +326,25 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         expression = expression.unalias()
         must_wrap_expression = not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
 
+        is_number = expression.is_number
+
         for column in columns_to_replace:
+            parent = column.parent
+
+            # Ensures that we don't merge literal numbers in GROUP BY as they have positional context
+            # e.g don't trasform `SELECT a FROM (SELECT 6 AS a) GROUP BY a` to `SELECT 6 AS a GROUP BY 6`,
+            # as this would attempt to GROUP BY the 6th projection instead of the column `a`
+            if is_number and isinstance(parent, exp.Group):
+                column.replace(exp.to_identifier(column.name))
+                continue
+
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).
-            if isinstance(column.parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
+            if isinstance(parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
                 expression = exp.paren(expression, copy=False)
 
             # make sure we do not accidentally change the name of the column
-            if isinstance(column.parent, exp.Select) and column.name != expression.name:
+            if isinstance(parent, exp.Select) and column.name != expression.name:
                 expression = exp.alias_(expression, column.name)
 
             column.replace(expression.copy())

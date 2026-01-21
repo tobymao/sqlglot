@@ -47,7 +47,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import is_date_unit, seq_get, find_new_name
+from sqlglot.helper import is_date_unit, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
 
@@ -90,8 +90,6 @@ WEEK_START_DAY_TO_DOW = {
 }
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
-
-SEQ_TYPES = (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8)
 
 # Base expression for SEQ functions: (ROW_NUMBER() OVER (ORDER BY 1) - 1)
 SEQ_ROW_NUM = parse_one("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
@@ -420,6 +418,10 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     - Unsigned (0): wraps at 2^(bits) - 1
     - Signed (1): wraps at 2^(bits-1) - 1, then goes negative
 
+    Note: SEQ in WHERE, HAVING, aggregates, or window ORDER BY is not supported
+    because these contexts don't allow window functions. Users should rewrite
+    using CTEs or subqueries.
+
     Args:
         expression: The SEQ function expression (may have 'this' arg for signed param)
         byte_width: 1, 2, 4, or 8 bytes
@@ -427,11 +429,21 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     Returns:
         SQL string using ROW_NUMBER() with modulo for wrap-around
     """
-    # Warn if SEQ is used with JOINs or LATERAL - results may differ between Snowflake and DuckDB
+    # Check for restricted contexts by walking up the parent chain
     parent = expression.parent
     while parent:
-        if isinstance(parent, exp.Select) and parent.args.get("joins"):
-            self.unsupported("SEQ with JOINs produces different results than Snowflake")
+        # WHERE or HAVING clause
+        if isinstance(parent, (exp.Where, exp.Having)):
+            self.unsupported("SEQ in WHERE/HAVING is not supported - use CTE or subquery")
+            break
+        # Inside an aggregate function
+        if isinstance(parent, exp.AggFunc):
+            self.unsupported("SEQ inside aggregate function is not supported - use CTE or subquery")
+            break
+        # Inside window ORDER BY (but not query-level ORDER BY)
+        if isinstance(parent, exp.Order) and isinstance(parent.parent, exp.Window):
+            self.unsupported("SEQ in window ORDER BY is not supported - use CTE or subquery")
+            break
         parent = parent.parent
 
     # Check if signed parameter is 1
@@ -1079,100 +1091,6 @@ def _regr_val_sql(
     )
 
 
-def _find_all_seq(node: exp.Expression) -> t.List[exp.Expression]:
-    """Find all SEQ1/2/4/8 functions in an expression."""
-    return list(node.find_all(*SEQ_TYPES))
-
-
-def _maybe_wrap_seq_in_select(expression: exp.Expression) -> exp.Expression:
-    """
-    Preprocessing function for SELECT expressions with SEQ functions.
-
-    Only processes SELECT expressions that were flagged by Snowflake's parser
-    as containing SEQ functions. This avoids traversing all SELECT expressions
-    during generation.
-    """
-    if isinstance(expression, exp.Select) and expression.meta.get("has_seq"):
-        return _wrap_seq_in_subquery(expression)
-    return expression
-
-
-def _wrap_seq_in_subquery(expression: exp.Select) -> exp.Select:
-    """
-    Wrap SELECT in subquery if SEQ functions appear in restricted contexts
-    (WHERE/HAVING, aggregates, window ORDER BY).
-    """
-    # Find SEQ in restricted contexts
-    restricted_seqs: t.List[exp.Expression] = []
-
-    for key in ("where", "having"):
-        if clause := expression.args.get(key):
-            restricted_seqs.extend(_find_all_seq(clause))
-
-    for agg in expression.find_all(exp.AggFunc):
-        restricted_seqs.extend(_find_all_seq(agg))
-
-    for window in expression.find_all(exp.Window):
-        if order := window.args.get("order"):
-            restricted_seqs.extend(_find_all_seq(order))
-
-    if not restricted_seqs:
-        return expression
-
-    # Build sql -> alias mapping
-    taken = set(expression.named_selects)
-    sql_to_alias: t.Dict[str, str] = {}
-    seq_aliases: t.List[exp.Expression] = []
-
-    for seq in restricted_seqs:
-        sql = seq.sql()
-        if sql not in sql_to_alias:
-            alias = find_new_name(taken, "_seq")
-            taken.add(alias)
-            sql_to_alias[sql] = alias
-            seq_aliases.append(exp.alias_(seq.copy(), alias, copy=False))
-
-    def replace_seqs(node: exp.Expression) -> None:
-        for seq in _find_all_seq(node):
-            if alias := sql_to_alias.get(seq.sql()):
-                seq.replace(exp.column(alias))
-
-    def strip_table_qualifiers(node: exp.Expression) -> None:
-        """Strip table qualifiers from columns since they're now in a subquery."""
-        for col in node.find_all(exp.Column):
-            if col.table:
-                col.set("table", None)
-
-    # Move clauses to outer query with SEQ replaced and table qualifiers stripped
-    outer_selects = [s.copy() for s in expression.selects]
-    for s in outer_selects:
-        strip_table_qualifiers(s)
-
-    outer_query = exp.select(*outer_selects, copy=False).from_(
-        expression.subquery(alias="_t", copy=False), copy=False
-    )
-
-    for key in ("where", "group", "having", "order", "limit", "offset"):
-        if clause := expression.args.pop(key, None):
-            clause_copy = clause.copy()
-            replace_seqs(clause_copy)
-            strip_table_qualifiers(clause_copy)
-            outer_query.set(key, clause_copy)
-
-    # Replace SEQ only inside aggregates/window ORDER BY in outer SELECT
-    for select in outer_query.selects:
-        for agg in select.find_all(exp.AggFunc):
-            replace_seqs(agg)
-        for window in select.find_all(exp.Window):
-            if order := window.args.get("order"):
-                replace_seqs(order)
-
-    # Inner query: SELECT *, seq_aliases
-    expression.set("expressions", [exp.Star()] + seq_aliases)
-
-    return outer_query
-
-
 def _maybe_corr_null_to_false(
     expression: t.Union[exp.Filter, exp.Window, exp.Corr],
 ) -> t.Optional[t.Union[exp.Filter, exp.Window, exp.Corr]]:
@@ -1781,7 +1699,6 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
-            exp.Select: transforms.preprocess([_maybe_wrap_seq_in_select]),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),

@@ -383,8 +383,21 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "TRY_TO_DECIMAL('123.45', '999.99', 10, 2)", "TRY_TO_NUMBER('123.45', '999.99', 10, 2)"
         )
-        self.validate_identity("TRY_TO_DOUBLE('123.456')")
+        self.validate_all(
+            "TRY_TO_DOUBLE('123.456')",
+            write={
+                "snowflake": "TRY_TO_DOUBLE('123.456')",
+                "duckdb": "TRY_CAST('123.456' AS DOUBLE)",
+            },
+        )
         self.validate_identity("TRY_TO_DOUBLE('123.456', '999.99')")
+        self.validate_all(
+            "TRY_TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
+            write={
+                "snowflake": "TRY_TO_DOUBLE('-4.56E-03', 'S9.99EEEE')",
+                "duckdb": UnsupportedError,
+            },
+        )
         self.validate_identity("TO_FILE(object_col)")
         self.validate_identity("TO_FILE('file.csv')")
         self.validate_identity("TO_FILE('file.csv', 'relativepath/')")

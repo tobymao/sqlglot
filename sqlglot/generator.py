@@ -5162,7 +5162,8 @@ class Generator(metaclass=_Generator):
 
     @unsupported_args("format")
     def todouble_sql(self, expression: exp.ToDouble) -> str:
-        return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
+        cast = exp.TryCast if expression.args.get("safe") else exp.Cast
+        return self.sql(cast(this=expression.this, to=exp.DataType.build(exp.DataType.Type.DOUBLE)))
 
     def string_sql(self, expression: exp.String) -> str:
         this = expression.this

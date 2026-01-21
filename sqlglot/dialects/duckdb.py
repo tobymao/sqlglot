@@ -2671,7 +2671,7 @@ class DuckDB(Dialect):
             # Check if input is a string type - ENCODE only accepts VARCHAR
             is_string = input_expr.is_string or input_expr.is_type(*exp.DataType.TEXT_TYPES)
 
-            result: exp.Expression = input_expr
+            result = input_expr
             if is_string:
                 result = exp.Encode(this=input_expr)
 

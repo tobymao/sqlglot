@@ -32,6 +32,9 @@ class TestStarrocks(Validator):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
         ddl_sqls = [
+            "PARTITION BY (col1, col2)",
+            "PARTITION BY (DATE_TRUNC('DAY', col2), col1)",
+            "PARTITION BY (FROM_UNIXTIME(col2))",
             "DISTRIBUTED BY HASH (col1) BUCKETS 1",
             "DISTRIBUTED BY HASH (col1)",
             "DISTRIBUTED BY RANDOM BUCKETS 1",
@@ -42,6 +45,7 @@ class TestStarrocks(Validator):
             "DUPLICATE KEY (col1, col2) DISTRIBUTED BY HASH (col1)",
             "UNIQUE KEY (col1, col2) PARTITION BY RANGE (col1) (START ('2024-01-01') END ('2024-01-31') EVERY (INTERVAL 1 DAY)) DISTRIBUTED BY HASH (col1)",
             "UNIQUE KEY (col1, col2) PARTITION BY RANGE (col1, col2) (START ('1') END ('10') EVERY (1), START ('10') END ('100') EVERY (10)) DISTRIBUTED BY HASH (col1)",
+            "ORDER BY (col1, col2)",
             "DISTRIBUTED BY HASH (col1) ROLLUP (r1(event_day, siteid), r2(event_day, citycode), r3(event_day))",
             "DISTRIBUTED BY HASH (col1) ROLLUP (r1(col2))",
             "DISTRIBUTED BY HASH (col1) ROLLUP (`r1`(`col2`))",
@@ -79,6 +83,75 @@ class TestStarrocks(Validator):
                 "postgres": "CREATE TABLE foo (col1 BIGINT, col2 BIGINT)",
             },
         )
+
+        # expression partitioning in MV
+        expr_partition = exp.PartitionedByProperty(
+            this=exp.Tuple(
+                expressions=[
+                    exp.Anonymous(this="FROM_UNIXTIME", expressions=[exp.column("ts")]),
+                    exp.column("region"),
+                ]
+            )
+        )
+        create = exp.Create(
+            this=exp.to_table("t"),
+            kind="VIEW",
+            properties=exp.Properties(expressions=[expr_partition]),
+        )
+        create_sql = create.sql(dialect="starrocks")
+        self.assertTrue("PARTITION BY (FROM_UNIXTIME(ts), region)" in create_sql)
+
+        # column tuple expression partitioning (columns only) in MV
+        columns_only_partition = exp.PartitionedByProperty(
+            this=exp.Tuple(expressions=[exp.column("c1"), exp.column("c2")])
+        )
+        create = exp.Create(
+            this=exp.to_table("t"),
+            kind="VIEW",
+            properties=exp.Properties(expressions=[columns_only_partition]),
+        )
+        self.assertEqual(
+            columns_only_partition.sql(dialect="starrocks"),
+            "PARTITION BY (c1, c2)",
+        )
+        create_sql = create.sql(dialect="starrocks")
+        self.assertTrue("PARTITION BY (c1, c2)" in create_sql)
+
+        # ORDER BY
+        multi_column_cluster = exp.Cluster(
+            expressions=[
+                exp.column("c"),
+                exp.column("d"),
+            ]
+        )
+        self.assertEqual(multi_column_cluster.sql(dialect="starrocks"), "ORDER BY (c, d)")
+
+        single_column_cluster = exp.Cluster(expressions=[exp.column("c")])
+        self.assertEqual(single_column_cluster.sql(dialect="starrocks"), "ORDER BY (c)")
+
+        # MV: Refresh trigger property
+        manual_refresh = exp.RefreshTriggerProperty(kind=exp.var("MANUAL"))
+        self.assertEqual(manual_refresh.sql(dialect="starrocks"), "REFRESH MANUAL")
+
+        async_refresh = exp.RefreshTriggerProperty(
+            method=exp.var("IMMEDIATE"),
+            kind=exp.var("ASYNC"),
+            starts=exp.Literal.string("2025-01-01 00:00:00"),
+            every=exp.Literal.number(5),
+            unit=exp.var("MINUTE"),
+        )
+        self.assertEqual(
+            async_refresh.sql(dialect="starrocks"),
+            "REFRESH IMMEDIATE ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
+        )
+
+        skip_unspecified_method_refresh = exp.RefreshTriggerProperty(
+            method=exp.var("UNSPECIFIED"), kind=exp.var("ASYNC")
+        )
+        self.assertEqual(skip_unspecified_method_refresh.sql(dialect="starrocks"), "REFRESH ASYNC")
+
+        # RENAME table without TO keyword
+        self.validate_identity("ALTER TABLE t1 RENAME t2")
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")

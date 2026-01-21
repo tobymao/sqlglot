@@ -194,6 +194,8 @@ class StarRocks(MySQL):
 
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False
+        # StarRocks doesn't support renaming a table with a database.
+        RENAME_TABLE_WITH_DB = False
 
         CAST_MAPPING = {}
 
@@ -211,6 +213,7 @@ class StarRocks(MySQL):
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {
@@ -416,10 +419,79 @@ class StarRocks(MySQL):
 
             return super().create_sql(expression)
 
+        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
+            """To avoid TO keyword in ALTER ... RENAME statements."""
+            return super().alterrename_sql(expression, include_to=False)
+
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            this = expression.this
-            if isinstance(this, exp.Schema):
-                # Parenstheses are ommited in latest versions
-                # https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
-                return f"PARTITION BY {self.expressions(this, flat=True)}"
-            return f"PARTITION BY {self.sql(this)}"
+            node = expression.this
+
+            if isinstance(node, exp.Schema):
+                parts = ", ".join(self.sql(e) for e in node.expressions)
+                is_simple = all(
+                    isinstance(e, (exp.Column, exp.Identifier)) for e in node.expressions
+                )
+            else:
+                parts = self.sql(node)
+                is_simple = isinstance(node, (exp.Column, exp.Identifier))
+
+            return f"PARTITION BY ({parts})" if is_simple else f"PARTITION BY {parts}"
+
+        def partition_sql(self, expression: exp.Partition) -> str:
+            parent = expression.parent
+            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
+                return ", ".join(self.sql(e) for e in expression.expressions)
+            return super().partition_sql(expression)
+
+        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
+            )
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
+            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
+
+        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
+            partition_expressions = self.expressions(
+                expression, key="partition_expressions", indent=False
+            )
+            create_sql = self.expressions(expression, key="create_expressions", indent=False)
+            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
+
+        def partitionlist_sql(self, expression: exp.PartitionList) -> str:
+            name = self.sql(expression, "this")
+            values = self.expressions(expression, indent=False)
+            return f"PARTITION {name} VALUES IN ({values})"
+
+        def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
+            name = self.sql(expression, "this")
+            values = self.expressions(expression, indent=False)
+            return f"PARTITION {name} VALUES LESS THAN ({values})"
+
+        def cluster_sql(self, expression: exp.Cluster) -> str:
+            """Generate StarRocks ORDER BY clause for clustering."""
+            expressions = self.expressions(expression, flat=True)
+            return f"ORDER BY ({expressions})" if expressions else ""
+
+        def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
+            """Generate StarRocks REFRESH clause for materialized views.
+            There is a little difference of the syntax between StarRocks and Doris.
+            """
+            parts = ["REFRESH"]
+
+            # Only render method when it matches StarRocks keywords.
+            method_sql = self.sql(expression, "method")
+            if method_sql.upper() != "UNSPECIFIED":
+                parts.append(method_sql)
+
+            if kind := expression.args.get("kind"):
+                parts.append(self.sql(kind))
+
+            if starts := self.sql(expression, "starts"):
+                parts.append(f"START ({starts})")
+
+            every = self.sql(expression, "every")
+            unit = self.sql(expression, "unit")
+            if every and unit:
+                parts.append(f"EVERY (INTERVAL {every} {unit})")
+
+            return " ".join(p for p in parts if p and str(p).strip())

@@ -262,7 +262,6 @@ class TestSnowflake(Validator):
                 "snowflake": "IS_NULL_VALUE(x)",
             },
         )
-
         # Test RANDSTR transpilation to DuckDB
         self.validate_all(
             "SELECT RANDSTR(10, 123)",
@@ -2564,30 +2563,41 @@ class TestSnowflake(Validator):
         )
 
         self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
-        self.validate_identity(
-            "SELECT BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHwxyz0123456789+/')"
-        )
+        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
 
         self.validate_identity("SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=')")
-        self.validate_identity(
-            "SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
-        )
+        self.validate_identity("SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', '+/=')")
 
-        self.validate_identity("SELECT BASE64_ENCODE('Hello World')")
-        self.validate_identity("SELECT BASE64_ENCODE('Hello World', 76)")
-        self.validate_identity(
-            "SELECT BASE64_ENCODE('Hello World', 76, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
+        expr = self.validate_identity("SELECT BASE64_ENCODE('Hello World')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "SELECT TO_BASE64(ENCODE('Hello World'))")
+        self.validate_all(
+            "SELECT BASE64_ENCODE(x)",
+            write={
+                "duckdb": "SELECT TO_BASE64(x)",
+                "snowflake": "SELECT BASE64_ENCODE(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT BASE64_ENCODE(x, 76)",
+            write={
+                "duckdb": "SELECT RTRIM(REGEXP_REPLACE(TO_BASE64(x), '(.{76})', '\\1' || CHR(10), 'g'), CHR(10))",
+                "snowflake": "SELECT BASE64_ENCODE(x, 76)",
+            },
+        )
+        self.validate_all(
+            "SELECT BASE64_ENCODE(x, 76, '+/=')",
+            write={
+                "duckdb": "SELECT RTRIM(REGEXP_REPLACE(TO_BASE64(x), '(.{76})', '\\1' || CHR(10), 'g'), CHR(10))",
+                "snowflake": "SELECT BASE64_ENCODE(x, 76, '+/=')",
+            },
         )
 
         self.validate_identity("SELECT TRY_BASE64_DECODE_BINARY('SGVsbG8=')")
-        self.validate_identity(
-            "SELECT TRY_BASE64_DECODE_BINARY('SGVsbG8=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
-        )
+        self.validate_identity("SELECT TRY_BASE64_DECODE_BINARY('SGVsbG8=', '+/=')")
 
         self.validate_identity("SELECT TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=')")
-        self.validate_identity(
-            "SELECT TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')"
-        )
+        self.validate_identity("SELECT TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', '+/=')")
 
         self.validate_identity("SELECT TRY_HEX_DECODE_BINARY('48656C6C6F')")
 

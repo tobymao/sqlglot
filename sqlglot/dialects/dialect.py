@@ -2080,6 +2080,16 @@ def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove)
     )
 
 
+def array_filter_null_sql(self: Generator, expression: exp.ArrayCompact) -> str:
+    lambda_id = exp.to_identifier("_u")
+    cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
+    return self.sql(
+        exp.ArrayFilter(
+            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
+        )
+    )
+
+
 def to_number_with_nls_param(self: Generator, expression: exp.ToNumber) -> str:
     return self.func(
         "TO_NUMBER",

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-from decimal import Decimal
 import logging
 import functools
 import itertools
@@ -468,10 +467,6 @@ def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
 
 def boolean_literal(condition):
     return exp.true() if condition else exp.false()
-
-
-def numeric_literal(value: int | float | Decimal) -> exp.Literal | exp.Neg:
-    return exp.Literal.number(value) if value >= 0 else exp.Neg(this=exp.Literal.number(abs(value)))
 
 
 class Simplifier:
@@ -1146,18 +1141,18 @@ class Simplifier:
             num_b = b.to_py()
 
             if isinstance(expression, exp.Add):
-                return numeric_literal(num_a + num_b)
+                return exp.Literal.number(num_a + num_b)
             if isinstance(expression, exp.Mul):
-                return numeric_literal(num_a * num_b)
+                return exp.Literal.number(num_a * num_b)
 
             # We only simplify Sub, Div if a and b have the same parent because they're not associative
             if isinstance(expression, exp.Sub):
-                return numeric_literal(num_a - num_b) if a.parent is b.parent else None
+                return exp.Literal.number(num_a - num_b) if a.parent is b.parent else None
             if isinstance(expression, exp.Div):
                 # engines have differing int div behavior so intdiv is not safe
                 if (isinstance(num_a, int) and isinstance(num_b, int)) or a.parent is not b.parent:
                     return None
-                return numeric_literal(num_a / num_b)
+                return exp.Literal.number(num_a / num_b)
 
             boolean = eval_boolean(expression, num_a, num_b)
 

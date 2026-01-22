@@ -761,13 +761,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
-        for op in ("-", "*", "+", "/"):
-            for lhs, rhs in (("5", "4"), ("5.5", "4.5"), ("5.5", "4")):
-                binary_op = f"-({lhs} {op} {rhs})"
-                with self.subTest(f"Test Simplify AST for: {binary_op}"):
-                    neg_expr = optimizer.simplify.simplify(parse_one(binary_op))
-                    self.assertTrue(isinstance(neg_expr, exp.Neg))
-
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1

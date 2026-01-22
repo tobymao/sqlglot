@@ -14,9 +14,15 @@ EXPRESSION_METADATA = {
             exp.Sec,
         }
     },
-    exp.CurrentTimezone: {"returns": exp.DataType.Type.VARCHAR},
+    **{
+        exp_type: {"returns": exp.DataType.Type.VARCHAR}
+        for exp_type in {
+            exp.CurrentTimezone,
+            exp.Monthname,
+            exp.SessionUser,
+        }
+    },
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
-    exp.Monthname: {"returns": exp.DataType.Type.VARCHAR},
 }

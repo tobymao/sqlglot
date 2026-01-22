@@ -592,6 +592,10 @@ STRING;
 SOUNDEX(tbl.str_col);
 STRING;
 
+# dialect: spark, databricks
+SESSION_USER();
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

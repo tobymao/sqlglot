@@ -81,7 +81,6 @@ class StarRocks(MySQL):
 
         PROPERTY_PARSERS = {
             **MySQL.Parser.PROPERTY_PARSERS,
-            "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "ROLLUP": lambda self: self._parse_rollup_property(),
@@ -139,58 +138,20 @@ class StarRocks(MySQL):
 
             return unnest
 
-        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
-            self._match_text_seq("START")
-            start = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("END")
-            end = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("EVERY")
-            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
-            return self.expression(
-                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
-            )
-
-        def _parse_partition_definition(self) -> exp.Partition:
-            # PARTITION <name> VALUES LESS THAN (<value_csv>)
-            self._match_text_seq("PARTITION")
-            name = self._parse_id_var()
-            self._match_text_seq("VALUES", "LESS", "THAN")
-            values = self._parse_wrapped_csv(self._parse_expression)
-
-            if (
-                len(values) == 1
-                and isinstance(values[0], exp.Column)
-                and values[0].name.upper() == "MAXVALUE"
-            ):
-                values = [exp.var("MAXVALUE")]
-
-            part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
-            return self.expression(exp.Partition, expressions=[part_range])
-
-        def _parse_partition_definition_list(self) -> exp.Partition:
-            # PARTITION <name> VALUES IN (<value_csv>)
-            self._match_text_seq("PARTITION")
-            name = self._parse_id_var()
-            self._match_text_seq("VALUES", "IN")
-            values = self._parse_wrapped_csv(self._parse_expression)
-            part_list = self.expression(exp.PartitionList, this=name, expressions=values)
-            return self.expression(exp.Partition, expressions=[part_list])
-
-        def _parse_partition_by_opt_range(
+        def _parse_partition_property(
             self,
-        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
+        ) -> t.Optional[
+            exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty
+        ]:
             if self._match_text_seq("LIST"):
-                # StarRocks LIST partitioning only supports column references, not expressions
                 return self.expression(
                     exp.PartitionByListProperty,
-                    partition_expressions=self._parse_wrapped_id_vars(),
-                    create_expressions=self._parse_wrapped_csv(
-                        self._parse_partition_definition_list
-                    ),
+                    partition_expressions=self._parse_wrapped_csv(self._parse_assignment),
+                    create_expressions=self._parse_wrapped_csv(self._parse_partition_list_value),
                 )
 
             if self._match_text_seq("RANGE"):
-                # StarRocks RANGE partitioning supports both columns and expressions like str2date()
+                # StarRocks RANGE partitioning supports expressions like str2date()
                 partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
                 self._match_l_paren()
 
@@ -199,7 +160,7 @@ class StarRocks(MySQL):
                         self._parse_partitioning_granularity_dynamic
                     )
                 elif self._match_text_seq("PARTITION", advance=False):
-                    create_expressions = self._parse_csv(self._parse_partition_definition)
+                    create_expressions = self._parse_csv(self._parse_partition_range_value)
                 else:
                     create_expressions = None
 
@@ -212,10 +173,20 @@ class StarRocks(MySQL):
                 )
 
             # StarRocks expression-based partitioning: PARTITION BY expr1, expr2, ...
-            # Can be column refs or function calls like DATE_TRUNC(), FROM_UNIXTIME()
             return self.expression(
                 exp.PartitionedByProperty,
                 this=exp.Schema(expressions=self._parse_csv(self._parse_assignment)),
+            )
+
+        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
+            self._match_text_seq("START")
+            start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            end = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("EVERY")
+            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
+            return self.expression(
+                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
     class Generator(MySQL.Generator):
@@ -244,9 +215,7 @@ class StarRocks(MySQL):
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
@@ -454,45 +423,8 @@ class StarRocks(MySQL):
             return super().create_sql(expression)
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            node = expression.this
-
-            if isinstance(node, exp.Schema):
-                parts = ", ".join(self.sql(e) for e in node.expressions)
-                is_simple = all(
-                    isinstance(e, (exp.Column, exp.Identifier)) for e in node.expressions
-                )
-            else:
-                parts = self.sql(node)
-                is_simple = isinstance(node, (exp.Column, exp.Identifier))
-
-            return f"PARTITION BY ({parts})" if is_simple else f"PARTITION BY {parts}"
-
-        def partition_sql(self, expression: exp.Partition) -> str:
-            parent = expression.parent
-            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
-                return ", ".join(self.sql(e) for e in expression.expressions)
-            return super().partition_sql(expression)
-
-        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
-
-        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
-
-        def partitionlist_sql(self, expression: exp.PartitionList) -> str:
-            name = self.sql(expression, "this")
-            values = self.expressions(expression, indent=False)
-            return f"PARTITION {name} VALUES IN ({values})"
-
-        def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
-            name = self.sql(expression, "this")
-            values = self.expressions(expression, indent=False)
-            return f"PARTITION {name} VALUES LESS THAN ({values})"
+            this = expression.this
+            partition_cols = this.expressions if isinstance(this, exp.Schema) else [this]
+            is_cols = all(isinstance(col, (exp.Column, exp.Identifier)) for col in partition_cols)
+            sql = self.expressions(sqls=partition_cols, flat=True)
+            return f"PARTITION BY ({sql})" if is_cols else f"PARTITION BY {sql}"

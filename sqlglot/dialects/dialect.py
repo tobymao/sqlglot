@@ -1406,45 +1406,41 @@ def array_concat_sql(
     """
     Transpile ARRAY_CONCAT/ARRAY_CAT between dialects with different NULL propagation semantics.
 
-    Some dialects (Redshift, Snowflake) return NULL when any input array is NULL.
+    Some dialects (Redshift, Snowflake, Spark) return NULL when ANY input array is NULL.
     Others (DuckDB, PostgreSQL) skip NULL arrays and continue concatenation.
 
     Args:
-        name: Target dialect's function name (e.g., "ARRAY_CAT", "ARRAY_CONCAT")
+        name: Target dialect's function name (e.g., "ARRAY_CAT", "ARRAY_CONCAT", "LIST_CONCAT")
 
     Returns:
         A callable that generates SQL with appropriate NULL handling for the target dialect.
         Dialects that propagate NULLs need to set `ARRAY_FUNCS_PROPAGATES_NULLS` to True.
     """
-    from functools import reduce
+
+    def _build_func_call(self: Generator, func_name: str, args: t.List[exp.Expression]) -> str:
+        """Build ARRAY_CONCAT call from a list of arguments, handling variadic vs binary nesting."""
+        if self.ARRAY_CONCAT_IS_VAR_LEN:
+            return self.func(func_name, *args)
+        elif len(args) == 1:
+            # Single arg gets empty array to preserve semantics
+            return self.func(func_name, args[0], exp.Array(expressions=[]))
+        else:
+            # Snowflake/PostgreSQL/Redshift require binary nesting: ARRAY_CAT(a, ARRAY_CAT(b, c))
+            # Build right-deep tree recursively to avoid creating new ArrayConcat expressions
+            result = self.func(func_name, args[-2], args[-1])
+            for arg in reversed(args[:-2]):
+                result = f"{func_name}({self.sql(arg)}, {result})"
+            return result
 
     def _array_concat_sql(self: Generator, expression: exp.ArrayConcat) -> str:
         this = expression.this
         exprs = expression.expressions
-
-        # Handle variadic arguments (convert to nested binary calls if needed)
-        if not self.ARRAY_CONCAT_IS_VAR_LEN:
-            if len(exprs) == 0:
-                rhs: t.Union[str, exp.Expression] = exp.Array(expressions=[])
-            else:
-                rhs = reduce(
-                    lambda x, y: exp.ArrayConcat(
-                        this=x,
-                        expressions=[y],
-                        null_propagation=expression.args.get("null_propagation"),
-                    ),
-                    exprs,
-                )
-        else:
-            rhs = self.expressions(expression)  # type: ignore
-
-        # Build the base function SQL
-        func_sql = self.func(name, this, rhs or None)
+        all_args = [this] + exprs  # Flat list for uniform processing
 
         source_null_propagation = bool(expression.args.get("null_propagation"))
         target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
 
-        # No transpilation needed when source and target have matching NULL semantics,
+        # Optimization: Skip wrapper when source and target have matching NULL semantics,
         # or when the first argument is an array literal (which can never be NULL),
         # or when it's a single-argument call (empty array is added, preserving NULL semantics)
         if (
@@ -1452,38 +1448,32 @@ def array_concat_sql(
             or isinstance(this, exp.Array)
             or len(exprs) == 0
         ):
-            return func_sql
+            return _build_func_call(self, name, all_args)
 
-        # Source propagates NULLs, target doesn't: wrap in conditional to return NULL explicitly
+        # Case 1: Source propagates NULLs, target doesn't (Snowflake → DuckDB)
+        # Check if ANY argument is NULL and return NULL explicitly
         if source_null_propagation:
+            # Build OR-chain: a IS NULL OR b IS NULL OR c IS NULL
+            null_checks = [exp.Is(this=arg.copy(), expression=exp.Null()) for arg in all_args]
+            combined_check = reduce(lambda a, b: exp.Or(this=a, expression=b), null_checks)
+
+            func_sql = _build_func_call(self, name, all_args)
+
             return self.sql(
                 exp.If(
-                    this=exp.Is(this=this, expression=exp.Null()),
+                    this=combined_check,
                     true=exp.Null(),
                     false=func_sql,
                 )
             )
 
-        # Source doesn't propagate NULLs, target does: use COALESCE to convert NULL to empty array
-        this = exp.Coalesce(expressions=[this, exp.Array(expressions=[])])
+        # Case 2: Source doesn't propagate NULLs, target does (DuckDB → Snowflake)
+        # Wrap ALL arguments in COALESCE to convert NULL → empty array
+        wrapped_args = [
+            exp.Coalesce(expressions=[arg.copy(), exp.Array(expressions=[])]) for arg in all_args
+        ]
 
-        # Rebuild rhs with COALESCE-wrapped this
-        if not self.ARRAY_CONCAT_IS_VAR_LEN:
-            if len(exprs) == 0:
-                rhs = exp.Array(expressions=[])
-            else:
-                rhs = reduce(
-                    lambda x, y: exp.ArrayConcat(
-                        this=x,
-                        expressions=[y],
-                        null_propagation=expression.args.get("null_propagation"),
-                    ),
-                    exprs,
-                )
-        else:
-            rhs = self.expressions(expression)  # type: ignore
-
-        return self.func(name, this, rhs or None)
+        return _build_func_call(self, name, wrapped_args)
 
     return _array_concat_sql
 

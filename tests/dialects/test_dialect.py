@@ -1598,40 +1598,36 @@ class TestDialect(Validator):
             ("snowflake", "ARRAY_CAT(arr1, arr2)"),
             ("redshift", "ARRAY_CONCAT(arr1, arr2)"),
         ):
-            with self.subTest(
-                f"ARRAY_CAT NULL propagation: {source_dialect} → DuckDB/PostgreSQL"
-            ):
+            with self.subTest(f"ARRAY_CAT NULL propagation: {source_dialect} → DuckDB/PostgreSQL"):
                 expr = parse_one(source_sql, dialect=source_dialect)
                 self.assertEqual(
                     expr.sql("duckdb"),
-                    "CASE WHEN arr1 IS NULL THEN NULL ELSE ARRAY_CONCAT(arr1, arr2) END",
+                    "CASE WHEN arr1 IS NULL OR arr2 IS NULL THEN NULL ELSE LIST_CONCAT(arr1, arr2) END",
                 )
                 self.assertEqual(
                     expr.sql("postgres"),
-                    "CASE WHEN arr1 IS NULL THEN NULL ELSE ARRAY_CAT(arr1, arr2) END",
+                    "CASE WHEN arr1 IS NULL OR arr2 IS NULL THEN NULL ELSE ARRAY_CAT(arr1, arr2) END",
                 )
 
         # Test NULL skipping semantics: NULL-skipping dialects → NULL-propagating dialects
         for source_dialect, source_sql in (
-            ("duckdb", "ARRAY_CONCAT(arr1, arr2)"),
+            ("duckdb", "LIST_CONCAT(arr1, arr2)"),
             ("postgres", "ARRAY_CAT(arr1, arr2)"),
         ):
-            with self.subTest(
-                f"ARRAY_CAT NULL skipping: {source_dialect} → Snowflake/Redshift"
-            ):
+            with self.subTest(f"ARRAY_CAT NULL skipping: {source_dialect} → Snowflake/Redshift"):
                 expr = parse_one(source_sql, dialect=source_dialect)
                 self.assertEqual(
                     expr.sql("snowflake"),
-                    "ARRAY_CAT(COALESCE(arr1, []), arr2)",
+                    "ARRAY_CAT(COALESCE(arr1, []), COALESCE(arr2, []))",
                 )
                 self.assertEqual(
                     expr.sql("redshift"),
-                    "ARRAY_CONCAT(COALESCE(arr1, ARRAY()), arr2)",
+                    "ARRAY_CONCAT(COALESCE(arr1, ARRAY()), COALESCE(arr2, ARRAY()))",
                 )
 
         # Test ARRAY_CAT identity transpilation (should NOT add wrappers)
         for dialect, sql in (
-            ("duckdb", "ARRAY_CONCAT(arr1, arr2)"),
+            ("duckdb", "LIST_CONCAT(arr1, arr2)"),
             ("postgres", "ARRAY_CAT(arr1, arr2)"),
             ("snowflake", "ARRAY_CAT(arr1, arr2)"),
             ("redshift", "ARRAY_CONCAT(arr1, arr2)"),
@@ -1641,18 +1637,59 @@ class TestDialect(Validator):
                 self.assertEqual(expr.sql(dialect), sql)
 
         # Test ARRAY_CAT with variadic arguments (3+ arrays)
-        for source_dialect, source_sql in (
-            ("snowflake", "ARRAY_CAT(arr1, arr2, arr3)"),
-            ("redshift", "ARRAY_CONCAT(arr1, arr2, arr3)"),
+        # Verify that ALL arguments are checked in NULL condition
+        for source_dialect, source_sql, expected in (
+            (
+                "snowflake",
+                "ARRAY_CAT(arr1, arr2, arr3)",
+                "CASE WHEN arr1 IS NULL OR arr2 IS NULL OR arr3 IS NULL THEN NULL ELSE LIST_CONCAT(arr1, arr2, arr3) END",
+            ),
+            (
+                "redshift",
+                "ARRAY_CONCAT(arr1, arr2, arr3)",
+                "CASE WHEN arr1 IS NULL OR arr2 IS NULL OR arr3 IS NULL THEN NULL ELSE LIST_CONCAT(arr1, arr2, arr3) END",
+            ),
+        ):
+            with self.subTest(f"ARRAY_CAT variadic NULL propagation: {source_dialect} → DuckDB"):
+                expr = parse_one(source_sql, dialect=source_dialect)
+                self.assertEqual(expr.sql("duckdb"), expected)
+
+        # Test variadic COALESCE wrapping: ALL args should be wrapped
+        for source_dialect, source_sql, expected_snowflake, expected_redshift in (
+            (
+                "duckdb",
+                "LIST_CONCAT(arr1, arr2, arr3)",
+                "ARRAY_CAT(COALESCE(arr1, []), ARRAY_CAT(COALESCE(arr2, []), COALESCE(arr3, [])))",
+                "ARRAY_CONCAT(COALESCE(arr1, ARRAY()), ARRAY_CONCAT(COALESCE(arr2, ARRAY()), COALESCE(arr3, ARRAY())))",
+            ),
+            (
+                "postgres",
+                "ARRAY_CAT(arr1, arr2, arr3)",
+                "ARRAY_CAT(COALESCE(arr1, []), ARRAY_CAT(COALESCE(arr2, []), COALESCE(arr3, [])))",
+                "ARRAY_CONCAT(COALESCE(arr1, ARRAY()), ARRAY_CONCAT(COALESCE(arr2, ARRAY()), COALESCE(arr3, ARRAY())))",
+            ),
         ):
             with self.subTest(
-                f"ARRAY_CAT variadic NULL propagation: {source_dialect} → DuckDB"
+                f"ARRAY_CAT variadic COALESCE wrapping: {source_dialect} → Snowflake/Redshift"
             ):
                 expr = parse_one(source_sql, dialect=source_dialect)
-                # With multiple args, the wrapper should still apply to the first arg
-                duckdb_sql = expr.sql("duckdb")
-                self.assertIn("CASE WHEN arr1 IS NULL THEN NULL", duckdb_sql)
-                self.assertIn("ARRAY_CONCAT", duckdb_sql)
+                self.assertEqual(expr.sql("snowflake"), expected_snowflake)
+                self.assertEqual(expr.sql("redshift"), expected_redshift)
+
+        # Test PostgreSQL → Snowflake (2 args)
+        expr = parse_one("ARRAY_CAT(arr1, arr2)", dialect="postgres")
+        self.assertEqual(
+            expr.sql("snowflake"),
+            "ARRAY_CAT(COALESCE(arr1, []), COALESCE(arr2, []))",
+        )
+
+        # Test edge case: array literal optimization (no wrapper needed)
+        expr = parse_one("ARRAY_CAT([1, 2], arr2)", dialect="snowflake")
+        self.assertEqual(expr.sql("duckdb"), "LIST_CONCAT([1, 2], arr2)")
+
+        # Test edge case: single argument
+        expr = parse_one("ARRAY_CAT(arr1)", dialect="snowflake")
+        self.assertEqual(expr.sql("duckdb"), "LIST_CONCAT(arr1)")
 
     def test_order_by(self):
         self.validate_identity(

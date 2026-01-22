@@ -588,6 +588,10 @@ STRING;
 HEX(tbl.int_col);
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+SOUNDEX(tbl.str_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

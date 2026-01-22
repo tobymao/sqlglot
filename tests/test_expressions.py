@@ -1286,32 +1286,32 @@ FROM foo""",
         assert expr == expr
 
     def test_literal_number(self):
-        literal = exp.Literal.number(5)
+        literal = exp.Literal.number(1)
         self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "5")
+        self.assertEqual(literal.this, "1")
 
-        literal = exp.Literal.number(-5)
+        literal = exp.Literal.number(-1)
         self.assertIsInstance(literal, exp.Neg)
         self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "5")
+        self.assertEqual(literal.this.this, "1")
 
-        literal = exp.Literal.number(-3.14)
+        literal = exp.Literal.number(-1.1)
         self.assertIsInstance(literal, exp.Neg)
         self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "3.14")
+        self.assertEqual(literal.this.this, "1.1")
 
         literal = exp.Literal.number(0)
         self.assertIsInstance(literal, exp.Literal)
         self.assertEqual(literal.this, "0")
 
-        literal = exp.Literal.number("10")
+        literal = exp.Literal.number("1")
         self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "10")
+        self.assertEqual(literal.this, "1")
 
-        literal = exp.Literal.number("-10")
+        literal = exp.Literal.number("-1")
         self.assertIsInstance(literal, exp.Neg)
         self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "10")
+        self.assertEqual(literal.this.this, "1")
 
         literal = exp.Literal.number("1e6")
         self.assertIsInstance(literal, exp.Literal)

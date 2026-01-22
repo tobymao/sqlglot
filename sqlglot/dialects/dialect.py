@@ -1435,12 +1435,12 @@ def array_concat_sql(
     def _array_concat_sql(self: Generator, expression: exp.ArrayConcat) -> str:
         this = expression.this
         exprs = expression.expressions
-        all_args = [this] + exprs  # Flat list for uniform processing
+        all_args = [this] + exprs
 
         source_null_propagation = bool(expression.args.get("null_propagation"))
         target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
 
-        # Optimization: Skip wrapper when source and target have matching NULL semantics,
+        # Skip wrapper when source and target have matching NULL semantics,
         # or when the first argument is an array literal (which can never be NULL),
         # or when it's a single-argument call (empty array is added, preserving NULL semantics)
         if (

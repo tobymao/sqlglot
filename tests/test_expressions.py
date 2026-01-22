@@ -1286,33 +1286,24 @@ FROM foo""",
         assert expr == expr
 
     def test_literal_number(self):
-        literal = exp.Literal.number(1)
-        self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "1")
+        for number in (1, -1.1, 1.1, 0, "-1", "1", "1.1", "-1.1", "1e6"):
+            literal = exp.Literal.number(number)
 
-        literal = exp.Literal.number(-1)
-        self.assertIsInstance(literal, exp.Neg)
-        self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "1")
+            self.assertTrue(literal.is_number)
 
-        literal = exp.Literal.number(-1.1)
-        self.assertIsInstance(literal, exp.Neg)
-        self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "1.1")
+            if isinstance(number, str):
+                is_negative = number.startswith("-")
+                expected_this = number.lstrip("-") if is_negative else number
+            else:
+                is_negative = number < 0
+                expected_this = str(abs(number))
 
-        literal = exp.Literal.number(0)
-        self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "0")
+            if is_negative:
+                self.assertIsInstance(literal, exp.Neg)
+                self.assertIsInstance(literal.this, exp.Literal)
+                this = literal.this.this
+            else:
+                self.assertIsInstance(literal, exp.Literal)
+                this = literal.this
 
-        literal = exp.Literal.number("1")
-        self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "1")
-
-        literal = exp.Literal.number("-1")
-        self.assertIsInstance(literal, exp.Neg)
-        self.assertIsInstance(literal.this, exp.Literal)
-        self.assertEqual(literal.this.this, "1")
-
-        literal = exp.Literal.number("1e6")
-        self.assertIsInstance(literal, exp.Literal)
-        self.assertEqual(literal.this, "1e6")
+            self.assertEqual(this, expected_this)

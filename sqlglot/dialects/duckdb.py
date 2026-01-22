@@ -91,6 +91,10 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
+# SEQ function constants
+_SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
+_SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
+
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
@@ -404,6 +408,46 @@ def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
 def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
+
+
+def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> str:
+    """
+    Transpile Snowflake SEQ1/SEQ2/SEQ4/SEQ8 to DuckDB.
+
+    Generates monotonically increasing integers starting from 0.
+    The signed parameter (0 or 1) affects wrap-around behavior:
+    - Unsigned (0): wraps at 2^(bits) - 1
+    - Signed (1): wraps at 2^(bits-1) - 1, then goes negative
+
+    Note: SEQ in WHERE, HAVING, aggregates, or window ORDER BY is not supported
+    because these contexts don't allow window functions. Users should rewrite
+    using CTEs or subqueries.
+
+    Args:
+        expression: The SEQ function expression (may have 'this' arg for signed param)
+        byte_width: 1, 2, 4, or 8 bytes
+
+    Returns:
+        SQL string using ROW_NUMBER() with modulo for wrap-around
+    """
+    # Warn if SEQ is in a restricted context (Select stops search at current scope)
+    ancestor = expression.find_ancestor(*_SEQ_RESTRICTED)
+    if ancestor and (
+        (not isinstance(ancestor, (exp.Order, exp.Select)))
+        or (isinstance(ancestor, exp.Order) and isinstance(ancestor.parent, exp.Window))
+    ):
+        self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
+
+    bits = byte_width * 8
+    max_val = exp.Literal.number(2**bits)
+
+    if expression.name == "1":
+        half = exp.Literal.number(2 ** (bits - 1))
+        result = exp.replace_placeholders(self.SEQ_SIGNED.copy(), max_val=max_val, half=half)
+    else:
+        result = exp.replace_placeholders(self.SEQ_UNSIGNED.copy(), max_val=max_val)
+
+    return self.sql(result)
 
 
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
@@ -1562,6 +1606,10 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
             exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
+            exp.Seq1: lambda self, e: _seq_sql(self, e, 1),
+            exp.Seq2: lambda self, e: _seq_sql(self, e, 2),
+            exp.Seq4: lambda self, e: _seq_sql(self, e, 4),
+            exp.Seq8: lambda self, e: _seq_sql(self, e, 8),
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
@@ -1831,6 +1879,14 @@ class DuckDB(Dialect):
         # Template for generating a seeded pseudo-random value in [0, 1) from a hash
         SEEDED_RANDOM_TEMPLATE: exp.Expression = exp.maybe_parse(
             "(ABS(HASH(:seed)) % 1000000) / 1000000.0"
+        )
+
+        # Template for generating signed and unsigned SEQ values within a specified range
+        SEQ_UNSIGNED: exp.Expression = exp.maybe_parse(f"{_SEQ_BASE} % :max_val")
+        SEQ_SIGNED: exp.Expression = exp.maybe_parse(
+            f"(CASE WHEN {_SEQ_BASE} % :max_val >= :half "
+            f"THEN {_SEQ_BASE} % :max_val - :max_val "
+            f"ELSE {_SEQ_BASE} % :max_val END)"
         )
 
         # Mappings for EXTRACT/DATE_PART transpilation
@@ -2149,6 +2205,20 @@ class DuckDB(Dialect):
             )
             case_expr.set("default", fallback_sql)
             return self.sql(case_expr)
+
+        def generator_sql(self, expression: exp.Generator) -> str:
+            # Transpile Snowflake GENERATOR to DuckDB range()
+            rowcount = expression.args.get("rowcount")
+            time_limit = expression.args.get("time_limit")
+
+            if time_limit:
+                self.unsupported("GENERATOR TIMELIMIT parameter is not supported in DuckDB")
+
+            if not rowcount:
+                self.unsupported("GENERATOR without ROWCOUNT is not supported in DuckDB")
+                return self.func("range", exp.Literal.number(0))
+
+            return self.func("range", rowcount)
 
         def greatest_sql(self: DuckDB.Generator, expression: exp.Greatest) -> str:
             return self._greatest_least_sql(expression)
@@ -2752,6 +2822,19 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.this),
                 _cast_to_varchar(expression.expression),
             )
+
+        def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
+            # For GENERATOR, unwrap TABLE() - just emit the Generator (becomes RANGE)
+            if isinstance(expression.this, exp.Generator):
+                # Preserve alias, joins, and other table-level args
+                table = exp.Table(
+                    this=expression.this,
+                    alias=expression.args.get("alias"),
+                    joins=expression.args.get("joins"),
+                )
+                return self.sql(table)
+
+            return super().tablefromrows_sql(expression)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             explode_array = expression.args.get("explode_array")

@@ -5344,6 +5344,38 @@ BINARY;
 TRY_DECRYPT_RAW(tbl.encrypted_col, tbl.key_col, tbl.iv_col, tbl.aad_col, 'AES-GCM', HEX_DECODE_BINARY('ff'));
 BINARY;
 
+# dialect: snowflake
+SEQ1();
+INT;
+
+# dialect: snowflake
+SEQ1(1);
+INT;
+
+# dialect: snowflake
+SEQ2();
+INT;
+
+# dialect: snowflake
+SEQ2(1);
+INT;
+
+# dialect: snowflake
+SEQ4();
+INT;
+
+# dialect: snowflake
+SEQ4(1);
+INT;
+
+# dialect: snowflake
+SEQ8();
+BIGINT;
+
+# dialect: snowflake
+SEQ8(1);
+BIGINT;
+
 --------------------------------------
 -- T-SQL
 --------------------------------------

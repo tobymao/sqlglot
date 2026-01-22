@@ -289,6 +289,7 @@ EXPRESSION_METADATA = {
             exp.MD5NumberLower64,
             exp.MD5NumberUpper64,
             exp.Rand,
+            exp.Seq8,
             exp.Zipf,
         }
     },
@@ -422,6 +423,9 @@ EXPRESSION_METADATA = {
             exp.Minute,
             exp.RtrimmedLength,
             exp.Second,
+            exp.Seq1,
+            exp.Seq2,
+            exp.Seq4,
             exp.WidthBucket,
         }
     },

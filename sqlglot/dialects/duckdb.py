@@ -97,6 +97,37 @@ _SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
 
 
+def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_string: bool) -> str:
+    """
+    Transpile Snowflake BASE64_DECODE_STRING/BINARY to DuckDB.
+
+    DuckDB uses FROM_BASE64() which returns BLOB. For string output, wrap with DECODE().
+    Custom alphabets require REPLACE() calls to convert to standard base64.
+    """
+    input_expr = expression.this
+    alphabet = expression.args.get("alphabet")
+
+    # Handle custom alphabet by replacing non-standard chars with standard ones
+    if isinstance(alphabet, exp.Literal) and alphabet.is_string:
+        result = input_expr.copy()
+        for default_char, new_char in zip("+/=", alphabet.this):
+            if new_char != default_char:
+                result = exp.Replace(
+                    this=result,
+                    expression=exp.Literal.string(new_char),
+                    replacement=exp.Literal.string(default_char),
+                )
+        input_expr = result
+
+    # FROM_BASE64 returns BLOB
+    input_expr = exp.FromBase64(this=input_expr)
+
+    if to_string:
+        input_expr = exp.Decode(this=input_expr)
+
+    return self.sql(input_expr)
+
+
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
     DuckDB's LAST_DAY only supports finding the last day of a month.
@@ -1536,6 +1567,8 @@ class DuckDB(Dialect):
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
+            exp.Base64DecodeBinary: lambda self, e: _base64_decode_sql(self, e, to_string=False),
+            exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
             exp.BitwiseLeftShift: _bitshift_sql,

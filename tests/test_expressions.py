@@ -1287,23 +1287,24 @@ FROM foo""",
 
     def test_literal_number(self):
         for number in (1, -1.1, 1.1, 0, "-1", "1", "1.1", "-1.1", "1e6"):
-            literal = exp.Literal.number(number)
+            with self.subTest(f"Test Literal number method for: {repr(number)}"):
+                literal = exp.Literal.number(number)
 
-            self.assertTrue(literal.is_number)
+                self.assertTrue(literal.is_number)
 
-            if isinstance(number, str):
-                is_negative = number.startswith("-")
-                expected_this = number.lstrip("-")
-            else:
-                is_negative = number < 0
-                expected_this = str(abs(number))
+                if isinstance(number, str):
+                    is_negative = number.startswith("-")
+                    expected_this = number.lstrip("-")
+                else:
+                    is_negative = number < 0
+                    expected_this = str(abs(number))
 
-            if is_negative:
-                self.assertIsInstance(literal, exp.Neg)
-                self.assertIsInstance(literal.this, exp.Literal)
-                this = literal.this.this
-            else:
-                self.assertIsInstance(literal, exp.Literal)
-                this = literal.this
+                if is_negative:
+                    self.assertIsInstance(literal, exp.Neg)
+                    self.assertIsInstance(literal.this, exp.Literal)
+                    this = literal.this.this
+                else:
+                    self.assertIsInstance(literal, exp.Literal)
+                    this = literal.this
 
-            self.assertEqual(this, expected_this)
+                self.assertEqual(this, expected_this)

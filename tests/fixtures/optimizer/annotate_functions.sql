@@ -596,6 +596,10 @@ STRING;
 SESSION_USER();
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+FACTORIAL(tbl.int_col);
+BIGINT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

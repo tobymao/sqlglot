@@ -39,10 +39,16 @@ EXPRESSION_METADATA = {
             exp.Soundex,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        for expr_type in {
+            exp.StrToUnix,
+            exp.Factorial,
+        }
+    },
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
-    exp.StrToUnix: {"returns": exp.DataType.Type.BIGINT},
     exp.Month: {"returns": exp.DataType.Type.INT},
 }

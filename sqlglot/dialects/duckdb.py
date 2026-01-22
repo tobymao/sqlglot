@@ -2694,7 +2694,7 @@ class DuckDB(Dialect):
 
             # Handle max_line_length by inserting newlines every N characters
             line_length = (
-                int(max_line_length.to_py())
+                max_line_length.to_py()
                 if isinstance(max_line_length, exp.Literal) and max_line_length.is_number
                 else 0
             )

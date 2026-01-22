@@ -919,6 +919,7 @@ class MySQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.PartitionedByProperty: exp.Properties.Location.UNSUPPORTED,
             exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
         }
@@ -1417,9 +1418,3 @@ class MySQL(Dialect):
             name = self.sql(expression, "this")
             values = self.expressions(expression, flat=True)
             return f"PARTITION {name} VALUES LESS THAN ({values})"
-
-        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            node = expression.this
-            if isinstance(node, exp.Schema):
-                return f"PARTITION BY ({self.expressions(node, flat=True)})"
-            return f"PARTITION BY ({self.sql(node)})"

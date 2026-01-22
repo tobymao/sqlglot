@@ -745,6 +745,12 @@ class Doris(MySQL):
 
             return f"FROM ({start}) TO ({end}) {interval}"
 
+        def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            this = expression.this
+            if isinstance(this, exp.Schema):
+                return f"PARTITION BY ({self.expressions(this, flat=True)})"
+            return f"PARTITION BY ({self.sql(this)})"
+
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""
             ancestor = expression.find_ancestor(exp.Update, exp.Delete, exp.Select)

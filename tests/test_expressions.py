@@ -1293,7 +1293,7 @@ FROM foo""",
 
             if isinstance(number, str):
                 is_negative = number.startswith("-")
-                expected_this = number.lstrip("-") if is_negative else number
+                expected_this = number.lstrip("-")
             else:
                 is_negative = number < 0
                 expected_this = str(abs(number))

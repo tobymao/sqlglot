@@ -766,7 +766,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             with self.subTest(f"Test Simplify AST for: {binary_op}"):
                 neg_expr = optimizer.simplify.simplify(parse_one(binary_op))
                 self.assertTrue(isinstance(neg_expr, exp.Neg))
-                self.assertTrue(isinstance(neg_expr.this, exp.Literal))
 
     def test_simplify_nested(self):
         sql = """

@@ -1417,7 +1417,7 @@ def array_concat_sql(
         Dialects that propagate NULLs need to set `ARRAY_FUNCS_PROPAGATES_NULLS` to True.
     """
 
-    def _build_func_call(self: Generator, func_name: str, args: t.List[exp.Expression]) -> str:
+    def _build_func_call(self: Generator, func_name: str, args: t.Sequence[exp.Expression]) -> str:
         """Build ARRAY_CONCAT call from a list of arguments, handling variadic vs binary nesting."""
         if self.ARRAY_CONCAT_IS_VAR_LEN:
             return self.func(func_name, *args)
@@ -1454,8 +1454,12 @@ def array_concat_sql(
         # Check if ANY argument is NULL and return NULL explicitly
         if source_null_propagation:
             # Build OR-chain: a IS NULL OR b IS NULL OR c IS NULL
-            null_checks = [exp.Is(this=arg.copy(), expression=exp.Null()) for arg in all_args]
-            combined_check = reduce(lambda a, b: exp.Or(this=a, expression=b), null_checks)
+            null_checks: t.List[exp.Expression] = [
+                exp.Is(this=arg.copy(), expression=exp.Null()) for arg in all_args
+            ]
+            combined_check: exp.Expression = reduce(
+                lambda a, b: exp.Or(this=a, expression=b), null_checks
+            )
 
             func_sql = _build_func_call(self, name, all_args)
 

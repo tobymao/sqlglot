@@ -1578,6 +1578,7 @@ class DuckDB(Dialect):
                 generator=inline_array_unless_query,
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
+            exp.ArrayCompact: remove_from_array_using_filter,
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,

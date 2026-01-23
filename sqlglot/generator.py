@@ -230,6 +230,7 @@ class Generator(metaclass=_Generator):
         exp.UtcTimestamp: lambda self, e: self.sql(
             exp.CurrentTimestamp(this=exp.Literal.string("UTC"))
         ),
+        exp.Variadic: lambda self, e: f"VARIADIC {self.sql(e, 'this')}",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",

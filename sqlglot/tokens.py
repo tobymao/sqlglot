@@ -439,6 +439,7 @@ class TokenType(AutoName):
     USE = auto()
     USING = auto()
     VALUES = auto()
+    VARIADIC = auto()
     VIEW = auto()
     SEMANTIC_VIEW = auto()
     VOLATILE = auto()

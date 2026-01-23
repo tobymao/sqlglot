@@ -397,6 +397,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
             "XML": TokenType.XML,
+            "VARIADIC": TokenType.VARIADIC,
         }
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")
@@ -461,6 +462,11 @@ class Postgres(Dialect):
             )
             if len(args) == 2
             else exp.WidthBucket.from_arg_list(args),
+        }
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
         }
 
         NO_PAREN_FUNCTIONS = {

@@ -258,8 +258,10 @@ class StarRocks(MySQL):
             REFRESH [DEFERRED | IMMEDIATE]
                     [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
             """
-            method = (self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()) or "UNSPECIFIED"
-            kind = (self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper())
+            method = (
+                self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
+            ) or "UNSPECIFIED"
+            kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
             start = None
             every = None
             unit = None
@@ -280,7 +282,6 @@ class StarRocks(MySQL):
                 every=every,
                 unit=unit,
             )
-
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -535,7 +536,7 @@ class StarRocks(MySQL):
             create = expression.find_ancestor(exp.Create)
             is_creating_view = create and create.kind == "VIEW"
 
-            if (is_simple or is_creating_view):
+            if is_simple or is_creating_view:
                 parts = f"({parts})"
             return f"PARTITION BY {parts}"
 

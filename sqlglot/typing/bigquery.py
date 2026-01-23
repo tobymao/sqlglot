@@ -165,6 +165,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ArgMax,
             exp.ArgMin,
+            exp.DateAdd,
             exp.DateTrunc,
             exp.DatetimeTrunc,
             exp.FirstValue,

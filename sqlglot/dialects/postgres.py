@@ -868,8 +868,9 @@ class Postgres(Dialect):
         def interval_sql(self, expression: exp.Interval) -> str:
             unit = expression.text("unit").lower()
 
-            if unit.startswith("quarter") and isinstance(expression.this, exp.Literal):
-                expression.this.replace(exp.Literal.number(int(expression.this.to_py()) * 3))
+            this = expression.this
+            if unit.startswith("quarter") and isinstance(this, exp.Literal):
+                this.replace(exp.Literal.string(int(this.to_py()) * 3))
                 expression.args["unit"].replace(exp.var("MONTH"))
 
             return super().interval_sql(expression)

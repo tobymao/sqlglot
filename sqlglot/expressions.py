@@ -2608,8 +2608,16 @@ class Literal(Condition):
     arg_types = {"this": True, "is_string": True}
 
     @classmethod
-    def number(cls, number) -> Literal:
-        return cls(this=str(number), is_string=False)
+    def number(cls, number) -> Literal | Neg:
+        expr: Literal | Neg = cls(this=str(number), is_string=False)
+
+        to_py = expr.to_py()
+
+        if not isinstance(to_py, str) and to_py < 0:
+            expr.set("this", str(abs(to_py)))
+            expr = Neg(this=expr)
+
+        return expr
 
     @classmethod
     def string(cls, string) -> Literal:

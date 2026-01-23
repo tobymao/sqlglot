@@ -2562,12 +2562,6 @@ class TestSnowflake(Validator):
             "SELECT ILIKE(col, 'pattern', '!')", "SELECT col ILIKE 'pattern' ESCAPE '!'"
         )
 
-        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
-        self.validate_identity("SELECT BASE64_DECODE_BINARY('SGVsbG8=')")
-
-        self.validate_identity("SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=')")
-        self.validate_identity("SELECT BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', '+/=')")
-
         expr = self.validate_identity("SELECT BASE64_ENCODE('Hello World')")
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "SELECT TO_BASE64(ENCODE('Hello World'))")
@@ -2593,11 +2587,34 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("SELECT TRY_BASE64_DECODE_BINARY('SGVsbG8=')")
-        self.validate_identity("SELECT TRY_BASE64_DECODE_BINARY('SGVsbG8=', '+/=')")
-
-        self.validate_identity("SELECT TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=')")
-        self.validate_identity("SELECT TRY_BASE64_DECODE_STRING('SGVsbG8gV29ybGQ=', '+/=')")
+        self.validate_all(
+            "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl')",
+            write={
+                "snowflake": "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl')",
+                "duckdb": "SELECT DECODE(FROM_BASE64('U25vd2ZsYWtl'))",
+            },
+        )
+        self.validate_all(
+            "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
+            write={
+                "snowflake": "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
+                "duckdb": "SELECT DECODE(FROM_BASE64(REPLACE(REPLACE(REPLACE('U25vd2ZsYWtl', '-', '+'), '_', '/'), '+', '=')))",
+            },
+        )
+        self.validate_all(
+            "SELECT BASE64_DECODE_BINARY(x)",
+            write={
+                "snowflake": "SELECT BASE64_DECODE_BINARY(x)",
+                "duckdb": "SELECT FROM_BASE64(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT BASE64_DECODE_BINARY(x, '-_+')",
+            write={
+                "snowflake": "SELECT BASE64_DECODE_BINARY(x, '-_+')",
+                "duckdb": "SELECT FROM_BASE64(REPLACE(REPLACE(REPLACE(x, '-', '+'), '_', '/'), '+', '='))",
+            },
+        )
 
         self.validate_identity("SELECT TRY_HEX_DECODE_BINARY('48656C6C6F')")
 

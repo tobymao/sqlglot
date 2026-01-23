@@ -5573,3 +5573,64 @@ FROM SEMANTIC_VIEW(
 
         ast = annotate_types(self.parse_one("SELECT BITSHIFTRIGHT(X'FF', 4)"), dialect="snowflake")
         self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)")
+
+    def test_array_flatten(self):
+        # String array flattening
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "duckdb": "SELECT FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "starrocks": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            },
+        )
+
+        # Nested arrays (single level flattening)
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+                "duckdb": "SELECT FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            },
+        )
+
+        # Array with NULL elements
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+                "duckdb": "SELECT FLATTEN([[1, NULL, 3], [4]])",
+            },
+        )
+
+        # Empty arrays
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[]])",
+                "duckdb": "SELECT FLATTEN([[]])",
+            },
+        )
+
+        # Multiple ARRAY_FLATTEN calls
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN(col1), ARRAY_FLATTEN(col2) FROM t",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN(col1), ARRAY_FLATTEN(col2) FROM t",
+                "duckdb": "SELECT FLATTEN(col1), FLATTEN(col2) FROM t",
+            },
+        )
+
+        # In subquery
+        self.validate_all(
+            "SELECT * FROM (SELECT ARRAY_FLATTEN([[1, 2]])) AS sub",
+            write={
+                "snowflake": "SELECT * FROM (SELECT ARRAY_FLATTEN([[1, 2]])) AS sub",
+                "duckdb": "SELECT * FROM (SELECT FLATTEN([[1, 2]])) AS sub",
+            },
+        )
+
+        # Verify round-trip preservation
+        self.validate_identity("SELECT ARRAY_FLATTEN([[1, 2, 3], [4], [5, 6]])")
+        self.validate_identity("SELECT ARRAY_FLATTEN([['a', 'b'], ['c']])")
+        self.validate_identity("SELECT ARRAY_FLATTEN([[1.5, 2.5], [3.5]])")

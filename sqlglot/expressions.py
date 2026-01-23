@@ -6094,7 +6094,7 @@ class ArrayPrepend(Func):
 
 class ArrayConcat(Func):
     _sql_names = ["ARRAY_CONCAT", "ARRAY_CAT"]
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "null_propagation": False}
     is_var_len_args = True
 
 

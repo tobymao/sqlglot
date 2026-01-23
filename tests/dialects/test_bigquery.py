@@ -1685,7 +1685,7 @@ WHERE
             "ARRAY_CONCAT([1, 2], [3, 4], [5, 6])",
             write={
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4], [5, 6])",
-                "duckdb": "ARRAY_CONCAT([1, 2], ARRAY_CONCAT([3, 4], [5, 6]))",
+                "duckdb": "LIST_CONCAT([1, 2], [3, 4], [5, 6])",
                 "postgres": "ARRAY_CAT(ARRAY[1, 2], ARRAY_CAT(ARRAY[3, 4], ARRAY[5, 6]))",
                 "redshift": "ARRAY_CONCAT(ARRAY(1, 2), ARRAY_CONCAT(ARRAY(3, 4), ARRAY(5, 6)))",
                 "snowflake": "ARRAY_CAT([1, 2], ARRAY_CAT([3, 4], [5, 6]))",

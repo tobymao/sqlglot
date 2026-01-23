@@ -4911,18 +4911,6 @@ class Generator(metaclass=_Generator):
 
         return self.sql(generate_series)
 
-    def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CONCAT") -> str:
-        exprs = expression.expressions
-        if not self.ARRAY_CONCAT_IS_VAR_LEN:
-            if len(exprs) == 0:
-                rhs: t.Union[str, exp.Expression] = exp.Array(expressions=[])
-            else:
-                rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
-        else:
-            rhs = self.expressions(expression)  # type: ignore
-
-        return self.func(name, expression.this, rhs or None)
-
     def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
         if self.SUPPORTS_CONVERT_TIMEZONE:
             return self.function_fallback_sql(expression)

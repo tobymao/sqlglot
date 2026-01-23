@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     array_append_sql,
+    array_concat_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -1240,6 +1241,7 @@ class DuckDB(Dialect):
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+            "LIST_CONCAT": parser.build_array_concat,
             "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
             "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
             "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
@@ -1510,7 +1512,6 @@ class DuckDB(Dialect):
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
-        ARRAY_CONCAT_IS_VAR_LEN = False
         ARRAY_SIZE_DIM_REQUIRED = False
         NORMALIZE_EXTRACT_DATE_PARTS = True
         SUPPORTS_LIKE_QUANTIFIERS = False
@@ -1526,6 +1527,7 @@ class DuckDB(Dialect):
                 generator=inline_array_unless_query,
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
+            exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

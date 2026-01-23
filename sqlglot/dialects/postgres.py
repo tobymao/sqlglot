@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
     array_append_sql,
+    array_concat_sql,
     binary_from_function,
     bool_xor_sql,
     datestrtodate_sql,
@@ -632,7 +633,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _versioned_anyvalue_sql,
-            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CAT"),
+            exp.ArrayConcat: array_concat_sql("ARRAY_CAT"),
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
             exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND", swap_params=True),

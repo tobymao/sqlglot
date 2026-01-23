@@ -740,7 +740,6 @@ class Postgres(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
             exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
             exp.CountIf: count_if_to_sum,
-            exp.Variadic: lambda self, e: self.variadic_sql(e),
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)

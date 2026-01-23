@@ -12,6 +12,15 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            "SELECT * FROM x ASOF JOIN y OFFSET MATCH_CONDITION (x.a > y.a)",
+            "SELECT * FROM x ASOF JOIN y AS OFFSET MATCH_CONDITION (x.a > y.a)",
+        )
+        self.validate_identity(
+            "SELECT * FROM x ASOF JOIN y LIMIT MATCH_CONDITION (x.a > y.a)",
+            "SELECT * FROM x ASOF JOIN y AS LIMIT MATCH_CONDITION (x.a > y.a)",
+        )
+
         self.validate_identity("SELECT session")
         self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
 

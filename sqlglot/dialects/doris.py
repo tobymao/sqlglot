@@ -743,6 +743,3 @@ class Doris(MySQL):
             if not isinstance(ancestor, exp.Select):
                 sep = " "
             return super().table_sql(expression, sep=sep)
-
-        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
-            return super().alterrename_sql(expression, include_to=False)

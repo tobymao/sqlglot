@@ -84,6 +84,7 @@ class StarRocks(MySQL):
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "ROLLUP": lambda self: self._parse_rollup_property(),
+            "REFRESH": lambda self: self._parse_refresh_property(),
         }
 
         def _parse_rollup_property(self) -> exp.RollupProperty:
@@ -182,6 +183,104 @@ class StarRocks(MySQL):
             return self.expression(
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
+
+
+        def _parse_partition_definition(self) -> exp.Partition:
+            # PARTITION <name> VALUES LESS THAN (<value_csv>)
+            self._match_text_seq("PARTITION")
+            name = self._parse_id_var()
+            self._match_text_seq("VALUES", "LESS", "THAN")
+            values = self._parse_wrapped_csv(self._parse_expression)
+
+            if (
+                len(values) == 1
+                and isinstance(values[0], exp.Column)
+                and values[0].name.upper() == "MAXVALUE"
+            ):
+                values = [exp.var("MAXVALUE")]
+
+            part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
+            return self.expression(exp.Partition, expressions=[part_range])
+
+        def _parse_partition_definition_list(self) -> exp.Partition:
+            # PARTITION <name> VALUES IN (<value_csv>)
+            self._match_text_seq("PARTITION")
+            name = self._parse_id_var()
+            self._match_text_seq("VALUES", "IN")
+            values = self._parse_wrapped_csv(self._parse_expression)
+            part_list = self.expression(exp.PartitionList, this=name, expressions=values)
+            return self.expression(exp.Partition, expressions=[part_list])
+
+        def _parse_partition_by_opt_range(
+            self,
+        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
+            if self._match_text_seq("LIST"):
+                # StarRocks LIST partitioning only supports column references, not expressions
+                return self.expression(
+                    exp.PartitionByListProperty,
+                    partition_expressions=self._parse_wrapped_id_vars(),
+                    create_expressions=self._parse_wrapped_csv(
+                        self._parse_partition_definition_list
+                    ),
+                )
+
+            if self._match_text_seq("RANGE"):
+                # StarRocks RANGE partitioning supports both columns and expressions like str2date()
+                partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+                self._match_l_paren()
+
+                if self._match_text_seq("START", advance=False):
+                    create_expressions = self._parse_csv(
+                        self._parse_partitioning_granularity_dynamic
+                    )
+                elif self._match_text_seq("PARTITION", advance=False):
+                    create_expressions = self._parse_csv(self._parse_partition_definition)
+                else:
+                    create_expressions = None
+
+                self._match_r_paren()
+
+                return self.expression(
+                    exp.PartitionByRangeProperty,
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+
+            # StarRocks expression-based partitioning: PARTITION BY expr1, expr2, ...
+            # Can be column refs or function calls like DATE_TRUNC(), FROM_UNIXTIME()
+            return self.expression(
+                exp.PartitionedByProperty,
+                this=exp.Schema(expressions=self._parse_csv(self._parse_assignment)),
+            )
+
+        def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
+            """
+            REFRESH [DEFERRED | IMMEDIATE]
+                    [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
+            """
+            method = (self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()) or "UNSPECIFIED"
+            kind = (self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper())
+            start = None
+            every = None
+            unit = None
+            if kind:
+                start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
+                if self._match_text_seq("EVERY"):
+                    self._match_l_paren()
+                    self._match_text_seq("INTERVAL")
+                    every = self._parse_number()
+                    unit = self._parse_var(any_token=True)
+                    self._match_r_paren()
+
+            return self.expression(
+                exp.RefreshTriggerProperty,
+                method=method,
+                kind=kind,
+                starts=start,
+                every=every,
+                unit=unit,
+            )
+
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -419,10 +518,6 @@ class StarRocks(MySQL):
 
             return super().create_sql(expression)
 
-        def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
-            """To avoid TO keyword in ALTER ... RENAME statements."""
-            return super().alterrename_sql(expression, include_to=False)
-
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             node = expression.this
 
@@ -436,6 +531,13 @@ class StarRocks(MySQL):
                 is_simple = isinstance(node, (exp.Column, exp.Identifier))
 
             return f"PARTITION BY ({parts})" if is_simple else f"PARTITION BY {parts}"
+            # For MVs and column-only tuples, StarRocks needs outer parentheses.
+            create = expression.find_ancestor(exp.Create)
+            is_creating_view = create and create.kind == "VIEW"
+
+            if (is_simple or is_creating_view):
+                parts = f"({parts})"
+            return f"PARTITION BY {parts}"
 
         def partition_sql(self, expression: exp.Partition) -> str:
             parent = expression.parent
@@ -476,22 +578,14 @@ class StarRocks(MySQL):
             """Generate StarRocks REFRESH clause for materialized views.
             There is a little difference of the syntax between StarRocks and Doris.
             """
-            parts = ["REFRESH"]
-
-            # Only render method when it matches StarRocks keywords.
-            method_sql = self.sql(expression, "method")
-            if method_sql.upper() != "UNSPECIFIED":
-                parts.append(method_sql)
-
-            if kind := expression.args.get("kind"):
-                parts.append(self.sql(kind))
-
-            if starts := self.sql(expression, "starts"):
-                parts.append(f"START ({starts})")
-
+            method = self.sql(expression, "method")
+            method = f" {method}" if method and method.upper() != "UNSPECIFIED" else ""
+            kind = self.sql(expression, "kind")
+            kind = f" {kind}" if kind else ""
+            starts = self.sql(expression, "starts")
+            starts = f" START ({starts})" if starts else ""
             every = self.sql(expression, "every")
             unit = self.sql(expression, "unit")
-            if every and unit:
-                parts.append(f"EVERY (INTERVAL {every} {unit})")
+            every = f" EVERY (INTERVAL {every} {unit})" if every and unit else ""
 
-            return " ".join(p for p in parts if p and str(p).strip())
+            return f"REFRESH{method}{kind}{starts}{every}"

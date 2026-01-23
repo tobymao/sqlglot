@@ -130,25 +130,16 @@ class TestStarrocks(Validator):
         self.assertEqual(single_column_cluster.sql(dialect="starrocks"), "ORDER BY (c)")
 
         # MV: Refresh trigger property
-        manual_refresh = exp.RefreshTriggerProperty(kind=exp.var("MANUAL"))
-        self.assertEqual(manual_refresh.sql(dialect="starrocks"), "REFRESH MANUAL")
-
-        async_refresh = exp.RefreshTriggerProperty(
-            method=exp.var("IMMEDIATE"),
-            kind=exp.var("ASYNC"),
-            starts=exp.Literal.string("2025-01-01 00:00:00"),
-            every=exp.Literal.number(5),
-            unit=exp.var("MINUTE"),
-        )
-        self.assertEqual(
-            async_refresh.sql(dialect="starrocks"),
-            "REFRESH IMMEDIATE ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
-        )
-
-        skip_unspecified_method_refresh = exp.RefreshTriggerProperty(
-            method=exp.var("UNSPECIFIED"), kind=exp.var("ASYNC")
-        )
-        self.assertEqual(skip_unspecified_method_refresh.sql(dialect="starrocks"), "REFRESH ASYNC")
+        refresh_sqls = [
+            "REFRESH DEFERRED",
+            "REFRESH ASYNC",
+            "REFRESH ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH DEFERRED ASYNC EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH IMMEDIATE MANUAL",
+        ]
+        for properties in refresh_sqls:
+            with self.subTest(f"Testing refresh clause: {properties}"):
+                self.validate_identity(f"CREATE MATERIALIZED VIEW mv {properties} AS SELECT 1")
 
         # RENAME table without TO keyword
         self.validate_identity("ALTER TABLE t1 RENAME t2")

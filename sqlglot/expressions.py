@@ -2608,8 +2608,16 @@ class Literal(Condition):
     arg_types = {"this": True, "is_string": True}
 
     @classmethod
-    def number(cls, number) -> Literal:
-        return cls(this=str(number), is_string=False)
+    def number(cls, number) -> Literal | Neg:
+        expr: Literal | Neg = cls(this=str(number), is_string=False)
+
+        to_py = expr.to_py()
+
+        if not isinstance(to_py, str) and to_py < 0:
+            expr.set("this", str(abs(to_py)))
+            expr = Neg(this=expr)
+
+        return expr
 
     @classmethod
     def string(cls, string) -> Literal:
@@ -6086,7 +6094,7 @@ class ArrayPrepend(Func):
 
 class ArrayConcat(Func):
     _sql_names = ["ARRAY_CONCAT", "ARRAY_CAT"]
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "null_propagation": False}
     is_var_len_args = True
 
 
@@ -8513,6 +8521,12 @@ class Semicolon(Expression):
 # BigQuery allows SELECT t FROM t and treats the projection as a struct value. This expression
 # type is intended to be constructed by qualify so that we can properly annotate its type later
 class TableColumn(Expression):
+    pass
+
+
+# https://www.postgresql.org/docs/current/typeconv-func.html
+# https://www.postgresql.org/docs/current/xfunc-sql.html
+class Variadic(Expression):
     pass
 
 

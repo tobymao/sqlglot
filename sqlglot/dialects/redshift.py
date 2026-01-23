@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     NormalizationStrategy,
+    array_concat_sql,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     date_delta_sql,
@@ -49,6 +50,7 @@ class Redshift(Postgres):
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = True
     COALESCE_COMPARISON_NON_STANDARD = True
     REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = False
+    ARRAY_FUNCS_PROPAGATES_NULLS = True
 
     # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
@@ -190,7 +192,7 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
-            exp.ArrayConcat: lambda self, e: self.arrayconcat_sql(e, name="ARRAY_CONCAT"),
+            exp.ArrayConcat: array_concat_sql("ARRAY_CONCAT"),
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self,

@@ -1044,6 +1044,16 @@ FROM json_data, field_ids""",
             },
         )
 
+        self.validate_identity("SELECT MLEAST(VARIADIC ARRAY[10, -1, 5, 4.4])")
+        self.validate_identity(
+            "SELECT MLEAST(VARIADIC ARRAY[]::numeric[])",
+            "SELECT MLEAST(VARIADIC CAST(ARRAY[] AS DECIMAL[]))",
+        )
+        self.validate_identity(
+            "SELECT * FROM schema_name.table_name st WHERE JSON_EXTRACT_PATH_TEXT((st.data)::json, variadic array['test'::text]) = 'test'::text",
+            "SELECT * FROM schema_name.table_name AS st WHERE JSON_EXTRACT_PATH_TEXT(CAST((st.data) AS JSON), VARIADIC ARRAY[CAST('test' AS TEXT)]) = CAST('test' AS TEXT)",
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

@@ -600,6 +600,10 @@ STRING;
 FACTORIAL(tbl.int_col);
 BIGINT;
 
+# dialect: hive, spark2, spark, databricks
+QUARTER(tbl.date_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -2023,6 +2027,66 @@ STRING;
 # dialect: bigquery
 r'a';
 STRING;
+
+# dialect: bigquery
+DATE_ADD(DATE '2008-12-25', INTERVAL 5 DAY);
+DATE;
+
+# dialect: bigquery
+DATE_ADD(DATE '2008-12-25', INTERVAL 2 WEEK);
+DATE;
+
+# dialect: bigquery
+DATE_ADD(DATE '2008-12-25', INTERVAL 3 MONTH);
+DATE;
+
+# dialect: bigquery
+DATE_ADD(DATE '2008-12-25', INTERVAL 1 QUARTER);
+DATE;
+
+# dialect: bigquery
+DATE_ADD(DATE '2008-12-25', INTERVAL 2 YEAR);
+DATE;
+
+# dialect: bigquery
+DATE_ADD(TIMESTAMP '2008-12-25 15:30:00', INTERVAL 5 DAY);
+TIMESTAMP;
+
+# dialect: bigquery
+DATE_ADD(TIMESTAMP '2008-12-25 15:30:00', INTERVAL 2 HOUR);
+TIMESTAMP;
+
+# dialect: bigquery
+DATE_ADD(TIMESTAMP '2008-12-25 15:30:00', INTERVAL 30 MINUTE);
+TIMESTAMP;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 5 DAY);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 2 WEEK);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 3 MONTH);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 1 QUARTER);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 2 YEAR);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 2 HOUR);
+DATETIME;
+
+# dialect: bigquery
+DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 30 MINUTE);
+DATETIME;
 
 --------------------------------------
 -- Snowflake

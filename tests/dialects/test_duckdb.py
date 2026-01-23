@@ -959,7 +959,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "ARRAY_CONCAT([1, 2], [3, 4])",
+            "LIST_CONCAT([1, 2], [3, 4])",
             read={
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
                 "postgres": "ARRAY_CAT(ARRAY[1, 2], ARRAY[3, 4])",
@@ -967,7 +967,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "bigquery": "ARRAY_CONCAT([1, 2], [3, 4])",
-                "duckdb": "ARRAY_CONCAT([1, 2], [3, 4])",
+                "duckdb": "LIST_CONCAT([1, 2], [3, 4])",
                 "hive": "CONCAT(ARRAY(1, 2), ARRAY(3, 4))",
                 "postgres": "ARRAY_CAT(ARRAY[1, 2], ARRAY[3, 4])",
                 "presto": "CONCAT(ARRAY[1, 2], ARRAY[3, 4])",

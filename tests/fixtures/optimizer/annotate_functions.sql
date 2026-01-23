@@ -600,6 +600,10 @@ STRING;
 FACTORIAL(tbl.int_col);
 BIGINT;
 
+# dialect: hive, spark2, spark, databricks
+QUARTER(tbl.date_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

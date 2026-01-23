@@ -46,9 +46,15 @@ EXPRESSION_METADATA = {
             exp.Factorial,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.INT}
+        for expr_type in {
+            exp.Month,
+            exp.Quarter,
+        }
+    },
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
-    exp.Month: {"returns": exp.DataType.Type.INT},
 }

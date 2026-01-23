@@ -2776,12 +2776,8 @@ class DuckDB(Dialect):
 
             return self.sql(case)
 
+        @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:
-            # Warn about unsupported cost parameters
-            for arg in ("ins_cost", "del_cost", "sub_cost"):
-                if expression.args.get(arg):
-                    self.unsupported(f"LEVENSHTEIN {arg} parameter is not supported in DuckDB")
-
             this = expression.this
             expr = expression.expression
             max_dist = expression.args.get("max_dist")

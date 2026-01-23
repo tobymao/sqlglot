@@ -572,8 +572,12 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         if isinstance(udf, str):
             parsed: exp.Expression = exp.maybe_parse(udf, dialect=dialect)
-            udf = parsed if isinstance(parsed, exp.Anonymous) else parsed.this
+            udf_expr = parsed.expression if isinstance(parsed, exp.Dot) else None
 
+            if not isinstance(udf_expr, exp.Anonymous):
+                raise SchemaError(f"Unable to parse UDF from: {udf!r}")
+
+            udf = udf_expr
         parts = self.udf_parts(udf)
 
         if normalize:

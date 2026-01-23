@@ -97,6 +97,35 @@ _SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
 
 
+def _apply_base64_alphabet_replacements(
+    result: exp.Expression,
+    alphabet: t.Optional[exp.Expression],
+    reverse: bool = False,
+) -> exp.Expression:
+    """
+    Apply base64 alphabet character replacements.
+
+    Base64 alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=').
+    zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/', etc.
+
+    Args:
+        result: The expression to apply replacements to
+        alphabet: Custom alphabet literal (expected chars for +/=)
+        reverse: If False, replace default with custom (encode)
+                 If True, replace custom with default (decode)
+    """
+    if isinstance(alphabet, exp.Literal) and alphabet.is_string:
+        for default_char, new_char in zip("+/=", alphabet.this):
+            if new_char != default_char:
+                find, replace = (new_char, default_char) if reverse else (default_char, new_char)
+                result = exp.Replace(
+                    this=result,
+                    expression=exp.Literal.string(find),
+                    replacement=exp.Literal.string(replace),
+                )
+    return result
+
+
 def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_string: bool) -> str:
     """
     Transpile Snowflake BASE64_DECODE_STRING/BINARY to DuckDB.
@@ -108,16 +137,7 @@ def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_st
     alphabet = expression.args.get("alphabet")
 
     # Handle custom alphabet by replacing non-standard chars with standard ones
-    if isinstance(alphabet, exp.Literal) and alphabet.is_string:
-        result = input_expr.copy()
-        for default_char, new_char in zip("+/=", alphabet.this):
-            if new_char != default_char:
-                result = exp.Replace(
-                    this=result,
-                    expression=exp.Literal.string(new_char),
-                    replacement=exp.Literal.string(default_char),
-                )
-        input_expr = result
+    input_expr = _apply_base64_alphabet_replacements(input_expr, alphabet, reverse=True)
 
     # FROM_BASE64 returns BLOB
     input_expr = exp.FromBase64(this=input_expr)
@@ -2775,29 +2795,19 @@ class DuckDB(Dialect):
             # DuckDB TO_BASE64 requires BLOB input
             # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly
             # encodes UTF-8 bytes. We add ENCODE unless the input is a binary type.
-            input_expr = expression.this
+            result = expression.this
 
             # Check if input is a string type - ENCODE only accepts VARCHAR
-            result = input_expr
-            if input_expr.is_type(*exp.DataType.TEXT_TYPES):
-                result = exp.Encode(this=input_expr)
+            if result.is_type(*exp.DataType.TEXT_TYPES):
+                result = exp.Encode(this=result)
 
             result = exp.ToBase64(this=result)
 
             max_line_length = expression.args.get("max_line_length")
             alphabet = expression.args.get("alphabet")
 
-            # Handle custom alphabet by replacing characters (applied before line breaks)
-            # Alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=')
-            # zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/'
-            if isinstance(alphabet, exp.Literal) and alphabet.is_string:
-                for default_char, new_char in zip("+/=", alphabet.this):
-                    if new_char != default_char:
-                        result = exp.Replace(
-                            this=result,
-                            expression=exp.Literal.string(default_char),
-                            replacement=exp.Literal.string(new_char),
-                        )
+            # Handle custom alphabet by replacing standard chars with custom ones
+            result = _apply_base64_alphabet_replacements(result, alphabet)
 
             # Handle max_line_length by inserting newlines every N characters
             line_length = (

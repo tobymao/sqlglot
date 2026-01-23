@@ -2595,24 +2595,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT BASE64_DECODE_STRING('test', '-_+')",
+            "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
             write={
-                "snowflake": "SELECT BASE64_DECODE_STRING('test', '-_+')",
-                "duckdb": "SELECT DECODE(FROM_BASE64(REPLACE(REPLACE(REPLACE('test', '-', '+'), '_', '/'), '+', '=')))",
+                "snowflake": "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
+                "duckdb": "SELECT DECODE(FROM_BASE64(REPLACE(REPLACE(REPLACE('U25vd2ZsYWtl', '-', '+'), '_', '/'), '+', '=')))",
             },
         )
         self.validate_all(
-            "SELECT BASE64_DECODE_BINARY('U25vd2ZsYWtl')",
+            "SELECT BASE64_DECODE_BINARY(x)",
             write={
-                "snowflake": "SELECT BASE64_DECODE_BINARY('U25vd2ZsYWtl')",
-                "duckdb": "SELECT FROM_BASE64('U25vd2ZsYWtl')",
+                "snowflake": "SELECT BASE64_DECODE_BINARY(x)",
+                "duckdb": "SELECT FROM_BASE64(x)",
             },
         )
         self.validate_all(
-            "SELECT BASE64_DECODE_BINARY('test', '-_+')",
+            "SELECT BASE64_DECODE_BINARY(x, '-_+')",
             write={
-                "snowflake": "SELECT BASE64_DECODE_BINARY('test', '-_+')",
-                "duckdb": "SELECT FROM_BASE64(REPLACE(REPLACE(REPLACE('test', '-', '+'), '_', '/'), '+', '='))",
+                "snowflake": "SELECT BASE64_DECODE_BINARY(x, '-_+')",
+                "duckdb": "SELECT FROM_BASE64(REPLACE(REPLACE(REPLACE(x, '-', '+'), '_', '/'), '+', '='))",
             },
         )
 

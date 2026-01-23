@@ -5746,15 +5746,15 @@ class ByteLength(Func):
 
 
 class Boolnot(Func):
-    pass
+    arg_types = {"this": True, "round_input": False}
 
 
 class Booland(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "round_input": False}
 
 
 class Boolor(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "round_input": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#bool_for_json
@@ -7056,7 +7056,7 @@ class Or(Connector, Func):
 
 
 class Xor(Connector, Func):
-    arg_types = {"this": False, "expression": False, "expressions": False}
+    arg_types = {"this": False, "expression": False, "expressions": False, "round_input": False}
     is_var_len_args = True
 
 

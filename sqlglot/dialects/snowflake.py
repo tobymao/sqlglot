@@ -846,7 +846,16 @@ class Snowflake(Dialect):
             "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
             "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
             "BITMAP_OR_AGG": exp.BitmapOrAgg.from_arg_list,
-            "BOOLXOR": _build_bitwise(exp.Xor, "BOOLXOR"),
+            "BOOLAND": lambda args: exp.Booland(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
+            "BOOLOR": lambda args: exp.Boolor(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
+            "BOOLNOT": lambda args: exp.Boolnot(this=seq_get(args, 0), round_input=True),
+            "BOOLXOR": lambda args: exp.Xor(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
             "CORR": lambda args: exp.Corr(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),

@@ -397,6 +397,7 @@ class Postgres(Dialect):
             "REGTYPE": TokenType.OBJECT_IDENTIFIER,
             "FLOAT": TokenType.DOUBLE,
             "XML": TokenType.XML,
+            "VARIADIC": TokenType.VARIADIC,
         }
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")
@@ -461,6 +462,11 @@ class Postgres(Dialect):
             )
             if len(args) == 2
             else exp.WidthBucket.from_arg_list(args),
+        }
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "VARIADIC": lambda self: self._parse_variadic(),
         }
 
         NO_PAREN_FUNCTIONS = {
@@ -578,6 +584,10 @@ class Postgres(Dialect):
                     udt_type = exp.Dot(this=udt_type, expression=part)
 
             return exp.DataType.build(udt_type, udt=True)
+
+        def _parse_variadic(self) -> exp.Variadic:
+            expression = self._parse_expression()
+            return self.expression(exp.Variadic, this=expression)
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
@@ -730,6 +740,7 @@ class Postgres(Dialect):
             exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
             exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
             exp.CountIf: count_if_to_sum,
+            exp.Variadic: lambda self, e: self.variadic_sql(e),
         }
 
         TRANSFORMS.pop(exp.CommentColumnConstraint)
@@ -900,3 +911,7 @@ class Postgres(Dialect):
             )
 
             return self.sql(case_expr)
+
+        def variadic_sql(self, expression: exp.Variadic) -> str:
+            expression = self.sql(expression, "this")
+            return f"VARIADIC {expression}"

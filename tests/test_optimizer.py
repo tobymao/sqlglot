@@ -1420,6 +1420,43 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             exp.DataType.Type.UNKNOWN,
         )
 
+    def test_udf_annotation(self):
+        # Unqualified UDF
+        schema = MappingSchema(
+            schema={"t": {"col": "INT"}},
+            udf_mapping={"my_func": "VARCHAR"},
+        )
+        expr = annotate_types(parse_one("SELECT my_func(col) FROM t"), schema=schema)
+        self.assertEqual(expr.selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # Qualified UDF (2-level)
+        schema = MappingSchema(
+            schema={"db": {"t": {"col": "INT"}}},
+            udf_mapping={"db": {"my_func": "DOUBLE"}},
+        )
+        expr = annotate_types(parse_one("SELECT db.my_func(col) FROM db.t"), schema=schema)
+        anon = expr.selects[0].find(exp.Anonymous)
+        self.assertEqual(anon.type.this, exp.DataType.Type.DOUBLE)
+        # Dot parent should also have the type
+        self.assertEqual(expr.selects[0].type.this, exp.DataType.Type.DOUBLE)
+
+        # Qualified UDF (3-level)
+        schema = MappingSchema(
+            schema={"cat": {"db": {"t": {"col": "INT"}}}},
+            udf_mapping={"cat": {"db": {"my_func": "BOOLEAN"}}},
+        )
+        expr = annotate_types(parse_one("SELECT cat.db.my_func(col) FROM cat.db.t"), schema=schema)
+        anon = expr.selects[0].find(exp.Anonymous)
+        self.assertEqual(anon.type.this, exp.DataType.Type.BOOLEAN)
+
+        # Unknown UDF returns UNKNOWN
+        schema = MappingSchema(
+            schema={"t": {"col": "INT"}},
+            udf_mapping={"known_func": "DATE"},
+        )
+        expr = annotate_types(parse_one("SELECT unknown_func(col) FROM t"), schema=schema)
+        self.assertEqual(expr.selects[0].type.this, exp.DataType.Type.UNKNOWN)
+
     def test_predicate_annotation(self):
         expression = annotate_types(parse_one("x BETWEEN a AND b"))
         self.assertEqual(expression.type.this, exp.DataType.Type.BOOLEAN)

@@ -111,6 +111,25 @@ class Schema(abc.ABC):
         name = column if isinstance(column, str) else column.name
         return name in self.column_names(table, dialect=dialect, normalize=normalize)
 
+    def get_udf_type(
+        self,
+        udf: exp.Anonymous | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> exp.DataType:
+        """
+        Get the return type of a UDF.
+
+        Args:
+            udf: the UDF expression or string.
+            dialect: the SQL dialect for parsing string arguments.
+            normalize: whether to normalize identifiers.
+
+        Returns:
+            The return type as a DataType, or UNKNOWN if not found.
+        """
+        return exp.DataType.build("unknown")
+
     @property
     @abc.abstractmethod
     def supported_table_args(self) -> t.Tuple[str, ...]:
@@ -128,11 +147,18 @@ class AbstractMappingSchema:
     def __init__(
         self,
         mapping: t.Optional[t.Dict] = None,
+        udf_mapping: t.Optional[t.Dict] = None,
     ) -> None:
         self.mapping = mapping or {}
         self.mapping_trie = new_trie(
             tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self.depth())
         )
+
+        self.udf_mapping = udf_mapping or {}
+        self.udf_trie = new_trie(
+            tuple(reversed(t)) for t in flatten_schema(self.udf_mapping, depth=self.udf_depth())
+        )
+
         self._supported_table_args: t.Tuple[str, ...] = tuple()
 
     @property
@@ -141,6 +167,9 @@ class AbstractMappingSchema:
 
     def depth(self) -> int:
         return dict_depth(self.mapping)
+
+    def udf_depth(self) -> int:
+        return dict_depth(self.udf_mapping)
 
     @property
     def supported_table_args(self) -> t.Tuple[str, ...]:
@@ -157,7 +186,39 @@ class AbstractMappingSchema:
         return self._supported_table_args
 
     def table_parts(self, table: exp.Table) -> t.List[str]:
-        return [part.name for part in reversed(table.parts)]
+        return [p.name for p in reversed(table.parts)]
+
+    def udf_parts(self, udf: exp.Anonymous) -> t.List[str]:
+        # a.b.c(...) is represented as Dot(Dot(a, b), Anonymous(c, ...))
+        parent = udf.parent
+        parts = [p.name for p in parent.flatten()] if isinstance(parent, exp.Dot) else [udf.name]
+        return list(reversed(parts))
+
+    def _find_in_trie(
+        self,
+        parts: t.List[str],
+        trie: t.Dict,
+        raise_on_missing: bool,
+    ) -> t.Optional[t.List[str]]:
+        value, trie = in_trie(trie, parts)
+
+        if value == TrieResult.FAILED:
+            return None
+
+        if value == TrieResult.PREFIX:
+            possibilities = flatten_schema(trie)
+
+            if len(possibilities) == 1:
+                parts.extend(possibilities[0])
+            else:
+                if raise_on_missing:
+                    joined_parts = ".".join(parts)
+                    message = ", ".join(".".join(p) for p in possibilities)
+                    raise SchemaError(f"Ambiguous mapping for {joined_parts}: {message}.")
+
+                return None
+
+        return parts
 
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
@@ -174,23 +235,35 @@ class AbstractMappingSchema:
             The schema of the target table.
         """
         parts = self.table_parts(table)[0 : len(self.supported_table_args)]
-        value, trie = in_trie(self.mapping_trie, parts)
+        resolved_parts = self._find_in_trie(parts, self.mapping_trie, raise_on_missing)
 
-        if value == TrieResult.FAILED:
+        if resolved_parts is None:
             return None
 
-        if value == TrieResult.PREFIX:
-            possibilities = flatten_schema(trie)
+        return self.nested_get(resolved_parts, raise_on_missing=raise_on_missing)
 
-            if len(possibilities) == 1:
-                parts.extend(possibilities[0])
-            else:
-                message = ", ".join(".".join(parts) for parts in possibilities)
-                if raise_on_missing:
-                    raise SchemaError(f"Ambiguous mapping for {table}: {message}.")
-                return None
+    def find_udf(self, udf: exp.Anonymous, raise_on_missing: bool = False) -> t.Optional[t.Any]:
+        """
+        Returns the return type of a given UDF.
 
-        return self.nested_get(parts, raise_on_missing=raise_on_missing)
+        Args:
+            udf: the target UDF expression.
+            raise_on_missing: whether to raise if the UDF is not found.
+
+        Returns:
+            The return type of the UDF, or None if not found.
+        """
+        parts = self.udf_parts(udf)[0 : self.udf_depth()]
+        resolved_parts = self._find_in_trie(parts, self.udf_trie, raise_on_missing)
+
+        if resolved_parts is None:
+            return None
+
+        return nested_get(
+            self.udf_mapping,
+            *zip(resolved_parts, reversed(resolved_parts)),
+            raise_on_missing=raise_on_missing,
+        )
 
     def nested_get(
         self, parts: t.Sequence[str], d: t.Optional[t.Dict] = None, raise_on_missing=True
@@ -227,6 +300,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         visible: t.Optional[t.Dict] = None,
         dialect: DialectType = None,
         normalize: bool = True,
+        udf_mapping: t.Optional[t.Dict] = None,
     ) -> None:
         self.visible = {} if visible is None else visible
         self.normalize = normalize
@@ -234,8 +308,12 @@ class MappingSchema(AbstractMappingSchema, Schema):
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
         self._depth = 0
         schema = {} if schema is None else schema
+        udf_mapping = {} if udf_mapping is None else udf_mapping
 
-        super().__init__(self._normalize(schema) if self.normalize else schema)
+        super().__init__(
+            self._normalize(schema) if self.normalize else schema,
+            self._normalize_udfs(udf_mapping) if self.normalize else udf_mapping,
+        )
 
     @property
     def dialect(self) -> Dialect:
@@ -249,6 +327,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             visible=mapping_schema.visible,
             dialect=mapping_schema.dialect,
             normalize=mapping_schema.normalize,
+            udf_mapping=mapping_schema.udf_mapping,
         )
 
     def find(
@@ -272,6 +351,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
                 "visible": self.visible.copy(),
                 "dialect": self.dialect,
                 "normalize": self.normalize,
+                "udf_mapping": self.udf_mapping.copy(),
                 **kwargs,
             }
         )
@@ -360,6 +440,43 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         return exp.DataType.build("unknown")
 
+    def get_udf_type(
+        self,
+        udf: exp.Anonymous | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> exp.DataType:
+        """
+        Get the return type of a UDF.
+
+        Args:
+            udf: the UDF expression or string (e.g., "db.my_func()").
+            dialect: the SQL dialect for parsing string arguments.
+            normalize: whether to normalize identifiers.
+
+        Returns:
+            The return type as a DataType, or UNKNOWN if not found.
+        """
+        parts = self._normalize_udf(udf, dialect=dialect, normalize=normalize)
+        parts = parts[0 : self.udf_depth()]
+        resolved_parts = self._find_in_trie(parts, self.udf_trie, raise_on_missing=False)
+
+        if resolved_parts is None:
+            return exp.DataType.build("unknown")
+
+        udf_type = nested_get(
+            self.udf_mapping,
+            *zip(resolved_parts, reversed(resolved_parts)),
+            raise_on_missing=False,
+        )
+
+        if isinstance(udf_type, exp.DataType):
+            return udf_type
+        elif isinstance(udf_type, str):
+            return self._to_data_type(udf_type, dialect=dialect)
+
+        return exp.DataType.build("unknown")
+
     def has_column(
         self,
         table: exp.Table | str,
@@ -413,6 +530,55 @@ class MappingSchema(AbstractMappingSchema, Schema):
                 )
 
         return normalized_mapping
+
+    def _normalize_udfs(self, udfs: t.Dict) -> t.Dict:
+        """
+        Normalizes all identifiers in the UDF mapping.
+
+        Args:
+            udfs: the UDF mapping to normalize.
+
+        Returns:
+            The normalized UDF mapping.
+        """
+        normalized_mapping: t.Dict = {}
+
+        for keys in flatten_schema(udfs, depth=dict_depth(udfs)):
+            udf_type = nested_get(udfs, *zip(keys, keys))
+            normalized_keys = [self._normalize_name(key, is_table=True) for key in keys]
+            nested_set(normalized_mapping, normalized_keys, udf_type)
+
+        return normalized_mapping
+
+    def _normalize_udf(
+        self,
+        udf: exp.Anonymous | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> t.List[str]:
+        """
+        Extract and normalize UDF parts for lookup.
+
+        Args:
+            udf: the UDF expression or qualified string (e.g., "db.my_func()").
+            dialect: the SQL dialect for parsing.
+            normalize: whether to normalize identifiers.
+
+        Returns:
+            A list of normalized UDF parts (reversed for trie lookup).
+        """
+        dialect = dialect or self.dialect
+        normalize = self.normalize if normalize is None else normalize
+
+        if isinstance(udf, str):
+            udf = t.cast(exp.Anonymous, exp.maybe_parse(udf, dialect=dialect).this)
+
+        parts = self.udf_parts(udf)
+
+        if normalize:
+            parts = [self._normalize_name(part, dialect=dialect, is_table=True) for part in parts]
+
+        return parts
 
     def _normalize_table(
         self,

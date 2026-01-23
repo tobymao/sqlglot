@@ -2070,19 +2070,15 @@ def filter_array_using_unnest(
     return self.sql(exp.Array(expressions=[filtered]))
 
 
-def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
+def remove_from_array_using_filter(
+    self: Generator, expression: exp.ArrayRemove | exp.ArrayCompact
+) -> str:
     lambda_id = exp.to_identifier("_u")
-    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
-    return self.sql(
-        exp.ArrayFilter(
-            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
-        )
-    )
+    if isinstance(expression, exp.ArrayRemove):
+        cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+    else:
+        cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
 
-
-def array_filter_null_sql(self: Generator, expression: exp.ArrayCompact) -> str:
-    lambda_id = exp.to_identifier("_u")
-    cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
     return self.sql(
         exp.ArrayFilter(
             this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])

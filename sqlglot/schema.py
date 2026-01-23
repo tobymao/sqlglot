@@ -571,13 +571,14 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalize = self.normalize if normalize is None else normalize
 
         if isinstance(udf, str):
-            parsed: exp.Expression = exp.maybe_parse(udf, dialect=dialect)
-            udf_expr = parsed.expression if isinstance(parsed, exp.Dot) else None
+            parsed = exp.maybe_parse(udf, dialect=dialect)
 
-            if not isinstance(udf_expr, exp.Anonymous):
+            if isinstance(parsed, exp.Anonymous):
+                udf = parsed
+            elif isinstance(parsed, exp.Dot) and isinstance(parsed.expression, exp.Anonymous):
+                udf = parsed.expression
+            else:
                 raise SchemaError(f"Unable to parse UDF from: {udf!r}")
-
-            udf = udf_expr
         parts = self.udf_parts(udf)
 
         if normalize:

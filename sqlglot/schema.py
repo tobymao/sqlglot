@@ -192,7 +192,7 @@ class AbstractMappingSchema:
         # a.b.c(...) is represented as Dot(Dot(a, b), Anonymous(c, ...))
         parent = udf.parent
         parts = [p.name for p in parent.flatten()] if isinstance(parent, exp.Dot) else [udf.name]
-        return list(reversed(parts))
+        return list(reversed(parts))[0 : self.udf_depth()]
 
     def _find_in_trie(
         self,
@@ -253,7 +253,7 @@ class AbstractMappingSchema:
         Returns:
             The return type of the UDF, or None if not found.
         """
-        parts = self.udf_parts(udf)[0 : self.udf_depth()]
+        parts = self.udf_parts(udf)
         resolved_parts = self._find_in_trie(parts, self.udf_trie, raise_on_missing)
 
         if resolved_parts is None:
@@ -458,7 +458,6 @@ class MappingSchema(AbstractMappingSchema, Schema):
             The return type as a DataType, or UNKNOWN if not found.
         """
         parts = self._normalize_udf(udf, dialect=dialect, normalize=normalize)
-        parts = parts[0 : self.udf_depth()]
         resolved_parts = self._find_in_trie(parts, self.udf_trie, raise_on_missing=False)
 
         if resolved_parts is None:
@@ -571,7 +570,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalize = self.normalize if normalize is None else normalize
 
         if isinstance(udf, str):
-            parsed = exp.maybe_parse(udf, dialect=dialect)
+            parsed: exp.Expression = exp.maybe_parse(udf, dialect=dialect)
 
             if isinstance(parsed, exp.Anonymous):
                 udf = parsed

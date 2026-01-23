@@ -5203,6 +5203,35 @@ FROM SEMANTIC_VIEW(
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(annotated.sql("duckdb"), "NULL")
 
+    def test_reverse(self):
+        # Test REVERSE with TO_BINARY (BLOB type) - UTF-8 format
+        expr = self.validate_identity("REVERSE(TO_BINARY('ABC', 'UTF-8'))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CAST(REVERSE(CAST(ENCODE('ABC') AS TEXT)) AS BLOB)"
+        )
+
+        # Test REVERSE with TO_BINARY - HEX format
+        expr = self.validate_identity("REVERSE(TO_BINARY('414243', 'HEX'))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST(REVERSE(CAST(UNHEX('414243') AS TEXT)) AS BLOB)",
+        )
+
+        # Test REVERSE with HEX_DECODE_BINARY
+        expr = self.validate_identity("REVERSE(HEX_DECODE_BINARY('414243'))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "CAST(REVERSE(CAST(UNHEX('414243') AS TEXT)) AS BLOB)",
+        )
+
+        # Test REVERSE with VARCHAR (should not add casts)
+        expr = self.validate_identity("REVERSE('ABC')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "REVERSE('ABC')")
+
     def test_float_interval(self):
         # Test TIMEADD with float interval value - DuckDB INTERVAL requires integers
         expr = self.validate_identity("TIMEADD(HOUR, 2.5, CAST('10:30:00' AS TIME))")

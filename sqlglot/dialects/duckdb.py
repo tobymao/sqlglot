@@ -2732,6 +2732,10 @@ class DuckDB(Dialect):
             result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
+        def reverse_sql(self, expression: exp.Reverse) -> str:
+            result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
+            return _gen_with_cast_to_blob(self, expression, result_sql)
+
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input
             # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly

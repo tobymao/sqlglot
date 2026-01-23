@@ -8519,7 +8519,7 @@ class TableColumn(Expression):
 # https://www.postgresql.org/docs/current/typeconv-func.html
 # https://www.postgresql.org/docs/current/xfunc-sql.html
 class Variadic(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})

@@ -585,10 +585,6 @@ class Postgres(Dialect):
 
             return exp.DataType.build(udt_type, udt=True)
 
-        def _parse_variadic(self) -> exp.Variadic:
-            expression = self._parse_expression()
-            return self.expression(exp.Variadic, this=expression)
-
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
         RENAME_TABLE_WITH_DB = False

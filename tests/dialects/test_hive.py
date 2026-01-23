@@ -288,11 +288,22 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
+            "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, col",
             write={
-                "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
-                "hive": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
-                "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS a",
+                "presto": "SELECT a FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos))",
+                "trino": "SELECT a FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos))",
+                "duckdb": "SELECT a FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos))",
+                "hive": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, col",
+                "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, col",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x LATERAL VIEW POSEXPLODE(MAP(col, 'val')) t AS pos, key, value",
+            write={
+                "presto": "SELECT * FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, key, value FROM UNNEST(MAP(ARRAY[col], ARRAY['val'])) WITH ORDINALITY AS t(key, value, pos))",
+                "trino": "SELECT * FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, key, value FROM UNNEST(MAP(ARRAY[col], ARRAY['val'])) WITH ORDINALITY AS t(key, value, pos))",
+                "hive": "SELECT * FROM x LATERAL VIEW POSEXPLODE(MAP(col, 'val')) t AS pos, key, value",
+                "spark": "SELECT * FROM x LATERAL VIEW POSEXPLODE(MAP(col, 'val')) t AS pos, key, value",
             },
         )
         self.validate_all(

@@ -913,5 +913,5 @@ class Postgres(Dialect):
             return self.sql(case_expr)
 
         def variadic_sql(self, expression: exp.Variadic) -> str:
-            expression = self.sql(expression, "this")
-            return f"VARIADIC {expression}"
+            this = self.sql(expression, "this")
+            return f"VARIADIC {this}"

@@ -604,6 +604,10 @@ BIGINT;
 QUARTER(tbl.date_col);
 INT;
 
+# dialect: hive, spark2, spark, databricks
+SECOND(tbl.timestamp_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

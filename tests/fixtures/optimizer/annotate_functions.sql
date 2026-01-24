@@ -600,6 +600,10 @@ STRING;
 FACTORIAL(tbl.int_col);
 BIGINT;
 
+# dialect: spark, databricks
+ARRAY_SIZE(tbl.array_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

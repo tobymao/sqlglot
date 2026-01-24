@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     array_append_sql,
+    array_concat_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -94,6 +95,57 @@ MAX_BIT_POSITION = exp.Literal.number(32768)
 # SEQ function constants
 _SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
+
+
+def _apply_base64_alphabet_replacements(
+    result: exp.Expression,
+    alphabet: t.Optional[exp.Expression],
+    reverse: bool = False,
+) -> exp.Expression:
+    """
+    Apply base64 alphabet character replacements.
+
+    Base64 alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=').
+    zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/', etc.
+
+    Args:
+        result: The expression to apply replacements to
+        alphabet: Custom alphabet literal (expected chars for +/=)
+        reverse: If False, replace default with custom (encode)
+                 If True, replace custom with default (decode)
+    """
+    if isinstance(alphabet, exp.Literal) and alphabet.is_string:
+        for default_char, new_char in zip("+/=", alphabet.this):
+            if new_char != default_char:
+                find, replace = (new_char, default_char) if reverse else (default_char, new_char)
+                result = exp.Replace(
+                    this=result,
+                    expression=exp.Literal.string(find),
+                    replacement=exp.Literal.string(replace),
+                )
+    return result
+
+
+def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_string: bool) -> str:
+    """
+    Transpile Snowflake BASE64_DECODE_STRING/BINARY to DuckDB.
+
+    DuckDB uses FROM_BASE64() which returns BLOB. For string output, wrap with DECODE().
+    Custom alphabets require REPLACE() calls to convert to standard base64.
+    """
+    input_expr = expression.this
+    alphabet = expression.args.get("alphabet")
+
+    # Handle custom alphabet by replacing non-standard chars with standard ones
+    input_expr = _apply_base64_alphabet_replacements(input_expr, alphabet, reverse=True)
+
+    # FROM_BASE64 returns BLOB
+    input_expr = exp.FromBase64(this=input_expr)
+
+    if to_string:
+        input_expr = exp.Decode(this=input_expr)
+
+    return self.sql(input_expr)
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
@@ -1240,6 +1292,7 @@ class DuckDB(Dialect):
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+            "LIST_CONCAT": parser.build_array_concat,
             "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
             "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
             "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
@@ -1510,7 +1563,6 @@ class DuckDB(Dialect):
         COPY_HAS_INTO_KEYWORD = False
         STAR_EXCEPT = "EXCLUDE"
         PAD_FILL_PATTERN_IS_REQUIRED = True
-        ARRAY_CONCAT_IS_VAR_LEN = False
         ARRAY_SIZE_DIM_REQUIRED = False
         NORMALIZE_EXTRACT_DATE_PARTS = True
         SUPPORTS_LIKE_QUANTIFIERS = False
@@ -1526,6 +1578,8 @@ class DuckDB(Dialect):
                 generator=inline_array_unless_query,
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
+            exp.ArrayCompact: remove_from_array_using_filter,
+            exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
@@ -1534,6 +1588,8 @@ class DuckDB(Dialect):
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
+            exp.Base64DecodeBinary: lambda self, e: _base64_decode_sql(self, e, to_string=False),
+            exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
             exp.BitwiseLeftShift: _bitshift_sql,
@@ -2732,33 +2788,27 @@ class DuckDB(Dialect):
             result_sql = self.func("UPPER", _cast_to_varchar(expression.this))
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
+        def reverse_sql(self, expression: exp.Reverse) -> str:
+            result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
+            return _gen_with_cast_to_blob(self, expression, result_sql)
+
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input
             # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly
             # encodes UTF-8 bytes. We add ENCODE unless the input is a binary type.
-            input_expr = expression.this
+            result = expression.this
 
             # Check if input is a string type - ENCODE only accepts VARCHAR
-            result = input_expr
-            if input_expr.is_type(*exp.DataType.TEXT_TYPES):
-                result = exp.Encode(this=input_expr)
+            if result.is_type(*exp.DataType.TEXT_TYPES):
+                result = exp.Encode(this=result)
 
             result = exp.ToBase64(this=result)
 
             max_line_length = expression.args.get("max_line_length")
             alphabet = expression.args.get("alphabet")
 
-            # Handle custom alphabet by replacing characters (applied before line breaks)
-            # Alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=')
-            # zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/'
-            if isinstance(alphabet, exp.Literal) and alphabet.is_string:
-                for default_char, new_char in zip("+/=", alphabet.this):
-                    if new_char != default_char:
-                        result = exp.Replace(
-                            this=result,
-                            expression=exp.Literal.string(default_char),
-                            replacement=exp.Literal.string(new_char),
-                        )
+            # Handle custom alphabet by replacing standard chars with custom ones
+            result = _apply_base64_alphabet_replacements(result, alphabet)
 
             # Handle max_line_length by inserting newlines every N characters
             line_length = (

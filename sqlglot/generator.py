@@ -230,6 +230,7 @@ class Generator(metaclass=_Generator):
         exp.UtcTimestamp: lambda self, e: self.sql(
             exp.CurrentTimestamp(this=exp.Literal.string("UTC"))
         ),
+        exp.Variadic: lambda self, e: f"VARIADIC {self.sql(e, 'this')}",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
@@ -4909,18 +4910,6 @@ class Generator(metaclass=_Generator):
             self.unsupported("GenerateSeries projection unnesting is not supported.")
 
         return self.sql(generate_series)
-
-    def arrayconcat_sql(self, expression: exp.ArrayConcat, name: str = "ARRAY_CONCAT") -> str:
-        exprs = expression.expressions
-        if not self.ARRAY_CONCAT_IS_VAR_LEN:
-            if len(exprs) == 0:
-                rhs: t.Union[str, exp.Expression] = exp.Array(expressions=[])
-            else:
-                rhs = reduce(lambda x, y: exp.ArrayConcat(this=x, expressions=[y]), exprs)
-        else:
-            rhs = self.expressions(expression)  # type: ignore
-
-        return self.func(name, expression.this, rhs or None)
 
     def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
         if self.SUPPORTS_CONVERT_TIMEZONE:

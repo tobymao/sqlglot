@@ -187,7 +187,7 @@ def build_array_append(args: t.List, dialect: Dialect) -> exp.ArrayAppend:
 
     Args:
         args: Function arguments [array, element]
-        dialect: The dialect to read ARRAY_APPEND_PROPAGATES_NULLS from
+        dialect: The dialect to read ARRAY_FUNCS_PROPAGATES_NULLS from
 
     Returns:
         ArrayAppend expression with appropriate null_propagation flag
@@ -195,7 +195,7 @@ def build_array_append(args: t.List, dialect: Dialect) -> exp.ArrayAppend:
     return exp.ArrayAppend(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
-        null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
+        null_propagation=dialect.ARRAY_FUNCS_PROPAGATES_NULLS,
     )
 
 
@@ -208,7 +208,7 @@ def build_array_prepend(args: t.List, dialect: Dialect) -> exp.ArrayPrepend:
 
     Args:
         args: Function arguments [array, element]
-        dialect: The dialect to read ARRAY_APPEND_PROPAGATES_NULLS from
+        dialect: The dialect to read ARRAY_FUNCS_PROPAGATES_NULLS from
 
     Returns:
         ArrayPrepend expression with appropriate null_propagation flag
@@ -216,7 +216,28 @@ def build_array_prepend(args: t.List, dialect: Dialect) -> exp.ArrayPrepend:
     return exp.ArrayPrepend(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
-        null_propagation=dialect.ARRAY_APPEND_PROPAGATES_NULLS,
+        null_propagation=dialect.ARRAY_FUNCS_PROPAGATES_NULLS,
+    )
+
+
+def build_array_concat(args: t.List, dialect: Dialect) -> exp.ArrayConcat:
+    """
+    Builds ArrayConcat with NULL propagation semantics based on the dialect configuration.
+
+    Some dialects (Redshift, Snowflake) return NULL when any input array is NULL.
+    Others (DuckDB, PostgreSQL) skip NULL arrays and continue concatenation.
+
+    Args:
+        args: Function arguments [array1, array2, ...] (variadic)
+        dialect: The dialect to read ARRAY_FUNCS_PROPAGATES_NULLS from
+
+    Returns:
+        ArrayConcat expression with appropriate null_propagation flag
+    """
+    return exp.ArrayConcat(
+        this=seq_get(args, 0),
+        expressions=args[1:],
+        null_propagation=dialect.ARRAY_FUNCS_PROPAGATES_NULLS,
     )
 
 
@@ -256,6 +277,8 @@ class Parser(metaclass=_Parser):
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
         ),
         "ARRAY_APPEND": build_array_append,
+        "ARRAY_CAT": build_array_concat,
+        "ARRAY_CONCAT": build_array_concat,
         "ARRAY_PREPEND": build_array_prepend,
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(

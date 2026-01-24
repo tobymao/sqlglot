@@ -759,6 +759,13 @@ class MySQL(Dialect):
             self._match_text_seq("PARTITION")
             name = self._parse_id_var()
             self._match_text_seq("VALUES", "LESS", "THAN")
+            values = self._parse_partition_bound_values()
+
+            part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
+            return self.expression(exp.Partition, expressions=[part_range])
+
+        def _parse_partition_bound_values(self) -> t.List[exp.Expression]:
+            """Parse (<values>) and normalize MAXVALUE to exp.var('MAXVALUE')."""
             values = self._parse_wrapped_csv(self._parse_expression)
 
             if (
@@ -766,10 +773,9 @@ class MySQL(Dialect):
                 and isinstance(values[0], exp.Column)
                 and values[0].name.upper() == "MAXVALUE"
             ):
-                values = [exp.var("MAXVALUE")]
+                return [exp.var("MAXVALUE")]
 
-            part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
-            return self.expression(exp.Partition, expressions=[part_range])
+            return values
 
         def _parse_partition_list_value(self) -> exp.Partition:
             """Parse PARTITION <name> VALUES IN (<values>)"""

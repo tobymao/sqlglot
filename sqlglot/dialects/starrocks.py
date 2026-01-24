@@ -150,32 +150,30 @@ class StarRocks(MySQL):
                     create_expressions=self._parse_wrapped_csv(self._parse_partition_list_value),
                 )
 
-            if self._match_text_seq("RANGE"):
-                # StarRocks RANGE partitioning supports expressions like str2date()
-                partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
-                self._match_l_paren()
-
-                if self._match_text_seq("START", advance=False):
-                    create_expressions = self._parse_csv(
-                        self._parse_partitioning_granularity_dynamic
-                    )
-                elif self._match_text_seq("PARTITION", advance=False):
-                    create_expressions = self._parse_csv(self._parse_partition_range_value)
-                else:
-                    create_expressions = None
-
-                self._match_r_paren()
-
+            if not self._match_text_seq("RANGE"):
+                # StarRocks expression-based partitioning: PARTITION BY expr1, expr2, ...
                 return self.expression(
-                    exp.PartitionByRangeProperty,
-                    partition_expressions=partition_expressions,
-                    create_expressions=create_expressions,
+                    exp.PartitionedByProperty,
+                    this=exp.Schema(expressions=self._parse_csv(self._parse_assignment)),
                 )
 
-            # StarRocks expression-based partitioning: PARTITION BY expr1, expr2, ...
+            # StarRocks RANGE partitioning supports expressions like str2date()
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            self._match_l_paren()
+
+            if self._match_text_seq("START", advance=False):
+                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
+            elif self._match_text_seq("PARTITION", advance=False):
+                create_expressions = self._parse_csv(self._parse_partition_range_value)
+            else:
+                create_expressions = None
+
+            self._match_r_paren()
+
             return self.expression(
-                exp.PartitionedByProperty,
-                this=exp.Schema(expressions=self._parse_csv(self._parse_assignment)),
+                exp.PartitionByRangeProperty,
+                partition_expressions=partition_expressions,
+                create_expressions=create_expressions,
             )
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
@@ -425,6 +423,8 @@ class StarRocks(MySQL):
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             this = expression.this
             partition_cols = this.expressions if isinstance(this, exp.Schema) else [this]
+            # Column refs need parens, especially for StarRocks < 3.4: PARTITION BY (col), expressions don't: PARTITION BY func()
+            # See https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
             is_cols = all(isinstance(col, (exp.Column, exp.Identifier)) for col in partition_cols)
             sql = self.expressions(sqls=partition_cols, flat=True)
             return f"PARTITION BY ({sql})" if is_cols else f"PARTITION BY {sql}"

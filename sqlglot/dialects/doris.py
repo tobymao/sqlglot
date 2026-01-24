@@ -77,35 +77,29 @@ class Doris(MySQL):
         ) -> t.Optional[
             exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty
         ]:
-            if self._match_text_seq("LIST"):
-                return self.expression(
-                    exp.PartitionByListProperty,
-                    partition_expressions=self._parse_wrapped_csv(self._parse_assignment),
-                    create_expressions=self._parse_wrapped_csv(self._parse_partition_list_value),
-                )
+            if self._match_text_seq("LIST", advance=False):
+                return super()._parse_partition_property()
 
-            if self._match_text_seq("RANGE"):
-                partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
-                self._match_l_paren()
+            if not self._match_text_seq("RANGE"):
+                return self._parse_partitioned_by()
 
-                if self._match_text_seq("FROM", advance=False):
-                    create_expressions = self._parse_csv(
-                        self._parse_partitioning_granularity_dynamic
-                    )
-                elif self._match_text_seq("PARTITION", advance=False):
-                    create_expressions = self._parse_csv(self._parse_partition_definition)
-                else:
-                    create_expressions = None
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            self._match_l_paren()
 
-                self._match_r_paren()
+            if self._match_text_seq("FROM", advance=False):
+                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
+            elif self._match_text_seq("PARTITION", advance=False):
+                create_expressions = self._parse_csv(self._parse_partition_range_value)
+            else:
+                create_expressions = None
 
-                return self.expression(
-                    exp.PartitionByRangeProperty,
-                    partition_expressions=partition_expressions,
-                    create_expressions=create_expressions,
-                )
+            self._match_r_paren()
 
-            return self._parse_partitioned_by()
+            return self.expression(
+                exp.PartitionByRangeProperty,
+                partition_expressions=partition_expressions,
+                create_expressions=create_expressions,
+            )
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
             self._match_text_seq("FROM")
@@ -120,17 +114,14 @@ class Doris(MySQL):
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
-        def _parse_partition_definition(self) -> exp.Partition:
+        def _parse_partition_range_value(self) -> exp.Partition:
             self._match_text_seq("PARTITION")
 
             name = self._parse_id_var()
             self._match_text_seq("VALUES")
 
             if self._match_text_seq("LESS", "THAN"):
-                values = self._parse_wrapped_csv(self._parse_expression)
-                if len(values) == 1 and values[0].name.upper() == "MAXVALUE":
-                    values = [exp.var("MAXVALUE")]
-
+                values = self._parse_partition_bound_values()
                 part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
                 return self.expression(exp.Partition, expressions=[part_range])
 

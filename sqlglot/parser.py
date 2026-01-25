@@ -4993,6 +4993,11 @@ class Parser(metaclass=_Parser):
             or self._try_parse(self._parse_offset, retreat=True)
         )
         self._retreat(index)
+
+        # MATCH_CONDITION (...) is a special construct that should not be consumed by limit/offset
+        if self._next and self._next.token_type == TokenType.MATCH_CONDITION:
+            result = False
+
         return result
 
     def _parse_limit_by(self) -> t.Optional[t.List[exp.Expression]]:

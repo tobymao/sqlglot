@@ -1764,9 +1764,6 @@ class DuckDB(Dialect):
                 )
             ),
             exp.Xor: bool_xor_sql,
-            exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
-                rename_func("LEVENSHTEIN")
-            ),
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),
@@ -2779,6 +2776,19 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        @unsupported_args("ins_cost", "del_cost", "sub_cost")
+        def levenshtein_sql(self, expression: exp.Levenshtein) -> str:
+            this = expression.this
+            expr = expression.expression
+            max_dist = expression.args.get("max_dist")
+
+            if max_dist is None:
+                return self.func("LEVENSHTEIN", this, expr)
+
+            # Emulate Snowflake semantics: if distance > max_dist, return max_dist
+            levenshtein = exp.Levenshtein(this=this, expression=expr)
+            return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

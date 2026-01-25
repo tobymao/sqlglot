@@ -1822,11 +1822,18 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("EDITDISTANCE(col1, col2)")
+        self.validate_all(
+            "EDITDISTANCE(col1, col2)",
+            write={
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+            },
+        )
         self.validate_all(
             "EDITDISTANCE(col1, col2, 3)",
             write={
                 "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "duckdb": "CASE WHEN LEVENSHTEIN(col1, col2) IS NULL OR 3 IS NULL THEN NULL ELSE LEAST(LEVENSHTEIN(col1, col2), 3) END",
                 "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },

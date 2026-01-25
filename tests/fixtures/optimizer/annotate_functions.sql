@@ -600,6 +600,10 @@ STRING;
 FACTORIAL(tbl.int_col);
 BIGINT;
 
+# dialect: spark, databricks
+ARRAY_SIZE(tbl.array_col);
+INT;
+
 # dialect: hive, spark2, spark, databricks
 QUARTER(tbl.date_col);
 INT;

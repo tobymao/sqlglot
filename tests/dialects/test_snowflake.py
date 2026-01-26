@@ -1845,6 +1845,35 @@ class TestSnowflake(Validator):
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },
         )
+
+        self.validate_identity("MINHASH(100, col1)")
+        self.validate_identity("MINHASH(100, col1, col2)")
+        self.validate_all(
+            "MINHASH(4, col1)",
+            write={
+                "duckdb": "(SELECT JSON_OBJECT('state', LIST(min_h ORDER BY seed NULLS FIRST), 'type', 'minhash', 'version', 1) FROM (SELECT seed, LIST_MIN(LIST_TRANSFORM(vals, __v -> HASH(CAST(__v AS TEXT) || CAST(seed AS TEXT)))) AS min_h FROM (SELECT LIST(col1) AS vals), RANGE(0, 4) AS t(seed)))",
+                "snowflake": "MINHASH(4, col1)",
+            },
+        )
+
+        self.validate_identity("MINHASH_COMBINE(sig_col)")
+        self.validate_all(
+            "MINHASH_COMBINE(sig_col)",
+            write={
+                "duckdb": "(SELECT JSON_OBJECT('state', LIST(min_h ORDER BY idx NULLS FIRST), 'type', 'minhash', 'version', 1) FROM (SELECT pos AS idx, MIN(val) AS min_h FROM UNNEST(LIST(sig_col)) AS _(sig) JOIN UNNEST(CAST(sig -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS t(val, pos) ON TRUE GROUP BY pos))",
+                "snowflake": "MINHASH_COMBINE(sig_col)",
+            },
+        )
+
+        self.validate_identity("APPROXIMATE_SIMILARITY(sig_col)")
+        self.validate_all(
+            "APPROXIMATE_SIMILARITY(sig_col)",
+            write={
+                "duckdb": "(SELECT CAST(SUM(match) AS DOUBLE) / COUNT(*) FROM (SELECT CASE WHEN s1.h = s2.h THEN 1 ELSE 0 END AS match FROM UNNEST(LIST(sig_col)) WITH ORDINALITY AS sigs1(sig1, n1) JOIN UNNEST(LIST(sig_col)) WITH ORDINALITY AS sigs2(sig2, n2) ON TRUE JOIN UNNEST(CAST(sig1 -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS s1(h, i) ON TRUE JOIN UNNEST(CAST(sig2 -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS s2(h, j) ON TRUE WHERE n1 < n2 AND s1.i = s2.j))",
+                "snowflake": "APPROXIMATE_SIMILARITY(sig_col)",
+            },
+        )
+
         self.validate_identity("SELECT BITNOT(a)")
         self.validate_identity("SELECT BIT_NOT(a)", "SELECT BITNOT(a)")
         self.validate_all(

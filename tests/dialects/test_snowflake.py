@@ -5627,3 +5627,15 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SELECT FLATTEN([[]])",
             },
         )
+
+    def test_directed_joins(self):
+        self.validate_identity("SELECT * FROM a CROSS DIRECTED JOIN b USING (id)")
+        self.validate_identity("SELECT * FROM a INNER DIRECTED JOIN b USING (id)")
+        self.validate_identity("SELECT * FROM a NATURAL INNER DIRECTED JOIN b USING (id)")
+
+        for join_side in ("LEFT", "RIGHT", "FULL"):
+            for outer in ("", " OUTER"):
+                for natural in ("", "NATURAL "):
+                    prefix = natural + join_side + outer + " DIRECTED"
+                    with self.subTest(f"Testing {prefix} JOIN"):
+                        self.validate_identity(f"SELECT * FROM a {prefix} JOIN b USING (id)")

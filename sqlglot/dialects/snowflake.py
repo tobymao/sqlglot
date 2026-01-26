@@ -1559,6 +1559,7 @@ class Snowflake(Dialect):
         ARRAY_SIZE_NAME = "ARRAY_SIZE"
         SUPPORTS_DECODE_CASE = True
         IS_BOOL_ALLOWED = False
+        DIRECTED_JOINS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

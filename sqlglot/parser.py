@@ -3976,6 +3976,7 @@ class Parser(metaclass=_Parser):
 
         index = self._index
         method, side, kind = self._parse_join_parts()
+        directed = self._match_text_seq("DIRECTED")
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
         join = self._match(TokenType.JOIN) or (kind and kind.token_type == TokenType.STRAIGHT_JOIN)
         join_comments = self._prev_comments
@@ -4046,6 +4047,9 @@ class Parser(metaclass=_Parser):
             and kwargs.get("kind") in (None, "INNER", "OUTER")
         ):
             kwargs["on"] = exp.true()
+
+        if directed:
+            kwargs["directed"] = directed
 
         return self.expression(exp.Join, comments=comments, **kwargs)
 

@@ -5468,6 +5468,38 @@ TIMESTAMPTZ;
 RADIANS(90);
 INT;
 
+# dialect: tsql
+SIN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+SIN(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+COS(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+COS(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+TAN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+TAN(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+COT(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+COT(tbl.float_col);
+FLOAT;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

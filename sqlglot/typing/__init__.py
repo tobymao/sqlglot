@@ -250,13 +250,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.ArrayLast,
         }
     },
-    **{
-        expr_type: {"returns": exp.DataType.Type.UNKNOWN}
-        for expr_type in {
-            exp.Anonymous,
-            exp.Slice,
-        }
-    },
+    exp.Anonymous: {"annotator": lambda self, e: self._set_type(e, self.schema.get_udf_type(e))},
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_timeunit(e)}
         for expr_type in {

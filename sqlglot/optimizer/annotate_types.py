@@ -722,6 +722,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _annotate_dot(self, expression: exp.Dot) -> exp.Dot:
         self._set_type(expression, None)
+
+        # Propagate type from qualified UDF calls (e.g., db.my_udf(...))
+        if isinstance(expression.expression, exp.Anonymous):
+            self._set_type(expression, expression.expression.type)
+            return expression
+
         this_type = expression.this.type
 
         if this_type and this_type.is_type(exp.DataType.Type.STRUCT):

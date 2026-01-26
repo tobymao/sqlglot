@@ -417,7 +417,7 @@ class StarRocks(MySQL):
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             this = expression.this
             if isinstance(this, exp.Schema):
-                # Parenstheses are ommited in lateset versions
+                # Parenstheses are ommited in latest versions
                 # https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
                 return f"PARTITION BY {self.expressions(this, flat=True)}"
             return f"PARTITION BY {self.sql(this)}"

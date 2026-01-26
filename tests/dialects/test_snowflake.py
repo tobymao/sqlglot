@@ -5589,3 +5589,41 @@ FROM SEMANTIC_VIEW(
 
         ast = annotate_types(self.parse_one("SELECT BITSHIFTRIGHT(X'FF', 4)"), dialect="snowflake")
         self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)")
+
+    def test_array_flatten(self):
+        # String array flattening
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "duckdb": "SELECT FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "starrocks": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            },
+        )
+
+        # Nested arrays (single level flattening)
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+                "duckdb": "SELECT FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            },
+        )
+
+        # Array with NULL elements
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+                "duckdb": "SELECT FLATTEN([[1, NULL, 3], [4]])",
+            },
+        )
+
+        # Empty arrays
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[]])",
+                "duckdb": "SELECT FLATTEN([[]])",
+            },
+        )

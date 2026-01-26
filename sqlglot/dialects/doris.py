@@ -68,10 +68,38 @@ class Doris(MySQL):
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             # Plain KEY without UNIQUE/DUPLICATE/AGGREGATE prefixes should be treated as UniqueKeyProperty with unique=False
             "KEY": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
-            "PARTITION BY": lambda self: self._parse_partition_by_opt_range(),
             "BUILD": lambda self: self._parse_build_property(),
             "REFRESH": lambda self: self._parse_refresh_property(),
         }
+
+        def _parse_partition_property(
+            self,
+        ) -> t.Optional[
+            exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty
+        ]:
+            if self._match_text_seq("LIST", advance=False):
+                return super()._parse_partition_property()
+
+            if not self._match_text_seq("RANGE"):
+                return self._parse_partitioned_by()
+
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            self._match_l_paren()
+
+            if self._match_text_seq("FROM", advance=False):
+                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
+            elif self._match_text_seq("PARTITION", advance=False):
+                create_expressions = self._parse_csv(self._parse_partition_range_value)
+            else:
+                create_expressions = None
+
+            self._match_r_paren()
+
+            return self.expression(
+                exp.PartitionByRangeProperty,
+                partition_expressions=partition_expressions,
+                create_expressions=create_expressions,
+            )
 
         def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
             self._match_text_seq("FROM")
@@ -86,20 +114,18 @@ class Doris(MySQL):
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
-        def _parse_partition_definition(self) -> exp.Partition:
+        def _parse_partition_range_value(self) -> exp.Partition:
             self._match_text_seq("PARTITION")
 
             name = self._parse_id_var()
             self._match_text_seq("VALUES")
 
             if self._match_text_seq("LESS", "THAN"):
-                values = self._parse_wrapped_csv(self._parse_expression)
-                if len(values) == 1 and values[0].name.upper() == "MAXVALUE":
-                    values = [exp.var("MAXVALUE")]
-
+                values = self._parse_partition_bound_values()
                 part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
                 return self.expression(exp.Partition, expressions=[part_range])
 
+            # Doris-specific bracket syntax: VALUES [(...), (...))
             self._match(TokenType.L_BRACKET)
             values = self._parse_csv(lambda: self._parse_wrapped_csv(self._parse_expression))
 
@@ -108,48 +134,6 @@ class Doris(MySQL):
 
             part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
             return self.expression(exp.Partition, expressions=[part_range])
-
-        def _parse_partition_definition_list(self) -> exp.Partition:
-            # PARTITION <name> VALUES IN (<value_csv>)
-            self._match_text_seq("PARTITION")
-            name = self._parse_id_var()
-            self._match_text_seq("VALUES", "IN")
-            values = self._parse_wrapped_csv(self._parse_expression)
-            part_list = self.expression(exp.PartitionList, this=name, expressions=values)
-            return self.expression(exp.Partition, expressions=[part_list])
-
-        def _parse_partition_by_opt_range(
-            self,
-        ) -> exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty:
-            if self._match_text_seq("LIST"):
-                return self.expression(
-                    exp.PartitionByListProperty,
-                    partition_expressions=self._parse_wrapped_id_vars(),
-                    create_expressions=self._parse_wrapped_csv(
-                        self._parse_partition_definition_list
-                    ),
-                )
-
-            if not self._match_text_seq("RANGE"):
-                return super()._parse_partitioned_by()
-
-            partition_expressions = self._parse_wrapped_id_vars()
-            self._match_l_paren()
-
-            if self._match_text_seq("FROM", advance=False):
-                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
-            elif self._match_text_seq("PARTITION", advance=False):
-                create_expressions = self._parse_csv(self._parse_partition_definition)
-            else:
-                create_expressions = None
-
-            self._match_r_paren()
-
-            return self.expression(
-                exp.PartitionByRangeProperty,
-                partition_expressions=partition_expressions,
-                create_expressions=create_expressions,
-            )
 
         def _parse_build_property(self) -> exp.BuildProperty:
             return self.expression(exp.BuildProperty, this=self._parse_var(upper=True))
@@ -190,8 +174,6 @@ class Doris(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
@@ -721,12 +703,6 @@ class Doris(MySQL):
 
             return super().uniquekeyproperty_sql(expression)
 
-        def partition_sql(self, expression: exp.Partition) -> str:
-            parent = expression.parent
-            if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
-                return ", ".join(self.sql(e) for e in expression.expressions)
-            return super().partition_sql(expression)
-
         def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
             name = self.sql(expression, "this")
             values = expression.expressions
@@ -760,31 +736,11 @@ class Doris(MySQL):
 
             return f"FROM ({start}) TO ({end}) {interval}"
 
-        def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY RANGE ({partition_expressions}) ({create_sql})"
-
-        def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
-            partition_expressions = self.expressions(
-                expression, key="partition_expressions", indent=False
-            )
-            create_sql = self.expressions(expression, key="create_expressions", indent=False)
-            return f"PARTITION BY LIST ({partition_expressions}) ({create_sql})"
-
-        def partitionlist_sql(self, expression: exp.PartitionList) -> str:
-            name = self.sql(expression, "this")
-            values = self.expressions(expression, indent=False)
-            return f"PARTITION {name} VALUES IN ({values})"
-
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            node = expression.this
-            if isinstance(node, exp.Schema):
-                parts = ", ".join(self.sql(e) for e in node.expressions)
-                return f"PARTITION BY ({parts})"
-            return f"PARTITION BY ({self.sql(node)})"
+            this = expression.this
+            if isinstance(this, exp.Schema):
+                return f"PARTITION BY ({self.expressions(this, flat=True)})"
+            return f"PARTITION BY ({self.sql(this)})"
 
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             """Override table_sql to avoid AS keyword in UPDATE and DELETE statements."""

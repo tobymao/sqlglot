@@ -211,10 +211,15 @@ class TestStarrocks(Validator):
 
     def test_partition(self):
         # Column-based partitioning
-        self.validate_identity("CREATE TABLE test_table (col1 STRING) PARTITION BY (col1)")
-        self.validate_identity(
-            "CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY (col1, col2)"
-        )
+        for cols in "col1", "col1, col2":
+            with self.subTest(f"Testing PARTITION BY with {cols}"):
+                self.validate_identity(
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})",
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}"
+                )
 
         # Expression-based partitioning
         self.validate_identity(

@@ -74,30 +74,23 @@ class Doris(MySQL):
 
         def _parse_partition_property(
             self,
-        ) -> t.Optional[
-            exp.PartitionedByProperty | exp.PartitionByRangeProperty | exp.PartitionByListProperty
-        ]:
-            if self._match_text_seq("LIST", advance=False):
-                return super()._parse_partition_property()
+        ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+            expr = super()._parse_partition_property()
 
-            if not self._match_text_seq("RANGE"):
+            if not expr:
                 return self._parse_partitioned_by()
 
-            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            if isinstance(expr, exp.Property):
+                return expr
+
             self._match_l_paren()
-
-            if self._match_text_seq("FROM", advance=False):
-                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
-            elif self._match_text_seq("PARTITION", advance=False):
-                create_expressions = self._parse_csv(self._parse_partition_range_value)
-            else:
-                create_expressions = None
-
+            self._match_text_seq("FROM")
+            create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
             self._match_r_paren()
 
             return self.expression(
                 exp.PartitionByRangeProperty,
-                partition_expressions=partition_expressions,
+                partition_expressions=expr,
                 create_expressions=create_expressions,
             )
 
@@ -115,15 +108,13 @@ class Doris(MySQL):
             )
 
         def _parse_partition_range_value(self) -> exp.Partition:
-            self._match_text_seq("PARTITION")
+            expr = super()._parse_partition_range_value()
 
-            name = self._parse_id_var()
+            if isinstance(expr, exp.Partition):
+                return expr
+
             self._match_text_seq("VALUES")
-
-            if self._match_text_seq("LESS", "THAN"):
-                values = self._parse_partition_bound_values()
-                part_range = self.expression(exp.PartitionRange, this=name, expressions=values)
-                return self.expression(exp.Partition, expressions=[part_range])
+            name = expr
 
             # Doris-specific bracket syntax: VALUES [(...), (...))
             self._match(TokenType.L_BRACKET)

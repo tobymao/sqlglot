@@ -821,6 +821,7 @@ class Snowflake(Dialect):
                 step=seq_get(args, 2),
             ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
+            "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
             "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BIT_AND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
@@ -1567,6 +1568,7 @@ class Snowflake(Dialect):
         ARRAY_SIZE_NAME = "ARRAY_SIZE"
         SUPPORTS_DECODE_CASE = True
         IS_BOOL_ALLOWED = False
+        DIRECTED_JOINS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1767,6 +1769,7 @@ class Snowflake(Dialect):
             exp.YearOfWeekIso: rename_func("YEAROFWEEKISO"),
             exp.Xor: rename_func("BOOLXOR"),
             exp.ByteLength: rename_func("OCTET_LENGTH"),
+            exp.Flatten: rename_func("ARRAY_FLATTEN"),
             exp.ArrayConcatAgg: lambda self, e: self.func(
                 "ARRAY_FLATTEN", exp.ArrayAgg(this=e.this)
             ),

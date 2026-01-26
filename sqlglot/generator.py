@@ -289,6 +289,9 @@ class Generator(metaclass=_Generator):
     # Whether join hints should be generated
     JOIN_HINTS = True
 
+    # Whether directed joins are supported
+    DIRECTED_JOINS = False
+
     # Whether table hints should be generated
     TABLE_HINTS = True
 
@@ -2455,6 +2458,7 @@ class Generator(metaclass=_Generator):
                 side,
                 expression.kind,
                 expression.hint if self.JOIN_HINTS else None,
+                "DIRECTED" if expression.args.get("directed") and self.DIRECTED_JOINS else None,
             )
             if op
         )

@@ -2647,6 +2647,7 @@ class Join(Expression):
         "global_": False,
         "hint": False,
         "match_condition": False,  # Snowflake
+        "directed": False,  # Snowflake
         "expressions": False,
         "pivots": False,
     }

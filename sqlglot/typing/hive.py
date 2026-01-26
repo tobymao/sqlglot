@@ -51,6 +51,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Month,
             exp.Quarter,
+            exp.Second,
         }
     },
     exp.Coalesce: {

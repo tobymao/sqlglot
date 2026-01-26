@@ -480,7 +480,7 @@ LANGUAGE js AS
                 "clickhouse": UnsupportedError,
                 "databricks": UnsupportedError,
                 "drill": UnsupportedError,
-                "duckdb": UnsupportedError,
+                "duckdb": "CASE WHEN LEVENSHTEIN(col1, col2) IS NULL OR 3 IS NULL THEN NULL ELSE LEAST(LEVENSHTEIN(col1, col2), 3) END",
                 "hive": UnsupportedError,
                 "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
                 "presto": UnsupportedError,

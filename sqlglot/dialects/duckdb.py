@@ -1613,6 +1613,7 @@ class DuckDB(Dialect):
                 generator=inline_array_unless_query,
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
+            exp.ArrayCompact: remove_from_array_using_filter,
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,
@@ -1797,6 +1798,7 @@ class DuckDB(Dialect):
                     expression=e.this,
                 )
             ),
+
             exp.Xor: _xor_sql,
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("LEVENSHTEIN")
@@ -2813,6 +2815,19 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        @unsupported_args("ins_cost", "del_cost", "sub_cost")
+        def levenshtein_sql(self, expression: exp.Levenshtein) -> str:
+            this = expression.this
+            expr = expression.expression
+            max_dist = expression.args.get("max_dist")
+
+            if max_dist is None:
+                return self.func("LEVENSHTEIN", this, expr)
+
+            # Emulate Snowflake semantics: if distance > max_dist, return max_dist
+            levenshtein = exp.Levenshtein(this=this, expression=expr)
+            return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

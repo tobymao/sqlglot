@@ -19,6 +19,7 @@ from sqlglot.helper import (
     seq_get,
     suggest_closest_match_and_fail,
     to_bool,
+    ensure_list,
 )
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
@@ -2152,9 +2153,15 @@ def filter_array_using_unnest(
     return self.sql(exp.Array(expressions=[filtered]))
 
 
-def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
+def remove_from_array_using_filter(
+    self: Generator, expression: exp.ArrayRemove | exp.ArrayCompact
+) -> str:
     lambda_id = exp.to_identifier("_u")
-    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+    if isinstance(expression, exp.ArrayRemove):
+        cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+    else:
+        cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
+
     return self.sql(
         exp.ArrayFilter(
             this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
@@ -2289,17 +2296,40 @@ def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], 
 
 
 def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
-    if isinstance(expression.this, exp.Explode):
-        return self.sql(
-            exp.Join(
-                this=exp.Unnest(
-                    expressions=[expression.this.this],
-                    alias=expression.args.get("alias"),
-                    offset=isinstance(expression.this, exp.Posexplode),
-                ),
-                kind="cross",
-            )
+    this = expression.this
+    alias = expression.args.get("alias")
+
+    cross_join_expr: t.Optional[exp.Expression] = None
+    if isinstance(this, exp.Posexplode) and alias:
+        # Spark's `FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, col` has the following semantics:
+        # - The first column is the position and the rest (1 for array, 2 for maps) are the exploded values
+        # - The position is 0-based whereas WITH ORDINALITY is 1-based
+        # For that matter, we must (1) subtract 1 from the ORDINALITY position and (2) rearrange the columns accordingly, returning:
+        # `FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos))
+        pos, cols = alias.columns[0], alias.columns[1:]
+
+        cols = ensure_list(cols)
+        lateral_subquery = exp.select(
+            exp.alias_(pos - 1, pos),
+            *cols,
+        ).from_(
+            exp.Unnest(
+                expressions=[this.this],
+                offset=True,
+                alias=exp.TableAlias(this=alias.this, columns=[*cols, pos]),
+            ),
         )
+
+        cross_join_expr = exp.Lateral(this=lateral_subquery.subquery())
+    elif isinstance(this, exp.Explode):
+        cross_join_expr = exp.Unnest(
+            expressions=[this.this],
+            alias=alias,
+        )
+
+    if cross_join_expr:
+        return self.sql(exp.Join(this=cross_join_expr, kind="cross"))
+
     return self.lateral_sql(expression)
 
 

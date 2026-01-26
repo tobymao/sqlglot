@@ -600,8 +600,16 @@ STRING;
 FACTORIAL(tbl.int_col);
 BIGINT;
 
+# dialect: spark, databricks
+ARRAY_SIZE(tbl.array_col);
+INT;
+
 # dialect: hive, spark2, spark, databricks
 QUARTER(tbl.date_col);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+SECOND(tbl.timestamp_col);
 INT;
 
 --------------------------------------
@@ -5459,6 +5467,38 @@ TIMESTAMPTZ;
 # dialect: tsql
 RADIANS(90);
 INT;
+
+# dialect: tsql
+SIN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+SIN(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+COS(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+COS(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+TAN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+TAN(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+COT(tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+COT(tbl.float_col);
+FLOAT;
 
 --------------------------------------
 -- MySQL

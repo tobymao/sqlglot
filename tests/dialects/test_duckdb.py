@@ -630,6 +630,41 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
+            write={
+                "duckdb": "LIST_FILTER([1, NULL, 2, NULL, 3], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
+            },
+        )
+        self.validate_all(
+            "ARRAY_COMPACT(NULL)",
+            write={
+                "duckdb": "LIST_FILTER(NULL, _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_COMPACT(NULL)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_COMPACT([])",
+            write={
+                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_COMPACT([])",
+            },
+        )
+        self.validate_all(
+            "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
+            write={
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
+            },
+        )
+        self.validate_all(
+            "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
+            write={
+                "duckdb": "LIST_FILTER([[1, 2], NULL, [3, 4]], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
+            },
+        )
+        self.validate_all(
             "SELECT ANY_VALUE(sample_column) FROM sample_table",
             write={
                 "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",

@@ -12,6 +12,15 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            "SELECT * FROM x ASOF JOIN y OFFSET MATCH_CONDITION (x.a > y.a)",
+            "SELECT * FROM x ASOF JOIN y AS OFFSET MATCH_CONDITION (x.a > y.a)",
+        )
+        self.validate_identity(
+            "SELECT * FROM x ASOF JOIN y LIMIT MATCH_CONDITION (x.a > y.a)",
+            "SELECT * FROM x ASOF JOIN y AS LIMIT MATCH_CONDITION (x.a > y.a)",
+        )
+
         self.validate_identity("SELECT session")
         self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
 
@@ -1823,11 +1832,18 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("EDITDISTANCE(col1, col2)")
+        self.validate_all(
+            "EDITDISTANCE(col1, col2)",
+            write={
+                "duckdb": "LEVENSHTEIN(col1, col2)",
+                "snowflake": "EDITDISTANCE(col1, col2)",
+            },
+        )
         self.validate_all(
             "EDITDISTANCE(col1, col2, 3)",
             write={
                 "bigquery": "EDIT_DISTANCE(col1, col2, max_distance => 3)",
+                "duckdb": "CASE WHEN LEVENSHTEIN(col1, col2) IS NULL OR 3 IS NULL THEN NULL ELSE LEAST(LEVENSHTEIN(col1, col2), 3) END",
                 "postgres": "LEVENSHTEIN_LESS_EQUAL(col1, col2, 3)",
                 "snowflake": "EDITDISTANCE(col1, col2, 3)",
             },
@@ -5583,3 +5599,53 @@ FROM SEMANTIC_VIEW(
 
         ast = annotate_types(self.parse_one("SELECT BITSHIFTRIGHT(X'FF', 4)"), dialect="snowflake")
         self.assertEqual(ast.sql("duckdb"), "SELECT CAST(CAST(UNHEX('FF') AS BIT) >> 4 AS BLOB)")
+
+    def test_array_flatten(self):
+        # String array flattening
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "duckdb": "SELECT FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+                "starrocks": "SELECT ARRAY_FLATTEN([['a', 'b'], ['c', 'd', 'e']])",
+            },
+        )
+
+        # Nested arrays (single level flattening)
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+                "duckdb": "SELECT FLATTEN([[[1, 2], [3]], [[4], [5]]])",
+            },
+        )
+
+        # Array with NULL elements
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[1, NULL, 3], [4]])",
+                "duckdb": "SELECT FLATTEN([[1, NULL, 3], [4]])",
+            },
+        )
+
+        # Empty arrays
+        self.validate_all(
+            "SELECT ARRAY_FLATTEN([[]])",
+            write={
+                "snowflake": "SELECT ARRAY_FLATTEN([[]])",
+                "duckdb": "SELECT FLATTEN([[]])",
+            },
+        )
+
+    def test_directed_joins(self):
+        self.validate_identity("SELECT * FROM a CROSS DIRECTED JOIN b USING (id)")
+        self.validate_identity("SELECT * FROM a INNER DIRECTED JOIN b USING (id)")
+        self.validate_identity("SELECT * FROM a NATURAL INNER DIRECTED JOIN b USING (id)")
+
+        for join_side in ("LEFT", "RIGHT", "FULL"):
+            for outer in ("", " OUTER"):
+                for natural in ("", "NATURAL "):
+                    prefix = natural + join_side + outer + " DIRECTED"
+                    with self.subTest(f"Testing {prefix} JOIN"):
+                        self.validate_identity(f"SELECT * FROM a {prefix} JOIN b USING (id)")

@@ -171,7 +171,6 @@ class Doris(MySQL):
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         CAST_MAPPING = {}

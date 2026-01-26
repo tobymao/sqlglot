@@ -313,7 +313,6 @@ class StarRocks(MySQL):
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         TRANSFORMS = {

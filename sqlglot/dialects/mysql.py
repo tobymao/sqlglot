@@ -1345,7 +1345,9 @@ class MySQL(Dialect):
             return f"SHOW{full}{global_}{this}{json}{target}{for_table}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}{for_group}{for_user}{for_role}{into_outfile}"
 
         def alterrename_sql(self, expression: exp.AlterRename, include_to: bool = True) -> str:
-            """To avoid TO keyword in ALTER ... RENAME statements."""
+            """To avoid TO keyword in ALTER ... RENAME statements.
+            It's moved from Doris, because it's the same for all MySQL, Doris, and StarRocks.
+            """
             return super().alterrename_sql(expression, include_to=False)
 
         def altercolumn_sql(self, expression: exp.AlterColumn) -> str:

@@ -349,6 +349,13 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT MAP_CAT(CAST(col AS MAP(VARCHAR, VARCHAR)), CAST(col AS MAP(VARCHAR, VARCHAR)))"
         )
+        self.validate_all(
+            "SELECT MAP_CAT(CAST(m1 AS MAP(VARCHAR, INT)), CAST(m2 AS MAP(VARCHAR, INT)))",
+            write={
+                "duckdb": "SELECT CASE WHEN CAST(m1 AS MAP(TEXT, INT)) IS NULL OR CAST(m2 AS MAP(TEXT, INT)) IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(CAST(m1 AS MAP(TEXT, INT))), MAP_KEYS(CAST(m2 AS MAP(TEXT, INT))))), __k -> STRUCT_PACK(key := __k, value := COALESCE(CAST(m2 AS MAP(TEXT, INT))[__k], CAST(m1 AS MAP(TEXT, INT))[__k]))), __x -> NOT __x.value IS NULL)) END",
+                "snowflake": "SELECT MAP_CAT(CAST(m1 AS MAP(VARCHAR, INT)), CAST(m2 AS MAP(VARCHAR, INT)))",
+            },
+        )
         self.validate_identity("SELECT MAP_CONTAINS_KEY('k1', CAST(col AS MAP(VARCHAR, VARCHAR)))")
         self.validate_identity("SELECT MAP_DELETE(CAST(col AS MAP(VARCHAR, VARCHAR)), 'k1')")
         self.validate_identity("SELECT MAP_INSERT(CAST(col AS MAP(VARCHAR, VARCHAR)), 'b', '2')")

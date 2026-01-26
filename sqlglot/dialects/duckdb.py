@@ -1732,7 +1732,6 @@ class DuckDB(Dialect):
             exp.Seq8: lambda self, e: _seq_sql(self, e, 8),
             exp.BoolxorAgg: _boolxor_agg_sql,
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
-            exp.MapCat: rename_func("MAP_CONCAT"),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
@@ -2005,6 +2004,22 @@ class DuckDB(Dialect):
             f"(CASE WHEN {_SEQ_BASE} % :max_val >= :half "
             f"THEN {_SEQ_BASE} % :max_val - :max_val "
             f"ELSE {_SEQ_BASE} % :max_val END)"
+        )
+
+        # Template for MAP_CAT transpilation - Snowflake semantics:
+        # 1. Returns NULL if either input is NULL
+        # 2. For duplicate keys, prefers non-NULL value (COALESCE(m2[k], m1[k]))
+        # 3. Filters out entries with NULL values from the result
+        MAPCAT_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :map1 IS NULL OR :map2 IS NULL THEN NULL
+                ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(
+                    LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(:map1), MAP_KEYS(:map2))),
+                    __k -> STRUCT_PACK(key := __k, value := COALESCE(:map2[__k], :map1[__k]))
+                ), __x -> __x.value IS NOT NULL))
+            END
+            """
         )
 
         # Mappings for EXTRACT/DATE_PART transpilation
@@ -3013,6 +3028,14 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
+
+        def mapcat_sql(self, expression: exp.MapCat) -> str:
+            result = exp.replace_placeholders(
+                self.MAPCAT_TEMPLATE.copy(),
+                map1=expression.this,
+                map2=expression.expression,
+            )
+            return self.sql(result)
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(

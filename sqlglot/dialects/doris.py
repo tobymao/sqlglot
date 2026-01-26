@@ -84,8 +84,12 @@ class Doris(MySQL):
                 return expr
 
             self._match_l_paren()
-            self._match_text_seq("FROM")
-            create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
+
+            if self._match_text_seq("FROM", advance=False):
+                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
+            else:
+                create_expressions = None
+
             self._match_r_paren()
 
             return self.expression(

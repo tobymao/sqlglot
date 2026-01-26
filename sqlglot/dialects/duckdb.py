@@ -1130,38 +1130,42 @@ def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
     return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
 
 
+def _round_arg(arg: exp.Expression, round_input: t.Optional[bool] = None) -> exp.Expression:
+    if round_input:
+        return exp.func("ROUND", arg, exp.Literal.number(0))
+    return arg
+
+
 def _boolnot_sql(self: DuckDB.Generator, expression: exp.Boolnot) -> str:
-    arg = expression.args.get("this")
-    if expression.args.get("round_input"):
-        arg = self.func("ROUND", arg, exp.Literal.number(0))
-    return f"NOT ({self.sql(arg)})"
+    arg = _round_arg(expression.this, expression.args.get("round_input"))
+    return self.sql(exp.not_(exp.paren(arg)))
 
 
 def _booland_sql(self: DuckDB.Generator, expression: exp.Booland) -> str:
-    left = expression.args.get("this")
-    right = expression.args.get("expression")
-    if expression.args.get("round_input"):
-        left = self.func("ROUND", left, exp.Literal.number(0))
-        right = self.func("ROUND", right, exp.Literal.number(0))
-    return f"(({self.sql(left)}) AND ({self.sql(right)}))"
+    round_input = expression.args.get("round_input")
+    left = _round_arg(expression.this, round_input)
+    right = _round_arg(expression.expression, round_input)
+    return self.sql(exp.paren(exp.and_(exp.paren(left), exp.paren(right), wrap=False)))
 
 
 def _boolor_sql(self: DuckDB.Generator, expression: exp.Boolor) -> str:
-    left = expression.args.get("this")
-    right = expression.args.get("expression")
-    if expression.args.get("round_input"):
-        left = self.func("ROUND", left, exp.Literal.number(0))
-        right = self.func("ROUND", right, exp.Literal.number(0))
-    return f"(({self.sql(left)}) OR ({self.sql(right)}))"
+    round_input = expression.args.get("round_input")
+    left = _round_arg(expression.this, round_input)
+    right = _round_arg(expression.expression, round_input)
+    return self.sql(exp.paren(exp.or_(exp.paren(left), exp.paren(right), wrap=False)))
 
 
 def _xor_sql(self: DuckDB.Generator, expression: exp.Xor) -> str:
-    left = expression.args.get("this")
-    right = expression.args.get("expression")
-    if expression.args.get("round_input"):
-        left = self.func("ROUND", left, exp.Literal.number(0))
-        right = self.func("ROUND", right, exp.Literal.number(0))
-    return f"({self.sql(left)} AND (NOT {self.sql(right)})) OR ((NOT {self.sql(left)}) AND {self.sql(right)})"
+    round_input = expression.args.get("round_input")
+    left = _round_arg(expression.this, round_input)
+    right = _round_arg(expression.expression, round_input)
+    return self.sql(
+        exp.or_(
+            exp.paren(exp.and_(left.copy(), exp.paren(right.not_()), wrap=False)),
+            exp.paren(exp.and_(exp.paren(left.not_()), right.copy(), wrap=False)),
+            wrap=False,
+        )
+    )
 
 
 class DuckDB(Dialect):

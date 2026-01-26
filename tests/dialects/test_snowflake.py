@@ -1869,7 +1869,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "APPROXIMATE_SIMILARITY(sig_col)",
             write={
-                "duckdb": "(SELECT CAST(SUM(match) AS DOUBLE) / COUNT(*) FROM (SELECT CASE WHEN s1.h = s2.h THEN 1 ELSE 0 END AS match FROM UNNEST(LIST(sig_col)) WITH ORDINALITY AS sigs1(sig1, n1) JOIN UNNEST(LIST(sig_col)) WITH ORDINALITY AS sigs2(sig2, n2) ON TRUE JOIN UNNEST(CAST(sig1 -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS s1(h, i) ON TRUE JOIN UNNEST(CAST(sig2 -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS s2(h, j) ON TRUE WHERE n1 < n2 AND s1.i = s2.j))",
+                "duckdb": "(SELECT CAST(SUM(CASE WHEN num_distinct = 1 THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*) FROM (SELECT pos, COUNT(DISTINCT h) AS num_distinct FROM (SELECT h, pos FROM UNNEST(LIST(sig_col)) AS _(sig) JOIN UNNEST(CAST(sig -> '$.state' AS UBIGINT[])) WITH ORDINALITY AS s(h, pos) ON TRUE) GROUP BY pos))",
                 "snowflake": "APPROXIMATE_SIMILARITY(sig_col)",
             },
         )

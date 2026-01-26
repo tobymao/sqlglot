@@ -2108,17 +2108,18 @@ class DuckDB(Dialect):
         )
 
         # Template for APPROXIMATE_SIMILARITY transpilation
-        # Computes Jaccard similarity across minhash signatures by comparing pairwise
+        # Computes multi-way Jaccard similarity: fraction of positions where ALL signatures agree
         APPROXIMATE_SIMILARITY_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
-            SELECT CAST(SUM(match) AS DOUBLE) / COUNT(*)
+            SELECT CAST(SUM(CASE WHEN num_distinct = 1 THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*)
             FROM (
-                SELECT CASE WHEN s1.h = s2.h THEN 1 ELSE 0 END AS match
-                FROM UNNEST(LIST(:expr)) WITH ORDINALITY AS sigs1(sig1, n1),
-                     UNNEST(LIST(:expr)) WITH ORDINALITY AS sigs2(sig2, n2),
-                     UNNEST(CAST(sig1 -> 'state' AS UBIGINT[])) WITH ORDINALITY AS s1(h, i),
-                     UNNEST(CAST(sig2 -> 'state' AS UBIGINT[])) WITH ORDINALITY AS s2(h, j)
-                WHERE n1 < n2 AND s1.i = s2.j
+                SELECT pos, COUNT(DISTINCT h) AS num_distinct
+                FROM (
+                    SELECT h, pos
+                    FROM UNNEST(LIST(:expr)) AS _(sig),
+                         UNNEST(CAST(sig -> 'state' AS UBIGINT[])) WITH ORDINALITY AS s(h, pos)
+                )
+                GROUP BY pos
             )
             """,
         )

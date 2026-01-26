@@ -298,7 +298,7 @@ class TestSnowflake(Validator):
             "SELECT BOOLNOT(0)",
             write={
                 "snowflake": "SELECT BOOLNOT(0)",
-                "duckdb": "SELECT NOT (0)",
+                "duckdb": "SELECT NOT (ROUND(0, 0))",
             },
         )
 
@@ -1708,17 +1708,24 @@ class TestSnowflake(Validator):
             },
             write={
                 "snowflake": "SELECT BOOLAND(1, -2)",
-                "duckdb": "SELECT ((1) AND (-2))",
+                "duckdb": "SELECT ((ROUND(1, 0)) AND (ROUND(-2, 0)))",
             },
         )
         self.validate_all(
             "SELECT BOOLOR(1, 0)",
-            read={
-                "snowflake": "SELECT BOOLOR(1, 0)",
-            },
             write={
                 "snowflake": "SELECT BOOLOR(1, 0)",
-                "duckdb": "SELECT ((1) OR (0))",
+                "duckdb": "SELECT ((ROUND(1, 0)) OR (ROUND(0, 0)))",
+            },
+        )
+        self.validate_all(
+            "SELECT BOOLXOR(2, 0.3)",
+            read={
+                "snowflake": "SELECT BOOLXOR(2, 0.3)",
+            },
+            write={
+                "snowflake": "SELECT BOOLXOR(2, 0.3)",
+                "duckdb": "SELECT (ROUND(2, 0) AND (NOT ROUND(0.3, 0))) OR ((NOT ROUND(2, 0)) AND ROUND(0.3, 0))",
             },
         )
         self.validate_all(

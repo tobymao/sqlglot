@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     array_concat_sql,
     arrow_json_extract_sql,
     binary_from_function,
-    bool_xor_sql,
     build_default_decimal_type,
     build_formatted_time,
     build_regexp_extract,
@@ -1131,6 +1130,40 @@ def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
     return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
 
 
+def _boolnot_sql(self: DuckDB.Generator, expression: exp.Boolnot) -> str:
+    arg = expression.args.get("this")
+    if expression.args.get("round_input"):
+        arg = self.func("ROUND", arg, exp.Literal.number(0))
+    return f"NOT ({self.sql(arg)})"
+
+
+def _booland_sql(self: DuckDB.Generator, expression: exp.Booland) -> str:
+    left = expression.args.get("this")
+    right = expression.args.get("expression")
+    if expression.args.get("round_input"):
+        left = self.func("ROUND", left, exp.Literal.number(0))
+        right = self.func("ROUND", right, exp.Literal.number(0))
+    return f"(({self.sql(left)}) AND ({self.sql(right)}))"
+
+
+def _boolor_sql(self: DuckDB.Generator, expression: exp.Boolor) -> str:
+    left = expression.args.get("this")
+    right = expression.args.get("expression")
+    if expression.args.get("round_input"):
+        left = self.func("ROUND", left, exp.Literal.number(0))
+        right = self.func("ROUND", right, exp.Literal.number(0))
+    return f"(({self.sql(left)}) OR ({self.sql(right)}))"
+
+
+def _xor_sql(self: DuckDB.Generator, expression: exp.Xor) -> str:
+    left = expression.args.get("this")
+    right = expression.args.get("expression")
+    if expression.args.get("round_input"):
+        left = self.func("ROUND", left, exp.Literal.number(0))
+        right = self.func("ROUND", right, exp.Literal.number(0))
+    return f"({self.sql(left)} AND (NOT {self.sql(right)})) OR ((NOT {self.sql(left)}) AND {self.sql(right)})"
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1572,7 +1605,9 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _anyvalue_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Boolnot: lambda self, e: f"NOT ({self.sql(e, 'this')})",
+            exp.Boolnot: _boolnot_sql,
+            exp.Booland: _booland_sql,
+            exp.Boolor: _boolor_sql,
             exp.Array: transforms.preprocess(
                 [transforms.inherit_struct_field_names],
                 generator=inline_array_unless_query,
@@ -1763,7 +1798,7 @@ class DuckDB(Dialect):
                     expression=e.this,
                 )
             ),
-            exp.Xor: bool_xor_sql,
+            exp.Xor: _xor_sql,
             exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
             exp.DateBin: rename_func("TIME_BUCKET"),

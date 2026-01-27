@@ -550,11 +550,12 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
-    SUPPORTS_GROUP_BY_ALIAS = True
+    SUPPORTS_GROUP_BY_ALIAS_REFS = True
     """
     Whether the dialect supports referencing SELECT aliases in the GROUP BY clause.
     
     When True, aliases in GROUP BY will not be expanded during optimization.
+    Note: ORDER BY alias handling is separate and uses different logic.
     
     For example, in ClickHouse and PostgreSQL:
         SELECT x + 1 AS y FROM t GROUP BY y  -- VALID (y is the alias)

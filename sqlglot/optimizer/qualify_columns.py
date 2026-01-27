@@ -417,7 +417,7 @@ def _expand_alias_refs(
                 alias_to_expression.pop(recursive_cte_column.output_name, None)
 
     replace_columns(expression.args.get("where"))
-    if not dialect.SUPPORTS_GROUP_BY_ALIAS:
+    if not dialect.SUPPORTS_GROUP_BY_ALIAS_REFS:
         replace_columns(expression.args.get("group"), literal_index=True)
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)

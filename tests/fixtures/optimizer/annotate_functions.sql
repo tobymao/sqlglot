@@ -5500,6 +5500,46 @@ FLOAT;
 COT(tbl.float_col);
 FLOAT;
 
+# dialect: tsql
+ATN2(tbl.int_col, tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+ATN2(tbl.int_col, tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+ATN2(tbl.float_col, tbl.int_col);
+FLOAT;
+
+# dialect: tsql
+ATN2(tbl.float_col, tbl.float_col);
+FLOAT;
+
+# dialect: tsql 
+ASIN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql 
+ASIN(tbl.float_col);
+FLOAT;
+
+# dialect: tsql 
+ACOS(tbl.int_col);
+FLOAT;
+
+# dialect: tsql 
+ACOS(tbl.float_col);
+FLOAT;
+
+# dialect: tsql 
+ATAN(tbl.int_col);
+FLOAT;
+
+# dialect: tsql 
+ATAN(tbl.float_col);
+FLOAT;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

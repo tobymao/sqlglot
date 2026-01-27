@@ -8,6 +8,10 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.FLOAT}
         for expr_type in {
+            exp.Asin,
+            exp.Acos,
+            exp.Atan,
+            exp.Atan2,
             exp.Cos,
             exp.Cot,
             exp.Sin,

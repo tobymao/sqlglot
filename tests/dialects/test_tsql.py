@@ -19,6 +19,7 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT ATN2(x, y)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("SELECT SYSDATETIMEOFFSET()")
         self.validate_identity("SELECT COMPRESS('Hello World')")

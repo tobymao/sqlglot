@@ -601,6 +601,7 @@ class TSQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ATN2": exp.Atan2.from_arg_list,
             "CHARINDEX": lambda args: exp.StrPosition(
                 this=seq_get(args, 1),
                 substr=seq_get(args, 0),
@@ -1058,6 +1059,7 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
+            exp.Atan2: rename_func("ATN2"),
             exp.ArrayToString: rename_func("STRING_AGG"),
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.Ceil: rename_func("CEILING"),

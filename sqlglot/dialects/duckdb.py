@@ -2880,9 +2880,9 @@ class DuckDB(Dialect):
             k = expression.this
             exprs = expression.expressions
 
-            if len(exprs) != 1:
+            if len(exprs) != 1 or isinstance(exprs[0], exp.Star):
                 self.unsupported(
-                    "MINHASH with multiple expressions requires manual query restructuring"
+                    "MINHASH with multiple expressions or * requires manual query restructuring"
                 )
                 return self.func("MINHASH", k, *exprs)
 

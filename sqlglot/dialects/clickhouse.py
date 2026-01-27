@@ -234,7 +234,7 @@ class ClickHouse(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     LOG_BASE_FIRST: t.Optional[bool] = None
-    FORCE_EARLY_ALIAS_REF_EXPANSION = True
+    FORCE_EARLY_ALIAS_REF_EXPANSION = False
     PRESERVE_ORIGINAL_NAMES = True
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -1037,6 +1037,117 @@ class ClickHouse(Dialect):
                 )
 
             return value
+
+        def _parse_group(self, skip_group_by_token: bool = False) -> t.Optional[exp.Group]:
+            # ClickHouse supports GROUP BY <expr> AS <alias> syntax
+            # The alias is ignored but we need to consume it from the token stream
+            # https://clickhouse.com/docs/en/sql-reference/statements/select/group-by
+            if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
+                return None
+            
+            from collections import defaultdict
+            comments = self._prev_comments
+            elements: t.Dict[str, t.Any] = defaultdict(list)
+
+            if self._match(TokenType.ALL):
+                elements["all"] = True
+            elif self._match(TokenType.DISTINCT):
+                elements["all"] = False
+
+            if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
+                return self.expression(exp.Group, comments=comments, **elements)
+
+            # Custom parser function that consumes optional AS alias after each expression
+            def parse_group_by_expr() -> t.Optional[exp.Expression]:
+                if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False):
+                    return None
+                    
+                expr = self._parse_disjunction()
+                if expr:
+                    # Consume optional AS alias (ignored in ClickHouse)
+                    if self._match(TokenType.ALIAS):
+                        self._parse_id_var()  # Parse and discard the alias
+                return expr
+
+            while True:
+                index = self._index
+                
+                elements["expressions"].extend(self._parse_csv(parse_group_by_expr))
+
+                before_with_index = self._index
+                with_prefix = self._match(TokenType.WITH)
+
+                if cube_or_rollup := self._parse_cube_or_rollup(with_prefix=with_prefix):
+                    key = "rollup" if isinstance(cube_or_rollup, exp.Rollup) else "cube"
+                    elements[key].append(cube_or_rollup)
+                elif grouping_sets := self._parse_grouping_sets():
+                    elements["grouping_sets"].append(grouping_sets)
+                elif self._match_text_seq("TOTALS"):
+                    elements["totals"] = True
+
+                if before_with_index <= self._index <= before_with_index + 1:
+                    self._retreat(before_with_index)
+                    break
+
+                if index == self._index:
+                    break
+
+            return self.expression(exp.Group, comments=comments, **elements)
+
+        def _parse_ordered(
+            self, parse_method: t.Optional[t.Callable] = None
+        ) -> t.Optional[exp.Ordered]:
+            # ClickHouse supports ORDER BY <expr> AS <alias> syntax
+            # The alias is ignored but we need to consume it from the token stream
+            this = parse_method() if parse_method else self._parse_disjunction()
+            if not this:
+                return None
+
+            # Consume optional AS alias (ignored in ClickHouse)
+            if self._match(TokenType.ALIAS):
+                self._parse_id_var()  # Parse and discard the alias
+
+            # Continue with standard ordered expression parsing
+            if this.name.upper() == "ALL" and self.dialect.SUPPORTS_ORDER_BY_ALL:
+                this = exp.var("ALL")
+
+            asc = self._match(TokenType.ASC)
+            desc = self._match(TokenType.DESC) or (asc and False)
+
+            is_nulls_first = self._match_text_seq("NULLS", "FIRST")
+            is_nulls_last = self._match_text_seq("NULLS", "LAST")
+
+            nulls_first = is_nulls_first or False
+            explicitly_null_ordered = is_nulls_first or is_nulls_last
+
+            if (
+                not explicitly_null_ordered
+                and (
+                    (not desc and self.dialect.NULL_ORDERING == "nulls_are_small")
+                    or (desc and self.dialect.NULL_ORDERING != "nulls_are_small")
+                )
+                and self.dialect.NULL_ORDERING != "nulls_are_last"
+            ):
+                nulls_first = True
+
+            if self._match_text_seq("WITH", "FILL"):
+                with_fill = self.expression(
+                    exp.WithFill,
+                    from_=self._match(TokenType.FROM) and self._parse_bitwise(),
+                    to=self._match_text_seq("TO") and self._parse_bitwise(),
+                    step=self._match_text_seq("STEP") and self._parse_bitwise(),
+                    interpolate=self._parse_interpolate(),
+                )
+            else:
+                with_fill = None
+
+            return self.expression(
+                exp.Ordered,
+                this=this,
+                desc=desc,
+                nulls_first=nulls_first,
+                with_fill=with_fill,
+            )
 
         def _parse_partitioned_by(self) -> exp.PartitionedByProperty:
             # ClickHouse allows custom expressions as partition key

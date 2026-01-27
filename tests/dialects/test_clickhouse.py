@@ -1584,3 +1584,133 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_group_by_order_by_alias_support(self):
+        """Test that ClickHouse properly supports aliases in GROUP BY and ORDER BY clauses."""
+        from sqlglot.optimizer import qualify_columns
+        from sqlglot.schema import MappingSchema
+        
+        # Test GROUP BY with alias
+        self.validate_identity("SELECT x + 1 AS y FROM t GROUP BY y")
+        
+        # Test ORDER BY with alias
+        self.validate_identity("SELECT x + 1 AS y FROM t ORDER BY y")
+        
+        # Test both GROUP BY and ORDER BY with alias
+        self.validate_identity("SELECT x + 1 AS y FROM t GROUP BY y ORDER BY y")
+        
+        # Test with optimizer - aliases should be preserved
+        schema = MappingSchema({"t": {"x": "int", "a": "int", "b": "int"}})
+        
+        # Test that GROUP BY aliases are NOT expanded during optimization
+        sql = "SELECT x + 1 AS y FROM t GROUP BY y"
+        parsed = parse_one(sql, dialect="clickhouse")
+        qualified = qualify_columns.qualify_columns(parsed, schema=schema, dialect="clickhouse")
+        result = qualified.sql(dialect="clickhouse")
+        self.assertEqual(result, "SELECT t.x + 1 AS y FROM t GROUP BY y")
+        
+        # Test with complex expression
+        sql = "SELECT a + b AS total FROM t GROUP BY total ORDER BY total"
+        parsed = parse_one(sql, dialect="clickhouse")
+        qualified = qualify_columns.qualify_columns(parsed, schema=schema, dialect="clickhouse")
+        result = qualified.sql(dialect="clickhouse")
+        self.assertEqual(result, "SELECT t.a + t.b AS total FROM t GROUP BY total ORDER BY total")
+        
+        # Test with multiple aliases (use different names to avoid ambiguity with column names)
+        sql = "SELECT a AS col1, b AS col2 FROM t GROUP BY col1, col2 ORDER BY col1, col2"
+        parsed = parse_one(sql, dialect="clickhouse")
+        qualified = qualify_columns.qualify_columns(parsed, schema=schema, dialect="clickhouse")
+        result = qualified.sql(dialect="clickhouse")
+        self.assertEqual(result, "SELECT t.a AS col1, t.b AS col2 FROM t GROUP BY col1, col2 ORDER BY col1, col2")
+
+    def test_group_by_with_alias_syntax(self):
+        """Test that ClickHouse supports GROUP BY <expr> AS <alias> syntax (alias is ignored)."""
+        # Single column with alias in GROUP BY
+        self.validate_all(
+            "SELECT number % 2 AS n, count() FROM numbers(10) GROUP BY n AS some_alias",
+            write={
+                "clickhouse": "SELECT number % 2 AS n, count() FROM numbers(10) GROUP BY n"
+            },
+        )
+        
+        # Multiple columns with aliases in GROUP BY
+        self.validate_all(
+            "SELECT a, b FROM t GROUP BY a AS x, b AS y",
+            write={
+                "clickhouse": "SELECT a, b FROM t GROUP BY a, b"
+            },
+        )
+        
+        # Mixed: some with aliases, some without
+        self.validate_all(
+            "SELECT a, b, c FROM t GROUP BY a, b AS x, c AS y",
+            write={
+                "clickhouse": "SELECT a, b, c FROM t GROUP BY a, b, c"
+            },
+        )
+        
+        # With ORDER BY
+        self.validate_all(
+            "SELECT x + 1 AS y FROM t GROUP BY y AS alias1 ORDER BY y",
+            write={
+                "clickhouse": "SELECT x + 1 AS y FROM t GROUP BY y ORDER BY y"
+            },
+        )
+
+    def test_order_by_with_alias_syntax(self):
+        """Test that ClickHouse supports ORDER BY <expr> AS <alias> syntax (alias is ignored)."""
+        # Single column with alias in ORDER BY
+        self.validate_all(
+            "SELECT x FROM t ORDER BY x AS some_alias",
+            write={
+                "clickhouse": "SELECT x FROM t ORDER BY x"
+            },
+        )
+        
+        # Multiple columns with aliases in ORDER BY
+        self.validate_all(
+            "SELECT x, y FROM t ORDER BY x AS a, y AS b",
+            write={
+                "clickhouse": "SELECT x, y FROM t ORDER BY x, y"
+            },
+        )
+        
+        # Mixed: some with aliases, some without
+        self.validate_all(
+            "SELECT a, b, c FROM t ORDER BY a, b AS x, c AS y",
+            write={
+                "clickhouse": "SELECT a, b, c FROM t ORDER BY a, b, c"
+            },
+        )
+        
+        # With ASC/DESC
+        self.validate_all(
+            "SELECT x FROM t ORDER BY x AS a DESC",
+            write={
+                "clickhouse": "SELECT x FROM t ORDER BY x DESC"
+            },
+        )
+        
+        # With NULLS FIRST/LAST
+        self.validate_all(
+            "SELECT x FROM t ORDER BY x AS a ASC NULLS FIRST",
+            write={
+                "clickhouse": "SELECT x FROM t ORDER BY x ASC NULLS FIRST"
+            },
+        )
+        
+        # Both GROUP BY and ORDER BY with aliases
+        self.validate_all(
+            "SELECT number % 2 AS n FROM numbers(10) GROUP BY n AS grp ORDER BY n AS sorted",
+            write={
+                "clickhouse": "SELECT number % 2 AS n FROM numbers(10) GROUP BY n ORDER BY n"
+            },
+        )
+        
+        # Complex expression with alias
+        self.validate_all(
+            "SELECT a + b AS total FROM t ORDER BY (a + b) AS sum DESC",
+            write={
+                "clickhouse": "SELECT a + b AS total FROM t ORDER BY (a + b) DESC"
+            },
+        )

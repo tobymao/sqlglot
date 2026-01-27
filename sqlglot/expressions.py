@@ -6108,6 +6108,10 @@ class ArrayCompact(Func):
     pass
 
 
+class ArrayInsert(Func):
+    arg_types = {"this": True, "position": True, "expression": True, "zero_based_indexing": False}
+
+
 class ArrayConstructCompact(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True

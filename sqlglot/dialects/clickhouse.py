@@ -1044,8 +1044,9 @@ class ClickHouse(Dialect):
             # https://clickhouse.com/docs/en/sql-reference/statements/select/group-by
             if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
                 return None
-            
+
             from collections import defaultdict
+
             comments = self._prev_comments
             elements: t.Dict[str, t.Any] = defaultdict(list)
 
@@ -1061,7 +1062,7 @@ class ClickHouse(Dialect):
             def parse_group_by_expr() -> t.Optional[exp.Expression]:
                 if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False):
                     return None
-                    
+
                 expr = self._parse_disjunction()
                 if expr:
                     # Consume optional AS alias (ignored in ClickHouse)
@@ -1071,7 +1072,7 @@ class ClickHouse(Dialect):
 
             while True:
                 index = self._index
-                
+
                 elements["expressions"].extend(self._parse_csv(parse_group_by_expr))
 
                 before_with_index = self._index

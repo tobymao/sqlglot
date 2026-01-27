@@ -2991,6 +2991,7 @@ class Parser(metaclass=_Parser):
             expressions=expressions,
             partition=partition,
             format=format,
+            as_json=self._match_text_seq("AS", "JSON"),
         )
 
     def _parse_multitable_inserts(self, comments: t.Optional[t.List[str]]) -> exp.MultitableInserts:

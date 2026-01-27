@@ -1328,8 +1328,9 @@ class Generator(metaclass=_Generator):
         partition = f" {partition}" if partition else ""
         format = self.sql(expression, "format")
         format = f" {format}" if format else ""
+        as_json = " AS JSON" if expression.args.get("as_json") else ""
 
-        return f"DESCRIBE{style}{format} {self.sql(expression, 'this')}{partition}"
+        return f"DESCRIBE{style}{format} {self.sql(expression, 'this')}{partition}{as_json}"
 
     def heredoc_sql(self, expression: exp.Heredoc) -> str:
         tag = self.sql(expression, "tag")

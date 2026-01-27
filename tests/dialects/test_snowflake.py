@@ -5635,6 +5635,34 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_space(self):
+        # Integer literal
+        self.validate_all(
+            "SELECT SPACE(5)",
+            write={
+                "snowflake": "SELECT REPEAT(' ', 5)",
+                "duckdb": "SELECT REPEAT(' ', CAST(5 AS BIGINT))",
+            },
+        )
+
+        # Float literal (tests rounding behavior)
+        self.validate_all(
+            "SELECT SPACE(3.7)",
+            write={
+                "snowflake": "SELECT REPEAT(' ', 3.7)",
+                "duckdb": "SELECT REPEAT(' ', CAST(3.7 AS BIGINT))",
+            },
+        )
+
+        # NULL value
+        self.validate_all(
+            "SELECT SPACE(NULL)",
+            write={
+                "snowflake": "SELECT REPEAT(' ', NULL)",
+                "duckdb": "SELECT REPEAT(' ', CAST(NULL AS BIGINT))",
+            },
+        )
+
     def test_directed_joins(self):
         self.validate_identity("SELECT * FROM a CROSS DIRECTED JOIN b USING (id)")
         self.validate_identity("SELECT * FROM a INNER DIRECTED JOIN b USING (id)")

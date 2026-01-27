@@ -2077,6 +2077,53 @@ class DuckDB(Dialect):
             """,
         )
 
+        # Template for MINHASH transpilation
+        # Computes k minimum hash values across aggregated data using DuckDB list functions
+        # Returns JSON matching Snowflake format: {"state": [...], "type": "minhash", "version": 1}
+        MINHASH_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            SELECT JSON_OBJECT('state', LIST(min_h ORDER BY seed), 'type', 'minhash', 'version', 1)
+            FROM (
+                SELECT seed, LIST_MIN(LIST_TRANSFORM(vals, __v -> HASH(CAST(__v AS VARCHAR) || CAST(seed AS VARCHAR)))) AS min_h
+                FROM (SELECT LIST(:expr) AS vals), RANGE(0, :k) AS t(seed)
+            )
+            """,
+        )
+
+        # Template for MINHASH_COMBINE transpilation
+        # Combines multiple minhash signatures by taking element-wise minimum
+        MINHASH_COMBINE_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            SELECT JSON_OBJECT('state', LIST(min_h ORDER BY idx), 'type', 'minhash', 'version', 1)
+            FROM (
+                SELECT
+                    pos AS idx,
+                    MIN(val) AS min_h
+                FROM
+                    UNNEST(LIST(:expr)) AS _(sig),
+                    UNNEST(CAST(sig -> 'state' AS UBIGINT[])) WITH ORDINALITY AS t(val, pos)
+                GROUP BY pos
+            )
+            """,
+        )
+
+        # Template for APPROXIMATE_SIMILARITY transpilation
+        # Computes multi-way Jaccard similarity: fraction of positions where ALL signatures agree
+        APPROXIMATE_SIMILARITY_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            SELECT CAST(SUM(CASE WHEN num_distinct = 1 THEN 1 ELSE 0 END) AS DOUBLE) / COUNT(*)
+            FROM (
+                SELECT pos, COUNT(DISTINCT h) AS num_distinct
+                FROM (
+                    SELECT h, pos
+                    FROM UNNEST(LIST(:expr)) AS _(sig),
+                         UNNEST(CAST(sig -> 'state' AS UBIGINT[])) WITH ORDINALITY AS s(h, pos)
+                )
+                GROUP BY pos
+            )
+            """,
+        )
+
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
             Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
@@ -2828,6 +2875,32 @@ class DuckDB(Dialect):
             # Emulate Snowflake semantics: if distance > max_dist, return max_dist
             levenshtein = exp.Levenshtein(this=this, expression=expr)
             return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
+
+        def minhash_sql(self, expression: exp.Minhash) -> str:
+            k = expression.this
+            exprs = expression.expressions
+
+            if len(exprs) != 1 or isinstance(exprs[0], exp.Star):
+                self.unsupported(
+                    "MINHASH with multiple expressions or * requires manual query restructuring"
+                )
+                return self.func("MINHASH", k, *exprs)
+
+            expr = exprs[0]
+            result = exp.replace_placeholders(self.MINHASH_TEMPLATE.copy(), expr=expr, k=k)
+            return f"({self.sql(result)})"
+
+        def minhashcombine_sql(self, expression: exp.MinhashCombine) -> str:
+            expr = expression.this
+            result = exp.replace_placeholders(self.MINHASH_COMBINE_TEMPLATE.copy(), expr=expr)
+            return f"({self.sql(result)})"
+
+        def approximatesimilarity_sql(self, expression: exp.ApproximateSimilarity) -> str:
+            expr = expression.this
+            result = exp.replace_placeholders(
+                self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr
+            )
+            return f"({self.sql(result)})"
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

@@ -1600,7 +1600,7 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity("SELECT x + 1 AS y FROM t GROUP BY y ORDER BY y")
 
         # Test with optimizer - aliases should be preserved
-        schema = MappingSchema({"t": {"x": "int", "a": "int", "b": "int"}})
+        schema = MappingSchema({"t": {"x": "int", "a": "int", "b": "int"}}, dialect="clickhouse")
 
         # Test that GROUP BY aliases are NOT expanded during optimization
         sql = "SELECT x + 1 AS y FROM t GROUP BY y"

@@ -550,7 +550,7 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
-    SUPPORTS_GROUP_BY_ALIAS_REFS = True
+    SUPPORTS_GROUP_BY_ALIAS_REFS = False
     """
     Whether the dialect supports referencing SELECT aliases in the GROUP BY clause.
     
@@ -560,7 +560,7 @@ class Dialect(metaclass=_Dialect):
     For example, in ClickHouse and PostgreSQL:
         SELECT x + 1 AS y FROM t GROUP BY y  -- VALID (y is the alias)
     
-    When False (e.g., some older SQL dialects), the alias must be expanded:
+    When False (default for most dialects), the alias must be expanded:
         SELECT x + 1 AS y FROM t GROUP BY x + 1  -- Must use the full expression
     """
 

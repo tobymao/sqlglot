@@ -2922,6 +2922,15 @@ class DuckDB(Dialect):
                 _cast_to_varchar(expression.expression),
             )
 
+        def space_sql(self, expression: exp.Space) -> str:
+            # DuckDB's REPEAT requires BIGINT for the count parameter
+            return self.sql(
+                exp.Repeat(
+                    this=exp.Literal.string(" "),
+                    times=exp.cast(expression.this, exp.DataType.Type.BIGINT),
+                )
+            )
+
         def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
             # For GENERATOR, unwrap TABLE() - just emit the Generator (becomes RANGE)
             if isinstance(expression.this, exp.Generator):

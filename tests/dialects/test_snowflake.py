@@ -3479,7 +3479,7 @@ class TestSnowflake(Validator):
             "ARRAYS_ZIP([1, 2], [3, 4])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2], [3, 4])",
-                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL THEN NULL ELSE LIST_ZIP([1, 2], [3, 4]) END",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL THEN NULL ELSE CASE WHEN LEN(LIST_TRANSFORM(LIST_ZIP([1, 2], [3, 4]), __row -> {'$1': __row[1], '$2': __row[2]})) = 0 THEN [{'$1': NULL, '$2': NULL}] ELSE LIST_TRANSFORM(LIST_ZIP([1, 2], [3, 4]), __row -> {'$1': __row[1], '$2': __row[2]}) END END",
             },
         )
         self.validate_all(

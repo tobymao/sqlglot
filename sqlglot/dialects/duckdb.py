@@ -151,23 +151,53 @@ def _arrays_zip_sql(self: DuckDB.Generator, expression: exp.ArraysZip) -> str:
     """
     Transpile Snowflake ARRAYS_ZIP to DuckDB LIST_ZIP with NULL handling.
 
-    Snowflake returns NULL if any input array is NULL, while DuckDB's LIST_ZIP
-    treats NULL arrays differently. We wrap in CASE WHEN to match Snowflake behavior.
+    Snowflake returns NULL if any input array is NULL and returns objects with
+    $1, $2, etc. keys. We wrap LIST_ZIP with LIST_TRANSFORM to match the format.
+    Snowflake also returns [{}] for empty arrays, so we handle that case.
     """
     args = expression.expressions
     if not args:
         return self.func("LIST_ZIP")
 
-    # Build: CASE WHEN a IS NULL OR b IS NULL ... THEN NULL ELSE LIST_ZIP(a, b, ...) END
+    # Build: CASE WHEN a IS NULL OR b IS NULL ... THEN NULL
+    #        ELSE CASE WHEN LEN(LIST_TRANSFORM(...)) = 0 THEN [{'$1': NULL, ...}]
+    #             ELSE LIST_TRANSFORM(...) END
+    #        END
     null_checks = [exp.Is(this=arg.copy(), expression=exp.Null()) for arg in args]
-    condition: exp.Expression = null_checks[0]
-    for check in null_checks[1:]:
-        condition = exp.Or(this=condition, expression=check)
+    condition = exp.or_(*null_checks)
 
     list_zip = exp.Anonymous(this="LIST_ZIP", expressions=[arg.copy() for arg in args])
 
-    case = exp.Case(ifs=[exp.If(this=condition, true=exp.Null())], default=list_zip)
-    return self.sql(case)
+    # Build struct: {'$1': __row[1], '$2': __row[2], ...}
+    struct_fields = []
+    for i in range(len(args)):
+        key = exp.Literal.string(f"${i + 1}")
+        # DuckDB Bracket adds 1 to index, so use 0-based to get 1-based output
+        value = exp.Bracket(this=exp.column("__row"), expressions=[exp.Literal.number(i)])
+        struct_fields.append(exp.PropertyEQ(this=key, expression=value))
+
+    struct_expr = exp.Struct(expressions=struct_fields)
+    transform_lambda = exp.Lambda(this=struct_expr, expressions=[exp.column("__row")])
+    list_transform = exp.Anonymous(this="LIST_TRANSFORM", expressions=[list_zip, transform_lambda])
+
+    # Build empty fallback struct: [{'$1': NULL, '$2': NULL, ...}]
+    empty_struct_fields = []
+    for i in range(len(args)):
+        key = exp.Literal.string(f"${i + 1}")
+        empty_struct_fields.append(exp.PropertyEQ(this=key, expression=exp.Null()))
+    empty_struct = exp.Struct(expressions=empty_struct_fields)
+    empty_array = exp.Array(expressions=[empty_struct])
+
+    # Inner CASE: check if result is empty, return [{'$1': NULL, ...}] if so
+    len_check = exp.EQ(
+        this=exp.Anonymous(this="LEN", expressions=[list_transform.copy()]),
+        expression=exp.Literal.number(0),
+    )
+    inner_case = exp.Case(ifs=[exp.If(this=len_check, true=empty_array)], default=list_transform)
+
+    # Outer CASE: check for NULL inputs
+    outer_case = exp.Case(ifs=[exp.If(this=condition, true=exp.Null())], default=inner_case)
+    return self.sql(outer_case)
 
 
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:

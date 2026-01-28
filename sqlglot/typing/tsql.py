@@ -18,5 +18,6 @@ EXPRESSION_METADATA = {
             exp.Tan,
         }
     },
+    exp.CurrentTimezone: {"returns": exp.DataType.Type.VARCHAR},
     exp.Radians: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

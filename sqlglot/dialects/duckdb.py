@@ -147,59 +147,6 @@ def _base64_decode_sql(self: DuckDB.Generator, expression: exp.Expression, to_st
     return self.sql(input_expr)
 
 
-def _arrays_zip_sql(self: DuckDB.Generator, expression: exp.ArraysZip) -> str:
-    """
-    Transpile Snowflake ARRAYS_ZIP to DuckDB LIST_ZIP with NULL handling.
-
-    Snowflake returns NULL if any input array is NULL and returns objects with
-    $1, $2, etc. keys. We wrap LIST_ZIP with LIST_TRANSFORM to match the format.
-    Snowflake also returns [{}] for empty arrays, so we handle that case.
-    """
-    args = expression.expressions
-    if not args:
-        return self.func("LIST_ZIP")
-
-    # Build: CASE WHEN a IS NULL OR b IS NULL ... THEN NULL
-    #        ELSE CASE WHEN LEN(LIST_TRANSFORM(...)) = 0 THEN [{'$1': NULL, ...}]
-    #             ELSE LIST_TRANSFORM(...) END
-    #        END
-    null_checks = [exp.Is(this=arg.copy(), expression=exp.Null()) for arg in args]
-    condition = exp.or_(*null_checks)
-
-    list_zip = exp.Anonymous(this="LIST_ZIP", expressions=[arg.copy() for arg in args])
-
-    # Build struct: {'$1': __row[1], '$2': __row[2], ...}
-    struct_fields = []
-    for i in range(len(args)):
-        key = exp.Literal.string(f"${i + 1}")
-        # DuckDB Bracket adds 1 to index, so use 0-based to get 1-based output
-        value = exp.Bracket(this=exp.column("__row"), expressions=[exp.Literal.number(i)])
-        struct_fields.append(exp.PropertyEQ(this=key, expression=value))
-
-    struct_expr = exp.Struct(expressions=struct_fields)
-    transform_lambda = exp.Lambda(this=struct_expr, expressions=[exp.column("__row")])
-    list_transform = exp.Anonymous(this="LIST_TRANSFORM", expressions=[list_zip, transform_lambda])
-
-    # Build empty fallback struct: [{'$1': NULL, '$2': NULL, ...}]
-    empty_struct_fields = []
-    for i in range(len(args)):
-        key = exp.Literal.string(f"${i + 1}")
-        empty_struct_fields.append(exp.PropertyEQ(this=key, expression=exp.Null()))
-    empty_struct = exp.Struct(expressions=empty_struct_fields)
-    empty_array = exp.Array(expressions=[empty_struct])
-
-    # Inner CASE: check if result is empty, return [{'$1': NULL, ...}] if so
-    len_check = exp.EQ(
-        this=exp.Anonymous(this="LEN", expressions=[list_transform.copy()]),
-        expression=exp.Literal.number(0),
-    )
-    inner_case = exp.Case(ifs=[exp.If(this=len_check, true=empty_array)], default=list_transform)
-
-    # Outer CASE: check for NULL inputs
-    outer_case = exp.Case(ifs=[exp.If(this=condition, true=exp.Null())], default=inner_case)
-    return self.sql(outer_case)
-
-
 def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
     """
     DuckDB's LAST_DAY only supports finding the last day of a month.
@@ -1682,7 +1629,6 @@ class DuckDB(Dialect):
             ),
             exp.Base64DecodeBinary: lambda self, e: _base64_decode_sql(self, e, to_string=False),
             exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
-            exp.ArraysZip: _arrays_zip_sql,
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
             exp.BitwiseLeftShift: _bitshift_sql,
@@ -2175,6 +2121,18 @@ class DuckDB(Dialect):
                 )
                 GROUP BY pos
             )
+            """,
+        )
+
+        # Template for ARRAYS_ZIP transpilation
+        # Snowflake pads to longest array; DuckDB LIST_ZIP truncates to shortest
+        # Uses RANGE + indexing to match Snowflake behavior
+        ARRAYS_ZIP_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE WHEN :null_check THEN NULL
+            ELSE CASE WHEN :all_empty_check THEN [:empty_struct]
+            ELSE LIST_TRANSFORM(RANGE(0, :max_len), __i -> :transform_struct) END
+            END
             """,
         )
 
@@ -2955,6 +2913,66 @@ class DuckDB(Dialect):
                 self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr
             )
             return f"({self.sql(result)})"
+
+        def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
+            args = expression.expressions
+            if not args:
+                return self.func("LIST_ZIP")
+
+            # If any argument is literal NULL, result is always NULL
+            if any(isinstance(arg, exp.Null) for arg in args):
+                return self.sql(exp.Null())
+
+            # If ALL arguments are literal empty arrays, return [{}] (Snowflake behavior)
+            # Using [MAP {}] since DuckDB can't represent empty structs directly
+            if all(isinstance(arg, exp.Array) and not arg.expressions for arg in args):
+                return self.sql(
+                    exp.Array(expressions=[exp.Map(keys=exp.Array(), values=exp.Array())])
+                )
+
+            # Build placeholder values for template
+            lengths = [exp.Length(this=arg) for arg in args]
+            max_len = (
+                lengths[0]
+                if len(lengths) == 1
+                else exp.Greatest(this=lengths[0], expressions=lengths[1:])
+            )
+
+            # Empty struct fallback: {'$1': NULL}
+            empty_struct = exp.Struct(
+                expressions=[exp.PropertyEQ(this=exp.Literal.string("$1"), expression=exp.Null())]
+            )
+
+            # Struct for transform: {'$1': arr1[__i + 1], '$2': arr2[__i + 1], ...}
+            transform_struct = exp.Struct(
+                expressions=[
+                    exp.PropertyEQ(
+                        this=exp.Literal.string(f"${i + 1}"),
+                        expression=exp.Bracket(
+                            this=arg,
+                            expressions=[
+                                exp.Add(this=exp.column("__i"), expression=exp.Literal.number(1))
+                            ],
+                        ),
+                    )
+                    for i, arg in enumerate(args)
+                ]
+            )
+
+            result = exp.replace_placeholders(
+                self.ARRAYS_ZIP_TEMPLATE.copy(),
+                null_check=exp.or_(*[arg.is_(exp.Null()) for arg in args]),
+                all_empty_check=exp.and_(
+                    *[
+                        exp.EQ(this=exp.Length(this=arg), expression=exp.Literal.number(0))
+                        for arg in args
+                    ]
+                ),
+                empty_struct=empty_struct,
+                max_len=max_len,
+                transform_struct=transform_struct,
+            )
+            return self.sql(result)
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

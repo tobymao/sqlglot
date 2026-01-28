@@ -2961,24 +2961,22 @@ class DuckDB(Dialect):
             """
             Handle RPAD/LPAD for VARCHAR and BINARY types.
 
-            For VARCHAR: Use native RPAD/LPAD functions
+            For VARCHAR: Delegate to parent class
             For BINARY: Lower to: input || REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input)))
             """
             string_arg = expression.this
-            length_arg = expression.expression
             fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
-            is_left = expression.args.get("is_left")
 
             # Check if operating on BINARY (check either input or pad)
-            is_blob = self._is_binary_type(string_arg) or self._is_binary_type(fill_arg)
-
-            if is_blob:
+            if self._is_binary_type(string_arg) or self._is_binary_type(fill_arg):
                 # For BINARY: Lower to byte-level operations
                 # RPAD: input || REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input)))
                 # LPAD: REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input))) || input
+                length_arg = expression.expression
+                is_left = expression.args.get("is_left")
+
                 input_len = exp.Anonymous(this="OCTET_LENGTH", expressions=[string_arg])
                 chars_needed = exp.Sub(this=length_arg, expression=input_len)
-                # Wrap with GREATEST(0, ...) to handle case where input is already longer than target
                 pad_count = exp.Anonymous(
                     this="GREATEST", expressions=[exp.Literal.number(0), chars_needed]
                 )
@@ -2993,9 +2991,8 @@ class DuckDB(Dialect):
 
                 return self.sql(result)
 
-            # For VARCHAR: Use native RPAD/LPAD
-            func_name = "LPAD" if is_left else "RPAD"
-            return self.func(func_name, string_arg, length_arg, fill_arg)
+            # For VARCHAR: Delegate to parent class (handles PAD_FILL_PATTERN_IS_REQUIRED)
+            return super().pad_sql(expression)
 
         def minhash_sql(self, expression: exp.Minhash) -> str:
             k = expression.this

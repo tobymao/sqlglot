@@ -286,6 +286,9 @@ class Generator(metaclass=_Generator):
     # The string used for creating an index on a table
     INDEX_ON = "ON"
 
+    # Separator for IN/OUT parameter mode (Oracle uses " " for "IN OUT", PostgreSQL uses "" for "INOUT")
+    INOUT_SEPARATOR = " "
+
     # Whether join hints should be generated
     JOIN_HINTS = True
 
@@ -1169,9 +1172,14 @@ class Generator(metaclass=_Generator):
     def inoutcolumnconstraint_sql(self, expression: exp.InOutColumnConstraint) -> str:
         input_ = expression.args.get("input_")
         output = expression.args.get("output")
+        variadic = expression.args.get("variadic")
+
+        # VARIADIC is mutually exclusive with IN/OUT/INOUT
+        if variadic:
+            return "VARIADIC"
 
         if input_ and output:
-            return "IN OUT"
+            return f"IN{self.INOUT_SEPARATOR}OUT"
         if input_:
             return "IN"
         if output:

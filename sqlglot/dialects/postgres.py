@@ -399,6 +399,7 @@ class Postgres(Dialect):
             "FLOAT": TokenType.DOUBLE,
             "XML": TokenType.XML,
             "VARIADIC": TokenType.VARIADIC,
+            "INOUT": TokenType.INOUT,
         }
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("DIV")
@@ -530,6 +531,89 @@ class Postgres(Dialect):
             ),
         }
 
+        def _detect_parameter_mode(self) -> t.Optional[TokenType]:
+            """
+            Detect PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).
+
+            Uses simplified pattern matching to disambiguate between mode keywords
+            and identifiers with the same name:
+            - Pattern: MODE TYPE → keyword is identifier (returns None)
+            - Pattern: MODE NAME TYPE → keyword is mode (returns mode token)
+
+            Returns:
+                TokenType if current token is a parameter mode, None otherwise.
+            """
+            mode_tokens = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
+            # Disambiguate mode by checking if there are two components before the type  
+            if not (self._curr and self._curr.token_type in mode_tokens):
+                return None
+
+            keyword_token = self._curr
+            next_token = self._next
+
+            if not next_token:
+                return None
+
+            # Pattern: MODE TYPE → keyword is identifier
+            if next_token.token_type in self.TYPE_TOKENS:
+                return None
+
+            # Pattern: MODE NAME TYPE → keyword is mode
+            if next_token.token_type in {TokenType.VAR, TokenType.IDENTIFIER}:
+                token_after_next = (
+                    self._tokens[self._index + 2] if self._index + 2 < len(self._tokens) else None
+                )
+                if token_after_next and token_after_next.token_type in (
+                    self.TYPE_TOKENS | {TokenType.VAR, TokenType.IDENTIFIER}
+                ):
+                    return keyword_token.token_type
+
+            return None
+
+        def _attach_mode_constraint(
+            self, column_def: exp.Expression, param_mode: TokenType
+        ) -> None:
+            """
+            Attach parameter mode as InOutColumnConstraint to column definition.
+
+            Args:
+                column_def: The column definition to attach the constraint to.
+                param_mode: The parameter mode token (IN, OUT, INOUT, or VARIADIC).
+            """
+            constraint = self.expression(
+                exp.InOutColumnConstraint,
+                input_=(param_mode in {TokenType.IN, TokenType.INOUT}),
+                output=(param_mode in {TokenType.OUT, TokenType.INOUT}),
+                variadic=(param_mode == TokenType.VARIADIC),
+            )
+            if not column_def.args.get("constraints"):
+                column_def.set("constraints", [])
+            column_def.args["constraints"].insert(0, constraint)
+
+        def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
+            """
+            Parse PostgreSQL function parameter with mode support.
+
+            Handles: IN, OUT, INOUT, VARIADIC parameter modes.
+            Uses simplified pattern matching to disambiguate mode keywords from identifiers.
+            """
+            # Detect parameter mode (if present)
+            param_mode = self._detect_parameter_mode()
+
+            # Advance past mode keyword if detected
+            if param_mode:
+                self._advance()
+
+            # Parse parameter name and type
+            param_name = self._parse_id_var()
+            column_def = self._parse_column_def(this=param_name, computed_column=False)
+
+            # Attach mode as constraint
+            if param_mode and column_def:
+                self._attach_mode_constraint(column_def, param_mode)
+
+            return column_def
+
         def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
             this = (
                 self._parse_wrapped(self._parse_id_var)
@@ -610,6 +694,7 @@ class Postgres(Dialect):
         SUPPORTS_MEDIAN = False
         ARRAY_SIZE_DIM_REQUIRED = True
         SUPPORTS_BETWEEN_FLAGS = True
+        INOUT_SEPARATOR = ""  # PostgreSQL uses "INOUT" (no space)
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -755,6 +840,18 @@ class Postgres(Dialect):
         def commentcolumnconstraint_sql(self, expression: exp.CommentColumnConstraint) -> str:
             self.unsupported("Column comments are not supported in the CREATE statement")
             return ""
+
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            # PostgreSQL places parameter modes BEFORE parameter name
+            param_constraint = expression.find(exp.InOutColumnConstraint)
+
+            if param_constraint:
+                mode_sql = self.sql(param_constraint)
+                param_constraint.pop()  # Remove to prevent double-rendering
+                base_sql = super().columndef_sql(expression, sep)
+                return f"{mode_sql} {base_sql}"
+
+            return super().columndef_sql(expression, sep)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             if len(expression.expressions) == 1:

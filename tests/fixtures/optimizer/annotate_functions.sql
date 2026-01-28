@@ -5540,6 +5540,10 @@ FLOAT;
 ATAN(tbl.float_col);
 FLOAT;
 
+# dialect: tsql
+CURRENT_TIMEZONE();
+NVARCHAR;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

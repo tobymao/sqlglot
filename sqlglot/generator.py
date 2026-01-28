@@ -634,6 +634,7 @@ class Generator(metaclass=_Generator):
         exp.PartitionedOfProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         exp.Property: exp.Properties.Location.POST_WITH,
+        exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RemoteWithConnectionModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RollupProperty: exp.Properties.Location.UNSUPPORTED,

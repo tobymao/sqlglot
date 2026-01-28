@@ -84,6 +84,7 @@ class StarRocks(MySQL):
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "ROLLUP": lambda self: self._parse_rollup_property(),
+            "REFRESH": lambda self: self._parse_refresh_property(),
         }
 
         def _parse_rollup_property(self) -> exp.RollupProperty:
@@ -183,6 +184,36 @@ class StarRocks(MySQL):
                 exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
             )
 
+        def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
+            """
+            REFRESH [DEFERRED | IMMEDIATE]
+                    [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
+            """
+            method = (
+                self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
+            ) or "UNSPECIFIED"
+            kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
+            start = None
+            every = None
+            unit = None
+            if kind:
+                start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
+                if self._match_text_seq("EVERY"):
+                    self._match_l_paren()
+                    self._match_text_seq("INTERVAL")
+                    every = self._parse_number()
+                    unit = self._parse_var(any_token=True)
+                    self._match_r_paren()
+
+            return self.expression(
+                exp.RefreshTriggerProperty,
+                method=method,
+                kind=kind,
+                starts=start,
+                every=every,
+                unit=unit,
+            )
+
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
@@ -194,6 +225,8 @@ class StarRocks(MySQL):
 
         # StarRocks doesn't support "IS TRUE/FALSE" syntax.
         IS_BOOL_ALLOWED = False
+        # StarRocks doesn't support renaming a table with a database.
+        RENAME_TABLE_WITH_DB = False
 
         CAST_MAPPING = {}
 
@@ -417,9 +450,41 @@ class StarRocks(MySQL):
             return super().create_sql(expression)
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
+            # For MVs, StarRocks needs outer parentheses.
+            create = expression.find_ancestor(exp.Create)
+            is_creating_view = create and create.kind == "VIEW"
+
             this = expression.this
-            if isinstance(this, exp.Schema):
+            if isinstance(this, (exp.Schema, exp.Tuple)):
                 # Parenstheses are ommited in latest versions
                 # https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
-                return f"PARTITION BY {self.expressions(this, flat=True)}"
-            return f"PARTITION BY {self.sql(this)}"
+                # But for PK/Aggr tables with columns only, parentheses are required (there should be a bug)
+                # So, using parentheses for columns only is a better way.
+                are_all_columns = all(isinstance(col, (exp.Column, exp.Identifier)) for col in this.expressions)
+                exprs_str = self.expressions(this, flat=True)
+                if is_creating_view or are_all_columns:
+                    exprs_str = f"({exprs_str})"
+                return f"PARTITION BY {exprs_str}"
+            else:
+                return f"PARTITION BY {self.sql(this)}"
+
+        def cluster_sql(self, expression: exp.Cluster) -> str:
+            """Generate StarRocks ORDER BY clause for clustering."""
+            expressions = self.expressions(expression, flat=True)
+            return f"ORDER BY ({expressions})" if expressions else ""
+
+        def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
+            """Generate StarRocks REFRESH clause for materialized views.
+            There is a little difference of the syntax between StarRocks and Doris.
+            """
+            method = self.sql(expression, "method")
+            method = f" {method}" if method and method.upper() != "UNSPECIFIED" else ""
+            kind = self.sql(expression, "kind")
+            kind = f" {kind}" if kind else ""
+            starts = self.sql(expression, "starts")
+            starts = f" START ({starts})" if starts else ""
+            every = self.sql(expression, "every")
+            unit = self.sql(expression, "unit")
+            every = f" EVERY (INTERVAL {every} {unit})" if every and unit else ""
+
+            return f"REFRESH{method}{kind}{starts}{every}"

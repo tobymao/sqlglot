@@ -32,9 +32,9 @@ class TestStarrocks(Validator):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
         ddl_sqls = [
-            "PARTITION BY (col1, col2)",
-            "PARTITION BY (DATE_TRUNC('DAY', col2), col1)",
-            "PARTITION BY (FROM_UNIXTIME(col2))",
+            "PARTITION BY col1, col2",
+            "PARTITION BY DATE_TRUNC('DAY', col2), col1",
+            "PARTITION BY FROM_UNIXTIME(col2)",
             "DISTRIBUTED BY HASH (col1) BUCKETS 1",
             "DISTRIBUTED BY HASH (col1)",
             "DISTRIBUTED BY RANDOM BUCKETS 1",
@@ -84,7 +84,7 @@ class TestStarrocks(Validator):
             },
         )
 
-        # expression partitioning in MV
+        # expression partitioning in MV, using exp.Tuple to build PartitionedByProperty
         expr_partition = exp.PartitionedByProperty(
             this=exp.Tuple(
                 expressions=[
@@ -101,22 +101,6 @@ class TestStarrocks(Validator):
         create_sql = create.sql(dialect="starrocks")
         self.assertTrue("PARTITION BY (FROM_UNIXTIME(ts), region)" in create_sql)
 
-        # column tuple expression partitioning (columns only) in MV
-        columns_only_partition = exp.PartitionedByProperty(
-            this=exp.Tuple(expressions=[exp.column("c1"), exp.column("c2")])
-        )
-        create = exp.Create(
-            this=exp.to_table("t"),
-            kind="VIEW",
-            properties=exp.Properties(expressions=[columns_only_partition]),
-        )
-        self.assertEqual(
-            columns_only_partition.sql(dialect="starrocks"),
-            "PARTITION BY (c1, c2)",
-        )
-        create_sql = create.sql(dialect="starrocks")
-        self.assertTrue("PARTITION BY (c1, c2)" in create_sql)
-
         # ORDER BY
         multi_column_cluster = exp.Cluster(
             expressions=[
@@ -129,15 +113,20 @@ class TestStarrocks(Validator):
         single_column_cluster = exp.Cluster(expressions=[exp.column("c")])
         self.assertEqual(single_column_cluster.sql(dialect="starrocks"), "ORDER BY (c)")
 
-        # MV: Refresh trigger property
-        refresh_sqls = [
+        # MV properties
+        mv_properties = [
+            # partitioning in MV
+            "PARTITION BY (DATE_FUNC(ts), region) REFRESH ASYNC",
+            "PARTITION BY (DATE_TRUNC('DAY', ts)) REFRESH ASYNC",
+            "PARTITION BY (col1, col2) REFRESH ASYNC",
+            # MV: Refresh trigger property
             "REFRESH DEFERRED",
             "REFRESH ASYNC",
             "REFRESH ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
             "REFRESH DEFERRED ASYNC EVERY (INTERVAL 5 MINUTE)",
             "REFRESH IMMEDIATE MANUAL",
         ]
-        for properties in refresh_sqls:
+        for properties in mv_properties:
             with self.subTest(f"Testing refresh clause: {properties}"):
                 self.validate_identity(f"CREATE MATERIALIZED VIEW mv {properties} AS SELECT 1")
 

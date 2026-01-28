@@ -103,6 +103,7 @@ class Scope:
         self._pivots = None
         self._references = None
         self._semi_anti_join_tables = None
+        self._column_index = None
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs

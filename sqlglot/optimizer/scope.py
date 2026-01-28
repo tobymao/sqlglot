@@ -265,7 +265,7 @@ class Scope:
     @property
     def column_index(self) -> t.Set[int]:
         """
-        Set of column object IDs that belong to this scope's expression.        
+        Set of column object IDs that belong to this scope's expression.
         """
         self._ensure_collected()
         return self._column_index

@@ -250,16 +250,16 @@ def build_array_insert(args: t.List, dialect: Dialect) -> exp.ArrayInsert:
 
     Args:
         args: Function arguments [array, position, element]
-        dialect: The dialect to read ARRAY_ZERO_BASED_INDEXING from
+        dialect: The dialect to read INDEX_OFFSET from
 
     Returns:
-        ArrayInsert expression with appropriate zero_based_indexing flag
+        ArrayInsert expression with appropriate index_offset flag
     """
     return exp.ArrayInsert(
         this=seq_get(args, 0),
         position=seq_get(args, 1),
         expression=seq_get(args, 2),
-        zero_based_indexing=dialect.ARRAY_ZERO_BASED_INDEXING,
+        offset=dialect.INDEX_OFFSET,
     )
 
 

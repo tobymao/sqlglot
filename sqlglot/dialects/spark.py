@@ -130,6 +130,12 @@ class Spark(Spark2):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
+            "ARRAY_INSERT": lambda args: exp.ArrayInsert(
+                this=seq_get(args, 0),
+                position=seq_get(args, 1),
+                expression=seq_get(args, 2),
+                offset=1,
+            ),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,

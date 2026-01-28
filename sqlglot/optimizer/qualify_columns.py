@@ -610,6 +610,13 @@ def _qualify_columns(
             # column_table can be a '' because bigquery unnest has no table alias
             column_table = resolver.get_table(column)
 
+            if (
+                column_table
+                and isinstance(source := scope.sources.get(column_table.name), Scope)
+                and id(column) in source.column_index
+            ):
+                continue
+
             if column_table:
                 column.set("table", column_table)
             elif (

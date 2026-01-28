@@ -3479,14 +3479,14 @@ class TestSnowflake(Validator):
             "ARRAYS_ZIP([1, 2], [3, 4])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2], [3, 4])",
-                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 THEN [{'$1': NULL, '$2': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4])) END), __i -> {'$1': [1, 2][__i + 1], '$2': [3, 4][__i + 1]}) END END",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4])) END), __i -> {'$1': [1, 2][__i + 1], '$2': [3, 4][__i + 1]}) END END",
             },
         )
         self.validate_all(
             "ARRAYS_ZIP([], [1, 2, 3])",
             write={
                 "snowflake": "ARRAYS_ZIP([], [1, 2, 3])",
-                "duckdb": "CASE WHEN [] IS NULL OR [1, 2, 3] IS NULL THEN NULL ELSE CASE WHEN LENGTH([]) = 0 AND LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL, '$2': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([]) IS NULL OR LENGTH([1, 2, 3]) IS NULL THEN NULL ELSE GREATEST(LENGTH([]), LENGTH([1, 2, 3])) END), __i -> {'$1': [][__i + 1], '$2': [1, 2, 3][__i + 1]}) END END",
+                "duckdb": "CASE WHEN [] IS NULL OR [1, 2, 3] IS NULL THEN NULL ELSE CASE WHEN LENGTH([]) = 0 AND LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([]) IS NULL OR LENGTH([1, 2, 3]) IS NULL THEN NULL ELSE GREATEST(LENGTH([]), LENGTH([1, 2, 3])) END), __i -> {'$1': [][__i + 1], '$2': [1, 2, 3][__i + 1]}) END END",
             },
         )
         self.validate_all(

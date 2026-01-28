@@ -32,7 +32,7 @@ class TestStarrocks(Validator):
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
         ddl_sqls = [
-            "PARTITION BY col1, col2",
+            "PARTITION BY (col1, col2)",
             "PARTITION BY DATE_TRUNC('DAY', col2), col1",
             "PARTITION BY FROM_UNIXTIME(col2)",
             "DISTRIBUTED BY HASH (col1) BUCKETS 1",
@@ -267,11 +267,11 @@ class TestStarrocks(Validator):
         for cols in "col1", "col1, col2":
             with self.subTest(f"Testing PARTITION BY with {cols}"):
                 self.validate_identity(
-                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})",
-                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}",
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})"
                 )
                 self.validate_identity(
-                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}"
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}",
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})"
                 )
 
         # Expression-based partitioning

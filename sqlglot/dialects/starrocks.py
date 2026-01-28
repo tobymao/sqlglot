@@ -458,8 +458,11 @@ class StarRocks(MySQL):
             if isinstance(this, (exp.Schema, exp.Tuple)):
                 # Parenstheses are ommited in latest versions
                 # https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
+                # But for PK/Aggr tables with columns only, parentheses are required (there should be a bug)
+                # So, using parentheses for columns only is a better way.
+                are_all_columns = all(isinstance(col, (exp.Column, exp.Identifier)) for col in this.expressions)
                 exprs_str = self.expressions(this, flat=True)
-                if is_creating_view:
+                if is_creating_view or are_all_columns:
                     exprs_str = f"({exprs_str})"
                 return f"PARTITION BY {exprs_str}"
             else:

@@ -2945,7 +2945,7 @@ class DuckDB(Dialect):
             Works with or without type annotation.
             """
             # Check type annotation (if available)
-            if expression.type and expression.type.is_type(
+            if expression.is_type(
                 exp.DataType.Type.BINARY, exp.DataType.Type.VARBINARY, exp.DataType.Type.BLOB
             ):
                 return True

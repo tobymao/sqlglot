@@ -2149,6 +2149,10 @@ ARRAY_REMOVE([1, 2, 3], 2);
 ARRAY;
 
 # dialect: snowflake
+ARRAYS_ZIP([1, 2], [3, 4]);
+ARRAY;
+
+# dialect: snowflake
 ASIN(tbl.double_col);
 DOUBLE;
 

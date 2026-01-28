@@ -3479,14 +3479,14 @@ class TestSnowflake(Validator):
             "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
-                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL OR [4, 5] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 AND LENGTH([4, 5]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL OR LENGTH([4, 5]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4]), LENGTH([4, 5])) END), __i -> {'$1': [1, 2][__i + 1], '$2': [3, 4][__i + 1], '$3': [4, 5][__i + 1]}) END END",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL OR [4, 5] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 AND LENGTH([4, 5]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL OR LENGTH([4, 5]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4]), LENGTH([4, 5])) END), __i -> {'$1': COALESCE([1, 2], [])[__i + 1], '$2': COALESCE([3, 4], [])[__i + 1], '$3': COALESCE([4, 5], [])[__i + 1]}) END END",
             },
         )
         self.validate_all(
             "ARRAYS_ZIP([1, 2, 3])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2, 3])",
-                "duckdb": "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, LENGTH([1, 2, 3])), __i -> {'$1': [1, 2, 3][__i + 1]}) END END",
+                "duckdb": "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE CASE WHEN LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, LENGTH([1, 2, 3])), __i -> {'$1': COALESCE([1, 2, 3], [])[__i + 1]}) END END",
             },
         )
         self.validate_all(

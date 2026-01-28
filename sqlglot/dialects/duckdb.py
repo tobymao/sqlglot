@@ -2916,12 +2916,6 @@ class DuckDB(Dialect):
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
-            if not args:
-                return self.func("LIST_ZIP")
-
-            # If any argument is literal NULL, result is always NULL
-            if any(isinstance(arg, exp.Null) for arg in args):
-                return self.sql(exp.Null())
 
             # If ALL arguments are literal empty arrays, return [{}] (Snowflake behavior)
             # Using [MAP {}] since DuckDB can't represent empty structs directly
@@ -2939,24 +2933,22 @@ class DuckDB(Dialect):
             )
 
             # Empty struct fallback: {'$1': NULL}
-            empty_struct = exp.Struct(
-                expressions=[exp.PropertyEQ(this=exp.Literal.string("$1"), expression=exp.Null())]
+            empty_struct = exp.func(
+                "STRUCT", exp.PropertyEQ(this=exp.Literal.string("$1"), expression=exp.Null())
             )
 
-            # Struct for transform: {'$1': arr1[__i + 1], '$2': arr2[__i + 1], ...}
-            transform_struct = exp.Struct(
-                expressions=[
+            # Struct for transform: {'$1': COALESCE(arr1, [])[__i + 1], ...}
+            # COALESCE wrapping handles NULL arrays - prevents invalid NULL[i] syntax
+            index = exp.column("__i") + 1
+            transform_struct = exp.func(
+                "STRUCT",
+                *[
                     exp.PropertyEQ(
                         this=exp.Literal.string(f"${i + 1}"),
-                        expression=exp.Bracket(
-                            this=arg,
-                            expressions=[
-                                exp.Add(this=exp.column("__i"), expression=exp.Literal.number(1))
-                            ],
-                        ),
+                        expression=exp.func("COALESCE", arg, exp.array())[index],
                     )
                     for i, arg in enumerate(args)
-                ]
+                ],
             )
 
             result = exp.replace_placeholders(

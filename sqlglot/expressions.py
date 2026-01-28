@@ -6195,7 +6195,7 @@ class ArrayUnionAgg(AggFunc):
 
 
 class ArraysZip(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 

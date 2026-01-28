@@ -822,7 +822,6 @@ class Snowflake(Dialect):
             ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
-            "ARRAYS_ZIP": exp.ArraysZip.from_arg_list,
             "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BIT_AND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),

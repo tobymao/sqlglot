@@ -544,7 +544,7 @@ class Postgres(Dialect):
                 TokenType if current token is a parameter mode, None otherwise.
             """
             mode_tokens = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
-            # Disambiguate mode by checking if there are two components before the type  
+            # Disambiguate mode by checking if there are two components before the type
             if not (self._curr and self._curr.token_type in mode_tokens):
                 return None
 

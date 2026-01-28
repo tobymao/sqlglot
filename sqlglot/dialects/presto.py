@@ -711,7 +711,9 @@ class Presto(Dialect):
         def struct_sql(self, expression: exp.Struct) -> str:
             from sqlglot.optimizer.annotate_types import annotate_types
 
-            expression = annotate_types(expression, dialect=self.dialect)
+            expression = annotate_types(
+                expression, dialect=self.dialect, overwrite_types=False
+            )
             values: t.List[str] = []
             schema: t.List[str] = []
             unknown_type = False

@@ -271,7 +271,7 @@ class TestStarrocks(Validator):
                 )
                 self.validate_identity(
                     f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY {cols}",
-                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})"
+                    f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})",
                 )
 
         # Expression-based partitioning

@@ -5542,7 +5542,7 @@ FLOAT;
 
 # dialect: tsql
 CURRENT_TIMEZONE();
-VARCHAR;
+NVARCHAR;
 
 --------------------------------------
 -- MySQL

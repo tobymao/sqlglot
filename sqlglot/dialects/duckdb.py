@@ -2130,8 +2130,8 @@ class DuckDB(Dialect):
         ARRAYS_ZIP_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             CASE WHEN :null_check THEN NULL
-            ELSE CASE WHEN :all_empty_check THEN [:empty_struct]
-            ELSE LIST_TRANSFORM(RANGE(0, :max_len), __i -> :transform_struct) END
+            WHEN :all_empty_check THEN [:empty_struct]
+            ELSE LIST_TRANSFORM(RANGE(0, :max_len), __i -> :transform_struct)
             END
             """,
         )
@@ -2917,12 +2917,9 @@ class DuckDB(Dialect):
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
 
-            # If ALL arguments are literal empty arrays, return [{}] (Snowflake behavior)
-            # Using [MAP {}] since DuckDB can't represent empty structs directly
-            if all(isinstance(arg, exp.Array) and not arg.expressions for arg in args):
-                return self.sql(
-                    exp.Array(expressions=[exp.Map(keys=exp.Array(), values=exp.Array())])
-                )
+            if not args:
+                # Return [{}] - using MAP([], []) since DuckDB can't represent empty structs
+                return self.sql(exp.array(exp.Map(keys=exp.array(), values=exp.array())))
 
             # Build placeholder values for template
             lengths = [exp.Length(this=arg) for arg in args]
@@ -2932,9 +2929,13 @@ class DuckDB(Dialect):
                 else exp.Greatest(this=lengths[0], expressions=lengths[1:])
             )
 
-            # Empty struct fallback: {'$1': NULL}
+            # Empty struct with same schema: {'$1': NULL, '$2': NULL, ...}
             empty_struct = exp.func(
-                "STRUCT", exp.PropertyEQ(this=exp.Literal.string("$1"), expression=exp.Null())
+                "STRUCT",
+                *[
+                    exp.PropertyEQ(this=exp.Literal.string(f"${i + 1}"), expression=exp.Null())
+                    for i in range(len(args))
+                ],
             )
 
             # Struct for transform: {'$1': COALESCE(arr1, [])[__i + 1], ...}

@@ -370,10 +370,20 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     element_array = exp.Array(expressions=[element])
     index_offset = expression.args.get("offset", 0)
 
-    pos_value = position.to_py()
-    if not isinstance(pos_value, int):
+    if position is None:
+        self.unsupported("ARRAY_INSERT missing required position argument")
+        return self.func("ARRAY_INSERT", this, element)
+
+    try:
+        pos_value = position.to_py()
+    except ValueError:
         # Dynamic position (column reference, expression, etc.) - not supported
         self.unsupported("ARRAY_INSERT with dynamic position not supported")
+        return self.func("ARRAY_INSERT", this, position, element)
+
+    if not isinstance(pos_value, int):
+        # Non-integer literal position - not supported
+        self.unsupported("ARRAY_INSERT with non-integer position not supported")
         return self.func("ARRAY_INSERT", this, position, element)
 
     # Normalize one-based indexing to zero-based for slice calculations

@@ -6109,7 +6109,7 @@ class ArrayCompact(Func):
 
 
 class ArrayInsert(Func):
-    arg_types = {"this": True, "position": True, "expression": True, "zero_based_indexing": False}
+    arg_types = {"this": True, "position": True, "expression": True, "offset": False}
 
 
 class ArrayConstructCompact(Func):

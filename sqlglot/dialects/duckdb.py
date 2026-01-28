@@ -368,15 +368,10 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     position = expression.args.get("position")
     element = expression.expression
     element_array = exp.Array(expressions=[element])
-    zero_based_indexing = bool(expression.args.get("zero_based_indexing"))
+    index_offset = expression.args.get("offset", 0)
 
-    if isinstance(position, exp.Neg) and isinstance(position.this, exp.Literal):
-        # Negative literal like -1, -2, etc.
-        pos_value = -int(position.this.this)
-    elif isinstance(position, exp.Literal):
-        # Positive literal
-        pos_value = int(position.this)
-    else:
+    pos_value = position.to_py()
+    if not isinstance(pos_value, int):
         # Dynamic position (column reference, expression, etc.) - not supported
         self.unsupported("ARRAY_INSERT with dynamic position not supported")
         return self.func("ARRAY_INSERT", this, position, element)
@@ -386,23 +381,22 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     #   Positive: pos=1 → pos=0 (subtract 1)
     #   Negative: pos=-2 → pos=-1 (add 1)
     # Example: Spark array_insert([a,b,c], -2, d) → [a,b,d,c] is same as Snowflake pos=-1
-    if not zero_based_indexing:
-        if pos_value > 0:
-            pos_value = pos_value - 1
-        elif pos_value < 0:
-            pos_value = pos_value + 1
+    if pos_value > 0:
+        pos_value = pos_value - index_offset
+    elif pos_value < 0:
+        pos_value = pos_value + index_offset
 
     # Build the appropriate list_concat expression based on position
     if pos_value == 0:
         # insert at beginning
-        func_expr = self.func("LIST_CONCAT", element_array, this.copy())
+        concat_exprs = [element_array, this]
     elif pos_value > 0:
         # Positive position: LIST_CONCAT(arr[1:pos], [elem], arr[pos+1:])
         # 0-based -> DuckDB 1-based slicing
 
         # left slice: arr[1:pos]
         slice_start = exp.Bracket(
-            this=this.copy(),
+            this=this,
             expressions=[
                 exp.Slice(this=exp.Literal.number(1), expression=exp.Literal.number(pos_value))
             ],
@@ -410,29 +404,29 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
 
         # right slice: arr[pos+1:]
         slice_end = exp.Bracket(
-            this=this.copy(), expressions=[exp.Slice(this=exp.Literal.number(pos_value + 1))]
+            this=this, expressions=[exp.Slice(this=exp.Literal.number(pos_value + 1))]
         )
 
-        func_expr = self.func("LIST_CONCAT", slice_start, element_array, slice_end)
+        concat_exprs = [slice_start, element_array, slice_end]
     else:
         # Negative position: arr[1:LEN(arr)+pos], [elem], arr[LEN(arr)+pos+1:]
         # pos=-1 means insert before last element
-        arr_len = exp.Length(this=this.copy())
+        arr_len = exp.Length(this=this)
 
         # Calculate slice position: LEN(arr) + pos (e.g., LEN(arr) + (-1) = LEN(arr) - 1)
-        slice_end_pos = exp.Add(this=arr_len.copy(), expression=exp.Literal.number(pos_value))
-        slice_start_pos = exp.Add(this=slice_end_pos.copy(), expression=exp.Literal.number(1))
+        slice_end_pos = exp.Add(this=arr_len, expression=exp.Literal.number(pos_value))
+        slice_start_pos = exp.Add(this=slice_end_pos, expression=exp.Literal.number(1))
 
         # left slice: arr[1:LEN(arr)+pos]
         slice_start = exp.Bracket(
-            this=this.copy(),
+            this=this,
             expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end_pos)],
         )
 
         # right slice: arr[LEN(arr)+pos+1:]
-        slice_end = exp.Bracket(this=this.copy(), expressions=[exp.Slice(this=slice_start_pos)])
+        slice_end = exp.Bracket(this=this, expressions=[exp.Slice(this=slice_start_pos)])
 
-        func_expr = self.func("LIST_CONCAT", slice_start, element_array, slice_end)
+        concat_exprs = [slice_start, element_array, slice_end]
 
     # All dialects that support ARRAY_INSERT propagate NULLs (Snowflake/Spark/Databricks)
     # Wrap in CASE WHEN array IS NULL THEN NULL ELSE func_expr END
@@ -440,7 +434,7 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
         exp.If(
             this=exp.Is(this=this, expression=exp.Null()),
             true=exp.Null(),
-            false=func_expr,
+            false=self.func("LIST_CONCAT", *concat_exprs),
         )
     )
 

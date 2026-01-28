@@ -705,9 +705,6 @@ class Dialect(metaclass=_Dialect):
     ARRAY_FUNCS_PROPAGATES_NULLS = False
     """Whether Array update functions return NULL when the input array is NULL."""
 
-    ARRAY_ZERO_BASED_INDEXING = False
-    """Whether array indexing starts at 0."""
-
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """
     This flag is used in the optimizer's canonicalize rule and determines whether x will be promoted

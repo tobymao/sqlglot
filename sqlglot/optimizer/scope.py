@@ -103,6 +103,7 @@ class Scope:
         self._pivots = None
         self._references = None
         self._semi_anti_join_tables = None
+        self._column_index = None
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs
@@ -131,6 +132,7 @@ class Scope:
         self._stars = []
         self._join_hints = []
         self._semi_anti_join_tables = set()
+        self._column_index = set()
 
         for node in self.walk(bfs=False):
             if node is self.expression:
@@ -139,6 +141,8 @@ class Scope:
             if isinstance(node, exp.Dot) and node.is_star:
                 self._stars.append(node)
             elif isinstance(node, exp.Column) and not isinstance(node, exp.Pseudocolumn):
+                self._column_index.add(id(node))
+
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
                 else:
@@ -258,6 +262,14 @@ class Scope:
         """
         self._ensure_collected()
         return self._stars
+
+    @property
+    def column_index(self) -> t.Set[int]:
+        """
+        Set of column object IDs that belong to this scope's expression.
+        """
+        self._ensure_collected()
+        return self._column_index
 
     @property
     def columns(self):

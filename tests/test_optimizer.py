@@ -574,6 +574,30 @@ class TestOptimizer(unittest.TestCase):
         )
         self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT
+                    (
+                        SELECT
+                        col_st.value
+                        FROM UNNEST(col_st) AS col_st
+                    ) AS vcol1
+                    FROM t AS b
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "t": {
+                        "col_st": "ARRAY<STRUCT<key STRING, value INT>>",
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT (SELECT `col_st`.`value` AS `value` FROM UNNEST(`b`.`col_st`) AS `col_st`) AS `vcol1` FROM `t` AS `b`",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

@@ -1199,11 +1199,7 @@ class Parser(metaclass=_Parser):
         "CHARACTER SET": lambda self: self.expression(
             exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
         ),
-        "CHECK": lambda self: self.expression(
-            exp.CheckColumnConstraint,
-            this=self._parse_wrapped(self._parse_assignment),
-            enforced=self._match_text_seq("ENFORCED"),
-        ),
+        "CHECK": lambda self: self._parse_check_constraint(),
         "COLLATE": lambda self: self.expression(
             exp.CollateColumnConstraint,
             this=self._parse_identifier() or self._parse_column(),
@@ -6400,6 +6396,16 @@ class Parser(metaclass=_Parser):
 
         return exp.AutoIncrementColumnConstraint()
 
+    def _parse_check_constraint(self) -> t.Optional[exp.CheckColumnConstraint]:
+        if not self._match(TokenType.L_PAREN, advance=False):
+            return None
+
+        return self.expression(
+            exp.CheckColumnConstraint,
+            this=self._parse_wrapped(self._parse_assignment),
+            enforced=self._match_text_seq("ENFORCED"),
+        )
+
     def _parse_auto_property(self) -> t.Optional[exp.AutoRefreshProperty]:
         if not self._match_text_seq("REFRESH"):
             self._retreat(self._index - 1)
@@ -6493,11 +6499,12 @@ class Parser(metaclass=_Parser):
         )
 
         if not procedure_option_follows and self._match_texts(self.CONSTRAINT_PARSERS):
-            return self.expression(
-                exp.ColumnConstraint,
-                this=this,
-                kind=self.CONSTRAINT_PARSERS[self._prev.text.upper()](self),
-            )
+            constraint = self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
+            if not constraint:
+                self._retreat(self._index - 1)
+                return None
+
+            return self.expression(exp.ColumnConstraint, this=this, kind=constraint)
 
         return this
 
@@ -6524,6 +6531,8 @@ class Parser(metaclass=_Parser):
     def _parse_unnamed_constraint(
         self, constraints: t.Optional[t.Collection[str]] = None
     ) -> t.Optional[exp.Expression]:
+        index = self._index
+
         if self._match(TokenType.IDENTIFIER, advance=False) or not self._match_texts(
             constraints or self.CONSTRAINT_PARSERS
         ):
@@ -6533,7 +6542,11 @@ class Parser(metaclass=_Parser):
         if constraint not in self.CONSTRAINT_PARSERS:
             self.raise_error(f"No parser found for schema constraint {constraint}.")
 
-        return self.CONSTRAINT_PARSERS[constraint](self)
+        constraint = self.CONSTRAINT_PARSERS[constraint](self)
+        if not constraint:
+            self._retreat(index)
+
+        return constraint
 
     def _parse_unique_key(self) -> t.Optional[exp.Expression]:
         return self._parse_id_var(any_token=False)

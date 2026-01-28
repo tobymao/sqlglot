@@ -1042,12 +1042,13 @@ def inherit_struct_field_names(expression: exp.Expression) -> exp.Expression:
             new_expressions = []
             for i, expr in enumerate(struct.expressions):
                 if not isinstance(expr, exp.PropertyEQ):
-                    # Create PropertyEQ: field_name := value
-                    new_expressions.append(
-                        exp.PropertyEQ(
-                            this=exp.Identifier(this=field_names[i].copy()), expression=expr
-                        )
+                    # Create PropertyEQ: field_name := value, preserving the type from the inner expression
+                    property_eq = exp.PropertyEQ(
+                        this=exp.Identifier(this=field_names[i].copy()),
+                        expression=expr,
                     )
+                    property_eq.type = expr.type
+                    new_expressions.append(property_eq)
                 else:
                     new_expressions.append(expr)
 

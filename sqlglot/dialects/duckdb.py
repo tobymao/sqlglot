@@ -2890,18 +2890,6 @@ class DuckDB(Dialect):
                     )
             return self.func("ENCODE", expression.this)
 
-        def _is_binary_type(self, expression: exp.Expression) -> bool:
-            """
-            Check if an expression evaluates to a binary type (BINARY/VARBINARY/BLOB).
-            Works with or without type annotation.
-            """
-            # Check type annotation using built-in delegation (handles Cast automatically)
-            if _is_binary(expression):
-                return True
-
-            # Check expression type for binary-producing functions (works without type annotation)
-            return isinstance(expression, (exp.ToBinary, exp.Encode))
-
         def bytelength_sql(self, expression: exp.ByteLength) -> str:
             return self.func("OCTET_LENGTH", expression.this)
 
@@ -2915,11 +2903,7 @@ class DuckDB(Dialect):
             string_arg = expression.this
             fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
 
-            # Check if operating on BINARY (check either input or pad)
-            if self._is_binary_type(string_arg) or self._is_binary_type(fill_arg):
-                # For BINARY: Lower to byte-level operations
-                # RPAD: input || REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input)))
-                # LPAD: REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input))) || input
+            if _is_binary(string_arg) or _is_binary(fill_arg):
                 length_arg = expression.expression
                 is_left = expression.args.get("is_left")
 

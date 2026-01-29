@@ -186,6 +186,55 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_SXY(y, x)")
         self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
+
+        # IS_ARRAY function tests - comprehensive coverage with multiple dialects
+        # Test 1: IS_ARRAY with array type (TRUE case) - most common use case
+        self.validate_all(
+            "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+            write={
+                "bigquery": "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+                "databricks": "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+                "duckdb": "SELECT JSON_TYPE(JSON('[1,2,3]')) = 'ARRAY'",
+                "mysql": "SELECT IS_ARRAY('[1,2,3]')",
+                "postgres": "SELECT IS_ARRAY(CAST('[1,2,3]' AS JSON))",
+                "presto": "SELECT IS_ARRAY(JSON_PARSE('[1,2,3]'))",
+                "snowflake": "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+                "spark": "SELECT IS_ARRAY('[1,2,3]')",
+                "trino": "SELECT IS_ARRAY(JSON_PARSE('[1,2,3]'))",
+            },
+        )
+
+        # Test 2: IS_ARRAY with object type (FALSE case) - important negative test
+        self.validate_all(
+            'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+            write={
+                "bigquery": 'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+                "databricks": 'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+                "duckdb": "SELECT JSON_TYPE(JSON('{\"key\":\"value\"}')) = 'ARRAY'",
+                "mysql": 'SELECT IS_ARRAY(\'{"key":"value"}\')',
+                "postgres": 'SELECT IS_ARRAY(CAST(\'{"key":"value"}\' AS JSON))',
+                "presto": 'SELECT IS_ARRAY(JSON_PARSE(\'{"key":"value"}\'))',
+                "snowflake": 'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+                "spark": 'SELECT IS_ARRAY(\'{"key":"value"}\')',
+                "trino": 'SELECT IS_ARRAY(JSON_PARSE(\'{"key":"value"}\'))',
+            },
+        )
+
+        # Test 3: IS_ARRAY with NULL input - edge case testing
+        self.validate_all(
+            "SELECT IS_ARRAY(NULL)",
+            write={
+                "bigquery": "SELECT IS_ARRAY(NULL)",
+                "databricks": "SELECT IS_ARRAY(NULL)",
+                "duckdb": "SELECT JSON_TYPE(NULL) = 'ARRAY'",
+                "mysql": "SELECT IS_ARRAY(NULL)",
+                "postgres": "SELECT IS_ARRAY(NULL)",
+                "presto": "SELECT IS_ARRAY(NULL)",
+                "snowflake": "SELECT IS_ARRAY(NULL)",
+                "spark": "SELECT IS_ARRAY(NULL)",
+                "trino": "SELECT IS_ARRAY(NULL)",
+            },
+        )
         self.validate_all(
             "SELECT IFF(x > 5, 10, 20)",
             write={

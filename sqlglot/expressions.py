@@ -7096,6 +7096,10 @@ class IsNullValue(Func):
     pass
 
 
+class IsArray(Func):
+    pass
+
+
 # https://www.postgresql.org/docs/current/functions-json.html
 class JSON(Expression):
     arg_types = {"this": False, "with_": False, "unique": False}

@@ -5155,6 +5155,32 @@ FROM SEMANTIC_VIEW(
         self.validate_identity("MD5_NUMBER_LOWER64(col)")
         self.validate_identity("MD5_NUMBER_UPPER64(col)")
 
+    def test_sha1(self):
+        # DuckDB's SHA1 only accepts VARCHAR or BLOB, Snowflake accepts any type
+        self.validate_identity("SHA1('text')")
+        self.validate_identity("SHA1(col)")
+        self.validate_all(
+            "SHA1(123)",
+            write={
+                "snowflake": "SHA1(123)",
+                "duckdb": "SHA1(CAST(123 AS TEXT))",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            write={
+                "snowflake": "SHA1(x)",
+                "duckdb": "SHA1(x)",
+            },
+        )
+        self.validate_all(
+            "SHA1(DATE '2024-01-15')",
+            write={
+                "snowflake": "SHA1(CAST('2024-01-15' AS DATE))",
+                "duckdb": "SHA1(CAST(CAST('2024-01-15' AS DATE) AS TEXT))",
+            },
+        )
+
     def test_model_attribute(self):
         self.validate_identity("SELECT model!mladmin")
         self.validate_identity("SELECT model!PREDICT(1)")

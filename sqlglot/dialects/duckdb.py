@@ -1849,7 +1849,6 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
-            exp.SHA: rename_func("SHA1"),
             exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
@@ -3003,6 +3002,21 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        def sha_sql(self, expression: exp.SHA) -> str:
+            arg = expression.this
+
+            # If type is compatible with DuckDB or is an unknown type, use directly
+            if arg.is_type(
+                *exp.DataType.TEXT_TYPES,
+                exp.DataType.Type.BINARY,
+                exp.DataType.Type.VARBINARY,
+                exp.DataType.Type.BLOB,
+            ) or (not isinstance(arg, exp.Literal) and not arg.type):
+                return self.func("SHA1", arg)
+
+            # Otherwise, cast to string
+            return self.func("SHA1", exp.cast(arg, exp.DataType.Type.VARCHAR))
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

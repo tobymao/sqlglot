@@ -370,12 +370,8 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     element_array = exp.Array(expressions=[element])
     index_offset = expression.args.get("offset", 0)
 
-    if position is None:
-        self.unsupported("ARRAY_INSERT missing required position argument")
-        return self.func("ARRAY_INSERT", this, element)
-
-    if not position.is_int:
-        self.unsupported("ARRAY_INSERT with dynamic position not supported")
+    if not position or not position.is_int:
+        self.unsupported("ARRAY_INSERT can only be transpiled with a literal position")
         return self.func("ARRAY_INSERT", this, position, element)
 
     pos_value = position.to_py()
@@ -418,8 +414,8 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
         arr_len = exp.Length(this=this)
 
         # Calculate slice position: LEN(arr) + pos (e.g., LEN(arr) + (-1) = LEN(arr) - 1)
-        slice_end_pos = exp.Add(this=arr_len, expression=exp.Literal.number(pos_value))
-        slice_start_pos = exp.Add(this=slice_end_pos, expression=exp.Literal.number(1))
+        slice_end_pos = arr_len + exp.Literal.number(pos_value)
+        slice_start_pos = slice_end_pos + exp.Literal.number(1)
 
         # left slice: arr[1:LEN(arr)+pos]
         slice_start = exp.Bracket(

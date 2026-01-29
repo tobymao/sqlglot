@@ -241,28 +241,6 @@ def build_array_concat(args: t.List, dialect: Dialect) -> exp.ArrayConcat:
     )
 
 
-def build_array_insert(args: t.List, dialect: Dialect) -> exp.ArrayInsert:
-    """
-    Builds ArrayInsert with indexing semantics based on the dialect configuration.
-
-    Some dialects (Snowflake) use 0-based indexing for ARRAY_INSERT.
-    Others (DuckDB, Spark) use 1-based indexing.
-
-    Args:
-        args: Function arguments [array, position, element]
-        dialect: The dialect to read INDEX_OFFSET from
-
-    Returns:
-        ArrayInsert expression with appropriate index_offset flag
-    """
-    return exp.ArrayInsert(
-        this=seq_get(args, 0),
-        position=seq_get(args, 1),
-        expression=seq_get(args, 2),
-        offset=dialect.INDEX_OFFSET,
-    )
-
-
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -301,7 +279,6 @@ class Parser(metaclass=_Parser):
         "ARRAY_APPEND": build_array_append,
         "ARRAY_CAT": build_array_concat,
         "ARRAY_CONCAT": build_array_concat,
-        "ARRAY_INSERT": build_array_insert,
         "ARRAY_PREPEND": build_array_prepend,
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(
@@ -6800,7 +6777,7 @@ class Parser(metaclass=_Parser):
             self._advance()
             end: t.Optional[exp.Expression] = -exp.Literal.number("1")
         else:
-            end = self._parse_unary()
+            end = self._parse_assignment()
         step = self._parse_unary() if self._match(TokenType.COLON) else None
         return self.expression(exp.Slice, this=this, expression=end, step=step)
 

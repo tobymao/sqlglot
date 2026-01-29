@@ -2924,20 +2924,16 @@ class DuckDB(Dialect):
                 length_arg = expression.expression
                 is_left = expression.args.get("is_left")
 
-                input_len = exp.Anonymous(this="OCTET_LENGTH", expressions=[string_arg])
+                input_len = exp.func("OCTET_LENGTH", string_arg)
                 chars_needed = exp.Sub(this=length_arg, expression=input_len)
-                pad_count = exp.Anonymous(
-                    this="GREATEST", expressions=[exp.Literal.number(0), chars_needed]
-                )
-                repeat_expr = exp.Anonymous(this="REPEAT", expressions=[fill_arg, pad_count])
+                pad_count = exp.func("GREATEST", exp.Literal.number(0), chars_needed)
+                repeat_expr = exp.func("REPEAT", fill_arg, pad_count)
 
+                left, right = string_arg, repeat_expr
                 if is_left:
-                    # LPAD: padding first, then input
-                    result = exp.DPipe(this=repeat_expr, expression=string_arg)
-                else:
-                    # RPAD: input first, then padding
-                    result = exp.DPipe(this=string_arg, expression=repeat_expr)
+                    left, right = right, left
 
+                result = exp.DPipe(this=left, expression=right)
                 return self.sql(result)
 
             # For VARCHAR: Delegate to parent class (handles PAD_FILL_PATTERN_IS_REQUIRED)

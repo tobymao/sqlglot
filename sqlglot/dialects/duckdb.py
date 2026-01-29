@@ -2903,7 +2903,14 @@ class DuckDB(Dialect):
             string_arg = expression.this
             fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
 
-            if _is_binary(string_arg) or _is_binary(fill_arg):
+            # Check if operating on BINARY: either has type annotation or is binary-producing function
+            is_binary = (
+                _is_binary(string_arg)
+                or _is_binary(fill_arg)
+                or isinstance(string_arg, (exp.ToBinary, exp.Encode))
+                or isinstance(fill_arg, (exp.ToBinary, exp.Encode))
+            )
+            if is_binary:
                 length_arg = expression.expression
                 is_left = expression.args.get("is_left")
 

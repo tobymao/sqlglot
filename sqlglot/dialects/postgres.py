@@ -531,64 +531,71 @@ class Postgres(Dialect):
             ),
         }
 
-        def _detect_parameter_mode(self) -> t.Optional[TokenType]:
-            """
-            Detect PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).
+        ARG_MODE_TOKENS = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
 
-            Uses simplified pattern matching to disambiguate between mode keywords
-            and identifiers with the same name:
-            - Pattern: MODE TYPE → keyword is identifier (returns None)
-            - Pattern: MODE NAME TYPE → keyword is mode (returns mode token)
+        def _parse_parameter_mode(self) -> t.Optional[TokenType]:
+            """
+            Parse PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).
+
+            Disambiguates between mode keywords and identifiers with the same name:
+            - MODE TYPE      → keyword is identifier (e.g., "out INT")
+            - MODE NAME TYPE → keyword is mode (e.g., "OUT x INT")
 
             Returns:
-                TokenType if current token is a parameter mode, None otherwise.
+                Mode token type if current token is a mode keyword, None otherwise.
             """
-            mode_tokens = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
-            # Disambiguate mode by checking if there are two components before the type
-            if not (self._curr and self._curr.token_type in mode_tokens):
+            if not self._match_set(self.ARG_MODE_TOKENS, advance=False) or not self._next:
                 return None
 
-            keyword_token = self._curr
-            next_token = self._next
+            mode_token = self._curr
+            start_index = self._index
 
-            if not next_token:
+            # Check Pattern 1: MODE TYPE
+            # Try parsing next token as a built-in type (not UDT)
+            # If successful, the keyword is an identifier, not a mode
+            self._advance()
+            is_followed_by_builtin_type = self._try_parse(
+                lambda: self._parse_types(check_func=False, allow_identifiers=False)
+            )
+            self._retreat(start_index)
+
+            if is_followed_by_builtin_type:
+                return None  # Pattern: "out INT" → out is parameter name
+
+            # Check Pattern 2: MODE NAME TYPE
+            # If next token is an identifier, check if there's a type after it
+            # The type can be built-in or user-defined (allow_identifiers=True)
+            if self._next.token_type not in self.ID_VAR_TOKENS:
                 return None
 
-            # Pattern: MODE TYPE → keyword is identifier
-            if next_token.token_type in self.TYPE_TOKENS:
-                return None
+            self._advance()  # Move past mode keyword
+            self._advance()  # Move past parameter name
+            is_followed_by_any_type = self._try_parse(
+                lambda: self._parse_types(check_func=False, allow_identifiers=True)
+            )
+            self._retreat(start_index)
 
-            # Pattern: MODE NAME TYPE → keyword is mode
-            if next_token.token_type in {TokenType.VAR, TokenType.IDENTIFIER}:
-                token_after_next = (
-                    self._tokens[self._index + 2] if self._index + 2 < len(self._tokens) else None
-                )
-                if token_after_next and token_after_next.token_type in (
-                    self.TYPE_TOKENS | {TokenType.VAR, TokenType.IDENTIFIER}
-                ):
-                    return keyword_token.token_type
+            if is_followed_by_any_type:
+                return mode_token.token_type  # Pattern: "OUT x INT" → OUT is mode
 
             return None
 
-        def _attach_mode_constraint(
-            self, column_def: exp.Expression, param_mode: TokenType
-        ) -> None:
+        def _create_mode_constraint(self, param_mode: TokenType) -> exp.InOutColumnConstraint:
             """
-            Attach parameter mode as InOutColumnConstraint to column definition.
+            Create parameter mode constraint for function parameters.
 
             Args:
-                column_def: The column definition to attach the constraint to.
                 param_mode: The parameter mode token (IN, OUT, INOUT, or VARIADIC).
+
+            Returns:
+                InOutColumnConstraint expression representing the parameter mode.
             """
-            constraint = self.expression(
+            return self.expression(
                 exp.InOutColumnConstraint,
                 input_=(param_mode in {TokenType.IN, TokenType.INOUT}),
                 output=(param_mode in {TokenType.OUT, TokenType.INOUT}),
                 variadic=(param_mode == TokenType.VARIADIC),
             )
-            if not column_def.args.get("constraints"):
-                column_def.set("constraints", [])
-            column_def.args["constraints"].insert(0, constraint)
 
         def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
             """
@@ -597,8 +604,8 @@ class Postgres(Dialect):
             Handles: IN, OUT, INOUT, VARIADIC parameter modes.
             Uses simplified pattern matching to disambiguate mode keywords from identifiers.
             """
-            # Detect parameter mode (if present)
-            param_mode = self._detect_parameter_mode()
+            # Parse parameter mode (if present)
+            param_mode = self._parse_parameter_mode()
 
             # Advance past mode keyword if detected
             if param_mode:
@@ -610,7 +617,10 @@ class Postgres(Dialect):
 
             # Attach mode as constraint
             if param_mode and column_def:
-                self._attach_mode_constraint(column_def, param_mode)
+                constraint = self._create_mode_constraint(param_mode)
+                if not column_def.args.get("constraints"):
+                    column_def.set("constraints", [])
+                column_def.args["constraints"].insert(0, constraint)
 
             return column_def
 

@@ -1247,6 +1247,16 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "CREATE OR REPLACE FUNCTION foo(id UUID, OUT created_at TIMESTAMPTZ)"
         )
+        self.validate_identity("CREATE FUNCTION foo(OUT x INT DEFAULT 5)")
+        self.validate_identity("CREATE FUNCTION foo(INOUT y VARCHAR DEFAULT 'test')")
+        self.validate_identity("CREATE FUNCTION foo(IN a INT DEFAULT 0, OUT b INT)")
+        self.validate_all(
+            "CREATE FUNCTION foo(VARIADIC args INT[] DEFAULT ARRAY[]::INT[])",
+            write={
+                "postgres": "CREATE FUNCTION foo(VARIADIC args INT[] DEFAULT CAST(ARRAY[] AS INT[]))",
+            },
+        )
+        self.validate_identity("CREATE FUNCTION foo(OUT result INT, IN input INT DEFAULT 10)")
 
         self.validate_identity(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",

@@ -2926,8 +2926,10 @@ class DuckDB(Dialect):
 
                 input_len = exp.func("OCTET_LENGTH", string_arg)
                 chars_needed = exp.Sub(this=length_arg, expression=input_len)
-                pad_count = exp.func("GREATEST", exp.Literal.number(0), chars_needed)
-                repeat_expr = exp.func("REPEAT", fill_arg, pad_count)
+                pad_count = exp.Greatest(
+                    this=exp.Literal.number(0), expressions=[chars_needed], ignore_nulls=True
+                )
+                repeat_expr = exp.Repeat(this=fill_arg, times=pad_count)
 
                 left, right = string_arg, repeat_expr
                 if is_left:

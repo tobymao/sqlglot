@@ -2904,15 +2904,7 @@ class DuckDB(Dialect):
             return isinstance(expression, (exp.ToBinary, exp.Encode))
 
         def bytelength_sql(self, expression: exp.ByteLength) -> str:
-            """
-            Map OCTET_LENGTH/BYTE_LENGTH to appropriate function based on argument type.
-
-            For BINARY: OCTET_LENGTH
-            For VARCHAR: LENGTH
-            """
-            arg = expression.this
-            func_name = "OCTET_LENGTH" if self._is_binary_type(arg) else "LENGTH"
-            return self.func(func_name, arg)
+            return self.func("OCTET_LENGTH", expression.this)
 
         def pad_sql(self, expression: exp.Pad) -> str:
             """

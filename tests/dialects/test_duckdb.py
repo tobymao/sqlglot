@@ -665,6 +665,27 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
+            write={
+                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT()",
+            write={
+                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT()",
+            },
+        )
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
+            write={
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
+            },
+        )
+        self.validate_all(
             "SELECT ANY_VALUE(sample_column) FROM sample_table",
             write={
                 "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",

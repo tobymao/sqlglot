@@ -1618,6 +1618,9 @@ class DuckDB(Dialect):
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
             exp.ArrayCompact: remove_from_array_using_filter,
+            exp.ArrayConstructCompact: lambda self, e: self.sql(
+                exp.ArrayCompact(this=exp.Array(expressions=e.expressions))
+            ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayRemove: remove_from_array_using_filter,

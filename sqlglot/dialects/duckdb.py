@@ -2882,10 +2882,9 @@ class DuckDB(Dialect):
             Handle ENCODE function.
             DuckDB only supports UTF-8 encoding.
             """
-            charset = expression.args.get("charset")
-            if charset:
-                charset_value = charset.this if isinstance(charset, exp.Literal) else None
-                if charset_value and charset_value.upper() not in ("UTF-8", "UTF8"):
+            if isinstance(charset := expression.args.get("charset"), exp.Literal):
+                charset_value = charset.name.upper()
+                if charset_value not in ("UTF-8", "UTF8"):
                     self.unsupported(
                         f"ENCODE with charset '{charset_value}' is not supported in DuckDB"
                     )

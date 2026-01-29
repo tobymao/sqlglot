@@ -5564,6 +5564,10 @@ DATETIME;
 ELT(1, 'a', 'b');
 VARCHAR;
 
+# dialect: mysql
+DAYOFWEEK(tbl.date_col);
+INT;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

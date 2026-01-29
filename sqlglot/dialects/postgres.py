@@ -568,8 +568,7 @@ class Postgres(Dialect):
             if self._next.token_type not in self.ID_VAR_TOKENS:
                 return None
 
-            self._advance()  # Move past mode keyword
-            self._advance()  # Move past parameter name
+            self._advance(2)  # Move past mode keyword and parameter name
             is_followed_by_any_type = self._try_parse(
                 lambda: self._parse_types(check_func=False, allow_identifiers=True)
             )

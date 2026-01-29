@@ -499,6 +499,14 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], e
 
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
+    ancestor_cast = expression.find_ancestor(exp.Cast, exp.Select)
+    ancestor_cast = None if isinstance(ancestor_cast, exp.Select) else ancestor_cast
+
+    # Empty struct cast works with MAP() since DuckDB can't parse {}
+    if not expression.expressions:
+        if isinstance(ancestor_cast, exp.Cast) and ancestor_cast.to.is_type(exp.DataType.Type.MAP):
+            return "MAP()"
+
     args: t.List[str] = []
 
     # BigQuery allows inline construction such as "STRUCT<a STRING, b INTEGER>('str', 1)" which is
@@ -506,7 +514,6 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     # The transformation to ROW will take place if:
     #  1. The STRUCT itself does not have proper fields (key := value) as a "proper" STRUCT would
     #  2. A cast to STRUCT / ARRAY of STRUCTs is found
-    ancestor_cast = expression.find_ancestor(exp.Cast)
     is_bq_inline_struct = (
         (expression.find(exp.PropertyEQ) is None)
         and ancestor_cast
@@ -2080,6 +2087,22 @@ class DuckDB(Dialect):
             f"ELSE {_SEQ_BASE} % :max_val END)"
         )
 
+        # Template for MAP_CAT transpilation - Snowflake semantics:
+        # 1. Returns NULL if either input is NULL
+        # 2. For duplicate keys, prefers non-NULL value (COALESCE(m2[k], m1[k]))
+        # 3. Filters out entries with NULL values from the result
+        MAPCAT_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :map1 IS NULL OR :map2 IS NULL THEN NULL
+                ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(
+                    LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(:map1), MAP_KEYS(:map2))),
+                    __k -> STRUCT_PACK(key := __k, value := COALESCE(:map2[__k], :map1[__k]))
+                ), __x -> __x.value IS NOT NULL))
+            END
+            """
+        )
+
         # Mappings for EXTRACT/DATE_PART transpilation
         # Maps Snowflake specifiers unsupported in DuckDB to strftime format codes
         EXTRACT_STRFTIME_MAPPINGS: t.Dict[str, t.Tuple[str, str]] = {
@@ -3151,6 +3174,14 @@ class DuckDB(Dialect):
                 return self.func("STRUCT_PACK", kv_sql)
 
             return self.func("STRUCT_INSERT", this, kv_sql)
+
+        def mapcat_sql(self, expression: exp.MapCat) -> str:
+            result = exp.replace_placeholders(
+                self.MAPCAT_TEMPLATE.copy(),
+                map1=expression.this,
+                map2=expression.expression,
+            )
+            return self.sql(result)
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(

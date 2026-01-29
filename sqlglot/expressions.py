@@ -5765,7 +5765,7 @@ class JSONBool(Func):
 
 
 class ArrayRemove(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "null_propagation": False}
 
 
 class ParameterizedAgg(AggFunc):

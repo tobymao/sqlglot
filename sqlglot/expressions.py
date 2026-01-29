@@ -3156,7 +3156,7 @@ class PartitionList(Expression):
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
 class RefreshTriggerProperty(Property):
     arg_types = {
-        "method": True,
+        "method": False,
         "kind": False,
         "every": False,
         "unit": False,

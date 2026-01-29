@@ -612,6 +612,10 @@ INT;
 SECOND(tbl.timestamp_col);
 INT;
 
+# dialect: hive, spark2, spark, databricks
+MD5(tbl.str_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

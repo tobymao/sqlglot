@@ -405,6 +405,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], e
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     ancestor_cast = expression.find_ancestor(exp.Cast, exp.Select)
+    ancestor_cast = None if isinstance(ancestor_cast, exp.Select) else ancestor_cast
 
     # Empty struct cast works with MAP() since DuckDB can't parse {}
     if not expression.expressions:

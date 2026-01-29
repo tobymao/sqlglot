@@ -5552,6 +5552,10 @@ FLOAT;
 CURRENT_TIMEZONE();
 NVARCHAR;
 
+# dialect: tsql
+SOUNDEX(tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

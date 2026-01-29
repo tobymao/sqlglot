@@ -404,11 +404,11 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDB.Parser], e
 
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
-    ancestor_cast = expression.find_ancestor(exp.Cast)
+    ancestor_cast = expression.find_ancestor(exp.Cast, exp.Select)
 
     # Empty struct cast works with MAP() since DuckDB can't parse {}
     if not expression.expressions:
-        if ancestor_cast and ancestor_cast.to.is_type(exp.DataType.Type.MAP):
+        if isinstance(ancestor_cast, exp.Cast) and ancestor_cast.to.is_type(exp.DataType.Type.MAP):
             return "MAP()"
 
     args: t.List[str] = []

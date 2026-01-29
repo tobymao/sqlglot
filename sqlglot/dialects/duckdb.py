@@ -1692,7 +1692,6 @@ class DuckDB(Dialect):
             exp.IsNullValue: lambda self, e: self.sql(
                 exp.func("JSON_TYPE", e.this).eq(exp.Literal.string("NULL"))
             ),
-            exp.Cast: lambda self, e: self._cast_to_binary_sql(e),
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),
@@ -2293,19 +2292,15 @@ class DuckDB(Dialect):
             value = expression.this
             format_arg = expression.args.get("format")
             is_safe = expression.args.get("safe")
-            is_binary = expression.is_type(exp.DataType.Type.BINARY)
+            is_binary = _is_binary(expression)
 
-            # Only transform if we have explicit format OR type annotation
-            # This preserves TO_BINARY in DuckDB->DuckDB identity transforms
             if not format_arg and not is_binary:
-                # No evidence this should be transformed - preserve as-is
                 func_name = "TRY_TO_BINARY" if is_safe else "TO_BINARY"
                 return self.func(func_name, value)
 
             # Snowflake defaults to HEX encoding when no format is specified
             fmt = format_arg.name.upper() if format_arg else "HEX"
 
-            # Transpile based on format
             if fmt in ("UTF-8", "UTF8"):
                 # DuckDB ENCODE always uses UTF-8, no charset parameter needed
                 result = self.func("ENCODE", value)
@@ -2319,8 +2314,6 @@ class DuckDB(Dialect):
                 else:
                     self.unsupported(f"format {fmt} is not supported")
                     result = self.func("TO_BINARY", value)
-
-            # Wrap with TRY() for TRY_TO_BINARY
             return f"TRY({result})" if is_safe else result
 
         def _greatest_least_sql(
@@ -2898,49 +2891,13 @@ class DuckDB(Dialect):
                     )
             return self.func("ENCODE", expression.this)
 
-        def _is_hex_string(self, s: str) -> bool:
-            """
-            Check if a string looks like a hex-encoded string.
-            Requirements: non-empty, even length, only hex digits (0-9, A-F, a-f).
-            """
-            if not s or len(s) % 2 != 0:
-                return False
-            return all(c in "0123456789ABCDEFabcdef" for c in s)
-
-        def _cast_to_binary_sql(self, expression: exp.Cast) -> str:
-            """
-            Handle CAST to BINARY/BLOB.
-
-            Snowflake treats string literals as hex when casting to BINARY.
-            Only apply UNHEX if the string looks like hex (all hex digits).
-            """
-            this = expression.this
-            if (
-                expression.is_type(
-                    exp.DataType.Type.BINARY,
-                    exp.DataType.Type.VARBINARY,
-                    exp.DataType.Type.BLOB,
-                )
-                and isinstance(this, exp.Literal)
-                and this.is_string
-            ):
-                # Get the string value (without quotes)
-                str_value = this.this
-                # Only use UNHEX if it looks like a hex string
-                if self._is_hex_string(str_value):
-                    return self.func("UNHEX", this)
-
-            return self.cast_sql(expression)
-
         def _is_binary_type(self, expression: exp.Expression) -> bool:
             """
             Check if an expression evaluates to a binary type (BINARY/VARBINARY/BLOB).
             Works with or without type annotation.
             """
             # Check type annotation using built-in delegation (handles Cast automatically)
-            if expression.is_type(
-                exp.DataType.Type.BINARY, exp.DataType.Type.VARBINARY, exp.DataType.Type.BLOB
-            ):
+            if _is_binary(expression):
                 return True
 
             # Check expression type for binary-producing functions (works without type annotation)

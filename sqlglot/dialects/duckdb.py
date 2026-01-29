@@ -345,6 +345,100 @@ def _date_delta_to_binary_interval_op(
     return _duckdb_date_delta_sql
 
 
+def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> str:
+    """
+    Transpile ARRAY_INSERT to DuckDB using LIST_CONCAT and slicing.
+
+    Handles:
+    - 0-based and 1-based indexing (normalizes to 0-based for calculations)
+    - Negative position conversion (requires array length)
+    - NULL propagation (source dialects return NULL, DuckDB creates single-element array)
+    - Assumes position is within bounds per user constraint
+
+    Note: All dialects that support ARRAY_INSERT (Snowflake, Spark, Databricks) have
+    ARRAY_FUNCS_PROPAGATES_NULLS=True, so we always assume source propagates NULLs.
+
+    Args:
+        expression: The ArrayInsert expression to transpile.
+
+    Returns:
+        SQL string implementing ARRAY_INSERT behavior.
+    """
+    this = expression.this
+    position = expression.args.get("position")
+    element = expression.expression
+    element_array = exp.Array(expressions=[element])
+    index_offset = expression.args.get("offset", 0)
+
+    if not position or not position.is_int:
+        self.unsupported("ARRAY_INSERT can only be transpiled with a literal position")
+        return self.func("ARRAY_INSERT", this, position, element)
+
+    pos_value = position.to_py()
+
+    # Normalize one-based indexing to zero-based for slice calculations
+    # Spark (1-based) → Snowflake (0-based):
+    #   Positive: pos=1 → pos=0 (subtract 1)
+    #   Negative: pos=-2 → pos=-1 (add 1)
+    # Example: Spark array_insert([a,b,c], -2, d) → [a,b,d,c] is same as Snowflake pos=-1
+    if pos_value > 0:
+        pos_value = pos_value - index_offset
+    elif pos_value < 0:
+        pos_value = pos_value + index_offset
+
+    # Build the appropriate list_concat expression based on position
+    if pos_value == 0:
+        # insert at beginning
+        concat_exprs = [element_array, this]
+    elif pos_value > 0:
+        # Positive position: LIST_CONCAT(arr[1:pos], [elem], arr[pos+1:])
+        # 0-based -> DuckDB 1-based slicing
+
+        # left slice: arr[1:pos]
+        slice_start = exp.Bracket(
+            this=this,
+            expressions=[
+                exp.Slice(this=exp.Literal.number(1), expression=exp.Literal.number(pos_value))
+            ],
+        )
+
+        # right slice: arr[pos+1:]
+        slice_end = exp.Bracket(
+            this=this, expressions=[exp.Slice(this=exp.Literal.number(pos_value + 1))]
+        )
+
+        concat_exprs = [slice_start, element_array, slice_end]
+    else:
+        # Negative position: arr[1:LEN(arr)+pos], [elem], arr[LEN(arr)+pos+1:]
+        # pos=-1 means insert before last element
+        arr_len = exp.Length(this=this)
+
+        # Calculate slice position: LEN(arr) + pos (e.g., LEN(arr) + (-1) = LEN(arr) - 1)
+        slice_end_pos = arr_len + exp.Literal.number(pos_value)
+        slice_start_pos = slice_end_pos + exp.Literal.number(1)
+
+        # left slice: arr[1:LEN(arr)+pos]
+        slice_start = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end_pos)],
+        )
+
+        # right slice: arr[LEN(arr)+pos+1:]
+        slice_end = exp.Bracket(this=this, expressions=[exp.Slice(this=slice_start_pos)])
+
+        concat_exprs = [slice_start, element_array, slice_end]
+
+    # All dialects that support ARRAY_INSERT propagate NULLs (Snowflake/Spark/Databricks)
+    # Wrap in CASE WHEN array IS NULL THEN NULL ELSE func_expr END
+    return self.sql(
+        exp.If(
+            this=exp.Is(this=this, expression=exp.Null()),
+            true=exp.Null(),
+            false=self.func("LIST_CONCAT", *concat_exprs),
+        )
+    )
+
+
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
@@ -1623,6 +1717,7 @@ class DuckDB(Dialect):
             ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
+            exp.ArrayInsert: _array_insert_sql,
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
             exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),

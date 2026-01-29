@@ -205,7 +205,7 @@ class StarRocks(MySQL):
 
             return self.expression(
                 exp.RefreshTriggerProperty,
-                method=method or "UNSPECIFIED",
+                method=method,
                 kind=kind,
                 starts=start,
                 every=every,
@@ -473,7 +473,7 @@ class StarRocks(MySQL):
             There is a little difference of the syntax between StarRocks and Doris.
             """
             method = self.sql(expression, "method")
-            method = f" {method}" if method and method.upper() != "UNSPECIFIED" else ""
+            method = f" {method}" if method else ""
             kind = self.sql(expression, "kind")
             kind = f" {kind}" if kind else ""
             starts = self.sql(expression, "starts")

@@ -1230,6 +1230,24 @@ FROM json_data, field_ids""",
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
             "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
         )
+
+        # Function parameter modes
+        self.validate_identity("CREATE FUNCTION foo(a INT)")
+        self.validate_identity("CREATE FUNCTION foo(IN a INT)")
+        self.validate_identity("CREATE FUNCTION foo(OUT a INT)")
+        self.validate_identity("CREATE FUNCTION foo(INOUT a INT)")
+        self.validate_identity("CREATE FUNCTION foo(VARIADIC a INT[])")
+        self.validate_identity("CREATE FUNCTION foo(out INT)")  # "out" as identifier
+        self.validate_identity("CREATE FUNCTION foo(inout VARCHAR)")  # "inout" as identifier
+        self.validate_identity("CREATE FUNCTION foo(variadic INT[])")  # "variadic" as identifier
+        self.validate_identity(
+            "CREATE FUNCTION foo(a INT, OUT b INT, INOUT c VARCHAR, VARIADIC d INT[])"
+        )
+        self.validate_identity("CREATE OR REPLACE FUNCTION foo(INOUT id UUID)")
+        self.validate_identity(
+            "CREATE OR REPLACE FUNCTION foo(id UUID, OUT created_at TIMESTAMPTZ)"
+        )
+
         self.validate_identity(
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
             "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",

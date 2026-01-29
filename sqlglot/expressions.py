@@ -2139,7 +2139,7 @@ class ComputedColumnConstraint(ColumnConstraintKind):
 
 # https://docs.oracle.com/en/database/other-databases/timesten/22.1/plsql-developer/examples-using-input-and-output-parameters-and-bind-variables.html#GUID-4B20426E-F93F-4835-88CB-6A79829A8D7F
 class InOutColumnConstraint(ColumnConstraintKind):
-    arg_types = {"input_": False, "output": False}
+    arg_types = {"input_": False, "output": False, "variadic": False}
 
 
 class Constraint(Expression):

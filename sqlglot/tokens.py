@@ -373,6 +373,7 @@ class TokenType(AutoName):
     ORDERED = auto()
     ORDINALITY = auto()
     OUT = auto()
+    INOUT = auto()
     OUTER = auto()
     OVER = auto()
     OVERLAPS = auto()

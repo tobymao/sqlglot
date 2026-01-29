@@ -2222,6 +2222,18 @@ class DuckDB(Dialect):
             """,
         )
 
+        # Template for ARRAYS_ZIP transpilation
+        # Snowflake pads to longest array; DuckDB LIST_ZIP truncates to shortest
+        # Uses RANGE + indexing to match Snowflake behavior
+        ARRAYS_ZIP_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE WHEN :null_check THEN NULL
+            WHEN :all_empty_check THEN [:empty_struct]
+            ELSE LIST_TRANSFORM(RANGE(0, :max_len), __i -> :transform_struct)
+            END
+            """,
+        )
+
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
             Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
@@ -2999,6 +3011,59 @@ class DuckDB(Dialect):
                 self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr
             )
             return f"({self.sql(result)})"
+
+        def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
+            args = expression.expressions
+
+            if not args:
+                # Return [{}] - using MAP([], []) since DuckDB can't represent empty structs
+                return self.sql(exp.array(exp.Map(keys=exp.array(), values=exp.array())))
+
+            # Build placeholder values for template
+            lengths = [exp.Length(this=arg) for arg in args]
+            max_len = (
+                lengths[0]
+                if len(lengths) == 1
+                else exp.Greatest(this=lengths[0], expressions=lengths[1:])
+            )
+
+            # Empty struct with same schema: {'$1': NULL, '$2': NULL, ...}
+            empty_struct = exp.func(
+                "STRUCT",
+                *[
+                    exp.PropertyEQ(this=exp.Literal.string(f"${i + 1}"), expression=exp.Null())
+                    for i in range(len(args))
+                ],
+            )
+
+            # Struct for transform: {'$1': COALESCE(arr1, [])[__i + 1], ...}
+            # COALESCE wrapping handles NULL arrays - prevents invalid NULL[i] syntax
+            index = exp.column("__i") + 1
+            transform_struct = exp.func(
+                "STRUCT",
+                *[
+                    exp.PropertyEQ(
+                        this=exp.Literal.string(f"${i + 1}"),
+                        expression=exp.func("COALESCE", arg, exp.array())[index],
+                    )
+                    for i, arg in enumerate(args)
+                ],
+            )
+
+            result = exp.replace_placeholders(
+                self.ARRAYS_ZIP_TEMPLATE.copy(),
+                null_check=exp.or_(*[arg.is_(exp.Null()) for arg in args]),
+                all_empty_check=exp.and_(
+                    *[
+                        exp.EQ(this=exp.Length(this=arg), expression=exp.Literal.number(0))
+                        for arg in args
+                    ]
+                ),
+                empty_struct=empty_struct,
+                max_len=max_len,
+                transform_struct=transform_struct,
+            )
+            return self.sql(result)
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

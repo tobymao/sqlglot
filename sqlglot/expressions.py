@@ -6198,6 +6198,11 @@ class ArrayUnionAgg(AggFunc):
     pass
 
 
+class ArraysZip(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class Avg(AggFunc):
     pass
 

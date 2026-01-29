@@ -84,24 +84,6 @@ class TestStarrocks(Validator):
             },
         )
 
-        # expression partitioning in MV, using exp.Tuple to build PartitionedByProperty
-        expr_partition = exp.PartitionedByProperty(
-            this=exp.Tuple(
-                expressions=[
-                    exp.Anonymous(this="FROM_UNIXTIME", expressions=[exp.column("ts")]),
-                    exp.column("region"),
-                ]
-            )
-        )
-        create = exp.Create(
-            this=exp.to_table("t"),
-            kind="VIEW",
-            properties=exp.Properties(expressions=[expr_partition]),
-        )
-        create_sql = create.sql(dialect="starrocks")
-        self.assertTrue("PARTITION BY (FROM_UNIXTIME(ts), region)" in create_sql)
-
-        # ORDER BY
         multi_column_cluster = exp.Cluster(
             expressions=[
                 exp.column("c"),
@@ -113,18 +95,25 @@ class TestStarrocks(Validator):
         single_column_cluster = exp.Cluster(expressions=[exp.column("c")])
         self.assertEqual(single_column_cluster.sql(dialect="starrocks"), "ORDER BY (c)")
 
-        # MV properties
         mv_properties = [
             # partitioning in MV
             "PARTITION BY (DATE_FUNC(ts), region) REFRESH ASYNC",
             "PARTITION BY (DATE_TRUNC('DAY', ts)) REFRESH ASYNC",
             "PARTITION BY (col1, col2) REFRESH ASYNC",
             # MV: Refresh trigger property
-            "REFRESH DEFERRED",
             "REFRESH ASYNC",
-            "REFRESH ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
-            "REFRESH DEFERRED ASYNC EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH IMMEDIATE",
+            "REFRESH DEFERRED",
+            "REFRESH DEFERRED ASYNC",
+            "REFRESH IMMEDIATE ASYNC",
+            "REFRESH DEFERRED MANUAL",
             "REFRESH IMMEDIATE MANUAL",
+            "REFRESH IMMEDIATE START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH IMMEDIATE ASYNC EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH DEFERRED START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH DEFERRED ASYNC EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH ASYNC EVERY (INTERVAL 5 MINUTE)",
         ]
         for properties in mv_properties:
             with self.subTest(f"Testing refresh clause: {properties}"):

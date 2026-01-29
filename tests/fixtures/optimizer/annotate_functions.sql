@@ -612,6 +612,10 @@ INT;
 SECOND(tbl.timestamp_col);
 INT;
 
+# dialect: hive, spark2, spark, databricks
+MD5(tbl.str_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -2146,6 +2150,10 @@ ARRAY;
 
 # dialect: snowflake
 ARRAY_REMOVE([1, 2, 3], 2);
+ARRAY;
+
+# dialect: snowflake
+ARRAYS_ZIP([1, 2], [3, 4]);
 ARRAY;
 
 # dialect: snowflake

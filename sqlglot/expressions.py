@@ -3156,7 +3156,7 @@ class PartitionList(Expression):
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
 class RefreshTriggerProperty(Property):
     arg_types = {
-        "method": True,
+        "method": False,
         "kind": False,
         "every": False,
         "unit": False,
@@ -6108,6 +6108,10 @@ class ArrayCompact(Func):
     pass
 
 
+class ArrayInsert(Func):
+    arg_types = {"this": True, "position": True, "expression": True, "offset": False}
+
+
 class ArrayConstructCompact(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True
@@ -6192,6 +6196,11 @@ class ArraySum(Func):
 
 class ArrayUnionAgg(AggFunc):
     pass
+
+
+class ArraysZip(Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
 
 
 class Avg(AggFunc):

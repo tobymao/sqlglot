@@ -189,21 +189,19 @@ class StarRocks(MySQL):
             REFRESH [DEFERRED | IMMEDIATE]
                     [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
             """
-            method = (
-                self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
-            ) or "UNSPECIFIED"
+            method = self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
             kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
-            start = None
-            every = None
-            unit = None
-            if kind:
-                start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
-                if self._match_text_seq("EVERY"):
-                    self._match_l_paren()
-                    self._match_text_seq("INTERVAL")
-                    every = self._parse_number()
-                    unit = self._parse_var(any_token=True)
-                    self._match_r_paren()
+            start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
+
+            if self._match_text_seq("EVERY"):
+                self._match_l_paren()
+                self._match_text_seq("INTERVAL")
+                every = self._parse_number()
+                unit = self._parse_var(any_token=True)
+                self._match_r_paren()
+            else:
+                every = None
+                unit = None
 
             return self.expression(
                 exp.RefreshTriggerProperty,
@@ -450,25 +448,20 @@ class StarRocks(MySQL):
             return super().create_sql(expression)
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
-            # For MVs, StarRocks needs outer parentheses.
-            create = expression.find_ancestor(exp.Create)
-            is_creating_view = create and create.kind == "VIEW"
-
             this = expression.this
-            if isinstance(this, (exp.Schema, exp.Tuple)):
-                # Parenstheses are ommited in latest versions
-                # https://docs.starrocks.io/docs/table_design/data_distribution/expression_partitioning/#syntax-1
-                # But for PK/Aggr tables with columns only, parentheses are required (there should be a bug)
-                # So, using parentheses for columns only is a better way.
-                are_all_columns = all(
+            if isinstance(this, exp.Schema):
+                # For MVs, StarRocks needs outer parentheses.
+                create = expression.find_ancestor(exp.Create)
+
+                sql = self.expressions(this, flat=True)
+                if (create and create.kind == "VIEW") or all(
                     isinstance(col, (exp.Column, exp.Identifier)) for col in this.expressions
-                )
-                exprs_str = self.expressions(this, flat=True)
-                if is_creating_view or are_all_columns:
-                    exprs_str = f"({exprs_str})"
-                return f"PARTITION BY {exprs_str}"
-            else:
-                return f"PARTITION BY {self.sql(this)}"
+                ):
+                    sql = f"({sql})"
+
+                return f"PARTITION BY {sql}"
+
+            return f"PARTITION BY {self.sql(this)}"
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             """Generate StarRocks ORDER BY clause for clustering."""
@@ -480,7 +473,7 @@ class StarRocks(MySQL):
             There is a little difference of the syntax between StarRocks and Doris.
             """
             method = self.sql(expression, "method")
-            method = f" {method}" if method and method.upper() != "UNSPECIFIED" else ""
+            method = f" {method}" if method else ""
             kind = self.sql(expression, "kind")
             kind = f" {kind}" if kind else ""
             starts = self.sql(expression, "starts")

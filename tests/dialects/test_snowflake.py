@@ -474,6 +474,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
         self.validate_identity("SELECT ARRAY_REMOVE([1, 2, 3], 2)")
+        self.validate_identity("SELECT ARRAYS_ZIP([1, 2, 3])")
+        self.validate_identity("SELECT ARRAYS_ZIP([1, 2, 3], ['a', 'b', 'c'], [10, 20, 30])")
         self.validate_identity("SELECT AI_AGG(review, 'Summarize the reviews')")
         self.validate_identity("SELECT AI_SUMMARIZE_AGG(review)")
         self.validate_identity("SELECT AI_CLASSIFY('text', ['travel', 'cooking'])")
@@ -3471,6 +3473,20 @@ class TestSnowflake(Validator):
                 "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
+            write={
+                "snowflake": "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL OR [4, 5] IS NULL THEN NULL WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 AND LENGTH([4, 5]) = 0 THEN [{'$1': NULL, '$2': NULL, '$3': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL OR LENGTH([4, 5]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4]), LENGTH([4, 5])) END), __i -> {'$1': COALESCE([1, 2], [])[__i + 1], '$2': COALESCE([3, 4], [])[__i + 1], '$3': COALESCE([4, 5], [])[__i + 1]}) END",
+            },
+        )
+        self.validate_all(
+            "ARRAYS_ZIP([1, 2, 3])",
+            write={
+                "snowflake": "ARRAYS_ZIP([1, 2, 3])",
+                "duckdb": "CASE WHEN [1, 2, 3] IS NULL THEN NULL WHEN LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, LENGTH([1, 2, 3])), __i -> {'$1': COALESCE([1, 2, 3], [])[__i + 1]}) END",
             },
         )
         self.validate_all(

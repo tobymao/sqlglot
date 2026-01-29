@@ -665,6 +665,27 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
+            write={
+                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT()",
+            write={
+                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT()",
+            },
+        )
+        self.validate_all(
+            "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
+            write={
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "snowflake": "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
+            },
+        )
+        self.validate_all(
             "SELECT ANY_VALUE(sample_column) FROM sample_table",
             write={
                 "duckdb": "SELECT ANY_VALUE(sample_column) FROM sample_table",
@@ -1372,6 +1393,8 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
@@ -1411,6 +1434,47 @@ class TestDuckDB(Validator):
                     "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
+
+    def test_array_insert(self):
+        # Test ARRAY_INSERT inserts at beginning
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([99], [1, 2, 3]) END",
+            read={
+                "": "ARRAY_INSERT([1, 2, 3], 0, 99)",
+                "snowflake": "ARRAY_INSERT([1, 2, 3], 0, 99)",
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), 1, 99)",
+            },
+        )
+
+        # Test ARRAY_INSERT inserts after first element
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3][1:1], [99], [1, 2, 3][2:]) END",
+            read={
+                "": "ARRAY_INSERT([1, 2, 3], 1, 99)",
+                "snowflake": "ARRAY_INSERT([1, 2, 3], 1, 99)",
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), 2, 99)",
+            },
+        )
+
+        # Test ARRAY_INSERT inserts at end
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3][1:3], [99], [1, 2, 3][4:]) END",
+            read={
+                "": "ARRAY_INSERT([1, 2, 3], 3, 99)",
+                "snowflake": "ARRAY_INSERT([1, 2, 3], 3, 99)",
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), 4, 99)",
+            },
+        )
+
+        # Test ARRAY_INSERT inserts before last element using negative position
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3][1:LENGTH([1, 2, 3]) + -1], [99], [1, 2, 3][LENGTH([1, 2, 3]) + -1 + 1:]) END",
+            read={
+                "": "ARRAY_INSERT([1, 2, 3], -1, 99)",
+                "snowflake": "ARRAY_INSERT([1, 2, 3], -1, 99)",
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), -2, 99)",
+            },
+        )
 
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")

@@ -6777,7 +6777,7 @@ class Parser(metaclass=_Parser):
             self._advance()
             end: t.Optional[exp.Expression] = -exp.Literal.number("1")
         else:
-            end = self._parse_unary()
+            end = self._parse_assignment()
         step = self._parse_unary() if self._match(TokenType.COLON) else None
         return self.expression(exp.Slice, this=this, expression=end, step=step)
 

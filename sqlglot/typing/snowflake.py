@@ -270,6 +270,7 @@ EXPRESSION_METADATA = {
             exp.ArrayConstructCompact,
             exp.ArrayPrepend,
             exp.ArrayRemove,
+            exp.ArraysZip,
             exp.ArrayUniqueAgg,
             exp.ArrayUnionAgg,
             exp.MapKeys,

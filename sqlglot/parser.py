@@ -645,6 +645,7 @@ class Parser(metaclass=_Parser):
         TokenType.FULL,
         TokenType.GET,
         TokenType.IDENTIFIER,
+        TokenType.INOUT,
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,

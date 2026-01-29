@@ -241,6 +241,27 @@ def build_array_concat(args: t.List, dialect: Dialect) -> exp.ArrayConcat:
     )
 
 
+def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
+    """
+    Builds ArrayRemove with NULL propagation semantics based on the dialect configuration.
+
+    Some dialects (Snowflake) return NULL when the removal value is NULL.
+    Others (DuckDB) may return empty array due to NULL comparison semantics.
+
+    Args:
+        args: Function arguments [array, value_to_remove]
+        dialect: The dialect to read ARRAY_FUNCS_PROPAGATES_NULLS from
+
+    Returns:
+        ArrayRemove expression with appropriate null_propagation flag
+    """
+    return exp.ArrayRemove(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        null_propagation=dialect.ARRAY_FUNCS_PROPAGATES_NULLS,
+    )
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -280,6 +301,7 @@ class Parser(metaclass=_Parser):
         "ARRAY_CAT": build_array_concat,
         "ARRAY_CONCAT": build_array_concat,
         "ARRAY_PREPEND": build_array_prepend,
+        "ARRAY_REMOVE": build_array_remove,
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,

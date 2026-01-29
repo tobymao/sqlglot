@@ -2153,20 +2153,53 @@ def filter_array_using_unnest(
     return self.sql(exp.Array(expressions=[filtered]))
 
 
-def remove_from_array_using_filter(
-    self: Generator, expression: exp.ArrayRemove | exp.ArrayCompact
-) -> str:
+def array_compact_sql(self: Generator, expression: exp.ArrayCompact) -> str:
     lambda_id = exp.to_identifier("_u")
-    if isinstance(expression, exp.ArrayRemove):
-        cond = exp.NEQ(this=lambda_id, expression=expression.expression)
-    else:
-        cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
-
+    cond = exp.Is(this=lambda_id, expression=exp.null()).not_()
     return self.sql(
         exp.ArrayFilter(
-            this=expression.this, expression=exp.Lambda(this=cond, expressions=[lambda_id])
+            this=expression.this,
+            expression=exp.Lambda(this=cond, expressions=[lambda_id]),
         )
     )
+
+
+def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
+    lambda_id = exp.to_identifier("_u")
+    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+
+    filter_sql = self.sql(
+        exp.ArrayFilter(
+            this=expression.this,
+            expression=exp.Lambda(this=cond, expressions=[lambda_id]),
+        )
+    )
+
+    # Handle NULL propagation for ArrayRemove
+    source_null_propagation = bool(expression.args.get("null_propagation"))
+    target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
+
+    # Source propagates NULLs (Snowflake), target doesn't (DuckDB):
+    # When removal value is NULL, return NULL instead of applying filter
+    if source_null_propagation and not target_null_propagation:
+        removal_value = expression.expression
+
+        # Optimization: skip wrapper if removal value is a non-NULL literal
+        # (e.g., 5, 'a', TRUE) or an array literal (e.g., [1, 2])
+        if (
+            isinstance(removal_value, exp.Literal) and not isinstance(removal_value, exp.Null)
+        ) or isinstance(removal_value, exp.Array):
+            return filter_sql
+
+        return self.sql(
+            exp.If(
+                this=exp.Is(this=removal_value, expression=exp.Null()),
+                true=exp.Null(),
+                false=filter_sql,
+            )
+        )
+
+    return filter_sql
 
 
 def to_number_with_nls_param(self: Generator, expression: exp.ToNumber) -> str:

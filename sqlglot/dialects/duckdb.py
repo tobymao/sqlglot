@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     array_append_sql,
+    array_compact_sql,
     array_concat_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -1711,7 +1712,7 @@ class DuckDB(Dialect):
                 generator=inline_array_unless_query,
             ),
             exp.ArrayAppend: array_append_sql("LIST_APPEND"),
-            exp.ArrayCompact: remove_from_array_using_filter,
+            exp.ArrayCompact: array_compact_sql,
             exp.ArrayConstructCompact: lambda self, e: self.sql(
                 exp.ArrayCompact(this=exp.Array(expressions=e.expressions))
             ),

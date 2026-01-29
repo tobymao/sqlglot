@@ -1476,6 +1476,31 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_array_remove(self):
+        # Test NULL propagation with column reference: Snowflake → DuckDB
+        self.validate_all(
+            "CASE WHEN target IS NULL THEN NULL ELSE LIST_FILTER(the_array, _u -> _u <> target) END",
+            read={
+                "snowflake": "ARRAY_REMOVE(the_array, target)",
+            },
+        )
+
+        # Test literal values: Snowflake → DuckDB
+        self.validate_all(
+            "LIST_FILTER([1, 2, 3], _u -> _u <> 2)",
+            read={
+                "snowflake": "ARRAY_REMOVE([1, 2, 3], 2)",
+            },
+        )
+
+        # Test NULL literal: Snowflake → DuckDB
+        self.validate_all(
+            "CASE WHEN NULL IS NULL THEN NULL ELSE LIST_FILTER([1, 2, 3], _u -> _u <> NULL) END",
+            read={
+                "snowflake": "ARRAY_REMOVE([1, 2, 3], NULL)",
+            },
+        )
+
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")
         self.validate_identity("SELECT CURRENT_TIMESTAMP")

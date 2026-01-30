@@ -5643,6 +5643,30 @@ ATAN(tbl.double_col);
 DOUBLE;
 
 # dialect: duckdb
+ACOSH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ACOSH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+ASINH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ASINH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+ATANH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ATANH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
 ISINF(tbl.float_col);
 BOOLEAN;
 

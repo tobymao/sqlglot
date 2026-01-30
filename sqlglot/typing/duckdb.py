@@ -14,6 +14,9 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
+            exp.Acosh,
+            exp.Asinh,
+            exp.Atanh,
             exp.Acos,
             exp.Asin,
             exp.Atan,

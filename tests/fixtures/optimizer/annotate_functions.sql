@@ -152,6 +152,9 @@ DOUBLE;
 CBRT(tbl.double_col);
 DOUBLE;
 
+ISINF(tbl.float_col);
+BOOLEAN;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -5611,3 +5614,7 @@ DOUBLE;
 # dialect: duckdb
 COS(tbl.double_col);
 DOUBLE;
+
+# dialect: duckdb
+ISINF(tbl.float_col);
+BOOLEAN;

@@ -27,4 +27,5 @@ EXPRESSION_METADATA = {
             exp.Tan,
         }
     },
+    exp.Quarter: {"returns": exp.DataType.Type.BIGINT},
 }

@@ -232,8 +232,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.BOOLEAN}
         for expr_type in {
-            exp.IsInf,
-            exp.IsNan,
             exp.JSONBool,
             exp.LaxBool,
         }

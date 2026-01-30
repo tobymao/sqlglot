@@ -186,6 +186,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_SXY(y, x)")
         self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
+
+        self.validate_all(
+            "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+            write={
+                "snowflake": "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+                "duckdb": "SELECT JSON_TYPE(JSON('[1,2,3]')) = 'ARRAY'",
+            },
+        )
         self.validate_all(
             "SELECT IFF(x > 5, 10, 20)",
             write={

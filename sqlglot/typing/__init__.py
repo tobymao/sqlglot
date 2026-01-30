@@ -54,6 +54,8 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.EndsWith,
             exp.Exists,
             exp.In,
+            exp.IsInf,
+            exp.IsNan,
             exp.LogicalAnd,
             exp.LogicalOr,
             exp.RegexpLike,

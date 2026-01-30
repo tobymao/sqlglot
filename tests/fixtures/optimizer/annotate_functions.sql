@@ -152,6 +152,12 @@ DOUBLE;
 CBRT(tbl.double_col);
 DOUBLE;
 
+ISINF(tbl.float_col);
+BOOLEAN;
+
+ISNAN(tbl.float_col);
+BOOLEAN;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -5556,6 +5562,10 @@ NVARCHAR;
 SOUNDEX(tbl.str_col);
 VARCHAR;
 
+# dialect: tsql
+STUFF(tbl.str_col, tbl.int_col, tbl.int_col, tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- MySQL
 --------------------------------------
@@ -5587,3 +5597,47 @@ VARCHAR;
 # dialect: duckdb 
 GET_BIT(tbl.str_col, tbl.int_col);
 INT;
+
+# dialect: duckdb
+FACTORIAL(tbl.int_col);
+HUGEINT;
+
+# dialect: duckdb
+SIN(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+SIN(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+COS(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+COS(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+COT(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+COT(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+TAN(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+TAN(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+ISINF(tbl.float_col);
+BOOLEAN;
+
+# dialect: duckdb
+RANDOM();
+DOUBLE;

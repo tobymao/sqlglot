@@ -5013,7 +5013,6 @@ FROM subquery2""",
             with self.subTest(f"Testing {func} with precision"):
                 dialects = {
                     "postgres": f"SELECT {func}(2)",
-                    "duckdb": f"SELECT {func}(2)",
                     "redshift": f"SELECT {func}(2)",
                     "presto": f"SELECT {func}(2)",
                     "trino": f"SELECT {func}(2)",

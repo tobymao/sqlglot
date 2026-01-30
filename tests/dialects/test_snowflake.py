@@ -2772,6 +2772,21 @@ class TestSnowflake(Validator):
         self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
 
         self.validate_all(
+            "SELECT CURRENT_TIME(4)",
+            write={
+                "snowflake": "SELECT CURRENT_TIME(4)",
+                "duckdb": "SELECT LOCALTIME",
+            },
+        )
+
+        self.validate_all(
+            "SELECT CURRENT_TIME",
+            write={
+                "snowflake": "SELECT CURRENT_TIME",
+                "duckdb": "SELECT LOCALTIME",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_FROM_PARTS(2026, 1, 100)",
             write={
                 "snowflake": "SELECT DATE_FROM_PARTS(2026, 1, 100)",

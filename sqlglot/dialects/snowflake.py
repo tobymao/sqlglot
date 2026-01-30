@@ -801,6 +801,11 @@ class Snowflake(Dialect):
 
         COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_TIME: exp.Localtime,
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.AddMonths(
@@ -809,6 +814,7 @@ class Snowflake(Dialect):
                 preserve_end_of_month=True,
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "CURRENT_TIME": lambda args: exp.Localtime(this=seq_get(args, 0)),
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
@@ -1603,6 +1609,9 @@ class Snowflake(Dialect):
             exp.CurrentTimestamp: lambda self, e: self.func("SYSDATE")
             if e.args.get("sysdate")
             else self.function_fallback_sql(e),
+            exp.Localtime: lambda self, e: self.func("CURRENT_TIME", e.this)
+            if e.this
+            else "CURRENT_TIME",
             exp.Localtimestamp: lambda self, e: self.func("CURRENT_TIMESTAMP", e.this)
             if e.this
             else "CURRENT_TIMESTAMP",

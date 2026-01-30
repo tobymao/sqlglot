@@ -1800,6 +1800,9 @@ class DuckDB(Dialect):
             exp.IsNullValue: lambda self, e: self.sql(
                 exp.func("JSON_TYPE", e.this).eq(exp.Literal.string("NULL"))
             ),
+            exp.IsArray: lambda self, e: self.sql(
+                exp.func("JSON_TYPE", e.this).eq(exp.Literal.string("ARRAY"))
+            ),
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
             exp.JSONBExists: rename_func("JSON_EXISTS"),

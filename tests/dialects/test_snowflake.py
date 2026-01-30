@@ -186,6 +186,29 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT REGR_SXY(y, x)")
         self.validate_identity("SELECT REGR_SYY(y, x)")
         self.validate_identity("SELECT REGR_SLOPE(y, x)")
+
+        # IS_ARRAY function tests - Snowflake to DuckDB transpilation
+        self.validate_all(
+            "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+            write={
+                "snowflake": "SELECT IS_ARRAY(PARSE_JSON('[1,2,3]'))",
+                "duckdb": "SELECT JSON_TYPE(JSON('[1,2,3]')) = 'ARRAY'",
+            },
+        )
+        self.validate_all(
+            'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+            write={
+                "snowflake": 'SELECT IS_ARRAY(PARSE_JSON(\'{"key":"value"}\'))',
+                "duckdb": "SELECT JSON_TYPE(JSON('{\"key\":\"value\"}')) = 'ARRAY'",
+            },
+        )
+        self.validate_all(
+            "SELECT IS_ARRAY(NULL)",
+            write={
+                "snowflake": "SELECT IS_ARRAY(NULL)",
+                "duckdb": "SELECT JSON_TYPE(NULL) = 'ARRAY'",
+            },
+        )
         self.validate_all(
             "SELECT IFF(x > 5, 10, 20)",
             write={

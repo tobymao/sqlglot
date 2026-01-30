@@ -5157,19 +5157,31 @@ FROM SEMANTIC_VIEW(
 
     def test_sha1(self):
         # DuckDB's SHA1 only accepts VARCHAR or BLOB, Snowflake accepts any type
-        self.validate_identity("SHA1('text')")
-        self.validate_all(
-            "SHA1(123)",
-            write={
-                "snowflake": "SHA1(123)",
-                "duckdb": "SHA1(CAST(123 AS TEXT))",
-            },
-        )
         self.validate_all(
             "SHA1(x)",
             write={
                 "snowflake": "SHA1(x)",
                 "duckdb": "SHA1(x)",
+            },
+        )
+
+        expr = self.validate_identity("SHA1('text')")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "SHA1('text')")
+        self.assertEqual(annotated.sql("snowflake"), "SHA1('text')")
+
+        self.validate_all(
+            "SHA1(X'002A'::BINARY)",
+            write={
+                "snowflake": "SHA1(CAST(x'002A' AS BINARY))",
+                "duckdb": "SHA1(CAST(UNHEX('002A') AS BLOB))",
+            },
+        )
+        self.validate_all(
+            "SHA1(123)",
+            write={
+                "snowflake": "SHA1(123)",
+                "duckdb": "SHA1(CAST(123 AS TEXT))",
             },
         )
         self.validate_all(

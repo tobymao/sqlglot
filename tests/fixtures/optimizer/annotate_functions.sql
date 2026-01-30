@@ -155,6 +155,9 @@ DOUBLE;
 ISINF(tbl.float_col);
 BOOLEAN;
 
+ISNAN(tbl.float_col);
+BOOLEAN;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

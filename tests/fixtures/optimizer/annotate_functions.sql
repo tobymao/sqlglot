@@ -5556,6 +5556,10 @@ NVARCHAR;
 SOUNDEX(tbl.str_col);
 VARCHAR;
 
+# dialect: tsql
+STUFF(tbl.str_col, tbl.int_col, tbl.int_col, tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

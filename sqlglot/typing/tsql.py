@@ -18,7 +18,13 @@ EXPRESSION_METADATA = {
             exp.Tan,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        for expr_type in {
+            exp.Soundex,
+            exp.Stuff,
+        }
+    },
     exp.CurrentTimezone: {"returns": exp.DataType.Type.NVARCHAR},
     exp.Radians: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
-    exp.Soundex: {"returns": exp.DataType.Type.VARCHAR},
 }

@@ -1636,7 +1636,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
-            exp.ByteLength: lambda self, e: self.bytelength_sql(e),
+            exp.ByteLength: lambda self, e: self.func("OCTET_LENGTH", e.this),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -1676,7 +1676,7 @@ class DuckDB(Dialect):
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
             exp.DiToDate: lambda self,
             e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
-            exp.Encode: lambda self, e: self._encode_sql(e),
+            exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE"),
             exp.EqualNull: lambda self, e: self.sql(
                 exp.NullSafeEQ(this=e.this, expression=e.expression)
             ),
@@ -2850,9 +2850,10 @@ class DuckDB(Dialect):
             blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
             varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
-            # Build the CASE expression using expression builders to avoid premature string conversion
             typeof_call = exp.Anonymous(this="TYPEOF", expressions=[arg])
-            octet_length_call = exp.Anonymous(this="OCTET_LENGTH", expressions=[blob])
+            octet_length_call = exp.Anonymous(
+                this="OCTET_LENGTH", expressions=[blob]
+            )  # use the AST for byte_length, use rnamefunc
 
             case = (
                 exp.case(typeof_call)
@@ -2877,22 +2878,6 @@ class DuckDB(Dialect):
             levenshtein = exp.Levenshtein(this=this, expression=expr)
             return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
 
-        def _encode_sql(self, expression: exp.Encode) -> str:
-            """
-            Handle ENCODE function.
-            DuckDB only supports UTF-8 encoding.
-            """
-            if isinstance(charset := expression.args.get("charset"), exp.Literal):
-                charset_value = charset.name.upper()
-                if charset_value not in ("UTF-8", "UTF8"):
-                    self.unsupported(
-                        f"ENCODE with charset '{charset_value}' is not supported in DuckDB"
-                    )
-            return self.func("ENCODE", expression.this)
-
-        def bytelength_sql(self, expression: exp.ByteLength) -> str:
-            return self.func("OCTET_LENGTH", expression.this)
-
         def pad_sql(self, expression: exp.Pad) -> str:
             """
             Handle RPAD/LPAD for VARCHAR and BINARY types.
@@ -2903,19 +2888,18 @@ class DuckDB(Dialect):
             string_arg = expression.this
             fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
 
-            # Check if operating on BINARY: either has type annotation or is binary-producing function
             is_binary = (
-                _is_binary(string_arg)
-                or _is_binary(fill_arg)
-                or isinstance(string_arg, (exp.ToBinary, exp.Encode))
-                or isinstance(fill_arg, (exp.ToBinary, exp.Encode))
+                    _is_binary(string_arg)
+                    or _is_binary(fill_arg)
+                    or isinstance(string_arg, (exp.ToBinary, exp.Encode))
+                    or isinstance(fill_arg, (exp.ToBinary, exp.Encode))
             )
             if is_binary:
                 length_arg = expression.expression
                 is_left = expression.args.get("is_left")
 
                 input_len = exp.func("OCTET_LENGTH", string_arg)
-                chars_needed = exp.Sub(this=length_arg, expression=input_len)
+                chars_needed = length_arg - input_len
                 pad_count = exp.Greatest(
                     this=exp.Literal.number(0), expressions=[chars_needed], ignore_nulls=True
                 )

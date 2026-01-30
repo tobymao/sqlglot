@@ -5621,3 +5621,7 @@ DOUBLE;
 # dialect: duckdb
 ISINF(tbl.float_col);
 BOOLEAN;
+
+# dialect: duckdb
+RANDOM();
+DOUBLE;

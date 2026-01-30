@@ -5582,6 +5582,10 @@ VARCHAR;
 DAYOFWEEK(tbl.date_col);
 INT;
 
+# dialect: mysql
+QUARTER(tbl.date_col);
+INT;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

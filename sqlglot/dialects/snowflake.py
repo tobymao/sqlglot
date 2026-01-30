@@ -892,7 +892,6 @@ class Snowflake(Dialect):
             ),
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
-            "IS_ARRAY": exp.IsArray.from_arg_list,
             "MD5_HEX": exp.MD5.from_arg_list,
             "MD5_BINARY": exp.MD5Digest.from_arg_list,
             "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,

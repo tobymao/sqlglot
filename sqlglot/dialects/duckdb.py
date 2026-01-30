@@ -3008,14 +3008,14 @@ class DuckDB(Dialect):
 
             # If type is compatible with DuckDB or is an unknown type, use directly
             if (
-                arg.is_type(*exp.DataType.TEXT_TYPES)
-                or _is_binary(arg)
-                or (not isinstance(arg, exp.Literal) and not arg.type)
+                arg.type
+                and arg.type.this != exp.DataType.Type.UNKNOWN
+                and not arg.is_type(*exp.DataType.TEXT_TYPES)
+                and not _is_binary(arg)
             ):
-                return self.func("SHA1", arg)
+                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
-            # Otherwise, cast to string
-            return self.func("SHA1", exp.cast(arg, exp.DataType.Type.VARCHAR))
+            return self.func("SHA1", arg)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

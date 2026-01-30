@@ -41,7 +41,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     remove_from_array_using_filter,
     sha2_digest_sql,
-    sha256_sql,
     strposition_sql,
     str_to_time_sql,
     timestrtotime_sql,
@@ -1843,7 +1842,6 @@ class DuckDB(Dialect):
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
             exp.SHA: rename_func("SHA1"),
-            exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -2996,6 +2994,13 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
+
+        def sha2_sql(self, expression: exp.SHA2) -> str:
+            length = expression.text("length")
+            # DuckDB only supports SHA256, not SHA224/SHA384/SHA512
+            if length in ("224", "384", "512"):
+                self.unsupported(f"SHA2 with digest size {length} is not supported in DuckDB")
+            return self.func("SHA256", expression.this)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

@@ -5626,6 +5626,13 @@ DOUBLE;
 COT(tbl.double_col);
 DOUBLE;
 
+TAN(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+TAN(tbl.double_col);
+DOUBLE;
+
 # dialect: duckdb
 ISINF(tbl.float_col);
 BOOLEAN;

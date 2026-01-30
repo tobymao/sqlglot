@@ -17,6 +17,7 @@ EXPRESSION_METADATA = {
             exp.Cos,
             exp.Cot,
             exp.Sin,
+            exp.Tan,
         }
     },
 }

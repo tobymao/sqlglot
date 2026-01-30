@@ -548,17 +548,15 @@ class Postgres(Dialect):
                 return None
 
             mode_token = self._curr
-            start_index = self._index
 
             # Check Pattern 1: MODE TYPE
             # Try parsing next token as a built-in type (not UDT)
             # If successful, the keyword is an identifier, not a mode
-            self._advance()
             is_followed_by_builtin_type = self._try_parse(
-                lambda: self._parse_types(check_func=False, allow_identifiers=False)
+                lambda: self._advance()  # type: ignore
+                or self._parse_types(check_func=False, allow_identifiers=False),
+                retreat=True,
             )
-            self._retreat(start_index)
-
             if is_followed_by_builtin_type:
                 return None  # Pattern: "out INT" → out is parameter name
 
@@ -568,11 +566,11 @@ class Postgres(Dialect):
             if self._next.token_type not in self.ID_VAR_TOKENS:
                 return None
 
-            self._advance(2)  # Move past mode keyword and parameter name
             is_followed_by_any_type = self._try_parse(
-                lambda: self._parse_types(check_func=False, allow_identifiers=True)
+                lambda: self._advance(2)  # type: ignore
+                or self._parse_types(check_func=False, allow_identifiers=True),
+                retreat=True,
             )
-            self._retreat(start_index)
 
             if is_followed_by_any_type:
                 return mode_token.token_type  # Pattern: "OUT x INT" → OUT is mode
@@ -597,16 +595,8 @@ class Postgres(Dialect):
             )
 
         def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
-            """
-            Parse PostgreSQL function parameter with mode support.
-
-            Handles: IN, OUT, INOUT, VARIADIC parameter modes.
-            Uses simplified pattern matching to disambiguate mode keywords from identifiers.
-            """
-            # Parse parameter mode (if present)
             param_mode = self._parse_parameter_mode()
 
-            # Advance past mode keyword if detected
             if param_mode:
                 self._advance()
 

@@ -5619,6 +5619,14 @@ COS(tbl.double_col);
 DOUBLE;
 
 # dialect: duckdb
+ACOS(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ACOS(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
 COT(tbl.int_col);
 DOUBLE;
 

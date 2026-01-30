@@ -5599,3 +5599,11 @@ DOUBLE;
 # dialect: duckdb
 SIN(tbl.double_col);
 DOUBLE;
+
+# dialect: duckdb
+COS(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+COS(tbl.double_col);
+DOUBLE;

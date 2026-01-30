@@ -3007,12 +3007,11 @@ class DuckDB(Dialect):
             arg = expression.this
 
             # If type is compatible with DuckDB or is an unknown type, use directly
-            if arg.is_type(
-                *exp.DataType.TEXT_TYPES,
-                exp.DataType.Type.BINARY,
-                exp.DataType.Type.VARBINARY,
-                exp.DataType.Type.BLOB,
-            ) or (not isinstance(arg, exp.Literal) and not arg.type):
+            if (
+                arg.is_type(*exp.DataType.TEXT_TYPES)
+                or _is_binary(arg)
+                or (not isinstance(arg, exp.Literal) and not arg.type)
+            ):
                 return self.func("SHA1", arg)
 
             # Otherwise, cast to string

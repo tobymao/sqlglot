@@ -5587,3 +5587,7 @@ VARCHAR;
 # dialect: duckdb 
 GET_BIT(tbl.str_col, tbl.int_col);
 INT;
+
+# dialect: duckdb
+FACTORIAL(tbl.int_col);
+HUGEINT

@@ -51,6 +51,7 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_date_unit, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.parser import binary_range_parser
+from sqlglot.typing.duckdb import EXPRESSION_METADATA
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
@@ -1288,6 +1289,8 @@ class DuckDB(Dialect):
         **Dialect.DATE_PART_MAPPING,
         "DAYOFWEEKISO": "ISODOW",
     }
+
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     DATE_PART_MAPPING.pop("WEEKDAY")
 

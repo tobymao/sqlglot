@@ -18,4 +18,10 @@ EXPRESSION_METADATA = {
             exp.Sin,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.BOOLEAN}
+        for expr_type in {
+            exp.IsInf,
+        }
+    },
 }

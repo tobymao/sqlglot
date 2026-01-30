@@ -5156,7 +5156,6 @@ FROM SEMANTIC_VIEW(
         self.validate_identity("MD5_NUMBER_UPPER64(col)")
 
     def test_sha1(self):
-        # DuckDB's SHA1 only accepts VARCHAR or BLOB, Snowflake accepts any type
         self.validate_all(
             "SHA1(x)",
             write={

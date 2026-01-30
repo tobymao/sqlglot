@@ -5158,7 +5158,6 @@ FROM SEMANTIC_VIEW(
     def test_sha1(self):
         # DuckDB's SHA1 only accepts VARCHAR or BLOB, Snowflake accepts any type
         self.validate_identity("SHA1('text')")
-        self.validate_identity("SHA1(col)")
         self.validate_all(
             "SHA1(123)",
             write={

@@ -5611,6 +5611,14 @@ SIN(tbl.double_col);
 DOUBLE;
 
 # dialect: duckdb
+ASIN(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ASIN(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
 COS(tbl.int_col);
 DOUBLE;
 

@@ -5590,4 +5590,12 @@ INT;
 
 # dialect: duckdb
 FACTORIAL(tbl.int_col);
-HUGEINT
+HUGEINT;
+
+# dialect: duckdb
+SIN(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+SIN(tbl.double_col);
+DOUBLE;

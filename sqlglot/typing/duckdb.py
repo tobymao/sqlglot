@@ -17,6 +17,8 @@ EXPRESSION_METADATA = {
             exp.Acosh,
             exp.Asinh,
             exp.Atanh,
+            exp.Acos,
+            exp.Asin,
             exp.Atan,
             exp.Cos,
             exp.Cot,

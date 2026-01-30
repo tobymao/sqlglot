@@ -11,4 +11,10 @@ EXPRESSION_METADATA = {
             exp.Factorial,
         }
     },
+    **{
+        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        for expr_type in {
+            exp.Sin,
+        }
+    },
 }

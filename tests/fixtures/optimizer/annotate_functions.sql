@@ -5626,6 +5626,7 @@ DOUBLE;
 COT(tbl.double_col);
 DOUBLE;
 
+# dialect: duckdb
 TAN(tbl.int_col);
 DOUBLE;
 

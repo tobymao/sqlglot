@@ -5582,6 +5582,38 @@ VARCHAR;
 DAYOFWEEK(tbl.date_col);
 INT;
 
+# dialect: mysql
+SIN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
+SIN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+COS(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+COS(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+TAN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+TAN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+COT(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+COT(tbl.double_col);
+DOUBLE;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

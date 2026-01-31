@@ -7,7 +7,7 @@ EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{expr_type: {"returns": exp.DataType.Type.VARCHAR} for expr_type in (exp.Elt,)},
     **{
-        expr_type: {"returns": exp.DataType.Type.INT} 
+        expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
             exp.DayOfWeek,
             exp.Second,

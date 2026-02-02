@@ -5571,6 +5571,14 @@ VARCHAR;
 --------------------------------------
 
 # dialect: mysql
+DEGREES(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql
+DEGREES(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
 LOCALTIME;
 DATETIME;
 

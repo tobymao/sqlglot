@@ -5759,6 +5759,22 @@ ATAN(tbl.double_col);
 DOUBLE;
 
 # dialect: duckdb
+ATAN2(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ATAN2(tbl.int_col, tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+ATAN2(tbl.double_col, tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+ATAN2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
 ACOSH(tbl.int_col);
 DOUBLE;
 

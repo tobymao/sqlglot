@@ -1931,6 +1931,11 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_sha1(self):
+        # Round-trip: DuckDB SHA1 should not add unnecessary casts
+        self.validate_identity("SHA1('foo')")
+        self.validate_identity("SHA1(x)")
+
     def test_rename_table(self):
         self.validate_all(
             "ALTER TABLE db.t1 RENAME TO db.t2",

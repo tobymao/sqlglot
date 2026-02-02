@@ -197,6 +197,11 @@ TBLPROPERTIES (
             },
         )
 
+    def test_trunc(self):
+        # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
+        self.parse_one("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(date_col, 'YEAR')").assert_is(exp.DateTrunc)
+
     @mock.patch("sqlglot.generator.logger")
     def test_hint(self, logger):
         self.validate_all(

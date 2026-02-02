@@ -303,13 +303,33 @@ def _build_trunc(args: t.List) -> exp.Expression:
     this = seq_get(args, 0)
     second = seq_get(args, 1)
 
-    # Only date/time variant has string literal as 2nd arg
-    if second and isinstance(second, exp.Literal) and second.is_string:
-        if this and not this.type:
-            this = annotate_types(this, dialect="snowflake")
+    # Date/time variant detection
+    has_string_unit = second and isinstance(second, exp.Literal) and second.is_string
+    has_null_unit = second and isinstance(second, exp.Null)
 
-        if this and this.is_type(*DATE_TIME_TYPES):
-            return _date_trunc_to_time([second, this])
+    # Early return for definite numeric TRUNC
+    if not (has_string_unit or has_null_unit):
+        return exp.func("TRUNC", *args)
+
+    # Annotate types if needed
+    if this and not this.type:
+        this = annotate_types(this, dialect="snowflake")
+
+    # Early return if no first argument
+    if not this:
+        return exp.func("TRUNC", *args)
+
+    # Check type once
+    is_date_time = this.is_type(*DATE_TIME_TYPES)
+    is_null_value = isinstance(this, exp.Null)
+
+    # Determine if this is date/time TRUNC
+    is_date_time_trunc = (has_string_unit and (is_date_time or is_null_value)) or (
+        has_null_unit and is_date_time
+    )
+
+    if is_date_time_trunc:
+        return _date_trunc_to_time([second, this])
 
     return exp.func("TRUNC", *args)
 

@@ -5591,6 +5591,10 @@ DAYOFWEEK(tbl.date_col);
 INT;
 
 # dialect: mysql
+MONTH(tbl.date_col);
+INT;
+
+# dialect: mysql
 QUARTER(tbl.date_col);
 INT;
 

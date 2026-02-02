@@ -1,6 +1,131 @@
 Changelog
 =========
 
+## [v28.8.0] - 2026-02-02
+### :boom: BREAKING CHANGES
+- due to [`9d2a12a`](https://github.com/tobymao/sqlglot/commit/9d2a12a650afcdaffe780144af26a0f21a6ec4e6) - Annotate SIN for DuckDB *(PR [#6892](https://github.com/tobymao/sqlglot/pull/6892) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate SIN for DuckDB (#6892)
+
+- due to [`d8e13ae`](https://github.com/tobymao/sqlglot/commit/d8e13ae8c3f14495fd7ea356bf53e338e6a5347e) - Annotate COS for DuckDB *(PR [#6893](https://github.com/tobymao/sqlglot/pull/6893) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate COS for DuckDB (#6893)
+
+- due to [`25f718c`](https://github.com/tobymao/sqlglot/commit/25f718cea3a62034d6a5c263e80e5b0363e3f394) - Annotate STUFF for TSQL *(PR [#6890](https://github.com/tobymao/sqlglot/pull/6890) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate STUFF for TSQL (#6890)
+
+- due to [`bec45a5`](https://github.com/tobymao/sqlglot/commit/bec45a55377e9802fe5c572371834e12d760f180) - Annotate `ISINF(expr)` for DuckDB *(PR [#6894](https://github.com/tobymao/sqlglot/pull/6894) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `ISINF(expr)` for DuckDB (#6894)
+
+- due to [`aab8243`](https://github.com/tobymao/sqlglot/commit/aab8243a19d776c65473e67a2dcb1fb71af19175) - Annotate ISNAN(expr) for Base *(PR [#6895](https://github.com/tobymao/sqlglot/pull/6895) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ISNAN(expr) for Base (#6895)
+
+- due to [`482128e`](https://github.com/tobymao/sqlglot/commit/482128e30aa0d607b7e5fcd2bde142eefcf02c4a) - Annotate TAN for DuckDB *(PR [#6896](https://github.com/tobymao/sqlglot/pull/6896) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate TAN for DuckDB (#6896)
+
+- due to [`a6d7f6e`](https://github.com/tobymao/sqlglot/commit/a6d7f6e1ef9cd5d22598a3e21cc69162b07c28a1) - Annotate `COT` for DuckDB *(PR [#6897](https://github.com/tobymao/sqlglot/pull/6897) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `COT` for DuckDB (#6897)
+
+- due to [`2ec7c2b`](https://github.com/tobymao/sqlglot/commit/2ec7c2b4a58bad3e736d021e7e414d00e7c16187) - Annotate RANDOM() for DuckDB *(PR [#6898](https://github.com/tobymao/sqlglot/pull/6898) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate RANDOM() for DuckDB (#6898)
+
+- due to [`a0b053d`](https://github.com/tobymao/sqlglot/commit/a0b053d10c5d7303f0f335be8ffe235f5a8727d9) - Annotate ATAN(expr) for DuckDB *(PR [#6900](https://github.com/tobymao/sqlglot/pull/6900) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ATAN(expr) for DuckDB (#6900)
+
+- due to [`f39b514`](https://github.com/tobymao/sqlglot/commit/f39b514936e6188799bf1c392937050d8aef6ac8) - Annotate ASIN(expr) for DuckDB *(PR [#6901](https://github.com/tobymao/sqlglot/pull/6901) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ASIN(expr) for DuckDB (#6901)
+
+- due to [`5fb98a1`](https://github.com/tobymao/sqlglot/commit/5fb98a1a0106b2e4740f8ae72fabeb424dacd07e) - Annotate ACOS(expr) for DuckDB *(PR [#6902](https://github.com/tobymao/sqlglot/pull/6902) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ACOS(expr) for DuckDB (#6902)
+
+- due to [`9e95d95`](https://github.com/tobymao/sqlglot/commit/9e95d95578ac8cb07076322c9f099467f17efb3f) - Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB *(PR [#6903](https://github.com/tobymao/sqlglot/pull/6903) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB (#6903)
+
+- due to [`a8fef30`](https://github.com/tobymao/sqlglot/commit/a8fef30ed6760bd095bd2c6b156ea7cd80c322d0) - Annotate DEGREES(expr) for MySQL *(PR [#6913](https://github.com/tobymao/sqlglot/pull/6913) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DEGREES(expr) for MySQL (#6913)
+
+- due to [`887d03a`](https://github.com/tobymao/sqlglot/commit/887d03af0fa10aef492cb54d8b48e5fc3a1ee6d1) - Annotate arc trignometric func for MySQL *(PR [#6912](https://github.com/tobymao/sqlglot/pull/6912) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate arc trignometric func for MySQL (#6912)
+
+- due to [`dc6bc5a`](https://github.com/tobymao/sqlglot/commit/dc6bc5af83dc6c2d9dee3ae82b7792fdc285450e) - Annotate SIN, COS, TAN, COT for MySQL *(PR [#6911](https://github.com/tobymao/sqlglot/pull/6911) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate SIN, COS, TAN, COT for MySQL (#6911)
+
+- due to [`6cae76f`](https://github.com/tobymao/sqlglot/commit/6cae76fb6de11b2b49db0bb5409495ddb676da05) - Annotate `SECOND(expr)` to `INT` *(PR [#6910](https://github.com/tobymao/sqlglot/pull/6910) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `SECOND(expr)` to `INT` (#6910)
+
+- due to [`bd595a6`](https://github.com/tobymao/sqlglot/commit/bd595a6afb724ed1e5ca64122bf1dd69a3adc473) - Annotate QUARTER(expr) for DuckDB *(PR [#6905](https://github.com/tobymao/sqlglot/pull/6905) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate QUARTER(expr) for DuckDB (#6905)
+
+- due to [`8e625b5`](https://github.com/tobymao/sqlglot/commit/8e625b5fae51659c2317a9c7a732114e047da9e0) - Annotate ATAN2 for DuckDB *(PR [#6904](https://github.com/tobymao/sqlglot/pull/6904) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ATAN2 for DuckDB (#6904)
+
+- due to [`ea678d2`](https://github.com/tobymao/sqlglot/commit/ea678d26dee0bfb223660b587744c6635c036f2f) - support transpilation of CURRENT_TIME from snowflake to duckdb *(PR [#6909](https://github.com/tobymao/sqlglot/pull/6909) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of CURRENT_TIME from snowflake to duckdb (#6909)
+
+- due to [`8e4f4b3`](https://github.com/tobymao/sqlglot/commit/8e4f4b386cd5f7484bbe32c9d8921e2fef4b02c1) - Annotate QUARTER(expr) to INT instead of TINYINT *(PR [#6906](https://github.com/tobymao/sqlglot/pull/6906) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate QUARTER(expr) to INT instead of TINYINT (#6906)
+
+- due to [`a94e45a`](https://github.com/tobymao/sqlglot/commit/a94e45a3c55f744b20c35c2a5cc61bab0a3678d7) - Annotate MONTH(expr) to INT instead of TINYINT *(PR [#6907](https://github.com/tobymao/sqlglot/pull/6907) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate MONTH(expr) to INT instead of TINYINT (#6907)
+
+- due to [`db51b75`](https://github.com/tobymao/sqlglot/commit/db51b7517229df2c6cf446962a9732e548a168f5) - Moved `YEAR`, `QUARTER`, `WEEK` to snowflake *(PR [#6918](https://github.com/tobymao/sqlglot/pull/6918) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Moved `YEAR`, `QUARTER`, `WEEK` to snowflake (#6918)
+
+
+### :sparkles: New Features
+- [`9d2a12a`](https://github.com/tobymao/sqlglot/commit/9d2a12a650afcdaffe780144af26a0f21a6ec4e6) - **duckdb**: Annotate SIN for DuckDB *(PR [#6892](https://github.com/tobymao/sqlglot/pull/6892) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`d8e13ae`](https://github.com/tobymao/sqlglot/commit/d8e13ae8c3f14495fd7ea356bf53e338e6a5347e) - **optimizer**: Annotate COS for DuckDB *(PR [#6893](https://github.com/tobymao/sqlglot/pull/6893) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`25f718c`](https://github.com/tobymao/sqlglot/commit/25f718cea3a62034d6a5c263e80e5b0363e3f394) - **tsql**: Annotate STUFF for TSQL *(PR [#6890](https://github.com/tobymao/sqlglot/pull/6890) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`bec45a5`](https://github.com/tobymao/sqlglot/commit/bec45a55377e9802fe5c572371834e12d760f180) - **optimizer**: Annotate `ISINF(expr)` for DuckDB *(PR [#6894](https://github.com/tobymao/sqlglot/pull/6894) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`aab8243`](https://github.com/tobymao/sqlglot/commit/aab8243a19d776c65473e67a2dcb1fb71af19175) - **optimmizer**: Annotate ISNAN(expr) for Base *(PR [#6895](https://github.com/tobymao/sqlglot/pull/6895) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`482128e`](https://github.com/tobymao/sqlglot/commit/482128e30aa0d607b7e5fcd2bde142eefcf02c4a) - **optimizer**: Annotate TAN for DuckDB *(PR [#6896](https://github.com/tobymao/sqlglot/pull/6896) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a6d7f6e`](https://github.com/tobymao/sqlglot/commit/a6d7f6e1ef9cd5d22598a3e21cc69162b07c28a1) - **optimizer**: Annotate `COT` for DuckDB *(PR [#6897](https://github.com/tobymao/sqlglot/pull/6897) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2ec7c2b`](https://github.com/tobymao/sqlglot/commit/2ec7c2b4a58bad3e736d021e7e414d00e7c16187) - **optimizer**: Annotate RANDOM() for DuckDB *(PR [#6898](https://github.com/tobymao/sqlglot/pull/6898) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a0b053d`](https://github.com/tobymao/sqlglot/commit/a0b053d10c5d7303f0f335be8ffe235f5a8727d9) - **optimizer**: Annotate ATAN(expr) for DuckDB *(PR [#6900](https://github.com/tobymao/sqlglot/pull/6900) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f39b514`](https://github.com/tobymao/sqlglot/commit/f39b514936e6188799bf1c392937050d8aef6ac8) - **optimmizer**: Annotate ASIN(expr) for DuckDB *(PR [#6901](https://github.com/tobymao/sqlglot/pull/6901) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`5fb98a1`](https://github.com/tobymao/sqlglot/commit/5fb98a1a0106b2e4740f8ae72fabeb424dacd07e) - **optimizer**: Annotate ACOS(expr) for DuckDB *(PR [#6902](https://github.com/tobymao/sqlglot/pull/6902) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`9e95d95`](https://github.com/tobymao/sqlglot/commit/9e95d95578ac8cb07076322c9f099467f17efb3f) - **optimizer**: Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB *(PR [#6903](https://github.com/tobymao/sqlglot/pull/6903) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a8fef30`](https://github.com/tobymao/sqlglot/commit/a8fef30ed6760bd095bd2c6b156ea7cd80c322d0) - **optimizer**: Annotate DEGREES(expr) for MySQL *(PR [#6913](https://github.com/tobymao/sqlglot/pull/6913) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`887d03a`](https://github.com/tobymao/sqlglot/commit/887d03af0fa10aef492cb54d8b48e5fc3a1ee6d1) - **optimizer**: Annotate arc trignometric func for MySQL *(PR [#6912](https://github.com/tobymao/sqlglot/pull/6912) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dc6bc5a`](https://github.com/tobymao/sqlglot/commit/dc6bc5af83dc6c2d9dee3ae82b7792fdc285450e) - **optimizer**: Annotate SIN, COS, TAN, COT for MySQL *(PR [#6911](https://github.com/tobymao/sqlglot/pull/6911) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6cae76f`](https://github.com/tobymao/sqlglot/commit/6cae76fb6de11b2b49db0bb5409495ddb676da05) - **mysql**: Annotate `SECOND(expr)` to `INT` *(PR [#6910](https://github.com/tobymao/sqlglot/pull/6910) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`bd595a6`](https://github.com/tobymao/sqlglot/commit/bd595a6afb724ed1e5ca64122bf1dd69a3adc473) - **optimizer**: Annotate QUARTER(expr) for DuckDB *(PR [#6905](https://github.com/tobymao/sqlglot/pull/6905) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`8e625b5`](https://github.com/tobymao/sqlglot/commit/8e625b5fae51659c2317a9c7a732114e047da9e0) - **optimizer**: Annotate ATAN2 for DuckDB *(PR [#6904](https://github.com/tobymao/sqlglot/pull/6904) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ea678d2`](https://github.com/tobymao/sqlglot/commit/ea678d26dee0bfb223660b587744c6635c036f2f) - **snowflake**: support transpilation of CURRENT_TIME from snowflake to duckdb *(PR [#6909](https://github.com/tobymao/sqlglot/pull/6909) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`db51b75`](https://github.com/tobymao/sqlglot/commit/db51b7517229df2c6cf446962a9732e548a168f5) - **optimizer**: Moved `YEAR`, `QUARTER`, `WEEK` to snowflake *(PR [#6918](https://github.com/tobymao/sqlglot/pull/6918) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :bug: Bug Fixes
+- [`8e4f4b3`](https://github.com/tobymao/sqlglot/commit/8e4f4b386cd5f7484bbe32c9d8921e2fef4b02c1) - **optimizer**: Annotate QUARTER(expr) to INT instead of TINYINT *(PR [#6906](https://github.com/tobymao/sqlglot/pull/6906) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a94e45a`](https://github.com/tobymao/sqlglot/commit/a94e45a3c55f744b20c35c2a5cc61bab0a3678d7) - **mysql**: Annotate MONTH(expr) to INT instead of TINYINT *(PR [#6907](https://github.com/tobymao/sqlglot/pull/6907) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`1fd5914`](https://github.com/tobymao/sqlglot/commit/1fd591403ad306912ac448a761540662c7a7f487) - **parser**: Literal number strings *(PR [#6916](https://github.com/tobymao/sqlglot/pull/6916) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#6908](https://github.com/tobymao/sqlglot/issues/6908) opened by [@Matt711](https://github.com/Matt711)*
+- [`0a065be`](https://github.com/tobymao/sqlglot/commit/0a065be1e00739f47f52166b7cbc890f1a4aea41) - **postgres**: Allow reserved tokens too in EXCLUDE WITH constraint *(PR [#6917](https://github.com/tobymao/sqlglot/pull/6917) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#6914](https://github.com/tobymao/sqlglot/issues/6914) opened by [@Badg](https://github.com/Badg)*
+
+### :wrench: Chores
+- [`a65c870`](https://github.com/tobymao/sqlglot/commit/a65c8701a30652bfadd4d39cf729a9e13c1fa769) - add CLAUDE.md to document guidelines for SQLGlot coding *(PR [#6899](https://github.com/tobymao/sqlglot/pull/6899) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+
+
 ## [v28.7.0] - 2026-01-30
 ### :boom: BREAKING CHANGES
 - due to [`ed4ba08`](https://github.com/tobymao/sqlglot/commit/ed4ba08940212f7ed9b67ea01b51f8df38fe85d2) - add support for Bitwise NOT *(PR [#6740](https://github.com/tobymao/sqlglot/pull/6740) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
@@ -12441,3 +12566,4 @@ Changelog
 [v28.5.0]: https://github.com/tobymao/sqlglot/compare/v28.4.1...v28.5.0
 [v28.6.0]: https://github.com/tobymao/sqlglot/compare/v28.5.0...v28.6.0
 [v28.7.0]: https://github.com/tobymao/sqlglot/compare/v28.6.0...v28.7.0
+[v28.8.0]: https://github.com/tobymao/sqlglot/compare/v28.7.0...v28.8.0

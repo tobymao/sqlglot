@@ -8668,7 +8668,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.WITH):
             return this
 
-        op = self._parse_var(any_token=True)
+        op = self._parse_var(any_token=True, tokens=self.RESERVED_TOKENS)
 
         return self.expression(exp.WithOperator, this=this, op=op)
 

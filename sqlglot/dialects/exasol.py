@@ -56,7 +56,9 @@ def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expr
 
         first = annotate_types(first, dialect=dialect)
 
-    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
+    if first.is_type(
+        exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
+    ):
         unit = second if second else exp.Literal.string("DD")
         return exp.DateTrunc(this=first, unit=unit)
 

@@ -54,7 +54,9 @@ def _build_trunc(args: t.List) -> exp.DateTrunc | exp.Trunc:
         this = annotate_types(this, dialect="oracle")
 
     # If first arg is date/timestamp type, it's date truncation
-    if this and this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
+    if this and this.is_type(
+        exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
+    ):
         unit = second if second else exp.Literal.string("DD")
         return exp.DateTrunc(this=this, unit=unit, unabbreviate=False)
 

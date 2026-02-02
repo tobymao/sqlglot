@@ -12,6 +12,7 @@ EXPRESSION_METADATA = {
             exp.Asin,
             exp.Atan,
             exp.Atan2,
+            exp.Degrees,
         }
     },
     **{expr_type: {"returns": exp.DataType.Type.VARCHAR} for expr_type in (exp.Elt,)},

@@ -5789,3 +5789,19 @@ BOOLEAN;
 # dialect: duckdb
 RANDOM();
 DOUBLE;
+
+# dialect: duckdb
+QUARTER(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
+QUARTER(tbl.timestamp_col);
+BIGINT;
+
+# dialect: duckdb
+QUARTER(tbl.interval_col);
+BIGINT;
+
+# dialect: duckdb
+QUARTER(tbl.timestamp_tz_col);
+BIGINT;

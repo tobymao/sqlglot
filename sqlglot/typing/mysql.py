@@ -25,7 +25,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.DayOfWeek,
             exp.Month,
-            exp.Quarter,
             exp.Second,
         }
     },

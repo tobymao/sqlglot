@@ -154,9 +154,12 @@ jobs:
         file_pattern: "CHANGELOG.md"
     - name: Update API docs
       run: |
-        git checkout api-docs
         source ./.venv/bin/activate
         make docs
+        mv docs /tmp/generated-docs
+        git checkout api-docs
+        rm -rf docs
+        mv /tmp/generated-docs docs
     - name: Commit API docs
       uses: stefanzweifel/git-auto-commit-action@v4
       with:

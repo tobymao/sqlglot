@@ -5847,6 +5847,10 @@ DAYOFYEAR(tbl.date_col);
 BIGINT;
 
 # dialect: duckdb
+EPOCH(tbl.interval_col);
+DOUBLE;
+
+# dialect: duckdb
 DAYOFMONTH(tbl.date_col);
 BIGINT;
 

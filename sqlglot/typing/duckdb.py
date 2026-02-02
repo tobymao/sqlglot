@@ -42,6 +42,7 @@ EXPRESSION_METADATA = {
             exp.Rand,
             exp.Sin,
             exp.Tan,
+            exp.TimeToUnix,
         }
     },
 }

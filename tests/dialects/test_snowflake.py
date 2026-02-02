@@ -5176,20 +5176,15 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SHA1(CAST(UNHEX('002A') AS BLOB))",
             },
         )
-        self.validate_all(
-            "SHA1(123)",
-            write={
-                "snowflake": "SHA1(123)",
-                "duckdb": "SHA1(CAST(123 AS TEXT))",
-            },
-        )
-        self.validate_all(
-            "SHA1(DATE '2024-01-15')",
-            write={
-                "snowflake": "SHA1(CAST('2024-01-15' AS DATE))",
-                "duckdb": "SHA1(CAST(CAST('2024-01-15' AS DATE) AS TEXT))",
-            },
-        )
+        expr = self.validate_identity("SHA1(123)")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("snowflake"), "SHA1(123)")
+        self.assertEqual(annotated.sql("duckdb"), "SHA1(CAST(123 AS TEXT))")
+
+        expr = self.validate_identity("SHA1(DATE '2024-01-15')", "SHA1(CAST('2024-01-15' AS DATE))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("snowflake"), "SHA1(CAST('2024-01-15' AS DATE))")
+        self.assertEqual(annotated.sql("duckdb"), "SHA1(CAST(CAST('2024-01-15' AS DATE) AS TEXT))")
 
     def test_model_attribute(self):
         self.validate_identity("SELECT model!mladmin")

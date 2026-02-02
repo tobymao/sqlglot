@@ -40,7 +40,6 @@ from sqlglot.dialects.dialect import (
     regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
-    sha2_digest_sql,
     strposition_sql,
     str_to_time_sql,
     timestrtotime_sql,
@@ -1822,7 +1821,6 @@ class DuckDB(Dialect):
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
-            exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
             exp.MonthsBetween: months_between_sql,
             exp.NextDay: _day_navigation_sql,
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
@@ -1848,7 +1846,6 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
-
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -2824,23 +2821,6 @@ class DuckDB(Dialect):
 
             return rename_func("MAKE_TIMESTAMP")(self, expression)
 
-        def sha2_sql(self, expression: exp.SHA) -> str:
-            arg = expression.this
-            length = expression.args.get("length")
-            if length and length.name != "256":
-                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
-
-            # If type is not compatible with what DuckDB expects, cast to VARCHAR
-            if (
-                not arg.is_type(*exp.DataType.TEXT_TYPES)
-                and not _is_binary(arg)
-                and (isinstance(arg, exp.Literal) or arg.type)
-            ):
-                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
-
-            # Otherwise, cast to string
-            return self.func("SHA256", arg)
-
         @unsupported_args("nano")
         def timestampltzfromparts_sql(self, expression: exp.TimestampLtzFromParts) -> str:
             # Pop nano so rename_func only passes args that MAKE_TIMESTAMP accepts
@@ -3019,19 +2999,46 @@ class DuckDB(Dialect):
 
             return self.sql(case)
 
+        def is_stringbinary(self, arg) -> bool:
+            return (
+                not arg.type
+                or arg.type.this == exp.DataType.Type.UNKNOWN
+                or arg.is_type(*exp.DataType.TEXT_TYPES)
+                or _is_binary(arg)
+            )
+
         def sha_sql(self, expression: exp.SHA) -> str:
             arg = expression.this
 
-            # If type is compatible with DuckDB or is an unknown type, use directly
-            if (
-                arg.type
-                and arg.type.this != exp.DataType.Type.UNKNOWN
-                and not arg.is_type(*exp.DataType.TEXT_TYPES)
-                and not _is_binary(arg)
-            ):
+            # If type is incompatible with DuckDB or is an unknown type, use directly
+            if not self.is_stringbinary(arg):
                 arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
             return self.func("SHA1", arg)
+
+        def sha2_sql(self, expression: exp.SHA) -> str:
+            arg = expression.this
+            length = expression.args.get("length")
+            if length and length.name != "256":
+                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
+
+            # If type is incompatible with DuckDB or is an unknown type, use directly
+            if not self.is_stringbinary(arg):
+                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+
+            # Otherwise, cast to string
+            return self.func("SHA256", arg)
+
+        def sha2digest_sql(self, expression: exp.SHA2Digest) -> str:
+            arg = expression.this
+            length = expression.text("length") or "256"
+            if length != "256":
+                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
+
+            if not self.is_stringbinary(arg):
+                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+
+            return self.func("UNHEX", self.func("SHA256", arg))
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

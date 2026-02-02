@@ -71,7 +71,6 @@ class TestSQLite(Validator):
             "CURRENT_TIME",
             read={
                 "": "CURRENT_TIME",
-                "snowflake": "CURRENT_TIME()",
             },
         )
         self.validate_all(

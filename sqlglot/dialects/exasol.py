@@ -4,27 +4,25 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
+    DATE_ADD_OR_SUB,
     Dialect,
     NormalizationStrategy,
     binary_from_function,
+    build_date_delta,
     build_formatted_time,
+    build_timetostr_or_tochar,
+    build_trunc,
     groupconcat_sql,
+    no_last_day_sql,
     rename_func,
     strposition_sql,
     timestrtotime_sql,
     timestamptrunc_sql,
-    build_date_delta,
-    no_last_day_sql,
-    DATE_ADD_OR_SUB,
-    build_timetostr_or_tochar,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.scope import build_scope
-
-if t.TYPE_CHECKING:
-    from sqlglot.dialects.dialect import DialectType
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -41,29 +39,6 @@ def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDs
         return self.function_fallback_sql(expression)
 
     return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
-
-
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(datetime).htm
-# https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/trunc%5Bate%5D%20(number).htm
-def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
-    first, second = seq_get(args, 0), seq_get(args, 1)
-
-    if not first:
-        return exp.Trunc(this=first, decimals=second)
-
-    if not first.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
-        first = annotate_types(first, dialect=dialect)
-
-    if first.is_type(
-        exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
-    ):
-        unit = second if second else exp.Literal.string("DD")
-        return exp.DateTrunc(this=first, unit=unit)
-
-    # Numeric truncation
-    return exp.Trunc(this=first, decimals=second)
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/zeroifnull.htm
@@ -370,8 +345,8 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
-            "TRUNC": _build_trunc,
-            "TRUNCATE": _build_trunc,
+            "TRUNC": build_trunc,
+            "TRUNCATE": build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,
             "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "TO_CHAR": build_timetostr_or_tochar,

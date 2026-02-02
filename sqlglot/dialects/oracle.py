@@ -6,8 +6,9 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    build_timetostr_or_tochar,
     build_formatted_time,
+    build_timetostr_or_tochar,
+    build_trunc,
     no_ilike_sql,
     rename_func,
     strposition_sql,
@@ -36,36 +37,6 @@ def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 
     return build_formatted_time(exp.StrToTime, "oracle")(args)
-
-
-def _build_trunc(args: t.List) -> exp.DateTrunc | exp.Trunc:
-    """
-    Oracle TRUNC handles both date and numeric truncation.
-    Uses type annotation to distinguish:
-    - DATE/TIMESTAMP first arg -> DateTrunc (default unit 'DD')
-    - Numeric first arg -> Trunc
-    """
-    from sqlglot.optimizer.annotate_types import annotate_types
-
-    this = seq_get(args, 0)
-    second = seq_get(args, 1)
-
-    if this and not this.type:
-        this = annotate_types(this, dialect="oracle")
-
-    # If first arg is date/timestamp type, it's date truncation
-    if this and this.is_type(
-        exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
-    ):
-        unit = second if second else exp.Literal.string("DD")
-        return exp.DateTrunc(this=this, unit=unit, unabbreviate=False)
-
-    # If second arg is a string literal, likely date truncation (heuristic fallback)
-    if isinstance(second, exp.Literal) and second.is_string:
-        return exp.DateTrunc(this=this, unit=second, unabbreviate=False)
-
-    # Otherwise numeric truncation
-    return exp.Trunc(this=this, decimals=second)
 
 
 class Oracle(Dialect):
@@ -154,7 +125,9 @@ class Oracle(Dialect):
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "TRUNC": _build_trunc,
+            "TRUNC": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_unabbreviate=False
+            ),
         }
         FUNCTIONS.pop("TO_BOOLEAN")
 

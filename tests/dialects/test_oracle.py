@@ -804,6 +804,37 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
+        # Date truncation with various units
+        for unit in ("DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):
+            with self.subTest(f"Date TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    write={
+                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    },
+                )
+
+        # Timestamp truncation with various units
+        for unit in ("HOUR", "MINUTE", "SECOND", "DAY", "MONTH", "YEAR"):
+            with self.subTest(f"Timestamp TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    write={
+                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATETIME2))",
+                        "spark": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    },
+                )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE INDEX ndx")

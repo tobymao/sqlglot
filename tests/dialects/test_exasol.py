@@ -612,6 +612,26 @@ class TestExasol(Validator):
             },
         )
 
+        # Date truncation with various units (Exasol-specific unit names)
+        for unit in ("YYYY", "MM", "DD", "HH", "MI", "SS", "WW"):
+            with self.subTest(f"Date/time TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    write={
+                        "exasol": f"DATE_TRUNC('{unit}', x)",
+                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    },
+                )
+
+        # Q gets normalized to QUARTER
+        self.validate_all(
+            "TRUNC(CAST(x AS TIMESTAMP), 'Q')",
+            write={
+                "exasol": "DATE_TRUNC('QUARTER', x)",
+                "oracle": "TRUNC(CAST(x AS TIMESTAMP), 'QUARTER')",
+            },
+        )
+
     def test_scalar(self):
         self.validate_all(
             "SELECT CURRENT_USER",

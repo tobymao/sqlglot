@@ -5591,6 +5591,10 @@ DAYOFWEEK(tbl.date_col);
 INT;
 
 # dialect: mysql
+SECOND(tbl.time_col);
+INT;
+
+# dialect: mysql
 SIN(tbl.int_col);
 DOUBLE;
 

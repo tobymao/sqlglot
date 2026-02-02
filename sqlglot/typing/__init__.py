@@ -180,7 +180,9 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.DayOfWeekIso,
             exp.DayOfYear,
             exp.Month,
+            exp.Week,
             exp.WeekOfYear,
+            exp.Year,
             exp.YearOfWeek,
             exp.YearOfWeekIso,
         }

@@ -6,6 +6,14 @@ from sqlglot.typing import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
+        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        for expr_type in {
+            exp.Quarter,
+            exp.Week,
+            exp.Year,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DataType.Type.INT128}
         for expr_type in {
             exp.Factorial,
@@ -28,5 +36,4 @@ EXPRESSION_METADATA = {
             exp.Tan,
         }
     },
-    exp.Quarter: {"returns": exp.DataType.Type.BIGINT},
 }

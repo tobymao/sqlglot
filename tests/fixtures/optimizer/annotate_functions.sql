@@ -5845,3 +5845,19 @@ BIGINT;
 # dialect: duckdb 
 DAYOFYEAR(tbl.date_col);
 BIGINT;
+
+# dialect: duckdb
+DAYOFMONTH(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
+DAY(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
+HOUR(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
+SECOND(tbl.date_col);
+BIGINT;

@@ -8,8 +8,13 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
+            exp.Acos,
+            exp.Asin,
+            exp.Atan,
+            exp.Atan2,
             exp.Cos,
             exp.Cot,
+            exp.Degrees,
             exp.Sin,
             exp.Tan,
         }

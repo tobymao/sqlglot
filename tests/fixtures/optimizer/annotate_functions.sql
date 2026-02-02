@@ -5829,3 +5829,11 @@ BIGINT;
 # dialect: duckdb
 QUARTER(tbl.timestamp_tz_col);
 BIGINT;
+
+# dialect: duckdb
+MINUTE(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb 
+MONTH(tbl.date_col);
+BIGINT;

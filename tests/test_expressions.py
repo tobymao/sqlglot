@@ -1286,7 +1286,19 @@ FROM foo""",
         assert expr == expr
 
     def test_literal_number(self):
-        for number in (1, -1.1, 1.1, 0, "-1", "1", "1.1", "-1.1", "1e6"):
+        for number in (
+            1,
+            -1.1,
+            1.1,
+            0,
+            "-1",
+            "1",
+            "1.1",
+            "-1.1",
+            "1e6",
+            "inf",
+            "binary_double_nan",
+        ):
             with self.subTest(f"Test Literal number method for: {repr(number)}"):
                 literal = exp.Literal.number(number)
 

@@ -2612,11 +2612,14 @@ class Literal(Condition):
     def number(cls, number) -> Literal | Neg:
         expr: Literal | Neg = cls(this=str(number), is_string=False)
 
-        to_py = expr.to_py()
+        try:
+            to_py = expr.to_py()
 
-        if not isinstance(to_py, str) and to_py < 0:
-            expr.set("this", str(abs(to_py)))
-            expr = Neg(this=expr)
+            if not isinstance(to_py, str) and to_py < 0:
+                expr.set("this", str(abs(to_py)))
+                expr = Neg(this=expr)
+        except Exception:
+            pass
 
         return expr
 

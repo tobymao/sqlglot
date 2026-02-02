@@ -5865,3 +5865,7 @@ BIGINT;
 # dialect: duckdb
 SECOND(tbl.date_col);
 BIGINT;
+
+# dialect: duckdb
+TO_DAYS(tbl.int_col);
+INTERVAL;

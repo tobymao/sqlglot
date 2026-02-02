@@ -45,4 +45,5 @@ EXPRESSION_METADATA = {
             exp.TimeToUnix,
         }
     },
+    exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
 }

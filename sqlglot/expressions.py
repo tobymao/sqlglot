@@ -6241,7 +6241,7 @@ class LastValue(AggFunc):
 
 
 class NthValue(AggFunc):
-    arg_types = {"this": True, "offset": True}
+    arg_types = {"this": True, "offset": True, "from_first": False}
 
 
 class ObjectAgg(AggFunc):

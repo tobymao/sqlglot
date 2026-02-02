@@ -2390,6 +2390,13 @@ class DuckDB(Dialect):
             arg = expression.this
             return f"({self.sql(exp.replace_placeholders(self.BITMAP_CONSTRUCT_AGG_TEMPLATE, arg=arg))})"
 
+        def nthvalue_sql(self: DuckDB.Generator, expression: exp.NthValue) -> str:
+            from_first = expression.args.get("from_first", True)
+            if not from_first:
+                self.unsupported("DuckDB's NTH_VALUE doesn't support starting from the end ")
+
+            return self.function_fallback_sql(expression)
+
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """
             Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.

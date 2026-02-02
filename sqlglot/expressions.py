@@ -2633,7 +2633,11 @@ class Literal(Condition):
             try:
                 return int(self.this)
             except ValueError:
-                return Decimal(self.this)
+                try:
+                    return Decimal(self.this)
+                except Exception:
+                    # Handle special numeric literals like 'binary_double_nan'
+                    return self.this
         return self.this
 
 

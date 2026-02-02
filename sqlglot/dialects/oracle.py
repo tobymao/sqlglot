@@ -38,6 +38,34 @@ def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
     return build_formatted_time(exp.StrToTime, "oracle")(args)
 
 
+def _build_trunc(args: t.List) -> exp.DateTrunc | exp.Trunc:
+    """
+    Oracle TRUNC handles both date and numeric truncation.
+    Uses type annotation to distinguish:
+    - DATE/TIMESTAMP first arg -> DateTrunc (default unit 'DD')
+    - Numeric first arg -> Trunc
+    """
+    from sqlglot.optimizer.annotate_types import annotate_types
+
+    this = seq_get(args, 0)
+    second = seq_get(args, 1)
+
+    if this and not this.type:
+        this = annotate_types(this, dialect="oracle")
+
+    # If first arg is date/timestamp type, it's date truncation
+    if this and this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
+        unit = second if second else exp.Literal.string("DD")
+        return exp.DateTrunc(this=this, unit=unit, unabbreviate=False)
+
+    # If second arg is a string literal, likely date truncation (heuristic fallback)
+    if isinstance(second, exp.Literal) and second.is_string:
+        return exp.DateTrunc(this=this, unit=second, unabbreviate=False)
+
+    # Otherwise numeric truncation
+    return exp.Trunc(this=this, decimals=second)
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -124,11 +152,7 @@ class Oracle(Dialect):
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "TRUNC": lambda args: exp.DateTrunc(
-                unit=seq_get(args, 1) or exp.Literal.string("DD"),
-                this=seq_get(args, 0),
-                unabbreviate=False,
-            ),
+            "TRUNC": _build_trunc,
         }
         FUNCTIONS.pop("TO_BOOLEAN")
 

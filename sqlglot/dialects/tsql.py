@@ -1110,6 +1110,9 @@ class TSQL(Dialect):
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TimestampTrunc: lambda self, e: self.func("DATETRUNC", e.unit, e.this),
+            exp.Trunc: lambda self, e: self.func(
+                "ROUND", e.this, e.args.get("decimals") or exp.Literal.number(0), exp.Literal.number(1)
+            ),
             exp.Uuid: lambda *_: "NEWID()",
             exp.DateFromParts: rename_func("DATEFROMPARTS"),
         }

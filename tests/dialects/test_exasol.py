@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -584,6 +585,32 @@ class TestExasol(Validator):
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
         self.validate_identity("SELECT DIV(1234, 2) AS DIV")
+
+        # Verify numeric TRUNC is parsed as exp.Trunc
+        self.parse_one("TRUNC(123.456, 2)").assert_is(exp.Trunc)
+
+        # Single-argument TRUNC (truncate to integer)
+        self.validate_identity("TRUNC(3.14159)")
+
+        # Date truncation with typed column is correctly identified as DateTrunc
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS DATETIME), 'MONTH')").assert_is(exp.DateTrunc)
+
+        # Date truncation without unit defaults to 'DD'
+        self.parse_one("TRUNC(CAST(x AS DATE))").assert_is(exp.DateTrunc)
+
+        # Cross-dialect transpilation for numeric truncation
+        self.validate_all(
+            "TRUNC(price, 2)",
+            write={
+                "exasol": "TRUNC(price, 2)",
+                "oracle": "TRUNC(price, 2)",
+                "postgres": "TRUNC(price, 2)",
+                "mysql": "TRUNCATE(price, 2)",
+                "tsql": "ROUND(price, 2, 1)",
+            },
+        )
 
     def test_scalar(self):
         self.validate_all(

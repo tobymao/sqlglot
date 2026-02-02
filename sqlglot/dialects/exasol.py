@@ -48,18 +48,20 @@ def _date_diff_sql(self: Exasol.Generator, expression: exp.DateDiff | exp.TsOrDs
 def _build_trunc(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
     first, second = seq_get(args, 0), seq_get(args, 1)
 
-    if not first or not second:
-        return exp.Anonymous(this="TRUNC", expressions=args)
+    if not first:
+        return exp.Trunc(this=first, decimals=second)
 
     if not first.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         first = annotate_types(first, dialect=dialect)
 
-    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP) and second.is_string:
-        return exp.DateTrunc(this=first, unit=second)
+    if first.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME):
+        unit = second if second else exp.Literal.string("DD")
+        return exp.DateTrunc(this=first, unit=unit)
 
-    return exp.Anonymous(this="TRUNC", expressions=args)
+    # Numeric truncation
+    return exp.Trunc(this=first, decimals=second)
 
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/zeroifnull.htm

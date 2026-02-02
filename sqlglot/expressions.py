@@ -7993,6 +7993,14 @@ class Round(Func):
     }
 
 
+# Numeric truncation - distinct from DateTrunc/TimestampTrunc
+# Most dialects: TRUNC(number, decimals) or TRUNCATE(number, decimals)
+# T-SQL: ROUND(number, decimals, 1) - handled in generator
+class Trunc(Func):
+    arg_types = {"this": True, "decimals": False}
+    _sql_names = ["TRUNC", "TRUNCATE"]
+
+
 class RowNumber(Func):
     arg_types = {"this": False}
 

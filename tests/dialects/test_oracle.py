@@ -754,6 +754,56 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
 
+    def test_numeric_trunc(self):
+        # Numeric truncation - distinct from date truncation
+        self.validate_identity("TRUNC(3.14159, 2)")
+        self.validate_identity("TRUNC(price, 0)")
+
+        # Single-argument TRUNC (truncate to integer)
+        self.validate_identity("TRUNC(3.14159)")
+        self.validate_all(
+            "TRUNC(3.14159)",
+            write={
+                "oracle": "TRUNC(3.14159)",
+                "postgres": "TRUNC(3.14159)",
+                "mysql": "TRUNCATE(3.14159)",
+                "tsql": "ROUND(3.14159, 0, 1)",
+            },
+        )
+
+        # Verify it's parsed as exp.Trunc (numeric), not DateTrunc
+        self.parse_one("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+
+        # Date truncation remains DateTrunc
+        self.parse_one("TRUNC(SYSDATE, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # Transpile to other dialects
+        self.validate_all(
+            "TRUNC(3.14159, 2)",
+            write={
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+                "snowflake": "TRUNC(3.14159, 2)",
+                "bigquery": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159, 2)",
+            },
+        )
+
+        # Read from other dialects
+        self.validate_all(
+            "TRUNC(price, 2)",
+            read={
+                "mysql": "TRUNCATE(price, 2)",
+                "postgres": "TRUNC(price, 2)",
+                "snowflake": "TRUNC(price, 2)",
+            },
+            write={
+                "oracle": "TRUNC(price, 2)",
+            },
+        )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE INDEX ndx")

@@ -1554,6 +1554,26 @@ COMMENT='客户账户表'"""
         self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
         self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)
 
+    def test_numeric_trunc(self):
+        # MySQL uses TRUNCATE for numeric truncation
+        self.validate_identity("TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNCATE(price, 0)").assert_is(exp.Trunc)
+
+        # TRUNC alias normalizes to TRUNCATE in MySQL
+        self.validate_identity("TRUNC(3.14159, 2)", "TRUNCATE(3.14159, 2)")
+
+        # Cross-dialect transpilation
+        self.validate_all(
+            "TRUNCATE(3.14159, 2)",
+            write={
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "snowflake": "TRUNC(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+            },
+        )
+
     def test_valid_interval_units(self):
         for unit in (
             "SECOND_MICROSECOND",

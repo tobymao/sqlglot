@@ -5871,5 +5871,9 @@ TO_DAYS(tbl.int_col);
 INTERVAL;
 
 # dialect: duckdb
+BIT_LENGTH(tbl.str_col);
+BIGINT;
+
+# dialect: duckdb
 MAKE_TIME(tbl.bigint_col, tbl.bigint_col, tbl.double_col);
 TIME;

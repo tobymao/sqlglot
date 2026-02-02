@@ -5571,6 +5571,14 @@ VARCHAR;
 --------------------------------------
 
 # dialect: mysql
+DEGREES(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql
+DEGREES(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
 LOCALTIME;
 DATETIME;
 
@@ -5585,6 +5593,94 @@ INT;
 # dialect: mysql
 SECOND(tbl.time_col);
 INT;
+
+# dialect: mysql
+SIN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
+SIN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+COS(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+COS(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+TAN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+TAN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+COT(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+COT(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ASIN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ASIN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ACOS(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ACOS(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.int_col, tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.double_col, tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN2(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN2(tbl.int_col, tbl.double_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN2(tbl.double_col, tbl.int_col);
+DOUBLE;
+
+# dialect: mysql 
+ATAN2(tbl.double_col, tbl.double_col);
+DOUBLE;
 
 --------------------------------------
 -- DuckDB

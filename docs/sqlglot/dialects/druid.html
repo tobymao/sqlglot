@@ -1,0 +1,1479 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="pdoc 16.0.0"/>
+    <title>sqlglot.dialects.druid API documentation</title>
+
+    <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
+    <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
+    <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;z-index:999;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent; z-index:1}nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{cursor:pointer;display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:.75rem center;margin-bottom:1rem;}.pdoc .alert > em{display:none;}.pdoc .alert > *:last-child{margin-bottom:0;}.pdoc .alert.note{color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .alert.tip{color:#0a3622;background-color:#d1e7dd;border-color:#a3cfbb;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%230a3622%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%206a6%206%200%201%201%2010.174%204.31c-.203.196-.359.4-.453.619l-.762%201.769A.5.5%200%200%201%2010.5%2013a.5.5%200%200%201%200%201%20.5.5%200%200%201%200%201l-.224.447a1%201%200%200%201-.894.553H6.618a1%201%200%200%201-.894-.553L5.5%2015a.5.5%200%200%201%200-1%20.5.5%200%200%201%200-1%20.5.5%200%200%201-.46-.302l-.761-1.77a2%202%200%200%200-.453-.618A5.98%205.98%200%200%201%202%206m6-5a5%205%200%200%200-3.479%208.592c.263.254.514.564.676.941L5.83%2012h4.342l.632-1.467c.162-.377.413-.687.676-.941A5%205%200%200%200%208%201%22/%3E%3C/svg%3E");}.pdoc .alert.important{color:#055160;background-color:#cff4fc;border-color:#9eeaf9;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23055160%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%200a2%202%200%200%200-2%202v12a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V2a2%202%200%200%200-2-2zm6%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .alert.caution{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M11.46.146A.5.5%200%200%200%2011.107%200H4.893a.5.5%200%200%200-.353.146L.146%204.54A.5.5%200%200%200%200%204.893v6.214a.5.5%200%200%200%20.146.353l4.394%204.394a.5.5%200%200%200%20.353.146h6.214a.5.5%200%200%200%20.353-.146l4.394-4.394a.5.5%200%200%200%20.146-.353V4.893a.5.5%200%200%200-.146-.353zM8%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--accent);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .decorator-deprecated{color:#842029;}.pdoc .decorator-deprecated ~ span{filter:grayscale(1) opacity(0.8);}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .view-value-toggle-state,.pdoc .view-value-toggle-state ~ .default_value{display:none;}.pdoc .view-value-toggle-state:checked ~ .default_value{display:inherit;}.pdoc .view-value-button{font-size:.5rem;vertical-align:middle;border-style:dashed;margin-top:-0.1rem;}.pdoc .view-value-button:hover{background:white;}.pdoc .view-value-button::before{content:"show";text-align:center;width:2.2em;display:inline-block;}.pdoc .view-value-toggle-state:checked ~ .view-value-button::before{content:"hide";}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:27px;vertical-align:bottom;width:50px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! custom.css */</style></head>
+<body>
+    <nav class="pdoc">
+        <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
+        <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
+        <div>            <a class="pdoc-button module-list-button" href="../dialects.html">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
+  <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
+</svg>                &nbsp;sqlglot.dialects</a>
+
+
+            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+                   pattern=".+" required>
+
+
+
+            <h2>API Documentation</h2>
+                <ul class="memberlist">
+            <li>
+                    <a class="class" href="#Druid">Druid</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="class" href="#Druid.Generator">Druid.Generator</a>
+                                        <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.TYPE_MAPPING">TYPE_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.TRANSFORMS">TRANSFORMS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.SELECT_KINDS">SELECT_KINDS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.TRY_SUPPORTED">TRY_SUPPORTED</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.SUPPORTS_UESCAPE">SUPPORTS_UESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.SUPPORTS_DECODE_CASE">SUPPORTS_DECODE_CASE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Druid.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS">AFTER_HAVING_MODIFIER_TRANSFORMS</a>
+                                    </li>
+                            </ul>
+
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.SUPPORTS_COLUMN_JOIN_MARKS">SUPPORTS_COLUMN_JOIN_MARKS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INITCAP_SUPPORTS_CUSTOM_DELIMITERS">INITCAP_SUPPORTS_CUSTOM_DELIMITERS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.jsonpath_tokenizer_class">jsonpath_tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INVERSE_FORMAT_MAPPING">INVERSE_FORMAT_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INVERSE_FORMAT_TRIE">INVERSE_FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.INVERSE_CREATABLE_KIND_MAPPING">INVERSE_CREATABLE_KIND_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.ESCAPED_SEQUENCES">ESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.VALID_INTERVAL_UNITS">VALID_INTERVAL_UNITS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.UNICODE_START">UNICODE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.UNICODE_END">UNICODE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.STRINGS_SUPPORT_ESCAPED_SEQUENCES">STRINGS_SUPPORT_ESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Druid.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES">BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES</a>
+                        </li>
+                </ul>
+
+            </li>
+    </ul>
+
+
+            <footer>Copyright (c) 2023 Toby Mao</footer>
+
+        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
+            built with <span class="visually-hidden">pdoc</span><img
+                alt="pdoc logo"
+                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22pdoc%20logo%22%20width%3D%22300%22%20height%3D%22160%22%20viewBox%3D%220%200%20150%2080%22%3E%3Ctitle%3Epdoc%3C/title%3E%3Cpath%20d%3D%22M132.316%2048.886c.276-4.679%202.342-6.698%204.409-7.982s4.27-1.165%206.751-1.055c1.586.07%203.044.156%204.222-.482%201.142-.619%202.026-1.932%202.162-3.739.268-3.576-1.929-5.368-5.006-5.551s-7.599.524-10.517%201.606c-4.455%201.652-8.588%206.606-9.552%208.992s-2.342%206.193-1.745%2010.873%202.664%209.221%205.878%2011.79%205.878%203.808%2010.103%204.312%203.444.229%206.062.229%205.006-2.202%204.914-4.909-2.296-5.001-4.501-4.863-3.077.505-5.281.229-7.715-2.064-7.899-9.451z%22%20fill%3D%22%23198754%22/%3E%3Ccircle%20cx%3D%22101.504%22%20cy%3D%2248.943%22%20r%3D%2214.208%22%20fill%3D%22none%22%20stroke%3D%22%23198754%22%20stroke-width%3D%229.354%22/%3E%3Cpath%20d%3D%22M87.81.002c-3.637.065-5.001.454-7.014%201.232s-3.443%201.363-6.3%204.282c-1.723%201.76-3.148%205.019-3.776%207.329-.413%201.521-.316%202.63-.316%202.63l-.195%2034.612c.065%205.774-6.755%208.305-9.612%208.37s-9.678-1.038-9.743-9.408%207.128-9.521%208.362-9.521c1.413-.13%202.526-.021%203.718-.016%202.071.009%204.157-.778%204.092-4.671s-4.157-4.736-4.157-4.736c-6.3-.843-11.43%202.206-11.43%202.206S40.917%2038.15%2041.372%2049.634%2051.568%2068.19%2061.311%2068.125s18.316-7.007%2018.445-17.193l.13-22.772c.046-2.291%202.683-3.644%204.476-4.203.745-.232%201.694-.274%201.694-.274l10.457-.13s4.871-.324%207.729-3.114%204.352-6.294%204.352-6.294.974-3.049.13-4.606-.195-1.233-2.792-3.309-8.573-4.477-8.573-4.477S91.447-.063%2087.81.002zM0%2047.169l.065%2028.417S0%2080.127%204.481%2079.997s5.072-3.866%205.049-4.152l-.113-28.482s1.624-7.656%209.937-7.721%2010.002%206.942%2010.002%208.499-.909%2010.51-9.093%2010.51c-.948%200-2.99-.567-4.145-.272-3.919%201-3.194%204.554-3.194%204.554s.065%205.061%207.404%204.996%2018.575-6.034%2018.575-19.074S26.953%2030.04%2019.549%2029.91%201.234%2035.296%200%2047.169z%22%20fill%3D%22%23198754%22/%3E%3Cg%20transform%3D%22matrix%28.325601%200%200%20.325256%20-10.32669%20-45.802786%29%22%3E%3Ccircle%20cx%3D%22297.554%22%20cy%3D%22172.286%22%20r%3D%2216.5%22%20fill%3D%22%23fff%22/%3E%3Cellipse%20cx%3D%22297.709%22%20cy%3D%22172.642%22%20rx%3D%2211.071%22%20ry%3D%2210.871%22%20fill%3D%22%23105a48%22/%3E%3Ccircle%20cx%3D%22304.104%22%20cy%3D%22167.667%22%20r%3D%224.5%22%20fill%3D%22%23fff%22/%3E%3C/g%3E%3Cpath%20d%3D%22M94.661%2017.032l.893-1.476s.99.714%201.916.925%201.575.114%202.955.114l14.565-.162c1.283-.032%203.085-.762%203.02-3.293s-.373-3.503-.373-3.503l1.283-.487s.52.503.877%201.573.309%201.995.292%202.66-.227%201.541-.227%201.541%201.564-.308%202.359-1.038.823-.779%201.489-1.508.812-.86.812-.86.552-.13.877.26.341.957.065%201.46-1.672%202.206-3.247%203.066-2.76%201.427-3.929%201.768-3.848.73-7.063.714l-10.944-.114s-2.143-.081-3.02-.373-2.241-.973-2.598-1.265z%22%20fill%3D%22%23d36d49%22/%3E%3Cg%20fill%3D%22%23105a48%22%3E%3Cellipse%20cx%3D%2293.052%22%20cy%3D%2243.567%22%20rx%3D%22.869%22%20ry%3D%221.014%22%20transform%3D%22rotate%28341.022%29%22/%3E%3Cellipse%20cx%3D%22104.3%22%20cy%3D%22-16.184%22%20rx%3D%22.865%22%20ry%3D%221.009%22%20transform%3D%22rotate%2814.786%29%22/%3E%3C/g%3E%3C/svg%3E"/>
+        </a>
+</div>
+    </nav>
+    <main class="pdoc">
+            <section class="module-info">
+                        <a class="pdoc-button git-button" href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects/druid.py">Edit on GitHub</a>
+                    <h1 class="modulename">
+<a href="./../../sqlglot.html">sqlglot</a><wbr>.<a href="./../dialects.html">dialects</a><wbr>.druid    </h1>
+
+                
+                        <input id="mod-druid-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+
+                        <label class="view-source-button" for="mod-druid-view-source"><span>View Source</span></label>
+
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">generator</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">rename_func</span><span class="p">,</span> <span class="n">Dialect</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Druid</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Generator</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>        <span class="c1"># https://druid.apache.org/docs/latest/querying/sql-data-types/</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>        <span class="n">TYPE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TYPE_MAPPING</span><span class="p">,</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NVARCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">UUID</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="p">}</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">CurrentTimestamp</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="s2">&quot;CURRENT_TIMESTAMP&quot;</span><span class="p">,</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Mod</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;MOD&quot;</span><span class="p">),</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;ARRAY[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="p">}</span>
+</span></pre></div>
+
+
+            </section>
+                <section id="Druid">
+                            <input id="Druid-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Druid</span><wbr>(<span class="base">sqlglot.dialects.dialect.Dialect</span>):
+
+                <label class="view-source-button" for="Druid-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Druid"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Druid-6"><a href="#Druid-6"><span class="linenos"> 6</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Druid</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
+</span><span id="Druid-7"><a href="#Druid-7"><span class="linenos"> 7</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Generator</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="Druid-8"><a href="#Druid-8"><span class="linenos"> 8</span></a>        <span class="c1"># https://druid.apache.org/docs/latest/querying/sql-data-types/</span>
+</span><span id="Druid-9"><a href="#Druid-9"><span class="linenos"> 9</span></a>        <span class="n">TYPE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Druid-10"><a href="#Druid-10"><span class="linenos">10</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TYPE_MAPPING</span><span class="p">,</span>
+</span><span id="Druid-11"><a href="#Druid-11"><span class="linenos">11</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid-12"><a href="#Druid-12"><span class="linenos">12</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NVARCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid-13"><a href="#Druid-13"><span class="linenos">13</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid-14"><a href="#Druid-14"><span class="linenos">14</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">UUID</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid-15"><a href="#Druid-15"><span class="linenos">15</span></a>        <span class="p">}</span>
+</span><span id="Druid-16"><a href="#Druid-16"><span class="linenos">16</span></a>
+</span><span id="Druid-17"><a href="#Druid-17"><span class="linenos">17</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Druid-18"><a href="#Druid-18"><span class="linenos">18</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>
+</span><span id="Druid-19"><a href="#Druid-19"><span class="linenos">19</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">CurrentTimestamp</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="s2">&quot;CURRENT_TIMESTAMP&quot;</span><span class="p">,</span>
+</span><span id="Druid-20"><a href="#Druid-20"><span class="linenos">20</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Mod</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;MOD&quot;</span><span class="p">),</span>
+</span><span id="Druid-21"><a href="#Druid-21"><span class="linenos">21</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;ARRAY[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+</span><span id="Druid-22"><a href="#Druid-22"><span class="linenos">22</span></a>        <span class="p">}</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Druid.SUPPORTS_COLUMN_JOIN_MARKS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_COLUMN_JOIN_MARKS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.SUPPORTS_COLUMN_JOIN_MARKS"></a>
+    
+            <div class="docstring"><p>Whether the old-style outer join (+) syntax is supported.</p>
+</div>
+
+
+                            </div>
+                            <div id="Druid.INITCAP_SUPPORTS_CUSTOM_DELIMITERS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INITCAP_SUPPORTS_CUSTOM_DELIMITERS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INITCAP_SUPPORTS_CUSTOM_DELIMITERS"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.jsonpath_tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">jsonpath_tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;sqlglot.tokens.JSONPathTokenizer&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.jsonpath_tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../parser.html#Parser">sqlglot.parser.Parser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Druid.Generator">Druid.Generator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.INVERSE_FORMAT_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_FORMAT_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INVERSE_FORMAT_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.INVERSE_FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INVERSE_FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.INVERSE_CREATABLE_KIND_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_CREATABLE_KIND_MAPPING</span><span class="annotation">: dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.INVERSE_CREATABLE_KIND_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ESCAPED_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.ESCAPED_SEQUENCES"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.VALID_INTERVAL_UNITS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">VALID_INTERVAL_UNITS</span><span class="annotation">: Set[str]</span>        =
+<input id="Druid.VALID_INTERVAL_UNITS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Druid.VALID_INTERVAL_UNITS-view-value"></label><span class="default_value">{&#39;MON&#39;, &#39;DAY OF YEAR&#39;, &#39;YEARS&#39;, &#39;EPOCH_NANOSECONDS&#39;, &#39;WEEKOFYEAR&#39;, &#39;M&#39;, &#39;MIL&#39;, &#39;DY&#39;, &#39;MINUTE&#39;, &#39;Y&#39;, &#39;MILS&#39;, &#39;MONS&#39;, &#39;NSEC&#39;, &#39;DOW&#39;, &#39;EPOCH_MICROSECONDS&#39;, &#39;YYYY&#39;, &#39;Q&#39;, &#39;DAY OF WEEK&#39;, &#39;HR&#39;, &#39;MILLISECONDS&#39;, &#39;DW_ISO&#39;, &#39;QTRS&#39;, &#39;W&#39;, &#39;NSECONDS&#39;, &#39;US&#39;, &#39;MINUTES&#39;, &#39;NANOSECS&#39;, &#39;NANOSECOND&#39;, &#39;MILLISECS&#39;, &#39;DECADES&#39;, &#39;EPOCH_SECONDS&#39;, &#39;MILLISECOND&#39;, &#39;C&#39;, &#39;DECS&#39;, &#39;DAYOFWEEK&#39;, &#39;DECADE&#39;, &#39;DAYS&#39;, &#39;CENTURY&#39;, &#39;YY&#39;, &#39;YR&#39;, &#39;SEC&#39;, &#39;QTR&#39;, &#39;MIN&#39;, &#39;WK&#39;, &#39;MM&#39;, &#39;DD&#39;, &#39;DW&#39;, &#39;YYY&#39;, &#39;TIMEZONE_HOUR&#39;, &#39;DOY&#39;, &#39;EPOCH_MILLISECONDS&#39;, &#39;TZH&#39;, &#39;DAYOFWEEK_ISO&#39;, &#39;MSEC&#39;, &#39;NANOSEC&#39;, &#39;CENTURIES&#39;, &#39;MICROSECS&#39;, &#39;MILLISECON&#39;, &#39;S&#39;, &#39;MI&#39;, &#39;WEEKDAY&#39;, &#39;EPOCH_NANOSECOND&#39;, &#39;WEEKOFYEARISO&#39;, &#39;MSECOND&#39;, &#39;HOURS&#39;, &#39;USECOND&#39;, &#39;EPOCH_SECOND&#39;, &#39;DAY&#39;, &#39;HH&#39;, &#39;SECS&#39;, &#39;NSECOND&#39;, &#39;EPOCH_MICROSECOND&#39;, &#39;MONTH&#39;, &#39;TZM&#39;, &#39;DOW_ISO&#39;, &#39;YEAR&#39;, &#39;D&#39;, &#39;MSECS&#39;, &#39;DAYOFMONTH&#39;, &#39;EPOCH_MILLISECOND&#39;, &#39;HOUR&#39;, &#39;YRS&#39;, &#39;WY&#39;, &#39;MICROSECONDS&#39;, &#39;DAYOFWEEKISO&#39;, &#39;WOY&#39;, &#39;WEEKDAY_ISO&#39;, &#39;H&#39;, &#39;MINS&#39;, &#39;MSECONDS&#39;, &#39;HRS&#39;, &#39;WEEK_ISO&#39;, &#39;TIMEZONE_MINUTE&#39;, &#39;MILLENNIUM&#39;, &#39;USECS&#39;, &#39;MILLISEC&#39;, &#39;MICROSECOND&#39;, &#39;WEEKOFYEAR_ISO&#39;, &#39;SECOND&#39;, &#39;USECONDS&#39;, &#39;WEEKISO&#39;, &#39;QUARTERS&#39;, &#39;MONTHS&#39;, &#39;MICROSEC&#39;, &#39;WEEK&#39;, &#39;DAYOFYEAR&#39;, &#39;QUARTER&#39;, &#39;CENTS&#39;, &#39;EPOCH&#39;, &#39;CENT&#39;, &#39;MILLENIA&#39;, &#39;DEC&#39;, &#39;NS&#39;, &#39;SECONDS&#39;, &#39;USEC&#39;, &#39;MS&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.VALID_INTERVAL_UNITS"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.UNICODE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNICODE_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.UNICODE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.UNICODE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNICODE_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.UNICODE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.STRINGS_SUPPORT_ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRINGS_SUPPORT_ESCAPED_SEQUENCES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.STRINGS_SUPPORT_ESCAPED_SEQUENCES"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="Druid.Generator">
+                            <input id="Druid.Generator-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Druid.Generator</span><wbr>(<span class="base"><a href="../generator.html#Generator">sqlglot.generator.Generator</a></span>):
+
+                <label class="view-source-button" for="Druid.Generator-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Druid.Generator"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Druid.Generator-7"><a href="#Druid.Generator-7"><span class="linenos"> 7</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Generator</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">):</span>
+</span><span id="Druid.Generator-8"><a href="#Druid.Generator-8"><span class="linenos"> 8</span></a>        <span class="c1"># https://druid.apache.org/docs/latest/querying/sql-data-types/</span>
+</span><span id="Druid.Generator-9"><a href="#Druid.Generator-9"><span class="linenos"> 9</span></a>        <span class="n">TYPE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Druid.Generator-10"><a href="#Druid.Generator-10"><span class="linenos">10</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TYPE_MAPPING</span><span class="p">,</span>
+</span><span id="Druid.Generator-11"><a href="#Druid.Generator-11"><span class="linenos">11</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-12"><a href="#Druid.Generator-12"><span class="linenos">12</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">NVARCHAR</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-13"><a href="#Druid.Generator-13"><span class="linenos">13</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-14"><a href="#Druid.Generator-14"><span class="linenos">14</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">UUID</span><span class="p">:</span> <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-15"><a href="#Druid.Generator-15"><span class="linenos">15</span></a>        <span class="p">}</span>
+</span><span id="Druid.Generator-16"><a href="#Druid.Generator-16"><span class="linenos">16</span></a>
+</span><span id="Druid.Generator-17"><a href="#Druid.Generator-17"><span class="linenos">17</span></a>        <span class="n">TRANSFORMS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Druid.Generator-18"><a href="#Druid.Generator-18"><span class="linenos">18</span></a>            <span class="o">**</span><span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="p">,</span>
+</span><span id="Druid.Generator-19"><a href="#Druid.Generator-19"><span class="linenos">19</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">CurrentTimestamp</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="s2">&quot;CURRENT_TIMESTAMP&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-20"><a href="#Druid.Generator-20"><span class="linenos">20</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Mod</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;MOD&quot;</span><span class="p">),</span>
+</span><span id="Druid.Generator-21"><a href="#Druid.Generator-21"><span class="linenos">21</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;ARRAY[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+</span><span id="Druid.Generator-22"><a href="#Druid.Generator-22"><span class="linenos">22</span></a>        <span class="p">}</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Generator converts a given syntax tree to the corresponding SQL string.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>pretty:</strong>  Whether to format the produced SQL string.
+Default: False.</li>
+<li><strong>identify:</strong>  Determines when an identifier should be quoted. Possible values are:
+False (default): Never quote, except in cases where it's mandatory by the dialect.
+True: Always quote except for specials cases.
+'safe': Only quote identifiers that are case insensitive.</li>
+<li><strong>normalize:</strong>  Whether to normalize identifiers to lowercase.
+Default: False.</li>
+<li><strong>pad:</strong>  The pad size in a formatted string. For example, this affects the indentation of
+a projection in a query, relative to its nesting level.
+Default: 2.</li>
+<li><strong>indent:</strong>  The indentation size in a formatted string. For example, this affects the
+indentation of subqueries and filters under a <code>WHERE</code> clause.
+Default: 2.</li>
+<li><strong>normalize_functions:</strong>  How to normalize function names. Possible values are:
+"upper" or True (default): Convert names to uppercase.
+"lower": Convert names to lowercase.
+False: Disables function name normalization.</li>
+<li><strong>unsupported_level:</strong>  Determines the generator's behavior when it encounters unsupported expressions.
+Default ErrorLevel.WARN.</li>
+<li><strong>max_unsupported:</strong>  Maximum number of unsupported messages to include in a raised UnsupportedError.
+This is only relevant if unsupported_level is ErrorLevel.RAISE.
+Default: 3</li>
+<li><strong>leading_comma:</strong>  Whether the comma is leading or trailing in select expressions.
+This is only relevant when generating in pretty mode.
+Default: False</li>
+<li><strong>max_text_width:</strong>  The max number of characters in a segment before creating new lines in pretty mode.
+The default is on the smaller end because the length only represents a segment and not the true
+line length.
+Default: 80</li>
+<li><strong>comments:</strong>  Whether to preserve comments in the output SQL code.
+Default: True</li>
+</ul>
+</div>
+
+
+                            <div id="Druid.Generator.TYPE_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TYPE_MAPPING</span>        =
+<input id="Druid.Generator.TYPE_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Druid.Generator.TYPE_MAPPING-view-value"></label><span class="default_value">{&lt;Type.DATETIME2: &#39;DATETIME2&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.NCHAR: &#39;NCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.NVARCHAR: &#39;NVARCHAR&#39;&gt;: &#39;STRING&#39;, &lt;Type.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.LONGTEXT: &#39;LONGTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.TINYTEXT: &#39;TINYTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.BLOB: &#39;BLOB&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.LONGBLOB: &#39;LONGBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.TINYBLOB: &#39;TINYBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.INET: &#39;INET&#39;&gt;: &#39;INET&#39;, &lt;Type.ROWVERSION: &#39;ROWVERSION&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.SMALLDATETIME: &#39;SMALLDATETIME&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.TEXT: &#39;TEXT&#39;&gt;: &#39;STRING&#39;, &lt;Type.UUID: &#39;UUID&#39;&gt;: &#39;STRING&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.TYPE_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TRANSFORMS</span>        =
+<input id="Druid.Generator.TRANSFORMS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Druid.Generator.TRANSFORMS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#JSONPathFilter">sqlglot.expressions.JSONPathFilter</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathKey">sqlglot.expressions.JSONPathKey</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathRecursive">sqlglot.expressions.JSONPathRecursive</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathRoot">sqlglot.expressions.JSONPathRoot</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathScript">sqlglot.expressions.JSONPathScript</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSelector">sqlglot.expressions.JSONPathSelector</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSlice">sqlglot.expressions.JSONPathSlice</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSubscript">sqlglot.expressions.JSONPathSubscript</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathUnion">sqlglot.expressions.JSONPathUnion</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathWildcard">sqlglot.expressions.JSONPathWildcard</a>&#39;&gt;: &lt;function &lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Adjacent">sqlglot.expressions.Adjacent</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#AllowedValuesProperty">sqlglot.expressions.AllowedValuesProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#AnalyzeColumns">sqlglot.expressions.AnalyzeColumns</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#AnalyzeWith">sqlglot.expressions.AnalyzeWith</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayContainsAll">sqlglot.expressions.ArrayContainsAll</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayOverlaps">sqlglot.expressions.ArrayOverlaps</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#AutoRefreshProperty">sqlglot.expressions.AutoRefreshProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BackupProperty">sqlglot.expressions.BackupProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CaseSpecificColumnConstraint">sqlglot.expressions.CaseSpecificColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Ceil">sqlglot.expressions.Ceil</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetColumnConstraint">sqlglot.expressions.CharacterSetColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetProperty">sqlglot.expressions.CharacterSetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ClusteredColumnConstraint">sqlglot.expressions.ClusteredColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CollateColumnConstraint">sqlglot.expressions.CollateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CommentColumnConstraint">sqlglot.expressions.CommentColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ConnectByRoot">sqlglot.expressions.ConnectByRoot</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ConvertToCharset">sqlglot.expressions.ConvertToCharset</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CopyGrantsProperty">sqlglot.expressions.CopyGrantsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CredentialsProperty">sqlglot.expressions.CredentialsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CurrentCatalog">sqlglot.expressions.CurrentCatalog</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SessionUser">sqlglot.expressions.SessionUser</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateFormatColumnConstraint">sqlglot.expressions.DateFormatColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DefaultColumnConstraint">sqlglot.expressions.DefaultColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DynamicProperty">sqlglot.expressions.DynamicProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EmptyProperty">sqlglot.expressions.EmptyProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EncodeColumnConstraint">sqlglot.expressions.EncodeColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EnviromentProperty">sqlglot.expressions.EnviromentProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EphemeralColumnConstraint">sqlglot.expressions.EphemeralColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExcludeColumnConstraint">sqlglot.expressions.ExcludeColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExecuteAsProperty">sqlglot.expressions.ExecuteAsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Except">sqlglot.expressions.Except</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExternalProperty">sqlglot.expressions.ExternalProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Floor">sqlglot.expressions.Floor</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Get">sqlglot.expressions.Get</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#GlobalProperty">sqlglot.expressions.GlobalProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#HeapProperty">sqlglot.expressions.HeapProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#IcebergProperty">sqlglot.expressions.IcebergProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#InheritsProperty">sqlglot.expressions.InheritsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#InlineLengthColumnConstraint">sqlglot.expressions.InlineLengthColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#InputModelProperty">sqlglot.expressions.InputModelProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Intersect">sqlglot.expressions.Intersect</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#IntervalSpan">sqlglot.expressions.IntervalSpan</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Int64">sqlglot.expressions.Int64</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONBContainsAnyTopKeys">sqlglot.expressions.JSONBContainsAnyTopKeys</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONBContainsAllTopKeys">sqlglot.expressions.JSONBContainsAllTopKeys</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONBDeleteAtPath">sqlglot.expressions.JSONBDeleteAtPath</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LanguageProperty">sqlglot.expressions.LanguageProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LocationProperty">sqlglot.expressions.LocationProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogProperty">sqlglot.expressions.LogProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#MaterializedProperty">sqlglot.expressions.MaterializedProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NetFunc">sqlglot.expressions.NetFunc</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NonClusteredColumnConstraint">sqlglot.expressions.NonClusteredColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NoPrimaryIndexProperty">sqlglot.expressions.NoPrimaryIndexProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NotForReplicationColumnConstraint">sqlglot.expressions.NotForReplicationColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnCommitProperty">sqlglot.expressions.OnCommitProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnProperty">sqlglot.expressions.OnProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnUpdateColumnConstraint">sqlglot.expressions.OnUpdateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Operator">sqlglot.expressions.Operator</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OutputModelProperty">sqlglot.expressions.OutputModelProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExtendsLeft">sqlglot.expressions.ExtendsLeft</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExtendsRight">sqlglot.expressions.ExtendsRight</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PathColumnConstraint">sqlglot.expressions.PathColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PartitionedByBucket">sqlglot.expressions.PartitionedByBucket</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PartitionByTruncate">sqlglot.expressions.PartitionByTruncate</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PivotAny">sqlglot.expressions.PivotAny</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PositionalColumn">sqlglot.expressions.PositionalColumn</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ProjectionPolicyColumnConstraint">sqlglot.expressions.ProjectionPolicyColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ZeroFillColumnConstraint">sqlglot.expressions.ZeroFillColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Put">sqlglot.expressions.Put</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#RemoteWithConnectionModelProperty">sqlglot.expressions.RemoteWithConnectionModelProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ReturnsProperty">sqlglot.expressions.ReturnsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SafeFunc">sqlglot.expressions.SafeFunc</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SampleProperty">sqlglot.expressions.SampleProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SecureProperty">sqlglot.expressions.SecureProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SecurityProperty">sqlglot.expressions.SecurityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SetConfigProperty">sqlglot.expressions.SetConfigProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SetProperty">sqlglot.expressions.SetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SettingsProperty">sqlglot.expressions.SettingsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SharingProperty">sqlglot.expressions.SharingProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SqlReadWriteProperty">sqlglot.expressions.SqlReadWriteProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SqlSecurityProperty">sqlglot.expressions.SqlSecurityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StabilityProperty">sqlglot.expressions.StabilityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Stream">sqlglot.expressions.Stream</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StreamingTableProperty">sqlglot.expressions.StreamingTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StrictProperty">sqlglot.expressions.StrictProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SwapTable">sqlglot.expressions.SwapTable</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TableColumn">sqlglot.expressions.TableColumn</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Tags">sqlglot.expressions.Tags</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TemporaryProperty">sqlglot.expressions.TemporaryProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TitleColumnConstraint">sqlglot.expressions.TitleColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ToMap">sqlglot.expressions.ToMap</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ToTableProperty">sqlglot.expressions.ToTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TransformModelProperty">sqlglot.expressions.TransformModelProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TransientProperty">sqlglot.expressions.TransientProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Union">sqlglot.expressions.Union</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnloggedProperty">sqlglot.expressions.UnloggedProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UsingTemplateProperty">sqlglot.expressions.UsingTemplateProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UsingData">sqlglot.expressions.UsingData</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UppercaseColumnConstraint">sqlglot.expressions.UppercaseColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UtcDate">sqlglot.expressions.UtcDate</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UtcTime">sqlglot.expressions.UtcTime</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UtcTimestamp">sqlglot.expressions.UtcTimestamp</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Variadic">sqlglot.expressions.Variadic</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VarMap">sqlglot.expressions.VarMap</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ViewAttributeProperty">sqlglot.expressions.ViewAttributeProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VolatileProperty">sqlglot.expressions.VolatileProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithJournalTableProperty">sqlglot.expressions.WithJournalTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithProcedureOptions">sqlglot.expressions.WithProcedureOptions</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithSchemaBindingProperty">sqlglot.expressions.WithSchemaBindingProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithOperator">sqlglot.expressions.WithOperator</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ForceProperty">sqlglot.expressions.ForceProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;: &lt;function <a href="#Druid.Generator">Druid.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Mod">sqlglot.expressions.Mod</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Array">sqlglot.expressions.Array</a>&#39;&gt;: &lt;function <a href="#Druid.Generator">Druid.Generator</a>.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.TRANSFORMS"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.SELECT_KINDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SELECT_KINDS</span><span class="annotation">: Tuple[str, ...]</span>        =
+<span class="default_value">()</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.SELECT_KINDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.TRY_SUPPORTED" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TRY_SUPPORTED</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.TRY_SUPPORTED"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.SUPPORTS_UESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_UESCAPE</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.SUPPORTS_UESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.SUPPORTS_DECODE_CASE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_DECODE_CASE</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.SUPPORTS_DECODE_CASE"></a>
+    
+    
+
+                            </div>
+                            <div id="Druid.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">AFTER_HAVING_MODIFIER_TRANSFORMS</span>        =
+<span class="default_value">{&#39;windows&#39;: &lt;function Generator.&lt;lambda&gt;&gt;, &#39;qualify&#39;: &lt;function Generator.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Druid.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
+                                <dd id="Druid.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
+                <dd id="Druid.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
+                <dd id="Druid.Generator.IGNORE_NULLS_IN_FUNC" class="variable"><a href="../generator.html#Generator.IGNORE_NULLS_IN_FUNC">IGNORE_NULLS_IN_FUNC</a></dd>
+                <dd id="Druid.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
+                <dd id="Druid.Generator.EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE" class="variable"><a href="../generator.html#Generator.EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE">EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE</a></dd>
+                <dd id="Druid.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
+                <dd id="Druid.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
+                <dd id="Druid.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
+                <dd id="Druid.Generator.SINGLE_STRING_INTERVAL" class="variable"><a href="../generator.html#Generator.SINGLE_STRING_INTERVAL">SINGLE_STRING_INTERVAL</a></dd>
+                <dd id="Druid.Generator.INTERVAL_ALLOWS_PLURAL_FORM" class="variable"><a href="../generator.html#Generator.INTERVAL_ALLOWS_PLURAL_FORM">INTERVAL_ALLOWS_PLURAL_FORM</a></dd>
+                <dd id="Druid.Generator.LIMIT_FETCH" class="variable"><a href="../generator.html#Generator.LIMIT_FETCH">LIMIT_FETCH</a></dd>
+                <dd id="Druid.Generator.LIMIT_ONLY_LITERALS" class="variable"><a href="../generator.html#Generator.LIMIT_ONLY_LITERALS">LIMIT_ONLY_LITERALS</a></dd>
+                <dd id="Druid.Generator.RENAME_TABLE_WITH_DB" class="variable"><a href="../generator.html#Generator.RENAME_TABLE_WITH_DB">RENAME_TABLE_WITH_DB</a></dd>
+                <dd id="Druid.Generator.GROUPINGS_SEP" class="variable"><a href="../generator.html#Generator.GROUPINGS_SEP">GROUPINGS_SEP</a></dd>
+                <dd id="Druid.Generator.INDEX_ON" class="variable"><a href="../generator.html#Generator.INDEX_ON">INDEX_ON</a></dd>
+                <dd id="Druid.Generator.INOUT_SEPARATOR" class="variable"><a href="../generator.html#Generator.INOUT_SEPARATOR">INOUT_SEPARATOR</a></dd>
+                <dd id="Druid.Generator.JOIN_HINTS" class="variable"><a href="../generator.html#Generator.JOIN_HINTS">JOIN_HINTS</a></dd>
+                <dd id="Druid.Generator.DIRECTED_JOINS" class="variable"><a href="../generator.html#Generator.DIRECTED_JOINS">DIRECTED_JOINS</a></dd>
+                <dd id="Druid.Generator.TABLE_HINTS" class="variable"><a href="../generator.html#Generator.TABLE_HINTS">TABLE_HINTS</a></dd>
+                <dd id="Druid.Generator.QUERY_HINTS" class="variable"><a href="../generator.html#Generator.QUERY_HINTS">QUERY_HINTS</a></dd>
+                <dd id="Druid.Generator.QUERY_HINT_SEP" class="variable"><a href="../generator.html#Generator.QUERY_HINT_SEP">QUERY_HINT_SEP</a></dd>
+                <dd id="Druid.Generator.IS_BOOL_ALLOWED" class="variable"><a href="../generator.html#Generator.IS_BOOL_ALLOWED">IS_BOOL_ALLOWED</a></dd>
+                <dd id="Druid.Generator.DUPLICATE_KEY_UPDATE_WITH_SET" class="variable"><a href="../generator.html#Generator.DUPLICATE_KEY_UPDATE_WITH_SET">DUPLICATE_KEY_UPDATE_WITH_SET</a></dd>
+                <dd id="Druid.Generator.LIMIT_IS_TOP" class="variable"><a href="../generator.html#Generator.LIMIT_IS_TOP">LIMIT_IS_TOP</a></dd>
+                <dd id="Druid.Generator.RETURNING_END" class="variable"><a href="../generator.html#Generator.RETURNING_END">RETURNING_END</a></dd>
+                <dd id="Druid.Generator.EXTRACT_ALLOWS_QUOTES" class="variable"><a href="../generator.html#Generator.EXTRACT_ALLOWS_QUOTES">EXTRACT_ALLOWS_QUOTES</a></dd>
+                <dd id="Druid.Generator.TZ_TO_WITH_TIME_ZONE" class="variable"><a href="../generator.html#Generator.TZ_TO_WITH_TIME_ZONE">TZ_TO_WITH_TIME_ZONE</a></dd>
+                <dd id="Druid.Generator.NVL2_SUPPORTED" class="variable"><a href="../generator.html#Generator.NVL2_SUPPORTED">NVL2_SUPPORTED</a></dd>
+                <dd id="Druid.Generator.VALUES_AS_TABLE" class="variable"><a href="../generator.html#Generator.VALUES_AS_TABLE">VALUES_AS_TABLE</a></dd>
+                <dd id="Druid.Generator.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD" class="variable"><a href="../generator.html#Generator.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD">ALTER_TABLE_INCLUDE_COLUMN_KEYWORD</a></dd>
+                <dd id="Druid.Generator.UNNEST_WITH_ORDINALITY" class="variable"><a href="../generator.html#Generator.UNNEST_WITH_ORDINALITY">UNNEST_WITH_ORDINALITY</a></dd>
+                <dd id="Druid.Generator.AGGREGATE_FILTER_SUPPORTED" class="variable"><a href="../generator.html#Generator.AGGREGATE_FILTER_SUPPORTED">AGGREGATE_FILTER_SUPPORTED</a></dd>
+                <dd id="Druid.Generator.SEMI_ANTI_JOIN_WITH_SIDE" class="variable"><a href="../generator.html#Generator.SEMI_ANTI_JOIN_WITH_SIDE">SEMI_ANTI_JOIN_WITH_SIDE</a></dd>
+                <dd id="Druid.Generator.COMPUTED_COLUMN_WITH_TYPE" class="variable"><a href="../generator.html#Generator.COMPUTED_COLUMN_WITH_TYPE">COMPUTED_COLUMN_WITH_TYPE</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_TABLE_COPY" class="variable"><a href="../generator.html#Generator.SUPPORTS_TABLE_COPY">SUPPORTS_TABLE_COPY</a></dd>
+                <dd id="Druid.Generator.TABLESAMPLE_REQUIRES_PARENS" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_REQUIRES_PARENS">TABLESAMPLE_REQUIRES_PARENS</a></dd>
+                <dd id="Druid.Generator.TABLESAMPLE_SIZE_IS_ROWS" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_SIZE_IS_ROWS">TABLESAMPLE_SIZE_IS_ROWS</a></dd>
+                <dd id="Druid.Generator.TABLESAMPLE_KEYWORDS" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_KEYWORDS">TABLESAMPLE_KEYWORDS</a></dd>
+                <dd id="Druid.Generator.TABLESAMPLE_WITH_METHOD" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_WITH_METHOD">TABLESAMPLE_WITH_METHOD</a></dd>
+                <dd id="Druid.Generator.TABLESAMPLE_SEED_KEYWORD" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_SEED_KEYWORD">TABLESAMPLE_SEED_KEYWORD</a></dd>
+                <dd id="Druid.Generator.COLLATE_IS_FUNC" class="variable"><a href="../generator.html#Generator.COLLATE_IS_FUNC">COLLATE_IS_FUNC</a></dd>
+                <dd id="Druid.Generator.DATA_TYPE_SPECIFIERS_ALLOWED" class="variable"><a href="../generator.html#Generator.DATA_TYPE_SPECIFIERS_ALLOWED">DATA_TYPE_SPECIFIERS_ALLOWED</a></dd>
+                <dd id="Druid.Generator.ENSURE_BOOLS" class="variable"><a href="../generator.html#Generator.ENSURE_BOOLS">ENSURE_BOOLS</a></dd>
+                <dd id="Druid.Generator.CTE_RECURSIVE_KEYWORD_REQUIRED" class="variable"><a href="../generator.html#Generator.CTE_RECURSIVE_KEYWORD_REQUIRED">CTE_RECURSIVE_KEYWORD_REQUIRED</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_SINGLE_ARG_CONCAT" class="variable"><a href="../generator.html#Generator.SUPPORTS_SINGLE_ARG_CONCAT">SUPPORTS_SINGLE_ARG_CONCAT</a></dd>
+                <dd id="Druid.Generator.LAST_DAY_SUPPORTS_DATE_PART" class="variable"><a href="../generator.html#Generator.LAST_DAY_SUPPORTS_DATE_PART">LAST_DAY_SUPPORTS_DATE_PART</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_TABLE_ALIAS_COLUMNS" class="variable"><a href="../generator.html#Generator.SUPPORTS_TABLE_ALIAS_COLUMNS">SUPPORTS_TABLE_ALIAS_COLUMNS</a></dd>
+                <dd id="Druid.Generator.UNPIVOT_ALIASES_ARE_IDENTIFIERS" class="variable"><a href="../generator.html#Generator.UNPIVOT_ALIASES_ARE_IDENTIFIERS">UNPIVOT_ALIASES_ARE_IDENTIFIERS</a></dd>
+                <dd id="Druid.Generator.JSON_KEY_VALUE_PAIR_SEP" class="variable"><a href="../generator.html#Generator.JSON_KEY_VALUE_PAIR_SEP">JSON_KEY_VALUE_PAIR_SEP</a></dd>
+                <dd id="Druid.Generator.INSERT_OVERWRITE" class="variable"><a href="../generator.html#Generator.INSERT_OVERWRITE">INSERT_OVERWRITE</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_SELECT_INTO" class="variable"><a href="../generator.html#Generator.SUPPORTS_SELECT_INTO">SUPPORTS_SELECT_INTO</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_UNLOGGED_TABLES" class="variable"><a href="../generator.html#Generator.SUPPORTS_UNLOGGED_TABLES">SUPPORTS_UNLOGGED_TABLES</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_CREATE_TABLE_LIKE" class="variable"><a href="../generator.html#Generator.SUPPORTS_CREATE_TABLE_LIKE">SUPPORTS_CREATE_TABLE_LIKE</a></dd>
+                <dd id="Druid.Generator.LIKE_PROPERTY_INSIDE_SCHEMA" class="variable"><a href="../generator.html#Generator.LIKE_PROPERTY_INSIDE_SCHEMA">LIKE_PROPERTY_INSIDE_SCHEMA</a></dd>
+                <dd id="Druid.Generator.MULTI_ARG_DISTINCT" class="variable"><a href="../generator.html#Generator.MULTI_ARG_DISTINCT">MULTI_ARG_DISTINCT</a></dd>
+                <dd id="Druid.Generator.JSON_TYPE_REQUIRED_FOR_EXTRACTION" class="variable"><a href="../generator.html#Generator.JSON_TYPE_REQUIRED_FOR_EXTRACTION">JSON_TYPE_REQUIRED_FOR_EXTRACTION</a></dd>
+                <dd id="Druid.Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED" class="variable"><a href="../generator.html#Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED">JSON_PATH_BRACKETED_KEY_SUPPORTED</a></dd>
+                <dd id="Druid.Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE" class="variable"><a href="../generator.html#Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE">JSON_PATH_SINGLE_QUOTE_ESCAPE</a></dd>
+                <dd id="Druid.Generator.SUPPORTED_JSON_PATH_PARTS" class="variable"><a href="../generator.html#Generator.SUPPORTED_JSON_PATH_PARTS">SUPPORTED_JSON_PATH_PARTS</a></dd>
+                <dd id="Druid.Generator.CAN_IMPLEMENT_ARRAY_ANY" class="variable"><a href="../generator.html#Generator.CAN_IMPLEMENT_ARRAY_ANY">CAN_IMPLEMENT_ARRAY_ANY</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_TO_NUMBER" class="variable"><a href="../generator.html#Generator.SUPPORTS_TO_NUMBER">SUPPORTS_TO_NUMBER</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_WINDOW_EXCLUDE" class="variable"><a href="../generator.html#Generator.SUPPORTS_WINDOW_EXCLUDE">SUPPORTS_WINDOW_EXCLUDE</a></dd>
+                <dd id="Druid.Generator.SET_OP_MODIFIERS" class="variable"><a href="../generator.html#Generator.SET_OP_MODIFIERS">SET_OP_MODIFIERS</a></dd>
+                <dd id="Druid.Generator.COPY_PARAMS_ARE_WRAPPED" class="variable"><a href="../generator.html#Generator.COPY_PARAMS_ARE_WRAPPED">COPY_PARAMS_ARE_WRAPPED</a></dd>
+                <dd id="Druid.Generator.COPY_PARAMS_EQ_REQUIRED" class="variable"><a href="../generator.html#Generator.COPY_PARAMS_EQ_REQUIRED">COPY_PARAMS_EQ_REQUIRED</a></dd>
+                <dd id="Druid.Generator.COPY_HAS_INTO_KEYWORD" class="variable"><a href="../generator.html#Generator.COPY_HAS_INTO_KEYWORD">COPY_HAS_INTO_KEYWORD</a></dd>
+                <dd id="Druid.Generator.UNICODE_SUBSTITUTE" class="variable"><a href="../generator.html#Generator.UNICODE_SUBSTITUTE">UNICODE_SUBSTITUTE</a></dd>
+                <dd id="Druid.Generator.STAR_EXCEPT" class="variable"><a href="../generator.html#Generator.STAR_EXCEPT">STAR_EXCEPT</a></dd>
+                <dd id="Druid.Generator.HEX_FUNC" class="variable"><a href="../generator.html#Generator.HEX_FUNC">HEX_FUNC</a></dd>
+                <dd id="Druid.Generator.WITH_PROPERTIES_PREFIX" class="variable"><a href="../generator.html#Generator.WITH_PROPERTIES_PREFIX">WITH_PROPERTIES_PREFIX</a></dd>
+                <dd id="Druid.Generator.QUOTE_JSON_PATH" class="variable"><a href="../generator.html#Generator.QUOTE_JSON_PATH">QUOTE_JSON_PATH</a></dd>
+                <dd id="Druid.Generator.PAD_FILL_PATTERN_IS_REQUIRED" class="variable"><a href="../generator.html#Generator.PAD_FILL_PATTERN_IS_REQUIRED">PAD_FILL_PATTERN_IS_REQUIRED</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_EXPLODING_PROJECTIONS" class="variable"><a href="../generator.html#Generator.SUPPORTS_EXPLODING_PROJECTIONS">SUPPORTS_EXPLODING_PROJECTIONS</a></dd>
+                <dd id="Druid.Generator.ARRAY_CONCAT_IS_VAR_LEN" class="variable"><a href="../generator.html#Generator.ARRAY_CONCAT_IS_VAR_LEN">ARRAY_CONCAT_IS_VAR_LEN</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_CONVERT_TIMEZONE" class="variable"><a href="../generator.html#Generator.SUPPORTS_CONVERT_TIMEZONE">SUPPORTS_CONVERT_TIMEZONE</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_MEDIAN" class="variable"><a href="../generator.html#Generator.SUPPORTS_MEDIAN">SUPPORTS_MEDIAN</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_UNIX_SECONDS" class="variable"><a href="../generator.html#Generator.SUPPORTS_UNIX_SECONDS">SUPPORTS_UNIX_SECONDS</a></dd>
+                <dd id="Druid.Generator.ALTER_SET_WRAPPED" class="variable"><a href="../generator.html#Generator.ALTER_SET_WRAPPED">ALTER_SET_WRAPPED</a></dd>
+                <dd id="Druid.Generator.NORMALIZE_EXTRACT_DATE_PARTS" class="variable"><a href="../generator.html#Generator.NORMALIZE_EXTRACT_DATE_PARTS">NORMALIZE_EXTRACT_DATE_PARTS</a></dd>
+                <dd id="Druid.Generator.PARSE_JSON_NAME" class="variable"><a href="../generator.html#Generator.PARSE_JSON_NAME">PARSE_JSON_NAME</a></dd>
+                <dd id="Druid.Generator.ARRAY_SIZE_NAME" class="variable"><a href="../generator.html#Generator.ARRAY_SIZE_NAME">ARRAY_SIZE_NAME</a></dd>
+                <dd id="Druid.Generator.ALTER_SET_TYPE" class="variable"><a href="../generator.html#Generator.ALTER_SET_TYPE">ALTER_SET_TYPE</a></dd>
+                <dd id="Druid.Generator.ARRAY_SIZE_DIM_REQUIRED" class="variable"><a href="../generator.html#Generator.ARRAY_SIZE_DIM_REQUIRED">ARRAY_SIZE_DIM_REQUIRED</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_BETWEEN_FLAGS" class="variable"><a href="../generator.html#Generator.SUPPORTS_BETWEEN_FLAGS">SUPPORTS_BETWEEN_FLAGS</a></dd>
+                <dd id="Druid.Generator.SUPPORTS_LIKE_QUANTIFIERS" class="variable"><a href="../generator.html#Generator.SUPPORTS_LIKE_QUANTIFIERS">SUPPORTS_LIKE_QUANTIFIERS</a></dd>
+                <dd id="Druid.Generator.MATCH_AGAINST_TABLE_PREFIX" class="variable"><a href="../generator.html#Generator.MATCH_AGAINST_TABLE_PREFIX">MATCH_AGAINST_TABLE_PREFIX</a></dd>
+                <dd id="Druid.Generator.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD" class="variable"><a href="../generator.html#Generator.SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD">SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD</a></dd>
+                <dd id="Druid.Generator.UPDATE_STATEMENT_SUPPORTS_FROM" class="variable"><a href="../generator.html#Generator.UPDATE_STATEMENT_SUPPORTS_FROM">UPDATE_STATEMENT_SUPPORTS_FROM</a></dd>
+                <dd id="Druid.Generator.UNSUPPORTED_TYPES" class="variable"><a href="../generator.html#Generator.UNSUPPORTED_TYPES">UNSUPPORTED_TYPES</a></dd>
+                <dd id="Druid.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
+                <dd id="Druid.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
+                <dd id="Druid.Generator.STRUCT_DELIMITER" class="variable"><a href="../generator.html#Generator.STRUCT_DELIMITER">STRUCT_DELIMITER</a></dd>
+                <dd id="Druid.Generator.PARAMETER_TOKEN" class="variable"><a href="../generator.html#Generator.PARAMETER_TOKEN">PARAMETER_TOKEN</a></dd>
+                <dd id="Druid.Generator.NAMED_PLACEHOLDER_TOKEN" class="variable"><a href="../generator.html#Generator.NAMED_PLACEHOLDER_TOKEN">NAMED_PLACEHOLDER_TOKEN</a></dd>
+                <dd id="Druid.Generator.EXPRESSION_PRECEDES_PROPERTIES_CREATABLES" class="variable"><a href="../generator.html#Generator.EXPRESSION_PRECEDES_PROPERTIES_CREATABLES">EXPRESSION_PRECEDES_PROPERTIES_CREATABLES</a></dd>
+                <dd id="Druid.Generator.PROPERTIES_LOCATION" class="variable"><a href="../generator.html#Generator.PROPERTIES_LOCATION">PROPERTIES_LOCATION</a></dd>
+                <dd id="Druid.Generator.RESERVED_KEYWORDS" class="variable"><a href="../generator.html#Generator.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Druid.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
+                <dd id="Druid.Generator.EXCLUDE_COMMENTS" class="variable"><a href="../generator.html#Generator.EXCLUDE_COMMENTS">EXCLUDE_COMMENTS</a></dd>
+                <dd id="Druid.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
+                <dd id="Druid.Generator.PARAMETERIZABLE_TEXT_TYPES" class="variable"><a href="../generator.html#Generator.PARAMETERIZABLE_TEXT_TYPES">PARAMETERIZABLE_TEXT_TYPES</a></dd>
+                <dd id="Druid.Generator.EXPRESSIONS_WITHOUT_NESTED_CTES" class="variable"><a href="../generator.html#Generator.EXPRESSIONS_WITHOUT_NESTED_CTES">EXPRESSIONS_WITHOUT_NESTED_CTES</a></dd>
+                <dd id="Druid.Generator.RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS" class="variable"><a href="../generator.html#Generator.RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS">RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS</a></dd>
+                <dd id="Druid.Generator.SAFE_JSON_PATH_KEY_RE" class="variable"><a href="../generator.html#Generator.SAFE_JSON_PATH_KEY_RE">SAFE_JSON_PATH_KEY_RE</a></dd>
+                <dd id="Druid.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
+                <dd id="Druid.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
+                <dd id="Druid.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
+                <dd id="Druid.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
+                <dd id="Druid.Generator.pad" class="variable"><a href="../generator.html#Generator.pad">pad</a></dd>
+                <dd id="Druid.Generator.unsupported_level" class="variable"><a href="../generator.html#Generator.unsupported_level">unsupported_level</a></dd>
+                <dd id="Druid.Generator.max_unsupported" class="variable"><a href="../generator.html#Generator.max_unsupported">max_unsupported</a></dd>
+                <dd id="Druid.Generator.leading_comma" class="variable"><a href="../generator.html#Generator.leading_comma">leading_comma</a></dd>
+                <dd id="Druid.Generator.max_text_width" class="variable"><a href="../generator.html#Generator.max_text_width">max_text_width</a></dd>
+                <dd id="Druid.Generator.comments" class="variable"><a href="../generator.html#Generator.comments">comments</a></dd>
+                <dd id="Druid.Generator.dialect" class="variable"><a href="../generator.html#Generator.dialect">dialect</a></dd>
+                <dd id="Druid.Generator.normalize_functions" class="variable"><a href="../generator.html#Generator.normalize_functions">normalize_functions</a></dd>
+                <dd id="Druid.Generator.unsupported_messages" class="variable"><a href="../generator.html#Generator.unsupported_messages">unsupported_messages</a></dd>
+                <dd id="Druid.Generator.generate" class="function"><a href="../generator.html#Generator.generate">generate</a></dd>
+                <dd id="Druid.Generator.preprocess" class="function"><a href="../generator.html#Generator.preprocess">preprocess</a></dd>
+                <dd id="Druid.Generator.unsupported" class="function"><a href="../generator.html#Generator.unsupported">unsupported</a></dd>
+                <dd id="Druid.Generator.sep" class="function"><a href="../generator.html#Generator.sep">sep</a></dd>
+                <dd id="Druid.Generator.seg" class="function"><a href="../generator.html#Generator.seg">seg</a></dd>
+                <dd id="Druid.Generator.sanitize_comment" class="function"><a href="../generator.html#Generator.sanitize_comment">sanitize_comment</a></dd>
+                <dd id="Druid.Generator.maybe_comment" class="function"><a href="../generator.html#Generator.maybe_comment">maybe_comment</a></dd>
+                <dd id="Druid.Generator.wrap" class="function"><a href="../generator.html#Generator.wrap">wrap</a></dd>
+                <dd id="Druid.Generator.no_identify" class="function"><a href="../generator.html#Generator.no_identify">no_identify</a></dd>
+                <dd id="Druid.Generator.normalize_func" class="function"><a href="../generator.html#Generator.normalize_func">normalize_func</a></dd>
+                <dd id="Druid.Generator.indent" class="function"><a href="../generator.html#Generator.indent">indent</a></dd>
+                <dd id="Druid.Generator.sql" class="function"><a href="../generator.html#Generator.sql">sql</a></dd>
+                <dd id="Druid.Generator.uncache_sql" class="function"><a href="../generator.html#Generator.uncache_sql">uncache_sql</a></dd>
+                <dd id="Druid.Generator.cache_sql" class="function"><a href="../generator.html#Generator.cache_sql">cache_sql</a></dd>
+                <dd id="Druid.Generator.characterset_sql" class="function"><a href="../generator.html#Generator.characterset_sql">characterset_sql</a></dd>
+                <dd id="Druid.Generator.column_parts" class="function"><a href="../generator.html#Generator.column_parts">column_parts</a></dd>
+                <dd id="Druid.Generator.column_sql" class="function"><a href="../generator.html#Generator.column_sql">column_sql</a></dd>
+                <dd id="Druid.Generator.pseudocolumn_sql" class="function"><a href="../generator.html#Generator.pseudocolumn_sql">pseudocolumn_sql</a></dd>
+                <dd id="Druid.Generator.columnposition_sql" class="function"><a href="../generator.html#Generator.columnposition_sql">columnposition_sql</a></dd>
+                <dd id="Druid.Generator.columndef_sql" class="function"><a href="../generator.html#Generator.columndef_sql">columndef_sql</a></dd>
+                <dd id="Druid.Generator.columnconstraint_sql" class="function"><a href="../generator.html#Generator.columnconstraint_sql">columnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.computedcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.computedcolumnconstraint_sql">computedcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.autoincrementcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.autoincrementcolumnconstraint_sql">autoincrementcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.compresscolumnconstraint_sql" class="function"><a href="../generator.html#Generator.compresscolumnconstraint_sql">compresscolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.generatedasidentitycolumnconstraint_sql" class="function"><a href="../generator.html#Generator.generatedasidentitycolumnconstraint_sql">generatedasidentitycolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.generatedasrowcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.generatedasrowcolumnconstraint_sql">generatedasrowcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.periodforsystemtimeconstraint_sql" class="function"><a href="../generator.html#Generator.periodforsystemtimeconstraint_sql">periodforsystemtimeconstraint_sql</a></dd>
+                <dd id="Druid.Generator.notnullcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.notnullcolumnconstraint_sql">notnullcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.primarykeycolumnconstraint_sql" class="function"><a href="../generator.html#Generator.primarykeycolumnconstraint_sql">primarykeycolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.uniquecolumnconstraint_sql" class="function"><a href="../generator.html#Generator.uniquecolumnconstraint_sql">uniquecolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.inoutcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.inoutcolumnconstraint_sql">inoutcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.createable_sql" class="function"><a href="../generator.html#Generator.createable_sql">createable_sql</a></dd>
+                <dd id="Druid.Generator.create_sql" class="function"><a href="../generator.html#Generator.create_sql">create_sql</a></dd>
+                <dd id="Druid.Generator.sequenceproperties_sql" class="function"><a href="../generator.html#Generator.sequenceproperties_sql">sequenceproperties_sql</a></dd>
+                <dd id="Druid.Generator.clone_sql" class="function"><a href="../generator.html#Generator.clone_sql">clone_sql</a></dd>
+                <dd id="Druid.Generator.describe_sql" class="function"><a href="../generator.html#Generator.describe_sql">describe_sql</a></dd>
+                <dd id="Druid.Generator.heredoc_sql" class="function"><a href="../generator.html#Generator.heredoc_sql">heredoc_sql</a></dd>
+                <dd id="Druid.Generator.prepend_ctes" class="function"><a href="../generator.html#Generator.prepend_ctes">prepend_ctes</a></dd>
+                <dd id="Druid.Generator.with_sql" class="function"><a href="../generator.html#Generator.with_sql">with_sql</a></dd>
+                <dd id="Druid.Generator.cte_sql" class="function"><a href="../generator.html#Generator.cte_sql">cte_sql</a></dd>
+                <dd id="Druid.Generator.tablealias_sql" class="function"><a href="../generator.html#Generator.tablealias_sql">tablealias_sql</a></dd>
+                <dd id="Druid.Generator.bitstring_sql" class="function"><a href="../generator.html#Generator.bitstring_sql">bitstring_sql</a></dd>
+                <dd id="Druid.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
+                <dd id="Druid.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
+                <dd id="Druid.Generator.unicodestring_sql" class="function"><a href="../generator.html#Generator.unicodestring_sql">unicodestring_sql</a></dd>
+                <dd id="Druid.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
+                <dd id="Druid.Generator.datatypeparam_sql" class="function"><a href="../generator.html#Generator.datatypeparam_sql">datatypeparam_sql</a></dd>
+                <dd id="Druid.Generator.datatype_sql" class="function"><a href="../generator.html#Generator.datatype_sql">datatype_sql</a></dd>
+                <dd id="Druid.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>
+                <dd id="Druid.Generator.delete_sql" class="function"><a href="../generator.html#Generator.delete_sql">delete_sql</a></dd>
+                <dd id="Druid.Generator.drop_sql" class="function"><a href="../generator.html#Generator.drop_sql">drop_sql</a></dd>
+                <dd id="Druid.Generator.set_operation" class="function"><a href="../generator.html#Generator.set_operation">set_operation</a></dd>
+                <dd id="Druid.Generator.set_operations" class="function"><a href="../generator.html#Generator.set_operations">set_operations</a></dd>
+                <dd id="Druid.Generator.fetch_sql" class="function"><a href="../generator.html#Generator.fetch_sql">fetch_sql</a></dd>
+                <dd id="Druid.Generator.limitoptions_sql" class="function"><a href="../generator.html#Generator.limitoptions_sql">limitoptions_sql</a></dd>
+                <dd id="Druid.Generator.filter_sql" class="function"><a href="../generator.html#Generator.filter_sql">filter_sql</a></dd>
+                <dd id="Druid.Generator.hint_sql" class="function"><a href="../generator.html#Generator.hint_sql">hint_sql</a></dd>
+                <dd id="Druid.Generator.indexparameters_sql" class="function"><a href="../generator.html#Generator.indexparameters_sql">indexparameters_sql</a></dd>
+                <dd id="Druid.Generator.index_sql" class="function"><a href="../generator.html#Generator.index_sql">index_sql</a></dd>
+                <dd id="Druid.Generator.identifier_sql" class="function"><a href="../generator.html#Generator.identifier_sql">identifier_sql</a></dd>
+                <dd id="Druid.Generator.hex_sql" class="function"><a href="../generator.html#Generator.hex_sql">hex_sql</a></dd>
+                <dd id="Druid.Generator.lowerhex_sql" class="function"><a href="../generator.html#Generator.lowerhex_sql">lowerhex_sql</a></dd>
+                <dd id="Druid.Generator.inputoutputformat_sql" class="function"><a href="../generator.html#Generator.inputoutputformat_sql">inputoutputformat_sql</a></dd>
+                <dd id="Druid.Generator.national_sql" class="function"><a href="../generator.html#Generator.national_sql">national_sql</a></dd>
+                <dd id="Druid.Generator.partition_sql" class="function"><a href="../generator.html#Generator.partition_sql">partition_sql</a></dd>
+                <dd id="Druid.Generator.properties_sql" class="function"><a href="../generator.html#Generator.properties_sql">properties_sql</a></dd>
+                <dd id="Druid.Generator.root_properties" class="function"><a href="../generator.html#Generator.root_properties">root_properties</a></dd>
+                <dd id="Druid.Generator.properties" class="function"><a href="../generator.html#Generator.properties">properties</a></dd>
+                <dd id="Druid.Generator.with_properties" class="function"><a href="../generator.html#Generator.with_properties">with_properties</a></dd>
+                <dd id="Druid.Generator.locate_properties" class="function"><a href="../generator.html#Generator.locate_properties">locate_properties</a></dd>
+                <dd id="Druid.Generator.property_name" class="function"><a href="../generator.html#Generator.property_name">property_name</a></dd>
+                <dd id="Druid.Generator.property_sql" class="function"><a href="../generator.html#Generator.property_sql">property_sql</a></dd>
+                <dd id="Druid.Generator.likeproperty_sql" class="function"><a href="../generator.html#Generator.likeproperty_sql">likeproperty_sql</a></dd>
+                <dd id="Druid.Generator.fallbackproperty_sql" class="function"><a href="../generator.html#Generator.fallbackproperty_sql">fallbackproperty_sql</a></dd>
+                <dd id="Druid.Generator.journalproperty_sql" class="function"><a href="../generator.html#Generator.journalproperty_sql">journalproperty_sql</a></dd>
+                <dd id="Druid.Generator.freespaceproperty_sql" class="function"><a href="../generator.html#Generator.freespaceproperty_sql">freespaceproperty_sql</a></dd>
+                <dd id="Druid.Generator.checksumproperty_sql" class="function"><a href="../generator.html#Generator.checksumproperty_sql">checksumproperty_sql</a></dd>
+                <dd id="Druid.Generator.mergeblockratioproperty_sql" class="function"><a href="../generator.html#Generator.mergeblockratioproperty_sql">mergeblockratioproperty_sql</a></dd>
+                <dd id="Druid.Generator.datablocksizeproperty_sql" class="function"><a href="../generator.html#Generator.datablocksizeproperty_sql">datablocksizeproperty_sql</a></dd>
+                <dd id="Druid.Generator.blockcompressionproperty_sql" class="function"><a href="../generator.html#Generator.blockcompressionproperty_sql">blockcompressionproperty_sql</a></dd>
+                <dd id="Druid.Generator.isolatedloadingproperty_sql" class="function"><a href="../generator.html#Generator.isolatedloadingproperty_sql">isolatedloadingproperty_sql</a></dd>
+                <dd id="Druid.Generator.partitionboundspec_sql" class="function"><a href="../generator.html#Generator.partitionboundspec_sql">partitionboundspec_sql</a></dd>
+                <dd id="Druid.Generator.partitionedofproperty_sql" class="function"><a href="../generator.html#Generator.partitionedofproperty_sql">partitionedofproperty_sql</a></dd>
+                <dd id="Druid.Generator.lockingproperty_sql" class="function"><a href="../generator.html#Generator.lockingproperty_sql">lockingproperty_sql</a></dd>
+                <dd id="Druid.Generator.withdataproperty_sql" class="function"><a href="../generator.html#Generator.withdataproperty_sql">withdataproperty_sql</a></dd>
+                <dd id="Druid.Generator.withsystemversioningproperty_sql" class="function"><a href="../generator.html#Generator.withsystemversioningproperty_sql">withsystemversioningproperty_sql</a></dd>
+                <dd id="Druid.Generator.insert_sql" class="function"><a href="../generator.html#Generator.insert_sql">insert_sql</a></dd>
+                <dd id="Druid.Generator.introducer_sql" class="function"><a href="../generator.html#Generator.introducer_sql">introducer_sql</a></dd>
+                <dd id="Druid.Generator.kill_sql" class="function"><a href="../generator.html#Generator.kill_sql">kill_sql</a></dd>
+                <dd id="Druid.Generator.pseudotype_sql" class="function"><a href="../generator.html#Generator.pseudotype_sql">pseudotype_sql</a></dd>
+                <dd id="Druid.Generator.objectidentifier_sql" class="function"><a href="../generator.html#Generator.objectidentifier_sql">objectidentifier_sql</a></dd>
+                <dd id="Druid.Generator.onconflict_sql" class="function"><a href="../generator.html#Generator.onconflict_sql">onconflict_sql</a></dd>
+                <dd id="Druid.Generator.returning_sql" class="function"><a href="../generator.html#Generator.returning_sql">returning_sql</a></dd>
+                <dd id="Druid.Generator.rowformatdelimitedproperty_sql" class="function"><a href="../generator.html#Generator.rowformatdelimitedproperty_sql">rowformatdelimitedproperty_sql</a></dd>
+                <dd id="Druid.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
+                <dd id="Druid.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
+                <dd id="Druid.Generator.historicaldata_sql" class="function"><a href="../generator.html#Generator.historicaldata_sql">historicaldata_sql</a></dd>
+                <dd id="Druid.Generator.table_parts" class="function"><a href="../generator.html#Generator.table_parts">table_parts</a></dd>
+                <dd id="Druid.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
+                <dd id="Druid.Generator.tablefromrows_sql" class="function"><a href="../generator.html#Generator.tablefromrows_sql">tablefromrows_sql</a></dd>
+                <dd id="Druid.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
+                <dd id="Druid.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>
+                <dd id="Druid.Generator.version_sql" class="function"><a href="../generator.html#Generator.version_sql">version_sql</a></dd>
+                <dd id="Druid.Generator.tuple_sql" class="function"><a href="../generator.html#Generator.tuple_sql">tuple_sql</a></dd>
+                <dd id="Druid.Generator.update_sql" class="function"><a href="../generator.html#Generator.update_sql">update_sql</a></dd>
+                <dd id="Druid.Generator.values_sql" class="function"><a href="../generator.html#Generator.values_sql">values_sql</a></dd>
+                <dd id="Druid.Generator.var_sql" class="function"><a href="../generator.html#Generator.var_sql">var_sql</a></dd>
+                <dd id="Druid.Generator.into_sql" class="function"><a href="../generator.html#Generator.into_sql">into_sql</a></dd>
+                <dd id="Druid.Generator.from_sql" class="function"><a href="../generator.html#Generator.from_sql">from_sql</a></dd>
+                <dd id="Druid.Generator.groupingsets_sql" class="function"><a href="../generator.html#Generator.groupingsets_sql">groupingsets_sql</a></dd>
+                <dd id="Druid.Generator.rollup_sql" class="function"><a href="../generator.html#Generator.rollup_sql">rollup_sql</a></dd>
+                <dd id="Druid.Generator.rollupindex_sql" class="function"><a href="../generator.html#Generator.rollupindex_sql">rollupindex_sql</a></dd>
+                <dd id="Druid.Generator.rollupproperty_sql" class="function"><a href="../generator.html#Generator.rollupproperty_sql">rollupproperty_sql</a></dd>
+                <dd id="Druid.Generator.cube_sql" class="function"><a href="../generator.html#Generator.cube_sql">cube_sql</a></dd>
+                <dd id="Druid.Generator.group_sql" class="function"><a href="../generator.html#Generator.group_sql">group_sql</a></dd>
+                <dd id="Druid.Generator.having_sql" class="function"><a href="../generator.html#Generator.having_sql">having_sql</a></dd>
+                <dd id="Druid.Generator.connect_sql" class="function"><a href="../generator.html#Generator.connect_sql">connect_sql</a></dd>
+                <dd id="Druid.Generator.prior_sql" class="function"><a href="../generator.html#Generator.prior_sql">prior_sql</a></dd>
+                <dd id="Druid.Generator.join_sql" class="function"><a href="../generator.html#Generator.join_sql">join_sql</a></dd>
+                <dd id="Druid.Generator.lambda_sql" class="function"><a href="../generator.html#Generator.lambda_sql">lambda_sql</a></dd>
+                <dd id="Druid.Generator.lateral_op" class="function"><a href="../generator.html#Generator.lateral_op">lateral_op</a></dd>
+                <dd id="Druid.Generator.lateral_sql" class="function"><a href="../generator.html#Generator.lateral_sql">lateral_sql</a></dd>
+                <dd id="Druid.Generator.limit_sql" class="function"><a href="../generator.html#Generator.limit_sql">limit_sql</a></dd>
+                <dd id="Druid.Generator.offset_sql" class="function"><a href="../generator.html#Generator.offset_sql">offset_sql</a></dd>
+                <dd id="Druid.Generator.setitem_sql" class="function"><a href="../generator.html#Generator.setitem_sql">setitem_sql</a></dd>
+                <dd id="Druid.Generator.set_sql" class="function"><a href="../generator.html#Generator.set_sql">set_sql</a></dd>
+                <dd id="Druid.Generator.queryband_sql" class="function"><a href="../generator.html#Generator.queryband_sql">queryband_sql</a></dd>
+                <dd id="Druid.Generator.pragma_sql" class="function"><a href="../generator.html#Generator.pragma_sql">pragma_sql</a></dd>
+                <dd id="Druid.Generator.lock_sql" class="function"><a href="../generator.html#Generator.lock_sql">lock_sql</a></dd>
+                <dd id="Druid.Generator.literal_sql" class="function"><a href="../generator.html#Generator.literal_sql">literal_sql</a></dd>
+                <dd id="Druid.Generator.escape_str" class="function"><a href="../generator.html#Generator.escape_str">escape_str</a></dd>
+                <dd id="Druid.Generator.loaddata_sql" class="function"><a href="../generator.html#Generator.loaddata_sql">loaddata_sql</a></dd>
+                <dd id="Druid.Generator.null_sql" class="function"><a href="../generator.html#Generator.null_sql">null_sql</a></dd>
+                <dd id="Druid.Generator.boolean_sql" class="function"><a href="../generator.html#Generator.boolean_sql">boolean_sql</a></dd>
+                <dd id="Druid.Generator.booland_sql" class="function"><a href="../generator.html#Generator.booland_sql">booland_sql</a></dd>
+                <dd id="Druid.Generator.boolor_sql" class="function"><a href="../generator.html#Generator.boolor_sql">boolor_sql</a></dd>
+                <dd id="Druid.Generator.order_sql" class="function"><a href="../generator.html#Generator.order_sql">order_sql</a></dd>
+                <dd id="Druid.Generator.withfill_sql" class="function"><a href="../generator.html#Generator.withfill_sql">withfill_sql</a></dd>
+                <dd id="Druid.Generator.cluster_sql" class="function"><a href="../generator.html#Generator.cluster_sql">cluster_sql</a></dd>
+                <dd id="Druid.Generator.distribute_sql" class="function"><a href="../generator.html#Generator.distribute_sql">distribute_sql</a></dd>
+                <dd id="Druid.Generator.sort_sql" class="function"><a href="../generator.html#Generator.sort_sql">sort_sql</a></dd>
+                <dd id="Druid.Generator.ordered_sql" class="function"><a href="../generator.html#Generator.ordered_sql">ordered_sql</a></dd>
+                <dd id="Druid.Generator.matchrecognizemeasure_sql" class="function"><a href="../generator.html#Generator.matchrecognizemeasure_sql">matchrecognizemeasure_sql</a></dd>
+                <dd id="Druid.Generator.matchrecognize_sql" class="function"><a href="../generator.html#Generator.matchrecognize_sql">matchrecognize_sql</a></dd>
+                <dd id="Druid.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
+                <dd id="Druid.Generator.options_modifier" class="function"><a href="../generator.html#Generator.options_modifier">options_modifier</a></dd>
+                <dd id="Druid.Generator.for_modifiers" class="function"><a href="../generator.html#Generator.for_modifiers">for_modifiers</a></dd>
+                <dd id="Druid.Generator.queryoption_sql" class="function"><a href="../generator.html#Generator.queryoption_sql">queryoption_sql</a></dd>
+                <dd id="Druid.Generator.offset_limit_modifiers" class="function"><a href="../generator.html#Generator.offset_limit_modifiers">offset_limit_modifiers</a></dd>
+                <dd id="Druid.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
+                <dd id="Druid.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
+                <dd id="Druid.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>
+                <dd id="Druid.Generator.schema_columns_sql" class="function"><a href="../generator.html#Generator.schema_columns_sql">schema_columns_sql</a></dd>
+                <dd id="Druid.Generator.star_sql" class="function"><a href="../generator.html#Generator.star_sql">star_sql</a></dd>
+                <dd id="Druid.Generator.parameter_sql" class="function"><a href="../generator.html#Generator.parameter_sql">parameter_sql</a></dd>
+                <dd id="Druid.Generator.sessionparameter_sql" class="function"><a href="../generator.html#Generator.sessionparameter_sql">sessionparameter_sql</a></dd>
+                <dd id="Druid.Generator.placeholder_sql" class="function"><a href="../generator.html#Generator.placeholder_sql">placeholder_sql</a></dd>
+                <dd id="Druid.Generator.subquery_sql" class="function"><a href="../generator.html#Generator.subquery_sql">subquery_sql</a></dd>
+                <dd id="Druid.Generator.qualify_sql" class="function"><a href="../generator.html#Generator.qualify_sql">qualify_sql</a></dd>
+                <dd id="Druid.Generator.unnest_sql" class="function"><a href="../generator.html#Generator.unnest_sql">unnest_sql</a></dd>
+                <dd id="Druid.Generator.prewhere_sql" class="function"><a href="../generator.html#Generator.prewhere_sql">prewhere_sql</a></dd>
+                <dd id="Druid.Generator.where_sql" class="function"><a href="../generator.html#Generator.where_sql">where_sql</a></dd>
+                <dd id="Druid.Generator.window_sql" class="function"><a href="../generator.html#Generator.window_sql">window_sql</a></dd>
+                <dd id="Druid.Generator.partition_by_sql" class="function"><a href="../generator.html#Generator.partition_by_sql">partition_by_sql</a></dd>
+                <dd id="Druid.Generator.windowspec_sql" class="function"><a href="../generator.html#Generator.windowspec_sql">windowspec_sql</a></dd>
+                <dd id="Druid.Generator.withingroup_sql" class="function"><a href="../generator.html#Generator.withingroup_sql">withingroup_sql</a></dd>
+                <dd id="Druid.Generator.between_sql" class="function"><a href="../generator.html#Generator.between_sql">between_sql</a></dd>
+                <dd id="Druid.Generator.bracket_offset_expressions" class="function"><a href="../generator.html#Generator.bracket_offset_expressions">bracket_offset_expressions</a></dd>
+                <dd id="Druid.Generator.bracket_sql" class="function"><a href="../generator.html#Generator.bracket_sql">bracket_sql</a></dd>
+                <dd id="Druid.Generator.all_sql" class="function"><a href="../generator.html#Generator.all_sql">all_sql</a></dd>
+                <dd id="Druid.Generator.any_sql" class="function"><a href="../generator.html#Generator.any_sql">any_sql</a></dd>
+                <dd id="Druid.Generator.exists_sql" class="function"><a href="../generator.html#Generator.exists_sql">exists_sql</a></dd>
+                <dd id="Druid.Generator.case_sql" class="function"><a href="../generator.html#Generator.case_sql">case_sql</a></dd>
+                <dd id="Druid.Generator.constraint_sql" class="function"><a href="../generator.html#Generator.constraint_sql">constraint_sql</a></dd>
+                <dd id="Druid.Generator.nextvaluefor_sql" class="function"><a href="../generator.html#Generator.nextvaluefor_sql">nextvaluefor_sql</a></dd>
+                <dd id="Druid.Generator.extract_sql" class="function"><a href="../generator.html#Generator.extract_sql">extract_sql</a></dd>
+                <dd id="Druid.Generator.trim_sql" class="function"><a href="../generator.html#Generator.trim_sql">trim_sql</a></dd>
+                <dd id="Druid.Generator.convert_concat_args" class="function"><a href="../generator.html#Generator.convert_concat_args">convert_concat_args</a></dd>
+                <dd id="Druid.Generator.concat_sql" class="function"><a href="../generator.html#Generator.concat_sql">concat_sql</a></dd>
+                <dd id="Druid.Generator.concatws_sql" class="function"><a href="../generator.html#Generator.concatws_sql">concatws_sql</a></dd>
+                <dd id="Druid.Generator.check_sql" class="function"><a href="../generator.html#Generator.check_sql">check_sql</a></dd>
+                <dd id="Druid.Generator.foreignkey_sql" class="function"><a href="../generator.html#Generator.foreignkey_sql">foreignkey_sql</a></dd>
+                <dd id="Druid.Generator.primarykey_sql" class="function"><a href="../generator.html#Generator.primarykey_sql">primarykey_sql</a></dd>
+                <dd id="Druid.Generator.if_sql" class="function"><a href="../generator.html#Generator.if_sql">if_sql</a></dd>
+                <dd id="Druid.Generator.matchagainst_sql" class="function"><a href="../generator.html#Generator.matchagainst_sql">matchagainst_sql</a></dd>
+                <dd id="Druid.Generator.jsonkeyvalue_sql" class="function"><a href="../generator.html#Generator.jsonkeyvalue_sql">jsonkeyvalue_sql</a></dd>
+                <dd id="Druid.Generator.jsonpath_sql" class="function"><a href="../generator.html#Generator.jsonpath_sql">jsonpath_sql</a></dd>
+                <dd id="Druid.Generator.json_path_part" class="function"><a href="../generator.html#Generator.json_path_part">json_path_part</a></dd>
+                <dd id="Druid.Generator.formatjson_sql" class="function"><a href="../generator.html#Generator.formatjson_sql">formatjson_sql</a></dd>
+                <dd id="Druid.Generator.formatphrase_sql" class="function"><a href="../generator.html#Generator.formatphrase_sql">formatphrase_sql</a></dd>
+                <dd id="Druid.Generator.jsonobject_sql" class="function"><a href="../generator.html#Generator.jsonobject_sql">jsonobject_sql</a></dd>
+                <dd id="Druid.Generator.jsonobjectagg_sql" class="function"><a href="../generator.html#Generator.jsonobjectagg_sql">jsonobjectagg_sql</a></dd>
+                <dd id="Druid.Generator.jsonarray_sql" class="function"><a href="../generator.html#Generator.jsonarray_sql">jsonarray_sql</a></dd>
+                <dd id="Druid.Generator.jsonarrayagg_sql" class="function"><a href="../generator.html#Generator.jsonarrayagg_sql">jsonarrayagg_sql</a></dd>
+                <dd id="Druid.Generator.jsoncolumndef_sql" class="function"><a href="../generator.html#Generator.jsoncolumndef_sql">jsoncolumndef_sql</a></dd>
+                <dd id="Druid.Generator.jsonschema_sql" class="function"><a href="../generator.html#Generator.jsonschema_sql">jsonschema_sql</a></dd>
+                <dd id="Druid.Generator.jsontable_sql" class="function"><a href="../generator.html#Generator.jsontable_sql">jsontable_sql</a></dd>
+                <dd id="Druid.Generator.openjsoncolumndef_sql" class="function"><a href="../generator.html#Generator.openjsoncolumndef_sql">openjsoncolumndef_sql</a></dd>
+                <dd id="Druid.Generator.openjson_sql" class="function"><a href="../generator.html#Generator.openjson_sql">openjson_sql</a></dd>
+                <dd id="Druid.Generator.in_sql" class="function"><a href="../generator.html#Generator.in_sql">in_sql</a></dd>
+                <dd id="Druid.Generator.in_unnest_op" class="function"><a href="../generator.html#Generator.in_unnest_op">in_unnest_op</a></dd>
+                <dd id="Druid.Generator.interval_sql" class="function"><a href="../generator.html#Generator.interval_sql">interval_sql</a></dd>
+                <dd id="Druid.Generator.return_sql" class="function"><a href="../generator.html#Generator.return_sql">return_sql</a></dd>
+                <dd id="Druid.Generator.reference_sql" class="function"><a href="../generator.html#Generator.reference_sql">reference_sql</a></dd>
+                <dd id="Druid.Generator.anonymous_sql" class="function"><a href="../generator.html#Generator.anonymous_sql">anonymous_sql</a></dd>
+                <dd id="Druid.Generator.paren_sql" class="function"><a href="../generator.html#Generator.paren_sql">paren_sql</a></dd>
+                <dd id="Druid.Generator.neg_sql" class="function"><a href="../generator.html#Generator.neg_sql">neg_sql</a></dd>
+                <dd id="Druid.Generator.not_sql" class="function"><a href="../generator.html#Generator.not_sql">not_sql</a></dd>
+                <dd id="Druid.Generator.alias_sql" class="function"><a href="../generator.html#Generator.alias_sql">alias_sql</a></dd>
+                <dd id="Druid.Generator.pivotalias_sql" class="function"><a href="../generator.html#Generator.pivotalias_sql">pivotalias_sql</a></dd>
+                <dd id="Druid.Generator.aliases_sql" class="function"><a href="../generator.html#Generator.aliases_sql">aliases_sql</a></dd>
+                <dd id="Druid.Generator.atindex_sql" class="function"><a href="../generator.html#Generator.atindex_sql">atindex_sql</a></dd>
+                <dd id="Druid.Generator.attimezone_sql" class="function"><a href="../generator.html#Generator.attimezone_sql">attimezone_sql</a></dd>
+                <dd id="Druid.Generator.fromtimezone_sql" class="function"><a href="../generator.html#Generator.fromtimezone_sql">fromtimezone_sql</a></dd>
+                <dd id="Druid.Generator.add_sql" class="function"><a href="../generator.html#Generator.add_sql">add_sql</a></dd>
+                <dd id="Druid.Generator.and_sql" class="function"><a href="../generator.html#Generator.and_sql">and_sql</a></dd>
+                <dd id="Druid.Generator.or_sql" class="function"><a href="../generator.html#Generator.or_sql">or_sql</a></dd>
+                <dd id="Druid.Generator.xor_sql" class="function"><a href="../generator.html#Generator.xor_sql">xor_sql</a></dd>
+                <dd id="Druid.Generator.connector_sql" class="function"><a href="../generator.html#Generator.connector_sql">connector_sql</a></dd>
+                <dd id="Druid.Generator.bitwiseand_sql" class="function"><a href="../generator.html#Generator.bitwiseand_sql">bitwiseand_sql</a></dd>
+                <dd id="Druid.Generator.bitwiseleftshift_sql" class="function"><a href="../generator.html#Generator.bitwiseleftshift_sql">bitwiseleftshift_sql</a></dd>
+                <dd id="Druid.Generator.bitwisenot_sql" class="function"><a href="../generator.html#Generator.bitwisenot_sql">bitwisenot_sql</a></dd>
+                <dd id="Druid.Generator.bitwiseor_sql" class="function"><a href="../generator.html#Generator.bitwiseor_sql">bitwiseor_sql</a></dd>
+                <dd id="Druid.Generator.bitwiserightshift_sql" class="function"><a href="../generator.html#Generator.bitwiserightshift_sql">bitwiserightshift_sql</a></dd>
+                <dd id="Druid.Generator.bitwisexor_sql" class="function"><a href="../generator.html#Generator.bitwisexor_sql">bitwisexor_sql</a></dd>
+                <dd id="Druid.Generator.cast_sql" class="function"><a href="../generator.html#Generator.cast_sql">cast_sql</a></dd>
+                <dd id="Druid.Generator.strtotime_sql" class="function"><a href="../generator.html#Generator.strtotime_sql">strtotime_sql</a></dd>
+                <dd id="Druid.Generator.currentdate_sql" class="function"><a href="../generator.html#Generator.currentdate_sql">currentdate_sql</a></dd>
+                <dd id="Druid.Generator.collate_sql" class="function"><a href="../generator.html#Generator.collate_sql">collate_sql</a></dd>
+                <dd id="Druid.Generator.command_sql" class="function"><a href="../generator.html#Generator.command_sql">command_sql</a></dd>
+                <dd id="Druid.Generator.comment_sql" class="function"><a href="../generator.html#Generator.comment_sql">comment_sql</a></dd>
+                <dd id="Druid.Generator.mergetreettlaction_sql" class="function"><a href="../generator.html#Generator.mergetreettlaction_sql">mergetreettlaction_sql</a></dd>
+                <dd id="Druid.Generator.mergetreettl_sql" class="function"><a href="../generator.html#Generator.mergetreettl_sql">mergetreettl_sql</a></dd>
+                <dd id="Druid.Generator.transaction_sql" class="function"><a href="../generator.html#Generator.transaction_sql">transaction_sql</a></dd>
+                <dd id="Druid.Generator.commit_sql" class="function"><a href="../generator.html#Generator.commit_sql">commit_sql</a></dd>
+                <dd id="Druid.Generator.rollback_sql" class="function"><a href="../generator.html#Generator.rollback_sql">rollback_sql</a></dd>
+                <dd id="Druid.Generator.altercolumn_sql" class="function"><a href="../generator.html#Generator.altercolumn_sql">altercolumn_sql</a></dd>
+                <dd id="Druid.Generator.alterindex_sql" class="function"><a href="../generator.html#Generator.alterindex_sql">alterindex_sql</a></dd>
+                <dd id="Druid.Generator.alterdiststyle_sql" class="function"><a href="../generator.html#Generator.alterdiststyle_sql">alterdiststyle_sql</a></dd>
+                <dd id="Druid.Generator.altersortkey_sql" class="function"><a href="../generator.html#Generator.altersortkey_sql">altersortkey_sql</a></dd>
+                <dd id="Druid.Generator.alterrename_sql" class="function"><a href="../generator.html#Generator.alterrename_sql">alterrename_sql</a></dd>
+                <dd id="Druid.Generator.renamecolumn_sql" class="function"><a href="../generator.html#Generator.renamecolumn_sql">renamecolumn_sql</a></dd>
+                <dd id="Druid.Generator.alterset_sql" class="function"><a href="../generator.html#Generator.alterset_sql">alterset_sql</a></dd>
+                <dd id="Druid.Generator.alter_sql" class="function"><a href="../generator.html#Generator.alter_sql">alter_sql</a></dd>
+                <dd id="Druid.Generator.altersession_sql" class="function"><a href="../generator.html#Generator.altersession_sql">altersession_sql</a></dd>
+                <dd id="Druid.Generator.add_column_sql" class="function"><a href="../generator.html#Generator.add_column_sql">add_column_sql</a></dd>
+                <dd id="Druid.Generator.droppartition_sql" class="function"><a href="../generator.html#Generator.droppartition_sql">droppartition_sql</a></dd>
+                <dd id="Druid.Generator.addconstraint_sql" class="function"><a href="../generator.html#Generator.addconstraint_sql">addconstraint_sql</a></dd>
+                <dd id="Druid.Generator.addpartition_sql" class="function"><a href="../generator.html#Generator.addpartition_sql">addpartition_sql</a></dd>
+                <dd id="Druid.Generator.distinct_sql" class="function"><a href="../generator.html#Generator.distinct_sql">distinct_sql</a></dd>
+                <dd id="Druid.Generator.ignorenulls_sql" class="function"><a href="../generator.html#Generator.ignorenulls_sql">ignorenulls_sql</a></dd>
+                <dd id="Druid.Generator.respectnulls_sql" class="function"><a href="../generator.html#Generator.respectnulls_sql">respectnulls_sql</a></dd>
+                <dd id="Druid.Generator.havingmax_sql" class="function"><a href="../generator.html#Generator.havingmax_sql">havingmax_sql</a></dd>
+                <dd id="Druid.Generator.intdiv_sql" class="function"><a href="../generator.html#Generator.intdiv_sql">intdiv_sql</a></dd>
+                <dd id="Druid.Generator.dpipe_sql" class="function"><a href="../generator.html#Generator.dpipe_sql">dpipe_sql</a></dd>
+                <dd id="Druid.Generator.div_sql" class="function"><a href="../generator.html#Generator.div_sql">div_sql</a></dd>
+                <dd id="Druid.Generator.safedivide_sql" class="function"><a href="../generator.html#Generator.safedivide_sql">safedivide_sql</a></dd>
+                <dd id="Druid.Generator.overlaps_sql" class="function"><a href="../generator.html#Generator.overlaps_sql">overlaps_sql</a></dd>
+                <dd id="Druid.Generator.distance_sql" class="function"><a href="../generator.html#Generator.distance_sql">distance_sql</a></dd>
+                <dd id="Druid.Generator.dot_sql" class="function"><a href="../generator.html#Generator.dot_sql">dot_sql</a></dd>
+                <dd id="Druid.Generator.eq_sql" class="function"><a href="../generator.html#Generator.eq_sql">eq_sql</a></dd>
+                <dd id="Druid.Generator.propertyeq_sql" class="function"><a href="../generator.html#Generator.propertyeq_sql">propertyeq_sql</a></dd>
+                <dd id="Druid.Generator.escape_sql" class="function"><a href="../generator.html#Generator.escape_sql">escape_sql</a></dd>
+                <dd id="Druid.Generator.glob_sql" class="function"><a href="../generator.html#Generator.glob_sql">glob_sql</a></dd>
+                <dd id="Druid.Generator.gt_sql" class="function"><a href="../generator.html#Generator.gt_sql">gt_sql</a></dd>
+                <dd id="Druid.Generator.gte_sql" class="function"><a href="../generator.html#Generator.gte_sql">gte_sql</a></dd>
+                <dd id="Druid.Generator.is_sql" class="function"><a href="../generator.html#Generator.is_sql">is_sql</a></dd>
+                <dd id="Druid.Generator.like_sql" class="function"><a href="../generator.html#Generator.like_sql">like_sql</a></dd>
+                <dd id="Druid.Generator.ilike_sql" class="function"><a href="../generator.html#Generator.ilike_sql">ilike_sql</a></dd>
+                <dd id="Druid.Generator.match_sql" class="function"><a href="../generator.html#Generator.match_sql">match_sql</a></dd>
+                <dd id="Druid.Generator.similarto_sql" class="function"><a href="../generator.html#Generator.similarto_sql">similarto_sql</a></dd>
+                <dd id="Druid.Generator.lt_sql" class="function"><a href="../generator.html#Generator.lt_sql">lt_sql</a></dd>
+                <dd id="Druid.Generator.lte_sql" class="function"><a href="../generator.html#Generator.lte_sql">lte_sql</a></dd>
+                <dd id="Druid.Generator.mod_sql" class="function"><a href="../generator.html#Generator.mod_sql">mod_sql</a></dd>
+                <dd id="Druid.Generator.mul_sql" class="function"><a href="../generator.html#Generator.mul_sql">mul_sql</a></dd>
+                <dd id="Druid.Generator.neq_sql" class="function"><a href="../generator.html#Generator.neq_sql">neq_sql</a></dd>
+                <dd id="Druid.Generator.nullsafeeq_sql" class="function"><a href="../generator.html#Generator.nullsafeeq_sql">nullsafeeq_sql</a></dd>
+                <dd id="Druid.Generator.nullsafeneq_sql" class="function"><a href="../generator.html#Generator.nullsafeneq_sql">nullsafeneq_sql</a></dd>
+                <dd id="Druid.Generator.sub_sql" class="function"><a href="../generator.html#Generator.sub_sql">sub_sql</a></dd>
+                <dd id="Druid.Generator.trycast_sql" class="function"><a href="../generator.html#Generator.trycast_sql">trycast_sql</a></dd>
+                <dd id="Druid.Generator.jsoncast_sql" class="function"><a href="../generator.html#Generator.jsoncast_sql">jsoncast_sql</a></dd>
+                <dd id="Druid.Generator.try_sql" class="function"><a href="../generator.html#Generator.try_sql">try_sql</a></dd>
+                <dd id="Druid.Generator.log_sql" class="function"><a href="../generator.html#Generator.log_sql">log_sql</a></dd>
+                <dd id="Druid.Generator.use_sql" class="function"><a href="../generator.html#Generator.use_sql">use_sql</a></dd>
+                <dd id="Druid.Generator.binary" class="function"><a href="../generator.html#Generator.binary">binary</a></dd>
+                <dd id="Druid.Generator.ceil_floor" class="function"><a href="../generator.html#Generator.ceil_floor">ceil_floor</a></dd>
+                <dd id="Druid.Generator.function_fallback_sql" class="function"><a href="../generator.html#Generator.function_fallback_sql">function_fallback_sql</a></dd>
+                <dd id="Druid.Generator.func" class="function"><a href="../generator.html#Generator.func">func</a></dd>
+                <dd id="Druid.Generator.format_args" class="function"><a href="../generator.html#Generator.format_args">format_args</a></dd>
+                <dd id="Druid.Generator.too_wide" class="function"><a href="../generator.html#Generator.too_wide">too_wide</a></dd>
+                <dd id="Druid.Generator.format_time" class="function"><a href="../generator.html#Generator.format_time">format_time</a></dd>
+                <dd id="Druid.Generator.expressions" class="function"><a href="../generator.html#Generator.expressions">expressions</a></dd>
+                <dd id="Druid.Generator.op_expressions" class="function"><a href="../generator.html#Generator.op_expressions">op_expressions</a></dd>
+                <dd id="Druid.Generator.naked_property" class="function"><a href="../generator.html#Generator.naked_property">naked_property</a></dd>
+                <dd id="Druid.Generator.tag_sql" class="function"><a href="../generator.html#Generator.tag_sql">tag_sql</a></dd>
+                <dd id="Druid.Generator.token_sql" class="function"><a href="../generator.html#Generator.token_sql">token_sql</a></dd>
+                <dd id="Druid.Generator.userdefinedfunction_sql" class="function"><a href="../generator.html#Generator.userdefinedfunction_sql">userdefinedfunction_sql</a></dd>
+                <dd id="Druid.Generator.joinhint_sql" class="function"><a href="../generator.html#Generator.joinhint_sql">joinhint_sql</a></dd>
+                <dd id="Druid.Generator.kwarg_sql" class="function"><a href="../generator.html#Generator.kwarg_sql">kwarg_sql</a></dd>
+                <dd id="Druid.Generator.when_sql" class="function"><a href="../generator.html#Generator.when_sql">when_sql</a></dd>
+                <dd id="Druid.Generator.whens_sql" class="function"><a href="../generator.html#Generator.whens_sql">whens_sql</a></dd>
+                <dd id="Druid.Generator.merge_sql" class="function"><a href="../generator.html#Generator.merge_sql">merge_sql</a></dd>
+                <dd id="Druid.Generator.tochar_sql" class="function"><a href="../generator.html#Generator.tochar_sql">tochar_sql</a></dd>
+                <dd id="Druid.Generator.tonumber_sql" class="function"><a href="../generator.html#Generator.tonumber_sql">tonumber_sql</a></dd>
+                <dd id="Druid.Generator.dictproperty_sql" class="function"><a href="../generator.html#Generator.dictproperty_sql">dictproperty_sql</a></dd>
+                <dd id="Druid.Generator.dictrange_sql" class="function"><a href="../generator.html#Generator.dictrange_sql">dictrange_sql</a></dd>
+                <dd id="Druid.Generator.dictsubproperty_sql" class="function"><a href="../generator.html#Generator.dictsubproperty_sql">dictsubproperty_sql</a></dd>
+                <dd id="Druid.Generator.duplicatekeyproperty_sql" class="function"><a href="../generator.html#Generator.duplicatekeyproperty_sql">duplicatekeyproperty_sql</a></dd>
+                <dd id="Druid.Generator.uniquekeyproperty_sql" class="function"><a href="../generator.html#Generator.uniquekeyproperty_sql">uniquekeyproperty_sql</a></dd>
+                <dd id="Druid.Generator.distributedbyproperty_sql" class="function"><a href="../generator.html#Generator.distributedbyproperty_sql">distributedbyproperty_sql</a></dd>
+                <dd id="Druid.Generator.oncluster_sql" class="function"><a href="../generator.html#Generator.oncluster_sql">oncluster_sql</a></dd>
+                <dd id="Druid.Generator.clusteredbyproperty_sql" class="function"><a href="../generator.html#Generator.clusteredbyproperty_sql">clusteredbyproperty_sql</a></dd>
+                <dd id="Druid.Generator.anyvalue_sql" class="function"><a href="../generator.html#Generator.anyvalue_sql">anyvalue_sql</a></dd>
+                <dd id="Druid.Generator.querytransform_sql" class="function"><a href="../generator.html#Generator.querytransform_sql">querytransform_sql</a></dd>
+                <dd id="Druid.Generator.indexconstraintoption_sql" class="function"><a href="../generator.html#Generator.indexconstraintoption_sql">indexconstraintoption_sql</a></dd>
+                <dd id="Druid.Generator.checkcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.checkcolumnconstraint_sql">checkcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.indexcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.indexcolumnconstraint_sql">indexcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.nvl2_sql" class="function"><a href="../generator.html#Generator.nvl2_sql">nvl2_sql</a></dd>
+                <dd id="Druid.Generator.comprehension_sql" class="function"><a href="../generator.html#Generator.comprehension_sql">comprehension_sql</a></dd>
+                <dd id="Druid.Generator.columnprefix_sql" class="function"><a href="../generator.html#Generator.columnprefix_sql">columnprefix_sql</a></dd>
+                <dd id="Druid.Generator.opclass_sql" class="function"><a href="../generator.html#Generator.opclass_sql">opclass_sql</a></dd>
+                <dd id="Druid.Generator.predict_sql" class="function"><a href="../generator.html#Generator.predict_sql">predict_sql</a></dd>
+                <dd id="Druid.Generator.generateembedding_sql" class="function"><a href="../generator.html#Generator.generateembedding_sql">generateembedding_sql</a></dd>
+                <dd id="Druid.Generator.mltranslate_sql" class="function"><a href="../generator.html#Generator.mltranslate_sql">mltranslate_sql</a></dd>
+                <dd id="Druid.Generator.mlforecast_sql" class="function"><a href="../generator.html#Generator.mlforecast_sql">mlforecast_sql</a></dd>
+                <dd id="Druid.Generator.featuresattime_sql" class="function"><a href="../generator.html#Generator.featuresattime_sql">featuresattime_sql</a></dd>
+                <dd id="Druid.Generator.vectorsearch_sql" class="function"><a href="../generator.html#Generator.vectorsearch_sql">vectorsearch_sql</a></dd>
+                <dd id="Druid.Generator.forin_sql" class="function"><a href="../generator.html#Generator.forin_sql">forin_sql</a></dd>
+                <dd id="Druid.Generator.refresh_sql" class="function"><a href="../generator.html#Generator.refresh_sql">refresh_sql</a></dd>
+                <dd id="Druid.Generator.toarray_sql" class="function"><a href="../generator.html#Generator.toarray_sql">toarray_sql</a></dd>
+                <dd id="Druid.Generator.tsordstotime_sql" class="function"><a href="../generator.html#Generator.tsordstotime_sql">tsordstotime_sql</a></dd>
+                <dd id="Druid.Generator.tsordstotimestamp_sql" class="function"><a href="../generator.html#Generator.tsordstotimestamp_sql">tsordstotimestamp_sql</a></dd>
+                <dd id="Druid.Generator.tsordstodatetime_sql" class="function"><a href="../generator.html#Generator.tsordstodatetime_sql">tsordstodatetime_sql</a></dd>
+                <dd id="Druid.Generator.tsordstodate_sql" class="function"><a href="../generator.html#Generator.tsordstodate_sql">tsordstodate_sql</a></dd>
+                <dd id="Druid.Generator.unixdate_sql" class="function"><a href="../generator.html#Generator.unixdate_sql">unixdate_sql</a></dd>
+                <dd id="Druid.Generator.lastday_sql" class="function"><a href="../generator.html#Generator.lastday_sql">lastday_sql</a></dd>
+                <dd id="Druid.Generator.dateadd_sql" class="function"><a href="../generator.html#Generator.dateadd_sql">dateadd_sql</a></dd>
+                <dd id="Druid.Generator.arrayany_sql" class="function"><a href="../generator.html#Generator.arrayany_sql">arrayany_sql</a></dd>
+                <dd id="Druid.Generator.struct_sql" class="function"><a href="../generator.html#Generator.struct_sql">struct_sql</a></dd>
+                <dd id="Druid.Generator.partitionrange_sql" class="function"><a href="../generator.html#Generator.partitionrange_sql">partitionrange_sql</a></dd>
+                <dd id="Druid.Generator.truncatetable_sql" class="function"><a href="../generator.html#Generator.truncatetable_sql">truncatetable_sql</a></dd>
+                <dd id="Druid.Generator.convert_sql" class="function"><a href="../generator.html#Generator.convert_sql">convert_sql</a></dd>
+                <dd id="Druid.Generator.copyparameter_sql" class="function"><a href="../generator.html#Generator.copyparameter_sql">copyparameter_sql</a></dd>
+                <dd id="Druid.Generator.credentials_sql" class="function"><a href="../generator.html#Generator.credentials_sql">credentials_sql</a></dd>
+                <dd id="Druid.Generator.copy_sql" class="function"><a href="../generator.html#Generator.copy_sql">copy_sql</a></dd>
+                <dd id="Druid.Generator.semicolon_sql" class="function"><a href="../generator.html#Generator.semicolon_sql">semicolon_sql</a></dd>
+                <dd id="Druid.Generator.datadeletionproperty_sql" class="function"><a href="../generator.html#Generator.datadeletionproperty_sql">datadeletionproperty_sql</a></dd>
+                <dd id="Druid.Generator.maskingpolicycolumnconstraint_sql" class="function"><a href="../generator.html#Generator.maskingpolicycolumnconstraint_sql">maskingpolicycolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.gapfill_sql" class="function"><a href="../generator.html#Generator.gapfill_sql">gapfill_sql</a></dd>
+                <dd id="Druid.Generator.scope_resolution" class="function"><a href="../generator.html#Generator.scope_resolution">scope_resolution</a></dd>
+                <dd id="Druid.Generator.scoperesolution_sql" class="function"><a href="../generator.html#Generator.scoperesolution_sql">scoperesolution_sql</a></dd>
+                <dd id="Druid.Generator.parsejson_sql" class="function"><a href="../generator.html#Generator.parsejson_sql">parsejson_sql</a></dd>
+                <dd id="Druid.Generator.rand_sql" class="function"><a href="../generator.html#Generator.rand_sql">rand_sql</a></dd>
+                <dd id="Druid.Generator.changes_sql" class="function"><a href="../generator.html#Generator.changes_sql">changes_sql</a></dd>
+                <dd id="Druid.Generator.pad_sql" class="function"><a href="../generator.html#Generator.pad_sql">pad_sql</a></dd>
+                <dd id="Druid.Generator.summarize_sql" class="function"><a href="../generator.html#Generator.summarize_sql">summarize_sql</a></dd>
+                <dd id="Druid.Generator.explodinggenerateseries_sql" class="function"><a href="../generator.html#Generator.explodinggenerateseries_sql">explodinggenerateseries_sql</a></dd>
+                <dd id="Druid.Generator.converttimezone_sql" class="function"><a href="../generator.html#Generator.converttimezone_sql">converttimezone_sql</a></dd>
+                <dd id="Druid.Generator.json_sql" class="function"><a href="../generator.html#Generator.json_sql">json_sql</a></dd>
+                <dd id="Druid.Generator.jsonvalue_sql" class="function"><a href="../generator.html#Generator.jsonvalue_sql">jsonvalue_sql</a></dd>
+                <dd id="Druid.Generator.conditionalinsert_sql" class="function"><a href="../generator.html#Generator.conditionalinsert_sql">conditionalinsert_sql</a></dd>
+                <dd id="Druid.Generator.multitableinserts_sql" class="function"><a href="../generator.html#Generator.multitableinserts_sql">multitableinserts_sql</a></dd>
+                <dd id="Druid.Generator.oncondition_sql" class="function"><a href="../generator.html#Generator.oncondition_sql">oncondition_sql</a></dd>
+                <dd id="Druid.Generator.jsonextractquote_sql" class="function"><a href="../generator.html#Generator.jsonextractquote_sql">jsonextractquote_sql</a></dd>
+                <dd id="Druid.Generator.jsonexists_sql" class="function"><a href="../generator.html#Generator.jsonexists_sql">jsonexists_sql</a></dd>
+                <dd id="Druid.Generator.arrayagg_sql" class="function"><a href="../generator.html#Generator.arrayagg_sql">arrayagg_sql</a></dd>
+                <dd id="Druid.Generator.slice_sql" class="function"><a href="../generator.html#Generator.slice_sql">slice_sql</a></dd>
+                <dd id="Druid.Generator.apply_sql" class="function"><a href="../generator.html#Generator.apply_sql">apply_sql</a></dd>
+                <dd id="Druid.Generator.grant_sql" class="function"><a href="../generator.html#Generator.grant_sql">grant_sql</a></dd>
+                <dd id="Druid.Generator.revoke_sql" class="function"><a href="../generator.html#Generator.revoke_sql">revoke_sql</a></dd>
+                <dd id="Druid.Generator.grantprivilege_sql" class="function"><a href="../generator.html#Generator.grantprivilege_sql">grantprivilege_sql</a></dd>
+                <dd id="Druid.Generator.grantprincipal_sql" class="function"><a href="../generator.html#Generator.grantprincipal_sql">grantprincipal_sql</a></dd>
+                <dd id="Druid.Generator.columns_sql" class="function"><a href="../generator.html#Generator.columns_sql">columns_sql</a></dd>
+                <dd id="Druid.Generator.overlay_sql" class="function"><a href="../generator.html#Generator.overlay_sql">overlay_sql</a></dd>
+                <dd id="Druid.Generator.todouble_sql" class="function"><a href="../generator.html#Generator.todouble_sql">todouble_sql</a></dd>
+                <dd id="Druid.Generator.string_sql" class="function"><a href="../generator.html#Generator.string_sql">string_sql</a></dd>
+                <dd id="Druid.Generator.median_sql" class="function"><a href="../generator.html#Generator.median_sql">median_sql</a></dd>
+                <dd id="Druid.Generator.overflowtruncatebehavior_sql" class="function"><a href="../generator.html#Generator.overflowtruncatebehavior_sql">overflowtruncatebehavior_sql</a></dd>
+                <dd id="Druid.Generator.unixseconds_sql" class="function"><a href="../generator.html#Generator.unixseconds_sql">unixseconds_sql</a></dd>
+                <dd id="Druid.Generator.arraysize_sql" class="function"><a href="../generator.html#Generator.arraysize_sql">arraysize_sql</a></dd>
+                <dd id="Druid.Generator.attach_sql" class="function"><a href="../generator.html#Generator.attach_sql">attach_sql</a></dd>
+                <dd id="Druid.Generator.detach_sql" class="function"><a href="../generator.html#Generator.detach_sql">detach_sql</a></dd>
+                <dd id="Druid.Generator.attachoption_sql" class="function"><a href="../generator.html#Generator.attachoption_sql">attachoption_sql</a></dd>
+                <dd id="Druid.Generator.watermarkcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.watermarkcolumnconstraint_sql">watermarkcolumnconstraint_sql</a></dd>
+                <dd id="Druid.Generator.encodeproperty_sql" class="function"><a href="../generator.html#Generator.encodeproperty_sql">encodeproperty_sql</a></dd>
+                <dd id="Druid.Generator.includeproperty_sql" class="function"><a href="../generator.html#Generator.includeproperty_sql">includeproperty_sql</a></dd>
+                <dd id="Druid.Generator.xmlelement_sql" class="function"><a href="../generator.html#Generator.xmlelement_sql">xmlelement_sql</a></dd>
+                <dd id="Druid.Generator.xmlkeyvalueoption_sql" class="function"><a href="../generator.html#Generator.xmlkeyvalueoption_sql">xmlkeyvalueoption_sql</a></dd>
+                <dd id="Druid.Generator.partitionbyrangeproperty_sql" class="function"><a href="../generator.html#Generator.partitionbyrangeproperty_sql">partitionbyrangeproperty_sql</a></dd>
+                <dd id="Druid.Generator.partitionbyrangepropertydynamic_sql" class="function"><a href="../generator.html#Generator.partitionbyrangepropertydynamic_sql">partitionbyrangepropertydynamic_sql</a></dd>
+                <dd id="Druid.Generator.unpivotcolumns_sql" class="function"><a href="../generator.html#Generator.unpivotcolumns_sql">unpivotcolumns_sql</a></dd>
+                <dd id="Druid.Generator.analyzesample_sql" class="function"><a href="../generator.html#Generator.analyzesample_sql">analyzesample_sql</a></dd>
+                <dd id="Druid.Generator.analyzestatistics_sql" class="function"><a href="../generator.html#Generator.analyzestatistics_sql">analyzestatistics_sql</a></dd>
+                <dd id="Druid.Generator.analyzehistogram_sql" class="function"><a href="../generator.html#Generator.analyzehistogram_sql">analyzehistogram_sql</a></dd>
+                <dd id="Druid.Generator.analyzedelete_sql" class="function"><a href="../generator.html#Generator.analyzedelete_sql">analyzedelete_sql</a></dd>
+                <dd id="Druid.Generator.analyzelistchainedrows_sql" class="function"><a href="../generator.html#Generator.analyzelistchainedrows_sql">analyzelistchainedrows_sql</a></dd>
+                <dd id="Druid.Generator.analyzevalidate_sql" class="function"><a href="../generator.html#Generator.analyzevalidate_sql">analyzevalidate_sql</a></dd>
+                <dd id="Druid.Generator.analyze_sql" class="function"><a href="../generator.html#Generator.analyze_sql">analyze_sql</a></dd>
+                <dd id="Druid.Generator.xmltable_sql" class="function"><a href="../generator.html#Generator.xmltable_sql">xmltable_sql</a></dd>
+                <dd id="Druid.Generator.xmlnamespace_sql" class="function"><a href="../generator.html#Generator.xmlnamespace_sql">xmlnamespace_sql</a></dd>
+                <dd id="Druid.Generator.export_sql" class="function"><a href="../generator.html#Generator.export_sql">export_sql</a></dd>
+                <dd id="Druid.Generator.declare_sql" class="function"><a href="../generator.html#Generator.declare_sql">declare_sql</a></dd>
+                <dd id="Druid.Generator.declareitem_sql" class="function"><a href="../generator.html#Generator.declareitem_sql">declareitem_sql</a></dd>
+                <dd id="Druid.Generator.recursivewithsearch_sql" class="function"><a href="../generator.html#Generator.recursivewithsearch_sql">recursivewithsearch_sql</a></dd>
+                <dd id="Druid.Generator.parameterizedagg_sql" class="function"><a href="../generator.html#Generator.parameterizedagg_sql">parameterizedagg_sql</a></dd>
+                <dd id="Druid.Generator.anonymousaggfunc_sql" class="function"><a href="../generator.html#Generator.anonymousaggfunc_sql">anonymousaggfunc_sql</a></dd>
+                <dd id="Druid.Generator.combinedaggfunc_sql" class="function"><a href="../generator.html#Generator.combinedaggfunc_sql">combinedaggfunc_sql</a></dd>
+                <dd id="Druid.Generator.combinedparameterizedagg_sql" class="function"><a href="../generator.html#Generator.combinedparameterizedagg_sql">combinedparameterizedagg_sql</a></dd>
+                <dd id="Druid.Generator.show_sql" class="function"><a href="../generator.html#Generator.show_sql">show_sql</a></dd>
+                <dd id="Druid.Generator.install_sql" class="function"><a href="../generator.html#Generator.install_sql">install_sql</a></dd>
+                <dd id="Druid.Generator.get_put_sql" class="function"><a href="../generator.html#Generator.get_put_sql">get_put_sql</a></dd>
+                <dd id="Druid.Generator.translatecharacters_sql" class="function"><a href="../generator.html#Generator.translatecharacters_sql">translatecharacters_sql</a></dd>
+                <dd id="Druid.Generator.decodecase_sql" class="function"><a href="../generator.html#Generator.decodecase_sql">decodecase_sql</a></dd>
+                <dd id="Druid.Generator.semanticview_sql" class="function"><a href="../generator.html#Generator.semanticview_sql">semanticview_sql</a></dd>
+                <dd id="Druid.Generator.getextract_sql" class="function"><a href="../generator.html#Generator.getextract_sql">getextract_sql</a></dd>
+                <dd id="Druid.Generator.datefromunixdate_sql" class="function"><a href="../generator.html#Generator.datefromunixdate_sql">datefromunixdate_sql</a></dd>
+                <dd id="Druid.Generator.space_sql" class="function"><a href="../generator.html#Generator.space_sql">space_sql</a></dd>
+                <dd id="Druid.Generator.buildproperty_sql" class="function"><a href="../generator.html#Generator.buildproperty_sql">buildproperty_sql</a></dd>
+                <dd id="Druid.Generator.refreshtriggerproperty_sql" class="function"><a href="../generator.html#Generator.refreshtriggerproperty_sql">refreshtriggerproperty_sql</a></dd>
+                <dd id="Druid.Generator.modelattribute_sql" class="function"><a href="../generator.html#Generator.modelattribute_sql">modelattribute_sql</a></dd>
+                <dd id="Druid.Generator.directorystage_sql" class="function"><a href="../generator.html#Generator.directorystage_sql">directorystage_sql</a></dd>
+                <dd id="Druid.Generator.uuid_sql" class="function"><a href="../generator.html#Generator.uuid_sql">uuid_sql</a></dd>
+                <dd id="Druid.Generator.initcap_sql" class="function"><a href="../generator.html#Generator.initcap_sql">initcap_sql</a></dd>
+                <dd id="Druid.Generator.localtime_sql" class="function"><a href="../generator.html#Generator.localtime_sql">localtime_sql</a></dd>
+                <dd id="Druid.Generator.localtimestamp_sql" class="function"><a href="../generator.html#Generator.localtimestamp_sql">localtimestamp_sql</a></dd>
+                <dd id="Druid.Generator.weekstart_sql" class="function"><a href="../generator.html#Generator.weekstart_sql">weekstart_sql</a></dd>
+                <dd id="Druid.Generator.chr_sql" class="function"><a href="../generator.html#Generator.chr_sql">chr_sql</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+    </main>
+<script>
+    function escapeHTML(html) {
+        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
+    }
+
+    const originalContent = document.querySelector("main.pdoc");
+    let currentContent = originalContent;
+
+    function setContent(innerHTML) {
+        let elem;
+        if (innerHTML) {
+            elem = document.createElement("main");
+            elem.classList.add("pdoc");
+            elem.innerHTML = innerHTML;
+        } else {
+            elem = originalContent;
+        }
+        if (currentContent !== elem) {
+            currentContent.replaceWith(elem);
+            currentContent = elem;
+        }
+    }
+
+    function getSearchTerm() {
+        return (new URL(window.location)).searchParams.get("search");
+    }
+
+    const searchBox = document.querySelector(".pdoc input[type=search]");
+    searchBox.addEventListener("input", function () {
+        let url = new URL(window.location);
+        if (searchBox.value.trim()) {
+            url.hash = "";
+            url.searchParams.set("search", searchBox.value);
+        } else {
+            url.searchParams.delete("search");
+        }
+        history.replaceState("", "", url.toString());
+        onInput();
+    });
+    window.addEventListener("popstate", onInput);
+
+
+    let search, searchErr;
+
+    async function initialize() {
+        try {
+            search = await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve(window.pdocSearch);
+                script.onerror = (e) => reject(e);
+                script.src = "../../search.js";
+                document.getElementsByTagName("head")[0].appendChild(script);
+            });
+        } catch (e) {
+            console.error("Cannot fetch pdoc search index");
+            searchErr = "Cannot fetch search index.";
+        }
+        onInput();
+
+        document.querySelector("nav.pdoc").addEventListener("click", e => {
+            if (e.target.hash) {
+                searchBox.value = "";
+                searchBox.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    function onInput() {
+        setContent((() => {
+            const term = getSearchTerm();
+            if (!term) {
+                return null
+            }
+            if (searchErr) {
+                return `<h3>Error: ${searchErr}</h3>`
+            }
+            if (!search) {
+                return "<h3>Searching...</h3>"
+            }
+
+            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+
+            const results = search(term);
+
+            let html;
+            if (results.length === 0) {
+                html = `No search results for '${escapeHTML(term)}'.`
+            } else {
+                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
+            }
+            for (let result of results.slice(0, 10)) {
+                let doc = result.doc;
+                let url = `../../${doc.modulename.replaceAll(".", "/")}.html`;
+                if (doc.qualname) {
+                    url += `#${doc.qualname}`;
+                }
+
+                let heading;
+                switch (result.doc.kind) {
+                    case "function":
+                        if (doc.fullname.endsWith(".__init__")) {
+                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
+                        } else {
+                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
+                        }
+                        break;
+                    case "class":
+                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
+                        if (doc.bases)
+                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
+                        heading += `:`;
+                        break;
+                    case "variable":
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        if (doc.annotation)
+                            heading += `<span class="annotation">${doc.annotation}</span>`;
+                        if (doc.default_value)
+                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
+                        break;
+                    default:
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        break;
+                }
+                html += `
+                        <section class="search-result">
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
+                        <div class="docstring">${doc.doc}</div>
+                        </section>
+                    `;
+
+            }
+            return html;
+        })());
+    }
+
+    if (getSearchTerm()) {
+        initialize();
+        searchBox.value = getSearchTerm();
+        onInput();
+    } else {
+        searchBox.addEventListener("focus", initialize, {once: true});
+    }
+
+    searchBox.addEventListener("keydown", e => {
+        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
+            let focused = currentContent.querySelector(".search-result.focused");
+            if (!focused) {
+                currentContent.querySelector(".search-result").classList.add("focused");
+            } else if (
+                e.key === "ArrowDown"
+                && focused.nextElementSibling
+                && focused.nextElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.nextElementSibling.classList.add("focused");
+                focused.nextElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "ArrowUp"
+                && focused.previousElementSibling
+                && focused.previousElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.previousElementSibling.classList.add("focused");
+                focused.previousElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "Enter"
+            ) {
+                focused.querySelector("a").click();
+            }
+        }
+    });
+</script></body>
+</html>

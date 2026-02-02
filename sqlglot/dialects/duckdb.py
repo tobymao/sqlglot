@@ -41,7 +41,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     remove_from_array_using_filter,
     sha2_digest_sql,
-    sha256_sql,
     strposition_sql,
     str_to_time_sql,
     timestrtotime_sql,
@@ -1849,7 +1848,7 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
-            exp.SHA2: sha256_sql,
+
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -2824,6 +2823,23 @@ class DuckDB(Dialect):
                 expression.set("sec", sec)
 
             return rename_func("MAKE_TIMESTAMP")(self, expression)
+
+        def sha2_sql(self, expression: exp.SHA) -> str:
+            arg = expression.this
+            length = expression.args.get("length")
+            if length and length.name != "256":
+                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
+
+            # If type is not compatible with what DuckDB expects, cast to VARCHAR
+            if (
+                not arg.is_type(*exp.DataType.TEXT_TYPES)
+                and not _is_binary(arg)
+                and (isinstance(arg, exp.Literal) or arg.type)
+            ):
+                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+
+            # Otherwise, cast to string
+            return self.func("SHA256", arg)
 
         @unsupported_args("nano")
         def timestampltzfromparts_sql(self, expression: exp.TimestampLtzFromParts) -> str:

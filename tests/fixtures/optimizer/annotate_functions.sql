@@ -5869,3 +5869,7 @@ BIGINT;
 # dialect: duckdb
 TO_DAYS(tbl.int_col);
 INTERVAL;
+
+# dialect: duckdb
+BIT_LENGTH(tbl.str_col);
+BIGINT;

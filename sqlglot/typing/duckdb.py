@@ -8,6 +8,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
+            exp.BitLength,
             exp.Day,
             exp.DayOfMonth,
             exp.DayOfWeek,

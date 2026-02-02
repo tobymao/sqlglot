@@ -1269,6 +1269,33 @@ def _xor_sql(self: DuckDB.Generator, expression: exp.Xor) -> str:
     )
 
 
+def _sha_sql(
+    self: DuckDB.Generator,
+    expression: exp.Expression,
+    hash_func: str,
+    is_binary: bool = False,
+) -> str:
+    arg = expression.this
+
+    # For SHA2 variants, check digest length (DuckDB only supports SHA256)
+    if hash_func == "SHA256":
+        length = expression.text("length") or "256"
+        if length != "256":
+            self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
+
+    # Cast if type is incompatible with DuckDB
+    if (
+        arg.type
+        and arg.type.this != exp.DataType.Type.UNKNOWN
+        and not arg.is_type(*exp.DataType.TEXT_TYPES)
+        and not _is_binary(arg)
+    ):
+        arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+
+    result = self.func(hash_func, arg)
+    return self.func("UNHEX", result) if is_binary else result
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1820,7 +1847,10 @@ class DuckDB(Dialect):
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
-            exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
+            exp.SHA: lambda self, e: _sha_sql(self, e, "SHA1"),
+            exp.SHA1Digest: lambda self, e: _sha_sql(self, e, "SHA1", is_binary=True),
+            exp.SHA2: lambda self, e: _sha_sql(self, e, "SHA256"),
+            exp.SHA2Digest: lambda self, e: _sha_sql(self, e, "SHA256", is_binary=True),
             exp.MonthsBetween: months_between_sql,
             exp.NextDay: _day_navigation_sql,
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
@@ -2998,47 +3028,6 @@ class DuckDB(Dialect):
             )
 
             return self.sql(case)
-
-        def is_stringbinary(self, arg) -> bool:
-            return (
-                not arg.type
-                or arg.type.this == exp.DataType.Type.UNKNOWN
-                or arg.is_type(*exp.DataType.TEXT_TYPES)
-                or _is_binary(arg)
-            )
-
-        def sha_sql(self, expression: exp.SHA) -> str:
-            arg = expression.this
-
-            # If type is incompatible with DuckDB or is an unknown type, use directly
-            if not self.is_stringbinary(arg):
-                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
-
-            return self.func("SHA1", arg)
-
-        def sha2_sql(self, expression: exp.SHA) -> str:
-            arg = expression.this
-            length = expression.args.get("length")
-            if length and length.name != "256":
-                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
-
-            # If type is incompatible with DuckDB or is an unknown type, use directly
-            if not self.is_stringbinary(arg):
-                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
-
-            # Otherwise, cast to string
-            return self.func("SHA256", arg)
-
-        def sha2digest_sql(self, expression: exp.SHA2Digest) -> str:
-            arg = expression.this
-            length = expression.text("length") or "256"
-            if length != "256":
-                self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
-
-            if not self.is_stringbinary(arg):
-                arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
-
-            return self.func("UNHEX", self.func("SHA256", arg))
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

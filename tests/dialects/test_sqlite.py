@@ -229,6 +229,21 @@ class TestSQLite(Validator):
 
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
+    def test_trunc(self):
+        # SQLite TRUNC only accepts one argument (truncates to integer)
+        self.validate_identity("TRUNC(3.14)")
+
+        # Zero decimals should simplify to single-arg TRUNC
+        self.validate_all(
+            "TRUNC(3.14, 0)",
+            write={"sqlite": "TRUNC(3.14)"},
+        )
+
+        # Non-zero decimals generates warning but still outputs SQL
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity("TRUNC(3.14, 2)")
+            self.assertIn("SQLite TRUNC does not support non-zero decimals", cm.output[0])
+
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):

@@ -22,6 +22,15 @@ from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
+def _trunc_sql(self: SQLite.Generator, expression: exp.Trunc) -> str:
+    # SQLite TRUNC only accepts one argument (truncates to integer)
+    decimals = expression.args.get("decimals")
+    if decimals is None or (decimals.is_number and decimals.to_py() == 0):
+        return self.func("TRUNC", expression.this)
+    self.unsupported("SQLite TRUNC does not support non-zero decimals argument")
+    return self.func("TRUNC", expression.this, decimals)
+
+
 def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
         args.append(exp.CurrentTimestamp())
@@ -231,6 +240,7 @@ class SQLite(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),
+            exp.Trunc: _trunc_sql,
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
         }

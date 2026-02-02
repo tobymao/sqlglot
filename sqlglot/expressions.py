@@ -6112,6 +6112,10 @@ class ArrayInsert(Func):
     arg_types = {"this": True, "position": True, "expression": True, "offset": False}
 
 
+class ArrayRemoveAt(Func):
+    arg_types = {"this": True, "position": True}
+
+
 class ArrayConstructCompact(Func):
     arg_types = {"expressions": False}
     is_var_len_args = True

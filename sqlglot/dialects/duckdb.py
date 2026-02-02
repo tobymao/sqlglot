@@ -440,6 +440,96 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     )
 
 
+def _array_remove_at_sql(self: DuckDB.Generator, expression: exp.ArrayRemoveAt) -> str:
+    """
+    Transpile ARRAY_REMOVE_AT to DuckDB using LIST_CONCAT and slicing.
+
+    Handles:
+    - Positive positions (0-based indexing)
+    - Negative positions (from end of array)
+    - NULL propagation (Snowflake returns NULL for NULL array, DuckDB doesn't auto-propagate)
+    - Only supports literal integer positions (non-literals remain untranspiled)
+
+    Transpilation patterns:
+    - pos=0 (first): arr[2:]
+    - pos>0 (middle): LIST_CONCAT(arr[1:p], arr[p+2:])
+    - pos=-1 (last): arr[1:LEN(arr)-1]
+    - pos<-1: LIST_CONCAT(arr[1:LEN(arr)+p], arr[LEN(arr)+p+2:])
+
+    All wrapped in: CASE WHEN arr IS NULL THEN NULL ELSE ... END
+
+    Args:
+        expression: The ArrayRemoveAt expression to transpile.
+
+    Returns:
+        SQL string implementing ARRAY_REMOVE_AT behavior.
+    """
+    this = expression.this
+    position = expression.args.get("position")
+
+    if not position or not position.is_int:
+        self.unsupported("ARRAY_REMOVE_AT can only be transpiled with a literal position")
+        return self.func("ARRAY_REMOVE_AT", this, position)
+
+    pos_value = position.to_py()
+
+    # Build the appropriate expression based on position
+    if pos_value == 0:
+        # Remove first element: arr[2:]
+        result_expr: exp.Expression | str = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(2))],
+        )
+    elif pos_value > 0:
+        # Remove at positive position: LIST_CONCAT(arr[1:pos], arr[pos+2:])
+        # DuckDB uses 1-based slicing
+        left_slice = exp.Bracket(
+            this=this,
+            expressions=[
+                exp.Slice(this=exp.Literal.number(1), expression=exp.Literal.number(pos_value))
+            ],
+        )
+        right_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(pos_value + 2))],
+        )
+        result_expr = self.func("LIST_CONCAT", left_slice, right_slice)
+    elif pos_value == -1:
+        # Remove last element: arr[1:LEN(arr)-1]
+        # Optimization: simpler than general negative case
+        arr_len = exp.Length(this=this)
+        slice_end = arr_len + exp.Literal.number(-1)
+        result_expr = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end)],
+        )
+    else:
+        # Remove at negative position: LIST_CONCAT(arr[1:LEN(arr)+pos], arr[LEN(arr)+pos+2:])
+        arr_len = exp.Length(this=this)
+        slice_end_pos = arr_len + exp.Literal.number(pos_value)
+        slice_start_pos = slice_end_pos + exp.Literal.number(2)
+
+        left_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end_pos)],
+        )
+        right_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=slice_start_pos)],
+        )
+        result_expr = self.func("LIST_CONCAT", left_slice, right_slice)
+
+    # Snowflake ARRAY_FUNCS_PROPAGATES_NULLS=True, so wrap in NULL check
+    # CASE WHEN array IS NULL THEN NULL ELSE result_expr END
+    return self.sql(
+        exp.If(
+            this=exp.Is(this=this, expression=exp.Null()),
+            true=exp.Null(),
+            false=result_expr,
+        )
+    )
+
+
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
@@ -1726,6 +1816,7 @@ class DuckDB(Dialect):
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
+            exp.ArrayRemoveAt: _array_remove_at_sql,
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
             exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),

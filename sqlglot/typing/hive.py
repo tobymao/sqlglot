@@ -51,7 +51,6 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
             exp.Month,
-            exp.Quarter,
             exp.Second,
         }
     },

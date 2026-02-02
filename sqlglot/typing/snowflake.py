@@ -473,6 +473,12 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DataType.Type.TINYINT}
+        for expr_type in {
+            exp.Quarter,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
             exp.AIAgg,

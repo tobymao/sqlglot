@@ -3283,6 +3283,90 @@ class TestSnowflake(Validator):
             },
         )
 
+        # TRUNC date/time variant: TRUNC(date_or_time_expr, 'date_part')
+        # TRUNC normalizes to DATE_TRUNC (canonical form), so tests use DATE_TRUNC as first param
+        date_units = [
+            ("YEAR", ["YEAR", "YEARS", "Y", "YY", "YYY", "YYYY", "YR", "YRS"]),
+            ("QUARTER", ["QUARTER", "QUARTERS", "Q", "QTR", "QTRS"]),
+            ("MONTH", ["MONTH", "MONTHS", "MM", "MON", "MONS"]),
+            ("WEEK", ["WEEK", "W", "WK", "WEEKOFYEAR", "WOY", "WY"]),
+            ("DAY", ["DAY", "DAYS", "D", "DD", "DAYOFMONTH"]),
+        ]
+
+        time_units = [
+            ("HOUR", ["HOUR", "HOURS", "H", "HH", "HR", "HRS"]),
+            ("MINUTE", ["MINUTE", "MINUTES", "M", "MI", "MIN", "MINS"]),
+            ("SECOND", ["SECOND", "SECONDS", "S", "SEC", "SECS"]),
+            ("MILLISECOND", ["MILLISECOND", "MILLISECONDS", "MS", "MSEC"]),
+            ("MICROSECOND", ["MICROSECOND", "MICROSECONDS", "US", "USEC"]),
+            (
+                "NANOSECOND",
+                [
+                    "NANOSECOND",
+                    "NANOSECONDS",
+                    "NANOSECS",
+                    "NS",
+                    "NSEC",
+                    "NANOSEC",
+                    "NSECOND",
+                    "NSECONDS",
+                ],
+            ),
+        ]
+
+        # Test date units with DATE type
+        for canonical, variants in date_units:
+            for unit in variants:
+                self.validate_all(
+                    f"DATE_TRUNC('{canonical}', CAST('2024-05-09' AS DATE))",
+                    read={"snowflake": f"TRUNC(DATE '2024-05-09', '{unit}')"},
+                    write={"duckdb": f"DATE_TRUNC('{canonical}', CAST('2024-05-09' AS DATE))"},
+                )
+
+        # Test time units with TIMESTAMP type
+        for canonical, variants in time_units:
+            for unit in variants:
+                self.validate_all(
+                    f"DATE_TRUNC('{canonical}', CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
+                    read={"snowflake": f"TRUNC(TIMESTAMP '2024-05-09 08:50:57', '{unit}')"},
+                    write={
+                        "duckdb": f"DATE_TRUNC('{canonical}', CAST('2024-05-09 08:50:57' AS TIMESTAMP))"
+                    },
+                )
+
+        # TRUNCATE is synonym of TRUNC
+        self.validate_all(
+            "DATE_TRUNC('MONTH', CAST('2024-05-09 08:50:57' AS TIMESTAMP))",
+            read={"snowflake": "TRUNCATE(TIMESTAMP '2024-05-09 08:50:57', 'MONTH')"},
+            write={
+                "duckdb": "CAST(DATE_TRUNC('MONTH', CAST('2024-05-09 08:50:57' AS TIMESTAMP)) AS TIMESTAMP)"
+            },
+        )
+
+        # TRUNC numeric variant: TRUNC(number [, scale])
+        self.validate_all(
+            "TRUNC(123.456, 2)",
+            write={"snowflake": "TRUNC(123.456, 2)", "duckdb": "TRUNC(123.456, 2)"},
+        )
+        self.validate_all(
+            "TRUNC(123.456)",
+            write={"snowflake": "TRUNC(123.456)", "duckdb": "TRUNC(123.456)"},
+        )
+
+        # Ambiguous TRUNC with unknown column type
+        self.validate_all(
+            "TRUNC(col)",
+            write={"snowflake": "TRUNC(col)", "duckdb": "TRUNC(col)"},
+        )
+        self.validate_all(
+            "TRUNC(col, 2)",
+            write={"snowflake": "TRUNC(col, 2)", "duckdb": "TRUNC(col, 2)"},
+        )
+        self.validate_all(
+            "TRUNC(col, 'YEAR')",
+            write={"snowflake": "TRUNC(col, 'YEAR')", "duckdb": "TRUNC(col, 'YEAR')"},
+        )
+
         self.validate_all(
             "DATE(x)",
             write={

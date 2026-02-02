@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, is_date_unit, is_int, seq_get
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.typing.snowflake import EXPRESSION_METADATA
@@ -50,6 +51,17 @@ TIMESTAMP_TYPES = {
     exp.DataType.Type.TIMESTAMPNTZ: "TO_TIMESTAMP_NTZ",
     exp.DataType.Type.TIMESTAMPTZ: "TO_TIMESTAMP_TZ",
 }
+
+# Date/time types for TRUNC date/time variant detection
+DATE_TIME_TYPES = (
+    exp.DataType.Type.DATE,
+    exp.DataType.Type.TIMESTAMP,
+    exp.DataType.Type.DATETIME,
+    exp.DataType.Type.TIMESTAMPTZ,
+    exp.DataType.Type.TIMESTAMPNTZ,
+    exp.DataType.Type.TIME,
+    exp.DataType.Type.TIMETZ,
+)
 
 
 def _build_strtok(args: t.List) -> exp.SplitPart:
@@ -271,7 +283,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
 def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
-    unit = map_date_part(trunc.args["unit"])
+    unit = map_date_part(trunc.args["unit"], dialect="snowflake")
     trunc.set("unit", unit)
     is_time_input = trunc.this.is_type(exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ)
     if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit) or is_time_input) or (
@@ -279,6 +291,27 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     ):
         trunc.set("input_type_preserved", True)
     return trunc
+
+
+def _build_trunc(args: t.List) -> exp.Expression:
+    """
+    Handle Snowflake's overloaded TRUNC function.
+
+    Date/Time TRUNC: TRUNC(date_or_time_expr, 'date_part') -> 2nd arg is STRING
+    Numeric TRUNC: TRUNC(number [, scale]) -> 2nd arg is INTEGER or omitted
+    """
+    this = seq_get(args, 0)
+    second = seq_get(args, 1)
+
+    # Only date/time variant has string literal as 2nd arg
+    if second and isinstance(second, exp.Literal) and second.is_string:
+        if this and not this.type:
+            this = annotate_types(this, dialect="snowflake")
+
+        if this and this.is_type(*DATE_TIME_TYPES):
+            return _date_trunc_to_time([second, this])
+
+    return exp.func("TRUNC", *args)
 
 
 def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
@@ -767,6 +800,7 @@ class Snowflake(Dialect):
         # to EXTRACT(EPOCH FROM ts) and lose the integer semantics.
         "EPOCH_SECOND": "EPOCH_SECOND",
         "EPOCH_SECONDS": "EPOCH_SECOND",
+        "NANOSECONDS": "NANOSECOND",
     }
 
     PSEUDOCOLUMNS = {"LEVEL"}
@@ -941,6 +975,8 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
+            "TRUNC": _build_trunc,
+            "TRUNCATE": _build_trunc,
             "TRY_DECRYPT": lambda args: exp.Decrypt(
                 this=seq_get(args, 0),
                 passphrase=seq_get(args, 1),

@@ -1754,6 +1754,7 @@ class DuckDB(Dialect):
             )
             if e.args.get("sysdate")
             else "CURRENT_TIMESTAMP",
+            exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfWeekIso: rename_func("ISODOW"),

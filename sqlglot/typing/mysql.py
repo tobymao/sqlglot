@@ -24,6 +24,7 @@ EXPRESSION_METADATA = {
             exp.DayOfYear,
             exp.Month,
             exp.Second,
+            exp.Week,
         }
     },
     exp.Localtime: {"returns": exp.DataType.Type.DATETIME},

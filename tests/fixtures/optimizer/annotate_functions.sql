@@ -5877,3 +5877,7 @@ BIGINT;
 # dialect: duckdb
 MAKE_TIME(tbl.bigint_col, tbl.bigint_col, tbl.double_col);
 TIME;
+
+# dialect: duckdb
+LENGTH(tbl.str_col);
+BIGINT;

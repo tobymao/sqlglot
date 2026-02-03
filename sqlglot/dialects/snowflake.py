@@ -1801,9 +1801,7 @@ class Snowflake(Dialect):
         }
 
         def nthvalue_sql(self, expression: exp.NthValue) -> str:
-            args = [self.sql(expression.this), self.sql(expression.args.get("offset"))]
-
-            result = f"NTH_VALUE({', '.join(args)})"
+            result = self.func("NTH_VALUE", expresion.this, expression.args.get("offset"))
 
             from_first = expression.args.get("from_first")
 

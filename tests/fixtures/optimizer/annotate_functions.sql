@@ -5924,3 +5924,11 @@ BIGINT;
 # dialect: presto, trino
 LENGTH(tbl.str_col);
 BIGINT;
+
+# dialect: presto, trino
+POSITION(tbl.str_col IN tbl.str_col);
+BIGINT;
+
+# dialect: presto, trino
+STRPOS(tbl.str_col, tbl.str_col);
+BIGINT;

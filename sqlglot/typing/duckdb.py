@@ -39,11 +39,7 @@ EXPRESSION_METADATA = {
             exp.Acos,
             exp.Asin,
             exp.Atan,
-            exp.Cos,
-            exp.Cot,
             exp.Rand,
-            exp.Sin,
-            exp.Tan,
             exp.TimeToUnix,
         }
     },

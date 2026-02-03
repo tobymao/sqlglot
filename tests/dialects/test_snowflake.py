@@ -3551,23 +3551,18 @@ class TestSnowflake(Validator):
 
     def test_trunc(self):
         # Numeric truncation identity
-        self.validate_identity("TRUNC(3.14159, 2)")
-        self.validate_identity("TRUNC(price, 0)")
-
-        # Single-argument TRUNC (truncate to integer)
-        self.validate_identity("TRUNC(3.14159)")
-
-        # Verify numeric TRUNC is parsed as exp.Trunc
-        self.parse_one("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
-        self.parse_one("TRUNC(3.14159)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
 
         # Date truncation with typed column is correctly identified as DateTrunc
         self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(CAST(x AS DATETIME), 'MONTH')").assert_is(exp.DateTrunc)
-
-        # Date truncation without unit defaults to 'DD'
         self.parse_one("TRUNC(CAST(x AS DATE))").assert_is(exp.DateTrunc)
+
+        # Fallback to Anonymous when type cannot be determined
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
 
         # Cross-dialect transpilation for numeric truncation
         self.validate_all(

@@ -771,15 +771,20 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        # Verify it's parsed as exp.Trunc (numeric), not DateTrunc
-        self.parse_one("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
-
         # Date truncation remains DateTrunc
         self.parse_one("TRUNC(SYSDATE, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # Fallback to Anonymous when type cannot be determined
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
 
         # Transpile to other dialects
         self.validate_all(
             "TRUNC(3.14159, 2)",
+            read={
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "snowflake": "TRUNC(3.14159, 2)",
+            },
             write={
                 "oracle": "TRUNC(3.14159, 2)",
                 "postgres": "TRUNC(3.14159, 2)",
@@ -788,19 +793,6 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                 "snowflake": "TRUNC(3.14159, 2)",
                 "bigquery": "TRUNC(3.14159, 2)",
                 "duckdb": "TRUNC(3.14159, 2)",
-            },
-        )
-
-        # Read from other dialects
-        self.validate_all(
-            "TRUNC(price, 2)",
-            read={
-                "mysql": "TRUNCATE(price, 2)",
-                "postgres": "TRUNC(price, 2)",
-                "snowflake": "TRUNC(price, 2)",
-            },
-            write={
-                "oracle": "TRUNC(price, 2)",
             },
         )
 

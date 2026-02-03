@@ -1883,27 +1883,25 @@ def build_trunc(
     this = seq_get(args, 0)
     second = seq_get(args, 1)
 
-    # 1) Try to determine by first arg type
     if this and not this.type:
         this = annotate_types(this, dialect=dialect)
-    if this and this.is_type(
-        exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP, exp.DataType.Type.DATETIME
+    if second and not second.type:
+        second = annotate_types(second, dialect=dialect)
+
+    # Date truncation
+    if (this and this.is_type(*exp.DataType.TEMPORAL_TYPES)) or (
+        second and second.is_type(*exp.DataType.TEXT_TYPES)
     ):
         unit = second if second else exp.Literal.string("DD")
         return exp.DateTrunc(this=this, unit=unit, unabbreviate=date_trunc_unabbreviate)
-    if this and this.is_type(*exp.DataType.NUMERIC_TYPES):
+
+    # Numeric truncation
+    if (this and this.is_type(*exp.DataType.NUMERIC_TYPES)) or (
+        second and second.is_type(*exp.DataType.NUMERIC_TYPES)
+    ):
         return exp.Trunc(this=this, decimals=second)
 
-    # 2) Try to determine by second arg type
-    if second:
-        if not second.type:
-            second = annotate_types(second, dialect=dialect)
-        if second.is_type(*exp.DataType.TEXT_TYPES):
-            return exp.DateTrunc(this=this, unit=second, unabbreviate=date_trunc_unabbreviate)
-        if second.is_type(*exp.DataType.NUMERIC_TYPES):
-            return exp.Trunc(this=this, decimals=second)
-
-    # 3) Fallback
+    # Fallback
     return exp.Anonymous(this="TRUNC", expressions=args)
 
 

@@ -2155,7 +2155,7 @@ WHERE
             self.assertIn("unsupported syntax", cm.output[0])
 
         with self.assertLogs(helper_logger):
-            statements = parse(
+            statement = parse_one(
                 """
                 BEGIN
                     DECLARE MY_VAR INT64 DEFAULT 1;
@@ -2180,7 +2180,7 @@ WHERE
                 "END",
             )
 
-            for actual, expected in zip(statements[0].expressions, expected_statements):
+            for actual, expected in zip(statement.expressions, expected_statements):
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
         with self.assertLogs(helper_logger) as cm:

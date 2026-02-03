@@ -158,6 +158,9 @@ BOOLEAN;
 ISNAN(tbl.float_col);
 BOOLEAN;
 
+CURRENT_CATALOG();
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -5591,6 +5594,14 @@ DAYOFWEEK(tbl.date_col);
 INT;
 
 # dialect: mysql
+DAYOFMONTH(tbl.date_col);
+INT;
+
+# dialect: mysql
+DAYOFYEAR(tbl.date_col);
+INT;
+
+# dialect: mysql
 MONTH(tbl.date_col);
 INT;
 
@@ -5877,3 +5888,7 @@ BIGINT;
 # dialect: duckdb
 MAKE_TIME(tbl.bigint_col, tbl.bigint_col, tbl.double_col);
 TIME;
+
+# dialect: duckdb
+LENGTH(tbl.str_col);
+BIGINT;

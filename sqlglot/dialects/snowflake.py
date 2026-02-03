@@ -1505,6 +1505,19 @@ class Snowflake(Dialect):
                         expr.set("kind", "VARIABLE")
             return set
 
+        def _parse_window(
+            self, this: t.Optional[exp.Expression], alias: bool = False
+        ) -> t.Optional[exp.Expression]:
+            if isinstance(this, exp.NthValue):
+                if self._match_text_seq("FROM"):
+                    if self._match_texts(("FIRST", "LAST")):
+                        from_first = self._prev.text.upper() == "FIRST"
+                        this.set("from_first", from_first)
+
+            result = super()._parse_window(this, alias)
+
+            return result
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -1789,6 +1802,19 @@ class Snowflake(Dialect):
                 "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
             ),
         }
+
+        def nthvalue_sql(self, expression: exp.NthValue) -> str:
+            result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
+
+            from_first = expression.args.get("from_first")
+
+            if from_first is not None:
+                if from_first:
+                    result = result + " FROM FIRST"
+                else:
+                    result = result + " FROM LAST"
+
+            return result
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

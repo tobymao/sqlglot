@@ -439,6 +439,96 @@ def _array_insert_sql(self: DuckDB.Generator, expression: exp.ArrayInsert) -> st
     )
 
 
+def _array_remove_at_sql(self: DuckDB.Generator, expression: exp.ArrayRemoveAt) -> str:
+    """
+    Transpile ARRAY_REMOVE_AT to DuckDB using LIST_CONCAT and slicing.
+
+    Handles:
+    - Positive positions (0-based indexing)
+    - Negative positions (from end of array)
+    - NULL propagation (Snowflake returns NULL for NULL array, DuckDB doesn't auto-propagate)
+    - Only supports literal integer positions (non-literals remain untranspiled)
+
+    Transpilation patterns:
+    - pos=0 (first): arr[2:]
+    - pos>0 (middle): LIST_CONCAT(arr[1:p], arr[p+2:])
+    - pos=-1 (last): arr[1:LEN(arr)-1]
+    - pos<-1: LIST_CONCAT(arr[1:LEN(arr)+p], arr[LEN(arr)+p+2:])
+
+    All wrapped in: CASE WHEN arr IS NULL THEN NULL ELSE ... END
+
+    Args:
+        expression: The ArrayRemoveAt expression to transpile.
+
+    Returns:
+        SQL string implementing ARRAY_REMOVE_AT behavior.
+    """
+    this = expression.this
+    position = expression.args.get("position")
+
+    if not position or not position.is_int:
+        self.unsupported("ARRAY_REMOVE_AT can only be transpiled with a literal position")
+        return self.func("ARRAY_REMOVE_AT", this, position)
+
+    pos_value = position.to_py()
+
+    # Build the appropriate expression based on position
+    if pos_value == 0:
+        # Remove first element: arr[2:]
+        result_expr: exp.Expression | str = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(2))],
+        )
+    elif pos_value > 0:
+        # Remove at positive position: LIST_CONCAT(arr[1:pos], arr[pos+2:])
+        # DuckDB uses 1-based slicing
+        left_slice = exp.Bracket(
+            this=this,
+            expressions=[
+                exp.Slice(this=exp.Literal.number(1), expression=exp.Literal.number(pos_value))
+            ],
+        )
+        right_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(pos_value + 2))],
+        )
+        result_expr = self.func("LIST_CONCAT", left_slice, right_slice)
+    elif pos_value == -1:
+        # Remove last element: arr[1:LEN(arr)-1]
+        # Optimization: simpler than general negative case
+        arr_len = exp.Length(this=this)
+        slice_end = arr_len + exp.Literal.number(-1)
+        result_expr = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end)],
+        )
+    else:
+        # Remove at negative position: LIST_CONCAT(arr[1:LEN(arr)+pos], arr[LEN(arr)+pos+2:])
+        arr_len = exp.Length(this=this)
+        slice_end_pos = arr_len + exp.Literal.number(pos_value)
+        slice_start_pos = slice_end_pos + exp.Literal.number(2)
+
+        left_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=exp.Literal.number(1), expression=slice_end_pos)],
+        )
+        right_slice = exp.Bracket(
+            this=this,
+            expressions=[exp.Slice(this=slice_start_pos)],
+        )
+        result_expr = self.func("LIST_CONCAT", left_slice, right_slice)
+
+    # Snowflake ARRAY_FUNCS_PROPAGATES_NULLS=True, so wrap in NULL check
+    # CASE WHEN array IS NULL THEN NULL ELSE result_expr END
+    return self.sql(
+        exp.If(
+            this=exp.Is(this=this, expression=exp.Null()),
+            true=exp.Null(),
+            false=result_expr,
+        )
+    )
+
+
 @unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
@@ -1754,6 +1844,7 @@ class DuckDB(Dialect):
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
+            exp.ArrayRemoveAt: _array_remove_at_sql,
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
             exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),
@@ -1770,6 +1861,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
+            exp.ByteLength: lambda self, e: self.func("OCTET_LENGTH", e.this),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -2390,6 +2482,13 @@ class DuckDB(Dialect):
             arg = expression.this
             return f"({self.sql(exp.replace_placeholders(self.BITMAP_CONSTRUCT_AGG_TEMPLATE, arg=arg))})"
 
+        def nthvalue_sql(self: DuckDB.Generator, expression: exp.NthValue) -> str:
+            from_first = expression.args.get("from_first", True)
+            if not from_first:
+                self.unsupported("DuckDB's NTH_VALUE doesn't support starting from the end ")
+
+            return self.function_fallback_sql(expression)
+
         def randstr_sql(self: DuckDB.Generator, expression: exp.Randstr) -> str:
             """
             Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.
@@ -2457,33 +2556,29 @@ class DuckDB(Dialect):
             value = expression.this
             format_arg = expression.args.get("format")
             is_safe = expression.args.get("safe")
+            is_binary = _is_binary(expression)
 
-            fmt = "HEX"
-            if format_arg:
-                fmt = format_arg.name.upper()
+            if not format_arg and not is_binary:
+                func_name = "TRY_TO_BINARY" if is_safe else "TO_BINARY"
+                return self.func(func_name, value)
 
-            if expression.is_type(exp.DataType.Type.BINARY):
-                if fmt == "UTF-8":
-                    result = self.func("ENCODE", value)
-                elif fmt == "BASE64":
-                    result = self.func("FROM_BASE64", value)
-                elif fmt == "HEX":
-                    result = self.func("UNHEX", value)
-                else:
-                    if is_safe:
-                        return self.sql(exp.null())
-                    else:
-                        self.unsupported(f"format {fmt} is not supported")
-                        result = self.func("TO_BINARY", value)
+            # Snowflake defaults to HEX encoding when no format is specified
+            fmt = format_arg.name.upper() if format_arg else "HEX"
 
-                # Wrap with TRY() for TRY_TO_BINARY
+            if fmt in ("UTF-8", "UTF8"):
+                # DuckDB ENCODE always uses UTF-8, no charset parameter needed
+                result = self.func("ENCODE", value)
+            elif fmt == "BASE64":
+                result = self.func("FROM_BASE64", value)
+            elif fmt == "HEX":
+                result = self.func("UNHEX", value)
+            else:
                 if is_safe:
-                    result = self.func("TRY", result)
-
-                return result
-
-            # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
-            return self.func("TO_BINARY", value)
+                    return self.sql(exp.null())
+                else:
+                    self.unsupported(f"format {fmt} is not supported")
+                    result = self.func("TO_BINARY", value)
+            return f"TRY({result})" if is_safe else result
 
         def _greatest_least_sql(
             self: DuckDB.Generator, expression: exp.Greatest | exp.Least
@@ -3020,13 +3115,10 @@ class DuckDB(Dialect):
             varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
             case = (
-                exp.case(self.func("TYPEOF", arg))
-                .when("'BLOB'", self.func("OCTET_LENGTH", blob))
-                .else_(
-                    exp.Anonymous(this="LENGTH", expressions=[varchar])
-                )  # anonymous to break length_sql recursion
+                exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))
+                .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
+                .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
             )
-
             return self.sql(case)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
@@ -3041,6 +3133,37 @@ class DuckDB(Dialect):
             # Emulate Snowflake semantics: if distance > max_dist, return max_dist
             levenshtein = exp.Levenshtein(this=this, expression=expr)
             return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
+
+        def pad_sql(self, expression: exp.Pad) -> str:
+            """
+            Handle RPAD/LPAD for VARCHAR and BINARY types.
+
+            For VARCHAR: Delegate to parent class
+            For BINARY: Lower to: input || REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input)))
+            """
+            string_arg = expression.this
+            fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
+
+            if _is_binary(string_arg) or _is_binary(fill_arg):
+                length_arg = expression.expression
+                is_left = expression.args.get("is_left")
+
+                input_len = exp.ByteLength(this=string_arg)
+                chars_needed = length_arg - input_len
+                pad_count = exp.Greatest(
+                    this=exp.Literal.number(0), expressions=[chars_needed], ignore_nulls=True
+                )
+                repeat_expr = exp.Repeat(this=fill_arg, times=pad_count)
+
+                left, right = string_arg, repeat_expr
+                if is_left:
+                    left, right = right, left
+
+                result = exp.DPipe(this=left, expression=right)
+                return self.sql(result)
+
+            # For VARCHAR: Delegate to parent class (handles PAD_FILL_PATTERN_IS_REQUIRED)
+            return super().pad_sql(expression)
 
         def minhash_sql(self, expression: exp.Minhash) -> str:
             k = expression.this

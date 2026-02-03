@@ -19,19 +19,15 @@ EXPRESSION_METADATA = {
             exp.Acos,
             exp.Atan,
             exp.Corr,
-            exp.Cos,
             exp.Cosh,
             exp.MonthsBetween,
-            exp.Sin,
             exp.Sinh,
-            exp.Tan,
             exp.Tanh,
         }
     },
     **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
-            exp.CurrentCatalog,
             exp.CurrentDatabase,
             exp.CurrentSchema,
             exp.CurrentUser,

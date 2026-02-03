@@ -255,7 +255,6 @@ EXPRESSION_METADATA = {
             exp.Atanh,
             exp.Corr,
             exp.CosineDistance,
-            exp.Cot,
             exp.Coth,
             exp.CovarPop,
             exp.CovarSamp,
@@ -269,7 +268,6 @@ EXPRESSION_METADATA = {
             exp.Rand,
             exp.Sec,
             exp.Sech,
-            exp.Sin,
             exp.Sinh,
         }
     },

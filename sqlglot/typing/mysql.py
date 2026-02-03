@@ -12,18 +12,16 @@ EXPRESSION_METADATA = {
             exp.Asin,
             exp.Atan,
             exp.Atan2,
-            exp.Cos,
-            exp.Cot,
             exp.Degrees,
-            exp.Sin,
-            exp.Tan,
         }
     },
     **{expr_type: {"returns": exp.DataType.Type.VARCHAR} for expr_type in (exp.Elt,)},
     **{
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
+            exp.DayOfMonth,
             exp.DayOfWeek,
+            exp.DayOfYear,
             exp.Month,
             exp.Second,
         }

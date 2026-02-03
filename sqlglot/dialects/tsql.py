@@ -704,7 +704,7 @@ class TSQL(Dialect):
         }
 
         def _parse_datepart(self) -> exp.Extract:
-            this = self._parse_var()
+            this = self._parse_var(tokens=[TokenType.IDENTIFIER])
             expression = self._match(TokenType.COMMA) and self._parse_bitwise()
             name = map_date_part(this, self.dialect)
 

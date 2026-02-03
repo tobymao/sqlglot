@@ -139,6 +139,39 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT LPAD(tbl.bin_col, 10)")
         self.validate_identity("SELECT RPAD('Hello', 10, '*')")
         self.validate_identity("SELECT RPAD(tbl.bin_col, 10)")
+
+        self.validate_all(
+            "SELECT RPAD('test', 10, 'ab')",
+            write={
+                "snowflake": "SELECT RPAD('test', 10, 'ab')",
+                "duckdb": "SELECT RPAD('test', 10, 'ab')",
+            },
+        )
+        self.validate_all(
+            "SELECT RPAD('data', 8)",
+            write={
+                "snowflake": "SELECT RPAD('data', 8)",
+                "duckdb": "SELECT RPAD('data', 8, ' ')",
+                "postgres": "SELECT RPAD('data', 8)",
+            },
+        )
+        self.validate_all(
+            "SELECT RPAD('exact', 5, '*')",
+            write={
+                "snowflake": "SELECT RPAD('exact', 5, '*')",
+                "duckdb": "SELECT RPAD('exact', 5, '*')",
+            },
+        )
+
+        ast = self.validate_identity(
+            "SELECT RPAD(TO_BINARY('Hi', 'UTF8'), 10, TO_BINARY('_', 'UTF8'))"
+        )
+        annotated = annotate_types(ast, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT ENCODE('Hi') || REPEAT(ENCODE('_'), GREATEST(0, 10 - OCTET_LENGTH(ENCODE('Hi'))))",
+        )
+
         self.validate_identity("SELECT SOUNDEX(column_name)")
         self.validate_identity("SELECT SOUNDEX_P123(column_name)")
         self.validate_identity("SELECT ABS(x)")
@@ -1254,6 +1287,31 @@ class TestSnowflake(Validator):
                 "trino": "SELECT i, p, o FROM (SELECT i, p, o, ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) AS _w FROM qt) AS _t WHERE _w = 1",
             },
         )
+
+        self.validate_all(
+            "SELECT NTH_VALUE(is_deleted, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            write={
+                "snowflake": "SELECT NTH_VALUE(is_deleted, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 IGNORE NULLS) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NTH_VALUE(is_deleted, 2) FROM LAST RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            write={
+                "snowflake": "SELECT NTH_VALUE(is_deleted, 2) FROM LAST RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 RESPECT NULLS) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            write={
+                "snowflake": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            },
+        )
+
         self.validate_all(
             "SELECT BOOLOR_AGG(c1), BOOLOR_AGG(c2) FROM test",
             write={

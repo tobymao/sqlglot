@@ -1756,7 +1756,7 @@ def encode_decode_sql(
     self: Generator, expression: exp.Expression, name: str, replace: bool = True
 ) -> str:
     charset = expression.args.get("charset")
-    if charset and charset.name.lower() != "utf-8":
+    if charset and charset.name.lower() not in ("utf-8", "utf8"):
         self.unsupported(f"Expected utf-8 character set, got {charset}.")
 
     return self.func(name, expression.this, expression.args.get("replace") if replace else None)

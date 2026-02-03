@@ -1570,6 +1570,10 @@ WHERE
                 "tsql": "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
             },
         )
+        self.validate_identity(
+            'SELECT DATEPART("dd", x)',
+            "SELECT DATEPART(DAY, x)",
+        )
 
     def test_convert(self):
         self.validate_all(

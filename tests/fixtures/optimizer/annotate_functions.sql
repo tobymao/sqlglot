@@ -5591,6 +5591,14 @@ DAYOFWEEK(tbl.date_col);
 INT;
 
 # dialect: mysql
+DAYOFMONTH(tbl.date_col);
+INT;
+
+# dialect: mysql
+DAYOFYEAR(tbl.date_col);
+INT;
+
+# dialect: mysql
 MONTH(tbl.date_col);
 INT;
 

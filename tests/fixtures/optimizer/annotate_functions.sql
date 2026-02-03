@@ -625,6 +625,10 @@ INT;
 MD5(tbl.str_col);
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+HOUR(tbl.timestamp_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -5615,6 +5619,10 @@ INT;
 
 # dialect: mysql
 QUARTER(tbl.date_col);
+INT;
+
+# dialect: mysql
+HOUR(tbl.time_col);
 INT;
 
 # dialect: mysql

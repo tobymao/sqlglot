@@ -1560,7 +1560,7 @@ COMMENT='客户账户表'"""
         self.validate_identity("TRUNCATE(price, 0)").assert_is(exp.Trunc)
 
         # TRUNC alias normalizes to TRUNCATE in MySQL
-        self.validate_identity("TRUNC(3.14159, 2)", "TRUNCATE(3.14159, 2)")
+        self.validate_identity("TRUNC(3.14159, 2)", "TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
 
         # Cross-dialect numeric truncation transpilation
         self.validate_all(

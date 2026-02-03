@@ -776,7 +776,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
 
     def test_trunc(self):
         # Numeric truncation identity and transpilation
-        self.validate_identity("TRUNC(3.14159)")
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
         self.validate_all(
             "TRUNC(3.14159)",
             write={

@@ -123,6 +123,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Ceil,
             exp.DatetimeDiff,
             exp.Getbit,
+            exp.Hour,
             exp.TimestampDiff,
             exp.TimeDiff,
             exp.Unicode,

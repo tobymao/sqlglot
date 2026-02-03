@@ -418,7 +418,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ByteLength,
             exp.Grouping,
-            exp.Hour,
             exp.JarowinklerSimilarity,
             exp.MapSize,
             exp.Minute,

@@ -358,8 +358,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
-            exp.Asinh,
-            exp.Atanh,
             exp.Cosh,
             exp.CosineDistance,
             exp.CovarPop,

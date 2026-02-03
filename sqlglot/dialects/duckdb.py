@@ -1676,7 +1676,7 @@ class DuckDB(Dialect):
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
             exp.DiToDate: lambda self,
             e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
-            exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE"),
+            exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.EqualNull: lambda self, e: self.sql(
                 exp.NullSafeEQ(this=e.this, expression=e.expression)
             ),

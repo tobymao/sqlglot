@@ -15,9 +15,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
-            exp.Asin,
-            exp.Acos,
-            exp.Atan,
             exp.Corr,
             exp.Cosh,
             exp.MonthsBetween,
@@ -32,7 +29,6 @@ EXPRESSION_METADATA = {
             exp.CurrentSchema,
             exp.CurrentUser,
             exp.Hex,
-            exp.MD5,
             exp.Soundex,
         }
     },

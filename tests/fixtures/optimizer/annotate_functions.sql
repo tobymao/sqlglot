@@ -5908,3 +5908,27 @@ TIME;
 # dialect: duckdb
 LENGTH(tbl.str_col);
 BIGINT;
+
+--------------------------------------
+-- Presto / Trino
+--------------------------------------
+
+# dialect: presto, trino
+MD5(tbl.bin_col);
+VARBINARY;
+
+# dialect: presto, trino
+LEVENSHTEIN_DISTANCE(tbl.str_col, tbl.str_col);
+BIGINT;
+
+# dialect: presto, trino
+LENGTH(tbl.str_col);
+BIGINT;
+
+# dialect: presto, trino
+POSITION(tbl.str_col IN tbl.str_col);
+BIGINT;
+
+# dialect: presto, trino
+STRPOS(tbl.str_col, tbl.str_col);
+BIGINT;

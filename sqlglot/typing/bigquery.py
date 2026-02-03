@@ -246,13 +246,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
-            exp.Acos,
-            exp.Acosh,
-            exp.Asin,
-            exp.Asinh,
-            exp.Atan,
             exp.Atan2,
-            exp.Atanh,
             exp.Corr,
             exp.CosineDistance,
             exp.Coth,
@@ -302,7 +296,6 @@ EXPRESSION_METADATA = {
             exp.JSONType,
             exp.LaxString,
             exp.LowerHex,
-            exp.MD5,
             exp.Normalize,
             exp.RegDomain,
             exp.SafeConvertBytesToString,

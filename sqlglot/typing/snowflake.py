@@ -358,8 +358,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
-            exp.Asinh,
-            exp.Atanh,
             exp.Cosh,
             exp.CosineDistance,
             exp.CovarPop,
@@ -510,7 +508,6 @@ EXPRESSION_METADATA = {
             exp.DecompressString,
             exp.HexDecodeString,
             exp.HexEncode,
-            exp.MD5,
             exp.Monthname,
             exp.Randstr,
             exp.RegexpExtract,

@@ -88,7 +88,13 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
     **{
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
+            exp.Asin,
+            exp.Asinh,
+            exp.Acos,
+            exp.Acosh,
             exp.ApproxQuantile,
+            exp.Atan,
+            exp.Atanh,
             exp.Avg,
             exp.Cbrt,
             exp.Cos,
@@ -206,6 +212,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,
+            exp.MD5,
             exp.SHA,
             exp.SHA2,
             exp.Substring,

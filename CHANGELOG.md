@@ -1,6 +1,45 @@
 Changelog
 =========
 
+## [v28.9.0] - 2026-02-02
+### :boom: BREAKING CHANGES
+- due to [`e9ff474`](https://github.com/tobymao/sqlglot/commit/e9ff4743e63c332ae8a4a101f976d4909918992a) - Annotate MINUTE, MONTH for DuckDB *(PR [#6919](https://github.com/tobymao/sqlglot/pull/6919) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate MINUTE, MONTH for DuckDB (#6919)
+
+- due to [`96dc339`](https://github.com/tobymao/sqlglot/commit/96dc339e0811c70dd12f92c297d2ff25456c71b7) - Annotate DAYOFWEEK, DAYOFYEAR for DuckDB *(PR [#6920](https://github.com/tobymao/sqlglot/pull/6920) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DAYOFWEEK, DAYOFYEAR for DuckDB (#6920)
+
+- due to [`b56f685`](https://github.com/tobymao/sqlglot/commit/b56f685193982590ea03b681cf542c0157e751d4) - Annotate DAY, HOUR, SECOND and DAYOFMONTH *(PR [#6922](https://github.com/tobymao/sqlglot/pull/6922) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DAY, HOUR, SECOND and DAYOFMONTH (#6922)
+
+- due to [`6e418ec`](https://github.com/tobymao/sqlglot/commit/6e418ecc95085e41a4fe4fed856bc3a08f4c46f8) - Annotate EPOCH(expr) for DuckDB *(PR [#6924](https://github.com/tobymao/sqlglot/pull/6924) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate EPOCH(expr) for DuckDB (#6924)
+
+- due to [`abd8d1b`](https://github.com/tobymao/sqlglot/commit/abd8d1bc5d892299dbe46a8208e23a4b2c1c833b) - Transpilation of SHA1 from Snowflake to DuckDB  *(PR [#6888](https://github.com/tobymao/sqlglot/pull/6888) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Transpilation of SHA1 from Snowflake to DuckDB  (#6888)
+
+- due to [`b2f5430`](https://github.com/tobymao/sqlglot/commit/b2f543030789ccf889fc6e065985fbeb821c26b7) - Annotate TO_DAYS(expr) for DuckDB *(PR [#6925](https://github.com/tobymao/sqlglot/pull/6925) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate TO_DAYS(expr) for DuckDB (#6925)
+
+
+### :sparkles: New Features
+- [`e9ff474`](https://github.com/tobymao/sqlglot/commit/e9ff4743e63c332ae8a4a101f976d4909918992a) - **optimizer**: Annotate MINUTE, MONTH for DuckDB *(PR [#6919](https://github.com/tobymao/sqlglot/pull/6919) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`96dc339`](https://github.com/tobymao/sqlglot/commit/96dc339e0811c70dd12f92c297d2ff25456c71b7) - **optimizer**: Annotate DAYOFWEEK, DAYOFYEAR for DuckDB *(PR [#6920](https://github.com/tobymao/sqlglot/pull/6920) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b56f685`](https://github.com/tobymao/sqlglot/commit/b56f685193982590ea03b681cf542c0157e751d4) - **optimizer**: Annotate DAY, HOUR, SECOND and DAYOFMONTH *(PR [#6922](https://github.com/tobymao/sqlglot/pull/6922) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6e418ec`](https://github.com/tobymao/sqlglot/commit/6e418ecc95085e41a4fe4fed856bc3a08f4c46f8) - **optimizer**: Annotate EPOCH(expr) for DuckDB *(PR [#6924](https://github.com/tobymao/sqlglot/pull/6924) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`abd8d1b`](https://github.com/tobymao/sqlglot/commit/abd8d1bc5d892299dbe46a8208e23a4b2c1c833b) - **snowflake**: Transpilation of SHA1 from Snowflake to DuckDB  *(PR [#6888](https://github.com/tobymao/sqlglot/pull/6888) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b2f5430`](https://github.com/tobymao/sqlglot/commit/b2f543030789ccf889fc6e065985fbeb821c26b7) - **optimizer**: Annotate TO_DAYS(expr) for DuckDB *(PR [#6925](https://github.com/tobymao/sqlglot/pull/6925) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :wrench: Chores
+- [`dfb2d3b`](https://github.com/tobymao/sqlglot/commit/dfb2d3b17d20f69536620976676a2b7248fdb699) - generate API docs before checking out api-docs branch *(PR [#6921](https://github.com/tobymao/sqlglot/pull/6921) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v28.8.0] - 2026-02-02
 ### :boom: BREAKING CHANGES
 - due to [`9d2a12a`](https://github.com/tobymao/sqlglot/commit/9d2a12a650afcdaffe780144af26a0f21a6ec4e6) - Annotate SIN for DuckDB *(PR [#6892](https://github.com/tobymao/sqlglot/pull/6892) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
@@ -12567,3 +12606,4 @@ Changelog
 [v28.6.0]: https://github.com/tobymao/sqlglot/compare/v28.5.0...v28.6.0
 [v28.7.0]: https://github.com/tobymao/sqlglot/compare/v28.6.0...v28.7.0
 [v28.8.0]: https://github.com/tobymao/sqlglot/compare/v28.7.0...v28.8.0
+[v28.9.0]: https://github.com/tobymao/sqlglot/compare/v28.8.0...v28.9.0

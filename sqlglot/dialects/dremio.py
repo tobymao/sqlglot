@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     build_date_delta,
     rename_func,
+    no_trycast_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -225,6 +226,7 @@ class Dremio(Dialect):
             exp.BitwiseOrAgg: rename_func("BIT_OR"),
             exp.ToChar: rename_func("TO_CHAR"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
+            exp.TryCast: no_trycast_sql,
             exp.DateAdd: _date_delta_sql("DATE_ADD"),
             exp.DateSub: _date_delta_sql("DATE_SUB"),
             exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),

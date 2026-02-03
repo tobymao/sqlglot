@@ -40,8 +40,6 @@ from sqlglot.dialects.dialect import (
     regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
-    sha2_digest_sql,
-    sha256_sql,
     strposition_sql,
     str_to_time_sql,
     timestrtotime_sql,
@@ -1271,6 +1269,33 @@ def _xor_sql(self: DuckDB.Generator, expression: exp.Xor) -> str:
     )
 
 
+def _sha_sql(
+    self: DuckDB.Generator,
+    expression: exp.Expression,
+    hash_func: str,
+    is_binary: bool = False,
+) -> str:
+    arg = expression.this
+
+    # For SHA2 variants, check digest length (DuckDB only supports SHA256)
+    if hash_func == "SHA256":
+        length = expression.text("length") or "256"
+        if length != "256":
+            self.unsupported("DuckDB only supports SHA256 hashing algorithm.")
+
+    # Cast if type is incompatible with DuckDB
+    if (
+        arg.type
+        and arg.type.this != exp.DataType.Type.UNKNOWN
+        and not arg.is_type(*exp.DataType.TEXT_TYPES)
+        and not _is_binary(arg)
+    ):
+        arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+
+    result = self.func(hash_func, arg)
+    return self.func("UNHEX", result) if is_binary else result
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1822,8 +1847,10 @@ class DuckDB(Dialect):
             exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
             exp.Initcap: _initcap_sql,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
-            exp.SHA1Digest: lambda self, e: self.func("UNHEX", self.func("SHA1", e.this)),
-            exp.SHA2Digest: lambda self, e: self.func("UNHEX", sha2_digest_sql(self, e)),
+            exp.SHA: lambda self, e: _sha_sql(self, e, "SHA1"),
+            exp.SHA1Digest: lambda self, e: _sha_sql(self, e, "SHA1", is_binary=True),
+            exp.SHA2: lambda self, e: _sha_sql(self, e, "SHA256"),
+            exp.SHA2Digest: lambda self, e: _sha_sql(self, e, "SHA256", is_binary=True),
             exp.MonthsBetween: months_between_sql,
             exp.NextDay: _day_navigation_sql,
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
@@ -1849,8 +1876,6 @@ class DuckDB(Dialect):
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
             exp.Rand: rename_func("RANDOM"),
-            exp.SHA: rename_func("SHA1"),
-            exp.SHA2: sha256_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,

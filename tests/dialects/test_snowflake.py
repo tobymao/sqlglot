@@ -140,9 +140,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT RPAD('Hello', 10, '*')")
         self.validate_identity("SELECT RPAD(tbl.bin_col, 10)")
 
-        # Important RPAD test cases
-        # Test 1: Multi-character fill pattern - DuckDB native support
-        # Tests that DuckDB now has native RPAD support for multi-char patterns
         self.validate_all(
             "SELECT RPAD('test', 10, 'ab')",
             write={
@@ -150,8 +147,6 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT RPAD('test', 10, 'ab')",
             },
         )
-        # Test 2: RPAD with default padding (space) - tests optional parameter handling
-        # DuckDB adds explicit space parameter when omitted
         self.validate_all(
             "SELECT RPAD('data', 8)",
             write={
@@ -160,8 +155,6 @@ class TestSnowflake(Validator):
                 "postgres": "SELECT RPAD('data', 8)",
             },
         )
-        # Test 3: RPAD edge case - padding to exact current length (no padding needed)
-        # Important for verifying edge case where target length equals string length
         self.validate_all(
             "SELECT RPAD('exact', 5, '*')",
             write={
@@ -169,14 +162,14 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT RPAD('exact', 5, '*')",
             },
         )
-        # Test 4: RPAD with binary data using TO_BINARY
-        # Critical for testing binary type handling - DuckDB uses ENCODE and OCTET_LENGTH
-        self.validate_all(
-            "SELECT RPAD(TO_BINARY('Hi', 'UTF8'), 10, TO_BINARY('_', 'UTF8'))",
-            write={
-                "snowflake": "SELECT RPAD(TO_BINARY('Hi', 'UTF8'), 10, TO_BINARY('_', 'UTF8'))",
-                "duckdb": "SELECT ENCODE('Hi') || REPEAT(ENCODE('_'), GREATEST(0, 10 - OCTET_LENGTH(ENCODE('Hi'))))",
-            },
+
+        ast = self.validate_identity(
+            "SELECT RPAD(TO_BINARY('Hi', 'UTF8'), 10, TO_BINARY('_', 'UTF8'))"
+        )
+        annotated = annotate_types(ast, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            "SELECT ENCODE('Hi') || REPEAT(ENCODE('_'), GREATEST(0, 10 - OCTET_LENGTH(ENCODE('Hi'))))",
         )
 
         self.validate_identity("SELECT SOUNDEX(column_name)")

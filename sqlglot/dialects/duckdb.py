@@ -3107,19 +3107,11 @@ class DuckDB(Dialect):
             blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
             varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
-            typeof_call = exp.Anonymous(this="TYPEOF", expressions=[arg])
-            octet_length_call = exp.Anonymous(
-                this="OCTET_LENGTH", expressions=[blob]
-            )  # use the AST for byte_length, use rnamefunc
-
             case = (
-                exp.case(typeof_call)
-                .when(exp.Literal.string("BLOB"), octet_length_call)
-                .else_(
-                    exp.Anonymous(this="LENGTH", expressions=[varchar])
-                )  # anonymous to break length_sql recursion
+                exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))
+                .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
+                .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
             )
-
             return self.sql(case)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
@@ -3145,17 +3137,11 @@ class DuckDB(Dialect):
             string_arg = expression.this
             fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
 
-            is_binary = (
-                _is_binary(string_arg)
-                or _is_binary(fill_arg)
-                or isinstance(string_arg, (exp.ToBinary, exp.Encode))
-                or isinstance(fill_arg, (exp.ToBinary, exp.Encode))
-            )
-            if is_binary:
+            if _is_binary(string_arg) or _is_binary(fill_arg):
                 length_arg = expression.expression
                 is_left = expression.args.get("is_left")
 
-                input_len = exp.func("OCTET_LENGTH", string_arg)
+                input_len = exp.ByteLength(this=string_arg)
                 chars_needed = length_arg - input_len
                 pad_count = exp.Greatest(
                     this=exp.Literal.number(0), expressions=[chars_needed], ignore_nulls=True

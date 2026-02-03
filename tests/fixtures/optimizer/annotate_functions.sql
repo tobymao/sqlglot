@@ -158,6 +158,9 @@ BOOLEAN;
 ISNAN(tbl.float_col);
 BOOLEAN;
 
+CURRENT_CATALOG();
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

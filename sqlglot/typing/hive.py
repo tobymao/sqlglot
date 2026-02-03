@@ -28,7 +28,6 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
-            exp.CurrentCatalog,
             exp.CurrentDatabase,
             exp.CurrentSchema,
             exp.CurrentUser,

@@ -198,6 +198,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Concat,
             exp.ConcatWs,
             exp.Chr,
+            exp.CurrentCatalog,
             exp.Dayname,
             exp.DateToDateStr,
             exp.DPipe,

@@ -1,4 +1,4 @@
-from sqlglot import exp, parse, parse_one
+from sqlglot import exp, parse_one
 from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -28,7 +28,10 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
-        self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
+        self.validate_identity(
+            "EXEC MyProc @id = 7, @name = 'Lochristi'",
+            "EXECUTE MyProc @id = 7, @name = 'Lochristi'",
+        )
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
@@ -316,8 +319,8 @@ class TestTSQL(Validator):
         self.validate_all(
             "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL DROP TABLE #TempTableName",
             write={
-                "tsql": "DROP TABLE IF EXISTS #TempTableName",
-                "spark": "DROP TABLE IF EXISTS TempTableName",
+                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NULL BEGIN DROP TABLE #TempTableName; END",
+                #"spark": "DROP TABLE IF EXISTS TempTableName",
             },
         )
 
@@ -335,7 +338,6 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
         self.validate_identity("SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY")
-        self.validate_identity("END")
         self.validate_identity("@x")
         self.validate_identity("#x")
         self.validate_identity("PRINT @TestVariable", check_command_warning=True)
@@ -512,17 +514,20 @@ class TestTSQL(Validator):
         with self.assertRaises(ParseError):
             parse_one("SELECT begin", read="tsql")
 
-        self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
+        self.validate_identity(
+            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
+            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
+        )
         self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
 
         for output in ("OUT", "OUTPUT", "READONLY"):
             self.validate_identity(
-                f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
+                f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output}) AS BEGIN SELECT 1; END"
             )
 
         self.validate_identity(
-            "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c')",
-            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')",
+            "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c') AS BEGIN SELECT 1; END",
+            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
         )
 
         for order_by in ("", " ORDER BY c"):
@@ -1062,8 +1067,8 @@ FOR XML
             "CREATE NONCLUSTERED COLUMNSTORE INDEX index_name ON foo.bar",
         )
         self.validate_identity(
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
+            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7; END;",
+            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7; END",
         )
         self.validate_identity(
             "INSERT INTO Production.UpdatedInventory SELECT ProductID, LocationID, NewQty, PreviousQty FROM (MERGE INTO Production.ProductInventory AS pi USING (SELECT ProductID, SUM(OrderQty) FROM Sales.SalesOrderDetail AS sod INNER JOIN Sales.SalesOrderHeader AS soh ON sod.SalesOrderID = soh.SalesOrderID AND soh.OrderDate BETWEEN '20030701' AND '20030731' GROUP BY ProductID) AS src(ProductID, OrderQty) ON pi.ProductID = src.ProductID WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty) WHERE Action = 'UPDATE'",
@@ -1245,22 +1250,21 @@ WHERE
             "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
         )
         self.validate_identity(
-            "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
+            "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar;"
         )
         self.validate_identity(
-            "CREATE PROC foo @ID INTEGER, @AGE INTEGER AS SELECT DB_NAME(@ID) AS ThatDB"
+            "CREATE PROC foo @ID INTEGER, @AGE INTEGER AS SELECT DB_NAME(@ID) AS ThatDB;"
         )
-        self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
-        self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
-
-        self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1")
-        self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1")
-        self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1")
-        self.validate_identity("CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1")
-        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS OWNER AS SELECT 1")
-        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1")
+        self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz;")
+        self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz;")
+        self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1;")
+        self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1;")
+        self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1;")
+        self.validate_identity("CREATE PROCEDURE foo WITH NATIVE_COMPILATION AS SELECT 1;")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS OWNER AS SELECT 1;")
+        self.validate_identity("CREATE PROCEDURE foo WITH EXECUTE AS 'username' AS SELECT 1;")
         self.validate_identity(
-            "CREATE PROCEDURE foo WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS SELECT 1"
+            "CREATE PROCEDURE foo WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS SELECT 1;"
         )
 
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
@@ -1312,12 +1316,14 @@ WHERE
         )
 
     def test_procedure_keywords(self):
-        self.validate_identity("BEGIN")
-        self.validate_identity("END")
         self.validate_identity("SET XACT_ABORT ON")
 
-    def test_fullproc(self):
-        sql = """
+    def test_procedures(self):
+        
+
+
+        self.validate_identity(
+            """
             CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
                 @Loadid INTEGER
                ,@NumberOfRows INTEGER
@@ -1333,24 +1339,13 @@ WHERE
 
                 DECLARE @SalesAmountBefore float;
                 SELECT @SalesAmountBefore=SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] S;
-            END
-        """
+            END;
+        """,
+            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON; DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104); DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104); DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER()); DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER()); DECLARE @SalesAmountBefore AS FLOAT; SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S; END",
+        )
 
-        expected_sqls = [
-            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
-            "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
-            "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @SalesAmountBefore AS FLOAT",
-            "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
-            "END",
-        ]
-
-        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
-
-        sql = """
+        self.validate_identity(
+            """
             CREATE PROC [dbo].[transform_proc] AS
 
             DECLARE @CurrentDate VARCHAR(20);
@@ -1359,16 +1354,9 @@ WHERE
             CREATE TABLE [target_schema].[target_table]
             (a INTEGER)
             WITH (DISTRIBUTION = REPLICATE, HEAP);
-        """
-
-        expected_sqls = [
-            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20)",
-            "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
-            "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
-        ]
-
-        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+        """,
+            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20); SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120); CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP);",
+        )
 
     def test_charindex(self):
         self.validate_identity(

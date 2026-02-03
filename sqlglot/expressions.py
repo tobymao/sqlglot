@@ -8560,6 +8560,34 @@ class Variadic(Expression):
     pass
 
 
+class StoredProcedure(Expression):
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
+
+
+class Block(Expression):
+    arg_types = {"expressions": True}
+
+
+class IfBlock(Expression):
+    arg_types = {"this": True, "true": True, "false": False}
+
+
+class WhileBlock(Expression):
+    arg_types = {"this": True, "body": True}
+
+
+class Execute(Expression):
+    arg_types = {"this": True, "expressions": False}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+
+class ExecuteSql(Execute):
+    pass
+
+
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 

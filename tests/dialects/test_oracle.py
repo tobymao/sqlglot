@@ -930,7 +930,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "END",
         ]
 
-        for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
+        for expr, expected_sql in zip(parse(sql, read="oracle")[0].expressions, expected_sqls):
             self.assertEqual(expr.sql(dialect="oracle"), expected_sql)
 
         sql = """
@@ -952,5 +952,5 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "END",
         ]
 
-        for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
+        for expr, expected_sql in zip(parse(sql, read="oracle")[0].expressions, expected_sqls):
             self.assertEqual(expr.sql(dialect="oracle"), expected_sql)

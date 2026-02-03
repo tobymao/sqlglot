@@ -173,10 +173,11 @@ class TestParser(unittest.TestCase):
     def test_command(self):
         with self.assertLogs(parser_logger) as cm:
             expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1", read="hive")
-            self.assertEqual(len(expressions), 3)
-            self.assertEqual(expressions[0].sql(), "SET x = 1")
-            self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
-            self.assertEqual(expressions[2].sql(), "SELECT 1")
+            self.assertEqual(len(expressions), 1)
+            self.assertIsInstance(expressions[0], exp.Block)
+            self.assertEqual(expressions[0].expressions[0].sql(), "SET x = 1")
+            self.assertEqual(expressions[0].expressions[1].sql(), "ADD JAR s3://a")
+            self.assertEqual(expressions[0].expressions[2].sql(), "SELECT 1")
 
         assert "'ADD JAR s3://a'" in cm.output[0]
 
@@ -242,14 +243,17 @@ class TestParser(unittest.TestCase):
         """
         )
 
-        assert len(expressions) == 2
-        assert expressions[0].args["from_"].name == "a"
-        assert expressions[1].args["from_"].name == "b"
+        assert len(expressions) == 1
+        self.assertIsInstance(expressions[0], exp.Block)
+        assert expressions[0].expressions[0].args["from_"].name == "a"
+        assert expressions[0].expressions[1].args["from_"].name == "b"
 
         expressions = parse("SELECT 1; ; SELECT 2")
 
-        assert len(expressions) == 3
-        assert expressions[1] is None
+        assert len(expressions) == 1
+        self.assertIsInstance(expressions[0], exp.Block)
+        assert len(expressions[0].expressions) == 3
+        assert expressions[0].expressions[1] is None
 
     def test_expression(self):
         ignore = Parser(error_level=ErrorLevel.IGNORE)
@@ -912,7 +916,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(
-            ";\n".join(e.sql() for e in expressions), "SELECT * FROM x;\n/* my comment */"
+            ";\n".join(e.sql() for e in expressions[0].expressions), "SELECT * FROM x;\n/* my comment */"
         )
 
     def test_parse_prop_eq(self):

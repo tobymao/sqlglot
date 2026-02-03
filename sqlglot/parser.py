@@ -1706,6 +1706,8 @@ class Parser(metaclass=_Parser):
         "_prev",
         "_prev_comments",
         "_pipe_cte_counter",
+        "_chunks",
+        "_chunk_index",
     )
 
     # Autofilled
@@ -1737,6 +1739,10 @@ class Parser(metaclass=_Parser):
         self._prev = None
         self._prev_comments = None
         self._pipe_cte_counter = 0
+
+        # State necessary for parsing imperative SQL
+        self._chunks: t.List[t.List[Token]] = []
+        self._chunk_index = 0
 
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
@@ -1792,6 +1798,34 @@ class Parser(metaclass=_Parser):
             errors=merge_errors(errors),
         ) from errors[-1]
 
+    def _parse_batch_statements(
+        self,
+        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
+        sep_first_statement: bool = True,
+    ) -> t.List[t.Optional[exp.Expression]]:
+        expressions = []
+
+        # Chunkification binds if/while statements with the first statement of the body
+        if sep_first_statement:
+            self._match(TokenType.BEGIN)
+            expressions.append(parse_method(self))
+
+        chunks_length = len(self._chunks)
+        while self._chunk_index < chunks_length:
+            self._advance_chunk()
+
+            if self._match(TokenType.END, advance=False) and not self._next:
+                continue
+
+            expressions.append(parse_method(self))
+
+            if self._index < len(self._tokens):
+                self.raise_error("Invalid expression / Unexpected token")
+
+            self.check_errors()
+
+        return expressions
+
     def _parse(
         self,
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
@@ -1814,21 +1848,16 @@ class Parser(metaclass=_Parser):
             else:
                 chunks[-1].append(token)
 
-        expressions = []
+        self._chunks = chunks
 
-        for tokens in chunks:
-            self._index = -1
-            self._tokens = tokens
-            self._advance()
+        expression = self._parse_batch_statements(
+            parse_method=parse_method, sep_first_statement=False
+        )
 
-            expressions.append(parse_method(self))
+        if expression and len(expression) > 1:
+            expression = [exp.Block(expressions=expression)]
 
-            if self._index < len(self._tokens):
-                self.raise_error("Invalid expression / Unexpected token")
-
-            self.check_errors()
-
-        return expressions
+        return expression
 
     def check_errors(self) -> None:
         """Logs or raises any found errors, depending on the chosen error level setting."""
@@ -1934,6 +1963,12 @@ class Parser(metaclass=_Parser):
         else:
             self._prev = None
             self._prev_comments = None
+
+    def _advance_chunk(self) -> None:
+        self._index = -1
+        self._tokens = self._chunks[self._chunk_index]
+        self._chunk_index += 1
+        self._advance()
 
     def _retreat(self, index: int) -> None:
         if index != self._index:
@@ -2056,6 +2091,25 @@ class Parser(metaclass=_Parser):
             aggregates=aggregates,
         )
 
+    def _parse_condition(self) -> t.Any:
+        return self._parse_wrapped(parse_method=self._parse_expression, optional=True)
+
+    def _parse_block(self) -> exp.Block:
+        self._match(TokenType.BEGIN)
+        return self.expression(
+            exp.Block,
+            expressions=self._parse_batch_statements(
+                parse_method=lambda self: self._parse_statement()
+            ),
+        )
+
+    def _parse_whileblock(self) -> exp.WhileBlock:
+        return self.expression(
+            exp.WhileBlock,
+            this=self._parse_condition(),
+            body=self._parse_block(),
+        )
+
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
             return None
@@ -2068,6 +2122,9 @@ class Parser(metaclass=_Parser):
 
         if self._match_set(self.dialect.tokenizer_class.COMMANDS):
             return self._parse_command()
+
+        if self._match_text_seq("WHILE"):
+            return self._parse_whileblock()
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
@@ -2196,9 +2253,13 @@ class Parser(metaclass=_Parser):
                         expression = self._parse_string()
                         extend_props(self._parse_properties())
                     else:
-                        expression = self._parse_user_defined_function_expression()
+                        expression = (
+                            self._parse_user_defined_function_expression()
+                            if create_token.token_type == TokenType.FUNCTION
+                            else self._parse_stored_procedure_expression()
+                        )
 
-                    end = self._match_text_seq("END")
+                    end = self._match(TokenType.END)
 
                     if return_:
                         expression = self.expression(exp.Return, this=expression)
@@ -6237,6 +6298,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:
         return self._parse_statement()
+
+    def _parse_stored_procedure_expression(self) -> t.Optional[exp.Expression]:
+        return self._parse_block()
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(this=self._parse_id_var(), computed_column=False)

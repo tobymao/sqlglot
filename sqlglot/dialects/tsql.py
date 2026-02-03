@@ -552,7 +552,7 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME2,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.DECLARE,
-            "EXEC": TokenType.COMMAND,
+            "EXEC": TokenType.EXECUTE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "GO": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
@@ -578,7 +578,7 @@ class TSQL(Dialect):
         }
         KEYWORDS.pop("/*+")
 
-        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END} - {TokenType.EXECUTE}
 
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
@@ -660,6 +660,7 @@ class TSQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
+            TokenType.EXECUTE: lambda self: self._parse_execute(),
         }
 
         RANGE_PARSERS = {
@@ -702,6 +703,27 @@ class TSQL(Dialect):
             "t": exp.Time,
             "ts": exp.Timestamp,
         }
+
+        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+            this = super()._parse_set()
+            if not isinstance(this, exp.Command):
+                expr = this.expressions[0].this
+                if isinstance(expr, exp.EQ) and isinstance(expr.this, exp.Parameter):
+                    return this
+
+            return this
+
+        def _parse_execute(self) -> exp.Execute:
+            execute = self.expression(
+                exp.Execute,
+                this=self._parse_table(schema=True),
+                expressions=self._parse_csv(self._parse_expression),
+            )
+
+            if execute.name.lower() == "sp_executesql":
+                execute = self.expression(exp.ExecuteSql, **execute.args)
+
+            return execute
 
         def _parse_datepart(self) -> exp.Extract:
             this = self._parse_var(tokens=[TokenType.IDENTIFIER])
@@ -866,19 +888,24 @@ class TSQL(Dialect):
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_user_defined_function(kind=kind)
 
-            if (
-                kind == TokenType.FUNCTION
-                or isinstance(this, exp.UserDefinedFunction)
-                or self._match(TokenType.ALIAS, advance=False)
-            ):
+            if kind == TokenType.FUNCTION or isinstance(this, exp.UserDefinedFunction):
                 return this
 
-            if not self._match(TokenType.WITH, advance=False):
-                expressions = self._parse_csv(self._parse_function_parameter)
-            else:
-                expressions = None
+            if kind == TokenType.PROCEDURE and this:
+                expressions = this.expressions
+                if not (
+                    expressions or self._match_set((TokenType.ALIAS, TokenType.WITH), advance=False)
+                ):
+                    expressions = self._parse_csv(self._parse_function_parameter)
 
-            return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
+                return self.expression(
+                    exp.StoredProcedure,
+                    this=this if isinstance(this, exp.Table) else this.this,
+                    expressions=expressions,
+                    wrapped=this.args.get("wrapped"),
+                )
+
+            return self.expression(exp.UserDefinedFunction, this=this)
 
         def _parse_into(self) -> t.Optional[exp.Into]:
             into = super()._parse_into()
@@ -922,16 +949,20 @@ class TSQL(Dialect):
 
             return create
 
-        def _parse_if(self) -> t.Optional[exp.Expression]:
-            index = self._index
+        def _parse_if(self) -> exp.IfBlock:
+            this = self._parse_condition()
+            true = self._parse_block()
 
-            if self._match_text_seq("OBJECT_ID"):
-                self._parse_wrapped_csv(self._parse_string)
-                if self._match_text_seq("IS", "NOT", "NULL") and self._match(TokenType.DROP):
-                    return self._parse_drop(exists=True)
-                self._retreat(index)
+            false = None
+            if (
+                self._chunk_index < len(self._chunks)
+                and self._chunks[self._chunk_index][0].token_type == TokenType.ELSE
+            ):
+                self._advance_chunk()
+                self._match(TokenType.ELSE)
+                false = self._parse_block()
 
-            return super()._parse_if()
+            return self.expression(exp.IfBlock, this=this, true=true, false=false)
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             if self._match_texts(("CLUSTERED", "NONCLUSTERED")):

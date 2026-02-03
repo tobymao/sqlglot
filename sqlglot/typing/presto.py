@@ -20,4 +20,5 @@ EXPRESSION_METADATA = {
         if e.this
         else self._set_type(e, exp.DataType.Type.DOUBLE)
     },
+    exp.MD5Digest: {"returns": exp.DataType.Type.VARBINARY},
 }

@@ -5908,3 +5908,11 @@ TIME;
 # dialect: duckdb
 LENGTH(tbl.str_col);
 BIGINT;
+
+--------------------------------------
+-- Presto / Trino
+--------------------------------------
+
+# dialect: presto, trino
+MD5(tbl.bin_col);
+VARBINARY;

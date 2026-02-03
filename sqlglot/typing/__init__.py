@@ -206,6 +206,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,
+            exp.MD5,
             exp.SHA,
             exp.SHA2,
             exp.Substring,

@@ -36,9 +36,6 @@ EXPRESSION_METADATA = {
             exp.Asinh,
             exp.Atanh,
             exp.Atan2,
-            exp.Acos,
-            exp.Asin,
-            exp.Atan,
             exp.Rand,
             exp.TimeToUnix,
         }

@@ -754,13 +754,29 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
 
-    def test_numeric_trunc(self):
-        # Numeric truncation - distinct from date truncation
+    def test_trunc_type_inference(self):
+        # Tests for build_trunc discrimination logic (shared across Oracle, Exasol, Snowflake)
+        # 5 cases: temporal+?, ?+string, numeric+?, ?+int, ?+?
+
+        # temporal + string: first arg typed as temporal
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(SYSDATE, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # ? + string: untyped first arg, string second arg infers DateTrunc
+        self.parse_one("TRUNC(col, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # numeric + int: first arg typed as numeric (literal infers type)
         self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+
+        # ? + int: untyped first arg, int second arg infers Trunc
         self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
 
-        # Single-argument TRUNC (truncate to integer)
-        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
+        # ? + ?: neither arg typed, fallback to Anonymous
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
+
+    def test_trunc(self):
+        # Numeric truncation identity and transpilation
+        self.validate_identity("TRUNC(3.14159)")
         self.validate_all(
             "TRUNC(3.14159)",
             write={
@@ -771,13 +787,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        # Date truncation remains DateTrunc
-        self.parse_one("TRUNC(SYSDATE, 'MONTH')").assert_is(exp.DateTrunc)
-
-        # Fallback to Anonymous when type cannot be determined
-        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
-
-        # Transpile to other dialects
+        # Numeric transpilation to other dialects
         self.validate_all(
             "TRUNC(3.14159, 2)",
             read={

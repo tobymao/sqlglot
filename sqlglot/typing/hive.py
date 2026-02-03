@@ -32,7 +32,6 @@ EXPRESSION_METADATA = {
             exp.CurrentSchema,
             exp.CurrentUser,
             exp.Hex,
-            exp.MD5,
             exp.Soundex,
         }
     },

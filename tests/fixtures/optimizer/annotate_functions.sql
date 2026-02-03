@@ -5606,6 +5606,14 @@ MONTH(tbl.date_col);
 INT;
 
 # dialect: mysql
+WEEK(tbl.date_col);
+INT;
+
+# dialect: mysql
+WEEK(tbl.date_col, int_col);
+INT;
+
+# dialect: mysql
 QUARTER(tbl.date_col);
 INT;
 

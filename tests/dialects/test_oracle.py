@@ -756,11 +756,11 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
 
     def test_numeric_trunc(self):
         # Numeric truncation - distinct from date truncation
-        self.validate_identity("TRUNC(3.14159, 2)")
-        self.validate_identity("TRUNC(price, 0)")
+        self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
 
         # Single-argument TRUNC (truncate to integer)
-        self.validate_identity("TRUNC(3.14159)")
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
         self.validate_all(
             "TRUNC(3.14159)",
             write={

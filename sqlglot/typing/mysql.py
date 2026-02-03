@@ -19,7 +19,9 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {
+            exp.DayOfMonth,
             exp.DayOfWeek,
+            exp.DayOfYear,
             exp.Month,
             exp.Second,
         }

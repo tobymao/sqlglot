@@ -1861,6 +1861,7 @@ class DuckDB(Dialect):
             exp.BitwiseOrAgg: _bitwise_agg_sql,
             exp.BitwiseRightShift: _bitshift_sql,
             exp.BitwiseXorAgg: _bitwise_agg_sql,
+            exp.ByteLength: lambda self, e: self.func("OCTET_LENGTH", e.this),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.Corr: lambda self, e: self._corr_sql(e),
             exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -2548,33 +2549,29 @@ class DuckDB(Dialect):
             value = expression.this
             format_arg = expression.args.get("format")
             is_safe = expression.args.get("safe")
+            is_binary = _is_binary(expression)
 
-            fmt = "HEX"
-            if format_arg:
-                fmt = format_arg.name.upper()
+            if not format_arg and not is_binary:
+                func_name = "TRY_TO_BINARY" if is_safe else "TO_BINARY"
+                return self.func(func_name, value)
 
-            if expression.is_type(exp.DataType.Type.BINARY):
-                if fmt == "UTF-8":
-                    result = self.func("ENCODE", value)
-                elif fmt == "BASE64":
-                    result = self.func("FROM_BASE64", value)
-                elif fmt == "HEX":
-                    result = self.func("UNHEX", value)
-                else:
-                    if is_safe:
-                        return self.sql(exp.null())
-                    else:
-                        self.unsupported(f"format {fmt} is not supported")
-                        result = self.func("TO_BINARY", value)
+            # Snowflake defaults to HEX encoding when no format is specified
+            fmt = format_arg.name.upper() if format_arg else "HEX"
 
-                # Wrap with TRY() for TRY_TO_BINARY
+            if fmt in ("UTF-8", "UTF8"):
+                # DuckDB ENCODE always uses UTF-8, no charset parameter needed
+                result = self.func("ENCODE", value)
+            elif fmt == "BASE64":
+                result = self.func("FROM_BASE64", value)
+            elif fmt == "HEX":
+                result = self.func("UNHEX", value)
+            else:
                 if is_safe:
-                    result = self.func("TRY", result)
-
-                return result
-
-            # Fallback, which needs to be updated if want to support transpilation from other dialects than Snowflake
-            return self.func("TO_BINARY", value)
+                    return self.sql(exp.null())
+                else:
+                    self.unsupported(f"format {fmt} is not supported")
+                    result = self.func("TO_BINARY", value)
+            return f"TRY({result})" if is_safe else result
 
         def _greatest_least_sql(
             self: DuckDB.Generator, expression: exp.Greatest | exp.Least
@@ -3110,9 +3107,14 @@ class DuckDB(Dialect):
             blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
             varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
 
+            typeof_call = exp.Anonymous(this="TYPEOF", expressions=[arg])
+            octet_length_call = exp.Anonymous(
+                this="OCTET_LENGTH", expressions=[blob]
+            )  # use the AST for byte_length, use rnamefunc
+
             case = (
-                exp.case(self.func("TYPEOF", arg))
-                .when("'BLOB'", self.func("OCTET_LENGTH", blob))
+                exp.case(typeof_call)
+                .when(exp.Literal.string("BLOB"), octet_length_call)
                 .else_(
                     exp.Anonymous(this="LENGTH", expressions=[varchar])
                 )  # anonymous to break length_sql recursion
@@ -3132,6 +3134,43 @@ class DuckDB(Dialect):
             # Emulate Snowflake semantics: if distance > max_dist, return max_dist
             levenshtein = exp.Levenshtein(this=this, expression=expr)
             return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
+
+        def pad_sql(self, expression: exp.Pad) -> str:
+            """
+            Handle RPAD/LPAD for VARCHAR and BINARY types.
+
+            For VARCHAR: Delegate to parent class
+            For BINARY: Lower to: input || REPEAT(pad, GREATEST(0, target_len - OCTET_LENGTH(input)))
+            """
+            string_arg = expression.this
+            fill_arg = expression.args.get("fill_pattern") or exp.Literal.string(" ")
+
+            is_binary = (
+                _is_binary(string_arg)
+                or _is_binary(fill_arg)
+                or isinstance(string_arg, (exp.ToBinary, exp.Encode))
+                or isinstance(fill_arg, (exp.ToBinary, exp.Encode))
+            )
+            if is_binary:
+                length_arg = expression.expression
+                is_left = expression.args.get("is_left")
+
+                input_len = exp.func("OCTET_LENGTH", string_arg)
+                chars_needed = length_arg - input_len
+                pad_count = exp.Greatest(
+                    this=exp.Literal.number(0), expressions=[chars_needed], ignore_nulls=True
+                )
+                repeat_expr = exp.Repeat(this=fill_arg, times=pad_count)
+
+                left, right = string_arg, repeat_expr
+                if is_left:
+                    left, right = right, left
+
+                result = exp.DPipe(this=left, expression=right)
+                return self.sql(result)
+
+            # For VARCHAR: Delegate to parent class (handles PAD_FILL_PATTERN_IS_REQUIRED)
+            return super().pad_sql(expression)
 
         def minhash_sql(self, expression: exp.Minhash) -> str:
             k = expression.this

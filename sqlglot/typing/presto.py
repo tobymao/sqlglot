@@ -10,6 +10,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Length,
             exp.Levenshtein,
+            exp.StrPosition,
         }
     },
     **{

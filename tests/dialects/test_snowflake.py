@@ -3558,7 +3558,7 @@ class TestSnowflake(Validator):
         # Single-arg TRUNC is always numeric in Snowflake (date trunc requires unit)
         self.validate_identity("TRUNC(col)").assert_is(exp.Trunc)
 
-        # Date truncation with typed column and unit is DateTrunc
+        # Date truncation with typed column and unit
         # (parse_one because DateTrunc generates as DATE_TRUNC, not TRUNC)
         self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
@@ -3567,7 +3567,7 @@ class TestSnowflake(Validator):
         # Fallback to Anonymous when type cannot be determined
         self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
 
-        # Cross-dialect transpilation for numeric truncation
+        # Cross-dialect numeric truncation transpilation
         self.validate_all(
             "TRUNC(3.14159, 2)",
             write={

@@ -787,7 +787,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        # Numeric transpilation to other dialects
+        # Cross-dialect numeric truncation transpilation
         self.validate_all(
             "TRUNC(3.14159, 2)",
             read={

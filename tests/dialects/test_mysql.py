@@ -1562,7 +1562,7 @@ COMMENT='客户账户表'"""
         # TRUNC alias normalizes to TRUNCATE in MySQL
         self.validate_identity("TRUNC(3.14159, 2)", "TRUNCATE(3.14159, 2)")
 
-        # Cross-dialect transpilation
+        # Cross-dialect numeric truncation transpilation
         self.validate_all(
             "TRUNCATE(3.14159, 2)",
             write={

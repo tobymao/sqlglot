@@ -6,6 +6,13 @@ from sqlglot.typing import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
+        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        for expr_type in {
+            exp.Length,
+            exp.Levenshtein,
+        }
+    },
+    **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.Ceil,

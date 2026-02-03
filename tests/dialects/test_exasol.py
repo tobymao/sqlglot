@@ -583,22 +583,21 @@ class TestExasol(Validator):
         )
 
     def test_number_functions(self):
-        self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
+        self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC").assert_is(exp.Select)
         self.validate_identity("SELECT DIV(1234, 2) AS DIV")
 
-        # Verify numeric TRUNC is parsed as exp.Trunc
-        self.parse_one("TRUNC(123.456, 2)").assert_is(exp.Trunc)
-
-        # Single-argument TRUNC (truncate to integer)
+        # Numeric TRUNC
+        self.validate_identity("TRUNC(123.456, 2)").assert_is(exp.Trunc)
         self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
 
-        # Date truncation with typed column is correctly identified as DateTrunc
+        # Date truncation with typed column and unit is DateTrunc
+        # (parse_one because DateTrunc generates as DATE_TRUNC, not TRUNC)
         self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(CAST(x AS DATETIME), 'MONTH')").assert_is(exp.DateTrunc)
 
-        # Date truncation without unit defaults to 'DD'
-        self.parse_one("TRUNC(CAST(x AS DATE))").assert_is(exp.DateTrunc)
+        # Date truncation without unit falls back to Anonymous (Exasol requires unit)
+        self.validate_identity("TRUNC(CAST(x AS DATE))").assert_is(exp.Anonymous)
 
         # Cross-dialect transpilation for numeric truncation
         self.validate_all(

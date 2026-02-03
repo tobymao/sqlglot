@@ -126,7 +126,7 @@ class Oracle(Dialect):
             "TO_TIMESTAMP": _build_to_timestamp,
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
             "TRUNC": lambda args, dialect: build_trunc(
-                args, dialect, date_trunc_unabbreviate=False
+                args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
             ),
         }
         FUNCTIONS.pop("TO_BOOLEAN")

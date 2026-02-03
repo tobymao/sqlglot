@@ -277,7 +277,7 @@ TBLPROPERTIES (
         )
 
         # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
-        self.parse_one("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
+        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
 
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")

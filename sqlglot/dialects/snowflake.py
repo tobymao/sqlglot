@@ -948,8 +948,12 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-            "TRUNC": build_trunc,
-            "TRUNCATE": build_trunc,
+            "TRUNC": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
+            "TRUNCATE": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
             "TRY_DECRYPT": lambda args: exp.Decrypt(
                 this=seq_get(args, 0),
                 passphrase=seq_get(args, 1),

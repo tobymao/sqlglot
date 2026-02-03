@@ -887,7 +887,7 @@ class TestHive(Validator):
         )
 
         # Hive TRUNC is date-only, should parse to TimestampTrunc (not numeric Trunc)
-        self.parse_one("TRUNC(date_col, 'MM')").assert_is(exp.TimestampTrunc)
+        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.TimestampTrunc)
         self.validate_all(
             "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={

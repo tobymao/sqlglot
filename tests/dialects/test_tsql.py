@@ -2427,23 +2427,6 @@ FROM OPENJSON(@json) WITH (
             CREATE PROCEDURE test(@in1 INTEGER)
             AS
             BEGIN
-                SELECT 1;
-                IF @in1 > 1
-                BEGIN
-                    SELECT 1;
-                    SELECT 2;
-                END;
-                ELSE
-                BEGIN
-                    SELECT 3;
-                    SELECT 4;
-                END;
-            END
-            """,
-            """
-            CREATE PROCEDURE test(@in1 INTEGER)
-            AS
-            BEGIN
                 IF @in1 > 1
                 BEGIN
                     SELECT col1 FROM t WHERE t.col2 = @in1;

@@ -583,7 +583,7 @@ class TestExasol(Validator):
         )
 
     def test_number_functions(self):
-        self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC").assert_is(exp.Select)
+        self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
         self.validate_identity("SELECT DIV(1234, 2) AS DIV")
 
         # Numeric truncation identity

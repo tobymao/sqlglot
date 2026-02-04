@@ -1896,7 +1896,7 @@ def build_trunc(
     if (
         this and this.is_type(*exp.DataType.TEMPORAL_TYPES) and (second or default_date_trunc_unit)
     ) or (second and second.is_type(*exp.DataType.TEXT_TYPES)):
-        unit = second if second else exp.Literal.string(default_date_trunc_unit)
+        unit = second or exp.Literal.string(default_date_trunc_unit)
         return exp.DateTrunc(this=this, unit=unit, unabbreviate=date_trunc_unabbreviate)
 
     # Numeric truncation

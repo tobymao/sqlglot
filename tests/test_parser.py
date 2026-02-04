@@ -908,7 +908,7 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)
 
     def test_trailing_comments(self):
-        expressions = parse(
+        expression = parse_one(
             """
         select * from x;
         -- my comment
@@ -916,7 +916,8 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(
-            ";\n".join(e.sql() for e in expressions[0].expressions), "SELECT * FROM x;\n/* my comment */"
+            ";\n".join(e.sql() for e in expression.expressions),
+            "SELECT * FROM x;\n/* my comment */",
         )
 
     def test_parse_prop_eq(self):

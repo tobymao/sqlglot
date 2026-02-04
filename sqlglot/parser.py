@@ -1814,7 +1814,11 @@ class Parser(metaclass=_Parser):
         while self._chunk_index < chunks_length:
             self._advance_chunk()
 
-            if self._match(TokenType.END, advance=False) and not self._next:
+            if self._match(TokenType.ELSE, advance=False):
+                return expressions
+
+            if not self._next and self._match(TokenType.END):
+                expressions.append(exp.EndStatement())
                 continue
 
             expressions.append(parse_method(self))
@@ -2095,7 +2099,6 @@ class Parser(metaclass=_Parser):
         return self._parse_wrapped(parse_method=self._parse_expression, optional=True)
 
     def _parse_block(self) -> exp.Block:
-        self._match(TokenType.BEGIN)
         return self.expression(
             exp.Block,
             expressions=self._parse_batch_statements(
@@ -2259,8 +2262,6 @@ class Parser(metaclass=_Parser):
                             else self._parse_stored_procedure_expression()
                         )
 
-                    end = self._match(TokenType.END)
-
                     if return_:
                         expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
@@ -2366,7 +2367,6 @@ class Parser(metaclass=_Parser):
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,
-            end=end,
             clone=clone,
             concurrently=concurrently,
             clustered=clustered,

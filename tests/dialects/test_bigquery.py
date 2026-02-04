@@ -8,7 +8,6 @@ from sqlglot import (
     TokenError,
     UnsupportedError,
     exp,
-    parse,
     transpile,
     parse_one,
 )
@@ -2131,7 +2130,23 @@ WHERE
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
-            self.validate_identity("BEGIN DECLARE 1; IF from_date IS NULL THEN SET x = 1; END IF;")
+            statement = parse_one(
+                """
+            BEGIN
+              DECLARE 1;
+              IF from_date IS NULL THEN SET x = 1;
+              END IF;
+            END;
+            """,
+                read="bigquery",
+            )
+
+            for actual, expected in zip(
+                statement.expressions,
+                ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END"),
+            ):
+                self.assertEqual(actual.sql(dialect="bigquery"), expected)
+
             self.assertIn("unsupported syntax", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
@@ -2230,6 +2245,7 @@ WHERE
                 [
                     'FOR record IN (SELECT word FROM shakespeare) DO BEGIN SET x = "SELECT 1"',
                     "EXECUTE IMMEDIATE x",
+                    "END",
                     "END FOR",
                 ],
             )

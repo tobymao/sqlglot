@@ -145,6 +145,7 @@ class Generator(metaclass=_Generator):
         exp.DynamicProperty: lambda *_: "DYNAMIC",
         exp.EmptyProperty: lambda *_: "EMPTY",
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
+        exp.EndStatement: lambda *_: "END",
         exp.EnviromentProperty: lambda self, e: f"ENVIRONMENT ({self.expressions(e, flat=True)})",
         exp.EphemeralColumnConstraint: lambda self,
         e: f"EPHEMERAL{(' ' + self.sql(e, 'this')) if e.this else ''}",
@@ -1218,11 +1219,10 @@ class Generator(metaclass=_Generator):
                 properties_sql = f" {properties_sql}"
 
         begin = " BEGIN" if expression.args.get("begin") else ""
-        end = " END" if expression.args.get("end") else ""
 
         expression_sql = self.sql(expression, "expression")
         if expression_sql:
-            expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
+            expression_sql = f"{begin}{self.sep()}{expression_sql}"
 
             if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
                 postalias_props_sql = ""
@@ -5610,18 +5610,18 @@ class Generator(metaclass=_Generator):
         true = self.sql(expression, "true")
         true = f" {true}" if true else " "
         false = self.sql(expression, "false")
-        false = f" END; ELSE BEGIN {false} END" if false else " END"
+        false = f"; ELSE BEGIN {false}" if false else ""
         return f"IF {this} BEGIN{true}{false}"
 
     def whileblock_sql(self, expression: exp.WhileBlock) -> str:
         this = self.sql(expression, "this")
         body = self.sql(expression, "body")
         body = f" {body}" if body else " "
-        return f"WHILE {this} BEGIN{body} END"
+        return f"WHILE {this} BEGIN{body}"
 
     def block_sql(self, expression: exp.Block) -> str:
         expressions = self.expressions(expression, sep="; ", flat=True)
-        return f"{expressions};" if expressions else ""
+        return f"{expressions}" if expressions else ""
 
     def execute_sql(self, expression: exp.Execute) -> str:
         this = self.sql(expression, "this")

@@ -704,15 +704,6 @@ class TSQL(Dialect):
             "ts": exp.Timestamp,
         }
 
-        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
-            this = super()._parse_set()
-            if not isinstance(this, exp.Command):
-                expr = this.expressions[0].this
-                if isinstance(expr, exp.EQ) and isinstance(expr.this, exp.Parameter):
-                    return this
-
-            return this
-
         def _parse_execute(self) -> exp.Execute:
             execute = self.expression(
                 exp.Execute,
@@ -953,14 +944,7 @@ class TSQL(Dialect):
             this = self._parse_condition()
             true = self._parse_block()
 
-            false = None
-            if (
-                self._chunk_index < len(self._chunks)
-                and self._chunks[self._chunk_index][0].token_type == TokenType.ELSE
-            ):
-                self._advance_chunk()
-                self._match(TokenType.ELSE)
-                false = self._parse_block()
+            false = self._match(TokenType.ELSE) and self._parse_block()
 
             return self.expression(exp.IfBlock, this=this, true=true, false=false)
 

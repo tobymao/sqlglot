@@ -1566,7 +1566,6 @@ class Create(DDL):
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
-        "end": False,
         "clone": False,
         "concurrently": False,
         "clustered": False,
@@ -8574,6 +8573,10 @@ class IfBlock(Expression):
 
 class WhileBlock(Expression):
     arg_types = {"this": True, "body": True}
+
+
+class EndStatement(Expression):
+    arg_types = {}
 
 
 class Execute(Expression):

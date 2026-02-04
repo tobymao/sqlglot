@@ -2620,3 +2620,8 @@ FROM OPENJSON(@json) WITH (
 
         for expr, expected_sql in zip(parse_one(sql, read="tsql").expressions, expected_sqls):
             self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+
+        self.validate_identity(
+            "IF ((@x = @y AND GETDATE() = GETDATE()) OR (GETDATE() = @t)) BEGIN SET @query_result = (SELECT MAX(id) + 1 FROM t); END",
+            "IF (@x = @y AND GETDATE() = GETDATE()) OR (GETDATE() = @t) BEGIN SET @query_result = (SELECT MAX(id) + 1 FROM t); END",
+        )

@@ -2136,7 +2136,7 @@ WHERE
               DECLARE 1;
               IF from_date IS NULL THEN SET x = 1;
               END IF;
-            END;
+            END
             """,
                 read="bigquery",
             )
@@ -2162,6 +2162,7 @@ WHERE
             expected_statements = (
                 "BEGIN CALL `project_id.dataset_id.stored_procedure_id`()",
                 "EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP()",
+                "END",
             )
 
             for actual, expected in zip(statement.expressions, expected_statements):

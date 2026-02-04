@@ -338,6 +338,7 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
         self.validate_identity("SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY")
+        self.validate_identity("END")
         self.validate_identity("@x")
         self.validate_identity("#x")
         self.validate_identity("PRINT @TestVariable", check_command_warning=True)
@@ -514,20 +515,17 @@ class TestTSQL(Validator):
         with self.assertRaises(ParseError):
             parse_one("SELECT begin", read="tsql")
 
-        self.validate_identity(
-            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
-            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
-        )
+        self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
         self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
 
         for output in ("OUT", "OUTPUT", "READONLY"):
             self.validate_identity(
-                f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output}) AS BEGIN SELECT 1; END"
+                f"CREATE PROCEDURE test(@v1 INTEGER = 1 {output}, @v2 CHAR(1) {output})"
             )
 
         self.validate_identity(
-            "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c') AS BEGIN SELECT 1; END",
-            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c') AS BEGIN SELECT 1; END",
+            "CREATE PROCEDURE test(@v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c')",
+            "CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')",
         )
 
         for order_by in ("", " ORDER BY c"):
@@ -1067,8 +1065,7 @@ FOR XML
             "CREATE NONCLUSTERED COLUMNSTORE INDEX index_name ON foo.bar",
         )
         self.validate_identity(
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7; END;",
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7; END",
+            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7; END",
         )
         self.validate_identity(
             "INSERT INTO Production.UpdatedInventory SELECT ProductID, LocationID, NewQty, PreviousQty FROM (MERGE INTO Production.ProductInventory AS pi USING (SELECT ProductID, SUM(OrderQty) FROM Sales.SalesOrderDetail AS sod INNER JOIN Sales.SalesOrderHeader AS soh ON sod.SalesOrderID = soh.SalesOrderID AND soh.OrderDate BETWEEN '20030701' AND '20030731' GROUP BY ProductID) AS src(ProductID, OrderQty) ON pi.ProductID = src.ProductID WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty) WHERE Action = 'UPDATE'",
@@ -1257,6 +1254,7 @@ WHERE
         )
         self.validate_identity("CREATE PROC foo AS SELECT BAR() AS baz")
         self.validate_identity("CREATE PROCEDURE foo AS SELECT BAR() AS baz")
+
         self.validate_identity("CREATE PROCEDURE foo WITH ENCRYPTION AS SELECT 1")
         self.validate_identity("CREATE PROCEDURE foo WITH RECOMPILE AS SELECT 1")
         self.validate_identity("CREATE PROCEDURE foo WITH SCHEMABINDING AS SELECT 1")
@@ -1316,6 +1314,8 @@ WHERE
         )
 
     def test_procedure_keywords(self):
+        self.validate_identity("BEGIN")
+        self.validate_identity("END")
         self.validate_identity("SET XACT_ABORT ON")
 
     def test_charindex(self):
@@ -2447,7 +2447,7 @@ FROM OPENJSON(@json) WITH (
                 BEGIN
                     SELECT col1 FROM t WHERE t.col2 = @in1;
                     SELECT 100;
-                END; 
+                END;
                 IF @in1 > 1
                 BEGIN
                     SELECT col2 FROM t1;
@@ -2458,7 +2458,7 @@ FROM OPENJSON(@json) WITH (
             CREATE PROCEDURE test(@in1 INTEGER)
             AS
             BEGIN
-                DECLARE @q1 AS INTEGER, @q2 AS INTEGER, @q3 AS INTEGER;  
+                DECLARE @q1 AS INTEGER, @q2 AS INTEGER, @q3 AS INTEGER;
                 SET @q1 = (SELECT MAX(col1) FROM t1);
                 SET @q2 = (SELECT MIN(col1) FROM t2);
                 IF @in1 > 1
@@ -2469,7 +2469,7 @@ FROM OPENJSON(@json) WITH (
                     BEGIN
                         SELECT 1;
                         SELECT 2;
-                    END; 
+                    END;
                 END;
                 IF @in1 > 1
                 BEGIN
@@ -2503,7 +2503,7 @@ FROM OPENJSON(@json) WITH (
             BEGIN
                 WHILE @in1 > 100
                 BEGIN
-                    SELECT col1 FROM t WHERE t.col2 = @in1 AND t.col3 = @c; 
+                    SELECT col1 FROM t WHERE t.col2 = @in1 AND t.col3 = @c;
                     SET @in1 = @in1 - 1;
                 END;
             END
@@ -2559,9 +2559,9 @@ FROM OPENJSON(@json) WITH (
             """,
             """
             CREATE PROCEDURE test
-            AS 
+            AS
             BEGIN
-                DECLARE @x AS INTEGER = 100;   
+                DECLARE @x AS INTEGER = 100;
                 IF @x > ANY (SELECT 100)
                 BEGIN
                     SET @x = 100;

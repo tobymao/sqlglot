@@ -11,6 +11,7 @@ EXPRESSION_METADATA = {
             exp.Length,
             exp.Levenshtein,
             exp.StrPosition,
+            exp.WidthBucket,
         }
     },
     **{

@@ -5932,3 +5932,7 @@ BIGINT;
 # dialect: presto, trino
 STRPOS(tbl.str_col, tbl.str_col);
 BIGINT;
+
+# dialect: presto, trino
+WIDTH_BUCKET(tbl.double_col, tbl.array_col);
+BIGINT;

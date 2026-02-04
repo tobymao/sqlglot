@@ -20,6 +20,7 @@ EXPRESSION_METADATA = {
             exp.SessionUser,
         }
     },
+    exp.BitmapCount: {"returns": exp.DataType.Type.BIGINT},
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},

@@ -630,6 +630,10 @@ HOUR(tbl.timestamp_col);
 INT;
 
 # dialect: spark, databricks
+BITMAP_COUNT(tbl.bin_col);
+BIGINT;
+
+# dialect: spark, databricks
 COLLATION(tbl.str_col);
 STRING;
 

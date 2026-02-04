@@ -262,7 +262,6 @@ EXPRESSION_METADATA = {
             exp.Rand,
             exp.Sec,
             exp.Sech,
-            exp.Sinh,
         }
     },
     **{

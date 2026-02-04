@@ -1870,6 +1870,46 @@ def build_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))
 
 
+def build_trunc(
+    args: t.List,
+    dialect: DialectType,
+    date_trunc_unabbreviate: bool = True,
+    default_date_trunc_unit: t.Optional[str] = None,
+    date_trunc_requires_part: bool = True,
+) -> exp.DateTrunc | exp.Trunc | exp.Anonymous:
+    """
+    Builder for dialects with overloaded TRUNC (Oracle, Snowflake, etc).
+    Uses type annotation to distinguish date vs numeric truncation.
+    Returns Anonymous if type cannot be determined.
+    """
+    from sqlglot.optimizer.annotate_types import annotate_types
+
+    this = seq_get(args, 0)
+    second = seq_get(args, 1)
+
+    if this and not this.type:
+        this = annotate_types(this, dialect=dialect)
+    if second and not second.type:
+        second = annotate_types(second, dialect=dialect)
+
+    # Date truncation
+    if (
+        this and this.is_type(*exp.DataType.TEMPORAL_TYPES) and (second or default_date_trunc_unit)
+    ) or (second and second.is_type(*exp.DataType.TEXT_TYPES)):
+        unit = second or exp.Literal.string(default_date_trunc_unit)
+        return exp.DateTrunc(this=this, unit=unit, unabbreviate=date_trunc_unabbreviate)
+
+    # Numeric truncation
+    if (
+        (this and this.is_type(*exp.DataType.NUMERIC_TYPES))
+        or (second and second.is_type(*exp.DataType.NUMERIC_TYPES))
+        or (not date_trunc_requires_part and not second)
+    ):
+        return exp.Trunc(this=this, decimals=second)
+
+    return exp.Anonymous(this="TRUNC", expressions=args)
+
+
 def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
     return self.func("MAX", expression.this)
 

@@ -1,5 +1,6 @@
 from tests.dialects.test_dialect import Validator
 
+from sqlglot import exp
 from sqlglot.helper import logger as helper_logger
 
 
@@ -228,6 +229,15 @@ class TestSQLite(Validator):
             )
 
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
+
+    def test_trunc(self):
+        # SQLite TRUNC only accepts one argument
+        self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
+
+        # Decimals arg is dropped with warning (best-effort transpilation)
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity("TRUNC(3.14, 2)", "TRUNC(3.14)").assert_is(exp.Trunc)
+            self.assertIn("'decimals' is not supported", cm.output[0])
 
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):

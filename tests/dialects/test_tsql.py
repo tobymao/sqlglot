@@ -2400,6 +2400,21 @@ FROM OPENJSON(@json) WITH (
             },
         )
 
+    def test_numeric_trunc(self):
+        # T-SQL doesn't have native TRUNC - uses ROUND with third parameter = 1
+        # Cross-dialect transpilation: other dialects' TRUNC -> T-SQL ROUND(x, n, 1)
+        self.validate_all(
+            "ROUND(3.14159, 2, 1)",
+            read={
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "mysql": "TRUNCATE(3.14159, 2)",
+            },
+            write={
+                "tsql": "ROUND(3.14159, 2, 1)",
+            },
+        )
+
     def test_collation_parse(self):
         self.validate_identity("ALTER TABLE a ALTER COLUMN b CHAR(10) COLLATE abc").assert_is(
             exp.Alter

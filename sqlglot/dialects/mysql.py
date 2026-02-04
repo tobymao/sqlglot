@@ -879,6 +879,7 @@ class MySQL(Dialect):
                 lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
             ),
             exp.Trim: trim_sql,
+            exp.Trunc: rename_func("TRUNCATE"),
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: date_add_sql("ADD"),
             exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),

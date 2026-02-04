@@ -8,30 +8,31 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     array_append_sql,
     array_concat_sql,
-    build_timetostr_or_tochar,
-    build_like,
     binary_from_function,
     build_default_decimal_type,
+    build_formatted_time,
+    build_like,
     build_replace_with_optional_replacement,
+    build_timetostr_or_tochar,
+    build_trunc,
     date_delta_sql,
     date_trunc_to_time,
     datestrtodate_sql,
-    build_formatted_time,
+    groupconcat_sql,
     if_sql,
     inline_array_sql,
+    map_date_part,
     max_or_greatest,
     min_or_least,
+    no_make_interval_sql,
+    no_timestamp_sql,
     rename_func,
+    strposition_sql,
+    timestampdiff_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
     unit_to_str,
     var_map_sql,
-    map_date_part,
-    no_timestamp_sql,
-    strposition_sql,
-    timestampdiff_sql,
-    no_make_interval_sql,
-    groupconcat_sql,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, is_date_unit, is_int, seq_get
@@ -947,6 +948,12 @@ class Snowflake(Dialect):
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
             "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
+            "TRUNC": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
+            "TRUNCATE": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
             "TRY_DECRYPT": lambda args: exp.Decrypt(
                 this=seq_get(args, 0),
                 passphrase=seq_get(args, 1),

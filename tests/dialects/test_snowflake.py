@@ -3549,6 +3549,63 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_trunc(self):
+        # Numeric truncation identity
+        self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
+
+        # Single-arg TRUNC is always numeric in Snowflake (date trunc requires unit)
+        self.validate_identity("TRUNC(col)").assert_is(exp.Trunc)
+
+        # Date truncation with typed column and unit
+        # (parse_one because DateTrunc generates as DATE_TRUNC, not TRUNC)
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS DATETIME), 'MONTH')").assert_is(exp.DateTrunc)
+
+        # Fallback to Anonymous when type cannot be determined
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
+
+        # Cross-dialect numeric truncation transpilation
+        self.validate_all(
+            "TRUNC(3.14159, 2)",
+            write={
+                "snowflake": "TRUNC(3.14159, 2)",
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+                "bigquery": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159, 2)",
+            },
+        )
+
+        # Single-argument numeric TRUNC transpilation
+        self.validate_all(
+            "TRUNC(3.14159)",
+            write={
+                "snowflake": "TRUNC(3.14159)",
+                "oracle": "TRUNC(3.14159)",
+                "postgres": "TRUNC(3.14159)",
+                "mysql": "TRUNCATE(3.14159)",
+                "tsql": "ROUND(3.14159, 0, 1)",
+            },
+        )
+
+        # Read numeric TRUNC from other dialects
+        self.validate_all(
+            "TRUNC(price, 2)",
+            read={
+                "mysql": "TRUNCATE(price, 2)",
+                "oracle": "TRUNC(price, 2)",
+                "postgres": "TRUNC(price, 2)",
+            },
+            write={
+                "snowflake": "TRUNC(price, 2)",
+            },
+        )
+
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")
         self.validate_identity("SELECT CAST(a AS ARRAY)")

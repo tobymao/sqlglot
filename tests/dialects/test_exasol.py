@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -584,6 +585,51 @@ class TestExasol(Validator):
     def test_number_functions(self):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
         self.validate_identity("SELECT DIV(1234, 2) AS DIV")
+
+        # Numeric truncation identity
+        self.validate_identity("TRUNC(123.456, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
+
+        # Date truncation with typed column and unit
+        # (parse_one because DateTrunc generates as DATE_TRUNC, not TRUNC)
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS DATETIME), 'MONTH')").assert_is(exp.DateTrunc)
+
+        # Fallback to Anonymous (Exasol requires unit for date truncation)
+        self.validate_identity("TRUNC(CAST(x AS DATE))").assert_is(exp.Anonymous)
+
+        # Cross-dialect numeric truncation transpilation
+        self.validate_all(
+            "TRUNC(price, 2)",
+            write={
+                "exasol": "TRUNC(price, 2)",
+                "oracle": "TRUNC(price, 2)",
+                "postgres": "TRUNC(price, 2)",
+                "mysql": "TRUNCATE(price, 2)",
+                "tsql": "ROUND(price, 2, 1)",
+            },
+        )
+
+        # Date truncation with various units (Exasol-specific unit names)
+        for unit in ("YYYY", "MM", "DD", "HH", "MI", "SS", "WW"):
+            with self.subTest(f"Date/time TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    write={
+                        "exasol": f"DATE_TRUNC('{unit}', x)",
+                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    },
+                )
+
+        # Q gets normalized to QUARTER
+        self.validate_all(
+            "TRUNC(CAST(x AS TIMESTAMP), 'Q')",
+            write={
+                "exasol": "DATE_TRUNC('QUARTER', x)",
+                "oracle": "TRUNC(CAST(x AS TIMESTAMP), 'QUARTER')",
+            },
+        )
 
     def test_scalar(self):
         self.validate_all(

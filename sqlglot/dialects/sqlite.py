@@ -267,6 +267,10 @@ class SQLite(Dialect):
 
             return super().cast_sql(expression)
 
+        @unsupported_args("decimals")
+        def trunc_sql(self, expression: exp.Trunc) -> str:
+            return self.func("TRUNC", expression.this)
+
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
             parent = expression.parent
             alias = parent and parent.args.get("alias")

@@ -885,6 +885,9 @@ class TestHive(Validator):
                 "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP))",
             },
         )
+
+        # Hive TRUNC is date-only, should parse to TimestampTrunc (not numeric Trunc)
+        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.TimestampTrunc)
         self.validate_all(
             "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={

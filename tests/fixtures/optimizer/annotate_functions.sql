@@ -629,6 +629,10 @@ STRING;
 HOUR(tbl.timestamp_col);
 INT;
 
+# dialect: spark, databricks
+BITMAP_COUNT(tbl.bin_col);
+BIGINT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

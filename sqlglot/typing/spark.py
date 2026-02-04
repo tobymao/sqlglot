@@ -14,6 +14,7 @@ EXPRESSION_METADATA = {
     **{
         exp_type: {"returns": exp.DataType.Type.VARCHAR}
         for exp_type in {
+            exp.Collation,
             exp.CurrentTimezone,
             exp.Monthname,
             exp.SessionUser,

@@ -156,6 +156,7 @@ jobs:
       run: |
         source ./.venv/bin/activate
         make docs
+        echo "sqlglot.com" > docs/CNAME
         mv docs /tmp/generated-docs
         git checkout api-docs
         rm -rf docs

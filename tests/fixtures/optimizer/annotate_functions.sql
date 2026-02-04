@@ -5948,3 +5948,7 @@ BIGINT;
 # dialect: presto, trino
 BITWISE_XOR(tbl.bigint_col, tbl.bigint_col);
 BIGINT;
+
+# dialect: presto, trino
+WIDTH_BUCKET(tbl.double_col, tbl.array_col);
+BIGINT;

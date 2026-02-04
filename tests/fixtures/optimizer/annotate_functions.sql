@@ -5932,3 +5932,19 @@ BIGINT;
 # dialect: presto, trino
 STRPOS(tbl.str_col, tbl.str_col);
 BIGINT;
+
+# dialect: presto, trino
+BITWISE_AND(tbl.bigint_col, tbl.bigint_col);
+BIGINT;
+
+# dialect: presto, trino
+BITWISE_NOT(tbl.bigint_col);
+BIGINT;
+
+# dialect: presto, trino
+BITWISE_OR(tbl.bigint_col, tbl.bigint_col);
+BIGINT;
+
+# dialect: presto, trino
+BITWISE_XOR(tbl.bigint_col, tbl.bigint_col);
+BIGINT;

@@ -8,6 +8,10 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
+            exp.BitwiseAnd,
+            exp.BitwiseNot,
+            exp.BitwiseOr,
+            exp.BitwiseXor,
             exp.Length,
             exp.Levenshtein,
             exp.StrPosition,

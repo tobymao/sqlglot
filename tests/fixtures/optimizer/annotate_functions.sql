@@ -629,6 +629,10 @@ STRING;
 HOUR(tbl.timestamp_col);
 INT;
 
+# dialect: spark, databricks
+COLLATION(tbl.str_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

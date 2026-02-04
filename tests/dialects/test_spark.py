@@ -279,6 +279,12 @@ TBLPROPERTIES (
         # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
         self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
 
+        # Numeric TRUNC from other dialects - Spark has no native support, uses CAST to BIGINT
+        self.validate_all(
+            "CAST(3.14159 AS BIGINT)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")
         self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")

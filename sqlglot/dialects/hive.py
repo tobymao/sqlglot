@@ -776,6 +776,13 @@ class Hive(Dialect):
                 expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
             )
 
+        # Hive/Spark lack native numeric TRUNC. CAST to BIGINT truncates toward zero (not rounds).
+        # Potential enhancement: a TRUNC_TEMPLATE using FLOOR/CEIL with scale (Spark 3.3+)
+        # could preserve decimals: CASE WHEN x >= 0 THEN FLOOR(x, d) ELSE CEIL(x, d) END
+        @unsupported_args("decimals")
+        def trunc_sql(self, expression: exp.Trunc) -> str:
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.BIGINT))
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
                 not expression.expressions or expression.expressions[0].name == "MAX"

@@ -1186,6 +1186,7 @@ class ClickHouse(Dialect):
             exp.Rand: rename_func("randCanonical"),
             exp.StartsWith: rename_func("startsWith"),
             exp.Struct: rename_func("tuple"),
+            exp.Trunc: rename_func("trunc"),
             exp.EndsWith: rename_func("endsWith"),
             exp.EuclideanDistance: rename_func("L2Distance"),
             exp.StrPosition: lambda self, e: strposition_sql(

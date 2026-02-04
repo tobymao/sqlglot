@@ -110,6 +110,15 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
+
+        # Numeric trunc
+        self.validate_identity("trunc(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("trunc(3.14159)").assert_is(exp.Trunc)
+        self.validate_all(
+            "trunc(3.14159, 2)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_identity("EXCHANGE TABLES x.a AND y.b", check_command_warning=True)
         self.validate_identity("CREATE TABLE test (id UInt8) ENGINE=Null()")
         self.validate_identity(

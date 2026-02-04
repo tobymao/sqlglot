@@ -2728,6 +2728,10 @@ class DuckDB(Dialect):
                 return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
             return self.func("JSON", arg)
 
+        @unsupported_args("decimals")
+        def trunc_sql(self, expression: exp.Trunc) -> str:
+            return self.func("TRUNC", expression.this)
+
         def normal_sql(self, expression: exp.Normal) -> str:
             """
             Transpile Snowflake's NORMAL(mean, stddev, gen) to DuckDB.

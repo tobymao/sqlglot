@@ -20,7 +20,7 @@ def gen_condition(n):
 # Create benchmark functions that return the setup data
 def get_tpch_setup():
     return (
-        [parse_one(sql) for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")],
+        [sql for _, sql, _ in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")] * 1000,
         TPCH_SCHEMA,
     )
 
@@ -46,8 +46,14 @@ def get_condition_1000_setup():
 
 # Optimizer functions that will be benchmarked
 def optimize_queries(expressions, schema):
+    from sqlglot.tokens import Tokenizer
+
+    tokenizer = Tokenizer(use_rs_tokenizer=False)
     for e in expressions:
-        optimize(e, schema)
+        tokenizer.tokenize(e)
+
+    # for e in expressions:
+    #     optimize(e, schema)
 
 
 def run_benchmarks():
@@ -57,15 +63,15 @@ def run_benchmarks():
     benchmarks = {
         "tpch": get_tpch_setup,
         # "tpcds": get_tpcds_setup,  # This is left out because it's too slow in CI
-        "condition_10": get_condition_10_setup,
-        "condition_100": get_condition_100_setup,
-        "condition_1000": get_condition_1000_setup,
+        # "condition_10": get_condition_10_setup,
+        # "condition_100": get_condition_100_setup,
+        # "condition_1000": get_condition_1000_setup,
     }
 
     for benchmark_name, benchmark_setup in benchmarks.items():
         expressions, schema = benchmark_setup()
 
-        runner.bench_func(f"optimize_{benchmark_name}", optimize_queries, expressions, schema)
+        runner.bench_func(f"tokenize_{benchmark_name}", optimize_queries, expressions, schema)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from setuptools import setup
+from Cython.Build import cythonize
 
 
 def sqlglotrs_version():
@@ -33,4 +34,5 @@ setup(
         ],
         "rs": [f"sqlglotrs=={sqlglotrs_version()}"],
     },
+    ext_modules=cythonize("sqlglot/tokens.py"),
 )

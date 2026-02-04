@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import cython
 import os
 import typing as t
 from enum import auto
@@ -1137,18 +1138,18 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan(self, until: t.Optional[t.Callable] = None) -> None:
         while self.size and not self._end:
-            current = self._current
+            current: cython.int = self._current
 
             # Skip spaces here rather than iteratively calling advance() for performance reasons
             while current < self.size:
-                char = self.sql[current]
+                char: str = self.sql[current]
 
                 if char.isspace() and (char == " " or char == "\t"):
                     current += 1
                 else:
                     break
 
-            offset = current - self._current if current > self._current else 1
+            offset: cython.int = current - self._current if current > self._current else 1
 
             self._start = current
             self._advance(offset)
@@ -1167,16 +1168,16 @@ class Tokenizer(metaclass=_Tokenizer):
         if self.tokens and self._comments:
             self.tokens[-1].comments.extend(self._comments)
 
-    def _chars(self, size: int) -> str:
+    def _chars(self, size: cython.int) -> str:
         if size == 1:
             return self._char
 
-        start = self._current - 1
-        end = start + size
+        start: cython.int = self._current - 1
+        end: cython.int = start + size
 
         return self.sql[start:end] if end <= self.size else ""
 
-    def _advance(self, i: int = 1, alnum: bool = False) -> None:
+    def _advance(self, i: cython.int = 1, alnum: cython.bint = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
             if not (self._char == "\r" and self._peek == "\n"):
@@ -1192,10 +1193,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if alnum and self._char.isalnum():
             # Here we use local variables instead of attributes for better performance
-            _col = self._col
-            _current = self._current
-            _end = self._end
-            _peek = self._peek
+            _col: cython.int = self._col
+            _current: cython.int = self._current
+            _end: cython.bint = self._end
+            _peek: str = self._peek
 
             while _peek.isalnum():
                 _col += 1
@@ -1249,14 +1250,16 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._add(TokenType.STRING, text)
 
     def _scan_keywords(self) -> None:
-        size = 0
-        word = None
-        chars = self._text
-        char = chars
-        prev_space = False
-        skip = False
-        trie = self._KEYWORD_TRIE
-        single_token = char in self.SINGLE_TOKENS
+        size: cython.int = 0
+        word: t.Optional[str] = None
+        chars: str = self._text
+        char: str = chars
+        prev_space: cython.bint = False
+        skip: cython.bint = False
+        trie: dict = self._KEYWORD_TRIE
+        single_token: cython.bint = char in self.SINGLE_TOKENS
+        end: cython.int
+        is_space: cython.bint
 
         while chars:
             if skip:
@@ -1306,20 +1309,20 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self._scan_var()
 
-    def _scan_comment(self, comment_start: str) -> bool:
+    def _scan_comment(self, comment_start: str) -> cython.bint:
         if comment_start not in self._COMMENTS:
             return False
 
-        comment_start_line = self._line
-        comment_start_size = len(comment_start)
-        comment_end = self._COMMENTS[comment_start]
+        comment_start_line: cython.int = self._line
+        comment_start_size: cython.int = len(comment_start)
+        comment_end: t.Optional[str] = self._COMMENTS[comment_start]
 
         if comment_end:
             # Skip the comment's start delimiter
             self._advance(comment_start_size)
 
-            comment_count = 1
-            comment_end_size = len(comment_end)
+            comment_count: cython.int = 1
+            comment_end_size: cython.int = len(comment_end)
 
             while not self._end:
                 if self._chars(comment_end_size) == comment_end:
@@ -1363,14 +1366,14 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_number(self) -> None:
         if self._char == "0":
-            peek = self._peek.upper()
+            peek: str = self._peek.upper()
             if peek == "B":
                 return self._scan_bits() if self.BIT_STRINGS else self._add(TokenType.NUMBER)
             elif peek == "X":
                 return self._scan_hex() if self.HEX_STRINGS else self._add(TokenType.NUMBER)
 
-        decimal = False
-        scientific = 0
+        decimal: cython.bint = False
+        scientific: cython.int = 0
 
         while True:
             if self._peek.isdigit():
@@ -1393,8 +1396,8 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek == "_" and self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED:
                 self._advance()
             elif self._peek.isidentifier():
-                number_text = self._text
-                literal = ""
+                number_text: str = self._text
+                literal: str = ""
 
                 while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:
                     literal += self._peek
@@ -1444,12 +1447,12 @@ class Tokenizer(metaclass=_Tokenizer):
 
         return self._text
 
-    def _scan_string(self, start: str) -> bool:
-        base = None
-        token_type = TokenType.STRING
+    def _scan_string(self, start: str) -> cython.bint:
+        base: cython.int = 0
+        token_type: TokenType = TokenType.STRING
 
         if start in self._QUOTES:
-            end = self._QUOTES[start]
+            end: str = self._QUOTES[start]
         elif start in self._FORMAT_STRINGS:
             end, token_type = self._FORMAT_STRINGS[start]
 
@@ -1461,7 +1464,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
 
                 if self._char == end:
-                    tag = ""
+                    tag: str = ""
                 else:
                     tag = self._extract_string(
                         end,
@@ -1486,7 +1489,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return False
 
         self._advance(len(start))
-        text = self._extract_string(
+        text: str = self._extract_string(
             end,
             escapes=(
                 self._BYTE_STRING_ESCAPES
@@ -1532,12 +1535,14 @@ class Tokenizer(metaclass=_Tokenizer):
         self,
         delimiter: str,
         escapes: t.Optional[t.Set[str]] = None,
-        raw_string: bool = False,
-        raise_unmatched: bool = True,
+        raw_string: cython.bint = False,
+        raise_unmatched: cython.bint = True,
     ) -> str:
-        text = ""
-        delim_size = len(delimiter)
+        text: str = ""
+        delim_size: cython.int = len(delimiter)
         escapes = self._STRING_ESCAPES if escapes is None else escapes
+        is_valid_custom_escape: cython.bint
+        current: cython.int
 
         while True:
             if (
@@ -1553,7 +1558,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     continue
 
             is_valid_custom_escape = (
-                self.ESCAPE_FOLLOW_CHARS
+                bool(self.ESCAPE_FOLLOW_CHARS)
                 and self._char == "\\"
                 and self._peek not in self.ESCAPE_FOLLOW_CHARS
             )

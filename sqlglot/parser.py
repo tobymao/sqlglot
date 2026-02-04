@@ -2258,7 +2258,7 @@ class Parser(metaclass=_Parser):
                         expression = (
                             self._parse_user_defined_function_expression()
                             if create_token.token_type == TokenType.FUNCTION
-                            else self._parse_stored_procedure_expression()
+                            else self._parse_block()
                         )
 
                     if return_:
@@ -6297,9 +6297,6 @@ class Parser(metaclass=_Parser):
 
     def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expression]:
         return self._parse_statement()
-
-    def _parse_stored_procedure_expression(self) -> t.Optional[exp.Expression]:
-        return self._parse_block()
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(this=self._parse_id_var(), computed_column=False)

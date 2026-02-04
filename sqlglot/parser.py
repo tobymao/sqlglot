@@ -2224,7 +2224,6 @@ class Parser(metaclass=_Parser):
         indexes = None
         no_schema_binding = None
         begin = None
-        end = None
         clone = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:

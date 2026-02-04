@@ -2228,6 +2228,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
         )
 
+        # BigQuery: UNNEST with JSON_QUERY_ARRAY - dot access should not create nested Identifiers
+        query = parse_one(
+            "SELECT JSON_VALUE(item.id) FROM UNNEST(JSON_QUERY_ARRAY(PARSE_JSON('[{\"id\": 1}]'))) AS item",
+            dialect="bigquery",
+        )
+        optimized = optimizer.optimize(query, dialect="bigquery")
+        assert (
+            optimized.sql("bigquery")
+            == "SELECT JSON_VALUE(`item`.`id`, '$') AS `_col_0` FROM UNNEST(JSON_QUERY_ARRAY(PARSE_JSON('[{\"id\": 1}]'), '$')) AS `item`"
+        )
+
     def test_deep_ast_type_annotation(self):
         union_sql = "SELECT 1 UNION ALL " * 2000 + "SELECT 1"
         annotated = annotate_types(parse_one(union_sql))

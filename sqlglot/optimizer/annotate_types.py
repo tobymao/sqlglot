@@ -257,7 +257,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             i = iter(dot_parts)
             parent = expression.parent
             while isinstance(parent, exp.Dot):
-                parent.expression.set("this", exp.to_identifier(next(i), quoted=True))
+                parent.expression.replace(exp.to_identifier(next(i), quoted=True))
                 parent = parent.parent
 
             expression.meta.pop("dot_parts", None)

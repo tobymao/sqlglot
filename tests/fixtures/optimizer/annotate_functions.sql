@@ -5830,6 +5830,30 @@ ATANH(tbl.int_col);
 DOUBLE;
 
 # dialect: duckdb
+TANH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+TANH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+COSH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+COSH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
+SINH(tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+SINH(tbl.double_col);
+DOUBLE;
+
+# dialect: duckdb
 ATANH(tbl.double_col);
 DOUBLE;
 

@@ -358,7 +358,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
-            exp.Cosh,
             exp.CosineDistance,
             exp.CovarPop,
             exp.CovarSamp,
@@ -367,7 +366,6 @@ EXPRESSION_METADATA = {
             exp.ManhattanDistance,
             exp.MonthsBetween,
             exp.Normal,
-            exp.Sinh,
         }
     },
     exp.Kurtosis: {"annotator": _annotate_kurtosis},

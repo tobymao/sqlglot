@@ -637,6 +637,10 @@ BIGINT;
 COLLATION(tbl.str_col);
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+REPEAT(tbl.str_col, tbl.int_col);
+STRING;
+
 # dialect: spark2, spark, databricks
 FORMAT_STRING(tbl.str_col, tbl.int_col, tbl.str_col);
 STRING;

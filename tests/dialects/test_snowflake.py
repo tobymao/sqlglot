@@ -2941,6 +2941,10 @@ class TestSnowflake(Validator):
                 "mysql": "SELECT VERSION()",
                 "singlestore": "SELECT VERSION()",
                 "starrocks": "SELECT CURRENT_VERSION()",
+                "postgres": "SELECT VERSION()",
+                "redshift": "SELECT VERSION()",
+                "clickhouse": "SELECT VERSION()",
+                "trino": "SELECT VERSION()",
             },
         )
 

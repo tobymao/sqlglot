@@ -3947,7 +3947,7 @@ class Lock(Expression):
     arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
-# In Redshift, star and exclude can be separated with column projections (e.g., SELECT *, col1 EXCLUDE (col2))
+# In Redshift, * and EXCLUDE can be separated with column projections (e.g., SELECT *, col1 EXCLUDE (col2))
 # The "exclude" arg enables correct parsing and transpilation of this clause
 class Select(Query):
     arg_types = {

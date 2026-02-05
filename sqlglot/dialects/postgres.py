@@ -737,6 +737,7 @@ class Postgres(Dialect):
             exp.CurrentDate: no_paren_current_date_sql,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.CurrentUser: lambda *_: "CURRENT_USER",
+            exp.CurrentVersion: rename_func("VERSION"),
             exp.DateAdd: _date_add_sql("+"),
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,

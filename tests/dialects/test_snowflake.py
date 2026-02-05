@@ -2936,7 +2936,7 @@ class TestSnowflake(Validator):
             "SELECT CURRENT_VERSION()",
             write={
                 "snowflake": "SELECT CURRENT_VERSION()",
-                "databricks": "SELECT VERSION()",
+                "databricks": "SELECT CURRENT_VERSION()",
                 "spark": "SELECT VERSION()",
             },
         )

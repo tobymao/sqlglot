@@ -718,6 +718,14 @@ class TestPresto(Validator):
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
+
+        # Numeric TRUNCATE
+        self.validate_identity("TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNCATE(3.14159)").assert_is(exp.Trunc)
+        self.validate_all(
+            "TRUNCATE(3.14159, 2)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
         self.validate_identity("SELECT * FROM (VALUES (1))")
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")

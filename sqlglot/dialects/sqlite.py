@@ -267,6 +267,10 @@ class SQLite(Dialect):
 
             return super().cast_sql(expression)
 
+        # Note: SQLite's TRUNC always returns REAL (e.g., trunc(10.99) -> 10.0), not INTEGER.
+        # This creates a transpilation gap affecting division semantics, similar to Presto.
+        # Unlike Presto where this only affects decimals=0, SQLite has no decimals parameter
+        # so every use of TRUNC is affected. Modeling precisely would require exp.FloatTrunc.
         @unsupported_args("decimals")
         def trunc_sql(self, expression: exp.Trunc) -> str:
             return self.func("TRUNC", expression.this)

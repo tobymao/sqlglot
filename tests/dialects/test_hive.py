@@ -888,6 +888,13 @@ class TestHive(Validator):
 
         # Hive TRUNC is date-only, should parse to TimestampTrunc (not numeric Trunc)
         self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.TimestampTrunc)
+
+        # Numeric TRUNC from other dialects - Hive has no native support, uses CAST to BIGINT
+        self.validate_all(
+            "CAST(3.14159 AS BIGINT)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_all(
             "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={

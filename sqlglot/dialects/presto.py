@@ -545,6 +545,12 @@ class Presto(Dialect):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
+            # Note: Presto's TRUNCATE always returns DOUBLE, even with decimals=0, whereas
+            # most dialects return INT (SQLite also returns REAL, see sqlite.py). This creates
+            # a bidirectional transpilation gap: Presto→Other may change float division to int
+            # division, and vice versa. Modeling precisely would require exp.FloatTrunc or
+            # similar, deemed overengineering for this subtle semantic difference.
+            exp.Trunc: rename_func("TRUNCATE"),
             exp.Xor: bool_xor_sql,
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),

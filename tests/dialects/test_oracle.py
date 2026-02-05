@@ -802,7 +802,10 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                 "tsql": "ROUND(3.14159, 2, 1)",
                 "snowflake": "TRUNC(3.14159, 2)",
                 "bigquery": "TRUNC(3.14159, 2)",
-                "duckdb": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159)",
+                "presto": "TRUNCATE(3.14159, 2)",
+                "clickhouse": "trunc(3.14159, 2)",
+                "spark": "CAST(3.14159 AS BIGINT)",
             },
         )
 

@@ -2938,6 +2938,8 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT CURRENT_VERSION()",
                 "databricks": "SELECT CURRENT_VERSION()",
                 "spark": "SELECT VERSION()",
+                "mysql": "SELECT VERSION()",
+                "singlestore": "SELECT VERSION()",
             },
         )
 

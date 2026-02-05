@@ -122,6 +122,7 @@ class SQLite(Dialect):
             "STRFTIME": _build_strftime,
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
             "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
+            "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         }
 
         STATEMENT_PARSERS = {
@@ -208,6 +209,7 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentVersion: lambda *_: "SQLITE_VERSION()",
             exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.If: rename_func("IIF"),

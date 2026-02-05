@@ -635,11 +635,11 @@ BIGINT;
 
 # dialect: spark, databricks
 RANDSTR(tbl.int_col);
-VARCHAR;
+STRING;
 
 # dialect: spark, databricks
 RANDSTR(tbl.int_col, tbl.int_col);
-VARCHAR;
+STRING;
 
 # dialect: spark, databricks
 COLLATION(tbl.str_col);

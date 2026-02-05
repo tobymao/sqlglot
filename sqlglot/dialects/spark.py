@@ -233,6 +233,7 @@ class Spark(Spark2):
                     move_partitioned_by_to_schema_columns,
                 ]
             ),
+            exp.CurrentVersion: rename_func("VERSION"),
             exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
             exp.DatetimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.DatetimeSub: date_delta_to_binary_interval_op(cast=False),

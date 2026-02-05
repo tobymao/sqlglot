@@ -3421,6 +3421,10 @@ BOOLEAN;
 JAROWINKLER_SIMILARITY('hello', 'world');
 INT;
 
+# dialect: duckdb
+JARO_WINKLER_SIMILARITY('hello', 'world');
+DOUBLE;
+
 # dialect: snowflake
 INSERT('abc', 1, 2, 'Z');
 VARCHAR;

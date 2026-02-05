@@ -102,6 +102,7 @@ class Databricks(Spark):
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
+            exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(

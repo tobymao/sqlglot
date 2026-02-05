@@ -17,6 +17,7 @@ EXPRESSION_METADATA = {
             exp.Collation,
             exp.CurrentTimezone,
             exp.Monthname,
+            exp.Randstr,
             exp.SessionUser,
         }
     },

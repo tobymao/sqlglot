@@ -2940,6 +2940,7 @@ class TestSnowflake(Validator):
                 "spark": "SELECT VERSION()",
                 "mysql": "SELECT VERSION()",
                 "singlestore": "SELECT VERSION()",
+                "starrocks": "SELECT CURRENT_VERSION()",
             },
         )
 

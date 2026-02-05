@@ -251,6 +251,7 @@ class StarRocks(MySQL):
             exp.ArrayFilter: rename_func("ARRAY_FILTER"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),

@@ -821,6 +821,7 @@ class MySQL(Dialect):
             exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.Chr: lambda self, e: self.chr_sql(e, "CHAR"),
             exp.CurrentDate: no_paren_current_date_sql,
+            exp.CurrentVersion: rename_func("VERSION"),
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
             ),

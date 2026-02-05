@@ -657,6 +657,14 @@ STRING;
 REPLACE(tbl.str_col, tbl.str_col, tbl.str_col);
 STRING;
 
+# dialect: spark, databricks
+OVERLAY(tbl.str_col PLACING tbl.str_col FROM tbl.int_col);
+STRING;
+
+# dialect: spark, databricks
+OVERLAY(tbl.bin_col PLACING tbl.bin_col FROM tbl.int_col FOR tbl.int_col);
+BINARY;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

@@ -2427,3 +2427,15 @@ class TestDuckDB(Validator):
             expr.sql(dialect="duckdb"),
             "SELECT CAST(APPROX_QUANTILE(CAST(a AS DOUBLE), 0.5) AS DOUBLE) FROM t",
         )
+
+    def test_current_database(self):
+        self.validate_all(
+            "SELECT CURRENT_DATABASE()",
+            read={
+                "snowflake": "SELECT CURRENT_DATABASE()",
+            },
+            write={
+                "duckdb": "SELECT CURRENT_DATABASE()",
+                "snowflake": "SELECT CURRENT_DATABASE()",
+            },
+        )

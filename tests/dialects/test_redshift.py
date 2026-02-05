@@ -468,7 +468,6 @@ ORDER BY
             """SELECT CONVERT_TIMEZONE('UTC', 'America/New_York', '2024-08-06 09:10:00.000')""",
         )
 
-
         self.validate_all(
             "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
             write={
@@ -486,6 +485,8 @@ ORDER BY
                 "snowflake": "SELECT * EXCLUDE (col2, col3) FROM (SELECT *, 4 AS col4 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
             },
         )
+
+        self.validate_identity("SELECT 1 AS EXCLUDE")
 
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError

@@ -2935,6 +2935,13 @@ class Generator(metaclass=_Generator):
                 table_kind = ""
             sql = f"CREATE{table_kind} TABLE {self.sql(into.this)} AS {sql}"
 
+        exclude = expression.args.get("exclude")
+        if exclude:
+            expression.args.pop("exclude")
+            subquery = expression.subquery(copy=False)
+            star = exp.Star(except_=exclude)
+            sql = self.sql(exp.select(star).from_(subquery, copy=False))
+
         return sql
 
     def schema_sql(self, expression: exp.Schema) -> str:

@@ -133,6 +133,19 @@ class Redshift(Postgres):
             self._retreat(index)
             return None
 
+        def _parse_projections(self) -> t.List[exp.Expression]:
+            projections = super()._parse_projections()
+            if (
+                self._prev
+                and self._prev.text.upper() == "EXCLUDE"
+                and self._curr
+                and not self._match(TokenType.FROM, advance=False)
+            ):
+                projections.append(projections.pop().this)
+                self._retreat(self._index - 1)
+
+            return projections
+
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
         HEX_STRINGS = []
@@ -175,6 +188,7 @@ class Redshift(Postgres):
         SUPPORTS_DECODE_CASE = True
         SUPPORTS_BETWEEN_FLAGS = False
         LIMIT_FETCH = "LIMIT"
+        STAR_EXCEPT = "EXCLUDE"
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

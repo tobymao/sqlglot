@@ -3483,6 +3483,7 @@ class Parser(metaclass=_Parser):
 
             limit = self._parse_limit(top=True)
             projections = self._parse_projections()
+            exclude = self._parse_exclude()
 
             this = self.expression(
                 exp.Select,
@@ -3491,6 +3492,7 @@ class Parser(metaclass=_Parser):
                 distinct=distinct,
                 expressions=projections,
                 limit=limit,
+                exclude=exclude,
                 operation_modifiers=operation_modifiers or None,
             )
             this.comments = comments
@@ -9270,3 +9272,8 @@ class Parser(metaclass=_Parser):
                 break
 
         return this
+
+    def _parse_exclude(self) -> t.Optional[t.List[exp.Expression]]:
+        if not self._match_text_seq("EXCLUDE"):
+            return None
+        return self._parse_wrapped_csv(self._parse_expression, optional=True)

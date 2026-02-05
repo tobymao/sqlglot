@@ -3483,7 +3483,11 @@ class Parser(metaclass=_Parser):
 
             limit = self._parse_limit(top=True)
             projections = self._parse_projections()
-            exclude = self._parse_exclude()
+
+            # Redshift's EXCLUDE clause, which always comes at the end of the projection list and applies to it as a whole
+            exclude = self._match_text_seq("EXCLUDE") and self._parse_wrapped_csv(
+                self._parse_expression, optional=True
+            )
 
             this = self.expression(
                 exp.Select,
@@ -9272,8 +9276,3 @@ class Parser(metaclass=_Parser):
                 break
 
         return this
-
-    def _parse_exclude(self) -> t.Optional[t.List[exp.Expression]]:
-        return self._match_text_seq("EXCLUDE") and self._parse_wrapped_csv(
-            self._parse_expression, optional=True
-        )

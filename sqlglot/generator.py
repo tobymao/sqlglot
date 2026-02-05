@@ -2937,7 +2937,7 @@ class Generator(metaclass=_Generator):
 
         exclude = expression.args.get("exclude")
         if exclude:
-            expression.args.pop("exclude")
+            expression.set("exclude", None)
             subquery = expression.subquery(copy=False)
             star = exp.Star(except_=exclude)
             sql = self.sql(exp.select(star).from_(subquery, copy=False))

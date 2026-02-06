@@ -1,5 +1,13 @@
 from setuptools import setup
 
+ext_modules = []
+try:
+    from mypyc.build import mypycify
+
+    ext_modules = mypycify(["sqlglot/tokenizer_core.py", "sqlglot/trie.py"])
+except ImportError:
+    pass
+
 
 def sqlglotrs_version():
     with open("sqlglotrs/Cargo.toml", encoding="utf-8") as fd:
@@ -33,4 +41,5 @@ setup(
         ],
         "rs": [f"sqlglotrs=={sqlglotrs_version()}"],
     },
+    ext_modules=ext_modules,
 )

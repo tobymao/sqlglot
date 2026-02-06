@@ -60,3 +60,10 @@ docs:
 
 docs-serve:
 	python pdoc/cli.py --port 8002
+
+clean:
+	rm -rf build/lib* sqlglot/*.so
+
+mypyc:
+	rm -rf build/lib* sqlglot/*.so
+	python3 setup.py build_ext --inplace

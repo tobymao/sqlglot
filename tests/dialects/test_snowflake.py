@@ -187,7 +187,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SIGN(x)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT TANH(0.5)")
-        self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
+        self.validate_all(
+            "JAROWINKLER_SIMILARITY('hello', 'world')",
+            write={
+                "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
+                "duckdb": "JARO_WINKLER_SIMILARITY('hello', 'world')",
+                "clickhouse": "jaroWinklerSimilarity('hello', 'world')",
+            },
+        )
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT UNICODE(column_name)")
         self.validate_identity("SELECT WIDTH_BUCKET(col, 0, 100, 10)")

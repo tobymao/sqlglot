@@ -33,6 +33,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.DOUBLE}
         for expr_type in {
             exp.Atan2,
+            exp.JarowinklerSimilarity,
             exp.Rand,
             exp.TimeToUnix,
         }

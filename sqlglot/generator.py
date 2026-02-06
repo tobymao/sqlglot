@@ -2913,7 +2913,7 @@ class Generator(metaclass=_Generator):
 
         exclude = expression.args.get("exclude")
 
-        if exclude and not self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE:
+        if not self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE and exclude:
             exclude_sql = self.expressions(sqls=exclude, flat=True)
             expressions = f"{expressions}{self.seg('EXCLUDE')} ({exclude_sql})"
 
@@ -2935,7 +2935,7 @@ class Generator(metaclass=_Generator):
 
         sql = self.prepend_ctes(expression, sql)
 
-        if exclude and self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE:
+        if self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE and exclude:
             expression.set("exclude", None)
             subquery = expression.subquery(copy=False)
             star = exp.Star(except_=exclude)

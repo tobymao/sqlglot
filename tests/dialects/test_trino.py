@@ -49,6 +49,8 @@ class TestTrino(Validator):
             "SELECT * FROM tbl MATCH_RECOGNIZE (PARTITION BY id ORDER BY col MEASURES FIRST(col, 2) AS col1, LAST(col, 2) AS col2 PATTERN (B* A) DEFINE A AS col = 1)"
         )
 
+        self.validate_identity("SELECT VERSION()")
+
     def test_listagg(self):
         self.validate_identity(
             "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"

@@ -24,6 +24,11 @@ class Trino(Presto):
         }
 
     class Parser(Presto.Parser):
+        FUNCTIONS = {
+            **Presto.Parser.FUNCTIONS,
+            "VERSION": exp.CurrentVersion.from_arg_list,
+        }
+
         FUNCTION_PARSERS = {
             **Presto.Parser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),

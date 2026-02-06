@@ -5761,6 +5761,10 @@ DOUBLE;
 ATAN2(tbl.double_col, tbl.double_col);
 DOUBLE;
 
+# dialect: mysql
+VERSION();
+VARCHAR;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

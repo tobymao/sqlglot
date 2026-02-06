@@ -368,6 +368,7 @@ class MySQL(Dialect):
                 )
                 + 1
             ),
+            "VERSION": lambda args: exp.CurrentVersion(),
             "WEEK": lambda args: exp.Week(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
             ),

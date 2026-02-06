@@ -309,8 +309,7 @@ class Spark(Spark2):
             if isinstance(condition_expr, exp.ObjectId):
                 object_type = condition_expr.expression
                 if (
-                    object_type is None
-                    or object_type.this.upper() in ("", "U")
+                    (object_type is None or object_type.name.upper() == "U")
                     and isinstance(true_block, exp.Block)
                     and isinstance(expr := true_block.expressions[0], exp.Drop)
                 ):

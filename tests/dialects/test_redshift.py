@@ -486,6 +486,15 @@ ORDER BY
             },
         )
 
+        self.validate_all(
+            "SELECT col1, *, col2 EXCLUDE(col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+            write={
+                "redshift": "SELECT * EXCLUDE (col3) FROM (SELECT col1, *, col2 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+                "duckdb": "SELECT * EXCLUDE (col3) FROM (SELECT col1, *, col2 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+                "snowflake": "SELECT * EXCLUDE (col3) FROM (SELECT col1, *, col2 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+            },
+        )
+
         self.validate_identity("SELECT 1 AS exclude")
         self.validate_identity("SELECT * FROM (SELECT 1 AS exclude) AS t")
         self.validate_identity("SELECT 1 AS exclude, 2 AS foo")

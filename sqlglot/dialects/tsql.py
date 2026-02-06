@@ -768,21 +768,24 @@ class TSQL(Dialect):
 
             return self._parse_csv(_parse_for_xml)
 
-        def _parse_projections(self) -> t.List[exp.Expression]:
+        def _parse_projections(
+            self,
+        ) -> t.Tuple[t.List[exp.Expression], t.Optional[t.List[exp.Expression]]]:
             """
             T-SQL supports the syntax alias = expression in the SELECT's projection list,
             so we transform all parsed Selects to convert their EQ projections into Aliases.
 
             See: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql?view=sql-server-ver16#syntax
             """
+            projections, _ = super()._parse_projections()
             return [
                 (
                     exp.alias_(projection.expression, projection.this.this, copy=False)
                     if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
                     else projection
                 )
-                for projection in super()._parse_projections()
-            ]
+                for projection in projections
+            ], None
 
         def _parse_commit_or_rollback(self) -> exp.Commit | exp.Rollback:
             """Applies to SQL Server and Azure SQL Database

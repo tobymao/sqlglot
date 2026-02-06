@@ -3356,8 +3356,10 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Tuple, expressions=[expression])
         return None
 
-    def _parse_projections(self) -> t.List[exp.Expression]:
-        return self._parse_expressions()
+    def _parse_projections(
+        self,
+    ) -> t.Tuple[t.List[exp.Expression], t.Optional[t.List[exp.Expression]]]:
+        return self._parse_expressions(), None
 
     def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
         if self._match_set((TokenType.PIVOT, TokenType.UNPIVOT)):
@@ -3482,15 +3484,7 @@ class Parser(metaclass=_Parser):
                 operation_modifiers.append(exp.var(self._prev.text.upper()))
 
             limit = self._parse_limit(top=True)
-            projections = self._parse_projections()
-
-            # Redshift's EXCLUDE clause, which always comes at the end of the projection list and applies to it as a whole
-            exclude = self._match_text_seq("EXCLUDE") and self._parse_wrapped_csv(
-                self._parse_expression, optional=True
-            )
-
-            if exclude:
-                projections.append(projections.pop())
+            projections, exclude = self._parse_projections()
 
             this = self.expression(
                 exp.Select,

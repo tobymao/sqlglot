@@ -3489,6 +3489,9 @@ class Parser(metaclass=_Parser):
                 self._parse_expression, optional=True
             )
 
+            if exclude:
+                projections.append(projections.pop())
+
             this = self.expression(
                 exp.Select,
                 kind=kind,

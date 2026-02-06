@@ -135,13 +135,7 @@ class Redshift(Postgres):
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             projections = super()._parse_projections()
-            if (
-                self._prev
-                and self._prev.text.upper() == "EXCLUDE"
-                and self._curr
-                and not self._match(TokenType.FROM, advance=False)
-            ):
-                projections.append(projections.pop().this)
+            if self._prev and self._prev.text.upper() == "EXCLUDE" and self._curr:
                 self._retreat(self._index - 1)
 
             return projections

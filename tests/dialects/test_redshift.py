@@ -543,6 +543,16 @@ FROM (
             "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
         )
 
+        # Test EXCLUDE with comma-separated columns without parentheses (Redshift-specific)
+        self.validate_identity(
+            "SELECT * EXCLUDE col1, col2 FROM t",
+            "SELECT * EXCEPT (col1, col2) FROM t",
+        )
+        self.validate_identity(
+            "SELECT * EXCLUDE col1 FROM t",
+            "SELECT * EXCEPT (col1) FROM t",
+        )
+
     def test_create_table_like(self):
         self.validate_identity(
             "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL"

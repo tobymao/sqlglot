@@ -2399,6 +2399,13 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
             expressions=[this.this],
             alias=alias,
         )
+    elif isinstance(this, exp.Inline):
+        # Spark's INLINE function expands an array of structs into a table
+        # This is transpiled to UNNEST in DuckDB/Presto
+        cross_join_expr = exp.Unnest(
+            expressions=[this.this],
+            alias=alias,
+        )
 
     if cross_join_expr:
         return self.sql(exp.Join(this=cross_join_expr, kind="cross"))

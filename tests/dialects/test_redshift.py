@@ -470,6 +470,39 @@ ORDER BY
             """SELECT CONVERT_TIMEZONE('UTC', 'America/New_York', '2024-08-06 09:10:00.000')""",
         )
 
+        self.validate_all(
+            "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+            write={
+                "redshift": "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+                "duckdb": "SELECT * EXCLUDE (col2, col3) FROM (SELECT *, 4 AS col4 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+                "snowflake": "SELECT * EXCLUDE (col2, col3) FROM (SELECT *, 4 AS col4 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT *, 4 AS col4 EXCLUDE col2, col3 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+            write={
+                "redshift": "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+                "duckdb": "SELECT * EXCLUDE (col2, col3) FROM (SELECT *, 4 AS col4 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+                "snowflake": "SELECT * EXCLUDE (col2, col3) FROM (SELECT *, 4 AS col4 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+            },
+        )
+
+        self.validate_all(
+            "SELECT col1, *, col2 EXCLUDE(col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+            write={
+                "redshift": "SELECT col1, *, col2 EXCLUDE (col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)",
+                "duckdb": "SELECT * EXCLUDE (col3) FROM (SELECT col1, *, col2 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+                "snowflake": "SELECT * EXCLUDE (col3) FROM (SELECT col1, *, col2 FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3))",
+            },
+        )
+
+        self.validate_identity("SELECT 1 EXCLUDE", "SELECT 1 AS EXCLUDE")
+        self.validate_identity("SELECT 1 EXCLUDE FROM t", "SELECT 1 AS EXCLUDE FROM t")
+        self.validate_identity("SELECT 1 AS EXCLUDE")
+        self.validate_identity("SELECT * FROM (SELECT 1 AS EXCLUDE) AS t")
+        self.validate_identity("SELECT 1 AS EXCLUDE, 2 AS foo")
+
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]

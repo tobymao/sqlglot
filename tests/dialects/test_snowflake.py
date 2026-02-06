@@ -5254,6 +5254,10 @@ FROM SEMANTIC_VIEW(
             pretty=True,
         )
 
+        self.validate_identity(
+            "SELECT col1, col2, metric1 FROM SEMANTIC_VIEW(mydb.myschema.my_semantic_view METRICS metric1 DIMENSIONS col1, DATE_TRUNC('MONTH', timestamp_col) AS col2) ORDER BY col1, col2 DESC"
+        )
+
     def test_get_extract(self):
         self.validate_all(
             "SELECT GET([4, 5, 6], 1)",

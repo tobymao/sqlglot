@@ -311,9 +311,8 @@ class Spark(Spark2):
                 if (
                     (object_type is None or object_type.name.upper() == "U")
                     and isinstance(true_block, exp.Block)
-                    and isinstance(expr := true_block.expressions[0], exp.Drop)
+                    and isinstance(drop := true_block.expressions[0], exp.Drop)
                 ):
-                    drop = expr.copy()
                     drop.set("exists", True)
                     return self.sql(drop)
 

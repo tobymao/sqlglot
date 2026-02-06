@@ -361,6 +361,7 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
+        self.validate_identity("SELECT VERSION()")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:

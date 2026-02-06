@@ -12,7 +12,13 @@ EXPRESSION_METADATA = {
             exp.Degrees,
         }
     },
-    **{expr_type: {"returns": exp.DataType.Type.VARCHAR} for expr_type in (exp.Elt,)},
+    **{
+        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        for expr_type in {
+            exp.CurrentVersion,
+            exp.Elt,
+        }
+    },
     **{
         expr_type: {"returns": exp.DataType.Type.INT}
         for expr_type in {

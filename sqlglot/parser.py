@@ -6678,7 +6678,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_primary_key(
-        self, wrapped_optional: bool = False, in_props: bool = False
+        self,
+        wrapped_optional: bool = False,
+        in_props: bool = False,
+        named_primary_key: bool = False,
     ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
         desc = (
             self._match_set((TokenType.ASC, TokenType.DESC))
@@ -6687,7 +6690,8 @@ class Parser(metaclass=_Parser):
 
         this = None
         if (
-            self._curr.text.upper() not in self.CONSTRAINT_PARSERS
+            named_primary_key
+            and self._curr.text.upper() not in self.CONSTRAINT_PARSERS
             and self._next
             and self._next.token_type == TokenType.L_PAREN
         ):

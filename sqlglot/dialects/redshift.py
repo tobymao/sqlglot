@@ -148,7 +148,7 @@ class Redshift(Postgres):
                 and isinstance(expr := projections[-1], exp.Alias)
                 and expr.alias == "EXCLUDE"
             ):
-                projections[-1] = expr.this.pop()
+                projections.append(projections.pop().this.copy())
 
             return projections, exclude
 
@@ -195,6 +195,7 @@ class Redshift(Postgres):
         SUPPORTS_BETWEEN_FLAGS = False
         LIMIT_FETCH = "LIMIT"
         STAR_EXCEPT = "EXCLUDE"
+        STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = False
 
         # Redshift doesn't have `WITH` as part of their with_properties so we remove it
         WITH_PROPERTIES_PREFIX = " "

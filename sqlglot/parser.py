@@ -7657,6 +7657,19 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_expression)
 
+        # Redshift supports comma-separated column names without parentheses
+        # e.g., SELECT * EXCLUDE col1, col2 FROM t
+        if self.dialect.__class__.__name__ == "Redshift":
+            expressions = []
+            while True:
+                expression = self._parse_alias(self._parse_disjunction(), explicit=True)
+                if expression is None:
+                    break
+                expressions.append(expression)
+                if not self._match(TokenType.COMMA):
+                    break
+            return expressions if expressions else None
+
         expression = self._parse_alias(self._parse_disjunction(), explicit=True)
         return [expression] if expression else None
 

@@ -7662,7 +7662,9 @@ class Parser(metaclass=_Parser):
         if self.dialect.__class__.__name__ == "Redshift":
             expressions = []
             while True:
-                expression = self._parse_alias(self._parse_disjunction(), explicit=True)
+                # Only parse simple identifiers, not complex expressions
+                # This prevents consuming things like "4 as col4" as part of EXCLUDE
+                expression = self._parse_id_var(any_token=False)
                 if expression is None:
                     break
                 expressions.append(expression)

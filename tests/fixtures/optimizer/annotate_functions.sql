@@ -677,6 +677,14 @@ ARRAY<STRING>;
 RIGHT(tbl.str_col, tbl.int_col);
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+SPLIT(tbl.str_col, tbl.str_col, tbl.int_col);
+ARRAY<STRING>;
+
+# dialect: hive, spark2, spark, databricks
+SPLIT(tbl.str_col, tbl.str_col);
+ARRAY<STRING>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

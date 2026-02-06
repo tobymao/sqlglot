@@ -359,6 +359,7 @@ class ClickHouse(Dialect):
             "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
             "COUNTIF": _build_count_if,
             "COSINEDISTANCE": exp.CosineDistance.from_arg_list,
+            "VERSION": lambda args: exp.CurrentVersion(),
             "DATE_ADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATEADD": build_date_delta(exp.DateAdd, default_unit=None),
             "DATE_DIFF": build_date_delta(exp.DateDiff, default_unit=None, supports_timezone=True),

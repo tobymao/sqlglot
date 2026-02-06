@@ -682,6 +682,8 @@ class TestClickhouse(Validator):
         self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
         self.validate_identity("currentSchemas(TRUE)", "CURRENT_SCHEMAS(TRUE)")
 
+        self.validate_identity("VERSION()")
+
         self.validate_identity(
             "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
         )

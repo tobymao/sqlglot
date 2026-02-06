@@ -941,6 +941,14 @@ ORDER BY (
         self.validate_identity(
             'CREATE TABLE t1 ("x" UInt32, "y" Dynamic, "z" Dynamic(max_types = 10)) ENGINE=MergeTree ORDER BY x'
         )
+        self.validate_identity(
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY id",
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY (id)",
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY tuple()",
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY (tuple())",
+        )
 
         self.validate_all(
             "CREATE DATABASE x",

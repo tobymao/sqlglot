@@ -17,6 +17,7 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.Collation,
             exp.CurrentTimezone,
+            exp.CurrentVersion,
             exp.Monthname,
             exp.Randstr,
             exp.SessionUser,

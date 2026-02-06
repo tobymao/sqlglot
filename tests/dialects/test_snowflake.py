@@ -2968,6 +2968,7 @@ class TestSnowflake(Validator):
                 "redshift": "SELECT VERSION()",
                 "clickhouse": "SELECT VERSION()",
                 "trino": "SELECT VERSION()",
+                "duckdb": "SELECT VERSION()",
             },
         )
 

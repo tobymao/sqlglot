@@ -1411,6 +1411,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
+        self.validate_identity("VERSION()")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

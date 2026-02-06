@@ -689,6 +689,10 @@ ARRAY<STRING>;
 SPLIT(tbl.str_col, tbl.str_col);
 ARRAY<STRING>;
 
+# dialect: spark2, spark, databricks
+FILTER(tbl.array_col, x -> x > 2);
+ARRAY<STRING>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

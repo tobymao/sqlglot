@@ -689,6 +689,14 @@ ARRAY<STRING>;
 SPLIT(tbl.str_col, tbl.str_col);
 ARRAY<STRING>;
 
+# dialect: hive, spark2, spark, databricks
+DAYOFWEEK(tbl.date_col);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+DAYOFMONTH(tbl.date_col);
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

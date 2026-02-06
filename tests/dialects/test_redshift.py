@@ -486,7 +486,9 @@ ORDER BY
             },
         )
 
-        self.validate_identity("SELECT 1 AS EXCLUDE")
+        self.validate_identity("SELECT 1 AS exclude")
+        self.validate_identity("SELECT * FROM (SELECT 1 AS exclude) AS t")
+        self.validate_identity("SELECT 1 AS exclude, 2 AS foo");
 
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError

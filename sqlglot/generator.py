@@ -2915,7 +2915,7 @@ class Generator(metaclass=_Generator):
 
         if exclude and not self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE:
             exclude_sql = self.expressions(sqls=exclude, flat=True)
-            expressions = f"{expressions}{self.seg("EXCLUDE")} ({exclude_sql})"
+            expressions = f"{expressions}{self.seg('EXCLUDE')} ({exclude_sql})"
 
         # We use LIMIT_IS_TOP as a proxy for whether DISTINCT should go first because tsql and Teradata
         # are the only dialects that use LIMIT_IS_TOP and both place DISTINCT first.

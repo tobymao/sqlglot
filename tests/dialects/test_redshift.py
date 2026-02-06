@@ -329,6 +329,8 @@ class TestRedshift(Validator):
             },
         )
 
+        self.validate_identity("SELECT VERSION()")
+
     def test_identity(self):
         self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")
         self.validate_identity("SELECT EXP(1)")

@@ -27,6 +27,7 @@ EXPRESSION_METADATA = {
             exp.CurrentUser,
             exp.Hex,
             exp.Repeat,
+            exp.Replace,
             exp.Soundex,
         }
     },

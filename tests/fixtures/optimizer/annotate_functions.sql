@@ -653,6 +653,10 @@ STRING;
 FORMAT_STRING(tbl.str_col, tbl.int_col, tbl.str_col);
 STRING;
 
+# dialect: hive, spark2, spark, databricks
+REPLACE(tbl.str_col, tbl.str_col, tbl.str_col);
+STRING;
+
 # dialect: spark, databricks
 OVERLAY(tbl.str_col PLACING tbl.str_col FROM tbl.int_col);
 STRING;

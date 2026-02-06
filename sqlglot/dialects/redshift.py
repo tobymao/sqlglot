@@ -148,7 +148,7 @@ class Redshift(Postgres):
                 and isinstance(expr := projections[-1], exp.Alias)
                 and expr.alias == "EXCLUDE"
             ):
-                projections.append(projections.pop().this.copy())
+                projections[-1] = expr.this.pop()
 
             return projections, exclude
 

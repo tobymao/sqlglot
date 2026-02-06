@@ -1197,6 +1197,12 @@ class Generator(metaclass=_Generator):
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind")
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+
+        # Handle CONSTRAINT TRIGGER
+        this = expression.this
+        if isinstance(this, exp.Trigger) and this.args.get("constraint"):
+            kind = f"CONSTRAINT {kind}"
+
         properties = expression.args.get("properties")
         properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
@@ -1326,6 +1332,123 @@ class Generator(metaclass=_Generator):
         options = f" {options}" if options else ""
 
         return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
+
+    def trigger_sql(self, expression: exp.Trigger) -> str:
+        """
+        Generate SQL for a Trigger node.
+
+        Example output:
+            my_trigger BEFORE INSERT OR UPDATE ON accounts
+            REFERENCING NEW TABLE AS new_data
+            FOR EACH ROW
+            WHEN (NEW.balance > 0)
+            EXECUTE FUNCTION check_balance()
+        """
+        # Build main clause: name timing events ON table
+        parts = [
+            self.sql(expression, "this"),
+            expression.args.get("timing", ""),
+            " OR ".join(self.sql(event) for event in expression.args.get("events", [])),
+            "ON",
+            self.sql(expression, "table"),
+        ]
+
+        # Optional: FROM referenced_table
+        referenced_table = expression.args.get("referenced_table")
+        if referenced_table:
+            parts.extend(["FROM", self.sql(referenced_table)])
+
+        sql = " ".join(parts)
+
+        # Append optional clauses in order
+        if deferrable := expression.args.get("deferrable"):
+            sql = f"{sql} {deferrable}"
+
+        if initially := expression.args.get("initially"):
+            sql = f"{sql} INITIALLY {initially}"
+
+        if referencing := expression.args.get("referencing"):
+            sql = f"{sql} {self.sql(referencing)}"
+
+        if for_each := expression.args.get("for_each"):
+            sql = f"{sql} FOR EACH {for_each}"
+
+        if when := expression.args.get("when"):
+            sql = f"{sql} WHEN ({self.sql(when)})"
+
+        # Execute clause is required
+        sql = f"{sql} {self.sql(expression, 'execute')}"
+
+        return sql
+
+    def triggerexecute_sql(self, expression: exp.TriggerExecute) -> str:
+        """
+        Generate SQL for TriggerExecute node.
+
+        Example output:
+            EXECUTE FUNCTION check_balance()
+
+        Note: PROCEDURE is a deprecated synonym for FUNCTION in trigger EXECUTE clauses.
+        We always normalize to FUNCTION per PostgreSQL best practices.
+        """
+        # Always use FUNCTION (PROCEDURE is historical and deprecated)
+        func_sql = self.sql(expression, "this")
+
+        # Add () if not already present (for function calls without arguments)
+        if not func_sql.endswith(")"):
+            func_sql = f"{func_sql}()"
+
+        return f"EXECUTE FUNCTION {func_sql}"
+
+    def triggerreferencing_sql(self, expression: exp.TriggerReferencing) -> str:
+        """
+        Generate SQL for TriggerReferencing node.
+
+        Example output:
+            REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data
+            REFERENCING NEW TABLE AS new_data
+            REFERENCING OLD AS old_row NEW AS new_row
+        """
+        parts = []
+
+        # OLD [TABLE|ROW] AS alias
+        old_alias = expression.args.get("old")
+        if old_alias:
+            old_name = self.sql(old_alias)
+            # TABLE = transition table (set of rows), ROW = single row reference
+            if expression.args.get("old_table"):
+                parts.append(f"OLD TABLE AS {old_name}")
+            else:
+                # Default to just "OLD AS" (row reference, usually omitted in syntax)
+                parts.append(f"OLD AS {old_name}")
+
+        # NEW [TABLE|ROW] AS alias
+        new_alias = expression.args.get("new")
+        if new_alias:
+            new_name = self.sql(new_alias)
+            # TABLE = transition table (set of rows), ROW = single row reference
+            if expression.args.get("new_table"):
+                parts.append(f"NEW TABLE AS {new_name}")
+            else:
+                # Default to just "NEW AS" (row reference, usually omitted in syntax)
+                parts.append(f"NEW AS {new_name}")
+
+        # Join with space
+        if parts:
+            return f"REFERENCING {' '.join(parts)}"
+        return ""
+
+    def triggerevent_sql(self, expression: exp.TriggerEvent) -> str:
+        """Generate SQL for TriggerEvent node."""
+        event_type = expression.args.get("this", "")
+
+        # Check for UPDATE OF columns
+        columns = expression.args.get("columns")
+        if columns:
+            column_list = ", ".join(self.sql(col) for col in columns)
+            return f"{event_type} OF {column_list}"
+
+        return event_type
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
@@ -3491,8 +3614,15 @@ class Generator(metaclass=_Generator):
         # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
         parent = expression.parent
         is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
+
+        # Also don't normalize if the function name is a quoted identifier
+        this = expression.this
+        is_quoted = isinstance(this, exp.Identifier) and this.quoted
+
         return self.func(
-            self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified
+            self.sql(expression, "this"),
+            *expression.expressions,
+            normalize=not (is_qualified or is_quoted),
         )
 
     def paren_sql(self, expression: exp.Paren) -> str:

@@ -593,6 +593,7 @@ class Parser(metaclass=_Parser):
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
+        TokenType.TRIGGER,
         *DB_CREATABLES,
     }
 
@@ -2256,6 +2257,16 @@ class Parser(metaclass=_Parser):
 
                     if return_:
                         expression = self.expression(exp.Return, this=expression)
+        elif create_token.token_type == TokenType.CONSTRAINT and self._match(TokenType.TRIGGER):
+            # Handle CREATE CONSTRAINT TRIGGER
+            # Update create_token to TRIGGER so kind becomes "TRIGGER"
+            create_token = self._prev
+            this = self._parse_create_trigger() or self._parse_as_command(start)
+            if isinstance(this, exp.Command):
+                return this
+            # Set constraint flag since we already consumed CONSTRAINT
+            this.set("constraint", True)
+            extend_props(self._parse_properties())
         elif create_token.token_type == TokenType.INDEX:
             # Postgres allows anonymous indexes, eg. CREATE INDEX IF NOT EXISTS ON t(c)
             if not self._match(TokenType.ON):
@@ -2266,6 +2277,11 @@ class Parser(metaclass=_Parser):
                 anonymous = True
 
             this = self._parse_index(index=index, anonymous=anonymous)
+        elif create_token.token_type == TokenType.TRIGGER:
+            this = self._parse_create_trigger() or self._parse_as_command(start)
+            if isinstance(this, exp.Command):
+                return this
+            extend_props(self._parse_properties())
         elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(
                 schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
@@ -2398,6 +2414,297 @@ class Parser(metaclass=_Parser):
 
         seq.set("options", options if options else None)
         return None if self._index == index else seq
+
+    def _parse_create_trigger(self) -> t.Optional[exp.Trigger]:
+        """
+        Parse a CREATE TRIGGER statement (PostgreSQL syntax).
+
+        Syntax:
+            CREATE [CONSTRAINT] TRIGGER name
+            {BEFORE | AFTER | INSTEAD OF} event [OR event ...]
+            ON table_name
+            [FROM referenced_table_name]
+            [deferrable clause]
+            [REFERENCING ...]
+            [FOR [EACH] {ROW | STATEMENT}]
+            [WHEN (condition)]
+            EXECUTE {FUNCTION | PROCEDURE} function_name(args)
+
+        Returns:
+            exp.Trigger node, or None if non-PostgreSQL syntax (for fallback to Command)
+        """
+
+        def parse_trigger() -> exp.Trigger:
+            # 1. Check for CONSTRAINT keyword
+            constraint = self._match(TokenType.CONSTRAINT)
+
+            # 2. Parse trigger name
+            trigger_name = self._parse_id_var()
+
+            # 3. Parse timing (BEFORE/AFTER/INSTEAD OF)
+            timing = self._parse_trigger_timing()
+
+            # 4. Parse events (INSERT/UPDATE/DELETE/TRUNCATE)
+            events = self._parse_trigger_events()
+
+            # 5. Expect ON keyword
+            if not self._match(TokenType.ON):
+                self.raise_error("Expected ON in trigger definition")
+
+            # 6. Parse table name
+            table = self._parse_table_parts()
+
+            # 7. Parse optional FROM referenced_table
+            referenced_table = None
+            if self._match(TokenType.FROM):
+                referenced_table = self._parse_table_parts()
+
+            # 8. Parse optional deferrable clause
+            deferrable, initially = self._parse_trigger_deferrable()
+
+            # 9. Parse optional REFERENCING clause
+            referencing = self._parse_trigger_referencing()
+
+            # 10. Parse optional FOR EACH ROW/STATEMENT
+            for_each = self._parse_trigger_for_each()
+
+            # 11. Parse optional WHEN clause
+            when = None
+            if self._match_text_seq("WHEN"):
+                when = self._parse_wrapped(self._parse_conjunction)
+
+            # 12. Parse EXECUTE FUNCTION/PROCEDURE (PostgreSQL specific)
+            execute = self._parse_trigger_execute()
+            if execute is None:
+                self.raise_error("Expected EXECUTE in trigger definition")
+
+            # 13. Return Trigger node with flattened structure
+            return self.expression(
+                exp.Trigger,
+                this=trigger_name,
+                table=table,
+                timing=timing,
+                events=events,
+                execute=execute,
+                constraint=constraint,
+                referenced_table=referenced_table,
+                deferrable=deferrable,
+                initially=initially,
+                referencing=referencing,
+                for_each=for_each,
+                when=when,
+            )
+
+        # Use _try_parse pattern: if PostgreSQL parsing fails, return None for Command fallback
+        return self._try_parse(parse_trigger)
+
+    def _parse_trigger_timing(self) -> str:  # type: ignore[return]
+        """
+        Parse BEFORE | AFTER | INSTEAD OF.
+
+        Returns:
+            'BEFORE', 'AFTER', or 'INSTEAD OF'
+        """
+        if self._match_text_seq("INSTEAD", "OF"):
+            return "INSTEAD OF"
+        elif self._match_text_seq("BEFORE"):
+            return "BEFORE"
+        elif self._match_text_seq("AFTER"):
+            return "AFTER"
+        else:
+            self.raise_error("Expected BEFORE, AFTER, or INSTEAD OF in trigger definition")
+
+    def _parse_trigger_events(self) -> t.List[exp.TriggerEvent]:
+        """
+        Parse one or more trigger events separated by OR.
+
+        Syntax:
+            INSERT | UPDATE [OF columns] | DELETE | TRUNCATE
+            Multiple events: INSERT OR UPDATE OR DELETE
+
+        Returns:
+            List of TriggerEvent nodes
+        """
+        events = []
+
+        while True:
+            # Parse event type
+            if self._match(TokenType.INSERT):
+                event_type = "INSERT"
+                columns = None
+            elif self._match(TokenType.UPDATE):
+                event_type = "UPDATE"
+                # Check for OF column_list
+                columns = None
+                if self._match_text_seq("OF"):
+                    columns = self._parse_csv(self._parse_column)
+            elif self._match(TokenType.DELETE):
+                event_type = "DELETE"
+                columns = None
+            elif self._match_text_seq("TRUNCATE"):
+                event_type = "TRUNCATE"
+                columns = None
+            else:
+                self.raise_error("Expected trigger event (INSERT, UPDATE, DELETE, TRUNCATE)")
+
+            # Create TriggerEvent node
+            events.append(
+                self.expression(
+                    exp.TriggerEvent,
+                    this=event_type,
+                    columns=columns,
+                )
+            )
+
+            # Check for OR (more events)
+            if not self._match(TokenType.OR):
+                break
+
+        return events
+
+    def _parse_trigger_deferrable(
+        self,
+    ) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+        """
+        Parse [NOT DEFERRABLE | DEFERRABLE] [INITIALLY IMMEDIATE | DEFERRED].
+
+        Returns:
+            (deferrable, initially) tuple where:
+            - deferrable: 'NOT DEFERRABLE' | 'DEFERRABLE' | None
+            - initially: 'IMMEDIATE' | 'DEFERRED' | None
+        """
+        deferrable = None
+        initially = None
+
+        # Parse DEFERRABLE clause
+        if self._match_text_seq("NOT", "DEFERRABLE"):
+            deferrable = "NOT DEFERRABLE"
+        elif self._match_text_seq("DEFERRABLE"):
+            deferrable = "DEFERRABLE"
+
+        # Parse INITIALLY clause (can be used with both DEFERRABLE and NOT DEFERRABLE)
+        if deferrable:
+            if self._match_text_seq("INITIALLY", "IMMEDIATE"):
+                initially = "IMMEDIATE"
+            elif self._match_text_seq("INITIALLY", "DEFERRED"):
+                initially = "DEFERRED"
+
+        return deferrable, initially
+
+    def _parse_trigger_referencing(self) -> t.Optional[exp.TriggerReferencing]:
+        """
+        Parse REFERENCING { {OLD | NEW} [TABLE | ROW] [AS] name } [...].
+
+        Syntax:
+            REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data
+            REFERENCING NEW TABLE AS newtab OLD TABLE AS oldtab
+            REFERENCING OLD AS old_row NEW AS new_row
+
+        Returns:
+            TriggerReferencing node or None
+        """
+        if not self._match_text_seq("REFERENCING"):
+            return None
+
+        old_alias = None
+        new_alias = None
+        old_table = None
+        new_table = None
+
+        while True:
+            if self._match_text_seq("OLD"):
+                if old_alias is not None:
+                    self.raise_error("Duplicate OLD clause in REFERENCING")
+                old_alias, old_table = self._parse_old_new_clause()
+            elif self._match_text_seq("NEW"):
+                if new_alias is not None:
+                    self.raise_error("Duplicate NEW clause in REFERENCING")
+                new_alias, new_table = self._parse_old_new_clause()
+            else:
+                break
+
+        if old_alias is None and new_alias is None:
+            self.raise_error("REFERENCING clause requires at least OLD or NEW")
+
+        return self.expression(
+            exp.TriggerReferencing,
+            old=old_alias,
+            new=new_alias,
+            old_table=old_table,
+            new_table=new_table,
+        )
+
+    def _parse_old_new_clause(self) -> t.Tuple[t.Optional[exp.Expression], t.Any]:
+        """
+        Parse [TABLE | ROW] [AS] alias for OLD or NEW clause in REFERENCING.
+
+        Returns:
+            (alias, is_table) tuple where is_table is True for TABLE, None for ROW or omitted
+        """
+        is_table = self._match_text_seq("TABLE") or None
+        self._match_text_seq("AS")
+        alias = self._parse_id_var()
+        return alias, is_table
+
+    def _parse_trigger_for_each(self) -> t.Optional[str]:  # type: ignore[return]
+        """
+        Parse FOR [EACH] {ROW | STATEMENT}.
+
+        Returns:
+            'ROW' or 'STATEMENT' or None
+        """
+        if not self._match(TokenType.FOR):
+            return None
+
+        self._match_text_seq("EACH")
+
+        if self._match_text_seq("ROW"):
+            return "ROW"
+        elif self._match_text_seq("STATEMENT"):
+            return "STATEMENT"
+        else:
+            self.raise_error("Expected ROW or STATEMENT after FOR")
+
+    def _parse_trigger_execute(self) -> t.Optional[exp.TriggerExecute]:
+        """
+        Parse EXECUTE {FUNCTION | PROCEDURE} function_name(arguments).
+
+        Returns:
+            TriggerExecute node containing function call and kind, or None if EXECUTE is not found
+        """
+        # Match EXECUTE keyword
+        if not self._match(TokenType.EXECUTE):
+            # Return None instead of raising error - allows fallback to Command parsing
+            return None
+
+        # Match FUNCTION or PROCEDURE and capture which one
+        kind = None
+        if self._match(TokenType.FUNCTION):
+            kind = "FUNCTION"
+        elif self._match(TokenType.PROCEDURE):
+            kind = "PROCEDURE"
+        else:
+            self.raise_error("Expected FUNCTION or PROCEDURE after EXECUTE")
+
+        # Parse function name
+        func_name = self._parse_id_var(any_token=False)
+
+        # Parse arguments
+        args = []
+        if self._match(TokenType.L_PAREN):
+            if not self._match(TokenType.R_PAREN):
+                args = self._parse_csv(self._parse_conjunction)
+                self._match_r_paren()
+
+        # Create function call node
+        func_call = self.expression(exp.Anonymous, this=func_name, expressions=args)
+
+        # Create TriggerExecute node
+        return self.expression(
+            exp.TriggerExecute,
+            this=func_call,
+            kind=kind,
+        )
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
         # only used for teradata currently

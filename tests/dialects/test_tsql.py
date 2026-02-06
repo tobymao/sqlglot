@@ -2392,6 +2392,26 @@ FROM OPENJSON(@json) WITH (
                 self.assertIsInstance(expr, exp.Insert)
                 self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
 
+    def test_create_trigger(self):
+        """Test that T-SQL CREATE TRIGGER statements fall back to Command parsing."""
+        # AFTER INSERT trigger with audit logging using inserted table
+        self.validate_identity(
+            "CREATE TRIGGER reminder ON customers AFTER INSERT AS BEGIN INSERT INTO audit_log (customer_id, action, created_at) SELECT id, 'INSERT', GETDATE() FROM inserted END",
+            check_command_warning=True,
+        )
+
+        # INSTEAD OF UPDATE trigger on view
+        self.validate_identity(
+            "CREATE TRIGGER updview ON vw_employees INSTEAD OF UPDATE AS BEGIN UPDATE employees SET salary = inserted.salary FROM inserted WHERE employees.id = inserted.id END",
+            check_command_warning=True,
+        )
+
+        # DDL trigger for tracking schema changes
+        self.validate_identity(
+            "CREATE TRIGGER ddl_trig ON DATABASE FOR CREATE_TABLE AS BEGIN INSERT INTO schema_changes (event_type, event_time, login_name) VALUES ('CREATE_TABLE', GETDATE(), SYSTEM_USER) END",
+            check_command_warning=True,
+        )
+
     def test_procedures(self):
         self.validate_identity("SELECT 1; SELECT 2").assert_is(exp.Block)
 

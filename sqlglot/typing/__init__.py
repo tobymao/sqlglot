@@ -225,6 +225,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Trim,
             exp.ToBase32,
             exp.ToBase64,
+            exp.Translate,
             exp.TsOrDsToDateStr,
             exp.UnixToStr,
             exp.UnixToTimeStr,

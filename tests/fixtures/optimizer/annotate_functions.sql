@@ -678,6 +678,10 @@ RIGHT(tbl.str_col, tbl.int_col);
 STRING;
 
 # dialect: hive, spark2, spark, databricks
+TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
+STRING; 
+
+# dialect: hive, spark2, spark, databricks
 SPLIT(tbl.str_col, tbl.str_col, tbl.int_col);
 ARRAY<STRING>;
 
@@ -5996,6 +6000,10 @@ TIME;
 # dialect: duckdb
 LENGTH(tbl.str_col);
 BIGINT;
+
+# dialect: duckdb
+TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
+VARCHAR;
 
 --------------------------------------
 -- Presto / Trino

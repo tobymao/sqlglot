@@ -665,6 +665,14 @@ STRING;
 OVERLAY(tbl.bin_col PLACING tbl.bin_col FROM tbl.int_col FOR tbl.int_col);
 BINARY;
 
+# dialect: hive, spark2, spark, databricks
+REVERSE(tbl.str_col);
+STRING;
+
+# dialect: hive, spark2, spark, databricks
+REVERSE(tbl.array_col);
+ARRAY<STRING>;
+
 # dialect: spark2, spark, databricks
 RIGHT(tbl.str_col, tbl.int_col);
 STRING;

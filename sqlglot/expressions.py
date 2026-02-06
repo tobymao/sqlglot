@@ -7342,6 +7342,10 @@ class OpenJSON(Func):
     arg_types = {"this": True, "path": False, "expressions": False}
 
 
+class ObjectId(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class JSONBContains(Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 

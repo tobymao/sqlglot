@@ -317,10 +317,10 @@ class TestTSQL(Validator):
         ).args["alias"].assert_is(exp.Identifier)
 
         self.validate_all(
-            "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL DROP TABLE #TempTableName",
+            "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL BEGIN DROP TABLE #TempTableName; END",
             write={
-                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NULL BEGIN DROP TABLE #TempTableName",
-                # "spark": "DROP TABLE IF EXISTS TempTableName",
+                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NULL BEGIN DROP TABLE #TempTableName; END",
+                "spark": "DROP TABLE IF EXISTS TempTableName",
             },
         )
 
@@ -541,6 +541,9 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("CEILING(2)")
+
+        self.validate_identity("OBJECT_ID('foo')")
+        self.validate_identity("OBJECT_ID('foo', 'U')")
 
     def test_option(self):
         possible_options = [

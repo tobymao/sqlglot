@@ -1484,3 +1484,34 @@ class TSQL(Dialect):
         def coalesce_sql(self, expression: exp.Coalesce) -> str:
             func_name = "ISNULL" if expression.args.get("is_null") else "COALESCE"
             return rename_func(func_name)(self, expression)
+
+        def storedprocedure_sql(self, expression: exp.StoredProcedure) -> str:
+            this = self.sql(expression, "this")
+            expressions = self.expressions(expression)
+            expressions = (
+                self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
+            )
+            return f"{this}{expressions}" if expressions.strip() != "" else this
+
+        def ifblock_sql(self, expression: exp.IfBlock) -> str:
+            this = self.sql(expression, "this")
+            true = self.sql(expression, "true")
+            true = f" {true}" if true else " "
+            false = self.sql(expression, "false")
+            false = f"; ELSE BEGIN {false}" if false else ""
+            return f"IF {this} BEGIN{true}{false}"
+
+        def whileblock_sql(self, expression: exp.WhileBlock) -> str:
+            this = self.sql(expression, "this")
+            body = self.sql(expression, "body")
+            body = f" {body}" if body else " "
+            return f"WHILE {this} BEGIN{body}"
+
+        def execute_sql(self, expression: exp.Execute) -> str:
+            this = self.sql(expression, "this")
+            expressions = self.expressions(expression)
+            expressions = f" {expressions}" if expressions else ""
+            return f"EXECUTE {this}{expressions}"
+
+        def executesql_sql(self, expression: exp.ExecuteSql) -> str:
+            return self.execute_sql(expression)

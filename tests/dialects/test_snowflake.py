@@ -187,7 +187,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT SIGN(x)")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT TANH(0.5)")
-        self.validate_identity("SELECT JAROWINKLER_SIMILARITY('hello', 'world')")
+        self.validate_all(
+            "JAROWINKLER_SIMILARITY('hello', 'world')",
+            write={
+                "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
+                "duckdb": "JARO_WINKLER_SIMILARITY('hello', 'world')",
+                "clickhouse": "jaroWinklerSimilarity('hello', 'world')",
+            },
+        )
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")
         self.validate_identity("SELECT UNICODE(column_name)")
         self.validate_identity("SELECT WIDTH_BUCKET(col, 0, 100, 10)")
@@ -2961,6 +2968,7 @@ class TestSnowflake(Validator):
                 "redshift": "SELECT VERSION()",
                 "clickhouse": "SELECT VERSION()",
                 "trino": "SELECT VERSION()",
+                "duckdb": "SELECT VERSION()",
             },
         )
 
@@ -5940,3 +5948,6 @@ FROM SEMANTIC_VIEW(
 
     def test_current_database(self):
         self.validate_identity("SELECT CURRENT_DATABASE()")
+
+    def test_current_schema(self):
+        self.validate_identity("SELECT CURRENT_SCHEMA()")

@@ -1534,6 +1534,7 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
             "EDITDIST3": exp.Levenshtein.from_arg_list,
+            "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "ENCODE": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
@@ -1589,6 +1590,7 @@ class DuckDB(Dialect):
             "TIME_BUCKET": exp.DateBin.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
+            "VERSION": exp.CurrentVersion.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
         }
 
@@ -1871,6 +1873,7 @@ class DuckDB(Dialect):
             )
             if e.args.get("sysdate")
             else "CURRENT_TIMESTAMP",
+            exp.CurrentVersion: rename_func("version"),
             exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
@@ -1923,6 +1926,7 @@ class DuckDB(Dialect):
             ),
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
+            exp.JarowinklerSimilarity: rename_func("JARO_WINKLER_SIMILARITY"),
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,

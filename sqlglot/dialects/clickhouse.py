@@ -397,6 +397,7 @@ class ClickHouse(Dialect):
             "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,
             "TOTYPENAME": exp.Typeof.from_arg_list,
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
+            "JAROWINKLERSIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
         }
         FUNCTIONS.pop("TRANSFORM")
@@ -1231,6 +1232,7 @@ class ClickHouse(Dialect):
             exp.Lead: lambda self, e: self.func(
                 "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),
+            exp.JarowinklerSimilarity: rename_func("jaroWinklerSimilarity"),
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("editDistance")
             ),

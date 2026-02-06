@@ -1152,6 +1152,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_identity("EDITDIST3(col1, col2)", "LEVENSHTEIN(col1, col2)")
+        self.validate_identity("JARO_WINKLER_SIMILARITY('hello', 'world')")
 
         self.validate_identity("SELECT LENGTH(foo)")
         self.validate_identity("SELECT ARRAY[1, 2, 3]", "SELECT [1, 2, 3]")
@@ -1410,6 +1411,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
+        self.validate_identity("VERSION()")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
@@ -2437,5 +2439,17 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT CURRENT_DATABASE()",
                 "snowflake": "SELECT CURRENT_DATABASE()",
+            },
+        )
+
+    def test_current_schema(self):
+        self.validate_all(
+            "SELECT CURRENT_SCHEMA()",
+            read={
+                "snowflake": "SELECT CURRENT_SCHEMA()",
+            },
+            write={
+                "duckdb": "SELECT CURRENT_SCHEMA()",
+                "snowflake": "SELECT CURRENT_SCHEMA()",
             },
         )

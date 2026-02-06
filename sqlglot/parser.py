@@ -3489,7 +3489,6 @@ class Parser(metaclass=_Parser):
                 self._parse_expression, optional=True
             )
 
-            # If the exclude consumes
             if exclude:
                 projections.append(projections.pop())
 

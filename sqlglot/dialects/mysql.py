@@ -791,6 +791,16 @@ class MySQL(Dialect):
             part_list = self.expression(exp.PartitionList, this=name, expressions=values)
             return self.expression(exp.Partition, expressions=[part_list])
 
+        def _parse_primary_key(
+            self,
+            wrapped_optional: bool = False,
+            in_props: bool = False,
+            named_primary_key: bool = False,
+        ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
+            return super()._parse_primary_key(
+                wrapped_optional=wrapped_optional, in_props=in_props, named_primary_key=True
+            )
+
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         LOCKING_READS_SUPPORTED = True

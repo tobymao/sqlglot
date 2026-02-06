@@ -918,10 +918,15 @@ class ClickHouse(Dialect):
             return super()._parse_wrapped_id_vars(optional=True)
 
         def _parse_primary_key(
-            self, wrapped_optional: bool = False, in_props: bool = False
+            self,
+            wrapped_optional: bool = False,
+            in_props: bool = False,
+            named_primary_key: bool = False,
         ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
             return super()._parse_primary_key(
-                wrapped_optional=wrapped_optional or in_props, in_props=in_props
+                wrapped_optional=wrapped_optional or in_props,
+                in_props=in_props,
+                named_primary_key=named_primary_key,
             )
 
         def _parse_on_property(self) -> t.Optional[exp.Expression]:

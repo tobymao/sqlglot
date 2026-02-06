@@ -48,4 +48,5 @@ EXPRESSION_METADATA = {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
+    exp.Reverse: {"annotator": lambda self, e: self._annotate_by_args(e, "this", promote=True)},
 }

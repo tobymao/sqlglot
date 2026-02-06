@@ -5947,3 +5947,6 @@ FROM SEMANTIC_VIEW(
 
     def test_current_database(self):
         self.validate_identity("SELECT CURRENT_DATABASE()")
+
+    def test_current_schema(self):
+        self.validate_identity("SELECT CURRENT_SCHEMA()")

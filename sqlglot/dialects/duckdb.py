@@ -1590,6 +1590,7 @@ class DuckDB(Dialect):
             "TIME_BUCKET": exp.DateBin.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
+            "VERSION": exp.CurrentVersion.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
         }
 
@@ -1872,6 +1873,7 @@ class DuckDB(Dialect):
             )
             if e.args.get("sysdate")
             else "CURRENT_TIMESTAMP",
+            exp.CurrentVersion: rename_func("version"),
             exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),

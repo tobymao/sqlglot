@@ -345,6 +345,7 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
+            "NOW": exp.CurrentTimestamp.from_arg_list,
             "TRUNC": build_trunc,
             "TRUNCATE": build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,

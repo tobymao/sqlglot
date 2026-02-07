@@ -13,6 +13,13 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        exp_type: {"returns": exp.DataType.Type.INT}
+        for exp_type in {
+            exp.ArraySize,
+            exp.UnixDate,
+        }
+    },
+    **{
         exp_type: {"returns": exp.DataType.Type.VARCHAR}
         for exp_type in {
             exp.Collation,
@@ -26,6 +33,5 @@ EXPRESSION_METADATA = {
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
-    exp.ArraySize: {"returns": exp.DataType.Type.INT},
     exp.Overlay: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

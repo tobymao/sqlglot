@@ -689,6 +689,14 @@ ARRAY<STRING>;
 SPLIT(tbl.str_col, tbl.str_col);
 ARRAY<STRING>;
 
+# dialect: spark2, spark, databricks
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+DATE;
+
+# dialect: hive
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

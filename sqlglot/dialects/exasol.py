@@ -297,6 +297,7 @@ class Exasol(Dialect):
             "USER": TokenType.CURRENT_USER,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
+            "CURDATE": TokenType.CURRENT_DATE,
             "LONG VARCHAR": TokenType.TEXT,
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
@@ -378,6 +379,7 @@ class Exasol(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
+            TokenType.CURRENT_DATE: exp.CurrentDate,
         }
 
         FUNCTION_PARSERS = {

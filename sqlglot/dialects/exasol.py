@@ -320,6 +320,7 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            "CURDATE": exp.CurrentDate.from_arg_list,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)

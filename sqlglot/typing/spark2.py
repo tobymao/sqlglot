@@ -58,6 +58,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Right,
         }
     },
+    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
             self, e, "expressions", target_type=exp.DataType.Type.TEXT

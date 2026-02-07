@@ -689,6 +689,10 @@ ARRAY<STRING>;
 SPLIT(tbl.str_col, tbl.str_col);
 ARRAY<STRING>;
 
+# dialect: spark2, spark, databricks
+FROM_UTC_TIMESTAMP(tbl.timestamp_col, tbl.str_col);
+TIMESTAMP;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

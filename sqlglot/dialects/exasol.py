@@ -314,12 +314,20 @@ class Exasol(Dialect):
                 f"{unit}S_BETWEEN": build_date_delta(exp.DateDiff, default_unit=unit)
                 for unit in DATE_UNITS
             },
+            "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "BIT_AND": binary_from_function(exp.BitwiseAnd),
             "BIT_OR": binary_from_function(exp.BitwiseOr),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/convert_tz.htm
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1),
+                target_tz=seq_get(args, 2),
+                timestamp=seq_get(args, 0),
+                options=seq_get(args, 3),
+            ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
@@ -331,6 +339,13 @@ class Exasol(Dialect):
             "HASH_SHA1": exp.SHA.from_arg_list,
             "HASH_MD5": exp.MD5.from_arg_list,
             "HASHTYPE_MD5": exp.MD5Digest.from_arg_list,
+            "HASH_SHA256": lambda args: exp.SHA2(
+                this=seq_get(args, 0), length=exp.Literal.number(256)
+            ),
+            "HASH_SHA512": lambda args: exp.SHA2(
+                this=seq_get(args, 0), length=exp.Literal.number(512)
+            ),
+            "NULLIFZERO": _build_nullifzero,
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
@@ -339,26 +354,12 @@ class Exasol(Dialect):
                 position=seq_get(args, 3),
                 occurrence=seq_get(args, 4),
             ),
-            "HASH_SHA256": lambda args: exp.SHA2(
-                this=seq_get(args, 0), length=exp.Literal.number(256)
-            ),
-            "HASH_SHA512": lambda args: exp.SHA2(
-                this=seq_get(args, 0), length=exp.Literal.number(512)
-            ),
             "TRUNC": build_trunc,
             "TRUNCATE": build_trunc,
-            "VAR_POP": exp.VariancePop.from_arg_list,
-            "APPROXIMATE_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "TO_CHAR": build_timetostr_or_tochar,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/convert_tz.htm
-            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
-                source_tz=seq_get(args, 1),
-                target_tz=seq_get(args, 2),
-                timestamp=seq_get(args, 0),
-                options=seq_get(args, 3),
-            ),
-            "NULLIFZERO": _build_nullifzero,
+            "USER": exp.CurrentUser.from_arg_list,
+            "VAR_POP": exp.VariancePop.from_arg_list,
             "ZEROIFNULL": _build_zeroifnull,
         }
         CONSTRAINT_PARSERS = {

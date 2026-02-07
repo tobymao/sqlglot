@@ -24,7 +24,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.CurrentDatabase,
             exp.CurrentSchema,
-            exp.CurrentUser,
             exp.Hex,
             exp.Repeat,
             exp.Replace,

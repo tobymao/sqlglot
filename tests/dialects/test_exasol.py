@@ -14,6 +14,7 @@ class TestExasol(Validator):
         self.validate_identity("SYSTIMESTAMP", "SYSTIMESTAMP()")
         self.validate_identity("SELECT SYSTIMESTAMP()")
         self.validate_identity("SELECT SYSTIMESTAMP(6)")
+        self.validate_identity("SELECT CURRENT_SCHEMA")
 
     def test_qualify_unscoped_star(self):
         self.validate_all(

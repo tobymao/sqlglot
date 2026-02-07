@@ -5785,6 +5785,10 @@ DOUBLE;
 VERSION();
 VARCHAR;
 
+# dialect: mysql
+CURRENT_TIMESTAMP();
+DATETIME;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

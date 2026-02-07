@@ -6005,6 +6005,10 @@ BIGINT;
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 VARCHAR;
 
+# dialect: duckdb
+COUNTIF(tbl.int_col > tbl.int_col);
+HUGEINT;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

@@ -13,6 +13,13 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DataType.Type.DATETIME}
+        for expr_type in {
+            exp.CurrentTimestamp,
+            exp.Localtime,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
             exp.CurrentVersion,
@@ -30,5 +37,4 @@ EXPRESSION_METADATA = {
             exp.Week,
         }
     },
-    exp.Localtime: {"returns": exp.DataType.Type.DATETIME},
 }

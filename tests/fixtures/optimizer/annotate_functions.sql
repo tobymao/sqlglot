@@ -161,6 +161,9 @@ BOOLEAN;
 CURRENT_CATALOG();
 VARCHAR;
 
+CURRENT_USER();
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

@@ -297,6 +297,7 @@ class Exasol(Dialect):
             "USER": TokenType.CURRENT_USER,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
+            "CURDATE": TokenType.CURRENT_DATE,
             "LONG VARCHAR": TokenType.TEXT,
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
@@ -320,6 +321,7 @@ class Exasol(Dialect):
             "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
             "BIT_LSHIFT": binary_from_function(exp.BitwiseLeftShift),
             "BIT_RSHIFT": binary_from_function(exp.BitwiseRightShift),
+            "CURDATE": exp.CurrentDate.from_arg_list,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
@@ -377,6 +379,7 @@ class Exasol(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
+            TokenType.CURRENT_DATE: exp.CurrentDate,
         }
 
         FUNCTION_PARSERS = {

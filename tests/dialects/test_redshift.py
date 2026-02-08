@@ -6,6 +6,26 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity(
+            "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM (SELECT 1 AS col1, 2 AS col2, 3 AS col3)"
+        )
+        self.validate_identity(
+            "SELECT *, col1 EXCLUDE (col2) FROM t"
+        )
+        self.validate_all(
+            "SELECT *, 4 AS col4 EXCLUDE col2, col3 FROM t",
+            write={
+                "redshift": "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM t",
+            write={
+                "": "SELECT * EXCEPT (col2, col3) FROM (SELECT *, 4 AS col4 FROM t)",
+                "redshift": "SELECT *, 4 AS col4 EXCLUDE (col2, col3) FROM t",
+            },
+        )
+
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity(
             "ROUND(CAST(a AS DOUBLE PRECISION) / CAST(b AS DOUBLE PRECISION), 2)"

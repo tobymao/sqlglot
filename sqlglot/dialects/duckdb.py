@@ -1386,6 +1386,13 @@ def _sha_sql(
     return self.func("UNHEX", result) if is_binary else result
 
 
+def _explode_to_unnest_sql(self: DuckDB.Generator, expression: exp.Lateral) -> str:
+    if isinstance(expression.this, exp.Inline):
+        expression.this.replace(exp.Explode(this=expression.this.this.copy()))
+
+    return explode_to_unnest_sql(self, expression)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
@@ -1932,7 +1939,7 @@ class DuckDB(Dialect):
             exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
-            exp.Lateral: explode_to_unnest_sql,
+            exp.Lateral: _explode_to_unnest_sql,
             exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
             exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
             exp.Seq1: lambda self, e: _seq_sql(self, e, 1),

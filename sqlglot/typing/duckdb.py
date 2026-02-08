@@ -38,6 +38,7 @@ EXPRESSION_METADATA = {
             exp.TimeToUnix,
         }
     },
+    exp.Format: {"returns": exp.DataType.Type.VARCHAR},
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

@@ -5930,6 +5930,10 @@ ISINF(tbl.float_col);
 BOOLEAN;
 
 # dialect: duckdb
+REVERSE(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
 RANDOM();
 DOUBLE;
 

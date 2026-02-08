@@ -5990,6 +5990,10 @@ TO_DAYS(tbl.int_col);
 INTERVAL;
 
 # dialect: duckdb
+ISODOW(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
 BIT_LENGTH(tbl.str_col);
 BIGINT;
 

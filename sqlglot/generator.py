@@ -529,6 +529,9 @@ class Generator(metaclass=_Generator):
     # Unsupported (MySQL, SingleStore): UPDATE t1 JOIN t2 ON TRUE SET t1.a = t2.b
     UPDATE_STATEMENT_SUPPORTS_FROM = True
 
+    # Whether SELECT *, ... EXCLUDE requires wrapping in a subquery for transpilation
+    STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.DATETIME2: "TIMESTAMP",
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2908,6 +2911,12 @@ class Generator(metaclass=_Generator):
         operation_modifiers = self.expressions(expression, key="operation_modifiers", sep=" ")
         operation_modifiers = f"{self.sep()}{operation_modifiers}" if operation_modifiers else ""
 
+        exclude = expression.args.get("exclude")
+
+        if not self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE and exclude:
+            exclude_sql = self.expressions(sqls=exclude, flat=True)
+            expressions = f"{expressions}{self.seg(self.STAR_EXCEPT)} ({exclude_sql})"
+
         # We use LIMIT_IS_TOP as a proxy for whether DISTINCT should go first because tsql and Teradata
         # are the only dialects that use LIMIT_IS_TOP and both place DISTINCT first.
         top_distinct = f"{distinct}{hint}{top}" if self.LIMIT_IS_TOP else f"{top}{hint}{distinct}"
@@ -2925,6 +2934,12 @@ class Generator(metaclass=_Generator):
             expression.pop_comments()
 
         sql = self.prepend_ctes(expression, sql)
+
+        if self.STAR_EXCLUDE_REQUIRES_DERIVED_TABLE and exclude:
+            expression.set("exclude", None)
+            subquery = expression.subquery(copy=False)
+            star = exp.Star(except_=exclude)
+            sql = self.sql(exp.select(star).from_(subquery, copy=False))
 
         if not self.SUPPORTS_SELECT_INTO and into:
             if into.args.get("temporary"):

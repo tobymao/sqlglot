@@ -3957,6 +3957,7 @@ class Select(Query):
         "into": False,
         "from_": False,
         "operation_modifiers": False,
+        "exclude": False,
         **QUERY_MODIFIERS,
     }
 

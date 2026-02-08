@@ -38,6 +38,7 @@ EXPRESSION_METADATA = {
             exp.TimeToUnix,
         }
     },
+    exp.DateBin: {"returns": exp.DataType.Type.DATE},
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

@@ -917,6 +917,18 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT h.id, cost.amount FROM hourlycostagg AS h CROSS JOIN UNNEST(h.costs) AS exploded(cost)",
+            read={
+                "spark": "SELECT h.id, cost.amount FROM hourlycostagg h LATERAL VIEW INLINE(h.costs) exploded AS cost",
+            },
+        )
+        self.validate_all(
+            "SELECT id_column, name, age FROM test_table CROSS JOIN UNNEST(struc_column) AS explode_view(name, age)",
+            read={
+                "spark": "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
+            },
+        )
+        self.validate_all(
             "1d",
             write={
                 "duckdb": "1 AS d",

@@ -27,6 +27,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.INT128}
         for expr_type in {
+            exp.CountIf,
             exp.Factorial,
         }
     },

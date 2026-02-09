@@ -1831,6 +1831,10 @@ class DuckDB(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: _anyvalue_sql,
+            exp.AutoIncrementColumnConstraint: lambda self,
+            e: self.generatedasidentitycolumnconstraint_sql(
+                exp.GeneratedAsIdentityColumnConstraint(this=False)
+            ),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Boolnot: _boolnot_sql,
             exp.Booland: _booland_sql,

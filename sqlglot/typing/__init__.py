@@ -210,6 +210,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Chr,
             exp.CurrentCatalog,
             exp.CurrentSchema,
+            exp.CurrentVersion,
             exp.CurrentUser,
             exp.Dayname,
             exp.DateToDateStr,

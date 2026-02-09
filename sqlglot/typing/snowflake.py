@@ -495,7 +495,6 @@ EXPRESSION_METADATA = {
             exp.CurrentSecondaryRoles,
             exp.CurrentSession,
             exp.CurrentStatement,
-            exp.CurrentVersion,
             exp.CurrentTransaction,
             exp.CurrentWarehouse,
             exp.CurrentOrganizationUser,

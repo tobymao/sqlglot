@@ -5699,7 +5699,7 @@ class ManhattanDistance(Func):
 
 
 class JarowinklerSimilarity(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "case_insensitive": False}
 
 
 class AggFunc(Func):

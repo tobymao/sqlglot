@@ -900,8 +900,9 @@ class Snowflake(Dialect):
             "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "JAROWINKLER_SIMILARITY": lambda args: exp.JarowinklerSimilarity(
-                this=exp.Upper(this=seq_get(args, 0)),
-                expression=exp.Upper(this=seq_get(args, 1)),
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                case_insensitive=True,
             ),
             "MD5_HEX": exp.MD5.from_arg_list,
             "MD5_BINARY": exp.MD5Digest.from_arg_list,
@@ -1946,15 +1947,6 @@ class Snowflake(Dialect):
                 return self.func("LN", expression.this)
 
             return super().log_sql(expression)
-
-        def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
-            this = expression.this
-            expr = expression.expression
-            if isinstance(this, exp.Upper):
-                this = this.this
-            if isinstance(expr, exp.Upper):
-                expr = expr.this
-            return self.func("JAROWINKLER_SIMILARITY", this, expr)
 
         def greatest_sql(self, expression: exp.Greatest) -> str:
             name = "GREATEST_IGNORE_NULLS" if expression.args.get("ignore_nulls") else "GREATEST"

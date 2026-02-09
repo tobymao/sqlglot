@@ -1926,7 +1926,6 @@ class DuckDB(Dialect):
             ),
             exp.Ceil: _ceil_floor,
             exp.Floor: _ceil_floor,
-            exp.JarowinklerSimilarity: rename_func("JARO_WINKLER_SIMILARITY"),
             exp.JSONBExists: rename_func("JSON_EXISTS"),
             exp.JSONExtract: _arrow_json_extract_sql,
             exp.JSONExtractArray: _json_extract_value_array_sql,
@@ -3141,6 +3140,14 @@ class DuckDB(Dialect):
             # Emulate Snowflake semantics: if distance > max_dist, return max_dist
             levenshtein = exp.Levenshtein(this=this, expression=expr)
             return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
+
+        def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
+            this = expression.this
+            expr = expression.expression
+            if expression.args.get("case_insensitive"):
+                this = exp.Upper(this=this)
+                expr = exp.Upper(this=expr)
+            return self.func("JARO_WINKLER_SIMILARITY", this, expr)
 
         def pad_sql(self, expression: exp.Pad) -> str:
             """

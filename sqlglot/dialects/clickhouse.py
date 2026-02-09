@@ -1238,7 +1238,6 @@ class ClickHouse(Dialect):
             exp.Lead: lambda self, e: self.func(
                 "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),
-            exp.JarowinklerSimilarity: rename_func("jaroWinklerSimilarity"),
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("editDistance")
             ),
@@ -1278,6 +1277,14 @@ class ClickHouse(Dialect):
             exp.DataType.Type.POLYGON,
             exp.DataType.Type.MULTIPOLYGON,
         }
+
+        def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
+            this = expression.this
+            expr = expression.expression
+            if expression.args.get("case_insensitive"):
+                this = exp.Upper(this=this)
+                expr = exp.Upper(this=expr)
+            return self.func("jaroWinklerSimilarity", this, expr)
 
         def offset_sql(self, expression: exp.Offset) -> str:
             offset = super().offset_sql(expression)

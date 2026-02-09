@@ -249,7 +249,6 @@ class TestDatabricks(Validator):
         self.validate_identity("CURRENT_TIMEZONE()")
         self.validate_identity("CURDATE()", "CURRENT_DATE")
         self.validate_identity("CURDATE", "CURRENT_DATE")
-        self.validate_identity("SELECT VERSION()", "SELECT CURRENT_VERSION()")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
         self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
 

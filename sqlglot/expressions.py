@@ -918,7 +918,8 @@ class Expression(metaclass=_Expression):
             self.meta["end"] = end
         elif hasattr(other, "meta"):
             for k in POSITION_META_KEYS:
-                self.meta[k] = other.meta[k]
+                if k in other.meta:
+                    self.meta[k] = other.meta[k]
         else:
             self.meta["line"] = other.line
             self.meta["col"] = other.col

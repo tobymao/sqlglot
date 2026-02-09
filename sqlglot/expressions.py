@@ -1590,107 +1590,42 @@ class SequenceProperties(Expression):
     }
 
 
-class Trigger(Expression):
-    """
-    Represents a CREATE TRIGGER statement.
-
-    Example SQL:
-        CREATE TRIGGER my_trigger BEFORE INSERT ON users
-        FOR EACH ROW EXECUTE FUNCTION log_insert()
-
-    AST Structure:
-        Trigger(
-            this='my_trigger',
-            table=Table(name='users'),
-            timing='BEFORE',
-            events=[TriggerEvent(this='INSERT')],
-            for_each='ROW',
-            execute=TriggerExecute(this=..., kind='FUNCTION')
-        )
-    """
-
+class TriggerProperties(Expression):
     arg_types = {
-        # Required fields
-        "this": True,  # Trigger name (Identifier)
-        "table": True,  # Table name (Table expression)
-        "timing": True,  # BEFORE | AFTER | INSTEAD OF (str)
-        "events": True,  # List of TriggerEvent nodes
-        "execute": True,  # TriggerExecute node (required)
-        # Optional modifiers
-        "constraint": False,  # True if CONSTRAINT modifier present
-        # Optional clauses
-        "referenced_table": False,  # FROM referenced_table (Table)
-        "deferrable": False,  # None | DEFERRABLE | NOT DEFERRABLE (str)
-        "initially": False,  # IMMEDIATE | DEFERRED (str)
-        "referencing": False,  # TriggerReferencing node
-        "for_each": False,  # ROW | STATEMENT (str)
-        "when": False,  # Condition expression
+        "table": True,
+        "timing": True,
+        "events": True,
+        "execute": True,
+        "constraint": False,
+        "referenced_table": False,
+        "deferrable": False,
+        "initially": False,
+        "referencing": False,
+        "for_each": False,
+        "when": False,
     }
 
 
 class TriggerExecute(Expression):
-    """
-    Represents EXECUTE FUNCTION/PROCEDURE clause in a trigger.
-
-    Example SQL:
-        EXECUTE FUNCTION check_balance()
-        EXECUTE PROCEDURE log_changes('audit')
-
-    AST Structure:
-        TriggerExecute(
-            this=Anonymous(this='check_balance'),
-            kind='FUNCTION'
-        )
-    """
-
     arg_types = {
-        "this": True,  # Function/procedure call expression
-        "kind": True,  # FUNCTION | PROCEDURE (str)
+        "this": True,
+        "is_function": False,
     }
 
 
 class TriggerEvent(Expression):
-    """
-    Represents a trigger event (INSERT, UPDATE, DELETE, TRUNCATE).
-
-    Example SQL:
-        UPDATE OF balance, name
-
-    AST Structure:
-        TriggerEvent(
-            this='UPDATE',
-            columns=[Column(this='balance'), Column(this='name')]
-        )
-    """
-
     arg_types = {
-        "this": True,  # INSERT | UPDATE | DELETE | TRUNCATE (str)
-        "columns": False,  # Column list for UPDATE OF (list of Column)
+        "this": True,
+        "columns": False,
     }
 
 
 class TriggerReferencing(Expression):
-    """
-    Represents REFERENCING clause for transition tables/rows.
-
-    Example SQL:
-        REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data
-        REFERENCING OLD AS old_row NEW AS new_row
-
-    AST Structure:
-        TriggerReferencing(
-            old=Identifier('old_data'),
-            new=Identifier('new_data'),
-            old_table=True,
-            new_table=True
-        )
-    """
-
     arg_types = {
-        "old": False,  # OLD [TABLE|ROW] AS alias (Identifier)
-        "new": False,  # NEW [TABLE|ROW] AS alias (Identifier)
-        "old_table": False,  # True if OLD TABLE, False if OLD ROW (bool)
-        "new_table": False,  # True if NEW TABLE, False if NEW ROW (bool)
+        "old": False,
+        "new": False,
+        "old_table": False,
+        "new_table": False,
     }
 
 

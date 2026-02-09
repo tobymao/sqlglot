@@ -47,6 +47,7 @@ EXPRESSION_METADATA = {
             exp.Reverse,
         }
     },
+    exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

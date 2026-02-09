@@ -324,6 +324,14 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "IF OBJECT_ID('tempdb.dbo.#TempTableName') IS NOT NULL BEGIN DROP TABLE #TempTableName; END",
+            write={
+                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName') IS NULL BEGIN DROP TABLE #TempTableName; END",
+                "spark": "DROP TABLE IF EXISTS TempTableName",
+            },
+        )
+
         self.validate_identity(
             "MERGE INTO mytable WITH (HOLDLOCK) AS T USING mytable_merge AS S "
             "ON (T.user_id = S.user_id) WHEN NOT MATCHED THEN INSERT (c1, c2) VALUES (S.c1, S.c2)"

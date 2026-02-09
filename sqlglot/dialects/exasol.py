@@ -345,6 +345,7 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
+            "NOW": exp.CurrentTimestamp.from_arg_list,
             "TRUNC": build_trunc,
             "TRUNCATE": build_trunc,
             "VAR_POP": exp.VariancePop.from_arg_list,
@@ -377,6 +378,7 @@ class Exasol(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
+            TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         }
 
         FUNCTION_PARSERS = {
@@ -459,6 +461,7 @@ class Exasol(Dialect):
             exp.BitwiseRightShift: rename_func("BIT_RSHIFT"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_xor.htm
             exp.BitwiseXor: rename_func("BIT_XOR"),
+            exp.CurrentSchema: lambda *_: "CURRENT_SCHEMA",
             exp.DateDiff: _date_diff_sql,
             exp.DateAdd: _add_date_sql,
             exp.TsOrDsAdd: _add_date_sql,

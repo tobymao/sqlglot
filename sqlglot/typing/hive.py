@@ -22,10 +22,12 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.VARCHAR}
         for expr_type in {
+            exp.AddMonths,
             exp.CurrentDatabase,
-            exp.CurrentSchema,
             exp.CurrentUser,
+            exp.CurrentSchema,
             exp.Hex,
+            exp.NextDay,
             exp.Repeat,
             exp.Replace,
             exp.Soundex,

@@ -1371,7 +1371,9 @@ class TestDuckDB(Validator):
         self.validate_identity("ROUND(2.256, 1)")
 
         # TODO: This is incorrect AST, DATE_PART creates a STRUCT of values but it's stored in 'year' arg
-        self.validate_identity("SELECT MAKE_DATE(DATE_PART(['year', 'month', 'day'], TODAY()))")
+        self.validate_identity(
+            "SELECT MAKE_DATE(DATE_PART(['year', 'month', 'day'], CURRENT_DATE))"
+        )
 
         self.validate_identity("SELECT * FROM t PIVOT(SUM(y) FOR foo IN y_enum)")
         self.validate_identity("SELECT 20_000 AS literal")
@@ -1411,6 +1413,7 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
         self.validate_identity("VERSION()")
+        self.validate_identity("SELECT TODAY()", "SELECT CURRENT_DATE")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

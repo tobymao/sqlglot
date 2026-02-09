@@ -1854,14 +1854,7 @@ class Parser(metaclass=_Parser):
 
         self._chunks = chunks
 
-        expression = self._parse_batch_statements(
-            parse_method=parse_method, sep_first_statement=False
-        )
-
-        if expression and len(expression) > 1:
-            expression = [exp.Block(expressions=expression)]
-
-        return expression
+        return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
 
     def check_errors(self) -> None:
         """Logs or raises any found errors, depending on the chosen error level setting."""

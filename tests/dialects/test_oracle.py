@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError, ParseError, parse_one, parse
+from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.qualify import qualify
 
@@ -926,8 +926,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         """
 
         expected_sqls = [
-            "CREATE OR REPLACE PROCEDURE query_emp(p_id IN VARCHAR2, p_name OUT VARCHAR2, p_salary OUT NUMBER) AS BEGIN SELECT last_name, salary INTO p_name, p_salary FROM employees WHERE employee_id = p_id",
-            "END",
+            "CREATE OR REPLACE PROCEDURE query_emp(p_id IN VARCHAR2, p_name OUT VARCHAR2, p_salary OUT NUMBER) AS BEGIN SELECT last_name, salary INTO p_name, p_salary FROM employees WHERE employee_id = p_id; END",
         ]
 
         for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
@@ -947,9 +946,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         """
 
         expected_sqls = [
-            "CREATE OR REPLACE PROCEDURE test_proc(a NUMBER, b IN NUMBER, c IN OUT NUMBER, d OUT NUMBER) AS BEGIN c := c + a + b",
-            "d := 42 + c",
-            "END",
+            "CREATE OR REPLACE PROCEDURE test_proc(a NUMBER, b IN NUMBER, c IN OUT NUMBER, d OUT NUMBER) AS BEGIN c := c + a + b; d := 42 + c; END",
         ]
 
         for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):

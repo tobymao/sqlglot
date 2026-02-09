@@ -297,3 +297,25 @@ class Spark(Spark2):
 
             parquet_file = expression.expressions[0]
             return f"parquet.`{parquet_file.name}`"
+
+        def ifblock_sql(self, expression: exp.IfBlock) -> str:
+            condition = expression.this
+            true_block = expression.args.get("true")
+
+            condition_expr = None
+            if isinstance(condition, exp.Not):
+                inner = condition.this
+                if isinstance(inner, exp.Is) and isinstance(inner.expression, exp.Null):
+                    condition_expr = inner.this
+
+            if isinstance(condition_expr, exp.ObjectId):
+                object_type = condition_expr.expression
+                if (
+                    (object_type is None or object_type.name.upper() == "U")
+                    and isinstance(true_block, exp.Block)
+                    and isinstance(drop := true_block.expressions[0], exp.Drop)
+                ):
+                    drop.set("exists", True)
+                    return self.sql(drop)
+
+            return super().ifblock_sql(expression)

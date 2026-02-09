@@ -1,4 +1,4 @@
-from sqlglot import exp, parse, parse_one
+from sqlglot import exp, parse_one
 from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -28,7 +28,10 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("ROUND(x, 1, 0)")
-        self.validate_identity("EXEC MyProc @id=7, @name='Lochristi'", check_command_warning=True)
+        self.validate_identity(
+            "EXEC MyProc @id = 7, @name = 'Lochristi'",
+            "EXECUTE MyProc @id = 7, @name = 'Lochristi'",
+        )
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
@@ -314,9 +317,17 @@ class TestTSQL(Validator):
         ).args["alias"].assert_is(exp.Identifier)
 
         self.validate_all(
-            "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL DROP TABLE #TempTableName",
+            "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL BEGIN DROP TABLE #TempTableName; END",
             write={
-                "tsql": "DROP TABLE IF EXISTS #TempTableName",
+                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NULL BEGIN DROP TABLE #TempTableName; END",
+                "spark": "DROP TABLE IF EXISTS TempTableName",
+            },
+        )
+
+        self.validate_all(
+            "IF OBJECT_ID('tempdb.dbo.#TempTableName') IS NOT NULL BEGIN DROP TABLE #TempTableName; END",
+            write={
+                "tsql": "IF NOT OBJECT_ID('tempdb.dbo.#TempTableName') IS NULL BEGIN DROP TABLE #TempTableName; END",
                 "spark": "DROP TABLE IF EXISTS TempTableName",
             },
         )
@@ -538,6 +549,9 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("CEILING(2)")
+
+        self.validate_identity("OBJECT_ID('foo')")
+        self.validate_identity("OBJECT_ID('foo', 'U')")
 
     def test_option(self):
         possible_options = [
@@ -1062,8 +1076,8 @@ FOR XML
             "CREATE NONCLUSTERED COLUMNSTORE INDEX index_name ON foo.bar",
         )
         self.validate_identity(
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
-            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
+            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7; END",
+            "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7; END",
         )
         self.validate_identity(
             "INSERT INTO Production.UpdatedInventory SELECT ProductID, LocationID, NewQty, PreviousQty FROM (MERGE INTO Production.ProductInventory AS pi USING (SELECT ProductID, SUM(OrderQty) FROM Sales.SalesOrderDetail AS sod INNER JOIN Sales.SalesOrderHeader AS soh ON sod.SalesOrderID = soh.SalesOrderID AND soh.OrderDate BETWEEN '20030701' AND '20030731' GROUP BY ProductID) AS src(ProductID, OrderQty) ON pi.ProductID = src.ProductID WHEN MATCHED AND pi.Quantity - src.OrderQty >= 0 THEN UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty WHEN MATCHED AND pi.Quantity - src.OrderQty <= 0 THEN DELETE OUTPUT $action, Inserted.ProductID, Inserted.LocationID, Inserted.Quantity AS NewQty, Deleted.Quantity AS PreviousQty) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty) WHERE Action = 'UPDATE'",
@@ -1315,60 +1329,6 @@ WHERE
         self.validate_identity("BEGIN")
         self.validate_identity("END")
         self.validate_identity("SET XACT_ABORT ON")
-
-    def test_fullproc(self):
-        sql = """
-            CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
-                @Loadid INTEGER
-               ,@NumberOfRows INTEGER
-            WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION
-            AS
-            BEGIN
-                SET XACT_ABORT ON;
-
-                DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, getdate(), 104);
-                DECLARE @DWH_DateModified DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104);
-                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (CURRENT_USER());
-                DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER);
-
-                DECLARE @SalesAmountBefore float;
-                SELECT @SalesAmountBefore=SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] S;
-            END
-        """
-
-        expected_sqls = [
-            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
-            "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
-            "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @SalesAmountBefore AS FLOAT",
-            "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
-            "END",
-        ]
-
-        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
-
-        sql = """
-            CREATE PROC [dbo].[transform_proc] AS
-
-            DECLARE @CurrentDate VARCHAR(20);
-            SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120);
-
-            CREATE TABLE [target_schema].[target_table]
-            (a INTEGER)
-            WITH (DISTRIBUTION = REPLICATE, HEAP);
-        """
-
-        expected_sqls = [
-            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20)",
-            "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
-            "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
-        ]
-
-        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
-            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
     def test_charindex(self):
         self.validate_identity(
@@ -2431,3 +2391,250 @@ FROM OPENJSON(@json) WITH (
                 expr = self.parse_one(sql)
                 self.assertIsInstance(expr, exp.Insert)
                 self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
+
+    def test_procedures(self):
+        self.validate_identity("SELECT 1; SELECT 2").assert_is(exp.Block)
+
+        sqls = [
+            "EXECUTE test @in1 = 100, @in2",
+            "EXECUTE sp_executesql @payload, @param_str, @param1 = value1, @param2 = value2",
+            "EXECUTE sp_executesql @stmt = @payload, @params = param_str, @param1 = value1, @param2 = value2",
+            """
+            CREATE
+            PROCEDURE test1
+            AS
+            BEGIN
+                SELECT 1;
+                SELECT 2;
+                SELECT 3;
+            END
+            """,
+            """
+            CREATE PROCEDURE test2(@in1 INTEGER, @c CHAR(1))
+            AS
+            BEGIN
+                IF @in1 > 1 AND @c = 'c'
+                BEGIN
+                    SELECT col1 FROM t WHERE t.col2 = @in1;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER)
+            AS
+            BEGIN
+                SELECT 1;
+                IF @in1 > 1
+                BEGIN
+                    SELECT 1;
+                    SELECT 2;
+                END;
+                ELSE
+                BEGIN
+                    SELECT 3;
+                    SELECT 4;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER)
+            AS
+            BEGIN
+                IF @in1 > 1
+                BEGIN
+                    SELECT col1 FROM t WHERE t.col2 = @in1;
+                    SELECT 100;
+                END;
+                IF @in1 > 1
+                BEGIN
+                    SELECT col2 FROM t1;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER)
+            AS
+            BEGIN
+                DECLARE @q1 AS INTEGER, @q2 AS INTEGER, @q3 AS INTEGER;
+                SET @q1 = (SELECT MAX(col1) FROM t1);
+                SET @q2 = (SELECT MIN(col1) FROM t2);
+                IF @in1 > 1
+                BEGIN
+                    SELECT 3;
+                    SET @q3 = (SELECT MAX(col2) FROM t1);
+                    IF @q3 < 5
+                    BEGIN
+                        SELECT 1;
+                        SELECT 2;
+                    END;
+                END;
+                IF @in1 > 1
+                BEGIN
+                    SELECT 1;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER)
+            AS
+            BEGIN
+                SELECT 1;
+                IF @in1 > 1
+                BEGIN
+                    SELECT 3;
+                END;
+                ELSE
+                BEGIN
+                    SELECT 4;
+                    SELECT 5;
+                    IF @in1 < 0
+                    BEGIN
+                        SELECT 1;
+                    END;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER, @c CHAR(1))
+            AS
+            BEGIN
+                WHILE @in1 > 100
+                BEGIN
+                    SELECT col1 FROM t WHERE t.col2 = @in1 AND t.col3 = @c;
+                    SET @in1 = @in1 - 1;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE test(@in1 INTEGER)
+            AS
+            BEGIN
+                DECLARE @temp AS INTEGER;
+                WHILE @in1 > 100
+                BEGIN
+                    SET @temp = (SELECT MAX(col1) FROM t WHERE t.col2 = @in1);
+                    SET @in1 = @in1 - @temp;
+                END;
+                SET @in1 = 50;
+                WHILE @in1 > 5
+                BEGIN
+                    SELECT col2 FROM t1 WHERE t1.col3 = @in1;
+                    SET @in1 = @in1 - 1;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE dbo.test(@in1 INTEGER = 5, @in2 VARCHAR(40) = 'empty', @in3 INTEGER = 1)
+            AS
+            BEGIN
+                INSERT INTO t (id, col1, col2) VALUES (@in1, @in2, @in3);
+            END;
+            CREATE PROCEDURE c.s.test2
+            AS
+            BEGIN
+                EXECUTE dbo.test;
+                DECLARE @i AS INTEGER = 0;
+                WHILE @i < 100
+                BEGIN
+                    EXECUTE test @in2 = 'temp_new';
+                    SET @i = @i + 100;
+                END;
+            END
+            """,
+            """
+            CREATE PROCEDURE DropTableIfExists
+                @TableName NVARCHAR(128)
+            AS
+            BEGIN
+                DECLARE @SQL AS NVARCHAR(MAX);
+                SET @SQL = N'DROP TABLE IF EXISTS [' + @TableName + ']';
+                EXECUTE sp_executesql 'SELECT 1 AS c';
+                EXECUTE sp_executesql N'SELECT 1 AS c';
+                EXECUTE sp_executesql @SQL;
+                EXECUTE sp_executesql @stmt = @SQL;
+            END
+            """,
+            """
+            CREATE PROCEDURE test
+            AS
+            BEGIN
+                DECLARE @x AS INTEGER = 100;
+                IF @x > ANY (SELECT 100)
+                BEGIN
+                    SET @x = 100;
+                END;
+                ELSE
+                BEGIN
+                    SET @x = 0;
+                END;
+            END
+            """,
+        ]
+        for sql in sqls:
+            ast = parse_one(sql, read="tsql")
+            expected_sql = " ".join(line for line in (l.strip() for l in sql.splitlines()) if line)
+            roundtripped_sql = ast.sql("tsql")
+            with self.subTest(f"Testing: {sql}"):
+                self.assertEqual(expected_sql, roundtripped_sql)
+
+        self.validate_identity(
+            "EXEC sp_executesql @payload", "EXECUTE sp_executesql @payload"
+        ).assert_is(exp.ExecuteSql)
+
+        sql = """
+            CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
+                @Loadid INTEGER
+               ,@NumberOfRows INTEGER
+            WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION
+            AS
+            BEGIN
+                SET XACT_ABORT ON;
+
+                DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, getdate(), 104);
+                DECLARE @DWH_DateModified DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104);
+                DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (CURRENT_USER());
+                DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER);
+
+                DECLARE @SalesAmountBefore float;
+                SELECT @SalesAmountBefore=SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] S;
+            END
+        """
+
+        expected_sqls = [
+            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
+            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
+            "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @SalesAmountBefore AS FLOAT",
+            "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
+            "END",
+        ]
+
+        for expr, expected_sql in zip(parse_one(sql, read="tsql").expressions, expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+
+        sql = """
+            CREATE PROC [dbo].[transform_proc] AS
+
+            DECLARE @CurrentDate VARCHAR(20);
+            SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120);
+
+            CREATE TABLE [target_schema].[target_table]
+            (a INTEGER)
+            WITH (DISTRIBUTION = REPLICATE, HEAP);
+        """
+
+        expected_sqls = [
+            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20)",
+            "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
+            "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
+        ]
+
+        for expr, expected_sql in zip(parse_one(sql, read="tsql").expressions, expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+
+        self.validate_identity(
+            "IF ((@x = @y AND GETDATE() = GETDATE()) OR (GETDATE() = @t)) BEGIN SET @query_result = (SELECT MAX(id) + 1 FROM t); END",
+            "IF (@x = @y AND GETDATE() = GETDATE()) OR (GETDATE() = @t) BEGIN SET @query_result = (SELECT MAX(id) + 1 FROM t); END",
+        )

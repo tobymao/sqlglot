@@ -1566,7 +1566,6 @@ class Create(DDL):
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
-        "end": False,
         "clone": False,
         "concurrently": False,
         "clustered": False,
@@ -7346,6 +7345,10 @@ class OpenJSON(Func):
     arg_types = {"this": True, "path": False, "expressions": False}
 
 
+class ObjectId(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class JSONBContains(Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
@@ -8560,6 +8563,38 @@ class TableColumn(Expression):
 # https://www.postgresql.org/docs/current/typeconv-func.html
 # https://www.postgresql.org/docs/current/xfunc-sql.html
 class Variadic(Expression):
+    pass
+
+
+class StoredProcedure(Expression):
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
+
+
+class Block(Expression):
+    arg_types = {"expressions": True}
+
+
+class IfBlock(Expression):
+    arg_types = {"this": True, "true": True, "false": False}
+
+
+class WhileBlock(Expression):
+    arg_types = {"this": True, "body": True}
+
+
+class EndStatement(Expression):
+    arg_types = {}
+
+
+class Execute(Expression):
+    arg_types = {"this": True, "expressions": False}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+
+class ExecuteSql(Execute):
     pass
 
 

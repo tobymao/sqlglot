@@ -6909,7 +6909,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
-        this = self._parse_disjunction()
+        this = self._parse_assignment()
 
         if not self._match(TokenType.ALIAS):
             if self._match(TokenType.COMMA):

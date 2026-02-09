@@ -13,6 +13,11 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity(
+            "cast(notEmpty(report_task_id)?report_task_id:'-1' AS text)",
+            "CAST(CASE WHEN notEmpty(report_task_id) THEN report_task_id ELSE '-1' END AS String)",
+        )
+
         expr = quote_identifiers(self.parse_one("{start_date:String}"), dialect="clickhouse")
         self.assertEqual(expr.sql("clickhouse"), "{start_date: String}")
 

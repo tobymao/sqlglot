@@ -40,7 +40,13 @@ EXPRESSION_METADATA = {
             exp.TimeToUnix,
         }
     },
-    exp.Reverse: {"returns": exp.DataType.Type.VARCHAR},
+      **{
+        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        for expr_type in {
+            exp.Format,
+            exp.Reverse,
+        }
+    },
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

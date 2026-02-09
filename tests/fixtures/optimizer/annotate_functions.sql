@@ -5972,6 +5972,10 @@ RANDOM();
 DOUBLE;
 
 # dialect: duckdb
+FORMAT('Benchmark "{}" took {} seconds', 'CSV', 42);
+VARCHAR;
+
+# dialect: duckdb
 QUARTER(tbl.date_col);
 BIGINT;
 

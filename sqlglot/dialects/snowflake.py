@@ -1045,6 +1045,7 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_alter(),
             "SESSION": lambda self: self._parse_alter_session(),
             "UNSET": lambda self: self.expression(
                 exp.Set,

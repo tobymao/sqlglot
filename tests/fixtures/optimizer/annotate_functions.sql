@@ -6056,6 +6056,14 @@ TIME_BUCKET(tbl.interval_col, tbl.date_col);
 DATE;
 
 # dialect: duckdb
+TIME_BUCKET(tbl.interval_col, tbl.timestamp_col, tbl.interval_col);
+TIMESTAMP;
+
+# dialect: duckdb
+TIME_BUCKET(tbl.interval_col, tbl.timestamp_col);
+TIMESTAMP;
+
+# dialect: duckdb
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 VARCHAR;
 

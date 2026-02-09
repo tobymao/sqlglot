@@ -1963,7 +1963,6 @@ class DuckDB(Dialect):
                 e.args.get("replacement"),
                 regexp_replace_global_modifier(e),
             ),
-            exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpILike: lambda self, e: self.func(
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
@@ -3129,6 +3128,44 @@ class DuckDB(Dialect):
                 .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
             )
             return self.sql(case)
+
+        def _validate_regexp_flags(self, flags: t.Optional[exp.Expression]) -> t.Optional[str]:
+            if not flags:
+                return None
+
+            if not isinstance(flags, exp.Literal) or not flags.is_string:
+                self.unsupported("Non-literal regexp flags are not fully supported in DuckDB")
+                return None
+
+            flag_str = flags.this
+            if "e" in flag_str:
+                self.unsupported("'e' (extract) flag is not supported in DuckDB")
+                flag_str = flag_str.replace("e", "")
+
+            return flag_str
+
+        def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+            this = expression.this
+            pattern = expression.expression
+            flag = expression.args.get("flag")
+
+            if not expression.args.get("full_match"):
+                return self.func("REGEXP_MATCHES", this, pattern, flag)
+
+            validated_flags = self._validate_regexp_flags(flag)
+
+            anchored_pattern = exp.Concat(
+                expressions=[
+                    exp.Literal.string("^("),
+                    pattern,
+                    exp.Literal.string(")$"),
+                ]
+            )
+
+            if validated_flags:
+                flag = exp.Literal.string(validated_flags)
+
+            return self.func("REGEXP_MATCHES", this, anchored_pattern, flag)
 
         def sha2_sql(self, expression: exp.SHA2) -> str:
             length = expression.text("length")

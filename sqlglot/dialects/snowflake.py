@@ -922,7 +922,12 @@ class Snowflake(Dialect):
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REPLACE": build_replace_with_optional_replacement,
-            "RLIKE": exp.RegexpLike.from_arg_list,
+            "RLIKE": lambda args: exp.RegexpLike(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                flag=seq_get(args, 2),
+                full_match=True,
+            ),
             "ROUND": _build_round,
             "SHA1_BINARY": exp.SHA1Digest.from_arg_list,
             "SHA1_HEX": exp.SHA.from_arg_list,

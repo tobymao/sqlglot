@@ -161,6 +161,9 @@ BOOLEAN;
 CURRENT_CATALOG();
 VARCHAR;
 
+CURRENT_USER();
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;
@@ -692,6 +695,18 @@ ARRAY<STRING>;
 # dialect: spark2, spark, databricks
 FROM_UTC_TIMESTAMP(tbl.timestamp_col, tbl.str_col);
 TIMESTAMP;
+
+# dialect: spark2, spark, databricks
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+DATE;
+
+# dialect: hive
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+FILTER(tbl.array_col, x -> x > 2);
+ARRAY<STRING>;
 
 --------------------------------------
 -- BigQuery
@@ -5788,6 +5803,10 @@ DOUBLE;
 # dialect: mysql
 VERSION();
 VARCHAR;
+
+# dialect: mysql
+CURRENT_TIMESTAMP();
+DATETIME;
 
 --------------------------------------
 -- DuckDB

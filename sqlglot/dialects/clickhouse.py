@@ -30,6 +30,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
 from sqlglot.generator import unsupported_args
+from sqlglot.typing.clickhouse import EXPRESSION_METADATA
 
 DATEΤΙΜΕ_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
@@ -242,6 +243,8 @@ class ClickHouse(Dialect):
 
     # https://github.com/ClickHouse/ClickHouse/issues/33935#issue-1112165779
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
+
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     UNESCAPED_SEQUENCES = {
         "\\0": "\0",

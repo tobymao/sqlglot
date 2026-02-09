@@ -12,6 +12,7 @@ EXPRESSION_METADATA = {
             exp.Day,
             exp.DayOfMonth,
             exp.DayOfWeek,
+            exp.DayOfWeekIso,
             exp.DayOfYear,
             exp.Hour,
             exp.Length,
@@ -26,6 +27,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.INT128}
         for expr_type in {
+            exp.CountIf,
             exp.Factorial,
         }
     },
@@ -38,7 +40,13 @@ EXPRESSION_METADATA = {
             exp.TimeToUnix,
         }
     },
-    exp.Format: {"returns": exp.DataType.Type.VARCHAR},
+      **{
+        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        for expr_type in {
+            exp.Format,
+            exp.Reverse,
+        }
+    },
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

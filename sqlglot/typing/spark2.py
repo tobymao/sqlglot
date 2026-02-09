@@ -58,15 +58,19 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Right,
         }
     },
+    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
+    exp.AddMonths: {"returns": exp.DataType.Type.DATE},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
             self, e, "expressions", target_type=exp.DataType.Type.TEXT
         )
     },
+    exp.NextDay: {"returns": exp.DataType.Type.DATE},
     exp.Pad: {
         "annotator": lambda self, e: _annotate_by_similar_args(
             self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
         )
     },
     exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.ArrayFilter: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

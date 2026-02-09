@@ -1359,6 +1359,47 @@ def _xor_sql(self: DuckDB.Generator, expression: exp.Xor) -> str:
     )
 
 
+def _explode_to_unnest_sql(self: DuckDB.Generator, expression: exp.Lateral) -> str:
+    """Handle LATERAL VIEW EXPLODE/INLINE conversion to UNNEST for DuckDB."""
+    explode = expression.this
+
+    if isinstance(explode, exp.Inline):
+        # For INLINE, create CROSS JOIN LATERAL (SELECT UNNEST(..., max_depth := 2))
+        # Build the UNNEST call with DuckDB-style named parameter
+        unnest_sql = f"UNNEST({self.sql(explode.this)}, max_depth := 2)"
+        lateral_subquery = f"(SELECT {unnest_sql})"
+
+        # Apply alias if present
+        alias = expression.args.get("alias")
+        alias_sql = ""
+        if alias:
+            # Check if there's a table alias (alias.this)
+            table_alias = alias.this.name if alias.this else None
+            columns = alias.args.get("columns")
+
+            if columns:
+                column_list = ", ".join(col.name for col in columns)
+                if table_alias:
+                    # Table alias with columns: AS table(col1, col2)
+                    alias_sql = f" AS {table_alias}({column_list})"
+                else:
+                    # No table alias, only column names: generate deterministic table name
+                    # AS _t123(col1, col2)
+                    import hashlib
+
+                    column_hash = hashlib.md5(column_list.encode()).hexdigest()[:8]
+                    table_name = f"_t_{column_hash}"
+                    alias_sql = f" AS {table_name}({column_list})"
+            else:
+                # Only table alias, no columns: AS table
+                alias_sql = f" AS {table_alias}" if table_alias else ""
+
+        return f" CROSS JOIN LATERAL {lateral_subquery}{alias_sql}"
+
+    # For other cases, use the standard conversion
+    return explode_to_unnest_sql(self, expression)
+
+
 def _sha_sql(
     self: DuckDB.Generator,
     expression: exp.Expression,
@@ -1933,7 +1974,7 @@ class DuckDB(Dialect):
             exp.JSONExtractArray: _json_extract_value_array_sql,
             exp.JSONFormat: _json_format_sql,
             exp.JSONValueArray: _json_extract_value_array_sql,
-            exp.Lateral: explode_to_unnest_sql,
+            exp.Lateral: _explode_to_unnest_sql,
             exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
             exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
             exp.Seq1: lambda self, e: _seq_sql(self, e, 1),

@@ -94,9 +94,6 @@ VARCHAR;
 TO_BASE64(tbl.bytes_col);
 VARCHAR;
 
-UNIX_DATE(tbl.date_col);
-BIGINT;
-
 UNIX_SECONDS(tbl.timestamp_col);
 BIGINT;
 
@@ -670,6 +667,10 @@ STRING;
 # dialect: spark, databricks
 OVERLAY(tbl.bin_col PLACING tbl.bin_col FROM tbl.int_col FOR tbl.int_col);
 BINARY;
+
+# dialect: spark, databricks
+UNIX_DATE(tbl.date_col);
+INT;
 
 # dialect: hive, spark2, spark, databricks
 REVERSE(tbl.str_col);
@@ -2210,6 +2211,10 @@ DATETIME;
 # dialect: bigquery
 DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 30 MINUTE);
 DATETIME;
+
+# dialect: bigquery
+UNIX_DATE(tbl.date_col);
+BIGINT;
 
 --------------------------------------
 -- Snowflake

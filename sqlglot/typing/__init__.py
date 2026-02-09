@@ -30,7 +30,6 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.ArraySize,
             exp.CountIf,
             exp.Int64,
-            exp.UnixDate,
             exp.UnixSeconds,
             exp.UnixMicros,
             exp.UnixMillis,
@@ -146,6 +145,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.StrPosition,
             exp.TsOrDiToDi,
             exp.Quarter,
+            exp.UnixDate,
         }
     },
     **{

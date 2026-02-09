@@ -1320,3 +1320,11 @@ FROM foo""",
                     this = literal.this
 
                 self.assertEqual(this, expected_this)
+
+    def test_update_positions_empty_meta(self):
+        expr1 = exp.Column(this="a")
+        expr2 = exp.Column(this="b")
+        expr2.meta.clear()
+
+        expr1.update_positions(expr2)
+        assert expr1.meta == {}

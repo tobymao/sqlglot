@@ -26,6 +26,7 @@ EXPRESSION_METADATA = {
             exp.CurrentDatabase,
             exp.CurrentSchema,
             exp.Hex,
+            exp.NextDay,
             exp.Repeat,
             exp.Replace,
             exp.Soundex,

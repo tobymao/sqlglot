@@ -680,6 +680,14 @@ ARRAY<STRING>;
 RIGHT(tbl.str_col, tbl.int_col);
 STRING;
 
+# dialect: spark2, spark, databricks
+NEXT_DAY(tbl.date_col, tbl.str_col);
+DATE;
+
+# dialect: hive
+NEXT_DAY(tbl.date_col, tbl.str_col);
+VARCHAR;
+
 # dialect: hive, spark2, spark, databricks
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 STRING; 

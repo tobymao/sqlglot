@@ -70,4 +70,5 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         )
     },
     exp.Substring: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.ArrayFilter: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

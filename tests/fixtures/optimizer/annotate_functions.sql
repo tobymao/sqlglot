@@ -692,6 +692,14 @@ NEXT_DAY(tbl.date_col, tbl.str_col);
 VARCHAR;
 
 # dialect: hive, spark2, spark, databricks
+DAYOFWEEK(tbl.date_col);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+DAYOFMONTH(tbl.date_col);
+INT;
+
+# dialect: hive, spark2, spark, databricks
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 STRING; 
 

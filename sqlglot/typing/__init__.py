@@ -131,6 +131,9 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.BitLength,
             exp.Ceil,
             exp.DatetimeDiff,
+            exp.DayOfMonth,
+            exp.DayOfWeek,
+            exp.DayOfYear,
             exp.Getbit,
             exp.Hour,
             exp.TimestampDiff,
@@ -189,10 +192,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         expr_type: {"returns": exp.DataType.Type.TINYINT}
         for expr_type in {
             exp.Day,
-            exp.DayOfMonth,
-            exp.DayOfWeek,
             exp.DayOfWeekIso,
-            exp.DayOfYear,
             exp.Month,
             exp.Week,
             exp.WeekOfYear,

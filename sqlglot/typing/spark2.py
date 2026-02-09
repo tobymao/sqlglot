@@ -58,6 +58,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Right,
         }
     },
+    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
     exp.AddMonths: {"returns": exp.DataType.Type.DATE},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(

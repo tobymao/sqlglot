@@ -693,6 +693,10 @@ SPLIT(tbl.str_col, tbl.str_col);
 ARRAY<STRING>;
 
 # dialect: spark2, spark, databricks
+FROM_UTC_TIMESTAMP(tbl.timestamp_col, tbl.str_col);
+TIMESTAMP;
+
+# dialect: spark2, spark, databricks
 ADD_MONTHS(tbl.date_col, tbl.int_col);
 DATE;
 

@@ -24,6 +24,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.AddMonths,
             exp.CurrentDatabase,
+            exp.CurrentUser,
             exp.CurrentSchema,
             exp.Hex,
             exp.NextDay,

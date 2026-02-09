@@ -1587,6 +1587,7 @@ class DuckDB(Dialect):
             "STRUCT_PACK": exp.Struct.from_arg_list,
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
+            "TODAY": exp.CurrentDate.from_arg_list,
             "TIME_BUCKET": exp.DateBin.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,

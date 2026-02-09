@@ -16,7 +16,6 @@ EXPRESSION_METADATA = {
         exp_type: {"returns": exp.DataType.Type.INT}
         for exp_type in {
             exp.ArraySize,
-            exp.UnixDate,
         }
     },
     **{

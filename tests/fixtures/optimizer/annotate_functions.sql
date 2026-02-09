@@ -91,9 +91,6 @@ VARCHAR;
 TO_BASE64(tbl.bytes_col);
 VARCHAR;
 
-UNIX_DATE(tbl.date_col);
-BIGINT;
-
 UNIX_SECONDS(tbl.timestamp_col);
 BIGINT;
 
@@ -2176,6 +2173,10 @@ DATETIME;
 # dialect: bigquery
 DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 30 MINUTE);
 DATETIME;
+
+# dialect: bigquery
+UNIX_DATE(tbl.date_col);
+BIGINT;
 
 --------------------------------------
 -- Snowflake

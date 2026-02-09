@@ -214,6 +214,7 @@ EXPRESSION_METADATA = {
             exp.RangeBucket,
             exp.RegexpInstr,
             exp.RowNumber,
+            exp.UnixDate,
         }
     },
     **{

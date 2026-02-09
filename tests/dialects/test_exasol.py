@@ -15,6 +15,9 @@ class TestExasol(Validator):
         self.validate_identity("SELECT SYSTIMESTAMP()")
         self.validate_identity("SELECT SYSTIMESTAMP(6)")
         self.validate_identity("SELECT CURDATE()", "SELECT CURRENT_DATE")
+        self.validate_identity("SELECT USER", "SELECT CURRENT_USER")
+        self.validate_identity("SELECT USER()", "SELECT CURRENT_USER")
+        self.validate_identity("SELECT CURRENT_USER", "SELECT CURRENT_USER")
         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
 

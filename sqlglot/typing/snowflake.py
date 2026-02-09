@@ -470,6 +470,9 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DataType.Type.TINYINT}
         for expr_type in {
+            exp.DayOfMonth,
+            exp.DayOfWeek,
+            exp.DayOfYear,
             exp.Quarter,
         }
     },

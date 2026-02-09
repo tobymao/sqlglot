@@ -8,6 +8,7 @@ from sqlglot import (
     TokenError,
     UnsupportedError,
     exp,
+    parse,
     transpile,
     parse_one,
 )
@@ -2130,7 +2131,7 @@ WHERE
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
-            statement = parse_one(
+            statements = parse(
                 """
             BEGIN
               DECLARE 1;
@@ -2142,7 +2143,7 @@ WHERE
             )
 
             for actual, expected in zip(
-                statement.expressions,
+                statements,
                 ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END"),
             ):
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
@@ -2150,7 +2151,7 @@ WHERE
             self.assertIn("unsupported syntax", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
-            statement = parse_one(
+            statements = parse(
                 """
                 BEGIN CALL `project_id.dataset_id.stored_procedure_id`();
                 EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP();
@@ -2165,13 +2166,13 @@ WHERE
                 "END",
             )
 
-            for actual, expected in zip(statement.expressions, expected_statements):
+            for actual, expected in zip(statements, expected_statements):
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
             self.assertIn("unsupported syntax", cm.output[0])
 
         with self.assertLogs(helper_logger):
-            statement = parse_one(
+            statements = parse(
                 """
                 BEGIN
                     DECLARE MY_VAR INT64 DEFAULT 1;
@@ -2196,7 +2197,7 @@ WHERE
                 "END",
             )
 
-            for actual, expected in zip(statement.expressions, expected_statements):
+            for actual, expected in zip(statements, expected_statements):
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
         with self.assertLogs(helper_logger) as cm:
@@ -2226,23 +2227,23 @@ WHERE
             )
 
         with self.assertLogs(parser_logger) as cm:
-            for_in_stmt = parse_one(
+            for_in_stmts = parse(
                 "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
                 read="bigquery",
             )
             self.assertEqual(
-                [s.sql(dialect="bigquery") for s in for_in_stmt.expressions],
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
                 ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
             )
             self.assertIn("'END FOR'", cm.output[0])
 
         with self.assertLogs(parser_logger) as cm:
-            for_in_stmt = parse_one(
+            for_in_stmts = parse(
                 'FOR record IN (SELECT word FROM shakespeare) DO BEGIN SET x = "SELECT 1"; EXECUTE IMMEDIATE x; END; END FOR;',
                 read="bigquery",
             )
             self.assertEqual(
-                [s.sql(dialect="bigquery") for s in for_in_stmt.expressions],
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
                 [
                     'FOR record IN (SELECT word FROM shakespeare) DO BEGIN SET x = "SELECT 1"',
                     "EXECUTE IMMEDIATE x",

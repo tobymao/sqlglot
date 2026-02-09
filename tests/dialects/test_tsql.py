@@ -2385,6 +2385,8 @@ FROM OPENJSON(@json) WITH (
                 self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
 
     def test_procedures(self):
+        self.validate_identity("SELECT 1; SELECT 2").assert_is(exp.Block)
+
         sqls = [
             "EXECUTE test @in1 = 100, @in2",
             "EXECUTE sp_executesql @payload, @param_str, @param1 = value1, @param2 = value2",

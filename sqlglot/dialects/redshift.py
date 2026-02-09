@@ -146,7 +146,7 @@ class Redshift(Postgres):
             if (
                 exclude
                 and isinstance(expr := projections[-1], exp.Alias)
-                and expr.alias == "EXCLUDE"
+                and expr.alias.upper() == "EXCLUDE"
             ):
                 projections[-1] = expr.this.pop()
 

@@ -76,6 +76,9 @@ STRING;
 ANY_VALUE(tbl.array_col);
 ARRAY<STRING>;
 
+CURRENT_SCHEMA();
+VARCHAR;
+
 CHR(65);
 VARCHAR;
 
@@ -159,6 +162,9 @@ ISNAN(tbl.float_col);
 BOOLEAN;
 
 CURRENT_CATALOG();
+VARCHAR;
+
+CURRENT_USER();
 VARCHAR;
 
 # dialect: snowflake
@@ -677,6 +683,14 @@ ARRAY<STRING>;
 RIGHT(tbl.str_col, tbl.int_col);
 STRING;
 
+# dialect: spark2, spark, databricks
+NEXT_DAY(tbl.date_col, tbl.str_col);
+DATE;
+
+# dialect: hive
+NEXT_DAY(tbl.date_col, tbl.str_col);
+VARCHAR;
+
 # dialect: hive, spark2, spark, databricks
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 STRING; 
@@ -691,6 +705,22 @@ ARRAY<STRING>;
 
 # dialect: hive, spark2, spark, databricks
 SPLIT(tbl.str_col, tbl.str_col);
+ARRAY<STRING>;
+
+# dialect: spark2, spark, databricks
+FROM_UTC_TIMESTAMP(tbl.timestamp_col, tbl.str_col);
+TIMESTAMP;
+
+# dialect: spark2, spark, databricks
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+DATE;
+
+# dialect: hive
+ADD_MONTHS(tbl.date_col, tbl.int_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+FILTER(tbl.array_col, x -> x > 2);
 ARRAY<STRING>;
 
 --------------------------------------
@@ -5789,6 +5819,10 @@ DOUBLE;
 VERSION();
 VARCHAR;
 
+# dialect: mysql
+CURRENT_TIMESTAMP();
+DATETIME;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------
@@ -5934,8 +5968,16 @@ ISINF(tbl.float_col);
 BOOLEAN;
 
 # dialect: duckdb
+REVERSE(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
 RANDOM();
 DOUBLE;
+
+# dialect: duckdb
+FORMAT('Benchmark "{}" took {} seconds', 'CSV', 42);
+VARCHAR;
 
 # dialect: duckdb
 QUARTER(tbl.date_col);
@@ -5994,6 +6036,10 @@ TO_DAYS(tbl.int_col);
 INTERVAL;
 
 # dialect: duckdb
+ISODOW(tbl.date_col);
+BIGINT;
+
+# dialect: duckdb
 BIT_LENGTH(tbl.str_col);
 BIGINT;
 
@@ -6008,6 +6054,10 @@ BIGINT;
 # dialect: duckdb
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 VARCHAR;
+
+# dialect: duckdb
+COUNTIF(tbl.int_col > tbl.int_col);
+HUGEINT;
 
 --------------------------------------
 -- Presto / Trino

@@ -25,6 +25,7 @@ class TestSingleStore(Validator):
 
         self.validate_identity("JSON_KEYS(json_doc, 'a', 'b', 'c', 2)")
         self.validate_identity("SELECT VERSION()")
+        self.validate_identity("SELECT CURTIME()", "SELECT CURRENT_TIME()")
 
     def test_byte_strings(self):
         self.validate_identity("SELECT e'text'")

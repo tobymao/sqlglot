@@ -3947,6 +3947,8 @@ class Lock(Expression):
     arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
+# In Redshift, * and EXCLUDE can be separated with column projections (e.g., SELECT *, col1 EXCLUDE (col2))
+# The "exclude" arg enables correct parsing and transpilation of this clause
 class Select(Query):
     arg_types = {
         "with_": False,
@@ -3957,6 +3959,7 @@ class Select(Query):
         "into": False,
         "from_": False,
         "operation_modifiers": False,
+        "exclude": False,
         **QUERY_MODIFIERS,
     }
 

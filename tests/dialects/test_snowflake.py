@@ -2972,6 +2972,9 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("SELECT CURRENT_DATABASE()")
+        self.validate_identity("SELECT CURRENT_SCHEMA()")
+
     def test_null_treatment(self):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
@@ -3982,10 +3985,10 @@ class TestSnowflake(Validator):
         for action in ("SET", "DROP"):
             with self.subTest(f"ALTER COLUMN {action} NOT NULL"):
                 self.validate_all(
-                    f"""
-                        ALTER TABLE a
-                        ALTER COLUMN my_column {action} NOT NULL;
-                    """,
+                    f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
+                    read={
+                        "snowflake": f"ALTER TABLE a MODIFY COLUMN my_column {action} NOT NULL",
+                    },
                     write={
                         "snowflake": f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
                         "duckdb": f"ALTER TABLE a ALTER COLUMN my_column {action} NOT NULL",
@@ -5254,6 +5257,10 @@ FROM SEMANTIC_VIEW(
             pretty=True,
         )
 
+        self.validate_identity(
+            "SELECT col1, col2, metric1 FROM SEMANTIC_VIEW(mydb.myschema.my_semantic_view METRICS metric1 DIMENSIONS col1, DATE_TRUNC('MONTH', timestamp_col) AS col2) ORDER BY col1, col2 DESC"
+        )
+
     def test_get_extract(self):
         self.validate_all(
             "SELECT GET([4, 5, 6], 1)",
@@ -5945,9 +5952,3 @@ FROM SEMANTIC_VIEW(
                     prefix = natural + join_side + outer + " DIRECTED"
                     with self.subTest(f"Testing {prefix} JOIN"):
                         self.validate_identity(f"SELECT * FROM a {prefix} JOIN b USING (id)")
-
-    def test_current_database(self):
-        self.validate_identity("SELECT CURRENT_DATABASE()")
-
-    def test_current_schema(self):
-        self.validate_identity("SELECT CURRENT_SCHEMA()")

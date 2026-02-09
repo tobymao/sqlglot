@@ -3167,13 +3167,6 @@ class DuckDB(Dialect):
 
             return self.func("REGEXP_MATCHES", this, anchored_pattern, flag)
 
-        def sha2_sql(self, expression: exp.SHA2) -> str:
-            length = expression.text("length")
-            # DuckDB only supports SHA256, not SHA224/SHA384/SHA512
-            if length in ("224", "384", "512"):
-                self.unsupported(f"SHA2 with digest size {length} is not supported in DuckDB")
-            return self.func("SHA256", expression.this)
-
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:
             this = expression.this

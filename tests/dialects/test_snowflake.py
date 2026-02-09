@@ -191,8 +191,8 @@ class TestSnowflake(Validator):
             "JAROWINKLER_SIMILARITY('hello', 'world')",
             write={
                 "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
-                "duckdb": "JARO_WINKLER_SIMILARITY('hello', 'world')",
-                "clickhouse": "jaroWinklerSimilarity('hello', 'world')",
+                "duckdb": "JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world'))",
+                "clickhouse": "jaroWinklerSimilarity(UPPER('hello'), UPPER('world'))",
             },
         )
         self.validate_identity("SELECT TRANSLATE(column_name, 'abc', '123')")

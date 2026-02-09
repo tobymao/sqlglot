@@ -1491,7 +1491,9 @@ class Snowflake(Dialect):
             while self._curr and not self._match(TokenType.R_PAREN, advance=False):
                 if self._match_texts(("DIMENSIONS", "METRICS", "FACTS")):
                     keyword = self._prev.text.lower()
-                    kwargs[keyword] = self._parse_csv(self._parse_disjunction)
+                    kwargs[keyword] = self._parse_csv(
+                        lambda: self._parse_alias(self._parse_disjunction(), explicit=True)
+                    )
                 elif self._match_text_seq("WHERE"):
                     kwargs["where"] = self._parse_expression()
                 else:

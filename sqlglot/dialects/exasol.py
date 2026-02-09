@@ -379,7 +379,6 @@ class Exasol(Dialect):
         NO_PAREN_FUNCTIONS = {
             **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
-            TokenType.CURRENT_DATE: exp.CurrentDate,
             TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         }
 

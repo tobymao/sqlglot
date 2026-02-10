@@ -95,6 +95,7 @@ MAX_BIT_POSITION = exp.Literal.number(32768)
 # SEQ function constants
 _SEQ_BASE: exp.Expression = exp.maybe_parse("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
+_SEQ_BYTE_WIDTH = {exp.Seq1: 1, exp.Seq2: 2, exp.Seq4: 4, exp.Seq8: 8}
 
 
 def _apply_base64_alphabet_replacements(
@@ -689,7 +690,7 @@ def _seq_to_range_in_generator(expression: exp.Expression) -> exp.Expression:
 
     def replace_seq(node: exp.Expression) -> exp.Expression:
         if isinstance(node, (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8)):
-            byte_width = {exp.Seq1: 1, exp.Seq2: 2, exp.Seq4: 4, exp.Seq8: 8}[type(node)]
+            byte_width = _SEQ_BYTE_WIDTH[type(node)]
             return _build_seq_expression(exp.column("range"), byte_width, signed=node.name == "1")
         return node
 
@@ -3155,13 +3156,6 @@ class DuckDB(Dialect):
                 .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
             )
             return self.sql(case)
-
-        def sha2_sql(self, expression: exp.SHA2) -> str:
-            length = expression.text("length")
-            # DuckDB only supports SHA256, not SHA224/SHA384/SHA512
-            if length in ("224", "384", "512"):
-                self.unsupported(f"SHA2 with digest size {length} is not supported in DuckDB")
-            return self.func("SHA256", expression.this)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

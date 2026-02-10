@@ -1212,3 +1212,15 @@ TBLPROPERTIES (
         approx_quantile_expr.this.assert_is(exp.Distinct)
         approx_quantile_expr.args.get("quantile").assert_is(exp.Literal)
         approx_quantile_expr.args.get("accuracy").assert_is(exp.Literal)
+
+    def test_array_insert(self):
+        self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            read={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+            write={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+                "spark": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+        )

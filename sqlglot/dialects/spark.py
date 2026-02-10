@@ -219,6 +219,9 @@ class Spark(Spark2):
             exp.ArrayConstructCompact: lambda self, e: self.func(
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
             ),
+            exp.ArrayInsert: lambda self, e: self.func(
+                "ARRAY_INSERT", e.this, e.args.get("position"), e.expression
+            ),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
             exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.BitwiseAndAgg: rename_func("BIT_AND"),

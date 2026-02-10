@@ -1364,37 +1364,27 @@ def _explode_to_unnest_sql(self: DuckDB.Generator, expression: exp.Lateral) -> s
     explode = expression.this
 
     if isinstance(explode, exp.Inline):
-        # For INLINE, create CROSS JOIN LATERAL (SELECT UNNEST(..., max_depth := 2))
+        # For INLINE, create CROSS JOIN LATERAL (SELECT UNNEST(..., max_depth => 2))
         # Build the UNNEST call with DuckDB-style named parameter
-        unnest_sql = f"UNNEST({self.sql(explode.this)}, max_depth := 2)"
-        lateral_subquery = f"(SELECT {unnest_sql})"
+        unnest_expr = exp.Unnest(
+            expressions=[
+                explode.this,
+                exp.Kwarg(this=exp.var("max_depth"), expression=exp.Literal.number(2)),
+            ]
+        )
+        unnest_sql = self.sql(unnest_expr)
+        select_expr = exp.Paren(this=exp.Select(expressions=[unnest_sql]))
 
-        # Apply alias if present
-        alias = expression.args.get("alias")
-        alias_sql = ""
-        if alias:
-            # Check if there's a table alias (alias.this)
-            table_alias = alias.this.name if alias.this else None
-            columns = alias.args.get("columns")
+        alias_expr = expression.args.get("alias")
+        if alias_expr and not alias_expr.this:
+            # we need to provide a table name if not present
+            alias_expr.set("this", f"_u_{expression.index}")
 
-            if columns:
-                column_list = ", ".join(col.name for col in columns)
-                if table_alias:
-                    # Table alias with columns: AS table(col1, col2)
-                    alias_sql = f" AS {table_alias}({column_list})"
-                else:
-                    # No table alias, only column names: generate deterministic table name
-                    # AS _t123(col1, col2)
-                    import hashlib
+        transformed_lateral_expr = exp.Lateral(this=select_expr, alias=alias_expr)
 
-                    column_hash = hashlib.md5(column_list.encode()).hexdigest()[:8]
-                    table_name = f"_t_{column_hash}"
-                    alias_sql = f" AS {table_name}({column_list})"
-            else:
-                # Only table alias, no columns: AS table
-                alias_sql = f" AS {table_alias}" if table_alias else ""
+        cross_join_lateral_expr = exp.Join(this=transformed_lateral_expr, kind="CROSS")
 
-        return f" CROSS JOIN LATERAL {lateral_subquery}{alias_sql}"
+        return self.sql(cross_join_lateral_expr)
 
     # For other cases, use the standard conversion
     return explode_to_unnest_sql(self, expression)

@@ -392,13 +392,13 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.costs) c",
             write={
-                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth := 2)) AS c",
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c",
             },
         )
         self.validate_all(
             "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.adjustments) as type, val, curr",
             write={
-                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth := 2)) AS _t_19d5b04c(type, val, curr)",
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth => 2)) AS _u_0(type, val, curr)",
             },
         )
         self.validate_all(
@@ -406,7 +406,7 @@ TBLPROPERTIES (
             write={
                 "presto": "SELECT id_column, name, age FROM test_table CROSS JOIN UNNEST(struc_column) AS explode_view(name, age)",
                 "spark": "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
-                "duckdb": "SELECT id_column, name, age FROM test_table CROSS JOIN LATERAL (SELECT UNNEST(struc_column, max_depth := 2)) AS explode_view(name, age)",
+                "duckdb": "SELECT id_column, name, age FROM test_table CROSS JOIN LATERAL (SELECT UNNEST(struc_column, max_depth => 2)) AS explode_view(name, age)",
             },
         )
         self.validate_all(

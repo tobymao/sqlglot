@@ -3130,7 +3130,7 @@ class DuckDB(Dialect):
             return self.sql(case)
 
         def _validate_regexp_flags(self, flags: t.Optional[exp.Expression]) -> t.Optional[str]:
-            if not flags:
+            if not isinstance(flags, exp.Expression):
                 return None
 
             if not isinstance(flags, exp.Literal) or not flags.is_string:

@@ -1169,8 +1169,6 @@ class Tokenizer(metaclass=_Tokenizer):
         return self.sql[start:end] if end <= self.size else ""
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
-        # Check for line break directly instead of dict lookup
-        # Common line break chars: \n, \r
         char = self._char
         if char == "\n" or char == "\r":
             # Ensures we don't count an extra line if we get a \r\n line break sequence
@@ -1217,7 +1215,6 @@ class Tokenizer(metaclass=_Tokenizer):
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
 
-        # Inline _text to avoid property overhead
         if text is None:
             text = self.sql[self._start : self._current]
 
@@ -1526,7 +1523,6 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while True:
             peek = self._peek
-            # Avoid .strip() - just check if it's whitespace or empty
             if not peek or peek.isspace():
                 break
             if peek not in var_single_tokens and peek in single_tokens:

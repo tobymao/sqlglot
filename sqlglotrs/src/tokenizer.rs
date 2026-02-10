@@ -175,8 +175,6 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
-        // Check for line break directly instead of hashmap lookup
-        // Common line break chars: \n, \r
         let current_char = self.current_char;
         if current_char == '\n' || current_char == '\r' {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
@@ -272,12 +270,10 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn scan_keyword(&mut self) -> Result<(), TokenizerError> {
-        // Cache settings access in local variables for performance
         let single_tokens = &self.settings.single_tokens;
 
         let mut size: usize = 0;
         let mut word: Option<String> = None;
-        // Start with current_char instead of text() to avoid string allocation
         let mut chars = self.current_char.to_string();
         let mut current_char = '\0';
         let mut prev_space = false;
@@ -395,7 +391,6 @@ impl<'a> TokenizerState<'a> {
                 .push(text[comment_start_size..text.len() - comment_end_size + 1].to_string());
             self.advance((comment_end_size - 1) as isize)?;
         } else {
-            // Cache peek_char and check directly for line breaks instead of hashmap lookup
             let mut peek_char = self.peek_char;
             while !self.is_end && peek_char != '\n' && peek_char != '\r' {
                 self.advance(1)?;
@@ -600,13 +595,11 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn scan_var(&mut self) -> Result<(), TokenizerError> {
-        // Cache settings access in local variables for performance
         let var_single_tokens = &self.settings.var_single_tokens;
         let single_tokens = &self.settings.single_tokens;
 
         loop {
             let peek_char = self.peek_char;
-            // Avoid creating temporary char - check directly if whitespace or empty
             if peek_char == '\0' || peek_char.is_whitespace() {
                 break;
             }

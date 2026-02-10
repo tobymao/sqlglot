@@ -55,4 +55,3 @@ EXPRESSION_METADATA = {
     exp.RegexpSplit: {"returns": exp.DataType.build("ARRAY<STRING>")},
     exp.Reverse: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }
- 

@@ -2393,7 +2393,6 @@ FROM OPENJSON(@json) WITH (
                 self.assertIsInstance(expr.expression.expressions[0].expressions[0], cls)
 
     def test_create_trigger(self):
-        """Test that T-SQL CREATE TRIGGER statements fall back to Command parsing."""
         self.validate_identity(
             "CREATE TRIGGER reminder ON customers AFTER INSERT AS BEGIN INSERT INTO audit_log (customer_id, action, created_at) SELECT id, 'INSERT', GETDATE() FROM inserted END",
             check_command_warning=True,

@@ -954,6 +954,7 @@ TBLPROPERTIES (
                 "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
             },
         )
+        self.validate_identity("BIT_GET(11, 0)", "GETBIT(11, 0)")
         self.validate_identity("BITMAP_OR_AGG(x)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")

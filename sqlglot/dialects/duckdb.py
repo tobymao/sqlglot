@@ -95,6 +95,7 @@ MAX_BIT_POSITION = exp.Literal.number(32768)
 # SEQ function constants
 _SEQ_BASE: exp.Expression = exp.maybe_parse("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
+# Maps SEQ expression types to their byte width (suffix indicates bytes: SEQ1=1, SEQ2=2, etc.)
 _SEQ_BYTE_WIDTH = {exp.Seq1: 1, exp.Seq2: 2, exp.Seq4: 4, exp.Seq8: 8}
 
 

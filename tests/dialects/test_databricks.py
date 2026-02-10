@@ -471,6 +471,3 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
         )
-
-    def test_array_insert(self):
-        self.validate_identity("SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')")

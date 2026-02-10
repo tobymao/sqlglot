@@ -1214,4 +1214,13 @@ TBLPROPERTIES (
         approx_quantile_expr.args.get("accuracy").assert_is(exp.Literal)
 
     def test_array_insert(self):
-        self.validate_identity("SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')")
+        self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            read={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+            write={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+                "spark": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+        )

@@ -954,19 +954,16 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
 
     def test_create_trigger(self):
         """Test that Oracle CREATE TRIGGER statements fall back to Command parsing."""
-        # BEFORE INSERT trigger with PL/SQL assignment
         self.validate_identity(
             "CREATE TRIGGER check_salary BEFORE INSERT ON employees FOR EACH ROW BEGIN :NEW.status := 'PENDING' END",
             check_command_warning=True,
         )
 
-        # AFTER UPDATE trigger with audit logging
         self.validate_identity(
             "CREATE TRIGGER audit_trigger AFTER UPDATE ON accounts FOR EACH ROW BEGIN INSERT INTO audit_log (user_id, old_balance, new_balance, changed_at) VALUES (:OLD.id, :OLD.balance, :NEW.balance, SYSDATE) END",
             check_command_warning=True,
         )
 
-        # INSTEAD OF trigger for view with INSERT
         self.validate_identity(
             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view FOR EACH ROW BEGIN INSERT INTO employees (id, name, dept_id) VALUES (:NEW.id, :NEW.name, :NEW.dept_id) END",
             check_command_warning=True,

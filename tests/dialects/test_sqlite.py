@@ -308,19 +308,16 @@ class TestSQLite(Validator):
 
     def test_create_trigger(self):
         """Test that SQLite CREATE TRIGGER statements fall back to Command parsing."""
-        # AFTER INSERT trigger with audit logging
         self.validate_identity(
             "CREATE TRIGGER log_insert AFTER INSERT ON users BEGIN INSERT INTO audit_log (user_id, action, created_at) VALUES (NEW.id, 'INSERT', datetime('now')) END",
             check_command_warning=True,
         )
 
-        # BEFORE UPDATE trigger with WHEN clause and counter
         self.validate_identity(
             "CREATE TRIGGER check_balance BEFORE UPDATE OF balance ON accounts WHEN NEW.balance < 0 BEGIN UPDATE accounts SET balance = 0 WHERE id = NEW.id END",
             check_command_warning=True,
         )
 
-        # INSTEAD OF INSERT trigger on view
         self.validate_identity(
             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view BEGIN INSERT INTO employees (id, name, department) VALUES (NEW.id, NEW.name, NEW.department) END",
             check_command_warning=True,

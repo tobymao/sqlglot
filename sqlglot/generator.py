@@ -1340,20 +1340,12 @@ class Generator(metaclass=_Generator):
         return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
 
     def triggerproperties_sql(self, expression: exp.TriggerProperties) -> str:
-        """
-        Generate SQL for trigger properties (timing, events, table, optional clauses).
+        timing = expression.args.get("timing", "")
+        events = " OR ".join(self.sql(event) for event in expression.args.get("events") or [])
+        timing_events = f"{timing} {events}".strip() if timing or events else ""
 
-        Example output:
-            BEFORE INSERT OR UPDATE ON accounts
-            FROM orders
-            REFERENCING NEW TABLE AS new_data
-            FOR EACH ROW
-            WHEN (NEW.balance > 0)
-            EXECUTE FUNCTION check_balance()
-        """
         parts = [
-            expression.args.get("timing", ""),
-            " OR ".join(self.sql(event) for event in expression.args.get("events", [])),
+            timing_events,
             "ON",
             self.sql(expression, "table"),
         ]
@@ -1378,68 +1370,28 @@ class Generator(metaclass=_Generator):
 
         parts.append(self.sql(expression, "execute"))
 
-        return " ".join(parts)
+        return self.sep().join(filter(None, parts))
 
     def triggerexecute_sql(self, expression: exp.TriggerExecute) -> str:
-        """
-        Generate SQL for TriggerExecute node.
-
-        Example output:
-            EXECUTE FUNCTION check_balance()
-
-        Note: PROCEDURE is a deprecated synonym for FUNCTION.
-        We normalize to FUNCTION per PostgreSQL best practices.
-        """
-        func_sql = self.sql(expression, "this")
-
-        if not func_sql.endswith(")"):
-            func_sql = f"{func_sql}()"
-
-        return f"EXECUTE FUNCTION {func_sql}"
+        return f"EXECUTE FUNCTION {self.sql(expression, 'this')}"
 
     def triggerreferencing_sql(self, expression: exp.TriggerReferencing) -> str:
-        """
-        Generate SQL for TriggerReferencing node.
-
-        Example output:
-            REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data
-            REFERENCING NEW TABLE AS new_data
-            REFERENCING OLD AS old_row NEW AS new_row
-        """
         parts = []
 
-        # OLD [TABLE|ROW] AS alias
-        old_alias = expression.args.get("old")
-        if old_alias:
-            old_name = self.sql(old_alias)
-            if expression.args.get("old_table"):
-                parts.append(f"OLD TABLE AS {old_name}")
-            else:
-                parts.append(f"OLD AS {old_name}")
+        if old_alias := expression.args.get("old"):
+            parts.append(f"OLD TABLE AS {self.sql(old_alias)}")
 
-        # NEW [TABLE|ROW] AS alias
-        new_alias = expression.args.get("new")
-        if new_alias:
-            new_name = self.sql(new_alias)
-            if expression.args.get("new_table"):
-                parts.append(f"NEW TABLE AS {new_name}")
-            else:
-                parts.append(f"NEW AS {new_name}")
+        if new_alias := expression.args.get("new"):
+            parts.append(f"NEW TABLE AS {self.sql(new_alias)}")
 
-        if parts:
-            return f"REFERENCING {' '.join(parts)}"
-        return ""
+        return f"REFERENCING {' '.join(parts)}"
 
     def triggerevent_sql(self, expression: exp.TriggerEvent) -> str:
-        """Generate SQL for TriggerEvent node."""
-        event_type = expression.args.get("this", "")
-
         columns = expression.args.get("columns")
         if columns:
-            column_list = ", ".join(self.sql(col) for col in columns)
-            return f"{event_type} OF {column_list}"
+            return f"{expression.this} OF {self.expressions(expression, key='columns', flat=True)}"
 
-        return event_type
+        return expression.this
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")

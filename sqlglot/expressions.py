@@ -1590,6 +1590,7 @@ class SequenceProperties(Expression):
     }
 
 
+# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerProperties(Expression):
     arg_types = {
         "table": True,
@@ -1606,6 +1607,7 @@ class TriggerProperties(Expression):
     }
 
 
+# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerExecute(Expression):
     arg_types = {
         "this": True,
@@ -1613,6 +1615,7 @@ class TriggerExecute(Expression):
     }
 
 
+# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerEvent(Expression):
     arg_types = {
         "this": True,
@@ -1620,12 +1623,11 @@ class TriggerEvent(Expression):
     }
 
 
+# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerReferencing(Expression):
     arg_types = {
         "old": False,
         "new": False,
-        "old_table": False,
-        "new_table": False,
     }
 
 

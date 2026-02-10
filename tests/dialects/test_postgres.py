@@ -1800,196 +1800,53 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             self.assertIsInstance(self.parse_one(day_time_str), exp.And)
 
     def test_postgres_create_trigger(self):
-        """Test PostgreSQL CREATE TRIGGER syntax support."""
-
-        # Test 1: Simple BEFORE trigger
-        self.validate_identity(
-            "CREATE TRIGGER check_update BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION check_account_update()",
+        basic_triggers = [
             "CREATE TRIGGER check_update BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_ACCOUNT_UPDATE()",
-        )
-
-        # Test 2: AFTER trigger with INSERT
-        self.validate_identity(
-            "CREATE TRIGGER log_insert AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_changes()",
             "CREATE TRIGGER log_insert AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
-        )
-
-        # Test 3: Multiple events with OR
-        self.validate_identity(
-            "CREATE TRIGGER audit_changes AFTER INSERT OR UPDATE OR DELETE ON products FOR EACH ROW EXECUTE FUNCTION audit_log()",
             "CREATE TRIGGER audit_changes AFTER INSERT OR UPDATE OR DELETE ON products FOR EACH ROW EXECUTE FUNCTION AUDIT_LOG()",
-        )
-
-        # Test 4: UPDATE OF specific columns
-        self.validate_identity(
-            "CREATE TRIGGER check_balance BEFORE UPDATE OF balance, status ON accounts FOR EACH ROW EXECUTE FUNCTION validate_balance()",
             "CREATE TRIGGER check_balance BEFORE UPDATE OF balance, status ON accounts FOR EACH ROW EXECUTE FUNCTION VALIDATE_BALANCE()",
-        )
-
-        # Test 5: WHEN condition
-        self.validate_identity(
-            "CREATE TRIGGER conditional_trigger BEFORE UPDATE ON users FOR EACH ROW WHEN (OLD.id <> NEW.id) EXECUTE FUNCTION check_id_change()",
             "CREATE TRIGGER conditional_trigger BEFORE UPDATE ON users FOR EACH ROW WHEN (OLD.id <> NEW.id) EXECUTE FUNCTION CHECK_ID_CHANGE()",
-        )
-
-        # Test 6: FOR EACH STATEMENT
-        self.validate_identity(
-            "CREATE TRIGGER statement_trigger AFTER INSERT ON orders FOR EACH STATEMENT EXECUTE FUNCTION update_summary()",
             "CREATE TRIGGER statement_trigger AFTER INSERT ON orders FOR EACH STATEMENT EXECUTE FUNCTION UPDATE_SUMMARY()",
-        )
-
-        # Test 7: REFERENCING clause with NEW TABLE
-        self.validate_identity(
-            "CREATE TRIGGER track_new_rows AFTER INSERT ON users REFERENCING NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION process_new_users()",
-            "CREATE TRIGGER track_new_rows AFTER INSERT ON users REFERENCING NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION PROCESS_NEW_USERS()",
-        )
-
-        # Test 8: REFERENCING with both OLD and NEW
-        self.validate_identity(
-            "CREATE TRIGGER track_changes AFTER UPDATE ON accounts REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION compare_changes()",
-            "CREATE TRIGGER track_changes AFTER UPDATE ON accounts REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION COMPARE_CHANGES()",
-        )
-
-        # Test 9: CONSTRAINT TRIGGER
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER check_integrity AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION validate_user()",
-            "CREATE CONSTRAINT TRIGGER check_integrity AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION VALIDATE_USER()",
-        )
-
-        # Test 10: DEFERRABLE constraint trigger
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE FOR EACH ROW EXECUTE FUNCTION check_order()",
-            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
-        )
-
-        # Test 11: INITIALLY DEFERRED
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_order()",
-            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
-        )
-
-        # Test 12: NOT DEFERRABLE INITIALLY IMMEDIATE
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER immediate_check AFTER INSERT ON orders NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION check_order()",
-            "CREATE CONSTRAINT TRIGGER immediate_check AFTER INSERT ON orders NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
-        )
-
-        # Test 13: INSTEAD OF trigger (for views)
-        self.validate_identity(
-            "CREATE TRIGGER instead_trigger INSTEAD OF INSERT ON user_view FOR EACH ROW EXECUTE FUNCTION handle_insert()",
             "CREATE TRIGGER instead_trigger INSTEAD OF INSERT ON user_view FOR EACH ROW EXECUTE FUNCTION HANDLE_INSERT()",
-        )
-
-        # Test 14: FROM clause (for constraint triggers on foreign keys)
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM users FOR EACH ROW EXECUTE FUNCTION check_foreign_key()",
-            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
-        )
-
-        # Test 15: FROM clause with schema-qualified referenced table
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM public.users FOR EACH ROW EXECUTE FUNCTION check_foreign_key()",
-            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM public.users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
-        )
-
-        # Test 17: OR REPLACE
-        self.validate_identity(
-            "CREATE OR REPLACE TRIGGER replace_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_insert()",
             "CREATE OR REPLACE TRIGGER replace_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_INSERT()",
-        )
+            "CREATE TRIGGER param_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_WITH_PARAMS('insert', 'users')",
+            "CREATE TRIGGER my_trigger BEFORE INSERT ON myschema.users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
+            "CREATE TRIGGER truncate_trigger BEFORE TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION LOG_TRUNCATE()",
+            "CREATE TRIGGER complex_when BEFORE UPDATE ON accounts FOR EACH ROW WHEN (OLD.balance IS DISTINCT FROM NEW.balance AND NEW.balance > 0) EXECUTE FUNCTION CHECK_BALANCE()",
+            "CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp FOR EACH ROW EXECUTE FUNCTION EMP_STAMP()",
+            "CREATE TRIGGER view_insert INSTEAD OF INSERT ON my_view FOR EACH ROW EXECUTE FUNCTION VIEW_INSERT_ROW()",
+            "CREATE TRIGGER check_update BEFORE UPDATE OF balance ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_ACCOUNT_UPDATE()",
+            "CREATE TRIGGER restock AFTER UPDATE ON products FOR EACH ROW WHEN (OLD.count <> NEW.count) EXECUTE FUNCTION RESTOCK_ITEM()",
+            "CREATE TRIGGER multi_col_update BEFORE UPDATE OF col1, col2, col3, col4 ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_COLUMNS()",
+            "CREATE TRIGGER all_events AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON audit_table FOR EACH STATEMENT EXECUTE FUNCTION LOG_ALL_CHANGES()",
+        ]
 
-        # Test 18: EXECUTE PROCEDURE (synonym for EXECUTE FUNCTION)
+        referencing_triggers = [
+            "CREATE TRIGGER track_new_rows AFTER INSERT ON users REFERENCING NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION PROCESS_NEW_USERS()",
+            "CREATE TRIGGER track_changes AFTER UPDATE ON accounts REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION COMPARE_CHANGES()",
+            "CREATE TRIGGER statistics_update AFTER UPDATE ON sales REFERENCING OLD TABLE AS old_sales NEW TABLE AS new_sales FOR EACH STATEMENT EXECUTE FUNCTION UPDATE_STATISTICS()",
+        ]
+
+        constraint_triggers = [
+            "CREATE CONSTRAINT TRIGGER check_integrity AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION VALIDATE_USER()",
+            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER immediate_check AFTER INSERT ON orders NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
+            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM public.users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
+            "CREATE CONSTRAINT TRIGGER if_dist_exists AFTER INSERT OR UPDATE ON films DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY('distributors', 'did')",
+            "CREATE CONSTRAINT TRIGGER check_fk AFTER INSERT ON orders FROM customers FOR EACH ROW EXECUTE FUNCTION CHECK_CUSTOMER_EXISTS()",
+            "CREATE CONSTRAINT TRIGGER complex_trigger AFTER UPDATE OF col1, col2 ON mytable FROM reftable DEFERRABLE INITIALLY DEFERRED REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT WHEN (OLD.status <> NEW.status) EXECUTE FUNCTION COMPLEX_CHECK('param1', 'param2')",
+        ]
+
+        for sql in basic_triggers + referencing_triggers + constraint_triggers:
+            with self.subTest(sql=sql[:80]):
+                self.validate_identity(sql)
+
         self.validate_identity(
-            "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE PROCEDURE log_changes()",
+            "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE PROCEDURE LOG_CHANGES()",
             "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
         )
-
-        # Test 19: Function with arguments
         self.validate_identity(
-            "CREATE TRIGGER param_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_with_params('insert', 'users')",
-            "CREATE TRIGGER param_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_WITH_PARAMS('insert', 'users')",
-        )
-
-        # Test 21: Schema-qualified table name
-        self.validate_identity(
-            "CREATE TRIGGER my_trigger BEFORE INSERT ON myschema.users FOR EACH ROW EXECUTE FUNCTION log_changes()",
-            "CREATE TRIGGER my_trigger BEFORE INSERT ON myschema.users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
-        )
-
-        # Test 22: TRUNCATE event
-        self.validate_identity(
-            "CREATE TRIGGER truncate_trigger BEFORE TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION log_truncate()",
-            "CREATE TRIGGER truncate_trigger BEFORE TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION LOG_TRUNCATE()",
-        )
-
-        # Test 23: Complex WHEN clause
-        self.validate_identity(
-            "CREATE TRIGGER complex_when BEFORE UPDATE ON accounts FOR EACH ROW WHEN (OLD.balance IS DISTINCT FROM NEW.balance AND NEW.balance > 0) EXECUTE FUNCTION check_balance()",
-            "CREATE TRIGGER complex_when BEFORE UPDATE ON accounts FOR EACH ROW WHEN (OLD.balance IS DISTINCT FROM NEW.balance AND NEW.balance > 0) EXECUTE FUNCTION CHECK_BALANCE()",
-        )
-
-        # Test 24: Official PostgreSQL doc example 1 - emp_stamp trigger
-        self.validate_identity(
-            "CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp FOR EACH ROW EXECUTE FUNCTION emp_stamp()",
-            "CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp FOR EACH ROW EXECUTE FUNCTION EMP_STAMP()",
-        )
-
-        # Test 25: Official PostgreSQL doc example 2 - if_dist_exists trigger
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER if_dist_exists AFTER INSERT OR UPDATE ON films DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_foreign_key('distributors', 'did')",
-            "CREATE CONSTRAINT TRIGGER if_dist_exists AFTER INSERT OR UPDATE ON films DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY('distributors', 'did')",
-        )
-
-        # Test 26: Official PostgreSQL doc example 3 - view_insert trigger
-        self.validate_identity(
-            "CREATE TRIGGER view_insert INSTEAD OF INSERT ON my_view FOR EACH ROW EXECUTE FUNCTION view_insert_row()",
-            "CREATE TRIGGER view_insert INSTEAD OF INSERT ON my_view FOR EACH ROW EXECUTE FUNCTION VIEW_INSERT_ROW()",
-        )
-
-        # Test 27: Official PostgreSQL doc example 4 - check_update trigger with UPDATE OF
-        self.validate_identity(
-            "CREATE TRIGGER check_update BEFORE UPDATE OF balance ON accounts FOR EACH ROW EXECUTE FUNCTION check_account_update()",
-            "CREATE TRIGGER check_update BEFORE UPDATE OF balance ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_ACCOUNT_UPDATE()",
-        )
-
-        # Test 28: Official PostgreSQL doc example 5 - restock trigger
-        self.validate_identity(
-            "CREATE TRIGGER restock AFTER UPDATE ON products FOR EACH ROW WHEN (OLD.count <> NEW.count) EXECUTE FUNCTION restock_item()",
-            "CREATE TRIGGER restock AFTER UPDATE ON products FOR EACH ROW WHEN (OLD.count <> NEW.count) EXECUTE FUNCTION RESTOCK_ITEM()",
-        )
-
-        # Test 29: Official PostgreSQL doc example 6 - trigger with REFERENCING
-        self.validate_identity(
-            "CREATE TRIGGER statistics_update AFTER UPDATE ON sales REFERENCING OLD TABLE AS old_sales NEW TABLE AS new_sales FOR EACH STATEMENT EXECUTE FUNCTION update_statistics()",
-            "CREATE TRIGGER statistics_update AFTER UPDATE ON sales REFERENCING OLD TABLE AS old_sales NEW TABLE AS new_sales FOR EACH STATEMENT EXECUTE FUNCTION UPDATE_STATISTICS()",
-        )
-
-        # Test 30: Official PostgreSQL doc example 7 - foreign key constraint trigger
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER check_fk AFTER INSERT ON orders FROM customers FOR EACH ROW EXECUTE FUNCTION check_customer_exists()",
-            "CREATE CONSTRAINT TRIGGER check_fk AFTER INSERT ON orders FROM customers FOR EACH ROW EXECUTE FUNCTION CHECK_CUSTOMER_EXISTS()",
-        )
-
-        # Test 31: Complex combination - all optional clauses
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER complex_trigger AFTER UPDATE OF col1, col2 ON mytable FROM reftable DEFERRABLE INITIALLY DEFERRED REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT WHEN (OLD.status <> NEW.status) EXECUTE FUNCTION complex_check('param1', 'param2')",
-            "CREATE CONSTRAINT TRIGGER complex_trigger AFTER UPDATE OF col1, col2 ON mytable FROM reftable DEFERRABLE INITIALLY DEFERRED REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT WHEN (OLD.status <> NEW.status) EXECUTE FUNCTION COMPLEX_CHECK('param1', 'param2')",
-        )
-
-        # Test 33: Quoted identifiers
-        self.validate_identity(
-            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION "MyFunction"()',
-            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION "MyFunction"()',
-        )
-
-        # Test 34: Multiple UPDATE OF columns
-        self.validate_identity(
-            "CREATE TRIGGER multi_col_update BEFORE UPDATE OF col1, col2, col3, col4 ON accounts FOR EACH ROW EXECUTE FUNCTION check_columns()",
-            "CREATE TRIGGER multi_col_update BEFORE UPDATE OF col1, col2, col3, col4 ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_COLUMNS()",
-        )
-
-        # Test 35: INSERT OR UPDATE OR DELETE OR TRUNCATE (all events)
-        self.validate_identity(
-            "CREATE TRIGGER all_events AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON audit_table FOR EACH STATEMENT EXECUTE FUNCTION log_all_changes()",
-            "CREATE TRIGGER all_events AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON audit_table FOR EACH STATEMENT EXECUTE FUNCTION LOG_ALL_CHANGES()",
+            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION "MyFunction"()'
         )

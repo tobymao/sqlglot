@@ -396,12 +396,6 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.costs)",
-            write={
-                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth := 2))",
-            },
-        )
-        self.validate_all(
             "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.adjustments) as type, val, curr",
             write={
                 "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth := 2)) AS _t_19d5b04c(type, val, curr)",

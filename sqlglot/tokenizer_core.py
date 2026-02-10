@@ -631,11 +631,12 @@ class TokenizerCore:
         return self.sql[start:end] if end <= self.size else ""
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
-        cfg = self._config
-
-        if cfg.white_space.get(self._char) is TokenType.BREAK:
+        # Check for line break directly instead of dict lookup
+        # Common line break chars: \n, \r (BREAK type in WHITE_SPACE)
+        char = self._char
+        if char == "\n" or char == "\r":
             # Ensures we don't count an extra line if we get a \r\n line break sequence
-            if not (self._char == "\r" and self._peek == "\n"):
+            if not (char == "\r" and self._peek == "\n"):
                 self._col = i
                 self._line += 1
         else:
@@ -648,6 +649,8 @@ class TokenizerCore:
 
         if alnum and self._char.isalnum():
             # Here we use local variables instead of attributes for better performance
+            sql = self.sql
+            size = self.size
             _col = self._col
             _current = self._current
             _end = self._end
@@ -656,14 +659,14 @@ class TokenizerCore:
             while _peek.isalnum():
                 _col += 1
                 _current += 1
-                _end = _current >= self.size
-                _peek = "" if _end else self.sql[_current]
+                _end = _current >= size
+                _peek = "" if _end else sql[_current]
 
             self._col = _col
             self._current = _current
             self._end = _end
             self._peek = _peek
-            self._char = self.sql[_current - 1]
+            self._char = sql[_current - 1]
 
     @property
     def _text(self) -> str:
@@ -677,10 +680,14 @@ class TokenizerCore:
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
 
+        # Inline _text to avoid property overhead
+        if text is None:
+            text = self.sql[self._start : self._current]
+
         self.tokens.append(
             Token(
                 token_type,
-                text=self._text if text is None else text,
+                text=text,
                 line=self._line,
                 col=self._col,
                 start=self._start,
@@ -710,14 +717,17 @@ class TokenizerCore:
 
     def _scan_keywords(self) -> None:
         cfg = self._config
+        sql = self.sql
+        sql_size = self.size
+        single_tokens = cfg.single_tokens
         size = 0
         word = None
-        chars = self._text
+        chars = self._char
         char = chars
         prev_space = False
         skip = False
         trie = cfg.keyword_trie
-        single_token = char in cfg.single_tokens
+        single_token = char in single_tokens
 
         while chars:
             if skip:
@@ -733,9 +743,9 @@ class TokenizerCore:
             end = self._current + size
             size += 1
 
-            if end < self.size:
-                char = self.sql[end]
-                single_token = single_token or char in cfg.single_tokens
+            if end < sql_size:
+                char = sql[end]
+                single_token = single_token or char in single_tokens
                 is_space = char.isspace()
 
                 if not is_space or not prev_space:
@@ -761,8 +771,8 @@ class TokenizerCore:
                 self._add(cfg.keywords[word], text=word)
                 return
 
-        if self._char in cfg.single_tokens:
-            self._add(cfg.single_tokens[self._char], text=self._char)
+        if self._char in single_tokens:
+            self._add(single_tokens[self._char], text=self._char)
             return
 
         self._scan_var()
@@ -983,17 +993,22 @@ class TokenizerCore:
 
     def _scan_var(self) -> None:
         cfg = self._config
+        var_single_tokens = cfg.var_single_tokens
+        single_tokens = cfg.single_tokens
+
         while True:
-            char = self._peek.strip()
-            if char and (char in cfg.var_single_tokens or char not in cfg.single_tokens):
-                self._advance(alnum=True)
-            else:
+            peek = self._peek
+            # Avoid .strip() - just check if it's whitespace or empty
+            if not peek or peek.isspace():
                 break
+            if peek not in var_single_tokens and peek in single_tokens:
+                break
+            self._advance(alnum=True)
 
         self._add(
             TokenType.VAR
             if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
-            else cfg.keywords.get(self._text.upper(), TokenType.VAR)
+            else cfg.keywords.get(self.sql[self._start : self._current].upper(), TokenType.VAR)
         )
 
     def _extract_string(

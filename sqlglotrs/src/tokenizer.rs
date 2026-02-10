@@ -175,9 +175,12 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
-        if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
+        // Check for line break directly instead of hashmap lookup
+        // Common line break chars: \n, \r
+        let current_char = self.current_char;
+        if current_char == '\n' || current_char == '\r' {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
-            if !(self.current_char == '\r' && self.peek_char == '\n') {
+            if !(current_char == '\r' && self.peek_char == '\n') {
                 self.column = i as usize;
                 self.line += 1;
             }
@@ -269,17 +272,17 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn scan_keyword(&mut self) -> Result<(), TokenizerError> {
+        // Cache settings access in local variables for performance
+        let single_tokens = &self.settings.single_tokens;
+
         let mut size: usize = 0;
         let mut word: Option<String> = None;
-        let mut chars = self.text();
+        // Start with current_char instead of text() to avoid string allocation
+        let mut chars = self.current_char.to_string();
         let mut current_char = '\0';
         let mut prev_space = false;
         let mut skip;
-        let mut is_single_token = chars.len() == 1
-            && self
-                .settings
-                .single_tokens
-                .contains_key(&chars.chars().next().unwrap());
+        let mut is_single_token = single_tokens.contains_key(&self.current_char);
 
         let (mut trie_result, mut trie_node) =
             self.keyword_trie.root.contains(&chars.to_uppercase());
@@ -297,7 +300,7 @@ impl<'a> TokenizerState<'a> {
             if end < self.size {
                 current_char = self.char_at(end)?;
                 is_single_token =
-                    is_single_token || self.settings.single_tokens.contains_key(&current_char);
+                    is_single_token || single_tokens.contains_key(&current_char);
                 let is_space = current_char.is_whitespace();
 
                 if !is_space || !prev_space {
@@ -392,10 +395,11 @@ impl<'a> TokenizerState<'a> {
                 .push(text[comment_start_size..text.len() - comment_end_size + 1].to_string());
             self.advance((comment_end_size - 1) as isize)?;
         } else {
-            while !self.is_end
-                && self.settings.white_space.get(&self.peek_char) != Some(&self.token_types.break_)
-            {
+            // Cache peek_char and check directly for line breaks instead of hashmap lookup
+            let mut peek_char = self.peek_char;
+            while !self.is_end && peek_char != '\n' && peek_char != '\r' {
                 self.advance(1)?;
+                peek_char = self.peek_char;
             }
             self.comments
                 .push(self.text()[comment_start_size..].to_string());
@@ -596,20 +600,20 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn scan_var(&mut self) -> Result<(), TokenizerError> {
+        // Cache settings access in local variables for performance
+        let var_single_tokens = &self.settings.var_single_tokens;
+        let single_tokens = &self.settings.single_tokens;
+
         loop {
-            let peek_char = if !self.peek_char.is_whitespace() {
-                self.peek_char
-            } else {
-                '\0'
-            };
-            if peek_char != '\0'
-                && (self.settings.var_single_tokens.contains(&peek_char)
-                    || !self.settings.single_tokens.contains_key(&peek_char))
-            {
-                self.advance(1)?;
-            } else {
+            let peek_char = self.peek_char;
+            // Avoid creating temporary char - check directly if whitespace or empty
+            if peek_char == '\0' || peek_char.is_whitespace() {
                 break;
             }
+            if !var_single_tokens.contains(&peek_char) && single_tokens.contains_key(&peek_char) {
+                break;
+            }
+            self.advance(1)?;
         }
 
         let token_type =

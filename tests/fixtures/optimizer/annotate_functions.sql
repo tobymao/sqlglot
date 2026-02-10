@@ -704,6 +704,14 @@ INT;
 TRANSLATE(tbl.str_col, tbl.str_col, tbl.str_col);
 STRING; 
 
+# dialect: spark, databricks
+ARRAY_COMPACT(tbl.array_col);
+ARRAY<STRING>;
+
+# dialect: spark, databricks
+ARRAY_COMPACT(array(1, 2, 3));
+ARRAY<INT>;
+
 # dialect: hive, spark2, spark, databricks
 SPLIT(tbl.str_col, tbl.str_col, tbl.int_col);
 ARRAY<STRING>;

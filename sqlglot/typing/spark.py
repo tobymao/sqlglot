@@ -28,9 +28,15 @@ EXPRESSION_METADATA = {
             exp.SessionUser,
         }
     },
+    **{
+        exp_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+        for exp_type in {
+            exp.ArrayCompact,
+            exp.Overlay,
+        }
+    },
     exp.BitmapCount: {"returns": exp.DataType.Type.BIGINT},
     exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
-    exp.Overlay: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

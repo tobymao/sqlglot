@@ -93,8 +93,10 @@ WEEK_START_DAY_TO_DOW = {
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
 # SEQ function constants
-_SEQ_BASE = "(ROW_NUMBER() OVER (ORDER BY 1) - 1)"
+_SEQ_BASE: exp.Expression = exp.maybe_parse("(ROW_NUMBER() OVER (ORDER BY 1) - 1)")
 _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
+# Maps SEQ expression types to their byte width (suffix indicates bytes: SEQ1=1, SEQ2=2, etc.)
+_SEQ_BYTE_WIDTH = {exp.Seq1: 1, exp.Seq2: 2, exp.Seq4: 4, exp.Seq8: 8}
 
 
 def _apply_base64_alphabet_replacements(
@@ -653,6 +655,49 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     return f"CAST({sql} AS TEXT)"
 
 
+def _build_seq_expression(base: exp.Expression, byte_width: int, signed: bool) -> exp.Expression:
+    """Build a SEQ expression with the given base, byte width, and signedness."""
+    bits = byte_width * 8
+    max_val = exp.Literal.number(2**bits)
+
+    if signed:
+        half = exp.Literal.number(2 ** (bits - 1))
+        return exp.replace_placeholders(
+            DuckDB.Generator.SEQ_SIGNED.copy(), base=base, max_val=max_val, half=half
+        )
+    return exp.replace_placeholders(
+        DuckDB.Generator.SEQ_UNSIGNED.copy(), base=base, max_val=max_val
+    )
+
+
+def _seq_to_range_in_generator(expression: exp.Expression) -> exp.Expression:
+    """
+    Transform SEQ functions to `range` column references when inside a GENERATOR context.
+
+    When GENERATOR(ROWCOUNT => N) becomes RANGE(N) in DuckDB, it produces a column
+    named `range` with values 0, 1, ..., N-1. SEQ functions produce the same sequence,
+    so we replace them with `range % max_val` to avoid nested window function issues.
+    """
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    from_ = expression.args.get("from_")
+    if not (
+        from_
+        and isinstance(from_.this, exp.TableFromRows)
+        and isinstance(from_.this.this, exp.Generator)
+    ):
+        return expression
+
+    def replace_seq(node: exp.Expression) -> exp.Expression:
+        if isinstance(node, (exp.Seq1, exp.Seq2, exp.Seq4, exp.Seq8)):
+            byte_width = _SEQ_BYTE_WIDTH[type(node)]
+            return _build_seq_expression(exp.column("range"), byte_width, signed=node.name == "1")
+        return node
+
+    return expression.transform(replace_seq, copy=False)
+
+
 def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> str:
     """
     Transpile Snowflake SEQ1/SEQ2/SEQ4/SEQ8 to DuckDB.
@@ -661,17 +706,6 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     The signed parameter (0 or 1) affects wrap-around behavior:
     - Unsigned (0): wraps at 2^(bits) - 1
     - Signed (1): wraps at 2^(bits-1) - 1, then goes negative
-
-    Note: SEQ in WHERE, HAVING, aggregates, or window ORDER BY is not supported
-    because these contexts don't allow window functions. Users should rewrite
-    using CTEs or subqueries.
-
-    Args:
-        expression: The SEQ function expression (may have 'this' arg for signed param)
-        byte_width: 1, 2, 4, or 8 bytes
-
-    Returns:
-        SQL string using ROW_NUMBER() with modulo for wrap-around
     """
     # Warn if SEQ is in a restricted context (Select stops search at current scope)
     ancestor = expression.find_ancestor(*_SEQ_RESTRICTED)
@@ -681,15 +715,7 @@ def _seq_sql(self: DuckDB.Generator, expression: exp.Func, byte_width: int) -> s
     ):
         self.unsupported("SEQ in restricted context is not supported - use CTE or subquery")
 
-    bits = byte_width * 8
-    max_val = exp.Literal.number(2**bits)
-
-    if expression.name == "1":
-        half = exp.Literal.number(2 ** (bits - 1))
-        result = exp.replace_placeholders(self.SEQ_SIGNED.copy(), max_val=max_val, half=half)
-    else:
-        result = exp.replace_placeholders(self.SEQ_UNSIGNED.copy(), max_val=max_val)
-
+    result = _build_seq_expression(_SEQ_BASE.copy(), byte_width, signed=expression.name == "1")
     return self.sql(result)
 
 
@@ -1937,6 +1963,7 @@ class DuckDB(Dialect):
             exp.Lateral: explode_to_unnest_sql,
             exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
             exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
+            exp.Select: transforms.preprocess([_seq_to_range_in_generator]),
             exp.Seq1: lambda self, e: _seq_sql(self, e, 1),
             exp.Seq2: lambda self, e: _seq_sql(self, e, 2),
             exp.Seq4: lambda self, e: _seq_sql(self, e, 4),
@@ -2210,11 +2237,11 @@ class DuckDB(Dialect):
         )
 
         # Template for generating signed and unsigned SEQ values within a specified range
-        SEQ_UNSIGNED: exp.Expression = exp.maybe_parse(f"{_SEQ_BASE} % :max_val")
+        SEQ_UNSIGNED: exp.Expression = exp.maybe_parse(":base % :max_val")
         SEQ_SIGNED: exp.Expression = exp.maybe_parse(
-            f"(CASE WHEN {_SEQ_BASE} % :max_val >= :half "
-            f"THEN {_SEQ_BASE} % :max_val - :max_val "
-            f"ELSE {_SEQ_BASE} % :max_val END)"
+            "(CASE WHEN :base % :max_val >= :half "
+            "THEN :base % :max_val - :max_val "
+            "ELSE :base % :max_val END)"
         )
 
         # Template for MAP_CAT transpilation - Snowflake semantics:

@@ -1860,6 +1860,7 @@ class DuckDB(Dialect):
             exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
             exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
             exp.BitwiseAndAgg: _bitwise_agg_sql,
+            exp.BitwiseCount: rename_func("BIT_COUNT"),
             exp.BitwiseLeftShift: _bitshift_sql,
             exp.BitwiseOr: lambda self, e: self._bitwise_op(e, "|"),
             exp.BitwiseOrAgg: _bitwise_agg_sql,

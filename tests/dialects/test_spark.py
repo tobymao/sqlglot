@@ -960,6 +960,15 @@ TBLPROPERTIES (
         self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
         self.validate_identity("SELECT MAKE_TIMESTAMP(2014, 12, 28, 6, 30, 45.887)")
 
+        self.validate_all(
+            "SELECT BIT_COUNT(0)",
+            write={
+                "spark": "SELECT BIT_COUNT(0)",
+                "databricks": "SELECT BIT_COUNT(0)",
+                "duckdb": "SELECT BIT_COUNT(0)",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

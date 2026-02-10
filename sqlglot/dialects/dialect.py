@@ -2531,3 +2531,16 @@ def getbit_sql(self: Generator, expression: exp.Getbit) -> str:
         return self.sql(masked)
 
     return self.func("GET_BIT", value, position)
+
+
+def jarowinkler_similarity(func: str) -> t.Callable[[Generator, exp.JarowinklerSimilarity], str]:
+    def jarowinklersimilarity_sql(self: Generator, expression: exp.JarowinklerSimilarity) -> str:
+        this = expression.this
+        expr = expression.expression
+        if expression.args.get("case_insensitive"):
+            this = exp.Upper(this=this)
+            expr = exp.Upper(this=expr)
+
+        return self.func(func, this, expr)
+
+    return jarowinklersimilarity_sql

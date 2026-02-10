@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     build_like,
     inline_array_sql,
+    jarowinkler_similarity,
     json_extract_segments,
     json_path_key_only_name,
     length_or_char_length_sql,
@@ -1181,6 +1182,7 @@ class ClickHouse(Dialect):
             exp.FarmFingerprint: rename_func("farmFingerprint64"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
+            exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
             exp.JSONCast: lambda self, e: f"{self.sql(e, 'this')}.:{self.sql(e, 'to')}",
             exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
@@ -1241,7 +1243,6 @@ class ClickHouse(Dialect):
             exp.Lead: lambda self, e: self.func(
                 "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
             ),
-            exp.JarowinklerSimilarity: rename_func("jaroWinklerSimilarity"),
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("editDistance")
             ),

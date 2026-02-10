@@ -3133,7 +3133,7 @@ class DuckDB(Dialect):
             if not isinstance(flags, exp.Expression):
                 return None
 
-            if not isinstance(flags, exp.Literal) or not flags.is_string:
+            if not flags.is_string:
                 self.unsupported("Non-literal regexp flags are not fully supported in DuckDB")
                 return None
 

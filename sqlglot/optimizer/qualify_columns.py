@@ -212,7 +212,7 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
             table_alias.set("columns", None)
 
 
-def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
+def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Dict[str, t.Any]]:
     columns = {}
 
     def _update_source_columns(source_name: str) -> None:
@@ -754,7 +754,7 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
 def _expand_stars(
     scope: Scope,
     resolver: Resolver,
-    using_column_tables: t.Dict[str, t.Any],
+    using_column_tables: t.Dict[str, t.Dict[str, t.Any]],
     pseudocolumns: t.Set[str],
     annotator: TypeAnnotator,
 ) -> None:
@@ -864,8 +864,8 @@ def _expand_stars(
                     continue
                 if name in using_column_tables and table in using_column_tables[name]:
                     coalesced_columns.add(name)
-                    tables = using_column_tables[name]
-                    coalesce_args = [exp.column(name, table=table) for table in tables]
+                    using_tables: t.Dict[str, t.Any] = using_column_tables[name]
+                    coalesce_args = [exp.column(name, table=t) for t in using_tables]
 
                     new_selections.append(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
@@ -960,7 +960,9 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
         scope.expression.set("expressions", new_selections)
 
 
-def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
+def quote_identifiers(
+    expression: E, dialect: DialectType = None, identify: t.Optional[bool] = True
+) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
     return expression.transform(
         Dialect.get_or_raise(dialect).quote_identifier, identify=identify, copy=False

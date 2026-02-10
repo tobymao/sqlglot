@@ -6,6 +6,7 @@ import pyperf
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlglot.optimizer import optimize
+from sqlglot.optimizer.qualify import qualify
 from sqlglot import parse_one
 from tests.helpers import load_sql_fixture_pairs, TPCH_SCHEMA, TPCDS_SCHEMA
 
@@ -47,7 +48,8 @@ def get_condition_1000_setup():
 # Optimizer functions that will be benchmarked
 def optimize_queries(expressions, schema):
     for e in expressions:
-        optimize(e, schema)
+        # optimize(e, schema)
+        qualify(e, schema=schema)
 
 
 def run_benchmarks():
@@ -57,9 +59,9 @@ def run_benchmarks():
     benchmarks = {
         "tpch": get_tpch_setup,
         # "tpcds": get_tpcds_setup,  # This is left out because it's too slow in CI
-        "condition_10": get_condition_10_setup,
-        "condition_100": get_condition_100_setup,
-        "condition_1000": get_condition_1000_setup,
+        # "condition_10": get_condition_10_setup,
+        # "condition_100": get_condition_100_setup,
+        # "condition_1000": get_condition_1000_setup,
     }
 
     for benchmark_name, benchmark_setup in benchmarks.items():

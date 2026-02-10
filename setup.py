@@ -4,9 +4,17 @@ ext_modules = []
 try:
     from mypyc.build import mypycify
 
-    ext_modules = mypycify(["sqlglot/tokenizer_core.py", "sqlglot/trie.py"])
-except ImportError:
-    pass
+    ext_modules = mypycify(
+        [
+            # "sqlglot/tokenizer_core.py",
+            # "sqlglot/trie.py",
+            "sqlglot/optimizer/qualify.py",
+            "sqlglot/optimizer/qualify_columns.py",
+            "sqlglot/optimizer/qualify_tables.py",
+        ]
+    )
+except ImportError as e:
+    print(e)
 
 
 def sqlglotrs_version():

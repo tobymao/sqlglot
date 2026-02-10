@@ -29,7 +29,7 @@ def qualify(
     allow_partial_qualification: bool = False,
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
-    identify: bool = True,
+    identify: t.Optional[bool] = True,
     canonicalize_table_aliases: bool = False,
     on_qualify: t.Optional[t.Callable[[exp.Expression], None]] = None,
     sql: t.Optional[str] = None,

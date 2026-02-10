@@ -2455,3 +2455,15 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT CURRENT_SCHEMA()",
             },
         )
+
+    def test_current_schemas(self):
+        self.validate_all(
+            "SELECT CURRENT_SCHEMAS(TRUE)",
+            read={
+                "snowflake": "SELECT CURRENT_SCHEMAS()",
+            },
+            write={
+                "duckdb": "SELECT CURRENT_SCHEMAS(TRUE)",
+                "snowflake": "SELECT CURRENT_SCHEMAS()",
+            },
+        )

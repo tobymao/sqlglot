@@ -1647,6 +1647,7 @@ class Snowflake(Dialect):
             exp.CurrentTimestamp: lambda self, e: self.func("SYSDATE")
             if e.args.get("sysdate")
             else self.function_fallback_sql(e),
+            exp.CurrentSchemas: lambda self, e: self.func("CURRENT_SCHEMAS"),
             exp.Localtime: lambda self, e: self.func("CURRENT_TIME", e.this)
             if e.this
             else "CURRENT_TIME",

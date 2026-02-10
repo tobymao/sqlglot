@@ -1742,7 +1742,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
-                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || b || ')$')",
+                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$')",
                 "hive": "SELECT a RLIKE b",
                 "snowflake": "SELECT REGEXP_LIKE(a, b)",
                 "spark": "SELECT a RLIKE b",
@@ -1751,7 +1751,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT RLIKE(a, b, 'i')",
             write={
-                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || b || ')$', 'i')",
+                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$', 'i')",
                 "snowflake": "SELECT REGEXP_LIKE(a, b, 'i')",
             },
         )

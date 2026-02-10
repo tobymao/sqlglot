@@ -3157,7 +3157,7 @@ class DuckDB(Dialect):
             anchored_pattern = exp.Concat(
                 expressions=[
                     exp.Literal.string("^("),
-                    pattern,
+                    exp.Paren(this=pattern),
                     exp.Literal.string(")$"),
                 ]
             )

@@ -47,6 +47,7 @@ EXPRESSION_METADATA = {
             exp.Second,
         }
     },
+    exp.ArrayIntersect: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
@@ -54,3 +55,4 @@ EXPRESSION_METADATA = {
     exp.RegexpSplit: {"returns": exp.DataType.build("ARRAY<STRING>")},
     exp.Reverse: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }
+ 

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import os
 import typing as t
-from enum import auto
+from enum import IntEnum, auto
 
 from sqlglot.errors import SqlglotError, TokenError
-from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -25,7 +24,7 @@ except ImportError:
     USE_RS_TOKENIZER = False
 
 
-class TokenType(AutoName):
+class TokenType(IntEnum):
     L_PAREN = auto()
     R_PAREN = auto()
     L_BRACKET = auto()
@@ -465,6 +464,9 @@ class TokenType(AutoName):
     # sentinel
     HIVE_TOKEN_STREAM = auto()
 
+    def __str__(self) -> str:
+        return f"TokenType.{self.name}"
+
 
 _ALL_TOKEN_TYPES = list(TokenType)
 _TOKEN_TYPE_TO_INDEX = {token_type: i for i, token_type in enumerate(_ALL_TOKEN_TYPES)}
@@ -523,7 +525,12 @@ class Token:
         self.comments = [] if comments is None else comments
 
     def __repr__(self) -> str:
-        attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)
+        attributes = ", ".join(
+            f"{k}: TokenType.{self.token_type.name}"
+            if k == "token_type"
+            else f"{k}: {getattr(self, k)}"
+            for k in self.__slots__
+        )
         return f"<Token {attributes}>"
 
 

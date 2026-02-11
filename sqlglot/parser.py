@@ -5948,7 +5948,7 @@ class Parser(metaclass=_Parser):
             if self._match_text_seq("UNSIGNED"):
                 unsigned_type_token = self.SIGNED_TO_UNSIGNED_TYPE_TOKEN.get(type_token)
                 if not unsigned_type_token:
-                    self.raise_error(f"Cannot convert {type_token.value} to unsigned.")
+                    self.raise_error(f"Cannot convert {type_token.name} to unsigned.")
 
                 type_token = unsigned_type_token or type_token
 
@@ -5958,7 +5958,7 @@ class Parser(metaclass=_Parser):
                 return None
 
             this = exp.DataType(
-                this=exp.DataType.Type[type_token.value],
+                this=exp.DataType.Type[type_token.name],
                 expressions=expressions,
                 nested=nested,
                 prefix=prefix,

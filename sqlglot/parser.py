@@ -1758,16 +1758,14 @@ class Parser(metaclass=_Parser):
         self._chunks: t.List[t.List[Token]] = []
         self._chunk_index = 0
 
-    def parse(
-        self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> t.List[t.Optional[exp.Expression]]:
+    def parse(self, raw_tokens: t.List[Token], sql: str) -> t.List[t.Optional[exp.Expression]]:
         """
         Parses a list of tokens and returns a list of syntax trees, one tree
         per parsed SQL statement.
 
         Args:
             raw_tokens: The list of tokens.
-            sql: The original SQL string, used to produce helpful debug messages.
+            sql: The original SQL string.
 
         Returns:
             The list of the produced syntax trees.

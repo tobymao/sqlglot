@@ -5595,7 +5595,12 @@ class Parser(metaclass=_Parser):
             return self._parse_id_var()
 
         this = self._parse_column()
-        return this and self._parse_column_ops(this)
+        if this:
+            this = self._parse_column_ops(this)
+        if this and self.COLON_IS_VARIANT_EXTRACT:
+            this = self._parse_colon_as_variant_extract(this)
+
+        return this
 
     def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
         this = self._parse_type()
@@ -6044,7 +6049,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_bracket(this)
 
-        return self._parse_colon_as_variant_extract(this) if self.COLON_IS_VARIANT_EXTRACT else this
+        return this
 
     def _parse_paren(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.L_PAREN):

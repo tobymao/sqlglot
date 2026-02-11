@@ -13,6 +13,11 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_identity(
+            """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT data:     level1  : level2 : level3::VARIANT FROM t""",
+            """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT CAST(GET_PATH(data, 'level1.level2.level3') AS VARIANT) FROM t""",
+        )
+
+        self.validate_identity(
             "SELECT * FROM x ASOF JOIN y OFFSET MATCH_CONDITION (x.a > y.a)",
             "SELECT * FROM x ASOF JOIN y AS OFFSET MATCH_CONDITION (x.a > y.a)",
         )

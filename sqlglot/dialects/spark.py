@@ -141,6 +141,7 @@ class Spark(Spark2):
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "BIT_COUNT": exp.BitwiseCount.from_arg_list,
+            "CURDATE": exp.CurrentDate.from_arg_list,
             "DATE_ADD": _build_dateadd,
             "DATEADD": _build_dateadd,
             "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,

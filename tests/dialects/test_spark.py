@@ -1013,6 +1013,7 @@ TBLPROPERTIES (
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
         self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
         self.validate_identity("SELECT MAKE_TIMESTAMP(2014, 12, 28, 6, 30, 45.887)")
+        self.validate_identity("SELECT CURDATE()", "SELECT CURRENT_DATE")
 
         self.validate_all(
             "SELECT BIT_COUNT(0)",

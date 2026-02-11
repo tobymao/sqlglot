@@ -1609,26 +1609,17 @@ class TriggerProperties(Expression):
 
 # https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerExecute(Expression):
-    arg_types = {
-        "this": True,
-        "is_function": False,
-    }
+    pass
 
 
 # https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerEvent(Expression):
-    arg_types = {
-        "this": True,
-        "columns": False,
-    }
+    arg_types = {"this": True, "columns": False}
 
 
 # https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerReferencing(Expression):
-    arg_types = {
-        "old": False,
-        "new": False,
-    }
+    arg_types = {"old": False, "new": False}
 
 
 class TruncateTable(Expression):

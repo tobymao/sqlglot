@@ -2567,21 +2567,11 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.EXECUTE):
             return None
 
-        is_function = None
-        if self._match(TokenType.FUNCTION):
-            is_function = True
-        elif self._match(TokenType.PROCEDURE):
-            is_function = False
-        else:
+        if not self._match_set((TokenType.FUNCTION, TokenType.PROCEDURE)):
             self.raise_error("Expected FUNCTION or PROCEDURE after EXECUTE")
 
         func_call = self._parse_function(anonymous=True, optional_parens=False)
-
-        return self.expression(
-            exp.TriggerExecute,
-            this=func_call,
-            is_function=is_function,
-        )
+        return self.expression(exp.TriggerExecute, this=func_call)
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
         # only used for teradata currently

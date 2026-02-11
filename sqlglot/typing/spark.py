@@ -32,6 +32,7 @@ EXPRESSION_METADATA = {
         exp_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for exp_type in {
             exp.ArrayCompact,
+            exp.ArrayInsert,
             exp.Overlay,
         }
     },

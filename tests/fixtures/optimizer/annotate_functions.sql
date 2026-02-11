@@ -736,6 +736,14 @@ STRING;
 FILTER(tbl.array_col, x -> x > 2);
 ARRAY<STRING>;
 
+# dialect: spark, databricks
+ARRAY_INSERT(array(1, 2, 3, 4), 5, 5);
+ARRAY<INT>;
+
+# dialect: spark, databricks
+ARRAY_INSERT(array_col, int_col, str_col);
+ARRAY<STRING>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

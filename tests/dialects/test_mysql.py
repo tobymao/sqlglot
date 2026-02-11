@@ -1592,3 +1592,20 @@ COMMENT='客户账户表'"""
         ):
             with self.subTest(f"Testing INTERVAL unit: {unit}"):
                 self.validate_identity(f"DATE_ADD(base_date, INTERVAL day_interval {unit})")
+
+    def test_create_trigger(self):
+        """Test that MySQL CREATE TRIGGER statements fall back to Command parsing."""
+        self.validate_identity(
+            "CREATE TRIGGER check_age BEFORE INSERT ON users FOR EACH ROW BEGIN SET NEW.created_at = NOW() END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER audit_update AFTER UPDATE ON accounts FOR EACH ROW BEGIN INSERT INTO audit_log (user_id, old_balance, new_balance, changed_at) VALUES (OLD.user_id, OLD.balance, NEW.balance, NOW()) END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER track_deletes BEFORE DELETE ON orders FOR EACH ROW BEGIN UPDATE statistics SET delete_count = delete_count + 1 WHERE table_name = 'orders' END",
+            check_command_warning=True,
+        )

@@ -593,8 +593,11 @@ class Parser(metaclass=_Parser):
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
+        TokenType.TRIGGER,
         *DB_CREATABLES,
     }
+
+    TRIGGER_EVENTS = {TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE, TokenType.TRUNCATE}
 
     ALTERABLES = {
         TokenType.INDEX,
@@ -1459,6 +1462,21 @@ class Parser(metaclass=_Parser):
     )
     CONFLICT_ACTIONS["DO"] = ("NOTHING", "UPDATE")
 
+    TRIGGER_TIMING: OPTIONS_TYPE = {
+        "INSTEAD": (("OF",),),
+        "BEFORE": tuple(),
+        "AFTER": tuple(),
+    }
+
+    TRIGGER_FOR_EACH: OPTIONS_TYPE = dict.fromkeys(("ROW", "STATEMENT"), tuple())
+
+    TRIGGER_DEFERRABLE: OPTIONS_TYPE = {
+        "NOT": (("DEFERRABLE",),),
+        "DEFERRABLE": tuple(),
+    }
+
+    TRIGGER_INITIALLY_VALUE: OPTIONS_TYPE = dict.fromkeys(("IMMEDIATE", "DEFERRED"), tuple())
+
     CREATE_SEQUENCE: OPTIONS_TYPE = {
         "SCALE": ("EXTEND", "NOEXTEND"),
         "SHARD": ("EXTEND", "NOEXTEND"),
@@ -2266,6 +2284,59 @@ class Parser(metaclass=_Parser):
                 anonymous = True
 
             this = self._parse_index(index=index, anonymous=anonymous)
+        elif (
+            create_token.token_type == TokenType.CONSTRAINT and self._match(TokenType.TRIGGER)
+        ) or create_token.token_type == TokenType.TRIGGER:
+            is_constraint = create_token.token_type == TokenType.CONSTRAINT
+            if is_constraint:
+                create_token = self._prev
+
+            trigger_name = self._parse_id_var()
+            if not trigger_name:
+                return self._parse_as_command(start)
+
+            timing_var = self._parse_var_from_options(self.TRIGGER_TIMING, raise_unmatched=False)
+            timing = timing_var.this if timing_var else None
+            if not timing:
+                return self._parse_as_command(start)
+            events = self._parse_trigger_events()
+
+            if not self._match(TokenType.ON):
+                self.raise_error("Expected ON in trigger definition")
+
+            table = self._parse_table_parts()
+            referenced_table = self._parse_table_parts() if self._match(TokenType.FROM) else None
+            deferrable, initially = self._parse_trigger_deferrable()
+            referencing = self._parse_trigger_referencing()
+            for_each = self._parse_trigger_for_each()
+            when = self._match_text_seq("WHEN") and self._pasre_wrapped(
+                self._parse_disjunction, optional=True
+            )
+            execute = self._parse_trigger_execute()
+
+            if execute is None:
+                return self._parse_as_command(start)
+
+            trigger_props = self.expression(
+                exp.TriggerProperties,
+                table=table,
+                timing=timing,
+                events=events,
+                execute=execute,
+                constraint=is_constraint,
+                referenced_table=referenced_table,
+                deferrable=deferrable,
+                initially=initially,
+                referencing=referencing,
+                for_each=for_each,
+                when=when,
+            )
+
+            this = trigger_name
+            trigger_properties = exp.Properties(
+                expressions=[trigger_props] if trigger_props else []
+            )
+            extend_props(trigger_properties)
         elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(
                 schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
@@ -2398,6 +2469,105 @@ class Parser(metaclass=_Parser):
 
         seq.set("options", options if options else None)
         return None if self._index == index else seq
+
+    def _parse_trigger_events(self) -> t.List[exp.TriggerEvent]:
+        events = []
+
+        while True:
+            event_type = self._match_set(self.TRIGGER_EVENTS) and self._prev.text.upper()
+
+            if not event_type:
+                self.raise_error("Expected trigger event (INSERT, UPDATE, DELETE, TRUNCATE)")
+
+            columns = (
+                self._parse_csv(self._parse_column)
+                if event_type == "UPDATE" and self._match_text_seq("OF")
+                else None
+            )
+
+            events.append(self.expression(exp.TriggerEvent, this=event_type, columns=columns))
+
+            if not self._match(TokenType.OR):
+                break
+
+        return events
+
+    def _parse_trigger_deferrable(
+        self,
+    ) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+        deferrable_var = self._parse_var_from_options(
+            self.TRIGGER_DEFERRABLE, raise_unmatched=False
+        )
+        deferrable = deferrable_var.this if deferrable_var else None
+
+        initially = None
+        if deferrable and self._match_text_seq("INITIALLY"):
+            initially_var = self._parse_var_from_options(
+                self.TRIGGER_INITIALLY_VALUE, raise_unmatched=False
+            )
+            initially = initially_var.this if initially_var else None
+            if not initially:
+                self.raise_error("Expected IMMEDIATE or DEFERRED after INITIALLY")
+
+        return deferrable, initially
+
+    def _parse_trigger_referencing_clause(self, keyword: str) -> t.Optional[exp.Expression]:
+        if not self._match_text_seq(keyword):
+            return None
+        if not self._match_text_seq("TABLE"):
+            self.raise_error(f"Expected TABLE after {keyword} in REFERENCING clause")
+        self._match_text_seq("AS")
+        return self._parse_id_var()
+
+    def _parse_trigger_referencing(self) -> t.Optional[exp.TriggerReferencing]:
+        if not self._match_text_seq("REFERENCING"):
+            return None
+
+        old_alias = None
+        new_alias = None
+
+        while True:
+            if alias := self._parse_trigger_referencing_clause("OLD"):
+                if old_alias is not None:
+                    self.raise_error("Duplicate OLD clause in REFERENCING")
+                old_alias = alias
+            elif alias := self._parse_trigger_referencing_clause("NEW"):
+                if new_alias is not None:
+                    self.raise_error("Duplicate NEW clause in REFERENCING")
+                new_alias = alias
+            else:
+                break
+
+        if old_alias is None and new_alias is None:
+            self.raise_error("REFERENCING clause requires at least OLD TABLE or NEW TABLE")
+
+        return self.expression(
+            exp.TriggerReferencing,
+            old=old_alias,
+            new=new_alias,
+        )
+
+    def _parse_trigger_for_each(self) -> t.Optional[str]:
+        if not self._match(TokenType.FOR):
+            return None
+
+        self._match_text_seq("EACH")
+
+        for_each = self._parse_var_from_options(self.TRIGGER_FOR_EACH, raise_unmatched=False)
+        if for_each:
+            return for_each.this
+        self.raise_error("Expected ROW or STATEMENT after FOR")
+        return None
+
+    def _parse_trigger_execute(self) -> t.Optional[exp.TriggerExecute]:
+        if not self._match(TokenType.EXECUTE):
+            return None
+
+        if not self._match_set((TokenType.FUNCTION, TokenType.PROCEDURE)):
+            self.raise_error("Expected FUNCTION or PROCEDURE after EXECUTE")
+
+        func_call = self._parse_function(anonymous=True, optional_parens=False)
+        return self.expression(exp.TriggerExecute, this=func_call)
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
         # only used for teradata currently

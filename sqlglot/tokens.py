@@ -432,6 +432,7 @@ class TokenType(AutoName):
     THEN = auto()
     TRUE = auto()
     TRUNCATE = auto()
+    TRIGGER = auto()
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
@@ -901,6 +902,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
+        "TRIGGER": TokenType.TRIGGER,
         "UNION": TokenType.UNION,
         "UNKNOWN": TokenType.UNKNOWN,
         "UNNEST": TokenType.UNNEST,

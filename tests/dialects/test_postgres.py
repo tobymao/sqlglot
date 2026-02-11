@@ -1202,8 +1202,7 @@ FROM json_data, field_ids""",
             check_command_warning=True,
         )
         self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()",
-            check_command_warning=True,
+            "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION DO_STH()"
         )
         self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
@@ -1798,3 +1797,55 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             day_time_str = "a > INTERVAL '1 00:00' AND TRUE"
             self.validate_identity(day_time_str, "a > INTERVAL '1 00:00' AND TRUE")
             self.assertIsInstance(self.parse_one(day_time_str), exp.And)
+
+    def test_postgres_create_trigger(self):
+        basic_triggers = [
+            "CREATE TRIGGER check_update BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_ACCOUNT_UPDATE()",
+            "CREATE TRIGGER log_insert AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
+            "CREATE TRIGGER audit_changes AFTER INSERT OR UPDATE OR DELETE ON products FOR EACH ROW EXECUTE FUNCTION AUDIT_LOG()",
+            "CREATE TRIGGER check_balance BEFORE UPDATE OF balance, status ON accounts FOR EACH ROW EXECUTE FUNCTION VALIDATE_BALANCE()",
+            "CREATE TRIGGER conditional_trigger BEFORE UPDATE ON users FOR EACH ROW WHEN (OLD.id <> NEW.id) EXECUTE FUNCTION CHECK_ID_CHANGE()",
+            "CREATE TRIGGER statement_trigger AFTER INSERT ON orders FOR EACH STATEMENT EXECUTE FUNCTION UPDATE_SUMMARY()",
+            "CREATE TRIGGER instead_trigger INSTEAD OF INSERT ON user_view FOR EACH ROW EXECUTE FUNCTION HANDLE_INSERT()",
+            "CREATE OR REPLACE TRIGGER replace_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_INSERT()",
+            "CREATE TRIGGER param_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_WITH_PARAMS('insert', 'users')",
+            "CREATE TRIGGER my_trigger BEFORE INSERT ON myschema.users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
+            "CREATE TRIGGER truncate_trigger BEFORE TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION LOG_TRUNCATE()",
+            "CREATE TRIGGER complex_when BEFORE UPDATE ON accounts FOR EACH ROW WHEN (OLD.balance IS DISTINCT FROM NEW.balance AND NEW.balance > 0) EXECUTE FUNCTION CHECK_BALANCE()",
+            "CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp FOR EACH ROW EXECUTE FUNCTION EMP_STAMP()",
+            "CREATE TRIGGER view_insert INSTEAD OF INSERT ON my_view FOR EACH ROW EXECUTE FUNCTION VIEW_INSERT_ROW()",
+            "CREATE TRIGGER check_update BEFORE UPDATE OF balance ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_ACCOUNT_UPDATE()",
+            "CREATE TRIGGER restock AFTER UPDATE ON products FOR EACH ROW WHEN (OLD.count <> NEW.count) EXECUTE FUNCTION RESTOCK_ITEM()",
+            "CREATE TRIGGER multi_col_update BEFORE UPDATE OF col1, col2, col3, col4 ON accounts FOR EACH ROW EXECUTE FUNCTION CHECK_COLUMNS()",
+            "CREATE TRIGGER all_events AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON audit_table FOR EACH STATEMENT EXECUTE FUNCTION LOG_ALL_CHANGES()",
+        ]
+
+        referencing_triggers = [
+            "CREATE TRIGGER track_new_rows AFTER INSERT ON users REFERENCING NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION PROCESS_NEW_USERS()",
+            "CREATE TRIGGER track_changes AFTER UPDATE ON accounts REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT EXECUTE FUNCTION COMPARE_CHANGES()",
+            "CREATE TRIGGER statistics_update AFTER UPDATE ON sales REFERENCING OLD TABLE AS old_sales NEW TABLE AS new_sales FOR EACH STATEMENT EXECUTE FUNCTION UPDATE_STATISTICS()",
+        ]
+
+        constraint_triggers = [
+            "CREATE CONSTRAINT TRIGGER check_integrity AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION VALIDATE_USER()",
+            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER deferred_check AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER immediate_check AFTER INSERT ON orders NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION CHECK_ORDER()",
+            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
+            "CREATE CONSTRAINT TRIGGER fk_check AFTER UPDATE ON orders FROM public.users FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY()",
+            "CREATE CONSTRAINT TRIGGER if_dist_exists AFTER INSERT OR UPDATE ON films DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION CHECK_FOREIGN_KEY('distributors', 'did')",
+            "CREATE CONSTRAINT TRIGGER check_fk AFTER INSERT ON orders FROM customers FOR EACH ROW EXECUTE FUNCTION CHECK_CUSTOMER_EXISTS()",
+            "CREATE CONSTRAINT TRIGGER complex_trigger AFTER UPDATE OF col1, col2 ON mytable FROM reftable DEFERRABLE INITIALLY DEFERRED REFERENCING OLD TABLE AS old_data NEW TABLE AS new_data FOR EACH STATEMENT WHEN (OLD.status <> NEW.status) EXECUTE FUNCTION COMPLEX_CHECK('param1', 'param2')",
+        ]
+
+        for sql in basic_triggers + referencing_triggers + constraint_triggers:
+            with self.subTest(sql):
+                self.validate_identity(sql)
+
+        self.validate_identity(
+            "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE PROCEDURE LOG_CHANGES()",
+            "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
+        )
+        self.validate_identity(
+            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION MYFUNCTION()'
+        )

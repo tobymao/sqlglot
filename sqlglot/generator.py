@@ -659,6 +659,7 @@ class Generator(metaclass=_Generator):
         exp.SetConfigProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.TriggerProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
@@ -1197,7 +1198,18 @@ class Generator(metaclass=_Generator):
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind")
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+
         properties = expression.args.get("properties")
+
+        if (
+            kind == "TRIGGER"
+            and properties
+            and properties.expressions
+            and isinstance(properties.expressions[0], exp.TriggerProperties)
+            and properties.expressions[0].args.get("constraint")
+        ):
+            kind = f"CONSTRAINT {kind}"
+
         properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
         this = self.createable_sql(expression, properties_locs)
@@ -1326,6 +1338,60 @@ class Generator(metaclass=_Generator):
         options = f" {options}" if options else ""
 
         return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
+
+    def triggerproperties_sql(self, expression: exp.TriggerProperties) -> str:
+        timing = expression.args.get("timing", "")
+        events = " OR ".join(self.sql(event) for event in expression.args.get("events") or [])
+        timing_events = f"{timing} {events}".strip() if timing or events else ""
+
+        parts = [
+            timing_events,
+            "ON",
+            self.sql(expression, "table"),
+        ]
+
+        if referenced_table := expression.args.get("referenced_table"):
+            parts.extend(["FROM", self.sql(referenced_table)])
+
+        if deferrable := expression.args.get("deferrable"):
+            parts.append(deferrable)
+
+        if initially := expression.args.get("initially"):
+            parts.append(f"INITIALLY {initially}")
+
+        if referencing := expression.args.get("referencing"):
+            parts.append(self.sql(referencing))
+
+        if for_each := expression.args.get("for_each"):
+            parts.append(f"FOR EACH {for_each}")
+
+        if when := expression.args.get("when"):
+            parts.append(f"WHEN ({self.sql(when)})")
+
+        parts.append(self.sql(expression, "execute"))
+
+        return self.sep().join(parts)
+
+    def triggerexecute_sql(self, expression: exp.TriggerExecute) -> str:
+        return f"EXECUTE FUNCTION {self.sql(expression, 'this')}"
+
+    def triggerreferencing_sql(self, expression: exp.TriggerReferencing) -> str:
+        parts = []
+
+        if old_alias := expression.args.get("old"):
+            parts.append(f"OLD TABLE AS {self.sql(old_alias)}")
+
+        if new_alias := expression.args.get("new"):
+            parts.append(f"NEW TABLE AS {self.sql(new_alias)}")
+
+        return f"REFERENCING {' '.join(parts)}"
+
+    def triggerevent_sql(self, expression: exp.TriggerEvent) -> str:
+        columns = expression.args.get("columns")
+        if columns:
+            return f"{expression.this} OF {self.expressions(expression, key='columns', flat=True)}"
+
+        return expression.this
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
@@ -3491,6 +3557,7 @@ class Generator(metaclass=_Generator):
         # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
         parent = expression.parent
         is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
+
         return self.func(
             self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified
         )

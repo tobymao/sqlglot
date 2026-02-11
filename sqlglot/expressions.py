@@ -1590,6 +1590,35 @@ class SequenceProperties(Expression):
     }
 
 
+# https://www.postgresql.org/docs/current/sql-createtrigger.html
+class TriggerProperties(Expression):
+    arg_types = {
+        "table": True,
+        "timing": True,
+        "events": True,
+        "execute": True,
+        "constraint": False,
+        "referenced_table": False,
+        "deferrable": False,
+        "initially": False,
+        "referencing": False,
+        "for_each": False,
+        "when": False,
+    }
+
+
+class TriggerExecute(Expression):
+    pass
+
+
+class TriggerEvent(Expression):
+    arg_types = {"this": True, "columns": False}
+
+
+class TriggerReferencing(Expression):
+    arg_types = {"old": False, "new": False}
+
+
 class TruncateTable(Expression):
     arg_types = {
         "expressions": True,

@@ -2807,6 +2807,28 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")
 
         self.validate_all(
+            "SELECT ARRAY_CONTAINS(NULL, [1, NULL, 3])",
+            write={
+                "snowflake": "SELECT ARRAY_CONTAINS(NULL, [1, NULL, 3])",
+                "duckdb": "SELECT NULLIF(ARRAY_LENGTH([1, NULL, 3]) <> LIST_COUNT([1, NULL, 3]), FALSE)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONTAINS(NULL, [1, 2, 3])",
+            write={
+                "snowflake": "SELECT ARRAY_CONTAINS(NULL, [1, 2, 3])",
+                "duckdb": "SELECT NULLIF(ARRAY_LENGTH([1, 2, 3]) <> LIST_COUNT([1, 2, 3]), FALSE)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONTAINS(1, [1, 2, 3])",
+            write={
+                "snowflake": "SELECT ARRAY_CONTAINS(1, [1, 2, 3])",
+                "duckdb": "SELECT ARRAY_CONTAINS([1, 2, 3], 1)",
+            },
+        )
+
+        self.validate_all(
             "SELECT x'ABCD'",
             write={
                 "snowflake": "SELECT x'ABCD'",

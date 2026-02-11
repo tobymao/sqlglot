@@ -542,6 +542,28 @@ def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
     return self.func(name, expression.this)
 
 
+def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -> str:
+    if not expression.args.get("check_null"):
+        return self.func("ARRAY_CONTAINS", expression.this, expression.expression)
+
+    this, expr = expression.this, expression.expression
+    has_null_in_array = exp.Nullif(
+        this=exp.NEQ(this=exp.ArraySize(this=this), expression=exp.func("LIST_COUNT", this)),
+        expression=exp.false(),
+    )
+    array_contains_check = exp.func("ARRAY_CONTAINS", this, expr)
+
+    if isinstance(expr, exp.Null):
+        return self.sql(has_null_in_array)
+
+    if isinstance(expr, exp.Literal):
+        return self.sql(array_contains_check)
+
+    return self.sql(
+        exp.If(this=expr.is_(exp.Null()), true=has_null_in_array, false=array_contains_check)
+    )
+
+
 def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
@@ -1901,6 +1923,7 @@ class DuckDB(Dialect):
                 exp.ArrayCompact(this=exp.Array(expressions=e.expressions))
             ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
+            exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
             exp.ArrayRemoveAt: _array_remove_at_sql,

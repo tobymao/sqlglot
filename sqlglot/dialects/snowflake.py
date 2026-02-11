@@ -263,6 +263,15 @@ def _build_regexp_replace(args: t.List) -> exp.RegexpReplace:
     return regexp_replace
 
 
+def _build_regexp_like(args: t.List) -> exp.RegexpLike:
+    return exp.RegexpLike(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        flag=seq_get(args, 2),
+        full_match=True,
+    )
+
+
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser], exp.Show]:
     def _parse(self: Snowflake.Parser) -> exp.Show:
         return self._parse_show_snowflake(*args, **kwargs)
@@ -923,11 +932,12 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), permissive=seq_get(args, 1)
             ),
             "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "REGEXP_LIKE": _build_regexp_like,
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
             "REPLACE": build_replace_with_optional_replacement,
-            "RLIKE": exp.RegexpLike.from_arg_list,
+            "RLIKE": _build_regexp_like,
             "ROUND": _build_round,
             "SHA1_BINARY": exp.SHA1Digest.from_arg_list,
             "SHA1_HEX": exp.SHA.from_arg_list,

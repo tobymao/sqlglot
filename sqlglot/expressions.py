@@ -7898,7 +7898,7 @@ class RegexpReplace(Func):
 
 
 class RegexpLike(Binary, Func):
-    arg_types = {"this": True, "expression": True, "flag": False}
+    arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 
 class RegexpILike(Binary, Func):

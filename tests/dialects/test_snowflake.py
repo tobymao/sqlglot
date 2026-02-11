@@ -1742,9 +1742,17 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
+                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$')",
                 "hive": "SELECT a RLIKE b",
                 "snowflake": "SELECT REGEXP_LIKE(a, b)",
                 "spark": "SELECT a RLIKE b",
+            },
+        )
+        self.validate_all(
+            "SELECT RLIKE(a, b, 'i')",
+            write={
+                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$', 'i')",
+                "snowflake": "SELECT REGEXP_LIKE(a, b, 'i')",
             },
         )
         self.validate_all(
@@ -5747,10 +5755,11 @@ FROM SEMANTIC_VIEW(
         )
 
         # GENERATOR with SEQ functions - the common use case
+        # SEQ is replaced with `range` column reference to avoid nested window function issues
         self.validate_all(
             "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
             write={
-                "duckdb": "SELECT (ROW_NUMBER() OVER (ORDER BY 1 NULLS FIRST) - 1) % 18446744073709551616 FROM RANGE(5)",
+                "duckdb": "SELECT range % 18446744073709551616 FROM RANGE(5)",
                 "snowflake": "SELECT SEQ8() FROM TABLE(GENERATOR(ROWCOUNT => 5))",
             },
         )

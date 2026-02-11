@@ -744,6 +744,14 @@ ARRAY<INT>;
 ARRAY_INSERT(tbl.array_col, tbl.int_col, tbl.str_col);
 ARRAY<STRING>;
 
+# dialect: hive, spark2, spark, databricks
+ARRAY_INTERSECT(tbl.array_col, tbl.array_col);
+ARRAY<STRING>;
+
+# dialect: hive, spark2, spark, databricks
+ARRAY_INTERSECT(array(1, 2, 3), array(1, 3, 5));
+ARRAY<INT>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

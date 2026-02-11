@@ -87,7 +87,6 @@ impl TokenTypeSettings {
 #[pyclass]
 #[cfg_attr(feature = "profiling", derive(serde::Serialize, serde::Deserialize))]
 pub struct TokenizerSettings {
-    pub white_space: HashMap<char, TokenType>,
     pub single_tokens: HashMap<char, TokenType>,
     pub keywords: HashMap<String, TokenType>,
     pub numeric_literals: HashMap<String, String>,
@@ -115,7 +114,6 @@ pub struct TokenizerSettings {
 impl TokenizerSettings {
     #[new]
     pub fn new(
-        white_space: HashMap<String, TokenType>,
         single_tokens: HashMap<String, TokenType>,
         keywords: HashMap<String, TokenType>,
         numeric_literals: HashMap<String, String>,
@@ -146,11 +144,6 @@ impl TokenizerSettings {
             }
         };
 
-        let white_space_native: HashMap<char, TokenType> = white_space
-            .into_iter()
-            .map(|(k, v)| (to_char(&k), v))
-            .collect();
-
         let single_tokens_native: HashMap<char, TokenType> = single_tokens
             .into_iter()
             .map(|(k, v)| (to_char(&k), v))
@@ -172,7 +165,6 @@ impl TokenizerSettings {
             var_single_tokens.iter().map(&to_char).collect();
 
         let tokenizer_settings = TokenizerSettings {
-            white_space: white_space_native,
             single_tokens: single_tokens_native,
             keywords,
             numeric_literals,

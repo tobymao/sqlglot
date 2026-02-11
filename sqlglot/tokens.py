@@ -587,7 +587,6 @@ class _Tokenizer(type):
 
         if USE_RS_TOKENIZER:
             settings = RsTokenizerSettings(
-                white_space={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.WHITE_SPACE.items()},
                 single_tokens={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.SINGLE_TOKENS.items()},
                 keywords={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.KEYWORDS.items()},
                 numeric_literals=klass.NUMERIC_LITERALS,
@@ -1037,13 +1036,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
     }
 
-    WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {
-        " ": TokenType.SPACE,
-        "\t": TokenType.SPACE,
-        "\n": TokenType.BREAK,
-        "\r": TokenType.BREAK,
-    }
-
     COMMANDS = {
         TokenType.COMMAND,
         TokenType.EXECUTE,
@@ -1177,9 +1169,10 @@ class Tokenizer(metaclass=_Tokenizer):
         return self.sql[start:end] if end <= self.size else ""
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
-        if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
+        char = self._char
+        if char == "\n" or char == "\r":
             # Ensures we don't count an extra line if we get a \r\n line break sequence
-            if not (self._char == "\r" and self._peek == "\n"):
+            if not (char == "\r" and self._peek == "\n"):
                 self._col = i
                 self._line += 1
         else:
@@ -1192,6 +1185,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if alnum and self._char.isalnum():
             # Here we use local variables instead of attributes for better performance
+            sql = self.sql
+            size = self.size
             _col = self._col
             _current = self._current
             _end = self._end
@@ -1200,14 +1195,14 @@ class Tokenizer(metaclass=_Tokenizer):
             while _peek.isalnum():
                 _col += 1
                 _current += 1
-                _end = _current >= self.size
-                _peek = "" if _end else self.sql[_current]
+                _end = _current >= size
+                _peek = "" if _end else sql[_current]
 
             self._col = _col
             self._current = _current
             self._end = _end
             self._peek = _peek
-            self._char = self.sql[_current - 1]
+            self._char = sql[_current - 1]
 
     @property
     def _text(self) -> str:
@@ -1220,10 +1215,13 @@ class Tokenizer(metaclass=_Tokenizer):
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
 
+        if text is None:
+            text = self.sql[self._start : self._current]
+
         self.tokens.append(
             Token(
                 token_type,
-                text=self._text if text is None else text,
+                text=text,
                 line=self._line,
                 col=self._col,
                 start=self._start,
@@ -1249,14 +1247,17 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._add(TokenType.STRING, text)
 
     def _scan_keywords(self) -> None:
+        sql = self.sql
+        sql_size = self.size
+        single_tokens = self.SINGLE_TOKENS
         size = 0
         word = None
-        chars = self._text
+        chars = self._char
         char = chars
         prev_space = False
         skip = False
         trie = self._KEYWORD_TRIE
-        single_token = char in self.SINGLE_TOKENS
+        single_token = char in single_tokens
 
         while chars:
             if skip:
@@ -1272,9 +1273,9 @@ class Tokenizer(metaclass=_Tokenizer):
             end = self._current + size
             size += 1
 
-            if end < self.size:
-                char = self.sql[end]
-                single_token = single_token or char in self.SINGLE_TOKENS
+            if end < sql_size:
+                char = sql[end]
+                single_token = single_token or char in single_tokens
                 is_space = char.isspace()
 
                 if not is_space or not prev_space:
@@ -1300,8 +1301,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._add(self.KEYWORDS[word], text=word)
                 return
 
-        if self._char in self.SINGLE_TOKENS:
-            self._add(self.SINGLE_TOKENS[self._char], text=self._char)
+        if self._char in single_tokens:
+            self._add(single_tokens[self._char], text=self._char)
             return
 
         self._scan_var()
@@ -1341,8 +1342,10 @@ class Tokenizer(metaclass=_Tokenizer):
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)
         else:
-            while not self._end and self.WHITE_SPACE.get(self._peek) is not TokenType.BREAK:
+            _peek = self._peek
+            while not self._end and _peek != "\n" and _peek != "\r":
                 self._advance(alnum=True)
+                _peek = self._peek
             self._comments.append(self._text[comment_start_size:])
 
         if (
@@ -1515,17 +1518,21 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
+        var_single_tokens = self.VAR_SINGLE_TOKENS
+        single_tokens = self.SINGLE_TOKENS
+
         while True:
-            char = self._peek.strip()
-            if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
-                self._advance(alnum=True)
-            else:
+            peek = self._peek
+            if not peek or peek.isspace():
                 break
+            if peek not in var_single_tokens and peek in single_tokens:
+                break
+            self._advance(alnum=True)
 
         self._add(
             TokenType.VAR
             if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
-            else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
+            else self.KEYWORDS.get(self.sql[self._start : self._current].upper(), TokenType.VAR)
         )
 
     def _extract_string(

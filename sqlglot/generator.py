@@ -1370,7 +1370,7 @@ class Generator(metaclass=_Generator):
 
         parts.append(self.sql(expression, "execute"))
 
-        return self.sep().join(filter(None, parts))
+        return self.sep().join(parts)
 
     def triggerexecute_sql(self, expression: exp.TriggerExecute) -> str:
         return f"EXECUTE FUNCTION {self.sql(expression, 'this')}"

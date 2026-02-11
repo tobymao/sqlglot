@@ -6,11 +6,9 @@ try:
 
     ext_modules = mypycify(
         [
-            # "sqlglot/tokenizer_core.py",
-            # "sqlglot/trie.py",
-            "sqlglot/optimizer/qualify.py",
-            "sqlglot/optimizer/qualify_columns.py",
-            "sqlglot/optimizer/qualify_tables.py",
+            "sqlglot/tokenizer_core.py",
+            "sqlglot/trie.py",
+            "sqlglot/expressions_core.py",
         ]
     )
 except ImportError as e:

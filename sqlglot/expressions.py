@@ -19,7 +19,6 @@ import re
 import sys
 import textwrap
 import typing as t
-from collections import deque
 from copy import deepcopy
 from decimal import Decimal
 from enum import auto
@@ -37,6 +36,14 @@ from sqlglot.helper import (
     to_bool,
 )
 from sqlglot.tokens import Token, TokenError
+from sqlglot.expressions_core import (
+    iter_expressions_func,
+    dfs_func,
+    bfs_func,
+    compute_hash_func,
+    set_parent_func,
+    deepcopy_func,
+)
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self
@@ -126,39 +133,7 @@ class Expression(metaclass=_Expression):
 
     def __hash__(self) -> int:
         if self._hash is None:
-            nodes = []
-            queue = deque([self])
-
-            while queue:
-                node = queue.popleft()
-                nodes.append(node)
-
-                for v in node.iter_expressions():
-                    if v._hash is None:
-                        queue.append(v)
-
-            for node in reversed(nodes):
-                hash_ = hash(node.key)
-                t = type(node)
-
-                if t is Literal or t is Identifier:
-                    for k, v in sorted(node.args.items()):
-                        if v:
-                            hash_ = hash((hash_, k, v))
-                else:
-                    for k, v in sorted(node.args.items()):
-                        t = type(v)
-
-                        if t is list:
-                            for x in v:
-                                if x is not None and x is not False:
-                                    hash_ = hash((hash_, k, x.lower() if type(x) is str else x))
-                                else:
-                                    hash_ = hash((hash_, k))
-                        elif v is not None and v is not False:
-                            hash_ = hash((hash_, k, v.lower() if t is str else v))
-
-                node._hash = hash_
+            compute_hash_func(self)
         assert self._hash
         return self._hash
 
@@ -303,38 +278,7 @@ class Expression(metaclass=_Expression):
         return self._meta
 
     def __deepcopy__(self, memo):
-        root = self.__class__()
-        stack = [(self, root)]
-
-        while stack:
-            node, copy = stack.pop()
-
-            if node.comments is not None:
-                copy.comments = deepcopy(node.comments)
-            if node._type is not None:
-                copy._type = deepcopy(node._type)
-            if node._meta is not None:
-                copy._meta = deepcopy(node._meta)
-            if node._hash is not None:
-                copy._hash = node._hash
-
-            for k, vs in node.args.items():
-                if hasattr(vs, "parent"):
-                    stack.append((vs, vs.__class__()))
-                    copy.set(k, stack[-1][-1])
-                elif type(vs) is list:
-                    copy.args[k] = []
-
-                    for v in vs:
-                        if hasattr(v, "parent"):
-                            stack.append((v, v.__class__()))
-                            copy.append(k, stack[-1][-1])
-                        else:
-                            copy.append(k, v)
-                else:
-                    copy.args[k] = vs
-
-        return root
+        return deepcopy_func(self)
 
     def copy(self) -> Self:
         """
@@ -433,16 +377,7 @@ class Expression(metaclass=_Expression):
         self._set_parent(arg_key, value, index)
 
     def _set_parent(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
-        if hasattr(value, "parent"):
-            value.parent = self
-            value.arg_key = arg_key
-            value.index = index
-        elif type(value) is list:
-            for index, v in enumerate(value):
-                if hasattr(v, "parent"):
-                    v.parent = self
-                    v.arg_key = arg_key
-                    v.index = index
+        set_parent_func(self, arg_key, value, index)
 
     @property
     def depth(self) -> int:
@@ -455,13 +390,7 @@ class Expression(metaclass=_Expression):
 
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
-        for vs in reversed(self.args.values()) if reverse else self.args.values():  # type: ignore
-            if type(vs) is list:
-                for v in reversed(vs) if reverse else vs:  # type: ignore
-                    if hasattr(v, "parent"):
-                        yield v
-            elif hasattr(vs, "parent"):
-                yield vs
+        return iter_expressions_func(self.args, reverse)
 
     def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
         """
@@ -559,18 +488,7 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        stack = [self]
-
-        while stack:
-            node = stack.pop()
-
-            yield node
-
-            if prune and prune(node):
-                continue
-
-            for v in node.iter_expressions(reverse=True):
-                stack.append(v)
+        return dfs_func(self, prune)
 
     def bfs(
         self, prune: t.Optional[t.Callable[[Expression], bool]] = None
@@ -582,18 +500,7 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        queue = deque([self])
-
-        while queue:
-            node = queue.popleft()
-
-            yield node
-
-            if prune and prune(node):
-                continue
-
-            for v in node.iter_expressions():
-                queue.append(v)
+        return bfs_func(self, prune)
 
     def unnest(self):
         """

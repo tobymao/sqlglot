@@ -1127,7 +1127,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         return self.tokens
 
-    def _scan(self, until: t.Optional[t.Callable] = None) -> None:
+    def _scan(self, check_semicolon: bool = False) -> None:
         while self.size and not self._end:
             current = self._current
 
@@ -1153,7 +1153,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     self._scan_keywords()
 
-            if until and until():
+            if check_semicolon and self._peek == ";":
                 break
 
         if self.tokens and self._comments:
@@ -1240,7 +1240,7 @@ class Tokenizer(metaclass=_Tokenizer):
         ):
             start = self._current
             tokens = len(self.tokens)
-            self._scan(lambda: self._peek == ";")
+            self._scan(check_semicolon=True)
             self.tokens = self.tokens[:tokens]
             text = self.sql[start : self._current].strip()
             if text:

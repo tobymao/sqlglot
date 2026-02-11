@@ -164,6 +164,9 @@ VARCHAR;
 CURRENT_USER();
 VARCHAR;
 
+SESSION_USER();
+VARCHAR;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

@@ -25,7 +25,6 @@ EXPRESSION_METADATA = {
             exp.CurrentTimezone,
             exp.Monthname,
             exp.Randstr,
-            exp.SessionUser,
         }
     },
     **{

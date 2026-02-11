@@ -2309,13 +2309,9 @@ class Parser(metaclass=_Parser):
             deferrable, initially = self._parse_trigger_deferrable()
             referencing = self._parse_trigger_referencing()
             for_each = self._parse_trigger_for_each()
-            when = None
-            if self._match_text_seq("WHEN"):
-                when = (
-                    self._parse_wrapped(self._parse_disjunction)
-                    if self._match(TokenType.L_PAREN, advance=False)
-                    else self._parse_disjunction()
-                )
+            when = self._match_text_seq("WHEN") and self._pasre_wrapped(
+                self._parse_disjunction, optional=True
+            )
             execute = self._parse_trigger_execute()
 
             if execute is None:

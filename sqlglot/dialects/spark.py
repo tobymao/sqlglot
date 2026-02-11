@@ -137,6 +137,7 @@ class Spark(Spark2):
                 offset=1,
             ),
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_GET": exp.Getbit.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "BIT_COUNT": exp.BitwiseCount.from_arg_list,

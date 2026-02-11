@@ -251,6 +251,7 @@ class TestDatabricks(Validator):
         self.validate_identity("CURDATE", "CURRENT_DATE")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
         self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
+        self.validate_identity("BIT_GET(11, 0)", "GETBIT(11, 0)")
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

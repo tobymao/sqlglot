@@ -14,8 +14,9 @@ class TestGenerator(unittest.TestCase):
         class NewParser(Parser):
             FUNCTIONS = SpecialUDF.default_parser_mappings()
 
-        tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a) FROM x")
-        expression = NewParser().parse(tokens)[0]
+        sql = "SELECT SPECIAL_UDF(a) FROM x"
+        tokens = Tokenizer().tokenize(sql)
+        expression = NewParser().parse(tokens, sql)[0]
         self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a) FROM x")
 
     def test_fallback_function_var_args_sql(self):
@@ -26,9 +27,10 @@ class TestGenerator(unittest.TestCase):
         class NewParser(Parser):
             FUNCTIONS = SpecialUDF.default_parser_mappings()
 
-        tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x")
-        expression = NewParser().parse(tokens)[0]
-        self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x")
+        sql = "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x"
+        tokens = Tokenizer().tokenize(sql)
+        expression = NewParser().parse(tokens, sql)[0]
+        self.assertEqual(expression.sql(), sql)
 
         self.assertEqual(
             exp.DateTrunc(this=exp.to_column("event_date"), unit=exp.var("MONTH")).sql(),

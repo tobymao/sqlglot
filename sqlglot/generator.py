@@ -3558,14 +3558,8 @@ class Generator(metaclass=_Generator):
         parent = expression.parent
         is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
 
-        # Also don't normalize if the function name is a quoted identifier
-        this = expression.this
-        is_quoted = isinstance(this, exp.Identifier) and this.quoted
-
         return self.func(
-            self.sql(expression, "this"),
-            *expression.expressions,
-            normalize=not (is_qualified or is_quoted),
+            self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified
         )
 
     def paren_sql(self, expression: exp.Paren) -> str:

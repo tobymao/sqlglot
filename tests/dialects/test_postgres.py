@@ -1839,7 +1839,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         ]
 
         for sql in basic_triggers + referencing_triggers + constraint_triggers:
-            with self.subTest(sql=sql[:80]):
+            with self.subTest(sql):
                 self.validate_identity(sql)
 
         self.validate_identity(
@@ -1847,5 +1847,5 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             "CREATE TRIGGER proc_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
         )
         self.validate_identity(
-            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION "MyFunction"()'
+            'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION MYFUNCTION()'
         )

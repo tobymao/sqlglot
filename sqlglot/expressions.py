@@ -1607,17 +1607,14 @@ class TriggerProperties(Expression):
     }
 
 
-# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerExecute(Expression):
     pass
 
 
-# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerEvent(Expression):
     arg_types = {"this": True, "columns": False}
 
 
-# https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerReferencing(Expression):
     arg_types = {"old": False, "new": False}
 

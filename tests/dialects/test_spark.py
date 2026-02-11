@@ -390,10 +390,63 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.costs) c",
+            write={
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c",
+            },
+        )
+        self.validate_all(
+            "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.adjustments) as type, val, curr",
+            write={
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth => 2)) AS _u_0(type, val, curr)",
+            },
+        )
+        self.validate_all(
+            """
+            WITH hourlycostagg AS (
+                SELECT
+                    101 AS id,
+                    ARRAY(
+                        STRUCT(10.0 AS amount, 'USD' AS currency),
+                        STRUCT(20.0 AS amount, 'EUR' AS currency)
+                    ) AS costs,
+                    ARRAY(
+                        STRUCT('tax' AS type, 0.15 AS val, 'EUR' AS currency),
+                        STRUCT('fee' AS type, 5.00 AS val, 'EUR' AS currency)
+                    ) AS adjustments,
+                    ARRAY(
+                        STRUCT(
+                            12.0 AS length, 
+                            STRUCT('A' AS tag, 98.5 AS score) AS details
+                        ),
+                        STRUCT(
+                            23.0 AS length, 
+                            STRUCT('B' AS tag, 99.5 AS score) AS details
+                        )
+                    ) AS info
+            )
+            SELECT 
+                h.id, 
+                amount,
+                currency,
+                type,
+                val,
+                leng
+            FROM hourlycostagg h
+            LATERAL VIEW inline(h.costs) c
+            LATERAL VIEW inline(h.adjustments) as type, val, curr
+            LATERAL VIEW inline(h.info) exploded as leng, det
+            """,
+            write={
+                "duckdb": "WITH hourlycostagg AS (SELECT 101 AS id, [{'amount': 10.0, 'currency': 'USD'}, {'amount': 20.0, 'currency': 'EUR'}] AS costs, [{'type': 'tax', 'val': 0.15, 'currency': 'EUR'}, {'type': 'fee', 'val': 5.00, 'currency': 'EUR'}] AS adjustments, [{'length': 12.0, 'details': {'tag': 'A', 'score': 98.5}}, {'length': 23.0, 'details': {'tag': 'B', 'score': 99.5}}] AS info) SELECT h.id, amount, currency, type, val, leng FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth => 2)) AS _u_1(type, val, curr) CROSS JOIN LATERAL (SELECT UNNEST(h.info, max_depth => 2)) AS exploded(leng, det)",
+            },
+        )
+        self.validate_all(
             "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
             write={
                 "presto": "SELECT id_column, name, age FROM test_table CROSS JOIN UNNEST(struc_column) AS explode_view(name, age)",
                 "spark": "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
+                "duckdb": "SELECT id_column, name, age FROM test_table CROSS JOIN LATERAL (SELECT UNNEST(struc_column, max_depth => 2)) AS explode_view(name, age)",
             },
         )
         self.validate_all(

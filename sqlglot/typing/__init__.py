@@ -234,6 +234,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.UnixToTimeStr,
             exp.Upper,
             exp.RawString,
+            exp.SessionUser,
             exp.Space,
         }
     },

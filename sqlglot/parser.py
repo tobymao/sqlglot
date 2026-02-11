@@ -1468,14 +1468,10 @@ class Parser(metaclass=_Parser):
         "AFTER": tuple(),
     }
 
-    TRIGGER_FOR_EACH: OPTIONS_TYPE = dict.fromkeys(("ROW", "STATEMENT"), tuple())
-
     TRIGGER_DEFERRABLE: OPTIONS_TYPE = {
         "NOT": (("DEFERRABLE",),),
         "DEFERRABLE": tuple(),
     }
-
-    TRIGGER_INITIALLY_VALUE: OPTIONS_TYPE = dict.fromkeys(("IMMEDIATE", "DEFERRED"), tuple())
 
     CREATE_SEQUENCE: OPTIONS_TYPE = {
         "SCALE": ("EXTEND", "NOEXTEND"),
@@ -2228,6 +2224,8 @@ class Parser(metaclass=_Parser):
             if not properties or not create_token:
                 return self._parse_as_command(start)
 
+        create_token_type = t.cast(Token, create_token).token_type
+
         concurrently = self._match_text_seq("CONCURRENTLY")
         exists = self._parse_exists(not_=True)
         this = None
@@ -2244,8 +2242,8 @@ class Parser(metaclass=_Parser):
             elif temp_props:
                 properties = temp_props
 
-        if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
-            this = self._parse_user_defined_function(kind=create_token.token_type)
+        if create_token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
+            this = self._parse_user_defined_function(kind=create_token_type)
 
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
@@ -2268,13 +2266,13 @@ class Parser(metaclass=_Parser):
                     else:
                         expression = (
                             self._parse_user_defined_function_expression()
-                            if create_token.token_type == TokenType.FUNCTION
+                            if create_token_type == TokenType.FUNCTION
                             else self._parse_block()
                         )
 
                     if return_:
                         expression = self.expression(exp.Return, this=expression)
-        elif create_token.token_type == TokenType.INDEX:
+        elif create_token_type == TokenType.INDEX:
             # Postgres allows anonymous indexes, eg. CREATE INDEX IF NOT EXISTS ON t(c)
             if not self._match(TokenType.ON):
                 index = self._parse_id_var()
@@ -2285,10 +2283,9 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_index(index=index, anonymous=anonymous)
         elif (
-            create_token.token_type == TokenType.CONSTRAINT and self._match(TokenType.TRIGGER)
-        ) or create_token.token_type == TokenType.TRIGGER:
-            is_constraint = create_token.token_type == TokenType.CONSTRAINT
-            if is_constraint:
+            create_token_type == TokenType.CONSTRAINT and self._match(TokenType.TRIGGER)
+        ) or create_token_type == TokenType.TRIGGER:
+            if is_constraint := (create_token_type == TokenType.CONSTRAINT):
                 create_token = self._prev
 
             trigger_name = self._parse_id_var()
@@ -2299,8 +2296,8 @@ class Parser(metaclass=_Parser):
             timing = timing_var.this if timing_var else None
             if not timing:
                 return self._parse_as_command(start)
-            events = self._parse_trigger_events()
 
+            events = self._parse_trigger_events()
             if not self._match(TokenType.ON):
                 self.raise_error("Expected ON in trigger definition")
 
@@ -2309,7 +2306,7 @@ class Parser(metaclass=_Parser):
             deferrable, initially = self._parse_trigger_deferrable()
             referencing = self._parse_trigger_referencing()
             for_each = self._parse_trigger_for_each()
-            when = self._match_text_seq("WHEN") and self._pasre_wrapped(
+            when = self._match_text_seq("WHEN") and self._parse_wrapped(
                 self._parse_disjunction, optional=True
             )
             execute = self._parse_trigger_execute()
@@ -2333,13 +2330,10 @@ class Parser(metaclass=_Parser):
             )
 
             this = trigger_name
-            trigger_properties = exp.Properties(
-                expressions=[trigger_props] if trigger_props else []
-            )
-            extend_props(trigger_properties)
-        elif create_token.token_type in self.DB_CREATABLES:
+            extend_props(exp.Properties(expressions=[trigger_props] if trigger_props else []))
+        elif create_token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(
-                schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
+                schema=True, is_db_reference=create_token_type == TokenType.SCHEMA
             )
 
             # exp.Properties.Location.POST_NAME
@@ -2356,7 +2350,7 @@ class Parser(metaclass=_Parser):
                 # exp.Properties.Location.POST_ALIAS
                 extend_props(self._parse_properties())
 
-            if create_token.token_type == TokenType.SEQUENCE:
+            if create_token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
                 props = self._parse_properties()
                 if props:
@@ -2384,7 +2378,7 @@ class Parser(metaclass=_Parser):
                 if not expression and has_alias:
                     expression = self._try_parse(self._parse_table_parts)
 
-            if create_token.token_type == TokenType.TABLE:
+            if create_token_type == TokenType.TABLE:
                 # exp.Properties.Location.POST_EXPRESSION
                 extend_props(self._parse_properties())
 
@@ -2399,10 +2393,10 @@ class Parser(metaclass=_Parser):
                     else:
                         self._match(TokenType.COMMA)
                         indexes.append(index)
-            elif create_token.token_type == TokenType.VIEW:
+            elif create_token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
-            elif create_token.token_type in (TokenType.SINK, TokenType.SOURCE):
+            elif create_token_type in (TokenType.SINK, TokenType.SOURCE):
                 extend_props(self._parse_properties())
 
             shallow = self._match_text_seq("SHALLOW")
@@ -2502,12 +2496,7 @@ class Parser(metaclass=_Parser):
 
         initially = None
         if deferrable and self._match_text_seq("INITIALLY"):
-            initially_var = self._parse_var_from_options(
-                self.TRIGGER_INITIALLY_VALUE, raise_unmatched=False
-            )
-            initially = initially_var.this if initially_var else None
-            if not initially:
-                self.raise_error("Expected IMMEDIATE or DEFERRED after INITIALLY")
+            initially = self._match_texts(("IMMEDIATE", "DEFERRED")) and self._prev.text.upper()
 
         return deferrable, initially
 
@@ -2548,16 +2537,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_trigger_for_each(self) -> t.Optional[str]:
-        if not self._match(TokenType.FOR):
+        if not self._match_text_seq("FOR", "EACH"):
             return None
 
-        self._match_text_seq("EACH")
-
-        for_each = self._parse_var_from_options(self.TRIGGER_FOR_EACH, raise_unmatched=False)
-        if for_each:
-            return for_each.this
-        self.raise_error("Expected ROW or STATEMENT after FOR")
-        return None
+        return self._match_texts(("ROW", "STATEMENT")) and self._prev.text.upper()
 
     def _parse_trigger_execute(self) -> t.Optional[exp.TriggerExecute]:
         if not self._match(TokenType.EXECUTE):

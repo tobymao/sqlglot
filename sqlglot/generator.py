@@ -221,6 +221,7 @@ class Generator(metaclass=_Generator):
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
+        exp.TriggerExecute: lambda self, e: f"EXECUTE FUNCTION {self.sql(e, 'this')}",
         exp.Union: lambda self, e: self.set_operations(e),
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.UsingTemplateProperty: lambda self, e: f"USING TEMPLATE {self.sql(e, 'this')}",
@@ -1344,11 +1345,7 @@ class Generator(metaclass=_Generator):
         events = " OR ".join(self.sql(event) for event in expression.args.get("events") or [])
         timing_events = f"{timing} {events}".strip() if timing or events else ""
 
-        parts = [
-            timing_events,
-            "ON",
-            self.sql(expression, "table"),
-        ]
+        parts = [timing_events, "ON", self.sql(expression, "table")]
 
         if referenced_table := expression.args.get("referenced_table"):
             parts.extend(["FROM", self.sql(referenced_table)])
@@ -1372,9 +1369,6 @@ class Generator(metaclass=_Generator):
 
         return self.sep().join(parts)
 
-    def triggerexecute_sql(self, expression: exp.TriggerExecute) -> str:
-        return f"EXECUTE FUNCTION {self.sql(expression, 'this')}"
-
     def triggerreferencing_sql(self, expression: exp.TriggerReferencing) -> str:
         parts = []
 
@@ -1391,7 +1385,7 @@ class Generator(metaclass=_Generator):
         if columns:
             return f"{expression.this} OF {self.expressions(expression, key='columns', flat=True)}"
 
-        return expression.this
+        return self.sql(expression, "this")
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")

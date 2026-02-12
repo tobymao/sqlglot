@@ -167,6 +167,9 @@ VARCHAR;
 SESSION_USER();
 VARCHAR;
 
+RAND();
+DOUBLE;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

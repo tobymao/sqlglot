@@ -260,7 +260,6 @@ EXPRESSION_METADATA = {
             exp.Float64,
             exp.LaxFloat64,
             exp.PercentRank,
-            exp.Rand,
             exp.Sec,
             exp.Sech,
         }

@@ -115,6 +115,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Stddev,
             exp.StddevPop,
             exp.StddevSamp,
+            exp.Rand,
             exp.Tan,
             exp.Tanh,
             exp.ToDouble,

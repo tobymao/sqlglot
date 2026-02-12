@@ -36,7 +36,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Atan2,
             exp.JarowinklerSimilarity,
-            exp.Rand,
             exp.TimeToUnix,
         }
     },

@@ -1325,6 +1325,22 @@ class TestSnowflake(Validator):
         )
 
         self.validate_all(
+            "SELECT FIRST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+            write={
+                "snowflake": "SELECT FIRST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+                "duckdb": "SELECT FIRST_VALUE(is_deleted RESPECT NULLS) OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+            write={
+                "snowflake": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+                "duckdb": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+            },
+        )
+
+        self.validate_all(
             "SELECT LEAD(is_deleted, 2, -10) RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
             write={
                 "snowflake": "SELECT LEAD(is_deleted, 2, -10) RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",

@@ -3208,18 +3208,15 @@ class DuckDB(Dialect):
             return self.sql(case)
 
         def _validate_regexp_flags(
-            self,
-            flags: t.Optional[exp.Expression],
-            supported_flags: t.Optional[str] = None,
+            self, flags: t.Optional[exp.Expression], supported_flags: str
         ) -> t.Optional[str]:
             """
-            Validate and filter regexp flags.
+            Validate and filter regexp flags for DuckDB compatibility.
 
             Args:
                 flags: The flags expression to validate
-                supported_flags: Optional string of supported flags (e.g., "ims").
-                                If provided, only these flags will be returned.
-                                If None, all flags except known unsupported ones are returned.
+                supported_flags: String of supported flags (e.g., "ims", "cims").
+                                Only these flags will be returned.
 
             Returns:
                 Validated/filtered flag string, or None if no valid flags remain
@@ -3232,20 +3229,14 @@ class DuckDB(Dialect):
                 return None
 
             flag_str = flags.this
+            unsupported = set(flag_str) - set(supported_flags)
 
-            # Filter to supported flags if specified
-            if supported_flags is not None:
-                unsupported = set(flag_str) - set(supported_flags)
-                if unsupported:
-                    self.unsupported(
-                        f"Regexp flags {sorted(unsupported)} are not supported in this context"
-                    )
-                flag_str = "".join(f for f in flag_str if f in supported_flags)
-            # Check for known unsupported flags
-            elif "e" in flag_str:
-                self.unsupported("'e' (extract) flag is not supported in DuckDB")
-                flag_str = flag_str.replace("e", "")
+            if unsupported:
+                self.unsupported(
+                    f"Regexp flags {sorted(unsupported)} are not supported in this context"
+                )
 
+            flag_str = "".join(f for f in flag_str if f in supported_flags)
             return flag_str if flag_str else None
 
         def regexpcount_sql(self, expression: exp.RegexpCount) -> str:
@@ -3290,7 +3281,8 @@ class DuckDB(Dialect):
             if not expression.args.get("full_match"):
                 return self.func("REGEXP_MATCHES", this, pattern, flag)
 
-            validated_flags = self._validate_regexp_flags(flag)
+            # DuckDB REGEXP_MATCHES supports: c, i, m, s (but not 'e')
+            validated_flags = self._validate_regexp_flags(flag, supported_flags="cims")
 
             anchored_pattern = exp.Concat(
                 expressions=[

@@ -138,32 +138,35 @@ class Scope:
             if node is self.expression:
                 continue
 
-            if isinstance(node, exp.Dot) and node.is_star:
+            node_type = type(node)
+            parent_type = type(node.parent)
+
+            if node_type is exp.Dot and node.is_star:
                 self._stars.append(node)
-            elif isinstance(node, exp.Column) and not isinstance(node, exp.Pseudocolumn):
+            elif node_type is exp.Column:
                 self._column_index.add(id(node))
 
-                if isinstance(node.this, exp.Star):
+                if type(node.this) is exp.Star:
                     self._stars.append(node)
                 else:
                     self._raw_columns.append(node)
-            elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
+            elif node_type is exp.Table and parent_type is not exp.JoinHint:
                 parent = node.parent
-                if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
+                if parent_type is exp.Join and parent.is_semi_or_anti_join:
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
-            elif isinstance(node, exp.JoinHint):
+            elif node_type is exp.JoinHint:
                 self._join_hints.append(node)
             elif isinstance(node, exp.UDTF):
                 self._udtfs.append(node)
-            elif isinstance(node, exp.CTE):
+            elif node_type is exp.CTE:
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.UNWRAPPED_QUERIES) and not _is_from_or_join(node):
                 self._subqueries.append(node)
-            elif isinstance(node, exp.TableColumn):
+            elif node_type is exp.TableColumn:
                 self._table_columns.append(node)
 
         self._collected = True
@@ -723,7 +726,7 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     as it doesn't introduce a new scope. If an alias is present, it shadows all names
     under the Subquery, so that's one exception to this rule.
     """
-    return isinstance(expression, exp.Subquery) and bool(
+    return type(expression) is exp.Subquery and bool(
         expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
     )
 
@@ -735,10 +738,10 @@ def _is_from_or_join(expression: exp.Expression) -> bool:
     parent = expression.parent
 
     # Subqueries can be arbitrarily nested
-    while isinstance(parent, exp.Subquery):
+    while type(parent) is exp.Subquery:
         parent = parent.parent
 
-    return isinstance(parent, (exp.From, exp.Join))
+    return type(parent) in (exp.From, exp.Join)
 
 
 def _traverse_tables(scope):
@@ -894,15 +897,17 @@ def walk_in_scope(expression, bfs=True, prune=None):
         if node is expression:
             continue
 
+        node_type = type(node)
+        parent_type = type(node.parent)
         if (
-            isinstance(node, exp.CTE)
-            or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
+            node_type is exp.CTE
+            or (parent_type in (exp.From, exp.Join) and _is_derived_table(node))
             or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
             crossed_scope_boundary = True
 
-            if isinstance(node, (exp.Subquery, exp.UDTF)):
+            if node_type is exp.Subquery or isinstance(node, exp.UDTF):
                 # The following args are not actually in the inner scope, so we should visit them
                 for key in ("joins", "laterals", "pivots"):
                     for arg in node.args.get(key) or []:

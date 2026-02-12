@@ -1411,6 +1411,31 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_all(
+            "LIST_CONTAINS(MAP_KEYS({'k1': 'v1', 'k2': 'v2', 'k3': 'v3'}), 'k1')",
+            read={
+                "snowflake": "MAP_CONTAINS_KEY('k1', {'k1': 'v1', 'k2': 'v2', 'k3': 'v3'})",
+            },
+        )
+        self.validate_all(
+            "LIST_CONTAINS(MAP_KEYS({'k1': 'v1', 'k2': 'v2'}), NULL)",
+            read={
+                "snowflake": "MAP_CONTAINS_KEY(NULL, {'k1': 'v1', 'k2': 'v2'})",
+            },
+        )
+        self.validate_all(
+            "LIST_CONTAINS(MAP_KEYS(CAST(NULL AS MAP(TEXT, TEXT))), 'k1')",
+            read={
+                "snowflake": "MAP_CONTAINS_KEY('k1', NULL::MAP(VARCHAR, VARCHAR))",
+            },
+        )
+        self.validate_all(
+            "LIST_CONTAINS(MAP_KEYS({'': 'empty_key', 'a': 'value'}), '')",
+            read={
+                "snowflake": "MAP_CONTAINS_KEY('', {'': 'empty_key', 'a': 'value'})",
+            },
+        )
+
         self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
         self.validate_identity("VERSION()")
         self.validate_identity("SELECT TODAY()", "SELECT CURRENT_DATE")

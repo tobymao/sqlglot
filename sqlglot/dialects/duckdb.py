@@ -543,25 +543,19 @@ def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
 
 
 def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -> str:
-    if not expression.args.get("check_null"):
-        return self.func("ARRAY_CONTAINS", expression.this, expression.expression)
+    this = expression.this
+    expr = expression.expression
 
-    this, expr = expression.this, expression.expression
-    has_null_in_array = exp.Nullif(
-        this=exp.NEQ(this=exp.ArraySize(this=this), expression=exp.func("LIST_COUNT", this)),
-        expression=exp.false(),
-    )
-    array_contains_check = exp.func("ARRAY_CONTAINS", this, expr)
+    func = self.func("ARRAY_CONTAINS", this, expr)
 
-    if isinstance(expr, exp.Null):
-        return self.sql(has_null_in_array)
+    if expression.args.get("check_null"):
+        has_null_in_array = exp.Nullif(
+            this=exp.NEQ(this=exp.ArraySize(this=this), expression=exp.func("LIST_COUNT", this)),
+            expression=exp.false(),
+        )
+        return self.sql(exp.If(this=expr.is_(exp.Null()), true=has_null_in_array, false=func))
 
-    if isinstance(expr, exp.Literal):
-        return self.sql(array_contains_check)
-
-    return self.sql(
-        exp.If(this=expr.is_(exp.Null()), true=has_null_in_array, false=array_contains_check)
-    )
+    return func
 
 
 def _build_sort_array_desc(args: t.List) -> exp.Expression:

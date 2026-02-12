@@ -549,11 +549,11 @@ def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -
     func = self.func("ARRAY_CONTAINS", this, expr)
 
     if expression.args.get("check_null"):
-        has_null_in_array = exp.Nullif(
+        check_null_in_array = exp.Nullif(
             this=exp.NEQ(this=exp.ArraySize(this=this), expression=exp.func("LIST_COUNT", this)),
             expression=exp.false(),
         )
-        return self.sql(exp.If(this=expr.is_(exp.Null()), true=has_null_in_array, false=func))
+        return self.sql(exp.If(this=expr.is_(exp.Null()), true=check_null_in_array, false=func))
 
     return func
 

@@ -3207,7 +3207,20 @@ class DuckDB(Dialect):
             )
             return self.sql(case)
 
-        def _validate_regexp_flags(self, flags: t.Optional[exp.Expression]) -> t.Optional[str]:
+        def _validate_regexp_flags(
+            self, flags: t.Optional[exp.Expression], supported_flags: str
+        ) -> t.Optional[str]:
+            """
+            Validate and filter regexp flags for DuckDB compatibility.
+
+            Args:
+                flags: The flags expression to validate
+                supported_flags: String of supported flags (e.g., "ims", "cims").
+                                Only these flags will be returned.
+
+            Returns:
+                Validated/filtered flag string, or None if no valid flags remain
+            """
             if not isinstance(flags, exp.Expression):
                 return None
 
@@ -3216,11 +3229,49 @@ class DuckDB(Dialect):
                 return None
 
             flag_str = flags.this
-            if "e" in flag_str:
-                self.unsupported("'e' (extract) flag is not supported in DuckDB")
-                flag_str = flag_str.replace("e", "")
+            unsupported = set(flag_str) - set(supported_flags)
 
-            return flag_str
+            if unsupported:
+                self.unsupported(
+                    f"Regexp flags {sorted(unsupported)} are not supported in this context"
+                )
+
+            flag_str = "".join(f for f in flag_str if f in supported_flags)
+            return flag_str if flag_str else None
+
+        def regexpcount_sql(self, expression: exp.RegexpCount) -> str:
+            this = expression.this
+            pattern = expression.expression
+            position = expression.args.get("position")
+            parameters = expression.args.get("parameters")
+
+            # Validate flags - only "ims" flags are supported for embedded patterns
+            validated_flags = self._validate_regexp_flags(parameters, supported_flags="ims")
+
+            if position:
+                this = exp.Substring(this=this, start=position)
+
+            # Embed flags in pattern (REGEXP_EXTRACT_ALL doesn't support flags argument)
+            if validated_flags:
+                pattern = exp.Concat(
+                    expressions=[exp.Literal.string(f"(?{validated_flags})"), pattern]
+                )
+
+            # Handle empty pattern: Snowflake returns 0, DuckDB would match between every character
+            result = (
+                exp.case()
+                .when(
+                    exp.EQ(this=pattern, expression=exp.Literal.string("")),
+                    exp.Literal.number(0),
+                )
+                .else_(
+                    exp.Length(
+                        this=exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern])
+                    )
+                )
+            )
+
+            return self.sql(result)
 
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:
             this = expression.this
@@ -3230,7 +3281,8 @@ class DuckDB(Dialect):
             if not expression.args.get("full_match"):
                 return self.func("REGEXP_MATCHES", this, pattern, flag)
 
-            validated_flags = self._validate_regexp_flags(flag)
+            # DuckDB REGEXP_MATCHES supports: c, i, m, s (but not 'e')
+            validated_flags = self._validate_regexp_flags(flag, supported_flags="cims")
 
             anchored_pattern = exp.Concat(
                 expressions=[

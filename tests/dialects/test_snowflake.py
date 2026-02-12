@@ -4468,6 +4468,38 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1)")
         self.validate_identity("SELECT REGEXP_COUNT('hello world', 'l', 1, 'i')")
 
+        self.validate_all(
+            "SELECT REGEXP_COUNT('hello', 'l')",
+            write={
+                "snowflake": "SELECT REGEXP_COUNT('hello', 'l')",
+                "duckdb": "SELECT CASE WHEN 'l' = '' THEN 0 ELSE LENGTH(REGEXP_EXTRACT_ALL('hello', 'l')) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT REGEXP_COUNT('hello world', 'l', 7)",
+            write={
+                "snowflake": "SELECT REGEXP_COUNT('hello world', 'l', 7)",
+                "duckdb": "SELECT CASE WHEN 'l' = '' THEN 0 ELSE LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING('hello world', 7), 'l')) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT REGEXP_COUNT('Hello World', 'L', 1, 'im')",
+            write={
+                "snowflake": "SELECT REGEXP_COUNT('Hello World', 'L', 1, 'im')",
+                "duckdb": "SELECT CASE WHEN '(?im)' || 'L' = '' THEN 0 ELSE LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING('Hello World', 1), '(?im)' || 'L')) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT REGEXP_COUNT(subject, pattern)",
+            write={
+                "snowflake": "SELECT REGEXP_COUNT(subject, pattern)",
+                "duckdb": "SELECT CASE WHEN pattern = '' THEN 0 ELSE LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) END",
+            },
+        )
+
     @mock.patch("sqlglot.generator.logger")
     def test_regexp_replace(self, logger):
         self.validate_all(

@@ -2814,6 +2814,24 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("SELECT ARRAY_DISTINCT(['A', 'B', 'A'])")
+
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(['A', NULL, 'B', NULL]) <> LIST_COUNT(['A', NULL, 'B', NULL]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(['A', NULL, 'B', NULL], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(['A', NULL, 'B', NULL]) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH([1, 2, 2, 3, 1]) <> LIST_COUNT([1, 2, 2, 3, 1]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER([1, 2, 2, 3, 1], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT([1, 2, 2, 3, 1]) END",
+            },
+        )
+
         self.validate_all(
             "SELECT x'ABCD'",
             write={

@@ -6233,6 +6233,10 @@ class ArraySum(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class ArrayDistinct(Func):
+    arg_types = {"this": True, "check_null": False}
+
+
 class ArrayUnionAgg(AggFunc):
     pass
 

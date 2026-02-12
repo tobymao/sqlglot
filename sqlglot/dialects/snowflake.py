@@ -828,7 +828,10 @@ class Snowflake(Dialect):
             "APPROX_TOP_K": _build_approx_top_k,
             "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
-                this=seq_get(args, 1), expression=seq_get(args, 0), ensure_variant=False
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                ensure_variant=False,
+                check_null=True,
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive

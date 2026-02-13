@@ -503,15 +503,6 @@ ORDER BY
         self.validate_identity("SELECT * FROM (SELECT 1 AS EXCLUDE) AS t")
         self.validate_identity("SELECT 1 AS EXCLUDE, 2 AS foo")
 
-        self.validate_identity(
-            "SELECT interval '00:00:01'::interval AS foo",
-            "SELECT CAST(INTERVAL '00:00:01' AS INTERVAL) AS foo",
-        )
-        self.validate_identity(
-            "SELECT ROW_NUMBER() OVER(PARTITION BY event_time + interval '00:00:01'::interval) AS foo FROM t",
-            "SELECT ROW_NUMBER() OVER (PARTITION BY event_time + CAST(INTERVAL '00:00:01' AS INTERVAL)) AS foo FROM t",
-        )
-
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]

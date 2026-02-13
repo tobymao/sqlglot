@@ -5713,6 +5713,18 @@ VARCHAR;
 STUFF(tbl.str_col, tbl.int_col, tbl.int_col, tbl.str_col);
 VARCHAR;
 
+# dialect: tsql
+DEGREES(tbl.int_col);
+INT;
+
+# dialect: tsql
+DEGREES(tbl.float_col);
+FLOAT;
+
+# dialect: tsql
+DEGREES(tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

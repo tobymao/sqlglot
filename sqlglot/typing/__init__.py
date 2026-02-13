@@ -99,6 +99,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Cos,
             exp.Cosh,
             exp.Cot,
+            exp.Degrees,
             exp.Exp,
             exp.Kurtosis,
             exp.Ln,

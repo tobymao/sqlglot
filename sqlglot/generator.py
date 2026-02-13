@@ -2202,9 +2202,9 @@ class Generator(metaclass=_Generator):
         pre_alias = ""
 
         if self.dialect.ALIAS_POST_TABLESAMPLE:
-            pre_alias = f"{sample}"
+            pre_alias = sample
         else:
-            post_alias = f"{sample}"
+            post_alias = sample
 
         if self.dialect.ALIAS_POST_VERSION:
             pre_alias = f"{pre_alias}{version}"

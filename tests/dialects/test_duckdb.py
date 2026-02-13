@@ -828,7 +828,10 @@ class TestDuckDB(Validator):
             "SELECT ARRAY_LENGTH([0], 1) AS x",
             write={"duckdb": "SELECT ARRAY_LENGTH([0], 1) AS x"},
         )
-        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, modifiers)")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement)")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'g')")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'gi')")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'ims')")
 
         self.validate_identity(
             "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table"

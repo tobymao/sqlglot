@@ -38,7 +38,6 @@ from sqlglot.dialects.dialect import (
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
     strposition_sql,
@@ -2034,13 +2033,6 @@ class DuckDB(Dialect):
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
             exp.PreviousDay: _day_navigation_sql,
-            exp.RegexpReplace: lambda self, e: self.func(
-                "REGEXP_REPLACE",
-                e.this,
-                e.expression,
-                e.args.get("replacement"),
-                regexp_replace_global_modifier(e),
-            ),
             exp.RegexpILike: lambda self, e: self.func(
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
@@ -3273,6 +3265,57 @@ class DuckDB(Dialect):
 
             return self.sql(result)
 
+        def regexpreplace_sql(self, expression: exp.RegexpReplace) -> str:
+            subject = expression.this
+            pattern = expression.expression
+            replacement = expression.args.get("replacement") or exp.Literal.string("")
+            position = expression.args.get("position")
+            occurrence = expression.args.get("occurrence")
+            modifiers = expression.args.get("modifiers")
+
+            validated_flags = self._validate_regexp_flags(modifiers, supported_flags="cimsg") or ""
+
+            # Handle occurrence (only literals supported)
+            if occurrence and not occurrence.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal occurrence")
+            else:
+                occurrence = occurrence.to_py() if occurrence and occurrence.is_int else 0
+                if occurrence > 1:
+                    self.unsupported(f"REGEXP_REPLACE occurrence={occurrence} not supported")
+                # flag duckdb to do either all or none, single_replace check is for duckdb round trip
+                elif (
+                    occurrence == 0
+                    and "g" not in validated_flags
+                    and not expression.args.get("single_replace")
+                ):
+                    validated_flags += "g"
+
+            # Handle position (only literals supported)
+            prefix = None
+            if position and not position.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal position")
+            elif position and position.is_int and position.to_py() > 1:
+                pos = position.to_py()
+                prefix = exp.Substring(
+                    this=subject, start=exp.Literal.number(1), length=exp.Literal.number(pos - 1)
+                )
+                subject = exp.Substring(this=subject, start=exp.Literal.number(pos))
+
+            result: exp.Expression = exp.Anonymous(
+                this="REGEXP_REPLACE",
+                expressions=[
+                    subject,
+                    pattern,
+                    replacement,
+                    exp.Literal.string(validated_flags) if validated_flags else None,
+                ],
+            )
+
+            if prefix:
+                result = exp.Concat(expressions=[prefix, result])
+
+            return self.sql(result)
+
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:
             this = expression.this
             pattern = expression.expression
@@ -3606,6 +3649,9 @@ class DuckDB(Dialect):
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
             null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+
+            params = self._validate_regexp_flags(params, supported_flags="cims")
+            params = exp.Literal.string(params) if params else None
 
             if position and (not position.is_int or position.to_py() > 1):
                 this = exp.Substring(this=this, start=position)

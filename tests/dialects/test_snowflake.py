@@ -4579,6 +4579,35 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'cg')",
             },
         )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 3, 0)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 3, 0)",
+                "duckdb": "SUBSTRING(subject, 1, 2) || REGEXP_REPLACE(SUBSTRING(subject, 3), pattern, replacement, 'g')",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 3, 1)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 3, 1)",
+                "duckdb": "SUBSTRING(subject, 1, 2) || REGEXP_REPLACE(SUBSTRING(subject, 3), pattern, replacement)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'i')",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'i')",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'ig')",
+            },
+        )
 
     def test_replace(self):
         self.validate_all(

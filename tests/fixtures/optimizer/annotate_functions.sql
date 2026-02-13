@@ -170,6 +170,9 @@ VARCHAR;
 RAND();
 DOUBLE;
 
+DEGREES(tbl.double_col);
+DOUBLE;
+
 # dialect: snowflake
 TO_BINARY('test');
 BINARY;

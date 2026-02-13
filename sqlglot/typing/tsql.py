@@ -25,6 +25,12 @@ EXPRESSION_METADATA = {
             exp.Stuff,
         }
     },
+    **{
+        expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+        for expr_type in {
+            exp.Degrees,
+            exp.Radians,
+        }
+    },
     exp.CurrentTimezone: {"returns": exp.DataType.Type.NVARCHAR},
-    exp.Radians: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

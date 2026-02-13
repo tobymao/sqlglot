@@ -1629,6 +1629,8 @@ class DuckDB(Dialect):
             "LIST_FILTER": exp.ArrayFilter.from_arg_list,
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+            "LIST_MAX": exp.ArrayMax.from_arg_list,
+            "LIST_MIN": exp.ArrayMin.from_arg_list,
             "LIST_PREPEND": _build_array_prepend,
             "LIST_REVERSE_SORT": _build_sort_array_desc,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -1925,6 +1927,8 @@ class DuckDB(Dialect):
             exp.ArraySort: _array_sort_sql,
             exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.ArrayMax: rename_func("LIST_MAX"),
+            exp.ArrayMin: rename_func("LIST_MIN"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),

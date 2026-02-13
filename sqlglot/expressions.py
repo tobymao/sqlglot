@@ -6233,6 +6233,14 @@ class ArraySum(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class ArrayMax(Func):
+    arg_types = {"this": True, "expression": False}
+
+
+class ArrayMin(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class ArrayUnionAgg(AggFunc):
     pass
 

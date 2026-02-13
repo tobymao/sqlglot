@@ -935,6 +935,8 @@ class TestDuckDB(Validator):
                 "spark": "ARRAY_SUM(ARRAY(1, 2))",
             },
         )
+        self.validate_identity("SELECT LIST_MAX(values) FROM table1")
+        self.validate_identity("SELECT LIST_MIN(values) FROM table1")
         self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={

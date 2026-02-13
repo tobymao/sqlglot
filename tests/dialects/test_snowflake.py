@@ -114,6 +114,41 @@ class TestSnowflake(Validator):
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => ARRAY_CONSTRUCT(1, 2, 3, 5)))",
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => [1, 2, 3, 5]))",
         )
+        self.validate_all(
+            "SELECT ARRAY_MAX([1, 2, 3])",
+            write={
+                "duckdb": "SELECT LIST_MAX([1, 2, 3])",
+                "snowflake": "SELECT ARRAY_MAX([1, 2, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_MIN([1, 2, 3])",
+            write={
+                "duckdb": "SELECT LIST_MIN([1, 2, 3])",
+                "snowflake": "SELECT ARRAY_MIN([1, 2, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_MAX([1, NULL, 3])",
+            write={
+                "duckdb": "SELECT LIST_MAX([1, NULL, 3])",
+                "snowflake": "SELECT ARRAY_MAX([1, NULL, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_MIN([1, NULL, 3])",
+            write={
+                "duckdb": "SELECT LIST_MIN([1, NULL, 3])",
+                "snowflake": "SELECT ARRAY_MIN([1, NULL, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_MAX([]), ARRAY_MIN([NULL, NULL])",
+            write={
+                "duckdb": "SELECT LIST_MAX([]), LIST_MIN([NULL, NULL])",
+                "snowflake": "SELECT ARRAY_MAX([]), ARRAY_MIN([NULL, NULL])",
+            },
+        )
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")

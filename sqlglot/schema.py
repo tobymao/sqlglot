@@ -306,6 +306,8 @@ class MappingSchema(AbstractMappingSchema, Schema):
         self.normalize = normalize
         self._dialect = Dialect.get_or_raise(dialect)
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
+        self._normalized_table_cache: t.Dict[t.Tuple[exp.Table, DialectType, bool], exp.Table] = {}
+        self._normalized_name_cache: t.Dict[t.Tuple[str, DialectType, bool, bool], str] = {}
         self._depth = 0
         schema = {} if schema is None else schema
         udf_mapping = {} if udf_mapping is None else udf_mapping
@@ -594,6 +596,13 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect = dialect or self.dialect
         normalize = self.normalize if normalize is None else normalize
 
+        # Cache normalized tables by object id for exp.Table inputs
+        # This is effective when the same Table object is looked up multiple times
+        if isinstance(table, exp.Table) and (
+            cached := self._normalized_table_cache.get((table, dialect, normalize))
+        ):
+            return cached
+
         normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
 
         if normalize:
@@ -603,6 +612,9 @@ class MappingSchema(AbstractMappingSchema, Schema):
                         normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
                     )
 
+        self._normalized_table_cache[(t.cast(exp.Table, table), dialect, normalize)] = (
+            normalized_table
+        )
         return normalized_table
 
     def _normalize_name(
@@ -612,12 +624,24 @@ class MappingSchema(AbstractMappingSchema, Schema):
         is_table: bool = False,
         normalize: t.Optional[bool] = None,
     ) -> str:
-        return normalize_name(
+        normalize = self.normalize if normalize is None else normalize
+
+        dialect = dialect or self.dialect
+        name_str = name if isinstance(name, str) else name.name
+        cache_key = (name_str, dialect, is_table, normalize)
+
+        if cached := self._normalized_name_cache.get(cache_key):
+            return cached
+
+        result = normalize_name(
             name,
-            dialect=dialect or self.dialect,
+            dialect=dialect,
             is_table=is_table,
-            normalize=self.normalize if normalize is None else normalize,
+            normalize=normalize,
         ).name
+
+        self._normalized_name_cache[cache_key] = result
+        return result
 
     def depth(self) -> int:
         if not self.empty and not self._depth:

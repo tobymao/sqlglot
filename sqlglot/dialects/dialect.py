@@ -808,6 +808,9 @@ class Dialect(metaclass=_Dialect):
     Whether to prioritize non-literal types over literals during type annotation.
     """
 
+    ALIAS_POST_VERSION = True
+    """Whether the table alias comes after version (timestamp or iceberg snapshot)."""
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

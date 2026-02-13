@@ -265,6 +265,9 @@ class TestBigQuery(Validator):
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            "SELECT * FROM foo AS t0 FOR SYSTEM_TIME AS OF '2026-02-12T23:22:21.743416+00:00'",
+        )
+        self.validate_identity(
             '''SELECT b"\\x0a$'x'00"''',
             """SELECT b'\\x0a$\\'x\\'00'""",
         )

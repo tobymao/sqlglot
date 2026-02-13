@@ -394,6 +394,7 @@ class BigQuery(Dialect):
     LEAST_GREATEST_IGNORES_NULLS = False
     DEFAULT_NULL_TYPE = exp.DataType.Type.BIGINT
     PRIORITIZE_NON_LITERAL_TYPES = True
+    ALIAS_POST_VERSION = False
 
     # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#initcap
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'

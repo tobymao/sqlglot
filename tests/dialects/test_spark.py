@@ -416,17 +416,17 @@ TBLPROPERTIES (
                     ) AS adjustments,
                     ARRAY(
                         STRUCT(
-                            12.0 AS length, 
+                            12.0 AS length,
                             STRUCT('A' AS tag, 98.5 AS score) AS details
                         ),
                         STRUCT(
-                            23.0 AS length, 
+                            23.0 AS length,
                             STRUCT('B' AS tag, 99.5 AS score) AS details
                         )
                     ) AS info
             )
-            SELECT 
-                h.id, 
+            SELECT
+                h.id,
                 amount,
                 currency,
                 type,
@@ -1021,6 +1021,17 @@ TBLPROPERTIES (
                 "spark": "SELECT BIT_COUNT(0)",
                 "databricks": "SELECT BIT_COUNT(0)",
                 "duckdb": "SELECT BIT_COUNT(0)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+            read={
+                "spark": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+                "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+            },
+            write={
+                "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
             },
         )
 

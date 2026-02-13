@@ -38,7 +38,6 @@ from sqlglot.dialects.dialect import (
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
     strposition_sql,
@@ -2034,13 +2033,6 @@ class DuckDB(Dialect):
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
             exp.PreviousDay: _day_navigation_sql,
-            exp.RegexpReplace: lambda self, e: self.func(
-                "REGEXP_REPLACE",
-                e.this,
-                e.expression,
-                e.args.get("replacement"),
-                regexp_replace_global_modifier(e),
-            ),
             exp.RegexpILike: lambda self, e: self.func(
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
@@ -3273,142 +3265,54 @@ class DuckDB(Dialect):
 
             return self.sql(result)
 
-        def _process_regexp_flags(
-            self, modifiers: t.Optional[exp.Expression], use_global: bool
-        ) -> t.Tuple[str, str]:
-            """
-            Process regexp flags for REGEXP_REPLACE.
-
-            Returns:
-                (flags_for_arg, flags_to_embed): Flags to pass as argument vs embed in pattern
-            """
-            validated_flags = self._validate_regexp_flags(modifiers)
-            if not validated_flags and not use_global:
-                return ("", "")
-
-            flags = ""
-            embed = ""
-
-            if validated_flags:
-                for flag in validated_flags:
-                    if flag == "m":
-                        embed += flag
-                    elif flag == "g":
-                        use_global = True
-                    elif flag in "ics":
-                        flags += flag
-
-            if use_global:
-                flags += "g"
-
-            return (flags, embed)
-
-        def _embed_flags_in_pattern(self, pattern: exp.Expression, flags: str) -> exp.Expression:
-            """Embed flags like (?m) at the start of a pattern."""
-            if not flags:
-                return pattern
-
-            if isinstance(pattern, exp.Literal) and pattern.is_string:
-                return exp.Literal.string(f"(?{flags}){pattern.this}")
-
-            return exp.Concat(expressions=[exp.Literal.string(f"(?{flags})"), pattern])
-
-        def _apply_position_to_subject(
-            self, subject: exp.Expression, position: t.Optional[exp.Expression]
-        ) -> t.Tuple[exp.Expression, t.Optional[exp.Expression]]:
-            """
-            Apply position parameter by splitting subject into prefix + effective part.
-
-            Returns:
-                (effective_subject, prefix_expr): Subject to use for replace, and prefix to concat back
-            """
-            if not position or not (isinstance(position, exp.Literal) and position.is_int):
-                return (subject, None)
-
-            pos_val = position.to_py()
-            if not isinstance(pos_val, int) or pos_val <= 1:
-                return (subject, None)
-
-            prefix = exp.Substring(
-                this=subject, start=exp.Literal.number(1), length=exp.Literal.number(pos_val - 1)
-            )
-            effective = exp.Substring(this=subject, start=position)
-            return (effective, prefix)
-
         def regexpreplace_sql(self, expression: exp.RegexpReplace) -> str:
-            this = expression.this
+            subject = expression.this
             pattern = expression.expression
             replacement = expression.args.get("replacement") or exp.Literal.string("")
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
             modifiers = expression.args.get("modifiers")
-            single_replace = expression.args.get("single_replace")
 
-            # Early returns for NULL edge cases
-            if position and isinstance(position, exp.Null):
-                return self.sql(exp.Null())
-            if occurrence and isinstance(occurrence, exp.Null):
-                return self.sql(exp.Null())
+            validated_flags = self._validate_regexp_flags(modifiers, supported_flags="cimsg") or ""
 
-            # Early return for literal empty pattern
-            if isinstance(pattern, exp.Literal) and pattern.is_string and pattern.this == "":
-                return self.sql(this)
+            # Handle occurrence (only literals supported)
+            if occurrence and not occurrence.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal occurrence")
+            else:
+                occurrence = occurrence.to_py() if occurrence and occurrence.is_int else 0
+                if occurrence > 1:
+                    self.unsupported(f"REGEXP_REPLACE occurrence={occurrence} not supported")
+                # flag duckdb to do either all or none, single_replace check is for duckdb round trip
+                elif (
+                    occurrence == 0
+                    and "g" not in validated_flags
+                    and not expression.args.get("single_replace")
+                ):
+                    validated_flags += "g"
 
-            # Validate modifiers - bail out if all flags are unsupported
-            if modifiers and self._validate_regexp_flags(modifiers) is None:
-                return self.func("REGEXP_REPLACE", this, pattern, replacement, modifiers)
-
-            # Validate position parameter
-            if position and not (isinstance(position, exp.Literal) and position.is_int):
-                self.unsupported(
-                    "REGEXP_REPLACE with non-literal position is not supported in DuckDB"
+            # Handle position (only literals supported)
+            prefix = None
+            if position and not position.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal position")
+            elif position and position.is_int and position.to_py() > 1:
+                pos = position.to_py()
+                prefix = exp.Substring(
+                    this=subject, start=exp.Literal.number(1), length=exp.Literal.number(pos - 1)
                 )
+                subject = exp.Substring(this=subject, start=exp.Literal.number(pos))
 
-            # Determine occurrence value and global flag
-            occ_val = 0
-            use_global = not single_replace  # Dialects like Snowflake replace all by default
-
-            if occurrence:
-                if occurrence.is_int:
-                    occ_val = occurrence.to_py()
-                    if occ_val == 0:
-                        use_global = True
-                else:
-                    self.unsupported(
-                        "REGEXP_REPLACE with non-literal occurrence is not supported in DuckDB"
-                    )
-
-            # Process flags and embed 'm' flag in pattern
-            flags, embed = self._process_regexp_flags(modifiers, use_global)
-            pattern = self._embed_flags_in_pattern(pattern, embed)
-
-            # Apply position parameter
-            effective_this, prefix_expr = self._apply_position_to_subject(this, position)
-
-            # Build core REGEXP_REPLACE expression
-            if occ_val > 1:
-                self.unsupported(
-                    f"REGEXP_REPLACE with occurrence > 1 (occurrence={occ_val}) is not fully supported in DuckDB"
-                )
-                result = exp.func("REGEXP_REPLACE", effective_this, pattern, replacement)
-            elif flags:
-                result = exp.func(
-                    "REGEXP_REPLACE",
-                    effective_this,
+            result: exp.Expression = exp.Anonymous(
+                this="REGEXP_REPLACE",
+                expressions=[
+                    subject,
                     pattern,
                     replacement,
-                    exp.Literal.string(flags),
-                )
-            else:
-                result = exp.func("REGEXP_REPLACE", effective_this, pattern, replacement)
+                    exp.Literal.string(validated_flags) if validated_flags else None,
+                ],
+            )
 
-            # Concat prefix back if position was applied
-            if prefix_expr:
-                result = exp.Concat(expressions=[prefix_expr, result])
-
-            # Handle empty pattern for non-literal patterns (query-time check)
-            if not single_replace and not (isinstance(pattern, exp.Literal) and pattern.is_string):
-                result = exp.case().when(pattern.eq(exp.Literal.string("")), this).else_(result)
+            if prefix:
+                result = exp.Concat(expressions=[prefix, result])
 
             return self.sql(result)
 
@@ -3745,6 +3649,9 @@ class DuckDB(Dialect):
             position = expression.args.get("position")
             occurrence = expression.args.get("occurrence")
             null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+
+            params = self._validate_regexp_flags(params, supported_flags="cims")
+            params = exp.Literal.string(params) if params else None
 
             if position and (not position.is_int or position.to_py() > 1):
                 this = exp.Substring(this=this, start=position)

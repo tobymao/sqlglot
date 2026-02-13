@@ -2198,12 +2198,18 @@ class Generator(metaclass=_Generator):
         alias = f"{sep}{alias}" if alias else ""
 
         sample = self.sql(expression, "sample")
+        post_alias = ""
+        pre_alias = ""
+
         if self.dialect.ALIAS_POST_TABLESAMPLE:
-            sample_pre_alias = sample
-            sample_post_alias = ""
+            pre_alias = f"{sample}"
         else:
-            sample_pre_alias = ""
-            sample_post_alias = sample
+            post_alias = f"{sample}"
+
+        if self.dialect.ALIAS_POST_VERSION:
+            pre_alias = f"{pre_alias}{version}"
+        else:
+            post_alias = f"{post_alias}{version}"
 
         hints = self.expressions(expression, key="hints", sep=" ")
         hints = f" {hints}" if hints and self.TABLE_HINTS else ""
@@ -2241,7 +2247,7 @@ class Generator(metaclass=_Generator):
         else:
             indexed = ""
 
-        return f"{only}{table}{changes}{partition}{version}{file_format}{sample_pre_alias}{alias}{indexed}{hints}{pivots}{sample_post_alias}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{joins}{laterals}{ordinality}"
 
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)

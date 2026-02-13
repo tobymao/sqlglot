@@ -1145,6 +1145,10 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_identity(
+            "SELECT * FROM foo FOR TIMESTAMP AS OF CAST('2020-01-01 00:00:00' AS TIMESTAMP) AS bar"
+        )
+
     def test_encode_decode(self):
         self.validate_identity("FROM_UTF8(x, y)")
 

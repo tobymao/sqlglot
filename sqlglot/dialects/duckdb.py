@@ -3514,6 +3514,11 @@ class DuckDB(Dialect):
             )
             return self.sql(result)
 
+        def mapcontainskey_sql(self, expression: exp.MapContainsKey) -> str:
+            return self.func(
+                "LIST_CONTAINS", exp.func("MAP_KEYS", expression.args["key"]), expression.this
+            )
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",

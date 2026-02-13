@@ -5186,3 +5186,13 @@ FROM subquery2""",
                 "doris": "JSON_KEYS(foo, '$.a')",
             },
         )
+
+    def test_interval_with_units_dcolon(self):
+        self.validate_identity(
+            "SELECT interval '00:00:01'::interval AS foo",
+            "SELECT CAST(INTERVAL '00:00:01' AS INTERVAL) AS foo",
+        )
+        self.validate_identity(
+            "SELECT ROW_NUMBER() OVER(PARTITION BY event_time + interval '00:00:01'::interval) AS foo FROM t",
+            "SELECT ROW_NUMBER() OVER (PARTITION BY event_time + CAST(INTERVAL '00:00:01' AS INTERVAL)) AS foo FROM t",
+        )

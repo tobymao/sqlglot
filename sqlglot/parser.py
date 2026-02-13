@@ -5535,7 +5535,7 @@ class Parser(metaclass=_Parser):
             else (
                 self._parse_function()
                 or (
-                    not self._match(TokenType.ALIAS, advance=False)
+                    not self._match_set((TokenType.ALIAS, TokenType.DCOLON), advance=False)
                     and self._parse_var(any_token=True, upper=True)
                 )
             )

@@ -3367,6 +3367,26 @@ class DuckDB(Dialect):
             )
             return f"({self.sql(result)})"
 
+        def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+            arr = expression.this
+            func = self.func("LIST_DISTINCT", arr)
+
+            if expression.args.get("check_null"):
+                add_null_to_array = exp.func(
+                    "LIST_APPEND", exp.func("LIST_DISTINCT", exp.ArrayCompact(this=arr)), exp.Null()
+                )
+                return self.sql(
+                    exp.If(
+                        this=exp.NEQ(
+                            this=exp.ArraySize(this=arr), expression=exp.func("LIST_COUNT", arr)
+                        ),
+                        true=add_null_to_array,
+                        false=func,
+                    )
+                )
+
+            return func
+
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
 

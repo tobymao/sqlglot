@@ -6240,6 +6240,14 @@ class ArrayDistinct(Func):
     arg_types = {"this": True, "check_null": False}
 
 
+class ArrayMax(Func):
+    pass
+
+
+class ArrayMin(Func):
+    pass
+
+
 class ArrayUnionAgg(AggFunc):
     pass
 

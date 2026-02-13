@@ -558,25 +558,6 @@ def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -
     return func
 
 
-def _array_distinct_sql(self: DuckDB.Generator, expression: exp.ArrayDistinct) -> str:
-    arr = expression.this
-    func = self.func("LIST_DISTINCT", arr)
-
-    if expression.args.get("check_null"):
-        add_null_to_array = exp.func(
-            "LIST_APPEND", exp.func("LIST_DISTINCT", exp.ArrayCompact(this=arr)), exp.Null()
-        )
-        return self.sql(
-            exp.If(
-                this=exp.NEQ(this=exp.ArraySize(this=arr), expression=exp.func("LIST_COUNT", arr)),
-                true=add_null_to_array,
-                false=func,
-            )
-        )
-
-    return func
-
-
 def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
@@ -1937,7 +1918,6 @@ class DuckDB(Dialect):
             ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayContains: _array_contains_sql,
-            exp.ArrayDistinct: _array_distinct_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
             exp.ArrayRemoveAt: _array_remove_at_sql,
@@ -3334,6 +3314,26 @@ class DuckDB(Dialect):
                 self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr
             )
             return f"({self.sql(result)})"
+
+        def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+            arr = expression.this
+            func = self.func("LIST_DISTINCT", arr)
+
+            if expression.args.get("check_null"):
+                add_null_to_array = exp.func(
+                    "LIST_APPEND", exp.func("LIST_DISTINCT", exp.ArrayCompact(this=arr)), exp.Null()
+                )
+                return self.sql(
+                    exp.If(
+                        this=exp.NEQ(
+                            this=exp.ArraySize(this=arr), expression=exp.func("LIST_COUNT", arr)
+                        ),
+                        true=add_null_to_array,
+                        false=func,
+                    )
+                )
+
+            return func
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions

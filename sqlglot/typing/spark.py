@@ -23,7 +23,6 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.Collation,
             exp.CurrentTimezone,
-            exp.Monthname,
             exp.Randstr,
         }
     },

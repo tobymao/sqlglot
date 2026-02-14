@@ -221,6 +221,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Initcap,
             exp.Lower,
             exp.MD5,
+            exp.Monthname,
             exp.SHA,
             exp.SHA2,
             exp.Substring,

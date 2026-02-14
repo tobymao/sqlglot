@@ -404,6 +404,7 @@ class ClickHouse(Dialect):
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "JAROWINKLERSIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
+            "UTCTIMESTAMP": exp.UtcTimestamp.from_arg_list,
         }
         FUNCTIONS.pop("TRANSFORM")
         FUNCTIONS.pop("APPROX_TOP_SUM")

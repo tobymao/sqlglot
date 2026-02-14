@@ -356,6 +356,7 @@ class ClickHouse(Dialect):
                 for unit in TIMESTAMP_TRUNC_UNITS
             },
             "ANY": exp.AnyValue.from_arg_list,
+            "ARRAYCOMPACT": exp.ArrayCompact.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
             "ARRAYSLICE": exp.ArraySlice.from_arg_list,

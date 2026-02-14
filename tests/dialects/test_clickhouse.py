@@ -697,6 +697,8 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT and(1, 2, 3)", "SELECT 1 AND 2 AND 3")
         self.validate_identity("SELECT or(and(3, 0), 5)", "SELECT (3 AND 0) OR 5")
 
+        self.validate_identity("SELECT UTCTimestamp()", "SELECT CURRENT_TIMESTAMP('UTC')")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

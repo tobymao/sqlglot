@@ -1094,7 +1094,7 @@ class Generator(metaclass=_Generator):
 
         return f"AS {this}{persisted}"
 
-    def autoincrementcolumnconstraint_sql(self, _) -> str:
+    def autoincrementcolumnconstraint_sql(self, _: exp.AutoIncrementColumnConstraint) -> str:
         return self.token_sql(TokenType.AUTO_INCREMENT)
 
     def compresscolumnconstraint_sql(self, expression: exp.CompressColumnConstraint) -> str:
@@ -5210,14 +5210,14 @@ class Generator(metaclass=_Generator):
             grant_option_prefix="GRANT OPTION FOR ",
         )
 
-    def grantprivilege_sql(self, expression: exp.GrantPrivilege):
+    def grantprivilege_sql(self, expression: exp.GrantPrivilege) -> str:
         this = self.sql(expression, "this")
         columns = self.expressions(expression, flat=True)
         columns = f"({columns})" if columns else ""
 
         return f"{this}{columns}"
 
-    def grantprincipal_sql(self, expression: exp.GrantPrincipal):
+    def grantprincipal_sql(self, expression: exp.GrantPrincipal) -> str:
         this = self.sql(expression, "this")
 
         kind = self.sql(expression, "kind")
@@ -5225,14 +5225,14 @@ class Generator(metaclass=_Generator):
 
         return f"{kind}{this}"
 
-    def columns_sql(self, expression: exp.Columns):
+    def columns_sql(self, expression: exp.Columns) -> str:
         func = self.function_fallback_sql(expression)
         if expression.args.get("unpack"):
             func = f"*{func}"
 
         return func
 
-    def overlay_sql(self, expression: exp.Overlay):
+    def overlay_sql(self, expression: exp.Overlay) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         from_sql = self.sql(expression, "from_")
@@ -5260,7 +5260,7 @@ class Generator(metaclass=_Generator):
 
         return self.sql(exp.cast(this, exp.DataType.Type.VARCHAR))
 
-    def median_sql(self, expression: exp.Median):
+    def median_sql(self, expression: exp.Median) -> str:
         if not self.SUPPORTS_MEDIAN:
             return self.sql(
                 exp.PercentileCont(this=expression.this, expression=exp.Literal.number(0.5))
@@ -5526,7 +5526,7 @@ class Generator(metaclass=_Generator):
         else:
             return f"GET {target} {this}{props_sql}"
 
-    def translatecharacters_sql(self, expression: exp.TranslateCharacters):
+    def translatecharacters_sql(self, expression: exp.TranslateCharacters) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         with_error = " WITH ERROR" if expression.args.get("with_error") else ""

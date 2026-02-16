@@ -1,7 +1,15 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot.optimizer.scope import Scope, build_scope
 
 
-def eliminate_ctes(expression):
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
+
+def eliminate_ctes(expression: E) -> E:
     """
     Remove unused CTEs from an expression.
 

@@ -11,7 +11,9 @@ from sqlglot.optimizer.simplify import Simplifier, flatten
 logger = logging.getLogger("sqlglot")
 
 
-def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int = 128):
+def normalize(
+    expression: exp.Expression, dnf: bool = False, max_distance: int = 128
+) -> exp.Expression:
     """
     Rewrite sqlglot AST into conjunctive normal form or disjunctive normal form.
 

@@ -541,6 +541,8 @@ class Exasol(Dialect):
             exp.Quarter: lambda self, e: f"CEIL(MONTH(TO_DATE({self.sql(e, 'this')}))/3)",
             exp.LastDay: no_last_day_sql,
         }
+
+        # https://docs.exasol.com/db/7.1/sql_references/system_tables/metadata/exa_sql_keywords.htm
         RESERVED_KEYWORDS = {
             "absolute",
             "action",

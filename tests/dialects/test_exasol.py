@@ -829,3 +829,14 @@ class TestExasol(Validator):
                     exasol_sql,
                     write={"exasol": exasol_sql, "databricks": dbx_sql},
                 )
+
+    def test_json(self):
+        self.validate_identity("""SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""")
+        self.validate_all(
+            """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+            write={
+                "exasol": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+                "bigquery": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+                "trino": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+            },
+        )

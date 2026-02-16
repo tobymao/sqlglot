@@ -388,6 +388,8 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
+            "JSON_VALUE": lambda self: self._parse_json_value(),
         }
 
         def _parse_column(self) -> t.Optional[exp.Expression]:

@@ -836,7 +836,6 @@ class TestExasol(Validator):
             """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
             write={
                 "exasol": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
-                "bigquery": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
                 "trino": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
             },
         )

@@ -21,6 +21,12 @@ class TestExasol(Validator):
         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
 
+    def test_exasol_keywords(self):
+        keywords = ["CONNECT", "QUALIFY", "LOCAL", "MINUS", "REGEXP", "CS"]
+
+        for keyword in keywords:
+            self.validate_identity(f'SELECT 1 AS "{keyword}"')
+
     def test_qualify_unscoped_star(self):
         self.validate_all(
             "SELECT TEST.*, 1 FROM TEST",

@@ -1001,8 +1001,7 @@ class Generator(metaclass=_Generator):
         else:
             exp_handler_name = expression.key + "_sql"
 
-            handler = getattr(self, exp_handler_name, None)
-            if handler:
+            if handler := getattr(self, exp_handler_name, None):
                 sql = handler(expression)
             elif isinstance(expression, exp.Func):
                 sql = self.function_fallback_sql(expression)

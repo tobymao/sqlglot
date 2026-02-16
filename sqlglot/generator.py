@@ -996,21 +996,20 @@ class Generator(metaclass=_Generator):
 
         transform = self.TRANSFORMS.get(expression.__class__)
 
-        if callable(transform):
+        if transform is not None:
             sql = transform(self, expression)
-        elif isinstance(expression, exp.Expression):
-            exp_handler_name = f"{expression.key}_sql"
+        else:
+            exp_handler_name = expression.key + "_sql"
 
-            if hasattr(self, exp_handler_name):
-                sql = getattr(self, exp_handler_name)(expression)
+            handler = getattr(self, exp_handler_name, None)
+            if handler is not None:
+                sql = handler(expression)
             elif isinstance(expression, exp.Func):
                 sql = self.function_fallback_sql(expression)
             elif isinstance(expression, exp.Property):
                 sql = self.property_sql(expression)
             else:
                 raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-        else:
-            raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
@@ -1786,10 +1785,11 @@ class Generator(metaclass=_Generator):
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
         lower = text.lower()
-        text = lower if self.normalize and not expression.quoted else text
+        quoted = expression.quoted
+        text = lower if self.normalize and not quoted else text
         text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
-            expression.quoted
+            quoted
             or self.dialect.can_quote(expression, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())

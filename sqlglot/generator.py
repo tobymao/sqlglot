@@ -996,7 +996,7 @@ class Generator(metaclass=_Generator):
 
         transform = self.TRANSFORMS.get(expression.__class__)
 
-        if transform is not None:
+        if transform:
             sql = transform(self, expression)
         else:
             exp_handler_name = expression.key + "_sql"

@@ -22,6 +22,8 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
     dialect = Dialect.get_or_raise(dialect)
 
     def _canonicalize(expression: exp.Expression) -> exp.Expression:
+        if type(expression) not in _CANONICALIZE_TYPES:
+            return expression
         expression = add_text_to_concat(expression)
         expression = replace_date_funcs(expression, dialect=dialect)
         expression = coerce_type(expression, dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
@@ -31,6 +33,48 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
         return expression
 
     return exp.replace_tree(expression, _canonicalize)
+
+
+# All expression types that any of the canonicalize functions can act on
+_CANONICALIZE_TYPES = frozenset(
+    {
+        # add_text_to_concat
+        exp.Add,
+        # replace_date_funcs
+        exp.Date,
+        exp.TsOrDsToDate,
+        exp.Timestamp,
+        # coerce_type (COERCIBLE_DATE_OPS + Between, Extract, DateAdd, DateSub, DateTrunc, DateDiff)
+        exp.Sub,
+        exp.EQ,
+        exp.NEQ,
+        exp.GT,
+        exp.GTE,
+        exp.LT,
+        exp.LTE,
+        exp.NullSafeEQ,
+        exp.NullSafeNEQ,
+        exp.Between,
+        exp.Extract,
+        exp.DateAdd,
+        exp.DateSub,
+        exp.DateTrunc,
+        exp.DateDiff,
+        # remove_redundant_casts
+        exp.Cast,
+        exp.TryCast,
+        # ensure_bools (Connector, Not, If, Where, Having)
+        exp.And,
+        exp.Or,
+        exp.Xor,
+        exp.Not,
+        exp.If,
+        exp.Where,
+        exp.Having,
+        # remove_ascending_order
+        exp.Ordered,
+    }
+)
 
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:

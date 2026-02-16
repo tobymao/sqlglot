@@ -30,13 +30,15 @@ def eliminate_joins(expression: E) -> E:
         The optimized expression
     """
     for scope in traverse_scope(expression):
+        joins = scope.expression.args.get("joins", [])
+        if not joins:
+            continue
+
         # If any columns in this scope aren't qualified, it's hard to determine if a join isn't used.
         # It's probably possible to infer this from the outputs of derived tables.
         # But for now, let's just skip this rule.
         if scope.unqualified_columns:
             continue
-
-        joins = scope.expression.args.get("joins", [])
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):

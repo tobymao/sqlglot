@@ -1691,6 +1691,56 @@ class TestDialect(Validator):
         expr = parse_one("ARRAY_CAT(arr1)", dialect="snowflake")
         self.assertEqual(expr.sql("duckdb"), "LIST_CONCAT(arr1)")
 
+        # Test ARRAY_MAX transpilation across dialects
+        self.validate_all(
+            "ARRAY_MAX(x)",
+            read={
+                "athena": "array_max(x)",
+                "clickhouse": "arrayMax(x)",
+                "databricks": "array_max(x)",
+                "duckdb": "list_max(x)",
+                "presto": "array_max(x)",
+                "snowflake": "ARRAY_MAX(x)",
+                "spark": "array_max(x)",
+                "trino": "array_max(x)",
+            },
+            write={
+                "athena": "ARRAY_MAX(x)",
+                "clickhouse": "arrayMax(x)",
+                "databricks": "ARRAY_MAX(x)",
+                "duckdb": "LIST_MAX(x)",
+                "presto": "ARRAY_MAX(x)",
+                "snowflake": "ARRAY_MAX(x)",
+                "spark": "ARRAY_MAX(x)",
+                "trino": "ARRAY_MAX(x)",
+            },
+        )
+
+        # Test ARRAY_MIN transpilation across dialects
+        self.validate_all(
+            "ARRAY_MIN(x)",
+            read={
+                "athena": "array_min(x)",
+                "clickhouse": "arrayMin(x)",
+                "databricks": "array_min(x)",
+                "duckdb": "list_min(x)",
+                "presto": "array_min(x)",
+                "snowflake": "ARRAY_MIN(x)",
+                "spark": "array_min(x)",
+                "trino": "array_min(x)",
+            },
+            write={
+                "athena": "ARRAY_MIN(x)",
+                "clickhouse": "arrayMin(x)",
+                "databricks": "ARRAY_MIN(x)",
+                "duckdb": "LIST_MIN(x)",
+                "presto": "ARRAY_MIN(x)",
+                "snowflake": "ARRAY_MIN(x)",
+                "spark": "ARRAY_MIN(x)",
+                "trino": "ARRAY_MIN(x)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

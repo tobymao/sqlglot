@@ -128,7 +128,7 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ARRAY_MIN([1, 2, 3])",
             },
         )
-      
+
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")

@@ -2460,6 +2460,27 @@ class DuckDB(Dialect):
             """,
         )
 
+        # ARRAY_EXCEPT with bag semantics: N - M occurrences via cumulative counting
+        # 0-based indices in template (SQLGlot internal), converted to 1-based for DuckDB
+        # IS NOT DISTINCT FROM for NULL-safe element comparison
+        ARRAY_EXCEPT_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :source IS NULL OR :exclude IS NULL THEN NULL
+                ELSE LIST_TRANSFORM(
+                    LIST_FILTER(
+                        LIST_ZIP(:source, GENERATE_SERIES(1, LEN(:source))),
+                        pair -> (
+                            LEN(LIST_FILTER(:source[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
+                            > LEN(LIST_FILTER(:exclude, e -> e IS NOT DISTINCT FROM pair[0]))
+                        )
+                    ),
+                    pair -> pair[0]
+                )
+            END
+            """,
+        )
+
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
             Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
@@ -3433,6 +3454,18 @@ class DuckDB(Dialect):
                 )
 
             return func
+
+        def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
+            source = expression.this
+            exclude = expression.expression
+
+            if isinstance(source, exp.Null) or isinstance(exclude, exp.Null):
+                return self.sql(exp.Null())
+
+            result = exp.replace_placeholders(
+                self.ARRAY_EXCEPT_TEMPLATE.copy(), source=source, exclude=exclude
+            )
+            return self.sql(result)
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions

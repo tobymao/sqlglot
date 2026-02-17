@@ -6200,6 +6200,11 @@ class ArrayIntersect(Func):
     _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
 
 
+class ArrayExcept(Func):
+    arg_types = {"this": True, "expression": True}
+    _sql_names = ["ARRAY_EXCEPT"]
+
+
 class StPoint(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ST_POINT", "ST_MAKEPOINT"]

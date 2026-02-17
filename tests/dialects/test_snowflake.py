@@ -4438,74 +4438,74 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_identity("REGEXP_SUBSTR_ALL(subject, pattern, pos, occ, param, group)")
 
         # DuckDB transpilation tests for REGEXP_SUBSTR
-        # Snowflake's parser adds default group=0 for transpilation correctness
+        # DuckDB's default (no group) is semantically equivalent to group=0
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern)",
             write={
-                "duckdb": "REGEXP_EXTRACT(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 3)",
             write={
-                "duckdb": "REGEXP_EXTRACT(NULLIF(SUBSTRING(subject, 3), ''), pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT(NULLIF(SUBSTRING(subject, 3), ''), pattern)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 3)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 2)",
             write={
-                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(subject, pattern, 0), 2)",
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(subject, pattern), 2)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 2)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             write={
-                "duckdb": "REGEXP_EXTRACT(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e', 0)",
             write={
-                "duckdb": "REGEXP_EXTRACT(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern)",
             write={
-                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR_ALL(subject, pattern)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern, 3)",
             write={
-                "duckdb": "REGEXP_EXTRACT_ALL(SUBSTRING(subject, 3), pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT_ALL(SUBSTRING(subject, 3), pattern)",
                 "snowflake": "REGEXP_SUBSTR_ALL(subject, pattern, 3)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern, 1, 2)",
             write={
-                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern, 0)[2:]",
+                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern)[2:]",
                 "snowflake": "REGEXP_SUBSTR_ALL(subject, pattern, 1, 2)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern, 1, 1, 'e')",
             write={
-                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR_ALL(subject, pattern, 1, 1, 'e')",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern, 1, 1, 'e', 0)",
             write={
-                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern, 0)",
+                "duckdb": "REGEXP_EXTRACT_ALL(subject, pattern)",
                 "snowflake": "REGEXP_SUBSTR_ALL(subject, pattern, 1, 1, 'e')",
             },
         )

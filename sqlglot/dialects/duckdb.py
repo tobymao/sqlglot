@@ -3607,26 +3607,20 @@ class DuckDB(Dialect):
             occurrence = expression.args.get("occurrence")
             null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
 
-            group_num = group.to_py() if group and group.is_int else 0
-            capturegroups = position is not None or occurrence is not None
-
             # Handle Snowflake's 'e' flag: it enables capture group extraction
             # In DuckDB, this is controlled by the group parameter directly
             if params and params.is_string and "e" in params.name:
                 params = exp.Literal.string(params.name.replace("e", ""))
-            # Snowflake without 'e' flag: return full match (group 0) to preserve Snowflake semantics
-            #            elif capturegroups and group_num == 0 and null_if_pos_overflow:
-            #                group = exp.Literal.number(0)
-            # Strip group=0 when it came from dialects that add defaults
-            elif (
-                group_num == 0
-                and not capturegroups
-                and "position" not in expression.args
-                and null_if_pos_overflow
-            ):
-                group = None
 
             validated_flags = self._validate_regexp_flags(params, supported_flags="cims")
+
+            # Strip default group when no following params (DuckDB default is same as group=0)
+            if (
+                not validated_flags
+                and group
+                and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
+            ):
+                group = None
             flags_expr = exp.Literal.string(validated_flags) if validated_flags else None
 
             # use substring to handle position argument

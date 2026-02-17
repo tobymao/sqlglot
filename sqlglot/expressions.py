@@ -4994,7 +4994,10 @@ class DataType(Expression):
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
 
-        return DataType(**{**data_type_exp.args, **kwargs})
+        if kwargs:
+            for k, v in kwargs.items():
+                data_type_exp.set(k, v)
+        return data_type_exp
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """

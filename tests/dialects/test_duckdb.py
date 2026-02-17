@@ -1065,11 +1065,21 @@ class TestDuckDB(Validator):
             read={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
                 "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
             },
             write={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
                 "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
+            },
+        )
+        # Snowflake adds default group=0 for transpilation correctness
+        self.validate_all(
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 0) FROM t",
+            read={
+                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
+            },
+            write={
+                "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
             },
         )
@@ -1083,12 +1093,24 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
             },
         )
+        # group=0 is the default and gets normalized away for REGEXP_EXTRACT
         self.validate_identity(
             "SELECT REGEXP_EXTRACT(a, 'pattern', 0)",
             "SELECT REGEXP_EXTRACT(a, 'pattern')",
         )
-        self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 0, 'i')")
+        self.validate_identity(
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 0, 'i')",
+            "SELECT REGEXP_EXTRACT(a, 'pattern', 'i')",
+        )
         self.validate_identity("SELECT REGEXP_EXTRACT(a, 'pattern', 1, 'i')")
+
+        # REGEXP_EXTRACT_ALL round-trip tests
+        self.validate_identity("SELECT REGEXP_EXTRACT_ALL(s, 'pattern', 0)")
+        self.validate_identity("SELECT REGEXP_EXTRACT_ALL(s, 'pattern', 1)")
+        self.validate_identity("SELECT REGEXP_EXTRACT_ALL(s, 'pattern', 0, 'i')")
+        self.validate_identity("SELECT REGEXP_EXTRACT_ALL(s, 'pattern', 1, 'im')")
+        # Array slicing for occurrence
+        self.validate_identity("SELECT REGEXP_EXTRACT_ALL(s, 'pattern', 0)[2:]")
 
         self.validate_identity("SELECT ISNAN(x)")
 

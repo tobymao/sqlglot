@@ -3599,7 +3599,7 @@ class DuckDB(Dialect):
 
             return self.func("ARRAY_TO_STRING", this, expression.expression)
 
-        def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
+        def _regexp_extract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
             this = expression.this
             group = expression.args.get("group")
             params = expression.args.get("parameters")
@@ -3607,29 +3607,61 @@ class DuckDB(Dialect):
             occurrence = expression.args.get("occurrence")
             null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
 
+            group_num = group.to_py() if group and group.is_int else 0
+            capturegroups = position is not None or occurrence is not None
+
+            # Handle Snowflake's 'e' flag: it enables capture group extraction
+            # In DuckDB, this is controlled by the group parameter directly
+            if params and params.is_string and "e" in params.name:
+                params = exp.Literal.string(params.name.replace("e", ""))
+            # Snowflake without 'e' flag: return full match (group 0) to preserve Snowflake semantics
+            #            elif capturegroups and group_num == 0 and null_if_pos_overflow:
+            #                group = exp.Literal.number(0)
+            # Strip group=0 when it came from dialects that add defaults
+            elif (
+                group_num == 0
+                and not capturegroups
+                and "position" not in expression.args
+                and null_if_pos_overflow
+            ):
+                group = None
+
+            validated_flags = self._validate_regexp_flags(params, supported_flags="cims")
+            flags_expr = exp.Literal.string(validated_flags) if validated_flags else None
+
+            # use substring to handle position argument
             if position and (not position.is_int or position.to_py() > 1):
                 this = exp.Substring(this=this, start=position)
 
                 if null_if_pos_overflow:
                     this = exp.Nullif(this=this, expression=exp.Literal.string(""))
 
-            # Do not render group if there is no following argument,
-            # and it's the default value for this dialect
-            if (
-                not params
-                and group
-                and group.name == str(self.dialect.REGEXP_EXTRACT_DEFAULT_GROUP)
-            ):
-                group = None
+            is_extract_all = isinstance(expression, exp.RegexpExtractAll)
+            non_single_occurrence = occurrence and (not occurrence.is_int or occurrence.to_py() > 1)
 
-            if occurrence and (not occurrence.is_int or occurrence.to_py() > 1):
-                return self.func(
-                    "ARRAY_EXTRACT",
-                    self.func("REGEXP_EXTRACT_ALL", this, expression.expression, group, params),
-                    exp.Literal.number(occurrence),
-                )
+            if is_extract_all or non_single_occurrence:
+                name = "REGEXP_EXTRACT_ALL"
+            else:
+                name = "REGEXP_EXTRACT"
 
-            return self.func("REGEXP_EXTRACT", this, expression.expression, group, params)
+            result: exp.Expression = exp.Anonymous(
+                this=name, expressions=[this, expression.expression, group, flags_expr]
+            )
+
+            # Array slicing for REGEXP_EXTRACT_ALL with occurrence
+            if is_extract_all and non_single_occurrence:
+                result = exp.Bracket(this=result, expressions=[exp.Slice(this=occurrence)])
+            # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1
+            elif non_single_occurrence:
+                result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
+
+            return self.sql(result)
+
+        def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
+            return self._regexp_extract_sql(expression)
+
+        def regexpextractall_sql(self, expression: exp.RegexpExtractAll) -> str:
+            return self._regexp_extract_sql(expression)
 
         @unsupported_args("culture")
         def numbertostr_sql(self, expression: exp.NumberToStr) -> str:

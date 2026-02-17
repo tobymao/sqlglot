@@ -453,7 +453,7 @@ def _regexpextract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAl
     position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
 
     return self.func(
-        "REGEXP_SUBSTR" if isinstance(expression, exp.RegexpExtract) else "REGEXP_EXTRACT_ALL",
+        "REGEXP_SUBSTR" if isinstance(expression, exp.RegexpExtract) else "REGEXP_SUBSTR_ALL",
         expression.this,
         expression.expression,
         position,

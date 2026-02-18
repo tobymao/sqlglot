@@ -3459,13 +3459,8 @@ class DuckDB(Dialect):
             source = expression.this
             exclude = expression.expression
 
-            if isinstance(source, exp.Null) or isinstance(exclude, exp.Null):
-                return self.sql(exp.Null())
-
-            result = exp.replace_placeholders(
-                self.ARRAY_EXCEPT_TEMPLATE.copy(), source=source, exclude=exclude
-            )
-            return self.sql(result)
+            replacements = {"source": source, "exclude": exclude}
+            return self.sql(exp.replace_placeholders(self.ARRAY_EXCEPT_TEMPLATE, **replacements))
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions

@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     binary_from_function,
     bool_xor_sql,
+    bracket_to_element_at_sql,
     build_replace_with_optional_replacement,
     date_trunc_to_time,
     datestrtodate_sql,
@@ -35,7 +36,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import apply_index_offset, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
@@ -699,19 +700,7 @@ class Presto(Dialect):
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):
-                return self.func(
-                    "ELEMENT_AT",
-                    expression.this,
-                    seq_get(
-                        apply_index_offset(
-                            expression.this,
-                            expression.expressions,
-                            1 - expression.args.get("offset", 0),
-                            dialect=self.dialect,
-                        ),
-                        0,
-                    ),
-                )
+                return bracket_to_element_at_sql(self, expression)
             return super().bracket_sql(expression)
 
         def struct_sql(self, expression: exp.Struct) -> str:

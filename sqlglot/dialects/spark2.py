@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     binary_from_function,
+    bracket_to_element_at_sql,
     build_formatted_time,
     is_parse_json,
     pivot_column_names,
@@ -152,6 +153,7 @@ class Spark2(Hive):
                 this=seq_get(args, 0),
                 expressions=ensure_list(seq_get(args, 1)),
                 offset=1,
+                safe=False,
             ),
             "FLOAT": _build_as_cast("float"),
             "FORMAT_STRING": exp.Format.from_arg_list,
@@ -350,3 +352,9 @@ class Spark2(Hive):
 
         def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
             return super(Hive.Generator, self).renamecolumn_sql(expression)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            if expression.args.get("safe") is False:
+                return bracket_to_element_at_sql(self, expression)
+
+            return super().bracket_sql(expression)

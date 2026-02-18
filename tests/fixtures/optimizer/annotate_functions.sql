@@ -837,7 +837,7 @@ INT;
 
 # dialect: spark2, spark, databricks
 ELEMENT_AT(ARRAY('1', '2','3'), 1);
-VARCHAR;
+STRING;
 
 # dialect: spark2, spark, databricks
 ELEMENT_AT(ARRAY(1, 2, 3), 1);

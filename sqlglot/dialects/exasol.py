@@ -246,6 +246,7 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
 
     return self.func(f"ADD_{unit}S", expression.this, offset_expr)
 
+
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
@@ -345,8 +346,6 @@ class Exasol(Dialect):
             "HASH_SHA512": lambda args: exp.SHA2(
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
-            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
-            "JSON_EXTRACT": _build_extract_json(exp.JSONExtract),
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_nullifzero,
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
@@ -391,6 +390,8 @@ class Exasol(Dialect):
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
             "JSON_VALUE": lambda self: self._parse_json_value(),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+            "JSON_EXTRACT": lambda self: self._parse_json_extract(),
         }
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
@@ -406,20 +407,20 @@ class Exasol(Dialect):
                 column.set("table", None)
             return column
 
-        def _parse_function(self, *args, **kwargs):
-            func = super()._parse_function(*args, **kwargs)
+        def _parse_json_extract(self) -> exp.JSONExtract:
+            args = self._parse_expressions()
+            self._match_r_paren()
 
-            if isinstance(func, exp.JSONExtract):
-                if not self._match_texts("EMITS"):
-                    self.raise_error("Expected EMITS")
+            expression = exp.JSONExtract(expressions=args)
 
+            if self._match_texts("EMITS"):
                 schema = self._parse_schema()
-                func.set("columns", schema.expressions)
-                expressions = func.args.get("expressions") or []
+                if schema is not None:
+                    expression.set("emits", schema.expressions)
+                else:
+                    self.raise_error("Expected schema after EMITS")
 
-                func.set("expressions", [e for e in expressions if isinstance(e, exp.JSONPath)])
-
-            return func
+            return expression
 
         ODBC_DATETIME_LITERALS = {
             "d": exp.Date,

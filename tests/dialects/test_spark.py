@@ -390,20 +390,15 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
-            "SELECT ARRAY(1, 2, 3)[0]",
+            "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
             read={
+                "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            },
+            write={
                 "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
                 "spark": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
                 "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
-            },
-        )
-
-        self.validate_all(
-            "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
-            write={
-                "spark2": "SELECT ARRAY(1, 2, 3)[0]",
-                "spark": "SELECT ARRAY(1, 2, 3)[0]",
-                "databricks": "SELECT ARRAY(1, 2, 3)[0]",
             },
         )
 

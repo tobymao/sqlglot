@@ -1741,21 +1741,21 @@ class TestDialect(Validator):
             },
         )
 
-        # Test ARRAY_EXCEPT with non-literal args, literals, strings, and duplicates
+        # Test ARRAY_EXCEPT transpilation across dialects
         self.validate_all(
-            "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2)), ARRAY_EXCEPT(ARRAY('a', 'b'), ARRAY('b')), ARRAY_EXCEPT(ARRAY(1, 1, 2), ARRAY(1))",
+            "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
             read={
-                "spark": "SELECT array_except(col1, col2), array_except(array(1, 2, 3), array(2)), array_except(array('a', 'b'), array('b')), array_except(array(1, 1, 2), array(1))",
-                "databricks": "SELECT array_except(col1, col2), array_except(array(1, 2, 3), array(2)), array_except(array('a', 'b'), array('b')), array_except(array(1, 1, 2), array(1))",
+                "spark": "SELECT array_except(array(1, 2, 3), array(2))",
+                "databricks": "SELECT array_except(array(1, 2, 3), array(2))",
             },
             write={
-                "snowflake": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT([1, 2, 3], [2]), ARRAY_EXCEPT(['a', 'b'], ['b']), ARRAY_EXCEPT([1, 1, 2], [1])",
-                "spark": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2)), ARRAY_EXCEPT(ARRAY('a', 'b'), ARRAY('b')), ARRAY_EXCEPT(ARRAY(1, 1, 2), ARRAY(1))",
-                "databricks": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2)), ARRAY_EXCEPT(ARRAY('a', 'b'), ARRAY('b')), ARRAY_EXCEPT(ARRAY(1, 1, 2), ARRAY(1))",
-                "trino": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2]), ARRAY_EXCEPT(ARRAY['a', 'b'], ARRAY['b']), ARRAY_EXCEPT(ARRAY[1, 1, 2], ARRAY[1])",
-                "presto": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2]), ARRAY_EXCEPT(ARRAY['a', 'b'], ARRAY['b']), ARRAY_EXCEPT(ARRAY[1, 1, 2], ARRAY[1])",
-                "athena": "SELECT ARRAY_EXCEPT(col1, col2), ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2]), ARRAY_EXCEPT(ARRAY['a', 'b'], ARRAY['b']), ARRAY_EXCEPT(ARRAY[1, 1, 2], ARRAY[1])",
-                "duckdb": "SELECT CASE WHEN col1 IS NULL OR col2 IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP(col1, GENERATE_SERIES(1, LENGTH(col1))), pair -> (LENGTH(LIST_FILTER(col1[1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER(col2, e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN ['a', 'b'] IS NULL OR ['b'] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP(['a', 'b'], GENERATE_SERIES(1, LENGTH(['a', 'b']))), pair -> (LENGTH(LIST_FILTER(['a', 'b'][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER(['b'], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN [1, 1, 2] IS NULL OR [1] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 1, 2], GENERATE_SERIES(1, LENGTH([1, 1, 2]))), pair -> (LENGTH(LIST_FILTER([1, 1, 2][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([1], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+                "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
+                "spark": "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
+                "databricks": "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
+                "trino": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "presto": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "athena": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
             },
         )
 

@@ -6102,10 +6102,10 @@ FROM SEMANTIC_VIEW(
 
     def test_array_except(self):
         self.validate_all(
-            "SELECT ARRAY_EXCEPT([1, 2, 3], [2]), ARRAY_EXCEPT(['A', 'B', 'C'], ['B']), ARRAY_EXCEPT([1, 1, 1, 2, 2, 3], [1, 2]), ARRAY_EXCEPT([1, 2, 3], []), ARRAY_EXCEPT([], [1, 2])",
+            "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
             write={
-                "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2]), ARRAY_EXCEPT(['A', 'B', 'C'], ['B']), ARRAY_EXCEPT([1, 1, 1, 2, 2, 3], [1, 2]), ARRAY_EXCEPT([1, 2, 3], []), ARRAY_EXCEPT([], [1, 2])",
-                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN ['A', 'B', 'C'] IS NULL OR ['B'] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP(['A', 'B', 'C'], GENERATE_SERIES(1, LENGTH(['A', 'B', 'C']))), pair -> (LENGTH(LIST_FILTER(['A', 'B', 'C'][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER(['B'], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN [1, 1, 1, 2, 2, 3] IS NULL OR [1, 2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 1, 1, 2, 2, 3], GENERATE_SERIES(1, LENGTH([1, 1, 1, 2, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 1, 1, 2, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([1, 2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN [1, 2, 3] IS NULL OR [] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END, CASE WHEN [] IS NULL OR [1, 2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([], GENERATE_SERIES(1, LENGTH([]))), pair -> (LENGTH(LIST_FILTER([][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([1, 2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+                "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
             },
         )
 

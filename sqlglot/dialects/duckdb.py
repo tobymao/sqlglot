@@ -3706,6 +3706,90 @@ class DuckDB(Dialect):
 
             return self.func("REGEXP_EXTRACT", this, expression.expression, group, params)
 
+        def regexpinstr_sql(self, expression: exp.RegexpInstr) -> str:
+            this = expression.this
+            pattern = expression.expression
+            position = expression.args.get("position")
+            orig_occ = expression.args.get("occurrence")
+            occurrence = orig_occ or exp.Literal.number(1)
+            option = expression.args.get("option")
+            parameters = expression.args.get("parameters")
+
+            validated_flags = self._validate_regexp_flags(parameters, supported_flags="ims")
+            if validated_flags:
+                pattern = exp.Concat(
+                    expressions=[exp.Literal.string(f"(?{validated_flags})"), pattern]
+                )
+
+            # Handle starting position offset
+            pos_offset: exp.Expression = exp.Literal.number(0)
+            if position and (not position.is_int or position.to_py() > 1):
+                this = exp.Substring(this=this, start=position)
+                pos_offset = position - exp.Literal.number(1)
+
+            # Helper: LIST_SUM(LIST_TRANSFORM(list[1:end], x -> LENGTH(x)))
+            def sum_lengths(func_name: str, end: exp.Expression) -> exp.Expression:
+                lst = exp.Bracket(
+                    this=exp.Anonymous(this=func_name, expressions=[this, pattern]),
+                    expressions=[exp.Slice(this=exp.Literal.number(1), expression=end)],
+                    offset=1,
+                )
+                transform = exp.Anonymous(
+                    this="LIST_TRANSFORM",
+                    expressions=[
+                        lst,
+                        exp.Lambda(
+                            this=exp.Length(this=exp.to_identifier("x")),
+                            expressions=[exp.to_identifier("x")],
+                        ),
+                    ],
+                )
+                return exp.Coalesce(
+                    this=exp.Anonymous(this="LIST_SUM", expressions=[transform]),
+                    expressions=[exp.Literal.number(0)],
+                )
+
+            # Position = 1 + sum(split_lengths[1:occ]) + sum(match_lengths[1:occ-1]) + offset
+            base_pos: exp.Expression = (
+                exp.Literal.number(1)
+                + sum_lengths("STRING_SPLIT_REGEX", occurrence)
+                + sum_lengths("REGEXP_EXTRACT_ALL", occurrence - exp.Literal.number(1))
+                + pos_offset
+            )
+
+            # option=1: add match length for end position
+            if option and option.is_int and option.to_py() == 1:
+                match_at_occ = exp.Bracket(
+                    this=exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern]),
+                    expressions=[occurrence],
+                    offset=1,
+                )
+                base_pos = base_pos + exp.Coalesce(
+                    this=exp.Length(this=match_at_occ), expressions=[exp.Literal.number(0)]
+                )
+
+            # NULL checks for all provided arguments
+            # .copy() is used strictly because .is_() alters the node's parent pointer, mutating the parsed AST
+            null_args = [
+                expression.this,
+                expression.expression,
+                position,
+                orig_occ,
+                option,
+                parameters,
+            ]
+            null_checks = [arg.copy().is_(exp.Null()) for arg in null_args if arg]
+
+            matches = exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern])
+
+            return self.sql(
+                exp.case()
+                .when(exp.or_(*null_checks), exp.Null())
+                .when(pattern.copy().eq(exp.Literal.string("")), exp.Literal.number(0))
+                .when(exp.Length(this=matches) < occurrence, exp.Literal.number(0))
+                .else_(base_pos)
+            )
+
         @unsupported_args("culture")
         def numbertostr_sql(self, expression: exp.NumberToStr) -> str:
             fmt = expression.args.get("format")

@@ -4436,7 +4436,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             ast.sql()  # check that this doesn't raise
 
     @mock.patch("sqlglot.generator.logger")
-    def test_regexp_substr(self, logger):
+    def test_regexp_functions(self, logger):
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
             write={
@@ -4562,6 +4562,45 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "snowflake": "SELECT REGEXP_COUNT(subject, pattern)",
                 "duckdb": "SELECT CASE WHEN pattern = '' THEN 0 ELSE LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) END",
+            },
+        )
+
+        self.validate_identity("SELECT REGEXP_INSTR('abc', 'a')")
+        self.validate_identity("SELECT REGEXP_INSTR('abc', 'a', 1, 1, 0, 'i')")
+
+        # Basic transpilation
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
+            },
+        )
+
+        # With position offset
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 5)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 5)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 5 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(SUBSTRING(subject, 5), pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 5 - 1 END",
+            },
+        )
+
+        # With occurrence
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 2 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 2 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:2], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:2 - 1], x -> LENGTH(x))), 0) + 0 END",
+            },
+        )
+
+        # With flags
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 1 IS NULL OR 0 IS NULL OR 'im' IS NULL THEN NULL WHEN '(?im)' || pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, '(?im)' || pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
             },
         )
 

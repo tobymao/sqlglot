@@ -1643,7 +1643,7 @@ class Generator(metaclass=_Generator):
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)
-        op_name = op_type.key.upper()
+        op_name = expression.key.upper()
 
         distinct = expression.args.get("distinct")
         if (
@@ -4801,7 +4801,7 @@ class Generator(metaclass=_Generator):
         this = expression.this
         if isinstance(this, self.RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS):
             self.unsupported(
-                f"RESPECT/IGNORE NULLS is not supported for {type(this).key} in {self.dialect.__class__.__name__}"
+                f"RESPECT/IGNORE NULLS is not supported for {this.key} in {self.dialect.__class__.__name__}"
             )
             return self.sql(this)
 

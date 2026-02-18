@@ -48,21 +48,6 @@ if t.TYPE_CHECKING:
     S = t.TypeVar("S", bound="SetOperation")
 
 
-class _Expression(type):
-    def __new__(cls, clsname, bases, attrs):
-        klass = super().__new__(cls, clsname, bases, attrs)
-
-        # When an Expression class is created, its key is automatically set
-        # to be the lowercase version of the class' name.
-        klass.key = clsname.lower()
-        klass.required_args = {k for k, v in klass.arg_types.items() if v}
-
-        # This is so that docstrings are not inherited in pdoc
-        klass.__doc__ = klass.__doc__ or ""
-
-        return klass
-
-
 SQLGLOT_META = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
@@ -71,7 +56,7 @@ POSITION_META_KEYS = ("line", "col", "start", "end")
 UNITTEST = "unittest" in sys.modules or "pytest" in sys.modules
 
 
-class Expression(metaclass=_Expression):
+class Expression:
     """
     The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
     context, such as its child expressions, their names (arg keys), and whether a given child expression
@@ -103,7 +88,10 @@ class Expression(metaclass=_Expression):
         args: a mapping used for retrieving the arguments of an expression, given their arg keys.
     """
 
-    key = "expression"
+    @property
+    def key(self) -> str:
+        return self.__class__.__name__.lower()
+
     arg_types = {"this": True}
     required_args = {"this"}
     __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
@@ -1126,6 +1114,8 @@ class Predicate(Condition):
 
 
 class DerivedTable(Expression):
+    """DERIVED TABLE expression. e.g. ``SELECT * FROM (SELECT 1) AS t``"""
+
     @property
     def selects(self) -> t.List[Expression]:
         return self.this.selects if isinstance(self.this, Query) else []
@@ -1136,6 +1126,8 @@ class DerivedTable(Expression):
 
 
 class Query(Expression):
+    """QUERY expression. e.g. ``SELECT 1``"""
+
     def subquery(self, alias: t.Optional[ExpOrStr] = None, copy: bool = True) -> Subquery:
         """
         Returns a `Subquery` that wraps around this query.
@@ -1467,6 +1459,8 @@ class Query(Expression):
 
 
 class UDTF(DerivedTable):
+    """UDTF expression. e.g. ``SELECT * FROM my_udtf(x)``"""
+
     @property
     def selects(self) -> t.List[Expression]:
         alias = self.args.get("alias")
@@ -1474,6 +1468,8 @@ class UDTF(DerivedTable):
 
 
 class Cache(Expression):
+    """CACHE statement. e.g. ``CACHE TABLE t``"""
+
     arg_types = {
         "this": True,
         "lazy": False,
@@ -1483,14 +1479,21 @@ class Cache(Expression):
 
 
 class Uncache(Expression):
+    """UNCACHE statement. e.g. ``UNCACHE TABLE t``"""
+
     arg_types = {"this": True, "exists": False}
 
 
 class Refresh(Expression):
+    """REFRESH statement. e.g. ``REFRESH TABLE t``"""
+
+    required_args = {"this", "kind"}
     arg_types = {"this": True, "kind": True}
 
 
 class DDL(Expression):
+    """DDL statement. e.g. ``CREATE TABLE t (x INT)``"""
+
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this statement."""
@@ -1513,10 +1516,15 @@ class DDL(Expression):
 
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Statement-Syntax/LOCKING-Request-Modifier/LOCKING-Request-Modifier-Syntax
 class LockingStatement(Expression):
+    """LOCKING STATEMENT statement. e.g. ``LOCK TABLE t IN EXCLUSIVE MODE``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class DML(Expression):
+    """DML statement. e.g. ``INSERT INTO t VALUES (1)``"""
+
     def returning(
         self,
         expression: ExpOrStr,
@@ -1554,6 +1562,9 @@ class DML(Expression):
 
 
 class Create(DDL):
+    """CREATE statement. e.g. ``CREATE TABLE t (x INT)``"""
+
+    required_args = {"this", "kind"}
     arg_types = {
         "with_": False,
         "this": True,
@@ -1579,6 +1590,9 @@ class Create(DDL):
 
 
 class SequenceProperties(Expression):
+    """SEQUENCE PROPERTIES expression. e.g. ``CREATE SEQUENCE seq START WITH 1 INCREMENT BY 1``"""
+
+    required_args = set()
     arg_types = {
         "increment": False,
         "minvalue": False,
@@ -1592,6 +1606,9 @@ class SequenceProperties(Expression):
 
 # https://www.postgresql.org/docs/current/sql-createtrigger.html
 class TriggerProperties(Expression):
+    """TRIGGER PROPERTIES expression. e.g. ``CREATE TRIGGER trig AFTER INSERT ON t FOR EACH ROW EXECUTE PROCEDURE f()``"""
+
+    required_args = {"table", "timing", "events", "execute"}
     arg_types = {
         "table": True,
         "timing": True,
@@ -1608,18 +1625,28 @@ class TriggerProperties(Expression):
 
 
 class TriggerExecute(Expression):
+    """TRIGGER EXECUTE expression. e.g. ``CREATE TRIGGER trig AFTER INSERT ON t FOR EACH ROW EXECUTE PROCEDURE f()``"""
+
     pass
 
 
 class TriggerEvent(Expression):
+    """TRIGGER EVENT expression. e.g. ``CREATE TRIGGER trig AFTER INSERT ON t FOR EACH ROW EXECUTE PROCEDURE f()``"""
+
     arg_types = {"this": True, "columns": False}
 
 
 class TriggerReferencing(Expression):
+    """TRIGGER REFERENCING expression. e.g. ``CREATE TRIGGER trig REFERENCING NEW AS new_t OLD AS old_t``"""
+
+    required_args = set()
     arg_types = {"old": False, "new": False}
 
 
 class TruncateTable(Expression):
+    """TRUNCATE TABLE statement. e.g. ``TRUNCATE TABLE t``"""
+
+    required_args = {"expressions"}
     arg_types = {
         "expressions": True,
         "is_database": False,
@@ -1636,10 +1663,14 @@ class TruncateTable(Expression):
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_copy
 class Clone(Expression):
+    """CLONE statement. e.g. ``CREATE TABLE t CLONE s``"""
+
     arg_types = {"this": True, "shallow": False, "copy": False}
 
 
 class Describe(Expression):
+    """DESCRIBE statement. e.g. ``DESCRIBE t``"""
+
     arg_types = {
         "this": True,
         "style": False,
@@ -1653,49 +1684,74 @@ class Describe(Expression):
 
 # https://duckdb.org/docs/sql/statements/attach.html#attach
 class Attach(Expression):
+    """ATTACH statement. e.g. ``ATTACH 'mydb.db'``"""
+
     arg_types = {"this": True, "exists": False, "expressions": False}
 
 
 # https://duckdb.org/docs/sql/statements/attach.html#detach
 class Detach(Expression):
+    """DETACH statement. e.g. ``DETACH mydb``"""
+
     arg_types = {"this": True, "exists": False}
 
 
 # https://duckdb.org/docs/sql/statements/load_and_install.html
 class Install(Expression):
+    """INSTALL statement. e.g. ``INSTALL httpfs``"""
+
     arg_types = {"this": True, "from_": False, "force": False}
 
 
 # https://duckdb.org/docs/guides/meta/summarize.html
 class Summarize(Expression):
+    """SUMMARIZE statement. e.g. ``SUMMARIZE t``"""
+
     arg_types = {"this": True, "table": False}
 
 
 class Kill(Expression):
+    """KILL statement. e.g. ``KILL 1``"""
+
     arg_types = {"this": True, "kind": False}
 
 
 class Pragma(Expression):
+    """PRAGMA statement. e.g. ``PRAGMA page_size``"""
+
     pass
 
 
 class Declare(Expression):
+    """DECLARE statement. e.g. ``DECLARE x INT``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class DeclareItem(Expression):
+    """DECLARE ITEM expression. e.g. ``DECLARE x INT``"""
+
     arg_types = {"this": True, "kind": False, "default": False}
 
 
 class Set(Expression):
+    """SET statement. e.g. ``SET x = 1``"""
+
+    required_args = set()
     arg_types = {"expressions": False, "unset": False, "tag": False}
 
 
 class Heredoc(Expression):
+    """HEREDOC expression. e.g. ``SELECT $$hello$$``"""
+
     arg_types = {"this": True, "tag": False}
 
 
 class SetItem(Expression):
+    """SET ITEM expression. e.g. ``SET x = 1``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "expressions": False,
@@ -1706,10 +1762,14 @@ class SetItem(Expression):
 
 
 class QueryBand(Expression):
+    """QUERY BAND statement. e.g. ``SET QUERY_BAND = 'app=myapp' FOR SESSION``"""
+
     arg_types = {"this": True, "scope": False, "update": False}
 
 
 class Show(Expression):
+    """SHOW statement. e.g. ``SHOW TABLES``"""
+
     arg_types = {
         "this": True,
         "history": False,
@@ -1743,18 +1803,28 @@ class Show(Expression):
 
 
 class UserDefinedFunction(Expression):
+    """USER DEFINED FUNCTION expression. e.g. ``CREATE FUNCTION f(x INT) RETURNS INT AS $$ SELECT x $$``"""
+
     arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
 class CharacterSet(Expression):
+    """CHARACTER SET expression. e.g. ``CREATE TABLE t (x VARCHAR(10) CHARACTER SET utf8)``"""
+
     arg_types = {"this": True, "default": False}
 
 
 class RecursiveWithSearch(Expression):
+    """RECURSIVE WITH SEARCH expression. e.g. ``WITH RECURSIVE cte AS (SELECT 1 UNION ALL SELECT n + 1 FROM cte WHERE n < 10) SELECT * FROM cte``"""
+
+    required_args = {"kind", "this", "expression"}
     arg_types = {"kind": True, "this": True, "expression": True, "using": False}
 
 
 class With(Expression):
+    """WITH clause. e.g. ``WITH cte AS (SELECT 1) SELECT * FROM cte``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "recursive": False, "search": False}
 
     @property
@@ -1763,12 +1833,17 @@ class With(Expression):
 
 
 class WithinGroup(Expression):
+    """WITHIN GROUP expression. e.g. ``SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY x)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 # clickhouse supports scalar ctes
 # https://clickhouse.com/docs/en/sql-reference/statements/select/with
 class CTE(DerivedTable):
+    """CTE clause. e.g. ``WITH cte AS (SELECT 1) SELECT * FROM cte``"""
+
+    required_args = {"this", "alias"}
     arg_types = {
         "this": True,
         "alias": True,
@@ -1779,10 +1854,16 @@ class CTE(DerivedTable):
 
 
 class ProjectionDef(Expression):
+    """PROJECTION DEF expression. e.g. ``SELECT x :: INT``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class TableAlias(Expression):
+    """TABLE ALIAS expression. e.g. ``SELECT * FROM t AS a``"""
+
+    required_args = set()
     arg_types = {"this": False, "columns": False}
 
     @property
@@ -1791,26 +1872,38 @@ class TableAlias(Expression):
 
 
 class BitString(Condition):
+    """BIT STRING expression. e.g. ``SELECT b'1010'``"""
+
     pass
 
 
 class HexString(Condition):
+    """HEX STRING expression. e.g. ``SELECT x'FF'``"""
+
     arg_types = {"this": True, "is_integer": False}
 
 
 class ByteString(Condition):
+    """BYTE STRING expression. e.g. ``SELECT e'\x01'``"""
+
     arg_types = {"this": True, "is_bytes": False}
 
 
 class RawString(Condition):
+    """RAW STRING expression. e.g. ``SELECT r'raw'``"""
+
     pass
 
 
 class UnicodeString(Condition):
+    """UNICODE STRING expression. e.g. ``SELECT u'abc'``"""
+
     arg_types = {"this": True, "escape": False}
 
 
 class Column(Condition):
+    """COLUMN expression. e.g. ``SELECT x``"""
+
     arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 
     @property
@@ -1852,14 +1945,21 @@ class Column(Condition):
 
 
 class Pseudocolumn(Column):
+    """PSEUDOCOLUMN expression. e.g. ``x``"""
+
     pass
 
 
 class ColumnPosition(Expression):
+    """COLUMN POSITION expression. e.g. ``x``"""
+
+    required_args = {"position"}
     arg_types = {"this": False, "position": True}
 
 
 class ColumnDef(Expression):
+    """COLUMN DEF expression. e.g. ``CREATE TABLE t (x INT)``"""
+
     arg_types = {
         "this": True,
         "kind": False,
@@ -1880,6 +1980,8 @@ class ColumnDef(Expression):
 
 
 class AlterColumn(Expression):
+    """ALTER COLUMN clause. e.g. ``ALTER TABLE t ALTER COLUMN x SET DEFAULT 0``"""
+
     arg_types = {
         "this": True,
         "dtype": False,
@@ -1896,19 +1998,30 @@ class AlterColumn(Expression):
 
 # https://dev.mysql.com/doc/refman/8.0/en/invisible-indexes.html
 class AlterIndex(Expression):
+    """ALTER INDEX expression. e.g. ``ALTER TABLE t ALTER INDEX idx RENAME TO idx2``"""
+
+    required_args = {"this", "visible"}
     arg_types = {"this": True, "visible": True}
 
 
 # https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE.html
 class AlterDistStyle(Expression):
+    """ALTER DIST STYLE expression. e.g. ``ALTER DISTSTYLE KEY DISTKEY x``"""
+
     pass
 
 
 class AlterSortKey(Expression):
+    """ALTER SORT KEY expression. e.g. ``ALTER SORTKEY``"""
+
+    required_args = set()
     arg_types = {"this": False, "expressions": False, "compound": False}
 
 
 class AlterSet(Expression):
+    """ALTER SET clause. e.g. ``ALTER TABLE t SET (x = 1)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "option": False,
@@ -1923,18 +2036,28 @@ class AlterSet(Expression):
 
 
 class RenameColumn(Expression):
+    """RENAME COLUMN expression. e.g. ``ALTER TABLE t RENAME COLUMN x TO y``"""
+
+    required_args = {"this", "to"}
     arg_types = {"this": True, "to": True, "exists": False}
 
 
 class AlterRename(Expression):
+    """ALTER RENAME clause. e.g. ``ALTER TABLE t RENAME TO s``"""
+
     pass
 
 
 class SwapTable(Expression):
+    """SWAP TABLE expression. e.g. ``ALTER TABLE t SWAP WITH s``"""
+
     pass
 
 
 class Comment(Expression):
+    """COMMENT expression. e.g. ``COMMENT ON TABLE t IS 'desc'``"""
+
+    required_args = {"this", "kind", "expression"}
     arg_types = {
         "this": True,
         "kind": True,
@@ -1945,6 +2068,9 @@ class Comment(Expression):
 
 
 class Comprehension(Expression):
+    """COMPREHENSION expression. e.g. ``SELECT [x * 2 FOR x IN arr]``"""
+
+    required_args = {"this", "expression", "iterator"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -1956,6 +2082,8 @@ class Comprehension(Expression):
 
 # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
 class MergeTreeTTLAction(Expression):
+    """MERGE TREE TTL ACTION expression. e.g. ``x``"""
+
     arg_types = {
         "this": True,
         "delete": False,
@@ -1967,6 +2095,9 @@ class MergeTreeTTLAction(Expression):
 
 # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
 class MergeTreeTTL(Expression):
+    """MERGE TREE TTL expression. e.g. ``TTL x``"""
+
+    required_args = {"expressions"}
     arg_types = {
         "expressions": True,
         "where": False,
@@ -1977,6 +2108,9 @@ class MergeTreeTTL(Expression):
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 class IndexConstraintOption(Expression):
+    """INDEX CONSTRAINT OPTION expression."""
+
+    required_args = set()
     arg_types = {
         "key_block_size": False,
         "using": False,
@@ -1989,6 +2123,9 @@ class IndexConstraintOption(Expression):
 
 
 class ColumnConstraint(Expression):
+    """COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT NOT NULL)``"""
+
+    required_args = {"kind"}
     arg_types = {"this": False, "kind": True}
 
     @property
@@ -1997,75 +2134,118 @@ class ColumnConstraint(Expression):
 
 
 class ColumnConstraintKind(Expression):
+    """COLUMN CONSTRAINT KIND expression."""
+
     pass
 
 
 class AutoIncrementColumnConstraint(ColumnConstraintKind):
+    """AUTO INCREMENT COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT AUTO_INCREMENT)``"""
+
     pass
 
 
 class ZeroFillColumnConstraint(ColumnConstraint):
+    """ZERO FILL COLUMN CONSTRAINT expression. e.g. ``ZEROFILL``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class PeriodForSystemTimeConstraint(ColumnConstraintKind):
+    """PERIOD FOR SYSTEM TIME CONSTRAINT expression. e.g. ``PERIOD FOR SYSTEM_TIME (x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class CaseSpecificColumnConstraint(ColumnConstraintKind):
+    """CASE SPECIFIC COLUMN CONSTRAINT expression. e.g. ``NOT CASESPECIFIC``"""
+
+    required_args = {"not_"}
     arg_types = {"not_": True}
 
 
 class CharacterSetColumnConstraint(ColumnConstraintKind):
+    """CHARACTER SET COLUMN CONSTRAINT expression. e.g. ``CHARACTER SET x``"""
+
     arg_types = {"this": True}
 
 
 class CheckColumnConstraint(ColumnConstraintKind):
+    """CHECK COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT CHECK (x > 0))``"""
+
     arg_types = {"this": True, "enforced": False}
 
 
 class ClusteredColumnConstraint(ColumnConstraintKind):
+    """CLUSTERED COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT CLUSTERED)``"""
+
     pass
 
 
 class CollateColumnConstraint(ColumnConstraintKind):
+    """COLLATE COLUMN CONSTRAINT expression. e.g. ``COLLATE x``"""
+
     pass
 
 
 class CommentColumnConstraint(ColumnConstraintKind):
+    """COMMENT COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT COMMENT 'desc')``"""
+
     pass
 
 
 class CompressColumnConstraint(ColumnConstraintKind):
+    """COMPRESS COLUMN CONSTRAINT expression. e.g. ``COMPRESS``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class DateFormatColumnConstraint(ColumnConstraintKind):
+    """DATE FORMAT COLUMN CONSTRAINT expression. e.g. ``FORMAT x``"""
+
     arg_types = {"this": True}
 
 
 class DefaultColumnConstraint(ColumnConstraintKind):
+    """DEFAULT COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT DEFAULT 0)``"""
+
     pass
 
 
 class EncodeColumnConstraint(ColumnConstraintKind):
+    """ENCODE COLUMN CONSTRAINT expression. e.g. ``ENCODE x``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-EXCLUDE
 class ExcludeColumnConstraint(ColumnConstraintKind):
+    """EXCLUDE COLUMN CONSTRAINT expression. e.g. ``EXCLUDE x``"""
+
     pass
 
 
 class EphemeralColumnConstraint(ColumnConstraintKind):
+    """EPHEMERAL COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT EPHEMERAL)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class WithOperator(Expression):
+    """WITH OPERATOR expression. e.g. ``x WITH x``"""
+
+    required_args = {"this", "op"}
     arg_types = {"this": True, "op": True}
 
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
+    """GENERATED AS IDENTITY COLUMN CONSTRAINT expression. e.g. ``GENERATED AS IDENTITY``"""
+
+    required_args = set()
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {
         "this": False,
@@ -2081,12 +2261,18 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 
 class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
+    """GENERATED AS ROW COLUMN CONSTRAINT expression. e.g. ``GENERATED ALWAYS AS ROW END``"""
+
+    required_args = set()
     arg_types = {"start": False, "hidden": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 # https://github.com/ClickHouse/ClickHouse/blob/master/src/Parsers/ParserCreateQuery.h#L646
 class IndexColumnConstraint(ColumnConstraintKind):
+    """INDEX COLUMN CONSTRAINT expression. e.g. ``INDEX``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "expressions": False,
@@ -2099,40 +2285,62 @@ class IndexColumnConstraint(ColumnConstraintKind):
 
 
 class InlineLengthColumnConstraint(ColumnConstraintKind):
+    """INLINE LENGTH COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT INLINE LENGTH 10)``"""
+
     pass
 
 
 class NonClusteredColumnConstraint(ColumnConstraintKind):
+    """NON CLUSTERED COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT NOT CLUSTERED)``"""
+
     pass
 
 
 class NotForReplicationColumnConstraint(ColumnConstraintKind):
+    """NOT FOR REPLICATION COLUMN CONSTRAINT expression. e.g. ``NOT FOR REPLICATION``"""
+
+    required_args = set()
     arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
 class MaskingPolicyColumnConstraint(ColumnConstraintKind):
+    """MASKING POLICY COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT MASKING POLICY p)``"""
+
     arg_types = {"this": True, "expressions": False}
 
 
 class NotNullColumnConstraint(ColumnConstraintKind):
+    """NOT NULL COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT NOT NULL)``"""
+
+    required_args = set()
     arg_types = {"allow_null": False}
 
 
 # https://dev.mysql.com/doc/refman/5.7/en/timestamp-initialization.html
 class OnUpdateColumnConstraint(ColumnConstraintKind):
+    """ON UPDATE COLUMN CONSTRAINT expression. e.g. ``ON UPDATE x``"""
+
     pass
 
 
 class PrimaryKeyColumnConstraint(ColumnConstraintKind):
+    """PRIMARY KEY COLUMN CONSTRAINT expression. e.g. ``PRIMARY KEY``"""
+
+    required_args = set()
     arg_types = {"desc": False, "options": False}
 
 
 class TitleColumnConstraint(ColumnConstraintKind):
+    """TITLE COLUMN CONSTRAINT expression. e.g. ``TITLE x``"""
+
     pass
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
+    """UNIQUE COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT UNIQUE)``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "index_type": False,
@@ -2143,39 +2351,60 @@ class UniqueColumnConstraint(ColumnConstraintKind):
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
+    """UPPERCASE COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x VARCHAR UPPERCASE)``"""
+
+    required_args = set()
     arg_types: t.Dict[str, t.Any] = {}
 
 
 # https://docs.risingwave.com/processing/watermarks#syntax
 class WatermarkColumnConstraint(Expression):
+    """WATERMARK COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT WATERMARK FOR ts AS ts - INTERVAL '5' SECOND)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class PathColumnConstraint(ColumnConstraintKind):
+    """PATH COLUMN CONSTRAINT expression. e.g. ``CREATE TABLE t (x INT PATH 'p')``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
 class ProjectionPolicyColumnConstraint(ColumnConstraintKind):
+    """PROJECTION POLICY COLUMN CONSTRAINT expression. e.g. ``PROJECTION POLICY x``"""
+
     pass
 
 
 # computed column expression
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql?view=sql-server-ver16
 class ComputedColumnConstraint(ColumnConstraintKind):
+    """COMPUTED COLUMN CONSTRAINT expression. e.g. ``AS x``"""
+
     arg_types = {"this": True, "persisted": False, "not_null": False, "data_type": False}
 
 
 # https://docs.oracle.com/en/database/other-databases/timesten/22.1/plsql-developer/examples-using-input-and-output-parameters-and-bind-variables.html#GUID-4B20426E-F93F-4835-88CB-6A79829A8D7F
 class InOutColumnConstraint(ColumnConstraintKind):
+    """IN OUT COLUMN CONSTRAINT expression."""
+
+    required_args = set()
     arg_types = {"input_": False, "output": False, "variadic": False}
 
 
 class Constraint(Expression):
+    """CONSTRAINT expression. e.g. ``CONSTRAINT x x``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
 
 
 class Delete(DML):
+    """DELETE statement. e.g. ``DELETE FROM t WHERE x = 1``"""
+
+    required_args = set()
     arg_types = {
         "with_": False,
         "this": False,
@@ -2262,6 +2491,9 @@ class Delete(DML):
 
 
 class Drop(Expression):
+    """DROP statement. e.g. ``DROP TABLE t``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "kind": False,
@@ -2284,31 +2516,50 @@ class Drop(Expression):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
 class Export(Expression):
+    """EXPORT statement. e.g. ``EXPORT DATABASE '/path'``"""
+
+    required_args = {"this", "options"}
     arg_types = {"this": True, "connection": False, "options": True}
 
 
 class Filter(Expression):
+    """FILTER expression. e.g. ``x FILTER(y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Check(Expression):
+    """CHECK expression. e.g. ``CHECK (x)``"""
+
     pass
 
 
 class Changes(Expression):
+    """CHANGES expression. e.g. ``CHANGES (INFORMATION => x)``"""
+
+    required_args = {"information"}
     arg_types = {"information": True, "at_before": False, "end": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/constructs/connect-by
 class Connect(Expression):
+    """CONNECT expression. e.g. ``CONNECT BY x``"""
+
+    required_args = {"connect"}
     arg_types = {"start": False, "connect": True, "nocycle": False}
 
 
 class CopyParameter(Expression):
+    """COPY PARAMETER expression. e.g. ``x``"""
+
     arg_types = {"this": True, "expression": False, "expressions": False}
 
 
 class Copy(DML):
+    """COPY statement. e.g. ``COPY t FROM 's3://bucket/file.csv'``"""
+
+    required_args = {"this", "kind"}
     arg_types = {
         "this": True,
         "kind": True,
@@ -2320,6 +2571,9 @@ class Copy(DML):
 
 
 class Credentials(Expression):
+    """CREDENTIALS expression."""
+
+    required_args = set()
     arg_types = {
         "credentials": False,
         "encryption": False,
@@ -2330,19 +2584,28 @@ class Credentials(Expression):
 
 
 class Prior(Expression):
+    """PRIOR expression. e.g. ``PRIOR x``"""
+
     pass
 
 
 class Directory(Expression):
+    """DIRECTORY expression. e.g. ``DIRECTORY x``"""
+
     arg_types = {"this": True, "local": False, "row_format": False}
 
 
 # https://docs.snowflake.com/en/user-guide/data-load-dirtables-query
 class DirectoryStage(Expression):
+    """DIRECTORY STAGE expression. e.g. ``DIRECTORY(x)``"""
+
     pass
 
 
 class ForeignKey(Expression):
+    """FOREIGN KEY expression. e.g. ``CREATE TABLE t (x INT REFERENCES s(id))``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "reference": False,
@@ -2353,16 +2616,25 @@ class ForeignKey(Expression):
 
 
 class ColumnPrefix(Expression):
+    """COLUMN PREFIX expression. e.g. ``x(y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class PrimaryKey(Expression):
+    """PRIMARY KEY expression. e.g. ``CREATE TABLE t (x INT PRIMARY KEY)``"""
+
+    required_args = {"expressions"}
     arg_types = {"this": False, "expressions": True, "options": False, "include": False}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html
 # https://docs.aws.amazon.com/redshift/latest/dg/r_SELECT_INTO.html#r_SELECT_INTO-examples
 class Into(Expression):
+    """INTO clause. e.g. ``SELECT x INTO t FROM s``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "temporary": False,
@@ -2373,6 +2645,8 @@ class Into(Expression):
 
 
 class From(Expression):
+    """FROM clause. e.g. ``SELECT 1 FROM t``"""
+
     @property
     def name(self) -> str:
         return self.this.name
@@ -2383,18 +2657,28 @@ class From(Expression):
 
 
 class Having(Expression):
+    """HAVING clause. e.g. ``SELECT x, COUNT(*) FROM t GROUP BY x HAVING COUNT(*) > 1``"""
+
     pass
 
 
 class Hint(Expression):
+    """HINT expression. e.g. ``/*+ x */``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class JoinHint(Expression):
+    """JOIN HINT clause. e.g. ``SELECT * FROM t JOIN s ON t.id = s.id``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
 
 
 class Identifier(Expression):
+    """IDENTIFIER expression. e.g. ``SELECT x AS y``"""
+
     arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
 
     @property
@@ -2408,10 +2692,16 @@ class Identifier(Expression):
 
 # https://www.postgresql.org/docs/current/indexes-opclass.html
 class Opclass(Expression):
+    """OPCLASS expression. e.g. ``x y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Index(Expression):
+    """INDEX expression. e.g. ``CREATE INDEX idx ON t (x)``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "table": False,
@@ -2423,6 +2713,9 @@ class Index(Expression):
 
 
 class IndexParameters(Expression):
+    """INDEX PARAMETERS expression. e.g. ``CREATE INDEX idx ON t (x)``"""
+
+    required_args = set()
     arg_types = {
         "using": False,
         "include": False,
@@ -2436,6 +2729,9 @@ class IndexParameters(Expression):
 
 
 class Insert(DDL, DML):
+    """INSERT statement. e.g. ``INSERT INTO t VALUES (1)``"""
+
+    required_args = set()
     arg_types = {
         "hint": False,
         "with_": False,
@@ -2505,14 +2801,22 @@ class Insert(DDL, DML):
 
 
 class ConditionalInsert(Expression):
+    """CONDITIONAL INSERT statement. e.g. ``INSERT INTO t WHEN x = 1 THEN VALUES (1)``"""
+
     arg_types = {"this": True, "expression": False, "else_": False}
 
 
 class MultitableInserts(Expression):
+    """MULTITABLE INSERTS statement. e.g. ``INSERT ALL INTO t VALUES (1) INTO s VALUES (2) SELECT 1 FROM DUAL``"""
+
+    required_args = {"expressions", "kind", "source"}
     arg_types = {"expressions": True, "kind": True, "source": True}
 
 
 class OnConflict(Expression):
+    """ON CONFLICT expression. e.g. ``INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING``"""
+
+    required_args = set()
     arg_types = {
         "duplicate": False,
         "expressions": False,
@@ -2525,24 +2829,38 @@ class OnConflict(Expression):
 
 
 class OnCondition(Expression):
+    """ON CONDITION expression."""
+
+    required_args = set()
     arg_types = {"error": False, "empty": False, "null": False}
 
 
 class Returning(Expression):
+    """RETURNING clause. e.g. ``INSERT INTO t VALUES (1) RETURNING x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "into": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
 class Introducer(Expression):
+    """INTRODUCER expression. e.g. ``x y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # national char, like n'utf8'
 class National(Expression):
+    """NATIONAL expression. e.g. ``N''``"""
+
     pass
 
 
 class LoadData(Expression):
+    """LOAD DATA expression. e.g. ``LOAD DATA INPATH x INTO TABLE x``"""
+
+    required_args = {"this", "inpath"}
     arg_types = {
         "this": True,
         "local": False,
@@ -2555,19 +2873,29 @@ class LoadData(Expression):
 
 
 class Partition(Expression):
+    """PARTITION expression. e.g. ``PARTITION(x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "subpartition": False}
 
 
 class PartitionRange(Expression):
+    """PARTITION RANGE expression. e.g. ``CREATE TABLE t PARTITION OF s FOR VALUES FROM (1) TO (10)``"""
+
     arg_types = {"this": True, "expression": False, "expressions": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
 class PartitionId(Expression):
+    """PARTITION ID expression."""
+
     pass
 
 
 class Fetch(Expression):
+    """FETCH clause. e.g. ``SELECT x FROM t ORDER BY x FETCH FIRST 5 ROWS ONLY``"""
+
+    required_args = set()
     arg_types = {
         "direction": False,
         "count": False,
@@ -2576,6 +2904,9 @@ class Fetch(Expression):
 
 
 class Grant(Expression):
+    """GRANT statement. e.g. ``GRANT SELECT ON TABLE t TO user1``"""
+
+    required_args = {"privileges", "securable", "principals"}
     arg_types = {
         "privileges": True,
         "kind": False,
@@ -2586,10 +2917,16 @@ class Grant(Expression):
 
 
 class Revoke(Expression):
+    """REVOKE statement. e.g. ``REVOKE SELECT ON TABLE t FROM user1``"""
+
+    required_args = {"privileges", "securable", "principals"}
     arg_types = {**Grant.arg_types, "cascade": False}
 
 
 class Group(Expression):
+    """GROUP clause. e.g. ``SELECT x FROM t GROUP BY x``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "grouping_sets": False,
@@ -2601,22 +2938,37 @@ class Group(Expression):
 
 
 class Cube(Expression):
+    """CUBE clause. e.g. ``SELECT x FROM t GROUP BY CUBE(x, y)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
 
 
 class Rollup(Expression):
+    """ROLLUP clause. e.g. ``SELECT x FROM t GROUP BY ROLLUP(x, y)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
 
 
 class GroupingSets(Expression):
+    """GROUPING SETS clause. e.g. ``SELECT x FROM t GROUP BY GROUPING SETS ((x), (y))``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class Lambda(Expression):
+    """LAMBDA expression. e.g. ``x -> x``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True, "colon": False}
 
 
 class Limit(Expression):
+    """LIMIT clause. e.g. ``SELECT x FROM t LIMIT 10``"""
+
+    required_args = {"expression"}
     arg_types = {
         "this": False,
         "expression": True,
@@ -2627,6 +2979,9 @@ class Limit(Expression):
 
 
 class LimitOptions(Expression):
+    """LIMIT OPTIONS expression."""
+
+    required_args = set()
     arg_types = {
         "percent": False,
         "rows": False,
@@ -2635,6 +2990,9 @@ class LimitOptions(Expression):
 
 
 class Literal(Condition):
+    """LITERAL expression. e.g. ``SELECT 1``"""
+
+    required_args = {"this", "is_string"}
     arg_types = {"this": True, "is_string": True}
 
     @classmethod
@@ -2670,6 +3028,8 @@ class Literal(Condition):
 
 
 class Join(Expression):
+    """JOIN clause. e.g. ``SELECT * FROM t JOIN s ON t.id = s.id``"""
+
     arg_types = {
         "this": True,
         "on": False,
@@ -2798,6 +3158,8 @@ class Join(Expression):
 
 
 class Lateral(UDTF):
+    """LATERAL clause. e.g. ``SELECT * FROM t, LATERAL (SELECT 1) AS s``"""
+
     arg_types = {
         "this": True,
         "view": False,
@@ -2811,6 +3173,8 @@ class Lateral(UDTF):
 # https://docs.snowflake.com/sql-reference/literals-table
 # https://docs.snowflake.com/en/sql-reference/functions-table#using-a-table-function
 class TableFromRows(UDTF):
+    """TABLE FROM ROWS expression. e.g. ``SELECT * FROM (VALUES (1), (2)) AS t(x)``"""
+
     arg_types = {
         "this": True,
         "alias": False,
@@ -2821,6 +3185,8 @@ class TableFromRows(UDTF):
 
 
 class MatchRecognizeMeasure(Expression):
+    """MATCH RECOGNIZE MEASURE expression. e.g. ``x``"""
+
     arg_types = {
         "this": True,
         "window_frame": False,
@@ -2828,6 +3194,9 @@ class MatchRecognizeMeasure(Expression):
 
 
 class MatchRecognize(Expression):
+    """MATCH RECOGNIZE expression. e.g. ``MATCH_RECOGNIZE ()``"""
+
+    required_args = set()
     arg_types = {
         "partition_by": False,
         "order": False,
@@ -2843,19 +3212,30 @@ class MatchRecognize(Expression):
 # Clickhouse FROM FINAL modifier
 # https://clickhouse.com/docs/en/sql-reference/statements/select/from/#final-modifier
 class Final(Expression):
+    """FINAL expression."""
+
     pass
 
 
 class Offset(Expression):
+    """OFFSET clause. e.g. ``SELECT x FROM t LIMIT 10 OFFSET 5``"""
+
+    required_args = {"expression"}
     arg_types = {"this": False, "expression": True, "expressions": False}
 
 
 class Order(Expression):
+    """ORDER clause. e.g. ``SELECT x FROM t ORDER BY x``"""
+
+    required_args = {"expressions"}
     arg_types = {"this": False, "expressions": True, "siblings": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
 class WithFill(Expression):
+    """WITH FILL expression. e.g. ``WITH FILL``"""
+
+    required_args = set()
     arg_types = {
         "from_": False,
         "to": False,
@@ -2867,18 +3247,27 @@ class WithFill(Expression):
 # hive specific sorts
 # https://cwiki.apache.org/confluence/display/Hive/LanguageManual+SortBy
 class Cluster(Order):
+    """CLUSTER clause. e.g. ``SELECT x FROM t CLUSTER BY x``"""
+
     pass
 
 
 class Distribute(Order):
+    """DISTRIBUTE clause. e.g. ``SELECT x FROM t DISTRIBUTE BY x``"""
+
     pass
 
 
 class Sort(Order):
+    """SORT clause. e.g. ``SELECT x FROM t SORT BY x``"""
+
     pass
 
 
 class Ordered(Expression):
+    """ORDERED expression. e.g. ``SELECT x FROM t ORDER BY x DESC``"""
+
+    required_args = {"this", "nulls_first"}
     arg_types = {"this": True, "desc": False, "nulls_first": True, "with_fill": False}
 
     @property
@@ -2887,44 +3276,72 @@ class Ordered(Expression):
 
 
 class Property(Expression):
+    """PROPERTY expression. e.g. ``CREATE TABLE t (x INT) WITH (key = 'val')``"""
+
+    required_args = {"this", "value"}
     arg_types = {"this": True, "value": True}
 
 
 class GrantPrivilege(Expression):
+    """GRANT PRIVILEGE expression. e.g. ``x``"""
+
     arg_types = {"this": True, "expressions": False}
 
 
 class GrantPrincipal(Expression):
+    """GRANT PRINCIPAL expression. e.g. ``x``"""
+
     arg_types = {"this": True, "kind": False}
 
 
 class AllowedValuesProperty(Expression):
+    """ALLOWED VALUES PROPERTY expression. e.g. ``ALLOWED_VALUES x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class AlgorithmProperty(Property):
+    """ALGORITHM PROPERTY expression. e.g. ``ALGORITHM=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class AutoIncrementProperty(Property):
+    """AUTO INCREMENT PROPERTY expression. e.g. ``AUTO_INCREMENT=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # https://docs.aws.amazon.com/prescriptive-guidance/latest/materialized-views-redshift/refreshing-materialized-views.html
 class AutoRefreshProperty(Property):
+    """AUTO REFRESH PROPERTY expression. e.g. ``AUTO REFRESH x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class BackupProperty(Property):
+    """BACKUP PROPERTY expression. e.g. ``BACKUP x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW/
 class BuildProperty(Property):
+    """BUILD PROPERTY expression. e.g. ``BUILD x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class BlockCompressionProperty(Property):
+    """BLOCK COMPRESSION PROPERTY expression."""
+
+    required_args = set()
     arg_types = {
         "autotemp": False,
         "always": False,
@@ -2935,22 +3352,37 @@ class BlockCompressionProperty(Property):
 
 
 class CharacterSetProperty(Property):
+    """CHARACTER SET PROPERTY expression. e.g. ``DEFAULT CHARACTER SET=x``"""
+
+    required_args = {"this", "default"}
     arg_types = {"this": True, "default": True}
 
 
 class ChecksumProperty(Property):
+    """CHECKSUM PROPERTY expression. e.g. ``CHECKSUM=OFF``"""
+
+    required_args = set()
     arg_types = {"on": False, "default": False}
 
 
 class CollateProperty(Property):
+    """COLLATE PROPERTY expression. e.g. ``COLLATE=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "default": False}
 
 
 class CopyGrantsProperty(Property):
+    """COPY GRANTS PROPERTY expression. e.g. ``COPY GRANTS``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class DataBlocksizeProperty(Property):
+    """DATA BLOCKSIZE PROPERTY expression. e.g. ``DATABLOCKSIZE=``"""
+
+    required_args = set()
     arg_types = {
         "size": False,
         "units": False,
@@ -2961,93 +3393,159 @@ class DataBlocksizeProperty(Property):
 
 
 class DataDeletionProperty(Property):
+    """DATA DELETION PROPERTY expression. e.g. ``DATA_DELETION=ON``"""
+
+    required_args = {"on"}
     arg_types = {"on": True, "filter_column": False, "retention_period": False}
 
 
 class DefinerProperty(Property):
+    """DEFINER PROPERTY expression. e.g. ``DEFINER=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class DistKeyProperty(Property):
+    """DIST KEY PROPERTY expression. e.g. ``DISTKEY=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-definition/CREATE_TABLE/#distribution_desc
 # https://doris.apache.org/docs/sql-manual/sql-statements/Data-Definition-Statements/Create/CREATE-TABLE?_highlight=create&_highlight=table#distribution_desc
 class DistributedByProperty(Property):
+    """DISTRIBUTED BY PROPERTY expression. e.g. ``CREATE TABLE t (x INT) DISTRIBUTED BY (y)``"""
+
+    required_args = {"kind"}
     arg_types = {"expressions": False, "kind": True, "buckets": False, "order": False}
 
 
 class DistStyleProperty(Property):
+    """DIST STYLE PROPERTY expression. e.g. ``DISTSTYLE=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class DuplicateKeyProperty(Property):
+    """DUPLICATE KEY PROPERTY expression. e.g. ``DUPLICATE KEY (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class EngineProperty(Property):
+    """ENGINE PROPERTY expression. e.g. ``ENGINE=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class HeapProperty(Property):
+    """HEAP PROPERTY expression. e.g. ``HEAP``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class ToTableProperty(Property):
+    """TO TABLE PROPERTY expression. e.g. ``TO x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class ExecuteAsProperty(Property):
+    """EXECUTE AS PROPERTY expression. e.g. ``EXECUTE AS x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class ExternalProperty(Property):
+    """EXTERNAL PROPERTY expression. e.g. ``EXTERNAL``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class FallbackProperty(Property):
+    """FALLBACK PROPERTY expression. e.g. ``CREATE TABLE t (x INT) FALLBACK``"""
+
+    required_args = {"no"}
     arg_types = {"no": True, "protection": False}
 
 
 # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-hiveformat
 class FileFormatProperty(Property):
+    """FILE FORMAT PROPERTY expression. e.g. ``CREATE TABLE t STORED AS PARQUET``"""
+
+    required_args = set()
     arg_types = {"this": False, "expressions": False, "hive_format": False}
 
 
 class CredentialsProperty(Property):
+    """CREDENTIALS PROPERTY expression. e.g. ``CREDENTIALS=(x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class FreespaceProperty(Property):
+    """FREESPACE PROPERTY expression. e.g. ``FREESPACE=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "percent": False}
 
 
 class GlobalProperty(Property):
+    """GLOBAL PROPERTY expression. e.g. ``GLOBAL``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class IcebergProperty(Property):
+    """ICEBERG PROPERTY expression. e.g. ``ICEBERG``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class InheritsProperty(Property):
+    """INHERITS PROPERTY expression. e.g. ``INHERITS (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class InputModelProperty(Property):
+    """INPUT MODEL PROPERTY expression. e.g. ``INPUTx``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class OutputModelProperty(Property):
+    """OUTPUT MODEL PROPERTY expression. e.g. ``OUTPUTx``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class IsolatedLoadingProperty(Property):
+    """ISOLATED LOADING PROPERTY expression. e.g. ``WITH ISOLATED LOADING``"""
+
+    required_args = set()
     arg_types = {"no": False, "concurrent": False, "target": False}
 
 
 class JournalProperty(Property):
+    """JOURNAL PROPERTY expression. e.g. ``JOURNAL``"""
+
+    required_args = set()
     arg_types = {
         "no": False,
         "dual": False,
@@ -3058,58 +3556,96 @@ class JournalProperty(Property):
 
 
 class LanguageProperty(Property):
+    """LANGUAGE PROPERTY expression. e.g. ``LANGUAGE x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class EnviromentProperty(Property):
+    """ENVIROMENT PROPERTY expression. e.g. ``ENVIRONMENT (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 # spark ddl
 class ClusteredByProperty(Property):
+    """CLUSTERED BY PROPERTY expression. e.g. ``CLUSTERED BY (x) INTO x BUCKETS``"""
+
+    required_args = {"expressions", "buckets"}
     arg_types = {"expressions": True, "sorted_by": False, "buckets": True}
 
 
 class DictProperty(Property):
+    """DICT PROPERTY expression. e.g. ``x(TABLE())``"""
+
+    required_args = {"this", "kind"}
     arg_types = {"this": True, "kind": True, "settings": False}
 
 
 class DictSubProperty(Property):
+    """DICT SUB PROPERTY expression. e.g. ``x x``"""
+
     pass
 
 
 class DictRange(Property):
+    """DICT RANGE expression. e.g. ``x(MIN x MAX x)``"""
+
+    required_args = {"this", "min", "max"}
     arg_types = {"this": True, "min": True, "max": True}
 
 
 class DynamicProperty(Property):
+    """DYNAMIC PROPERTY expression. e.g. ``DYNAMIC``"""
+
+    required_args = set()
     arg_types = {}
 
 
 # Clickhouse CREATE ... ON CLUSTER modifier
 # https://clickhouse.com/docs/en/sql-reference/distributed-ddl
 class OnCluster(Property):
+    """ON CLUSTER expression."""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # Clickhouse EMPTY table "property"
 class EmptyProperty(Property):
+    """EMPTY PROPERTY expression. e.g. ``EMPTY``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class LikeProperty(Property):
+    """LIKE PROPERTY expression. e.g. ``LIKE x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "expressions": False}
 
 
 class LocationProperty(Property):
+    """LOCATION PROPERTY expression. e.g. ``CREATE TABLE t (x INT) LOCATION 's3://bucket'``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class LockProperty(Property):
+    """LOCK PROPERTY expression. e.g. ``LOCK=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class LockingProperty(Property):
+    """LOCKING PROPERTY expression. e.g. ``LOCKING TABLE x``"""
+
+    required_args = {"kind", "lock_type"}
     arg_types = {
         "this": False,
         "kind": True,
@@ -3120,73 +3656,121 @@ class LockingProperty(Property):
 
 
 class LogProperty(Property):
+    """LOG PROPERTY expression. e.g. ``NO LOG``"""
+
+    required_args = {"no"}
     arg_types = {"no": True}
 
 
 class MaterializedProperty(Property):
+    """MATERIALIZED PROPERTY expression. e.g. ``MATERIALIZED``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class MergeBlockRatioProperty(Property):
+    """MERGE BLOCK RATIO PROPERTY expression. e.g. ``MERGEBLOCKRATIO=``"""
+
+    required_args = set()
     arg_types = {"this": False, "no": False, "default": False, "percent": False}
 
 
 class NoPrimaryIndexProperty(Property):
+    """NO PRIMARY INDEX PROPERTY expression. e.g. ``NO PRIMARY INDEX``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class OnProperty(Property):
+    """ON PROPERTY expression. e.g. ``CREATE TABLE t (x INT) ON COMMIT DELETE ROWS``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class OnCommitProperty(Property):
+    """ON COMMIT PROPERTY expression. e.g. ``ON COMMIT PRESERVE ROWS``"""
+
+    required_args = set()
     arg_types = {"delete": False}
 
 
 class PartitionedByProperty(Property):
+    """PARTITIONED BY PROPERTY expression. e.g. ``CREATE TABLE t (x INT) PARTITIONED BY (y INT)``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class PartitionedByBucket(Property):
+    """PARTITIONED BY BUCKET expression. e.g. ``BUCKET(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class PartitionByTruncate(Property):
+    """PARTITION BY TRUNCATE expression. e.g. ``TRUNCATE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
 class PartitionByRangeProperty(Property):
+    """PARTITION BY RANGE PROPERTY expression."""
+
+    required_args = {"partition_expressions", "create_expressions"}
     arg_types = {"partition_expressions": True, "create_expressions": True}
 
 
 # https://docs.starrocks.io/docs/table_design/data_distribution/#range-partitioning
 class PartitionByRangePropertyDynamic(Expression):
+    """PARTITION BY RANGE PROPERTY DYNAMIC expression. e.g. ``START (x) END (x) EVERY (x)``"""
+
+    required_args = {"start", "end", "every"}
     arg_types = {"this": False, "start": True, "end": True, "every": True}
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/#rollup-index
 class RollupProperty(Property):
+    """ROLLUP PROPERTY expression. e.g. ``ROLLUP (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/#rollup-index
 class RollupIndex(Expression):
+    """ROLLUP INDEX expression. e.g. ``x(x)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True, "from_index": False, "properties": False}
 
 
 # https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
 class PartitionByListProperty(Property):
+    """PARTITION BY LIST PROPERTY expression. e.g. ``None=``"""
+
+    required_args = {"partition_expressions", "create_expressions"}
     arg_types = {"partition_expressions": True, "create_expressions": True}
 
 
 # https://doris.apache.org/docs/table-design/data-partitioning/manual-partitioning
 class PartitionList(Expression):
+    """PARTITION LIST expression."""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
 
 
 # https://doris.apache.org/docs/sql-manual/sql-statements/table-and-view/async-materialized-view/CREATE-ASYNC-MATERIALIZED-VIEW
 class RefreshTriggerProperty(Property):
+    """REFRESH TRIGGER PROPERTY expression. e.g. ``REFRESH``"""
+
+    required_args = set()
     arg_types = {
         "method": False,
         "kind": False,
@@ -3198,11 +3782,17 @@ class RefreshTriggerProperty(Property):
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
 class UniqueKeyProperty(Property):
+    """UNIQUE KEY PROPERTY expression. e.g. ``UNIQUE KEY (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 # https://www.postgresql.org/docs/current/sql-createtable.html
 class PartitionBoundSpec(Expression):
+    """PARTITION BOUND SPEC expression. e.g. ``CREATE TABLE t PARTITION OF s FOR VALUES FROM (1) TO (10)``"""
+
+    required_args = set()
     # this -> IN / MODULUS, expression -> REMAINDER, from_expressions -> FROM (...), to_expressions -> TO (...)
     arg_types = {
         "this": False,
@@ -3213,31 +3803,52 @@ class PartitionBoundSpec(Expression):
 
 
 class PartitionedOfProperty(Property):
+    """PARTITIONED OF PROPERTY expression. e.g. ``PARTITION OF x DEFAULT``"""
+
+    required_args = {"this", "expression"}
     # this -> parent_table (schema), expression -> FOR VALUES ... / DEFAULT
     arg_types = {"this": True, "expression": True}
 
 
 class StreamingTableProperty(Property):
+    """STREAMING TABLE PROPERTY expression. e.g. ``STREAMING``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class RemoteWithConnectionModelProperty(Property):
+    """REMOTE WITH CONNECTION MODEL PROPERTY expression. e.g. ``REMOTE WITH CONNECTION x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class ReturnsProperty(Property):
+    """RETURNS PROPERTY expression. e.g. ``RETURNS``"""
+
+    required_args = set()
     arg_types = {"this": False, "is_table": False, "table": False, "null": False}
 
 
 class StrictProperty(Property):
+    """STRICT PROPERTY expression. e.g. ``STRICT``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class RowFormatProperty(Property):
+    """ROW FORMAT PROPERTY expression. e.g. ``ROW_FORMAT=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class RowFormatDelimitedProperty(Property):
+    """ROW FORMAT DELIMITED PROPERTY expression. e.g. ``CREATE TABLE t (x INT) ROW FORMAT DELIMITED``"""
+
+    required_args = set()
     # https://cwiki.apache.org/confluence/display/hive/languagemanual+dml
     arg_types = {
         "fields": False,
@@ -3251,11 +3862,17 @@ class RowFormatDelimitedProperty(Property):
 
 
 class RowFormatSerdeProperty(Property):
+    """ROW FORMAT SERDE PROPERTY expression. e.g. ``None=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "serde_properties": False}
 
 
 # https://spark.apache.org/docs/3.1.2/sql-ref-syntax-qry-select-transform.html
 class QueryTransform(Expression):
+    """QUERY TRANSFORM expression. e.g. ``TRANSFORM(x) USING x``"""
+
+    required_args = {"expressions", "command_script"}
     arg_types = {
         "expressions": True,
         "command_script": True,
@@ -3268,19 +3885,30 @@ class QueryTransform(Expression):
 
 
 class SampleProperty(Property):
+    """SAMPLE PROPERTY expression. e.g. ``SAMPLE BY x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # https://prestodb.io/docs/current/sql/create-view.html#synopsis
 class SecurityProperty(Property):
+    """SECURITY PROPERTY expression. e.g. ``SECURITY x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class SchemaCommentProperty(Property):
+    """SCHEMA COMMENT PROPERTY expression. e.g. ``CREATE TABLE t (x INT) COMMENT 'desc'``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class SemanticView(Expression):
+    """SEMANTIC VIEW expression. e.g. ``SEMANTIC_VIEW(x)``"""
+
     arg_types = {
         "this": True,
         "metrics": False,
@@ -3291,97 +3919,166 @@ class SemanticView(Expression):
 
 
 class SerdeProperties(Property):
+    """SERDE PROPERTIES expression. e.g. ``None=``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "with_": False}
 
 
 class SetProperty(Property):
+    """SET PROPERTY expression. e.g. ``MULTISET``"""
+
+    required_args = {"multi"}
     arg_types = {"multi": True}
 
 
 class SharingProperty(Property):
+    """SHARING PROPERTY expression. e.g. ``SHARING=``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class SetConfigProperty(Property):
+    """SET CONFIG PROPERTY expression. e.g. ``x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class SettingsProperty(Property):
+    """SETTINGS PROPERTY expression. e.g. ``SETTINGS x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class SortKeyProperty(Property):
+    """SORT KEY PROPERTY expression. e.g. ``SORTKEY=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "compound": False}
 
 
 class SqlReadWriteProperty(Property):
+    """SQL READ WRITE PROPERTY expression."""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class SqlSecurityProperty(Property):
+    """SQL SECURITY PROPERTY expression. e.g. ``SQL SECURITY x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class StabilityProperty(Property):
+    """STABILITY PROPERTY expression."""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class StorageHandlerProperty(Property):
+    """STORAGE HANDLER PROPERTY expression. e.g. ``None=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class TemporaryProperty(Property):
+    """TEMPORARY PROPERTY expression. e.g. ``TEMPORARY``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class SecureProperty(Property):
+    """SECURE PROPERTY expression. e.g. ``SECURE``"""
+
+    required_args = set()
     arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
 class Tags(ColumnConstraintKind, Property):
+    """TAGS expression. e.g. ``TAG (x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class TransformModelProperty(Property):
+    """TRANSFORM MODEL PROPERTY expression. e.g. ``TRANSFORM(x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class TransientProperty(Property):
+    """TRANSIENT PROPERTY expression. e.g. ``TRANSIENT``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class UnloggedProperty(Property):
+    """UNLOGGED PROPERTY expression. e.g. ``UNLOGGED``"""
+
+    required_args = set()
     arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table#create-table-using-template
 class UsingTemplateProperty(Property):
+    """USING TEMPLATE PROPERTY expression. e.g. ``USING TEMPLATE x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql?view=sql-server-ver16
 class ViewAttributeProperty(Property):
+    """VIEW ATTRIBUTE PROPERTY expression. e.g. ``WITH x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class VolatileProperty(Property):
+    """VOLATILE PROPERTY expression. e.g. ``VOLATILE``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class WithDataProperty(Property):
+    """WITH DATA PROPERTY expression. e.g. ``CREATE TABLE t AS SELECT 1 WITH DATA``"""
+
+    required_args = {"no"}
     arg_types = {"no": True, "statistics": False}
 
 
 class WithJournalTableProperty(Property):
+    """WITH JOURNAL TABLE PROPERTY expression. e.g. ``WITH JOURNAL TABLE=x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class WithSchemaBindingProperty(Property):
+    """WITH SCHEMA BINDING PROPERTY expression. e.g. ``WITH SCHEMA x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class WithSystemVersioningProperty(Property):
+    """WITH SYSTEM VERSIONING PROPERTY expression. e.g. ``WITH(SYSTEM_VERSIONING=OFF)``"""
+
+    required_args = {"with_"}
     arg_types = {
         "on": False,
         "this": False,
@@ -3392,22 +4089,37 @@ class WithSystemVersioningProperty(Property):
 
 
 class WithProcedureOptions(Property):
+    """WITH PROCEDURE OPTIONS expression. e.g. ``WITH x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class EncodeProperty(Property):
+    """ENCODE PROPERTY expression. e.g. ``ENCODE x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "properties": False, "key": False}
 
 
 class IncludeProperty(Property):
+    """INCLUDE PROPERTY expression. e.g. ``INCLUDE x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True, "alias": False, "column_def": False}
 
 
 class ForceProperty(Property):
+    """FORCE PROPERTY expression. e.g. ``FORCE``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class Properties(Expression):
+    """PROPERTIES expression. e.g. ``CREATE TABLE t (x INT) WITH (key = 'val')``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
     NAME_TO_PROPERTY = {
@@ -3475,23 +4187,35 @@ class Properties(Expression):
 
 
 class Qualify(Expression):
+    """QUALIFY expression. e.g. ``QUALIFY x``"""
+
     pass
 
 
 class InputOutputFormat(Expression):
+    """INPUT OUTPUT FORMAT expression."""
+
+    required_args = set()
     arg_types = {"input_format": False, "output_format": False}
 
 
 # https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql
 class Return(Expression):
+    """RETURN expression. e.g. ``RETURN x``"""
+
     pass
 
 
 class Reference(Expression):
+    """REFERENCE expression. e.g. ``CREATE TABLE t (x INT REFERENCES s(id))``"""
+
     arg_types = {"this": True, "expressions": False, "options": False}
 
 
 class Tuple(Expression):
+    """TUPLE expression. e.g. ``()``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
 
     def isin(
@@ -3548,35 +4272,54 @@ QUERY_MODIFIERS = {
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/option-clause-transact-sql?view=sql-server-ver16
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16
 class QueryOption(Expression):
+    """QUERY OPTION expression."""
+
     arg_types = {"this": True, "expression": False}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
 class WithTableHint(Expression):
+    """WITH TABLE HINT expression. e.g. ``SELECT * FROM t WITH (NOLOCK)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/index-hints.html
 class IndexTableHint(Expression):
+    """INDEX TABLE HINT expression. e.g. ``x INDEX ()``"""
+
     arg_types = {"this": True, "expressions": False, "target": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/constructs/at-before
 class HistoricalData(Expression):
+    """HISTORICAL DATA expression. e.g. ``x (TABLE => y)``"""
+
+    required_args = {"this", "kind", "expression"}
     arg_types = {"this": True, "kind": True, "expression": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/put
 class Put(Expression):
+    """PUT expression. e.g. ``PUT x x``"""
+
+    required_args = {"this", "target"}
     arg_types = {"this": True, "target": True, "properties": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/get
 class Get(Expression):
+    """GET expression. e.g. ``GET x x``"""
+
+    required_args = {"this", "target"}
     arg_types = {"this": True, "target": True, "properties": False}
 
 
 class Table(Expression):
+    """TABLE expression. e.g. ``SELECT * FROM t``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "alias": False,
@@ -3655,6 +4398,9 @@ class Table(Expression):
 
 
 class SetOperation(Query):
+    """SET OPERATION expression. e.g. ``SELECT 1 UNION SELECT 2``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "with_": False,
         "this": True,
@@ -3718,18 +4464,27 @@ class SetOperation(Query):
 
 
 class Union(SetOperation):
+    """UNION expression. e.g. ``SELECT 1 UNION SELECT 2``"""
+
     pass
 
 
 class Except(SetOperation):
+    """EXCEPT expression. e.g. ``SELECT 1 EXCEPT SELECT 2``"""
+
     pass
 
 
 class Intersect(SetOperation):
+    """INTERSECT expression. e.g. ``SELECT 1 INTERSECT SELECT 1``"""
+
     pass
 
 
 class Update(DML):
+    """UPDATE statement. e.g. ``UPDATE t SET x = 1``"""
+
+    required_args = set()
     arg_types = {
         "with_": False,
         "this": False,
@@ -3939,6 +4694,9 @@ class Update(DML):
 
 # DuckDB supports VALUES followed by https://duckdb.org/docs/stable/sql/query_syntax/limit
 class Values(UDTF):
+    """VALUES expression. e.g. ``VALUES x``"""
+
+    required_args = {"expressions"}
     arg_types = {
         "expressions": True,
         "alias": False,
@@ -3949,6 +4707,8 @@ class Values(UDTF):
 
 
 class Var(Expression):
+    """VAR expression. e.g. ``x``"""
+
     pass
 
 
@@ -3963,22 +4723,33 @@ class Version(Expression):
     kind is ("AS OF", "BETWEEN")
     """
 
+    required_args = {"this", "kind"}
+
     arg_types = {"this": True, "kind": True, "expression": False}
 
 
 class Schema(Expression):
+    """SCHEMA expression."""
+
+    required_args = set()
     arg_types = {"this": False, "expressions": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/select.html
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 class Lock(Expression):
+    """LOCK statement. e.g. ``LOCK TABLE t``"""
+
+    required_args = {"update"}
     arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
 # In Redshift, * and EXCLUDE can be separated with column projections (e.g., SELECT *, col1 EXCLUDE (col2))
 # The "exclude" arg enables correct parsing and transpilation of this clause
 class Select(Query):
+    """SELECT statement. e.g. ``SELECT 1``"""
+
+    required_args = set()
     arg_types = {
         "with_": False,
         "kind": False,
@@ -4515,6 +5286,8 @@ UNWRAPPED_QUERIES = (Select, SetOperation)
 
 
 class Subquery(DerivedTable, Query):
+    """SUBQUERY expression. e.g. ``SELECT * FROM (SELECT 1) AS s``"""
+
     arg_types = {
         "this": True,
         "alias": False,
@@ -4568,6 +5341,9 @@ class Subquery(DerivedTable, Query):
 
 
 class TableSample(Expression):
+    """TABLE SAMPLE expression. e.g. ``SELECT * FROM t TABLESAMPLE (10 ROWS)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "method": False,
@@ -4584,6 +5360,8 @@ class TableSample(Expression):
 class Tag(Expression):
     """Tags are used for generating arbitrary sql like SELECT <span>x</span>."""
 
+    required_args = set()
+
     arg_types = {
         "this": False,
         "prefix": False,
@@ -4594,6 +5372,9 @@ class Tag(Expression):
 # Represents both the standard SQL PIVOT operator and DuckDB's "simplified" PIVOT syntax
 # https://duckdb.org/docs/sql/statements/pivot
 class Pivot(Expression):
+    """PIVOT clause. e.g. ``SELECT * FROM t PIVOT (SUM(x) FOR y IN ('a', 'b'))``"""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "alias": False,
@@ -4621,10 +5402,15 @@ class Pivot(Expression):
 # https://duckdb.org/docs/sql/statements/unpivot#simplified-unpivot-syntax
 # UNPIVOT ... INTO [NAME <col_name> VALUE <col_value>][...,]
 class UnpivotColumns(Expression):
+    """UNPIVOT COLUMNS expression. e.g. ``NAME x VALUE x``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
 
 
 class Window(Condition):
+    """WINDOW clause. e.g. ``SELECT SUM(x) OVER w FROM t WINDOW w AS (PARTITION BY y)``"""
+
     arg_types = {
         "this": True,
         "partition_by": False,
@@ -4637,6 +5423,9 @@ class Window(Condition):
 
 
 class WindowSpec(Expression):
+    """WINDOW SPEC expression. e.g. ``BETWEEN  AND CURRENT ROW``"""
+
+    required_args = set()
     arg_types = {
         "kind": False,
         "start": False,
@@ -4648,14 +5437,21 @@ class WindowSpec(Expression):
 
 
 class PreWhere(Expression):
+    """PRE WHERE expression."""
+
     pass
 
 
 class Where(Expression):
+    """WHERE clause. e.g. ``SELECT 1 FROM t WHERE x = 1``"""
+
     pass
 
 
 class Star(Expression):
+    """STAR expression. e.g. ``SELECT *``"""
+
+    required_args = set()
     arg_types = {"except_": False, "replace": False, "rename": False}
 
     @property
@@ -4668,16 +5464,23 @@ class Star(Expression):
 
 
 class Parameter(Condition):
+    """PARAMETER expression. e.g. ``@x``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class SessionParameter(Condition):
+    """SESSION PARAMETER expression. e.g. ``@@x``"""
+
     arg_types = {"this": True, "kind": False}
 
 
 # https://www.databricks.com/blog/parameterized-queries-pyspark
 # https://jdbc.postgresql.org/documentation/query/#using-the-statement-or-preparedstatement-interface
 class Placeholder(Condition):
+    """PLACEHOLDER expression. e.g. ``?``"""
+
+    required_args = set()
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
 
     @property
@@ -4686,6 +5489,9 @@ class Placeholder(Condition):
 
 
 class Null(Condition):
+    """NULL expression. e.g. ``SELECT NULL``"""
+
+    required_args = set()
     arg_types: t.Dict[str, t.Any] = {}
 
     @property
@@ -4697,11 +5503,15 @@ class Null(Condition):
 
 
 class Boolean(Condition):
+    """BOOLEAN expression. e.g. ``SELECT TRUE``"""
+
     def to_py(self) -> bool:
         return self.this
 
 
 class DataTypeParam(Expression):
+    """DATA TYPE PARAM expression. e.g. ``x``"""
+
     arg_types = {"this": True, "expression": False}
 
     @property
@@ -4712,6 +5522,8 @@ class DataTypeParam(Expression):
 # The `nullable` arg is helpful when transpiling types from other dialects to ClickHouse, which
 # assumes non-nullable types by default. Values `None` and `True` mean the type is nullable.
 class DataType(Expression):
+    """DATA TYPE expression. e.g. ``SELECT CAST(x AS INT)``"""
+
     arg_types = {
         "this": True,
         "expressions": False,
@@ -5033,46 +5845,70 @@ class DataType(Expression):
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
 class PseudoType(DataType):
+    """PSEUDO TYPE expression."""
+
     arg_types = {"this": True}
 
 
 # https://www.postgresql.org/docs/15/datatype-oid.html
 class ObjectIdentifier(DataType):
+    """OBJECT IDENTIFIER expression."""
+
     arg_types = {"this": True}
 
 
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
 class SubqueryPredicate(Predicate):
+    """SUBQUERY PREDICATE expression."""
+
     pass
 
 
 class All(SubqueryPredicate):
+    """ALL expression. e.g. ``ALL (x)``"""
+
     pass
 
 
 class Any(SubqueryPredicate):
+    """ANY expression. e.g. ``ANY x``"""
+
     pass
 
 
 # Commands to interact with the databases or engines. For most of the command
 # expressions we parse whatever comes after the command's name as a string.
 class Command(Expression):
+    """COMMAND statement. e.g. ``VACUUM``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Transaction(Expression):
+    """TRANSACTION statement. e.g. ``BEGIN TRANSACTION``"""
+
+    required_args = set()
     arg_types = {"this": False, "modes": False, "mark": False}
 
 
 class Commit(Expression):
+    """COMMIT statement. e.g. ``COMMIT``"""
+
+    required_args = set()
     arg_types = {"chain": False, "this": False, "durability": False}
 
 
 class Rollback(Expression):
+    """ROLLBACK statement. e.g. ``ROLLBACK``"""
+
+    required_args = set()
     arg_types = {"savepoint": False, "this": False}
 
 
 class Alter(Expression):
+    """ALTER statement. e.g. ``ALTER TABLE t ADD COLUMN x INT``"""
+
+    required_args = {"kind", "actions"}
     arg_types = {
         "this": False,
         "kind": True,
@@ -5097,10 +5933,16 @@ class Alter(Expression):
 
 
 class AlterSession(Expression):
+    """ALTER SESSION expression. e.g. ``SET x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "unset": False}
 
 
 class Analyze(Expression):
+    """ANALYZE expression. e.g. ``ANALYZE``"""
+
+    required_args = set()
     arg_types = {
         "kind": False,
         "this": False,
@@ -5113,6 +5955,9 @@ class Analyze(Expression):
 
 
 class AnalyzeStatistics(Expression):
+    """ANALYZE STATISTICS expression. e.g. ``TABLE STATISTICS``"""
+
+    required_args = {"kind"}
     arg_types = {
         "kind": True,
         "option": False,
@@ -5122,6 +5967,9 @@ class AnalyzeStatistics(Expression):
 
 
 class AnalyzeHistogram(Expression):
+    """ANALYZE HISTOGRAM expression. e.g. ``x HISTOGRAM ON x``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {
         "this": True,
         "expressions": True,
@@ -5131,22 +5979,37 @@ class AnalyzeHistogram(Expression):
 
 
 class AnalyzeSample(Expression):
+    """ANALYZE SAMPLE expression. e.g. ``SAMPLE x TABLE``"""
+
+    required_args = {"kind", "sample"}
     arg_types = {"kind": True, "sample": True}
 
 
 class AnalyzeListChainedRows(Expression):
+    """ANALYZE LIST CHAINED ROWS expression. e.g. ``LIST CHAINED ROWS``"""
+
+    required_args = set()
     arg_types = {"expression": False}
 
 
 class AnalyzeDelete(Expression):
+    """ANALYZE DELETE expression. e.g. ``DELETE STATISTICS``"""
+
+    required_args = set()
     arg_types = {"kind": False}
 
 
 class AnalyzeWith(Expression):
+    """ANALYZE WITH expression. e.g. ``WITH x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class AnalyzeValidate(Expression):
+    """ANALYZE VALIDATE expression. e.g. ``VALIDATE TABLE``"""
+
+    required_args = {"kind"}
     arg_types = {
         "kind": True,
         "this": False,
@@ -5155,36 +6018,56 @@ class AnalyzeValidate(Expression):
 
 
 class AnalyzeColumns(Expression):
+    """ANALYZE COLUMNS expression. e.g. ``x``"""
+
     pass
 
 
 class UsingData(Expression):
+    """USING DATA expression. e.g. ``USING DATA x``"""
+
     pass
 
 
 class AddConstraint(Expression):
+    """ADD CONSTRAINT expression. e.g. ``ADD x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class AddPartition(Expression):
+    """ADD PARTITION expression. e.g. ``ADD x``"""
+
     arg_types = {"this": True, "exists": False, "location": False}
 
 
 class AttachOption(Expression):
+    """ATTACH OPTION expression. e.g. ``x``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class DropPartition(Expression):
+    """DROP PARTITION expression. e.g. ``DROP x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "exists": False}
 
 
 # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#replace-partition
 class ReplacePartition(Expression):
+    """REPLACE PARTITION expression."""
+
+    required_args = {"expression", "source"}
     arg_types = {"expression": True, "source": True}
 
 
 # Binary expressions like (ADD a b)
 class Binary(Condition):
+    """BINARY expression."""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
     @property
@@ -5197,50 +6080,74 @@ class Binary(Condition):
 
 
 class Add(Binary):
+    """ADD expression. e.g. ``SELECT 1 + 2``"""
+
     pass
 
 
 class Connector(Binary):
+    """CONNECTOR expression."""
+
     pass
 
 
 class BitwiseAnd(Binary):
+    """BITWISE AND expression. e.g. ``x & y``"""
+
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseLeftShift(Binary):
+    """BITWISE LEFT SHIFT expression. e.g. ``x << y``"""
+
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
 class BitwiseOr(Binary):
+    """BITWISE OR expression. e.g. ``x | y``"""
+
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class BitwiseRightShift(Binary):
+    """BITWISE RIGHT SHIFT expression. e.g. ``x >> y``"""
+
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
 class BitwiseXor(Binary):
+    """BITWISE XOR expression. e.g. ``x ^ y``"""
+
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
 class Div(Binary):
+    """DIV expression. e.g. ``SELECT 4 / 2``"""
+
     arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
 class Overlaps(Binary):
+    """OVERLAPS expression. e.g. ``x OVERLAPS y``"""
+
     pass
 
 
 class ExtendsLeft(Binary):
+    """EXTENDS LEFT expression. e.g. ``x &< y``"""
+
     pass
 
 
 class ExtendsRight(Binary):
+    """EXTENDS RIGHT expression. e.g. ``x &> y``"""
+
     pass
 
 
 class Dot(Binary):
+    """DOT expression. e.g. ``SELECT t.x``"""
+
     @property
     def is_star(self) -> bool:
         return self.expression.is_star
@@ -5282,55 +6189,81 @@ DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DataType.Type]
 
 
 class DPipe(Binary):
+    """DPIPE expression. e.g. ``SELECT x || y``"""
+
     arg_types = {"this": True, "expression": True, "safe": False}
 
 
 class EQ(Binary, Predicate):
+    """EQ expression. e.g. ``SELECT x = 1``"""
+
     pass
 
 
 class NullSafeEQ(Binary, Predicate):
+    """NULL SAFE EQ expression. e.g. ``x IS NOT DISTINCT FROM y``"""
+
     pass
 
 
 class NullSafeNEQ(Binary, Predicate):
+    """NULL SAFE NEQ expression. e.g. ``x IS DISTINCT FROM y``"""
+
     pass
 
 
 # Represents e.g. := in DuckDB which is mostly used for setting parameters
 class PropertyEQ(Binary):
+    """PROPERTY EQ expression. e.g. ``x := y``"""
+
     pass
 
 
 class Distance(Binary):
+    """DISTANCE expression. e.g. ``x <-> y``"""
+
     pass
 
 
 class Escape(Binary):
+    """ESCAPE expression. e.g. ``x ESCAPE y``"""
+
     pass
 
 
 class Glob(Binary, Predicate):
+    """GLOB expression. e.g. ``x GLOB y``"""
+
     pass
 
 
 class GT(Binary, Predicate):
+    """GT expression. e.g. ``SELECT x > 1``"""
+
     pass
 
 
 class GTE(Binary, Predicate):
+    """GTE expression. e.g. ``SELECT x >= 1``"""
+
     pass
 
 
 class ILike(Binary, Predicate):
+    """ILIKE expression. e.g. ``SELECT x ILIKE '%a%'``"""
+
     pass
 
 
 class IntDiv(Binary):
+    """INT DIV expression. e.g. ``CAST(x / y AS INT)``"""
+
     pass
 
 
 class Is(Binary, Predicate):
+    """IS expression. e.g. ``SELECT x IS NULL``"""
+
     pass
 
 
@@ -5339,73 +6272,106 @@ class Kwarg(Binary):
 
 
 class Like(Binary, Predicate):
+    """LIKE expression. e.g. ``SELECT x LIKE '%a%'``"""
+
     pass
 
 
 class Match(Binary, Predicate):
+    """MATCH expression. e.g. ``x MATCH y``"""
+
     pass
 
 
 class LT(Binary, Predicate):
+    """LT expression. e.g. ``SELECT x < 1``"""
+
     pass
 
 
 class LTE(Binary, Predicate):
+    """LTE expression. e.g. ``SELECT x <= 1``"""
+
     pass
 
 
 class Mod(Binary):
+    """MOD expression. e.g. ``SELECT 5 % 3``"""
+
     pass
 
 
 class Mul(Binary):
+    """MUL expression. e.g. ``SELECT 2 * 3``"""
+
     pass
 
 
 class NEQ(Binary, Predicate):
+    """NEQ expression. e.g. ``SELECT x <> 1``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
 class Operator(Binary):
+    """OPERATOR expression. e.g. ``x OPERATOR(x) y``"""
+
+    required_args = {"this", "operator", "expression"}
     arg_types = {"this": True, "operator": True, "expression": True}
 
 
 class SimilarTo(Binary, Predicate):
+    """SIMILAR TO expression. e.g. ``x SIMILAR TO y``"""
+
     pass
 
 
 class Sub(Binary):
+    """SUB expression. e.g. ``SELECT 2 - 1``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/current/functions-range.html
 # Represents range adjacency operator: -|-
 class Adjacent(Binary):
+    """ADJACENT expression. e.g. ``x -|- y``"""
+
     pass
 
 
 # Unary Expressions
 # (NOT a)
 class Unary(Condition):
+    """UNARY expression."""
+
     pass
 
 
 class BitwiseNot(Unary):
+    """BITWISE NOT expression. e.g. ``~x``"""
+
     pass
 
 
 class Not(Unary):
+    """NOT expression. e.g. ``SELECT NOT x``"""
+
     pass
 
 
 class Paren(Unary):
+    """PAREN expression. e.g. ``SELECT (x + 1)``"""
+
     @property
     def output_name(self) -> str:
         return self.this.name
 
 
 class Neg(Unary):
+    """NEG expression. e.g. ``SELECT -x``"""
+
     def to_py(self) -> int | Decimal:
         if self.is_number:
             return self.this.to_py() * -1
@@ -5413,6 +6379,8 @@ class Neg(Unary):
 
 
 class Alias(Expression):
+    """ALIAS expression. e.g. ``SELECT x AS y``"""
+
     arg_types = {"this": True, "alias": False}
 
     @property
@@ -5423,16 +6391,24 @@ class Alias(Expression):
 # BigQuery requires the UNPIVOT column list aliases to be either strings or ints, but
 # other dialects require identifiers. This enables us to transpile between them easily.
 class PivotAlias(Alias):
+    """PIVOT ALIAS expression."""
+
     pass
 
 
 # Represents Snowflake's ANY [ ORDER BY ... ] syntax
 # https://docs.snowflake.com/en/sql-reference/constructs/pivot
 class PivotAny(Expression):
+    """PIVOT ANY expression. e.g. ``ANY``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Aliases(Expression):
+    """ALIASES expression. e.g. ``x AS (x)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
 
     @property
@@ -5442,14 +6418,23 @@ class Aliases(Expression):
 
 # https://docs.aws.amazon.com/redshift/latest/dg/query-super.html
 class AtIndex(Expression):
+    """AT INDEX expression. e.g. ``x AT y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class AtTimeZone(Expression):
+    """AT TIME ZONE expression. e.g. ``x AT TIME ZONE x``"""
+
+    required_args = {"this", "zone"}
     arg_types = {"this": True, "zone": True}
 
 
 class FromTimeZone(Expression):
+    """FROM TIME ZONE expression. e.g. ``x AT TIME ZONE x AT TIME ZONE 'UTC'``"""
+
+    required_args = {"this", "zone"}
     arg_types = {"this": True, "zone": True}
 
 
@@ -5460,14 +6445,22 @@ class FormatPhrase(Expression):
     https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
     """
 
+    required_args = {"this", "format"}
+
     arg_types = {"this": True, "format": True}
 
 
 class Between(Predicate):
+    """BETWEEN expression. e.g. ``SELECT x BETWEEN 1 AND 10``"""
+
+    required_args = {"this", "low", "high"}
     arg_types = {"this": True, "low": True, "high": True, "symmetric": False}
 
 
 class Bracket(Condition):
+    """BRACKET expression. e.g. ``SELECT x[1]``"""
+
+    required_args = {"this", "expressions"}
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
     arg_types = {
         "this": True,
@@ -5486,10 +6479,15 @@ class Bracket(Condition):
 
 
 class Distinct(Expression):
+    """DISTINCT expression. e.g. ``DISTINCT``"""
+
+    required_args = set()
     arg_types = {"expressions": False, "on": False}
 
 
 class In(Predicate):
+    """IN expression. e.g. ``SELECT x IN (1, 2, 3)``"""
+
     arg_types = {
         "this": True,
         "expressions": False,
@@ -5502,11 +6500,16 @@ class In(Predicate):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#for-in
 class ForIn(Expression):
+    """FOR IN expression. e.g. ``FOR x DO y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class TimeUnit(Expression):
     """Automatically converts unit arg into a var."""
+
+    required_args = set()
 
     arg_types = {"unit": False}
 
@@ -5542,6 +6545,9 @@ class TimeUnit(Expression):
 
 
 class IntervalOp(TimeUnit):
+    """INTERVAL OP expression."""
+
+    required_args = {"expression"}
     arg_types = {"unit": False, "expression": True}
 
     def interval(self):
@@ -5555,23 +6561,35 @@ class IntervalOp(TimeUnit):
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
 # https://docs.databricks.com/en/sql/language-manual/data-types/interval-type.html
 class IntervalSpan(DataType):
+    """INTERVAL SPAN expression. e.g. ``x TO y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Interval(TimeUnit):
+    """INTERVAL expression. e.g. ``SELECT INTERVAL '1' DAY``"""
+
     arg_types = {"this": False, "unit": False}
 
 
 class IgnoreNulls(Expression):
+    """IGNORE NULLS expression. e.g. ``x IGNORE NULLS``"""
+
     pass
 
 
 class RespectNulls(Expression):
+    """RESPECT NULLS expression. e.g. ``x RESPECT NULLS``"""
+
     pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate-function-calls#max_min_clause
 class HavingMax(Expression):
+    """HAVING MAX expression. e.g. ``x HAVING MAX y``"""
+
+    required_args = {"this", "expression", "max"}
     arg_types = {"this": True, "expression": True, "max": True}
 
 
@@ -5630,282 +6648,433 @@ class Func(Condition):
 # Function returns NULL instead of error
 # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#safe_prefix
 class SafeFunc(Func):
+    """SAFE FUNC function. e.g. ``SELECT SAFE_FUNC(1)``"""
+
     pass
 
 
 class Typeof(Func):
+    """TYPEOF function. e.g. ``SELECT TYPEOF(1)``"""
+
     pass
 
 
 class Acos(Func):
+    """ACOS function. e.g. ``SELECT ACOS(1)``"""
+
     pass
 
 
 class Acosh(Func):
+    """ACOSH function. e.g. ``SELECT ACOSH(1)``"""
+
     pass
 
 
 class Asin(Func):
+    """ASIN function. e.g. ``SELECT ASIN(1)``"""
+
     pass
 
 
 class Asinh(Func):
+    """ASINH function. e.g. ``SELECT ASINH(1)``"""
+
     pass
 
 
 class Atan(Func):
+    """ATAN function. e.g. ``SELECT ATAN(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Atanh(Func):
+    """ATANH function. e.g. ``SELECT ATANH(1)``"""
+
     pass
 
 
 class Atan2(Func):
+    """ATAN2 function. e.g. ``SELECT ATAN2(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Cot(Func):
+    """COT function. e.g. ``SELECT COT(1)``"""
+
     pass
 
 
 class Coth(Func):
+    """COTH function. e.g. ``SELECT COTH(1)``"""
+
     pass
 
 
 class Cos(Func):
+    """COS function. e.g. ``SELECT COS(1)``"""
+
     pass
 
 
 class Csc(Func):
+    """CSC function. e.g. ``SELECT CSC(1)``"""
+
     pass
 
 
 class Csch(Func):
+    """CSCH function. e.g. ``SELECT CSCH(1)``"""
+
     pass
 
 
 class Sec(Func):
+    """SEC function. e.g. ``SELECT SEC(1)``"""
+
     pass
 
 
 class Sech(Func):
+    """SECH function. e.g. ``SELECT SECH(1)``"""
+
     pass
 
 
 class Sin(Func):
+    """SIN function. e.g. ``SELECT SIN(1)``"""
+
     pass
 
 
 class Sinh(Func):
+    """SINH function. e.g. ``SELECT SINH(1)``"""
+
     pass
 
 
 class Tan(Func):
+    """TAN function. e.g. ``SELECT TAN(1)``"""
+
     pass
 
 
 class Tanh(Func):
+    """TANH function. e.g. ``SELECT TANH(1)``"""
+
     pass
 
 
 class Degrees(Func):
+    """DEGREES function. e.g. ``SELECT DEGREES(1)``"""
+
     pass
 
 
 class Cosh(Func):
+    """COSH function. e.g. ``SELECT COSH(1)``"""
+
     pass
 
 
 class CosineDistance(Func):
+    """COSINE DISTANCE function. e.g. ``SELECT COSINE_DISTANCE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class DotProduct(Func):
+    """DOT PRODUCT function. e.g. ``SELECT DOT_PRODUCT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class EuclideanDistance(Func):
+    """EUCLIDEAN DISTANCE function. e.g. ``SELECT EUCLIDEAN_DISTANCE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class ManhattanDistance(Func):
+    """MANHATTAN DISTANCE function. e.g. ``SELECT MANHATTAN_DISTANCE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class JarowinklerSimilarity(Func):
+    """JAROWINKLER SIMILARITY function. e.g. ``SELECT JAROWINKLER_SIMILARITY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "case_insensitive": False}
 
 
 class AggFunc(Func):
+    """AGG FUNC function. e.g. ``SELECT AGG_FUNC(1)``"""
+
     pass
 
 
 class BitwiseAndAgg(AggFunc):
+    """BITWISE AND AGG function. e.g. ``SELECT BITWISE_AND_AGG(1)``"""
+
     pass
 
 
 class BitwiseOrAgg(AggFunc):
+    """BITWISE OR AGG function. e.g. ``SELECT BITWISE_OR_AGG(1)``"""
+
     pass
 
 
 class BitwiseXorAgg(AggFunc):
+    """BITWISE XOR AGG function. e.g. ``SELECT BITWISE_XOR_AGG(1)``"""
+
     pass
 
 
 class BoolxorAgg(AggFunc):
+    """BOOLXOR AGG function. e.g. ``SELECT BOOLXOR_AGG(1)``"""
+
     pass
 
 
 class BitwiseCount(Func):
+    """BITWISE COUNT function. e.g. ``SELECT BITWISE_COUNT(1)``"""
+
     pass
 
 
 class BitmapBucketNumber(Func):
+    """BITMAP BUCKET NUMBER function. e.g. ``SELECT BITMAP_BUCKET_NUMBER(1)``"""
+
     pass
 
 
 class BitmapCount(Func):
+    """BITMAP COUNT function. e.g. ``SELECT BITMAP_COUNT(1)``"""
+
     pass
 
 
 class BitmapBitPosition(Func):
+    """BITMAP BIT POSITION function. e.g. ``SELECT BITMAP_BIT_POSITION(1)``"""
+
     pass
 
 
 class BitmapConstructAgg(AggFunc):
+    """BITMAP CONSTRUCT AGG function. e.g. ``SELECT BITMAP_CONSTRUCT_AGG(1)``"""
+
     pass
 
 
 class BitmapOrAgg(AggFunc):
+    """BITMAP OR AGG function. e.g. ``SELECT BITMAP_OR_AGG(1)``"""
+
     pass
 
 
 class ByteLength(Func):
+    """BYTE LENGTH function. e.g. ``SELECT BYTE_LENGTH(1)``"""
+
     pass
 
 
 class Boolnot(Func):
+    """BOOLNOT function. e.g. ``SELECT BOOLNOT(1)``"""
+
     arg_types = {"this": True, "round_input": False}
 
 
 class Booland(Func):
+    """BOOLAND function. e.g. ``SELECT BOOLAND(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
 class Boolor(Func):
+    """BOOLOR function. e.g. ``SELECT BOOLOR(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#bool_for_json
 class JSONBool(Func):
+    """JSON BOOL function. e.g. ``SELECT JSON_BOOL(1)``"""
+
     pass
 
 
 class ArrayRemove(Func):
+    """ARRAY REMOVE function. e.g. ``SELECT ARRAY_REMOVE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "null_propagation": False}
 
 
 class ParameterizedAgg(AggFunc):
+    """PARAMETERIZED AGG function. e.g. ``SELECT PARAMETERIZED_AGG(x, y, z)``"""
+
+    required_args = {"this", "expressions", "params"}
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
 class Abs(Func):
+    """ABS function. e.g. ``SELECT ABS(1)``"""
+
     pass
 
 
 class ArgMax(AggFunc):
+    """ARG MAX function. e.g. ``SELECT ARG_MAX(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "count": False}
     _sql_names = ["ARG_MAX", "ARGMAX", "MAX_BY"]
 
 
 class ArgMin(AggFunc):
+    """ARG MIN function. e.g. ``SELECT ARG_MIN(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "count": False}
     _sql_names = ["ARG_MIN", "ARGMIN", "MIN_BY"]
 
 
 class ApproxTopK(AggFunc):
+    """APPROX TOP K function. e.g. ``SELECT APPROX_TOP_K(1)``"""
+
     arg_types = {"this": True, "expression": False, "counters": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/approx_top_k_accumulate
 # https://spark.apache.org/docs/preview/api/sql/index.html#approx_top_k_accumulate
 class ApproxTopKAccumulate(AggFunc):
+    """APPROX TOP KACCUMULATE function. e.g. ``SELECT APPROX_TOP_KACCUMULATE(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/approx_top_k_combine
 class ApproxTopKCombine(AggFunc):
+    """APPROX TOP KCOMBINE function. e.g. ``SELECT APPROX_TOP_KCOMBINE(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class ApproxTopKEstimate(Func):
+    """APPROX TOP KESTIMATE function. e.g. ``SELECT APPROX_TOP_KESTIMATE(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class ApproxTopSum(AggFunc):
+    """APPROX TOP SUM function. e.g. ``SELECT APPROX_TOP_SUM(x, y, z)``"""
+
+    required_args = {"this", "expression", "count"}
     arg_types = {"this": True, "expression": True, "count": True}
 
 
 class ApproxQuantiles(AggFunc):
+    """APPROX QUANTILES function. e.g. ``SELECT APPROX_QUANTILES(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_combine
 class ApproxPercentileCombine(AggFunc):
+    """APPROX PERCENTILE COMBINE function. e.g. ``SELECT APPROX_PERCENTILE_COMBINE(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/minhash
 class Minhash(AggFunc):
+    """MINHASH function. e.g. ``SELECT MINHASH(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/minhash_combine
 class MinhashCombine(AggFunc):
+    """MINHASH COMBINE function. e.g. ``SELECT MINHASH_COMBINE(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/approximate_similarity
 class ApproximateSimilarity(AggFunc):
+    """APPROXIMATE SIMILARITY function. e.g. ``SELECT APPROXIMATE_SIMILARITY(1)``"""
+
     _sql_names = ["APPROXIMATE_SIMILARITY", "APPROXIMATE_JACCARD_INDEX"]
 
 
 class FarmFingerprint(Func):
+    """FARM FINGERPRINT function. e.g. ``SELECT FARM_FINGERPRINT(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
     is_var_len_args = True
     _sql_names = ["FARM_FINGERPRINT", "FARMFINGERPRINT64"]
 
 
 class Flatten(Func):
+    """FLATTEN function. e.g. ``SELECT FLATTEN(1)``"""
+
     pass
 
 
 class Float64(Func):
+    """FLOAT64 function. e.g. ``SELECT FLOAT64(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
+    """TRANSFORM function. e.g. ``SELECT TRANSFORM(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Translate(Func):
+    """TRANSLATE function. e.g. ``SELECT TRANSLATE(x, y, z)``"""
+
+    required_args = {"this", "from_", "to"}
     arg_types = {"this": True, "from_": True, "to": True}
 
 
 class Grouping(AggFunc):
+    """GROUPING function. e.g. ``SELECT GROUPING(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
     is_var_len_args = True
 
 
 class GroupingId(AggFunc):
+    """GROUPING ID function. e.g. ``SELECT GROUPING_ID(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class Anonymous(Func):
+    """ANONYMOUS function. e.g. ``SELECT SOME_FUNC(x)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -5915,21 +7084,29 @@ class Anonymous(Func):
 
 
 class AnonymousAggFunc(AggFunc):
+    """ANONYMOUS AGG FUNC function. e.g. ``SELECT ANONYMOUS_AGG_FUNC(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 # https://clickhouse.com/docs/en/sql-reference/aggregate-functions/combinators
 class CombinedAggFunc(AnonymousAggFunc):
+    """COMBINED AGG FUNC function. e.g. ``SELECT COMBINED_AGG_FUNC(1)``"""
+
     arg_types = {"this": True, "expressions": False}
 
 
 class CombinedParameterizedAgg(ParameterizedAgg):
+    """COMBINED PARAMETERIZED AGG function. e.g. ``SELECT COMBINED_PARAMETERIZED_AGG(x, y, z)``"""
+
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/hash_agg
 class HashAgg(AggFunc):
+    """HASH AGG function. e.g. ``SELECT HASH_AGG(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -5937,20 +7114,30 @@ class HashAgg(AggFunc):
 # https://docs.snowflake.com/en/sql-reference/functions/hll
 # https://docs.aws.amazon.com/redshift/latest/dg/r_HLL_function.html
 class Hll(AggFunc):
+    """HLL function. e.g. ``SELECT HLL(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 class ApproxDistinct(AggFunc):
+    """APPROX DISTINCT function. e.g. ``SELECT APPROX_DISTINCT(1)``"""
+
     arg_types = {"this": True, "accuracy": False}
     _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
 
 
 class Apply(Func):
+    """APPLY function. e.g. ``SELECT APPLY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Array(Func):
+    """ARRAY function. e.g. ``SELECT ARRAY(1)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "bracket_notation": False,
@@ -5960,32 +7147,46 @@ class Array(Func):
 
 
 class Ascii(Func):
+    """ASCII function. e.g. ``SELECT ASCII(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_array
 class ToArray(Func):
+    """TO ARRAY function. e.g. ``SELECT TO_ARRAY(1)``"""
+
     pass
 
 
 class ToBoolean(Func):
+    """TO BOOLEAN function. e.g. ``SELECT TO_BOOLEAN(1)``"""
+
     arg_types = {"this": True, "safe": False}
 
 
 # https://materialize.com/docs/sql/types/list/
 class List(Func):
+    """LIST function. e.g. ``SELECT LIST(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 # String pad, kind True -> LPAD, False -> RPAD
 class Pad(Func):
+    """PAD function. e.g. ``SELECT PAD(x, y, z)``"""
+
+    required_args = {"this", "expression", "is_left"}
     arg_types = {"this": True, "expression": True, "fill_pattern": False, "is_left": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
+    """TO CHAR function. e.g. ``SELECT TO_CHAR(1)``"""
+
     arg_types = {
         "this": True,
         "format": False,
@@ -5995,12 +7196,16 @@ class ToChar(Func):
 
 
 class ToCodePoints(Func):
+    """TO CODE POINTS function. e.g. ``SELECT TO_CODE_POINTS(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_decimal
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_NUMBER.html
 class ToNumber(Func):
+    """TO NUMBER function. e.g. ``SELECT TO_NUMBER(1)``"""
+
     arg_types = {
         "this": True,
         "format": False,
@@ -6014,6 +7219,8 @@ class ToNumber(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_double
 class ToDouble(Func):
+    """TO DOUBLE function. e.g. ``SELECT TO_DOUBLE(1)``"""
+
     arg_types = {
         "this": True,
         "format": False,
@@ -6023,6 +7230,8 @@ class ToDouble(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_decfloat
 class ToDecfloat(Func):
+    """TO DECFLOAT function. e.g. ``SELECT TO_DECFLOAT(1)``"""
+
     arg_types = {
         "this": True,
         "format": False,
@@ -6031,6 +7240,8 @@ class ToDecfloat(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_to_decfloat
 class TryToDecfloat(Func):
+    """TRY TO DECFLOAT function. e.g. ``SELECT TRY_TO_DECFLOAT(1)``"""
+
     arg_types = {
         "this": True,
         "format": False,
@@ -6039,6 +7250,8 @@ class TryToDecfloat(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_file
 class ToFile(Func):
+    """TO FILE function. e.g. ``SELECT TO_FILE(1)``"""
+
     arg_types = {
         "this": True,
         "path": False,
@@ -6047,24 +7260,37 @@ class ToFile(Func):
 
 
 class CodePointsToBytes(Func):
+    """CODE POINTS TO BYTES function. e.g. ``SELECT CODE_POINTS_TO_BYTES(1)``"""
+
     pass
 
 
 class Columns(Func):
+    """COLUMNS function. e.g. ``SELECT COLUMNS(1)``"""
+
     arg_types = {"this": True, "unpack": False}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
 class Convert(Func):
+    """CONVERT function. e.g. ``SELECT CONVERT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "style": False, "safe": False}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CONVERT.html
 class ConvertToCharset(Func):
+    """CONVERT TO CHARSET function. e.g. ``SELECT CONVERT_TO_CHARSET(x, y)``"""
+
+    required_args = {"this", "dest"}
     arg_types = {"this": True, "dest": True, "source": False}
 
 
 class ConvertTimezone(Func):
+    """CONVERT TIMEZONE function. e.g. ``SELECT CONVERT_TIMEZONE(x, y)``"""
+
+    required_args = {"target_tz", "timestamp"}
     arg_types = {
         "source_tz": False,
         "target_tz": True,
@@ -6074,10 +7300,15 @@ class ConvertTimezone(Func):
 
 
 class CodePointsToString(Func):
+    """CODE POINTS TO STRING function. e.g. ``SELECT CODE_POINTS_TO_STRING(1)``"""
+
     pass
 
 
 class GenerateSeries(Func):
+    """GENERATE SERIES function. e.g. ``SELECT * FROM GENERATE_SERIES(1, 10)``"""
+
+    required_args = {"start", "end"}
     arg_types = {"start": True, "end": True, "step": False, "is_end_exclusive": False}
 
 
@@ -6085,221 +7316,341 @@ class GenerateSeries(Func):
 # used in a projection, so this expression is a helper that facilitates transpilation to other
 # dialects. For example, we'd generate UNNEST(GENERATE_SERIES(...)) in DuckDB
 class ExplodingGenerateSeries(GenerateSeries):
+    """EXPLODING GENERATE SERIES function. e.g. ``SELECT EXPLODING_GENERATE_SERIES(x, y)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/generator
 class Generator(Func, UDTF):
+    """GENERATOR function. e.g. ``SELECT GENERATOR(1)``"""
+
+    required_args = set()
     arg_types = {"rowcount": False, "timelimit": False}
 
 
 class ArrayAgg(AggFunc):
+    """ARRAY AGG function. e.g. ``SELECT ARRAY_AGG(1)``"""
+
     arg_types = {"this": True, "nulls_excluded": False}
 
 
 class ArrayUniqueAgg(AggFunc):
+    """ARRAY UNIQUE AGG function. e.g. ``SELECT ARRAY_UNIQUE_AGG(1)``"""
+
     pass
 
 
 class AIAgg(AggFunc):
+    """AI AGG function. e.g. ``SELECT AI_AGG(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
     _sql_names = ["AI_AGG"]
 
 
 class AISummarizeAgg(AggFunc):
+    """AI SUMMARIZE AGG function. e.g. ``SELECT AI_SUMMARIZE_AGG(1)``"""
+
     _sql_names = ["AI_SUMMARIZE_AGG"]
 
 
 class AIClassify(Func):
+    """AI CLASSIFY function. e.g. ``SELECT AI_CLASSIFY(x, y)``"""
+
+    required_args = {"this", "categories"}
     arg_types = {"this": True, "categories": True, "config": False}
     _sql_names = ["AI_CLASSIFY"]
 
 
 class ArrayAll(Func):
+    """ARRAY ALL function. e.g. ``SELECT ARRAY_ALL(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # Represents Python's `any(f(x) for x in array)`, where `array` is `this` and `f` is `expression`
 class ArrayAny(Func):
+    """ARRAY ANY function. e.g. ``SELECT ARRAY_ANY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class ArrayAppend(Func):
+    """ARRAY APPEND function. e.g. ``SELECT ARRAY_APPEND(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "null_propagation": False}
 
 
 class ArrayPrepend(Func):
+    """ARRAY PREPEND function. e.g. ``SELECT ARRAY_PREPEND(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "null_propagation": False}
 
 
 class ArrayConcat(Func):
+    """ARRAY CONCAT function. e.g. ``SELECT ARRAY_CONCAT(1)``"""
+
     _sql_names = ["ARRAY_CONCAT", "ARRAY_CAT"]
     arg_types = {"this": True, "expressions": False, "null_propagation": False}
     is_var_len_args = True
 
 
 class ArrayConcatAgg(AggFunc):
+    """ARRAY CONCAT AGG function. e.g. ``SELECT ARRAY_CONCAT_AGG(1)``"""
+
     pass
 
 
 class ArrayCompact(Func):
+    """ARRAY COMPACT function. e.g. ``SELECT ARRAY_COMPACT(1)``"""
+
     pass
 
 
 class ArrayInsert(Func):
+    """ARRAY INSERT function. e.g. ``SELECT ARRAY_INSERT(x, y, z)``"""
+
+    required_args = {"this", "position", "expression"}
     arg_types = {"this": True, "position": True, "expression": True, "offset": False}
 
 
 class ArrayRemoveAt(Func):
+    """ARRAY REMOVE AT function. e.g. ``SELECT ARRAY_REMOVE_AT(x, y)``"""
+
+    required_args = {"this", "position"}
     arg_types = {"this": True, "position": True}
 
 
 class ArrayConstructCompact(Func):
+    """ARRAY CONSTRUCT COMPACT function. e.g. ``SELECT ARRAY_CONSTRUCT_COMPACT(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class ArrayContains(Binary, Func):
+    """ARRAY CONTAINS function. e.g. ``SELECT ARRAY_CONTAINS(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "ensure_variant": False, "check_null": False}
     _sql_names = ["ARRAY_CONTAINS", "ARRAY_HAS"]
 
 
 class ArrayContainsAll(Binary, Func):
+    """ARRAY CONTAINS ALL function. e.g. ``SELECT ARRAY_CONTAINS_ALL(x, y)``"""
+
     _sql_names = ["ARRAY_CONTAINS_ALL", "ARRAY_HAS_ALL"]
 
 
 class ArrayFilter(Func):
+    """ARRAY FILTER function. e.g. ``SELECT ARRAY_FILTER(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
     _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
 class ArrayFirst(Func):
+    """ARRAY FIRST function. e.g. ``SELECT ARRAY_FIRST(1)``"""
+
     pass
 
 
 class ArrayLast(Func):
+    """ARRAY LAST function. e.g. ``SELECT ARRAY_LAST(1)``"""
+
     pass
 
 
 class ArrayReverse(Func):
+    """ARRAY REVERSE function. e.g. ``SELECT ARRAY_REVERSE(1)``"""
+
     pass
 
 
 class ArraySlice(Func):
+    """ARRAY SLICE function. e.g. ``SELECT ARRAY_SLICE(x, y)``"""
+
+    required_args = {"this", "start"}
     arg_types = {"this": True, "start": True, "end": False, "step": False}
 
 
 class ArrayToString(Func):
+    """ARRAY TO STRING function. e.g. ``SELECT ARRAY_TO_STRING(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
 class ArrayIntersect(Func):
+    """ARRAY INTERSECT function. e.g. ``SELECT ARRAY_INTERSECT(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
     is_var_len_args = True
     _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
 
 
 class StPoint(Func):
+    """ST POINT function. e.g. ``SELECT ST_POINT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ST_POINT", "ST_MAKEPOINT"]
 
 
 class StDistance(Func):
+    """ST DISTANCE function. e.g. ``SELECT ST_DISTANCE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "use_spheroid": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/timestamp_functions#string
 class String(Func):
+    """STRING function. e.g. ``SELECT STRING(1)``"""
+
     arg_types = {"this": True, "zone": False}
 
 
 class StringToArray(Func):
+    """STRING TO ARRAY function. e.g. ``SELECT STRING_TO_ARRAY(1)``"""
+
     arg_types = {"this": True, "expression": False, "null": False}
     _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
 
 
 class ArrayOverlaps(Binary, Func):
+    """ARRAY OVERLAPS function. e.g. ``SELECT ARRAY_OVERLAPS(x, y)``"""
+
     pass
 
 
 class ArraySize(Func):
+    """ARRAY SIZE function. e.g. ``SELECT ARRAY_SIZE(1)``"""
+
     arg_types = {"this": True, "expression": False}
     _sql_names = ["ARRAY_SIZE", "ARRAY_LENGTH"]
 
 
 class ArraySort(Func):
+    """ARRAY SORT function. e.g. ``SELECT ARRAY_SORT(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class ArraySum(Func):
+    """ARRAY SUM function. e.g. ``SELECT ARRAY_SUM(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class ArrayDistinct(Func):
+    """ARRAY DISTINCT function. e.g. ``SELECT ARRAY_DISTINCT(1)``"""
+
     arg_types = {"this": True, "check_null": False}
 
 
 class ArrayMax(Func):
+    """ARRAY MAX function. e.g. ``SELECT ARRAY_MAX(1)``"""
+
     pass
 
 
 class ArrayMin(Func):
+    """ARRAY MIN function. e.g. ``SELECT ARRAY_MIN(1)``"""
+
     pass
 
 
 class ArrayUnionAgg(AggFunc):
+    """ARRAY UNION AGG function. e.g. ``SELECT ARRAY_UNION_AGG(1)``"""
+
     pass
 
 
 class ArraysZip(Func):
+    """ARRAYS ZIP function. e.g. ``SELECT ARRAYS_ZIP(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class Avg(AggFunc):
+    """AVG function. e.g. ``SELECT AVG(1)``"""
+
     pass
 
 
 class AnyValue(AggFunc):
+    """ANY VALUE function. e.g. ``SELECT ANY_VALUE(1)``"""
+
     pass
 
 
 class Lag(AggFunc):
+    """LAG function. e.g. ``SELECT LAG(1)``"""
+
     arg_types = {"this": True, "offset": False, "default": False}
 
 
 class Lead(AggFunc):
+    """LEAD function. e.g. ``SELECT LEAD(1)``"""
+
     arg_types = {"this": True, "offset": False, "default": False}
 
 
 # some dialects have a distinction between first and first_value, usually first is an aggregate func
 # and first_value is a window func
 class First(AggFunc):
+    """FIRST function. e.g. ``SELECT FIRST(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Last(AggFunc):
+    """LAST function. e.g. ``SELECT LAST(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class FirstValue(AggFunc):
+    """FIRST VALUE function. e.g. ``SELECT FIRST_VALUE(1)``"""
+
     pass
 
 
 class LastValue(AggFunc):
+    """LAST VALUE function. e.g. ``SELECT LAST_VALUE(1)``"""
+
     pass
 
 
 class NthValue(AggFunc):
+    """NTH VALUE function. e.g. ``SELECT NTH_VALUE(x, y)``"""
+
+    required_args = {"this", "offset"}
     arg_types = {"this": True, "offset": True, "from_first": False}
 
 
 class ObjectAgg(AggFunc):
+    """OBJECT AGG function. e.g. ``SELECT OBJECT_AGG(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Case(Func):
+    """CASE function. e.g. ``SELECT CASE WHEN x = 1 THEN 'a' ELSE 'b' END``"""
+
+    required_args = {"ifs"}
     arg_types = {"this": False, "ifs": True, "default": False}
 
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
@@ -6320,6 +7671,9 @@ class Case(Func):
 
 
 class Cast(Func):
+    """CAST function. e.g. ``SELECT CAST(x AS INT)``"""
+
+    required_args = {"this", "to"}
     arg_types = {
         "this": True,
         "to": True,
@@ -6357,256 +7711,420 @@ class Cast(Func):
 
 
 class TryCast(Cast):
+    """TRY CAST function. e.g. ``SELECT TRY_CAST(x AS INT)``"""
+
     arg_types = {**Cast.arg_types, "requires_string": False}
 
 
 # https://clickhouse.com/docs/sql-reference/data-types/newjson#reading-json-paths-as-sub-columns
 class JSONCast(Cast):
+    """JSON CAST function. e.g. ``SELECT JSON_CAST(x, y)``"""
+
     pass
 
 
 class JustifyDays(Func):
+    """JUSTIFY DAYS function. e.g. ``SELECT JUSTIFY_DAYS(1)``"""
+
     pass
 
 
 class JustifyHours(Func):
+    """JUSTIFY HOURS function. e.g. ``SELECT JUSTIFY_HOURS(1)``"""
+
     pass
 
 
 class JustifyInterval(Func):
+    """JUSTIFY INTERVAL function. e.g. ``SELECT JUSTIFY_INTERVAL(1)``"""
+
     pass
 
 
 class Try(Func):
+    """TRY function. e.g. ``SELECT TRY(1)``"""
+
     pass
 
 
 class CastToStrType(Func):
+    """CAST TO STR TYPE function. e.g. ``SELECT CAST_TO_STR_TYPE(x, y)``"""
+
+    required_args = {"this", "to"}
     arg_types = {"this": True, "to": True}
 
 
 class CheckJson(Func):
+    """CHECK JSON function. e.g. ``SELECT CHECK_JSON(1)``"""
+
     arg_types = {"this": True}
 
 
 class CheckXml(Func):
+    """CHECK XML function. e.g. ``SELECT CHECK_XML(1)``"""
+
     arg_types = {"this": True, "disable_auto_convert": False}
 
 
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/String-Operators-and-Functions/TRANSLATE/TRANSLATE-Function-Syntax
 class TranslateCharacters(Expression):
+    """TRANSLATE CHARACTERS expression. e.g. ``TRANSLATE(x USING y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "with_error": False}
 
 
 class Collate(Binary, Func):
+    """COLLATE function. e.g. ``SELECT COLLATE(x, y)``"""
+
     pass
 
 
 class Collation(Func):
+    """COLLATION function. e.g. ``SELECT COLLATION(1)``"""
+
     pass
 
 
 class Ceil(Func):
+    """CEIL function. e.g. ``SELECT CEIL(1)``"""
+
     arg_types = {"this": True, "decimals": False, "to": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
 class Coalesce(Func):
+    """COALESCE function. e.g. ``SELECT COALESCE(x, 0)``"""
+
     arg_types = {"this": True, "expressions": False, "is_nvl": False, "is_null": False}
     is_var_len_args = True
     _sql_names = ["COALESCE", "IFNULL", "NVL"]
 
 
 class Chr(Func):
+    """CHR function. e.g. ``SELECT CHR(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "charset": False}
     is_var_len_args = True
     _sql_names = ["CHR", "CHAR"]
 
 
 class Concat(Func):
+    """CONCAT function. e.g. ``SELECT CONCAT(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "safe": False, "coalesce": False}
     is_var_len_args = True
 
 
 class ConcatWs(Concat):
+    """CONCAT WS function. e.g. ``SELECT CONCAT_WS(1)``"""
+
     _sql_names = ["CONCAT_WS"]
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#contains_substr
 class Contains(Func):
+    """CONTAINS function. e.g. ``SELECT CONTAINS(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "json_scope": False}
 
 
 # https://docs.oracle.com/cd/B13789_01/server.101/b10759/operators004.htm#i1035022
 class ConnectByRoot(Func):
+    """CONNECT BY ROOT function. e.g. ``SELECT CONNECT_BY_ROOT(1)``"""
+
     pass
 
 
 class Count(AggFunc):
+    """COUNT function. e.g. ``SELECT COUNT(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "expressions": False, "big_int": False}
     is_var_len_args = True
 
 
 class CountIf(AggFunc):
+    """COUNT IF function. e.g. ``SELECT COUNT_IF(1)``"""
+
     _sql_names = ["COUNT_IF", "COUNTIF"]
 
 
 # cube root
 class Cbrt(Func):
+    """CBRT function. e.g. ``SELECT CBRT(1)``"""
+
     pass
 
 
 class CurrentAccount(Func):
+    """CURRENT ACCOUNT function. e.g. ``SELECT CURRENT_ACCOUNT(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentAccountName(Func):
+    """CURRENT ACCOUNT NAME function. e.g. ``SELECT CURRENT_ACCOUNT_NAME(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentAvailableRoles(Func):
+    """CURRENT AVAILABLE ROLES function. e.g. ``SELECT CURRENT_AVAILABLE_ROLES(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentClient(Func):
+    """CURRENT CLIENT function. e.g. ``SELECT CURRENT_CLIENT(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentIpAddress(Func):
+    """CURRENT IP ADDRESS function. e.g. ``SELECT CURRENT_IP_ADDRESS(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentDatabase(Func):
+    """CURRENT DATABASE function. e.g. ``SELECT CURRENT_DATABASE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentSchemas(Func):
+    """CURRENT SCHEMAS function. e.g. ``SELECT CURRENT_SCHEMAS(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentSecondaryRoles(Func):
+    """CURRENT SECONDARY ROLES function. e.g. ``SELECT CURRENT_SECONDARY_ROLES(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentSession(Func):
+    """CURRENT SESSION function. e.g. ``SELECT CURRENT_SESSION(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentStatement(Func):
+    """CURRENT STATEMENT function. e.g. ``SELECT CURRENT_STATEMENT(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentVersion(Func):
+    """CURRENT VERSION function. e.g. ``SELECT CURRENT_VERSION(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentTransaction(Func):
+    """CURRENT TRANSACTION function. e.g. ``SELECT CURRENT_TRANSACTION(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentWarehouse(Func):
+    """CURRENT WAREHOUSE function. e.g. ``SELECT CURRENT_WAREHOUSE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentDate(Func):
+    """CURRENT DATE function. e.g. ``SELECT CURRENT_DATE(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentDatetime(Func):
+    """CURRENT DATETIME function. e.g. ``SELECT CURRENT_DATETIME(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentTime(Func):
+    """CURRENT TIME function. e.g. ``SELECT CURRENT_TIME(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT
 # In Postgres, the difference between CURRENT_TIME vs LOCALTIME etc is that the latter does not have tz
 class Localtime(Func):
+    """LOCALTIME function. e.g. ``SELECT LOCALTIME(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Localtimestamp(Func):
+    """LOCALTIMESTAMP function. e.g. ``SELECT LOCALTIMESTAMP(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Systimestamp(Func):
+    """SYSTIMESTAMP function. e.g. ``SELECT SYSTIMESTAMP(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentTimestamp(Func):
+    """CURRENT TIMESTAMP function. e.g. ``SELECT CURRENT_TIMESTAMP(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "sysdate": False}
 
 
 class CurrentTimestampLTZ(Func):
+    """CURRENT TIMESTAMP LTZ function. e.g. ``SELECT CURRENT_TIMESTAMP_LTZ(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentTimezone(Func):
+    """CURRENT TIMEZONE function. e.g. ``SELECT CURRENT_TIMEZONE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentOrganizationName(Func):
+    """CURRENT ORGANIZATION NAME function. e.g. ``SELECT CURRENT_ORGANIZATION_NAME(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentSchema(Func):
+    """CURRENT SCHEMA function. e.g. ``SELECT CURRENT_SCHEMA(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentUser(Func):
+    """CURRENT USER function. e.g. ``SELECT CURRENT_USER(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class CurrentCatalog(Func):
+    """CURRENT CATALOG function. e.g. ``SELECT CURRENT_CATALOG(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentRegion(Func):
+    """CURRENT REGION function. e.g. ``SELECT CURRENT_REGION(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentRole(Func):
+    """CURRENT ROLE function. e.g. ``SELECT CURRENT_ROLE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentRoleType(Func):
+    """CURRENT ROLE TYPE function. e.g. ``SELECT CURRENT_ROLE_TYPE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class CurrentOrganizationUser(Func):
+    """CURRENT ORGANIZATION USER function. e.g. ``SELECT CURRENT_ORGANIZATION_USER(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class SessionUser(Func):
+    """SESSION USER function. e.g. ``SELECT SESSION_USER(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class UtcDate(Func):
+    """UTC DATE function. e.g. ``SELECT UTC_DATE(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class UtcTime(Func):
+    """UTC TIME function. e.g. ``SELECT UTC_TIME(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class UtcTimestamp(Func):
+    """UTC TIMESTAMP function. e.g. ``SELECT UTC_TIMESTAMP(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class DateAdd(Func, IntervalOp):
+    """DATE ADD function. e.g. ``SELECT DATE_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DateBin(Func, IntervalOp):
+    """DATE BIN function. e.g. ``SELECT DATE_BIN(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False, "zone": False, "origin": False}
 
 
 class DateSub(Func, IntervalOp):
+    """DATE SUB function. e.g. ``SELECT DATE_SUB(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DateDiff(Func, TimeUnit):
+    """DATE DIFF function. e.g. ``SELECT DATE_DIFF(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["DATEDIFF", "DATE_DIFF"]
     arg_types = {
         "this": True,
@@ -6619,6 +8137,9 @@ class DateDiff(Func, TimeUnit):
 
 
 class DateTrunc(Func):
+    """DATE TRUNC function. e.g. ``SELECT DATE_TRUNC(x, y)``"""
+
+    required_args = {"unit", "this"}
     arg_types = {"unit": True, "this": True, "zone": False, "input_type_preserved": False}
 
     def __init__(self, **args):
@@ -6646,72 +8167,112 @@ class DateTrunc(Func):
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
 # expression can either be time_expr or time_zone
 class Datetime(Func):
+    """DATETIME function. e.g. ``SELECT DATETIME(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class DatetimeAdd(Func, IntervalOp):
+    """DATETIME ADD function. e.g. ``SELECT DATETIME_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DatetimeSub(Func, IntervalOp):
+    """DATETIME SUB function. e.g. ``SELECT DATETIME_SUB(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DatetimeDiff(Func, TimeUnit):
+    """DATETIME DIFF function. e.g. ``SELECT DATETIME_DIFF(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class DatetimeTrunc(Func, TimeUnit):
+    """DATETIME TRUNC function. e.g. ``SELECT DATETIME_TRUNC(x, y)``"""
+
+    required_args = {"this", "unit"}
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
 class DateFromUnixDate(Func):
+    """DATE FROM UNIX DATE function. e.g. ``SELECT DATE_FROM_UNIX_DATE(1)``"""
+
     pass
 
 
 class DayOfWeek(Func):
+    """DAY OF WEEK function. e.g. ``SELECT DAY_OF_WEEK(1)``"""
+
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
 # https://duckdb.org/docs/sql/functions/datepart.html#part-specifiers-only-usable-as-date-part-specifiers
 # ISO day of week function in duckdb is ISODOW
 class DayOfWeekIso(Func):
+    """DAY OF WEEK ISO function. e.g. ``SELECT DAY_OF_WEEK_ISO(1)``"""
+
     _sql_names = ["DAYOFWEEK_ISO", "ISODOW"]
 
 
 class DayOfMonth(Func):
+    """DAY OF MONTH function. e.g. ``SELECT DAY_OF_MONTH(1)``"""
+
     _sql_names = ["DAY_OF_MONTH", "DAYOFMONTH"]
 
 
 class DayOfYear(Func):
+    """DAY OF YEAR function. e.g. ``SELECT DAY_OF_YEAR(1)``"""
+
     _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
 class Dayname(Func):
+    """DAYNAME function. e.g. ``SELECT DAYNAME(1)``"""
+
     arg_types = {"this": True, "abbreviated": False}
 
 
 class ToDays(Func):
+    """TO DAYS function. e.g. ``SELECT TO_DAYS(1)``"""
+
     pass
 
 
 class WeekOfYear(Func):
+    """WEEK OF YEAR function. e.g. ``SELECT WEEK_OF_YEAR(1)``"""
+
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
 class YearOfWeek(Func):
+    """YEAR OF WEEK function. e.g. ``SELECT YEAR_OF_WEEK(1)``"""
+
     _sql_names = ["YEAR_OF_WEEK", "YEAROFWEEK"]
 
 
 class YearOfWeekIso(Func):
+    """YEAR OF WEEK ISO function. e.g. ``SELECT YEAR_OF_WEEK_ISO(1)``"""
+
     _sql_names = ["YEAR_OF_WEEK_ISO", "YEAROFWEEKISO"]
 
 
 class MonthsBetween(Func):
+    """MONTHS BETWEEN function. e.g. ``SELECT MONTHS_BETWEEN(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "roundoff": False}
 
 
 class MakeInterval(Func):
+    """MAKE INTERVAL function. e.g. ``SELECT MAKE_INTERVAL(1)``"""
+
+    required_args = set()
     arg_types = {
         "year": False,
         "month": False,
@@ -6724,90 +8285,148 @@ class MakeInterval(Func):
 
 
 class LastDay(Func, TimeUnit):
+    """LAST DAY function. e.g. ``SELECT LAST_DAY(1)``"""
+
+    required_args = {"this"}
     _sql_names = ["LAST_DAY", "LAST_DAY_OF_MONTH"]
     arg_types = {"this": True, "unit": False}
 
 
 class PreviousDay(Func):
+    """PREVIOUS DAY function. e.g. ``SELECT PREVIOUS_DAY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class LaxBool(Func):
+    """LAX BOOL function. e.g. ``SELECT LAX_BOOL(1)``"""
+
     pass
 
 
 class LaxFloat64(Func):
+    """LAX FLOAT64 function. e.g. ``SELECT LAX_FLOAT64(1)``"""
+
     pass
 
 
 class LaxInt64(Func):
+    """LAX INT64 function. e.g. ``SELECT LAX_INT64(1)``"""
+
     pass
 
 
 class LaxString(Func):
+    """LAX STRING function. e.g. ``SELECT LAX_STRING(1)``"""
+
     pass
 
 
 class Extract(Func):
+    """EXTRACT function. e.g. ``SELECT EXTRACT(YEAR FROM d)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Exists(Func, SubqueryPredicate):
+    """EXISTS function. e.g. ``SELECT EXISTS(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Elt(Func):
+    """ELT function. e.g. ``SELECT ELT(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
 class Timestamp(Func):
+    """TIMESTAMP function. e.g. ``SELECT TIMESTAMP(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "zone": False, "with_tz": False}
 
 
 class TimestampAdd(Func, TimeUnit):
+    """TIMESTAMP ADD function. e.g. ``SELECT TIMESTAMP_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimestampSub(Func, TimeUnit):
+    """TIMESTAMP SUB function. e.g. ``SELECT TIMESTAMP_SUB(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimestampDiff(Func, TimeUnit):
+    """TIMESTAMP DIFF function. e.g. ``SELECT TIMESTAMP_DIFF(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["TIMESTAMPDIFF", "TIMESTAMP_DIFF"]
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimestampTrunc(Func, TimeUnit):
+    """TIMESTAMP TRUNC function. e.g. ``SELECT TIMESTAMP_TRUNC(x, y)``"""
+
+    required_args = {"this", "unit"}
     arg_types = {"this": True, "unit": True, "zone": False, "input_type_preserved": False}
 
 
 class TimeSlice(Func, TimeUnit):
+    """TIME SLICE function. e.g. ``SELECT TIME_SLICE(x, y, z)``"""
+
+    required_args = {"this", "expression", "unit"}
     arg_types = {"this": True, "expression": True, "unit": True, "kind": False}
 
 
 class TimeAdd(Func, TimeUnit):
+    """TIME ADD function. e.g. ``SELECT TIME_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimeSub(Func, TimeUnit):
+    """TIME SUB function. e.g. ``SELECT TIME_SUB(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimeDiff(Func, TimeUnit):
+    """TIME DIFF function. e.g. ``SELECT TIME_DIFF(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TimeTrunc(Func, TimeUnit):
+    """TIME TRUNC function. e.g. ``SELECT TIME_TRUNC(x, y)``"""
+
+    required_args = {"this", "unit"}
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
 class DateFromParts(Func):
+    """DATE FROM PARTS function. e.g. ``SELECT DATE_FROM_PARTS(1)``"""
+
+    required_args = {"year"}
     _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
     arg_types = {"year": True, "month": False, "day": False, "allow_overflow": False}
 
 
 class TimeFromParts(Func):
+    """TIME FROM PARTS function. e.g. ``SELECT TIME_FROM_PARTS(x, y, z)``"""
+
+    required_args = {"hour", "min", "sec"}
     _sql_names = ["TIME_FROM_PARTS", "TIMEFROMPARTS"]
     arg_types = {
         "hour": True,
@@ -6821,38 +8440,58 @@ class TimeFromParts(Func):
 
 
 class DateStrToDate(Func):
+    """DATE STR TO DATE function. e.g. ``SELECT DATE_STR_TO_DATE(1)``"""
+
     pass
 
 
 class DateToDateStr(Func):
+    """DATE TO DATE STR function. e.g. ``SELECT DATE_TO_DATE_STR(1)``"""
+
     pass
 
 
 class DateToDi(Func):
+    """DATE TO DI function. e.g. ``SELECT DATE_TO_DI(1)``"""
+
     pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date
 class Date(Func):
+    """DATE function. e.g. ``SELECT DATE(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "zone": False, "expressions": False}
     is_var_len_args = True
 
 
 class Day(Func):
+    """DAY function. e.g. ``SELECT DAY(1)``"""
+
     pass
 
 
 class Decode(Func):
+    """DECODE function. e.g. ``SELECT DECODE(x, y)``"""
+
+    required_args = {"this", "charset"}
     arg_types = {"this": True, "charset": True, "replace": False}
 
 
 class DecodeCase(Func):
+    """DECODE CASE function. e.g. ``SELECT DECODE_CASE(1)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
     is_var_len_args = True
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/decrypt
 class Decrypt(Func):
+    """DECRYPT function. e.g. ``SELECT DECRYPT(x, y)``"""
+
+    required_args = {"this", "passphrase"}
     arg_types = {
         "this": True,
         "passphrase": True,
@@ -6864,6 +8503,9 @@ class Decrypt(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/decrypt_raw
 class DecryptRaw(Func):
+    """DECRYPT RAW function. e.g. ``SELECT DECRYPT_RAW(x, y, z)``"""
+
+    required_args = {"this", "key", "iv"}
     arg_types = {
         "this": True,
         "key": True,
@@ -6876,68 +8518,104 @@ class DecryptRaw(Func):
 
 
 class DenseRank(AggFunc):
+    """DENSE RANK function. e.g. ``SELECT DENSE_RANK(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class DiToDate(Func):
+    """DI TO DATE function. e.g. ``SELECT DI_TO_DATE(1)``"""
+
     pass
 
 
 class Encode(Func):
+    """ENCODE function. e.g. ``SELECT ENCODE(x, y)``"""
+
+    required_args = {"this", "charset"}
     arg_types = {"this": True, "charset": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/encrypt
 class Encrypt(Func):
+    """ENCRYPT function. e.g. ``SELECT ENCRYPT(x, y)``"""
+
+    required_args = {"this", "passphrase"}
     arg_types = {"this": True, "passphrase": True, "aad": False, "encryption_method": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/encrypt_raw
 class EncryptRaw(Func):
+    """ENCRYPT RAW function. e.g. ``SELECT ENCRYPT_RAW(x, y, z)``"""
+
+    required_args = {"this", "key", "iv"}
     arg_types = {"this": True, "key": True, "iv": True, "aad": False, "encryption_method": False}
 
 
 class EqualNull(Func):
+    """EQUAL NULL function. e.g. ``SELECT EQUAL_NULL(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Exp(Func):
+    """EXP function. e.g. ``SELECT EXP(1)``"""
+
     pass
 
 
 class Factorial(Func):
+    """FACTORIAL function. e.g. ``SELECT FACTORIAL(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/flatten
 class Explode(Func, UDTF):
+    """EXPLODE function. e.g. ``SELECT EXPLODE(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 # https://spark.apache.org/docs/latest/api/sql/#inline
 class Inline(Func):
+    """INLINE function. e.g. ``SELECT INLINE(1)``"""
+
     pass
 
 
 class ExplodeOuter(Explode):
+    """EXPLODE OUTER function. e.g. ``SELECT EXPLODE_OUTER(1)``"""
+
     pass
 
 
 class Posexplode(Explode):
+    """POSEXPLODE function. e.g. ``SELECT POSEXPLODE(1)``"""
+
     pass
 
 
 class PosexplodeOuter(Posexplode, ExplodeOuter):
+    """POSEXPLODE OUTER function. e.g. ``SELECT POSEXPLODE_OUTER(1)``"""
+
     pass
 
 
 class PositionalColumn(Expression):
+    """POSITIONAL COLUMN expression. e.g. ``#x``"""
+
     pass
 
 
 class Unnest(Func, UDTF):
+    """UNNEST function. e.g. ``SELECT * FROM UNNEST(arr) AS t(x)``"""
+
+    required_args = {"expressions"}
     arg_types = {
         "expressions": True,
         "alias": False,
@@ -6955,70 +8633,101 @@ class Unnest(Func, UDTF):
 
 
 class Floor(Func):
+    """FLOOR function. e.g. ``SELECT FLOOR(1)``"""
+
     arg_types = {"this": True, "decimals": False, "to": False}
 
 
 class FromBase32(Func):
+    """FROM BASE32 function. e.g. ``SELECT FROM_BASE32(1)``"""
+
     pass
 
 
 class FromBase64(Func):
+    """FROM BASE64 function. e.g. ``SELECT FROM_BASE64(1)``"""
+
     pass
 
 
 class ToBase32(Func):
+    """TO BASE32 function. e.g. ``SELECT TO_BASE32(1)``"""
+
     pass
 
 
 class ToBase64(Func):
+    """TO BASE64 function. e.g. ``SELECT TO_BASE64(1)``"""
+
     pass
 
 
 class ToBinary(Func):
+    """TO BINARY function. e.g. ``SELECT TO_BINARY(1)``"""
+
     arg_types = {"this": True, "format": False, "safe": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_binary
 class Base64DecodeBinary(Func):
+    """BASE64 DECODE BINARY function. e.g. ``SELECT BASE64_DECODE_BINARY(1)``"""
+
     arg_types = {"this": True, "alphabet": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_decode_string
 class Base64DecodeString(Func):
+    """BASE64 DECODE STRING function. e.g. ``SELECT BASE64_DECODE_STRING(1)``"""
+
     arg_types = {"this": True, "alphabet": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/base64_encode
 class Base64Encode(Func):
+    """BASE64 ENCODE function. e.g. ``SELECT BASE64_ENCODE(1)``"""
+
     arg_types = {"this": True, "max_line_length": False, "alphabet": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_base64_decode_binary
 class TryBase64DecodeBinary(Func):
+    """TRY BASE64 DECODE BINARY function. e.g. ``SELECT TRY_BASE64_DECODE_BINARY(1)``"""
+
     arg_types = {"this": True, "alphabet": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_base64_decode_string
 class TryBase64DecodeString(Func):
+    """TRY BASE64 DECODE STRING function. e.g. ``SELECT TRY_BASE64_DECODE_STRING(1)``"""
+
     arg_types = {"this": True, "alphabet": False}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_hex_decode_binary
 class TryHexDecodeBinary(Func):
+    """TRY HEX DECODE BINARY function. e.g. ``SELECT TRY_HEX_DECODE_BINARY(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/try_hex_decode_string
 class TryHexDecodeString(Func):
+    """TRY HEX DECODE STRING function. e.g. ``SELECT TRY_HEX_DECODE_STRING(1)``"""
+
     pass
 
 
 # https://trino.io/docs/current/functions/datetime.html#from_iso8601_timestamp
 class FromISO8601Timestamp(Func):
+    """FROM ISO8601 TIMESTAMP function. e.g. ``SELECT FROM_ISO8601_TIMESTAMP(1)``"""
+
     _sql_names = ["FROM_ISO8601_TIMESTAMP"]
 
 
 class GapFill(Func):
+    """GAP FILL function. e.g. ``SELECT GAP_FILL(x, y, z)``"""
+
+    required_args = {"this", "ts_column", "bucket_width"}
     arg_types = {
         "this": True,
         "ts_column": True,
@@ -7032,26 +8741,41 @@ class GapFill(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#generate_date_array
 class GenerateDateArray(Func):
+    """GENERATE DATE ARRAY function. e.g. ``SELECT GENERATE_DATE_ARRAY(x, y)``"""
+
+    required_args = {"start", "end"}
     arg_types = {"start": True, "end": True, "step": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#generate_timestamp_array
 class GenerateTimestampArray(Func):
+    """GENERATE TIMESTAMP ARRAY function. e.g. ``SELECT GENERATE_TIMESTAMP_ARRAY(x, y, z)``"""
+
+    required_args = {"start", "end", "step"}
     arg_types = {"start": True, "end": True, "step": True}
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/get
 class GetExtract(Func):
+    """GET EXTRACT function. e.g. ``SELECT GET_EXTRACT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Getbit(Func):
+    """GETBIT function. e.g. ``SELECT GETBIT(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["GETBIT", "GET_BIT"]
     # zero_is_msb means the most significant bit is indexed 0
     arg_types = {"this": True, "expression": True, "zero_is_msb": False}
 
 
 class Greatest(Func):
+    """GREATEST function. e.g. ``SELECT GREATEST(x, y)``"""
+
+    required_args = {"this", "ignore_nulls"}
     arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
@@ -7059,116 +8783,176 @@ class Greatest(Func):
 # Trino's `ON OVERFLOW TRUNCATE [filler_string] {WITH | WITHOUT} COUNT`
 # https://trino.io/docs/current/functions/aggregate.html#listagg
 class OverflowTruncateBehavior(Expression):
+    """OVERFLOW TRUNCATE BEHAVIOR expression. e.g. ``TRUNCATE WITH COUNT``"""
+
+    required_args = {"with_count"}
     arg_types = {"this": False, "with_count": True}
 
 
 class GroupConcat(AggFunc):
+    """GROUP CONCAT function. e.g. ``SELECT GROUP_CONCAT(1)``"""
+
     arg_types = {"this": True, "separator": False, "on_overflow": False}
 
 
 class Hex(Func):
+    """HEX function. e.g. ``SELECT HEX(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/hex_decode_string
 class HexDecodeString(Func):
+    """HEX DECODE STRING function. e.g. ``SELECT HEX_DECODE_STRING(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/hex_encode
 class HexEncode(Func):
+    """HEX ENCODE function. e.g. ``SELECT HEX_ENCODE(1)``"""
+
     arg_types = {"this": True, "case": False}
 
 
 class Hour(Func):
+    """HOUR function. e.g. ``SELECT HOUR(1)``"""
+
     pass
 
 
 class Minute(Func):
+    """MINUTE function. e.g. ``SELECT MINUTE(1)``"""
+
     pass
 
 
 class Second(Func):
+    """SECOND function. e.g. ``SELECT SECOND(1)``"""
+
     pass
 
 
 # T-SQL: https://learn.microsoft.com/en-us/sql/t-sql/functions/compress-transact-sql?view=sql-server-ver17
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/compress
 class Compress(Func):
+    """COMPRESS function. e.g. ``SELECT COMPRESS(1)``"""
+
     arg_types = {"this": True, "method": False}
 
 
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/decompress_binary
 class DecompressBinary(Func):
+    """DECOMPRESS BINARY function. e.g. ``SELECT DECOMPRESS_BINARY(x, y)``"""
+
+    required_args = {"this", "method"}
     arg_types = {"this": True, "method": True}
 
 
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/decompress_string
 class DecompressString(Func):
+    """DECOMPRESS STRING function. e.g. ``SELECT DECOMPRESS_STRING(x, y)``"""
+
+    required_args = {"this", "method"}
     arg_types = {"this": True, "method": True}
 
 
 class LowerHex(Hex):
+    """LOWER HEX function. e.g. ``SELECT LOWER_HEX(1)``"""
+
     pass
 
 
 class And(Connector, Func):
+    """AND function. e.g. ``SELECT x = 1 AND y = 2``"""
+
     pass
 
 
 class Or(Connector, Func):
+    """OR function. e.g. ``SELECT x = 1 OR y = 2``"""
+
     pass
 
 
 class Xor(Connector, Func):
+    """XOR function. e.g. ``SELECT XOR(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "expression": False, "expressions": False, "round_input": False}
     is_var_len_args = True
 
 
 class If(Func):
+    """IF function. e.g. ``SELECT IF(x > 0, 1, 0)``"""
+
+    required_args = {"this", "true"}
     arg_types = {"this": True, "true": True, "false": False}
     _sql_names = ["IF", "IIF"]
 
 
 class Nullif(Func):
+    """NULLIF function. e.g. ``SELECT NULLIF(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Initcap(Func):
+    """INITCAP function. e.g. ``SELECT INITCAP(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class IsAscii(Func):
+    """IS ASCII function. e.g. ``SELECT IS_ASCII(1)``"""
+
     pass
 
 
 class IsNan(Func):
+    """IS NAN function. e.g. ``SELECT IS_NAN(1)``"""
+
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#int64_for_json
 class Int64(Func):
+    """INT64 function. e.g. ``SELECT INT64(1)``"""
+
     pass
 
 
 class IsInf(Func):
+    """IS INF function. e.g. ``SELECT IS_INF(1)``"""
+
     _sql_names = ["IS_INF", "ISINF"]
 
 
 class IsNullValue(Func):
+    """IS NULL VALUE function. e.g. ``SELECT IS_NULL_VALUE(1)``"""
+
     pass
 
 
 class IsArray(Func):
+    """IS ARRAY function. e.g. ``SELECT IS_ARRAY(1)``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/current/functions-json.html
 class JSON(Expression):
+    """JSON expression. e.g. ``SELECT {'k': 1}``"""
+
+    required_args = set()
     arg_types = {"this": False, "with_": False, "unique": False}
 
 
 class JSONPath(Expression):
+    """JSON PATH expression. e.g. ``SELECT col:$.key``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True, "escape": False}
 
     @property
@@ -7178,74 +8962,117 @@ class JSONPath(Expression):
 
 
 class JSONPathPart(Expression):
+    """JSON PATH PART expression."""
+
+    required_args = set()
     arg_types = {}
 
 
 class JSONPathFilter(JSONPathPart):
+    """JSON PATH FILTER expression. e.g. ``?x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class JSONPathKey(JSONPathPart):
+    """JSON PATH KEY expression. e.g. ``SELECT col:$.key``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class JSONPathRecursive(JSONPathPart):
+    """JSON PATH RECURSIVE expression. e.g. ``..``"""
+
     arg_types = {"this": False}
 
 
 class JSONPathRoot(JSONPathPart):
+    """JSON PATH ROOT expression. e.g. ``$``"""
+
     pass
 
 
 class JSONPathScript(JSONPathPart):
+    """JSON PATH SCRIPT expression. e.g. ``(x``"""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class JSONPathSlice(JSONPathPart):
+    """JSON PATH SLICE expression."""
+
     arg_types = {"start": False, "end": False, "step": False}
 
 
 class JSONPathSelector(JSONPathPart):
+    """JSON PATH SELECTOR expression."""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class JSONPathSubscript(JSONPathPart):
+    """JSON PATH SUBSCRIPT expression."""
+
+    required_args = {"this"}
     arg_types = {"this": True}
 
 
 class JSONPathUnion(JSONPathPart):
+    """JSON PATH UNION expression."""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class JSONPathWildcard(JSONPathPart):
+    """JSON PATH WILDCARD expression. e.g. ``*``"""
+
     pass
 
 
 class FormatJson(Expression):
+    """FORMAT JSON expression. e.g. ``x FORMAT JSON``"""
+
     pass
 
 
 class Format(Func):
+    """FORMAT function. e.g. ``SELECT FORMAT(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 class JSONKeys(Func):
+    """JSON KEYS function. e.g. ``SELECT JSON_KEYS(1)``"""
+
     arg_types = {"this": True, "expression": False, "expressions": False}
     is_var_len_args = True
     _sql_names = ["JSON_KEYS"]
 
 
 class JSONKeyValue(Expression):
+    """JSON KEY VALUE expression. e.g. ``x: y``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_keys
 class JSONKeysAtDepth(Func):
+    """JSON KEYS AT DEPTH function. e.g. ``SELECT JSON_KEYS_AT_DEPTH(1)``"""
+
     arg_types = {"this": True, "expression": False, "mode": False}
 
 
 class JSONObject(Func):
+    """JSON OBJECT function. e.g. ``SELECT JSON_OBJECT('k': v)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -7256,6 +9083,9 @@ class JSONObject(Func):
 
 
 class JSONObjectAgg(AggFunc):
+    """JSON OBJECT AGG function. e.g. ``SELECT JSON_OBJECT_AGG(1)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -7267,11 +9097,17 @@ class JSONObjectAgg(AggFunc):
 
 # https://www.postgresql.org/docs/9.5/functions-aggregate.html
 class JSONBObjectAgg(AggFunc):
+    """JSONB OBJECT AGG function. e.g. ``SELECT JSONB_OBJECT_AGG(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
 class JSONArray(Func):
+    """JSON ARRAY function. e.g. ``SELECT JSON_ARRAY(1, 2, 3)``"""
+
+    required_args = set()
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -7282,6 +9118,8 @@ class JSONArray(Func):
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAYAGG.html
 class JSONArrayAgg(AggFunc):
+    """JSON ARRAY AGG function. e.g. ``SELECT JSON_ARRAY_AGG(1)``"""
+
     arg_types = {
         "this": True,
         "order": False,
@@ -7292,6 +9130,9 @@ class JSONArrayAgg(AggFunc):
 
 
 class JSONExists(Func):
+    """JSON EXISTS function. e.g. ``SELECT JSON_EXISTS(col, '$.key')``"""
+
+    required_args = {"this", "path"}
     arg_types = {
         "this": True,
         "path": True,
@@ -7304,6 +9145,9 @@ class JSONExists(Func):
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 # Note: parsing of JSON column definitions is currently incomplete.
 class JSONColumnDef(Expression):
+    """JSON COLUMN DEF expression."""
+
+    required_args = set()
     arg_types = {
         "this": False,
         "kind": False,
@@ -7314,10 +9158,16 @@ class JSONColumnDef(Expression):
 
 
 class JSONSchema(Expression):
+    """JSON SCHEMA expression. e.g. ``COLUMNS(x)``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class JSONSet(Func):
+    """JSON SET function. e.g. ``SELECT JSON_SET(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_SET"]
@@ -7325,6 +9175,8 @@ class JSONSet(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_strip_nulls
 class JSONStripNulls(Func):
+    """JSON STRIP NULLS function. e.g. ``SELECT JSON_STRIP_NULLS(1)``"""
+
     arg_types = {
         "this": True,
         "expression": False,
@@ -7336,6 +9188,9 @@ class JSONStripNulls(Func):
 
 # https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html#function_json-value
 class JSONValue(Expression):
+    """JSON VALUE expression. e.g. ``JSON_VALUE(x, x)``"""
+
+    required_args = {"this", "path"}
     arg_types = {
         "this": True,
         "path": True,
@@ -7345,10 +9200,15 @@ class JSONValue(Expression):
 
 
 class JSONValueArray(Func):
+    """JSON VALUE ARRAY function. e.g. ``SELECT JSON_VALUE_ARRAY(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class JSONRemove(Func):
+    """JSON REMOVE function. e.g. ``SELECT JSON_REMOVE(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_REMOVE"]
@@ -7356,6 +9216,9 @@ class JSONRemove(Func):
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
 class JSONTable(Func):
+    """JSON TABLE function. e.g. ``SELECT * FROM JSON_TABLE(col, '$' COLUMNS(x INT PATH '$.x'))``"""
+
+    required_args = {"this", "schema"}
     arg_types = {
         "this": True,
         "schema": True,
@@ -7368,12 +9231,17 @@ class JSONTable(Func):
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_type
 # https://doris.apache.org/docs/sql-manual/sql-functions/scalar-functions/json-functions/json-type#description
 class JSONType(Func):
+    """JSON TYPE function. e.g. ``SELECT JSON_TYPE(1)``"""
+
     arg_types = {"this": True, "expression": False}
     _sql_names = ["JSON_TYPE"]
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/object_insert
 class ObjectInsert(Func):
+    """OBJECT INSERT function. e.g. ``SELECT OBJECT_INSERT(x, y, z)``"""
+
+    required_args = {"this", "key", "value"}
     arg_types = {
         "this": True,
         "key": True,
@@ -7383,42 +9251,62 @@ class ObjectInsert(Func):
 
 
 class OpenJSONColumnDef(Expression):
+    """OPEN JSON COLUMN DEF expression. e.g. ``x TABLE``"""
+
+    required_args = {"this", "kind"}
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 
 
 class OpenJSON(Func):
+    """OPEN JSON function. e.g. ``SELECT OPEN_JSON(1)``"""
+
     arg_types = {"this": True, "path": False, "expressions": False}
 
 
 class ObjectId(Func):
+    """OBJECT ID function. e.g. ``SELECT OBJECT_ID(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class JSONBContains(Binary, Func):
+    """JSONB CONTAINS function. e.g. ``SELECT JSONB_CONTAINS(x, y)``"""
+
     _sql_names = ["JSONB_CONTAINS"]
 
 
 # https://www.postgresql.org/docs/9.5/functions-json.html
 class JSONBContainsAnyTopKeys(Binary, Func):
+    """JSONB CONTAINS ANY TOP KEYS function. e.g. ``SELECT JSONB_CONTAINS_ANY_TOP_KEYS(x, y)``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/9.5/functions-json.html
 class JSONBContainsAllTopKeys(Binary, Func):
+    """JSONB CONTAINS ALL TOP KEYS function. e.g. ``SELECT JSONB_CONTAINS_ALL_TOP_KEYS(x, y)``"""
+
     pass
 
 
 class JSONBExists(Func):
+    """JSONB EXISTS function. e.g. ``SELECT JSONB_EXISTS(x, y)``"""
+
+    required_args = {"this", "path"}
     arg_types = {"this": True, "path": True}
     _sql_names = ["JSONB_EXISTS"]
 
 
 # https://www.postgresql.org/docs/9.5/functions-json.html
 class JSONBDeleteAtPath(Binary, Func):
+    """JSONB DELETE AT PATH function. e.g. ``SELECT JSONB_DELETE_AT_PATH(x, y)``"""
+
     pass
 
 
 class JSONExtract(Binary, Func):
+    """JSON EXTRACT function. e.g. ``SELECT col:$.key``"""
+
     arg_types = {
         "this": True,
         "expression": True,
@@ -7441,6 +9329,9 @@ class JSONExtract(Binary, Func):
 
 # https://trino.io/docs/current/functions/json.html#json-query
 class JSONExtractQuote(Expression):
+    """JSON EXTRACT QUOTE expression. e.g. ``x QUOTES``"""
+
+    required_args = {"option"}
     arg_types = {
         "option": True,
         "scalar": False,
@@ -7448,11 +9339,15 @@ class JSONExtractQuote(Expression):
 
 
 class JSONExtractArray(Func):
+    """JSON EXTRACT ARRAY function. e.g. ``SELECT JSON_EXTRACT_ARRAY(1)``"""
+
     arg_types = {"this": True, "expression": False}
     _sql_names = ["JSON_EXTRACT_ARRAY"]
 
 
 class JSONExtractScalar(Binary, Func):
+    """JSON EXTRACT SCALAR function. e.g. ``SELECT JSON_EXTRACT_SCALAR(col, '$.key')``"""
+
     arg_types = {
         "this": True,
         "expression": True,
@@ -7470,20 +9365,30 @@ class JSONExtractScalar(Binary, Func):
 
 
 class JSONBExtract(Binary, Func):
+    """JSONB EXTRACT function. e.g. ``SELECT JSONB_EXTRACT(x, y)``"""
+
     _sql_names = ["JSONB_EXTRACT"]
 
 
 class JSONBExtractScalar(Binary, Func):
+    """JSONB EXTRACT SCALAR function. e.g. ``SELECT JSONB_EXTRACT_SCALAR(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
 class JSONFormat(Func):
+    """JSON FORMAT function. e.g. ``SELECT col FORMAT JSON``"""
+
+    required_args = set()
     arg_types = {"this": False, "options": False, "is_json": False, "to_json": False}
     _sql_names = ["JSON_FORMAT"]
 
 
 class JSONArrayAppend(Func):
+    """JSON ARRAY APPEND function. e.g. ``SELECT JSON_ARRAY_APPEND(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_ARRAY_APPEND"]
@@ -7491,25 +9396,36 @@ class JSONArrayAppend(Func):
 
 # https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
 class JSONArrayContains(Binary, Predicate, Func):
+    """JSON ARRAY CONTAINS function. e.g. ``SELECT JSON_ARRAY_CONTAINS(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSON_ARRAY_CONTAINS"]
 
 
 class JSONArrayInsert(Func):
+    """JSON ARRAY INSERT function. e.g. ``SELECT JSON_ARRAY_INSERT(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_ARRAY_INSERT"]
 
 
 class ParseBignumeric(Func):
+    """PARSE BIGNUMERIC function. e.g. ``SELECT PARSE_BIGNUMERIC(1)``"""
+
     pass
 
 
 class ParseNumeric(Func):
+    """PARSE NUMERIC function. e.g. ``SELECT PARSE_NUMERIC(1)``"""
+
     pass
 
 
 class ParseJSON(Func):
+    """PARSE JSON function. e.g. ``SELECT PARSE_JSON(1)``"""
+
     # BigQuery, Snowflake have PARSE_JSON, Presto has JSON_PARSE
     # Snowflake also has TRY_PARSE_JSON, which is represented using `safe`
     _sql_names = ["PARSE_JSON", "JSON_PARSE"]
@@ -7519,52 +9435,81 @@ class ParseJSON(Func):
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/parse_url
 # Databricks: https://docs.databricks.com/aws/en/sql/language-manual/functions/parse_url
 class ParseUrl(Func):
+    """PARSE URL function. e.g. ``SELECT PARSE_URL(1)``"""
+
     arg_types = {"this": True, "part_to_extract": False, "key": False, "permissive": False}
 
 
 class ParseIp(Func):
+    """PARSE IP function. e.g. ``SELECT PARSE_IP(x, y)``"""
+
+    required_args = {"this", "type"}
     arg_types = {"this": True, "type": True, "permissive": False}
 
 
 class ParseTime(Func):
+    """PARSE TIME function. e.g. ``SELECT PARSE_TIME(x, y)``"""
+
+    required_args = {"this", "format"}
     arg_types = {"this": True, "format": True}
 
 
 class ParseDatetime(Func):
+    """PARSE DATETIME function. e.g. ``SELECT PARSE_DATETIME(1)``"""
+
     arg_types = {"this": True, "format": False, "zone": False}
 
 
 class Least(Func):
+    """LEAST function. e.g. ``SELECT LEAST(x, y)``"""
+
+    required_args = {"this", "ignore_nulls"}
     arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
 
 class Left(Func):
+    """LEFT function. e.g. ``SELECT LEFT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Right(Func):
+    """RIGHT function. e.g. ``SELECT RIGHT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Reverse(Func):
+    """REVERSE function. e.g. ``SELECT REVERSE(1)``"""
+
     pass
 
 
 class Length(Func):
+    """LENGTH function. e.g. ``SELECT LENGTH(1)``"""
+
     arg_types = {"this": True, "binary": False, "encoding": False}
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
 class RtrimmedLength(Func):
+    """RTRIMMED LENGTH function. e.g. ``SELECT RTRIMMED_LENGTH(1)``"""
+
     pass
 
 
 class BitLength(Func):
+    """BIT LENGTH function. e.g. ``SELECT BIT_LENGTH(1)``"""
+
     pass
 
 
 class Levenshtein(Func):
+    """LEVENSHTEIN function. e.g. ``SELECT LEVENSHTEIN(1)``"""
+
     arg_types = {
         "this": True,
         "expression": False,
@@ -7576,26 +9521,39 @@ class Levenshtein(Func):
 
 
 class Ln(Func):
+    """LN function. e.g. ``SELECT LN(1)``"""
+
     pass
 
 
 class Log(Func):
+    """LOG function. e.g. ``SELECT LOG(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class LogicalOr(AggFunc):
+    """LOGICAL OR function. e.g. ``SELECT LOGICAL_OR(1)``"""
+
     _sql_names = ["LOGICAL_OR", "BOOL_OR", "BOOLOR_AGG"]
 
 
 class LogicalAnd(AggFunc):
+    """LOGICAL AND function. e.g. ``SELECT LOGICAL_AND(1)``"""
+
     _sql_names = ["LOGICAL_AND", "BOOL_AND", "BOOLAND_AGG"]
 
 
 class Lower(Func):
+    """LOWER function. e.g. ``SELECT LOWER(1)``"""
+
     _sql_names = ["LOWER", "LCASE"]
 
 
 class Map(Func):
+    """MAP function. e.g. ``SELECT MAP(1)``"""
+
+    required_args = set()
     arg_types = {"keys": False, "values": False}
 
     @property
@@ -7611,61 +9569,97 @@ class Map(Func):
 
 # Represents the MAP {...} syntax in DuckDB - basically convert a struct to a MAP
 class ToMap(Func):
+    """TO MAP function. e.g. ``SELECT TO_MAP(1)``"""
+
     pass
 
 
 class MapFromEntries(Func):
+    """MAP FROM ENTRIES function. e.g. ``SELECT MAP_FROM_ENTRIES(1)``"""
+
     pass
 
 
 class MapCat(Func):
+    """MAP CAT function. e.g. ``SELECT MAP_CAT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class MapContainsKey(Func):
+    """MAP CONTAINS KEY function. e.g. ``SELECT MAP_CONTAINS_KEY(x, y)``"""
+
+    required_args = {"this", "key"}
     arg_types = {"this": True, "key": True}
 
 
 class MapDelete(Func):
+    """MAP DELETE function. e.g. ``SELECT MAP_DELETE(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
 class MapInsert(Func):
+    """MAP INSERT function. e.g. ``SELECT MAP_INSERT(x, y)``"""
+
+    required_args = {"this", "value"}
     arg_types = {"this": True, "key": False, "value": True, "update_flag": False}
 
 
 class MapKeys(Func):
+    """MAP KEYS function. e.g. ``SELECT MAP_KEYS(1)``"""
+
     pass
 
 
 class MapPick(Func):
+    """MAP PICK function. e.g. ``SELECT MAP_PICK(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
 class MapSize(Func):
+    """MAP SIZE function. e.g. ``SELECT MAP_SIZE(1)``"""
+
     pass
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql?view=sql-server-ver16
 class ScopeResolution(Expression):
+    """SCOPE RESOLUTION expression. e.g. ``SCOPE_RESOLUTION(y)``"""
+
+    required_args = {"expression"}
     arg_types = {"this": False, "expression": True}
 
 
 class Slice(Expression):
+    """SLICE expression. e.g. ``:``"""
+
+    required_args = set()
     arg_types = {"this": False, "expression": False, "step": False}
 
 
 class Stream(Expression):
+    """STREAM expression. e.g. ``STREAM x``"""
+
     pass
 
 
 class StarMap(Func):
+    """STAR MAP function. e.g. ``SELECT STAR_MAP(1)``"""
+
     pass
 
 
 class VarMap(Func):
+    """VAR MAP function. e.g. ``SELECT VAR_MAP(x, y)``"""
+
+    required_args = {"keys", "values"}
     arg_types = {"keys": True, "values": True}
     is_var_len_args = True
 
@@ -7680,15 +9674,22 @@ class VarMap(Func):
 
 # https://dev.mysql.com/doc/refman/8.0/en/fulltext-search.html
 class MatchAgainst(Func):
+    """MATCH AGAINST function. e.g. ``SELECT MATCH_AGAINST(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True, "modifier": False}
 
 
 class Max(AggFunc):
+    """MAX function. e.g. ``SELECT MAX(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 class MD5(Func):
+    """MD5 function. e.g. ``SELECT MD5(1)``"""
+
     _sql_names = ["MD5"]
 
 
@@ -7696,6 +9697,8 @@ class MD5(Func):
 # Var len args due to Exasol:
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hashtype_md5.htm
 class MD5Digest(Func):
+    """MD5 DIGEST function. e.g. ``SELECT MD5_DIGEST(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
     _sql_names = ["MD5_DIGEST"]
@@ -7703,106 +9706,163 @@ class MD5Digest(Func):
 
 # https://docs.snowflake.com/en/sql-reference/functions/md5_number_lower64
 class MD5NumberLower64(Func):
+    """MD5 NUMBER LOWER64 function. e.g. ``SELECT MD5_NUMBER_LOWER64(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/md5_number_upper64
 class MD5NumberUpper64(Func):
+    """MD5 NUMBER UPPER64 function. e.g. ``SELECT MD5_NUMBER_UPPER64(1)``"""
+
     pass
 
 
 class Median(AggFunc):
+    """MEDIAN function. e.g. ``SELECT MEDIAN(1)``"""
+
     pass
 
 
 class Mode(AggFunc):
+    """MODE function. e.g. ``SELECT MODE(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "deterministic": False}
 
 
 class Min(AggFunc):
+    """MIN function. e.g. ``SELECT MIN(1)``"""
+
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
 class Month(Func):
+    """MONTH function. e.g. ``SELECT MONTH(1)``"""
+
     pass
 
 
 class Monthname(Func):
+    """MONTHNAME function. e.g. ``SELECT MONTHNAME(1)``"""
+
     arg_types = {"this": True, "abbreviated": False}
 
 
 class AddMonths(Func):
+    """ADD MONTHS function. e.g. ``SELECT ADD_MONTHS(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "preserve_end_of_month": False}
 
 
 class Nvl2(Func):
+    """NVL2 function. e.g. ``SELECT NVL2(x, y)``"""
+
+    required_args = {"this", "true"}
     arg_types = {"this": True, "true": True, "false": False}
 
 
 class Ntile(AggFunc):
+    """NTILE function. e.g. ``SELECT NTILE(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Normalize(Func):
+    """NORMALIZE function. e.g. ``SELECT NORMALIZE(1)``"""
+
     arg_types = {"this": True, "form": False, "is_casefold": False}
 
 
 class Normal(Func):
+    """NORMAL function. e.g. ``SELECT NORMAL(x, y, z)``"""
+
+    required_args = {"this", "stddev", "gen"}
     arg_types = {"this": True, "stddev": True, "gen": True}
 
 
 # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/net_functions
 class NetFunc(Func):
+    """NET FUNC function. e.g. ``SELECT NET_FUNC(1)``"""
+
     pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#nethost
 class Host(Func):
+    """HOST function. e.g. ``SELECT HOST(1)``"""
+
     pass
 
 
 # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/net_functions#netreg_domain
 class RegDomain(Func):
+    """REG DOMAIN function. e.g. ``SELECT REG_DOMAIN(1)``"""
+
     pass
 
 
 class Overlay(Func):
+    """OVERLAY function. e.g. ``SELECT OVERLAY(x, y, z)``"""
+
+    required_args = {"this", "expression", "from_"}
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function
 class Predict(Func):
+    """PREDICT function. e.g. ``SELECT PREDICT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-translate#mltranslate_function
 class MLTranslate(Func):
+    """ML TRANSLATE function. e.g. ``SELECT ML_TRANSLATE(x, y, z)``"""
+
+    required_args = {"this", "expression", "params_struct"}
     arg_types = {"this": True, "expression": True, "params_struct": True}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time
 class FeaturesAtTime(Func):
+    """FEATURES AT TIME function. e.g. ``SELECT FEATURES_AT_TIME(1)``"""
+
     arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding
 class GenerateEmbedding(Func):
+    """GENERATE EMBEDDING function. e.g. ``SELECT GENERATE_EMBEDDING(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "params_struct": False, "is_text": False}
 
 
 class MLForecast(Func):
+    """ML FORECAST function. e.g. ``SELECT ML_FORECAST(1)``"""
+
     arg_types = {"this": True, "expression": False, "params_struct": False}
 
 
 # Represents Snowflake's <model>!<attribute> syntax. For example: SELECT model!PREDICT(INPUT_DATA => {*})
 # See: https://docs.snowflake.com/en/guides-overview-ml-functions
 class ModelAttribute(Expression):
+    """MODEL ATTRIBUTE expression."""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search
 class VectorSearch(Func):
+    """VECTOR SEARCH function. e.g. ``SELECT VECTOR_SEARCH(x, y, z)``"""
+
+    required_args = {"this", "column_to_search", "query_table"}
     arg_types = {
         "this": True,
         "column_to_search": True,
@@ -7815,31 +9875,48 @@ class VectorSearch(Func):
 
 
 class Pi(Func):
+    """PI function. e.g. ``SELECT PI(1)``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class Pow(Binary, Func):
+    """POW function. e.g. ``SELECT POW(x, y)``"""
+
     _sql_names = ["POWER", "POW"]
 
 
 class PercentileCont(AggFunc):
+    """PERCENTILE CONT function. e.g. ``SELECT PERCENTILE_CONT(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class PercentileDisc(AggFunc):
+    """PERCENTILE DISC function. e.g. ``SELECT PERCENTILE_DISC(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class PercentRank(AggFunc):
+    """PERCENT RANK function. e.g. ``SELECT PERCENT_RANK(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class Quantile(AggFunc):
+    """QUANTILE function. e.g. ``SELECT QUANTILE(x, y)``"""
+
+    required_args = {"this", "quantile"}
     arg_types = {"this": True, "quantile": True}
 
 
 class ApproxQuantile(Quantile):
+    """APPROX QUANTILE function. e.g. ``SELECT APPROX_QUANTILE(x, y)``"""
+
     arg_types = {
         "this": True,
         "quantile": True,
@@ -7851,62 +9928,97 @@ class ApproxQuantile(Quantile):
 
 # https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_accumulate
 class ApproxPercentileAccumulate(AggFunc):
+    """APPROX PERCENTILE ACCUMULATE function. e.g. ``SELECT APPROX_PERCENTILE_ACCUMULATE(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/approx_percentile_estimate
 class ApproxPercentileEstimate(Func):
+    """APPROX PERCENTILE ESTIMATE function. e.g. ``SELECT APPROX_PERCENTILE_ESTIMATE(x, y)``"""
+
+    required_args = {"this", "percentile"}
     arg_types = {"this": True, "percentile": True}
 
 
 class Quarter(Func):
+    """QUARTER function. e.g. ``SELECT QUARTER(1)``"""
+
     pass
 
 
 # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions/RANDOM/RANDOM-Function-Syntax
 # teradata lower and upper bounds
 class Rand(Func):
+    """RAND function. e.g. ``SELECT RAND(1)``"""
+
+    required_args = set()
     _sql_names = ["RAND", "RANDOM"]
     arg_types = {"this": False, "lower": False, "upper": False}
 
 
 class Randn(Func):
+    """RANDN function. e.g. ``SELECT RANDN(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Randstr(Func):
+    """RANDSTR function. e.g. ``SELECT RANDSTR(1)``"""
+
     arg_types = {"this": True, "generator": False}
 
 
 class RangeN(Func):
+    """RANGE N function. e.g. ``SELECT RANGE_N(x, y)``"""
+
+    required_args = {"this", "expressions"}
     arg_types = {"this": True, "expressions": True, "each": False}
 
 
 class RangeBucket(Func):
+    """RANGE BUCKET function. e.g. ``SELECT RANGE_BUCKET(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Rank(AggFunc):
+    """RANK function. e.g. ``SELECT RANK(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class ReadCSV(Func):
+    """READ CSV function. e.g. ``SELECT READ_CSV(1)``"""
+
     _sql_names = ["READ_CSV"]
     is_var_len_args = True
     arg_types = {"this": True, "expressions": False}
 
 
 class ReadParquet(Func):
+    """READ PARQUET function. e.g. ``SELECT READ_PARQUET(1)``"""
+
+    required_args = {"expressions"}
     is_var_len_args = True
     arg_types = {"expressions": True}
 
 
 class Reduce(Func):
+    """REDUCE function. e.g. ``SELECT REDUCE(arr, 0, (acc, x) -> acc + x)``"""
+
+    required_args = {"this", "initial", "merge"}
     arg_types = {"this": True, "initial": True, "merge": True, "finish": False}
 
 
 class RegexpExtract(Func):
+    """REGEXP EXTRACT function. e.g. ``SELECT REGEXP_EXTRACT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -7919,6 +10031,9 @@ class RegexpExtract(Func):
 
 
 class RegexpExtractAll(Func):
+    """REGEXP EXTRACT ALL function. e.g. ``SELECT REGEXP_EXTRACT_ALL(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -7930,6 +10045,9 @@ class RegexpExtractAll(Func):
 
 
 class RegexpReplace(Func):
+    """REGEXP REPLACE function. e.g. ``SELECT REGEXP_REPLACE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -7942,18 +10060,27 @@ class RegexpReplace(Func):
 
 
 class RegexpLike(Binary, Func):
+    """REGEXP LIKE function. e.g. ``SELECT REGEXP_LIKE(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 
 class RegexpILike(Binary, Func):
+    """REGEXP ILIKE function. e.g. ``SELECT REGEXP_ILIKE(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
 class RegexpFullMatch(Binary, Func):
+    """REGEXP FULL MATCH function. e.g. ``SELECT REGEXP_FULL_MATCH(x, y)``"""
+
     arg_types = {"this": True, "expression": True, "options": False}
 
 
 class RegexpInstr(Func):
+    """REGEXP INSTR function. e.g. ``SELECT REGEXP_INSTR(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -7968,10 +10095,16 @@ class RegexpInstr(Func):
 # https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.split.html
 # limit is the number of times a pattern is applied
 class RegexpSplit(Func):
+    """REGEXP SPLIT function. e.g. ``SELECT REGEXP_SPLIT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
 class RegexpCount(Func):
+    """REGEXP COUNT function. e.g. ``SELECT REGEXP_COUNT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,
         "expression": True,
@@ -7981,65 +10114,108 @@ class RegexpCount(Func):
 
 
 class RegrValx(AggFunc):
+    """REGR VALX function. e.g. ``SELECT REGR_VALX(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrValy(AggFunc):
+    """REGR VALY function. e.g. ``SELECT REGR_VALY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrAvgy(AggFunc):
+    """REGR AVGY function. e.g. ``SELECT REGR_AVGY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrAvgx(AggFunc):
+    """REGR AVGX function. e.g. ``SELECT REGR_AVGX(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrCount(AggFunc):
+    """REGR COUNT function. e.g. ``SELECT REGR_COUNT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrIntercept(AggFunc):
+    """REGR INTERCEPT function. e.g. ``SELECT REGR_INTERCEPT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrR2(AggFunc):
+    """REGR R2 function. e.g. ``SELECT REGR_R2(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrSxx(AggFunc):
+    """REGR SXX function. e.g. ``SELECT REGR_SXX(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrSxy(AggFunc):
+    """REGR SXY function. e.g. ``SELECT REGR_SXY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrSyy(AggFunc):
+    """REGR SYY function. e.g. ``SELECT REGR_SYY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class RegrSlope(AggFunc):
+    """REGR SLOPE function. e.g. ``SELECT REGR_SLOPE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Repeat(Func):
+    """REPEAT function. e.g. ``SELECT REPEAT(x, y)``"""
+
+    required_args = {"this", "times"}
     arg_types = {"this": True, "times": True}
 
 
 # Some dialects like Snowflake support two argument replace
 class Replace(Func):
+    """REPLACE function. e.g. ``SELECT REPLACE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "replacement": False}
 
 
 class Radians(Func):
+    """RADIANS function. e.g. ``SELECT RADIANS(1)``"""
+
     pass
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
 # tsql third argument function == trunctaion if not 0
 class Round(Func):
+    """ROUND function. e.g. ``SELECT ROUND(1)``"""
+
     arg_types = {
         "this": True,
         "decimals": False,
@@ -8052,91 +10228,143 @@ class Round(Func):
 # Most dialects: TRUNC(number, decimals) or TRUNCATE(number, decimals)
 # T-SQL: ROUND(number, decimals, 1) - handled in generator
 class Trunc(Func):
+    """TRUNC function. e.g. ``SELECT TRUNC(1)``"""
+
     arg_types = {"this": True, "decimals": False}
     _sql_names = ["TRUNC", "TRUNCATE"]
 
 
 class RowNumber(Func):
+    """ROW NUMBER function. e.g. ``SELECT ROW_NUMBER(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Seq1(Func):
+    """SEQ1 function. e.g. ``SELECT SEQ1(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Seq2(Func):
+    """SEQ2 function. e.g. ``SELECT SEQ2(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Seq4(Func):
+    """SEQ4 function. e.g. ``SELECT SEQ4(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class Seq8(Func):
+    """SEQ8 function. e.g. ``SELECT SEQ8(1)``"""
+
+    required_args = set()
     arg_types = {"this": False}
 
 
 class SafeAdd(Func):
+    """SAFE ADD function. e.g. ``SELECT SAFE_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class SafeDivide(Func):
+    """SAFE DIVIDE function. e.g. ``SELECT SAFE_DIVIDE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class SafeMultiply(Func):
+    """SAFE MULTIPLY function. e.g. ``SELECT SAFE_MULTIPLY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class SafeNegate(Func):
+    """SAFE NEGATE function. e.g. ``SELECT SAFE_NEGATE(1)``"""
+
     pass
 
 
 class SafeSubtract(Func):
+    """SAFE SUBTRACT function. e.g. ``SELECT SAFE_SUBTRACT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class SafeConvertBytesToString(Func):
+    """SAFE CONVERT BYTES TO STRING function. e.g. ``SELECT SAFE_CONVERT_BYTES_TO_STRING(1)``"""
+
     pass
 
 
 class SHA(Func):
+    """SHA function. e.g. ``SELECT SHA(1)``"""
+
     _sql_names = ["SHA", "SHA1"]
 
 
 class SHA2(Func):
+    """SHA2 function. e.g. ``SELECT SHA2(1)``"""
+
     _sql_names = ["SHA2"]
     arg_types = {"this": True, "length": False}
 
 
 # Represents the variant of the SHA1 function that returns a binary value
 class SHA1Digest(Func):
+    """SHA1 DIGEST function. e.g. ``SELECT SHA1_DIGEST(1)``"""
+
     pass
 
 
 # Represents the variant of the SHA2 function that returns a binary value
 class SHA2Digest(Func):
+    """SHA2 DIGEST function. e.g. ``SELECT SHA2_DIGEST(1)``"""
+
     arg_types = {"this": True, "length": False}
 
 
 class Sign(Func):
+    """SIGN function. e.g. ``SELECT SIGN(1)``"""
+
     _sql_names = ["SIGN", "SIGNUM"]
 
 
 class SortArray(Func):
+    """SORT ARRAY function. e.g. ``SELECT SORT_ARRAY(1)``"""
+
     arg_types = {"this": True, "asc": False, "nulls_first": False}
 
 
 class Soundex(Func):
+    """SOUNDEX function. e.g. ``SELECT SOUNDEX(1)``"""
+
     pass
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/soundex_p123
 class SoundexP123(Func):
+    """SOUNDEX P123 function. e.g. ``SELECT SOUNDEX_P123(1)``"""
+
     pass
 
 
 class Split(Func):
+    """SPLIT function. e.g. ``SELECT SPLIT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
@@ -8144,12 +10372,16 @@ class Split(Func):
 # https://docs.snowflake.com/en/sql-reference/functions/split_part
 # https://docs.snowflake.com/en/sql-reference/functions/strtok
 class SplitPart(Func):
+    """SPLIT PART function. e.g. ``SELECT SPLIT_PART(1)``"""
+
     arg_types = {"this": True, "delimiter": False, "part_index": False}
 
 
 # Start may be omitted in the case of postgres
 # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 class Substring(Func):
+    """SUBSTRING function. e.g. ``SELECT SUBSTRING(1)``"""
+
     _sql_names = ["SUBSTRING", "SUBSTR"]
     arg_types = {"this": True, "start": False, "length": False}
 
@@ -8162,24 +10394,37 @@ class SubstringIndex(Func):
     *count* < 0  → right slice after the |count|-th delimiter
     """
 
+    required_args = {"this", "delimiter", "count"}
+
     arg_types = {"this": True, "delimiter": True, "count": True}
 
 
 class StandardHash(Func):
+    """STANDARD HASH function. e.g. ``SELECT STANDARD_HASH(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class StartsWith(Func):
+    """STARTS WITH function. e.g. ``SELECT STARTS_WITH(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["STARTS_WITH", "STARTSWITH"]
     arg_types = {"this": True, "expression": True}
 
 
 class EndsWith(Func):
+    """ENDS WITH function. e.g. ``SELECT ENDS_WITH(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["ENDS_WITH", "ENDSWITH"]
     arg_types = {"this": True, "expression": True}
 
 
 class StrPosition(Func):
+    """STR POSITION function. e.g. ``SELECT STR_POSITION(x, y)``"""
+
+    required_args = {"this", "substr"}
     arg_types = {
         "this": True,
         "substr": True,
@@ -8191,6 +10436,9 @@ class StrPosition(Func):
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search
 # BigQuery: https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#search
 class Search(Func):
+    """SEARCH function. e.g. ``SELECT SEARCH(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {
         "this": True,  # data_to_search / search_data
         "expression": True,  # search_query / search_string
@@ -8203,26 +10451,39 @@ class Search(Func):
 
 # Snowflake: https://docs.snowflake.com/en/sql-reference/functions/search_ip
 class SearchIp(Func):
+    """SEARCH IP function. e.g. ``SELECT SEARCH_IP(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class StrToDate(Func):
+    """STR TO DATE function. e.g. ``SELECT STR_TO_DATE(1)``"""
+
     arg_types = {"this": True, "format": False, "safe": False}
 
 
 class StrToTime(Func):
+    """STR TO TIME function. e.g. ``SELECT STR_TO_TIME(x, y)``"""
+
+    required_args = {"this", "format"}
     arg_types = {"this": True, "format": True, "zone": False, "safe": False, "target_type": False}
 
 
 # Spark allows unix_timestamp()
 # https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.unix_timestamp.html
 class StrToUnix(Func):
+    """STR TO UNIX function. e.g. ``SELECT STR_TO_UNIX(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "format": False}
 
 
 # https://prestodb.io/docs/current/functions/string.html
 # https://spark.apache.org/docs/latest/api/sql/index.html#str_to_map
 class StrToMap(Func):
+    """STR TO MAP function. e.g. ``SELECT STR_TO_MAP(1)``"""
+
     arg_types = {
         "this": True,
         "pair_delim": False,
@@ -8232,10 +10493,16 @@ class StrToMap(Func):
 
 
 class NumberToStr(Func):
+    """NUMBER TO STR function. e.g. ``SELECT NUMBER_TO_STR(x, y)``"""
+
+    required_args = {"this", "format"}
     arg_types = {"this": True, "format": True, "culture": False}
 
 
 class FromBase(Func):
+    """FROM BASE function. e.g. ``SELECT FROM_BASE(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
@@ -8248,71 +10515,108 @@ class Space(Func):
 
 
 class Struct(Func):
+    """STRUCT function. e.g. ``SELECT STRUCT(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class StructExtract(Func):
+    """STRUCT EXTRACT function. e.g. ``SELECT STRUCT_EXTRACT(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/stuff-transact-sql?view=sql-server-ver16
 # https://docs.snowflake.com/en/sql-reference/functions/insert
 class Stuff(Func):
+    """STUFF function. e.g. ``SELECT STUFF(1, 1, 1, 1)``"""
+
+    required_args = {"this", "start", "length", "expression"}
     _sql_names = ["STUFF", "INSERT"]
     arg_types = {"this": True, "start": True, "length": True, "expression": True}
 
 
 class Sum(AggFunc):
+    """SUM function. e.g. ``SELECT SUM(1)``"""
+
     pass
 
 
 class Sqrt(Func):
+    """SQRT function. e.g. ``SELECT SQRT(1)``"""
+
     pass
 
 
 class Stddev(AggFunc):
+    """STDDEV function. e.g. ``SELECT STDDEV(1)``"""
+
     _sql_names = ["STDDEV", "STDEV"]
 
 
 class StddevPop(AggFunc):
+    """STDDEV POP function. e.g. ``SELECT STDDEV_POP(1)``"""
+
     pass
 
 
 class StddevSamp(AggFunc):
+    """STDDEV SAMP function. e.g. ``SELECT STDDEV_SAMP(1)``"""
+
     pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/time_functions#time
 class Time(Func):
+    """TIME function. e.g. ``SELECT TIME(1)``"""
+
+    required_args = set()
     arg_types = {"this": False, "zone": False}
 
 
 class TimeToStr(Func):
+    """TIME TO STR function. e.g. ``SELECT TIME_TO_STR(x, y)``"""
+
+    required_args = {"this", "format"}
     arg_types = {"this": True, "format": True, "culture": False, "zone": False}
 
 
 class TimeToTimeStr(Func):
+    """TIME TO TIME STR function. e.g. ``SELECT TIME_TO_TIME_STR(1)``"""
+
     pass
 
 
 class TimeToUnix(Func):
+    """TIME TO UNIX function. e.g. ``SELECT TIME_TO_UNIX(1)``"""
+
     pass
 
 
 class TimeStrToDate(Func):
+    """TIME STR TO DATE function. e.g. ``SELECT TIME_STR_TO_DATE(1)``"""
+
     pass
 
 
 class TimeStrToTime(Func):
+    """TIME STR TO TIME function. e.g. ``SELECT TIME_STR_TO_TIME(1)``"""
+
     arg_types = {"this": True, "zone": False}
 
 
 class TimeStrToUnix(Func):
+    """TIME STR TO UNIX function. e.g. ``SELECT TIME_STR_TO_UNIX(1)``"""
+
     pass
 
 
 class Trim(Func):
+    """TRIM function. e.g. ``SELECT TRIM(1)``"""
+
     arg_types = {
         "this": True,
         "expression": False,
@@ -8322,6 +10626,9 @@ class Trim(Func):
 
 
 class TsOrDsAdd(Func, TimeUnit):
+    """TS OR DS ADD function. e.g. ``SELECT TS_OR_DS_ADD(x, y)``"""
+
+    required_args = {"this", "expression"}
     # return_type is used to correctly cast the arguments of this expression when transpiling it
     arg_types = {"this": True, "expression": True, "unit": False, "return_type": False}
 
@@ -8331,57 +10638,85 @@ class TsOrDsAdd(Func, TimeUnit):
 
 
 class TsOrDsDiff(Func, TimeUnit):
+    """TS OR DS DIFF function. e.g. ``SELECT TS_OR_DS_DIFF(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 class TsOrDsToDateStr(Func):
+    """TS OR DS TO DATE STR function. e.g. ``SELECT TS_OR_DS_TO_DATE_STR(1)``"""
+
     pass
 
 
 class TsOrDsToDate(Func):
+    """TS OR DS TO DATE function. e.g. ``SELECT TS_OR_DS_TO_DATE(1)``"""
+
     arg_types = {"this": True, "format": False, "safe": False}
 
 
 class TsOrDsToDatetime(Func):
+    """TS OR DS TO DATETIME function. e.g. ``SELECT TS_OR_DS_TO_DATETIME(1)``"""
+
     pass
 
 
 class TsOrDsToTime(Func):
+    """TS OR DS TO TIME function. e.g. ``SELECT TS_OR_DS_TO_TIME(1)``"""
+
     arg_types = {"this": True, "format": False, "safe": False}
 
 
 class TsOrDsToTimestamp(Func):
+    """TS OR DS TO TIMESTAMP function. e.g. ``SELECT TS_OR_DS_TO_TIMESTAMP(1)``"""
+
     pass
 
 
 class TsOrDiToDi(Func):
+    """TS OR DI TO DI function. e.g. ``SELECT TS_OR_DI_TO_DI(1)``"""
+
     pass
 
 
 class Unhex(Func):
+    """UNHEX function. e.g. ``SELECT UNHEX(1)``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Unicode(Func):
+    """UNICODE function. e.g. ``SELECT UNICODE(1)``"""
+
     pass
 
 
 class Uniform(Func):
+    """UNIFORM function. e.g. ``SELECT UNIFORM(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True, "gen": False, "seed": False}
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#unix_date
 class UnixDate(Func):
+    """UNIX DATE function. e.g. ``SELECT UNIX_DATE(1)``"""
+
     pass
 
 
 class UnixToStr(Func):
+    """UNIX TO STR function. e.g. ``SELECT UNIX_TO_STR(1)``"""
+
     arg_types = {"this": True, "format": False}
 
 
 # https://prestodb.io/docs/current/functions/datetime.html
 # presto has weird zone/hours/minutes
 class UnixToTime(Func):
+    """UNIX TO TIME function. e.g. ``SELECT UNIX_TO_TIME(1)``"""
+
     arg_types = {
         "this": True,
         "scale": False,
@@ -8405,22 +10740,33 @@ class UnixToTime(Func):
 
 
 class UnixToTimeStr(Func):
+    """UNIX TO TIME STR function. e.g. ``SELECT UNIX_TO_TIME_STR(1)``"""
+
     pass
 
 
 class UnixSeconds(Func):
+    """UNIX SECONDS function. e.g. ``SELECT UNIX_SECONDS(1)``"""
+
     pass
 
 
 class UnixMicros(Func):
+    """UNIX MICROS function. e.g. ``SELECT UNIX_MICROS(1)``"""
+
     pass
 
 
 class UnixMillis(Func):
+    """UNIX MILLIS function. e.g. ``SELECT UNIX_MILLIS(1)``"""
+
     pass
 
 
 class Uuid(Func):
+    """UUID function. e.g. ``SELECT UUID(1)``"""
+
+    required_args = set()
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
     arg_types = {"this": False, "name": False, "is_string": False}
@@ -8438,6 +10784,9 @@ TIMESTAMP_PARTS = {
 
 
 class TimestampFromParts(Func):
+    """TIMESTAMP FROM PARTS function. e.g. ``SELECT TIMESTAMP_FROM_PARTS(1)``"""
+
+    required_args = set()
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
         **TIMESTAMP_PARTS,
@@ -8449,11 +10798,17 @@ class TimestampFromParts(Func):
 
 
 class TimestampLtzFromParts(Func):
+    """TIMESTAMP LTZ FROM PARTS function. e.g. ``SELECT TIMESTAMP_LTZ_FROM_PARTS(1)``"""
+
+    required_args = set()
     _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
     arg_types = TIMESTAMP_PARTS.copy()
 
 
 class TimestampTzFromParts(Func):
+    """TIMESTAMP TZ FROM PARTS function. e.g. ``SELECT TIMESTAMP_TZ_FROM_PARTS(1)``"""
+
+    required_args = set()
     _sql_names = ["TIMESTAMP_TZ_FROM_PARTS", "TIMESTAMPTZFROMPARTS"]
     arg_types = {
         **TIMESTAMP_PARTS,
@@ -8462,10 +10817,14 @@ class TimestampTzFromParts(Func):
 
 
 class Upper(Func):
+    """UPPER function. e.g. ``SELECT UPPER(1)``"""
+
     _sql_names = ["UPPER", "UCASE"]
 
 
 class Corr(Binary, AggFunc):
+    """CORR function. e.g. ``SELECT CORR(x, y)``"""
+
     # Correlation divides by variance(column). If a column has 0 variance, the denominator
     # is 0 - some dialects return NaN (DuckDB) while others return NULL (Snowflake).
     # `null_on_zero_variance` is set to True at parse time for dialects that return NULL.
@@ -8474,27 +10833,40 @@ class Corr(Binary, AggFunc):
 
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/CUME_DIST.html
 class CumeDist(AggFunc):
+    """CUME DIST function. e.g. ``SELECT CUME_DIST(1)``"""
+
+    required_args = set()
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
 class Variance(AggFunc):
+    """VARIANCE function. e.g. ``SELECT VARIANCE(1)``"""
+
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
 class VariancePop(AggFunc):
+    """VARIANCE POP function. e.g. ``SELECT VARIANCE_POP(1)``"""
+
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
 
 
 class Kurtosis(AggFunc):
+    """KURTOSIS function. e.g. ``SELECT KURTOSIS(1)``"""
+
     pass
 
 
 class Skewness(AggFunc):
+    """SKEWNESS function. e.g. ``SELECT SKEWNESS(1)``"""
+
     pass
 
 
 class WidthBucket(Func):
+    """WIDTH BUCKET function. e.g. ``SELECT WIDTH_BUCKET(1)``"""
+
     arg_types = {
         "this": True,
         "min_value": False,
@@ -8505,36 +10877,56 @@ class WidthBucket(Func):
 
 
 class CovarSamp(AggFunc):
+    """COVAR SAMP function. e.g. ``SELECT COVAR_SAMP(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class CovarPop(AggFunc):
+    """COVAR POP function. e.g. ``SELECT COVAR_POP(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class Week(Func):
+    """WEEK function. e.g. ``SELECT WEEK(1)``"""
+
     arg_types = {"this": True, "mode": False}
 
 
 class WeekStart(Expression):
+    """WEEK START expression. e.g. ``WEEK(x)``"""
+
     pass
 
 
 class NextDay(Func):
+    """NEXT DAY function. e.g. ``SELECT NEXT_DAY(x, y)``"""
+
+    required_args = {"this", "expression"}
     arg_types = {"this": True, "expression": True}
 
 
 class XMLElement(Func):
+    """XML ELEMENT function. e.g. ``SELECT XML_ELEMENT(1)``"""
+
     _sql_names = ["XMLELEMENT"]
     arg_types = {"this": True, "expressions": False, "evalname": False}
 
 
 class XMLGet(Func):
+    """XML GET function. e.g. ``SELECT XML_GET(x, y)``"""
+
+    required_args = {"this", "expression"}
     _sql_names = ["XMLGET"]
     arg_types = {"this": True, "expression": True, "instance": False}
 
 
 class XMLTable(Func):
+    """XML TABLE function. e.g. ``SELECT * FROM XMLTABLE('/root' PASSING col COLUMNS x INT PATH 'x')``"""
+
     arg_types = {
         "this": True,
         "namespaces": False,
@@ -8545,27 +10937,42 @@ class XMLTable(Func):
 
 
 class XMLNamespace(Expression):
+    """XML NAMESPACE expression. e.g. ``SELECT * FROM XMLTABLE(XMLNAMESPACES('uri' AS ns), '/ns:root' PASSING col COLUMNS x INT PATH 'ns:x')``"""
+
     pass
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql?view=sql-server-ver17#syntax
 class XMLKeyValueOption(Expression):
+    """XML KEY VALUE OPTION expression. e.g. ``x``"""
+
     arg_types = {"this": True, "expression": False}
 
 
 class Year(Func):
+    """YEAR function. e.g. ``SELECT YEAR(1)``"""
+
     pass
 
 
 class Zipf(Func):
+    """ZIPF function. e.g. ``SELECT ZIPF(x, y, z)``"""
+
+    required_args = {"this", "elementcount", "gen"}
     arg_types = {"this": True, "elementcount": True, "gen": True}
 
 
 class Use(Expression):
+    """USE statement. e.g. ``USE db``"""
+
+    required_args = set()
     arg_types = {"this": False, "expressions": False, "kind": False}
 
 
 class Merge(DML):
+    """MERGE statement. e.g. ``MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.x = s.x``"""
+
+    required_args = {"this", "using", "whens"}
     arg_types = {
         "this": True,
         "using": True,
@@ -8578,11 +10985,16 @@ class Merge(DML):
 
 
 class When(Expression):
+    """WHEN expression. e.g. ``WHEN MATCHED THEN x``"""
+
+    required_args = {"matched", "then"}
     arg_types = {"matched": True, "source": False, "condition": False, "then": True}
 
 
 class Whens(Expression):
     """Wraps around one or more WHEN [NOT] MATCHED [...] clauses."""
+
+    required_args = {"expressions"}
 
     arg_types = {"expressions": True}
 
@@ -8590,48 +11002,73 @@ class Whens(Expression):
 # https://docs.oracle.com/javadb/10.8.3.0/ref/rrefsqljnextvaluefor.html
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/next-value-for-transact-sql?view=sql-server-ver16
 class NextValueFor(Func):
+    """NEXT VALUE FOR function. e.g. ``SELECT NEXT_VALUE_FOR(1)``"""
+
     arg_types = {"this": True, "order": False}
 
 
 # Refers to a trailing semi-colon. This is only used to preserve trailing comments
 # select 1; -- my comment
 class Semicolon(Expression):
+    """SEMICOLON expression."""
+
+    required_args = set()
     arg_types = {}
 
 
 # BigQuery allows SELECT t FROM t and treats the projection as a struct value. This expression
 # type is intended to be constructed by qualify so that we can properly annotate its type later
 class TableColumn(Expression):
+    """TABLE COLUMN expression. e.g. ``x``"""
+
     pass
 
 
 # https://www.postgresql.org/docs/current/typeconv-func.html
 # https://www.postgresql.org/docs/current/xfunc-sql.html
 class Variadic(Expression):
+    """VARIADIC expression. e.g. ``VARIADIC x``"""
+
     pass
 
 
 class StoredProcedure(Expression):
+    """STORED PROCEDURE expression."""
+
     arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
 class Block(Expression):
+    """BLOCK expression. e.g. ``x``"""
+
+    required_args = {"expressions"}
     arg_types = {"expressions": True}
 
 
 class IfBlock(Expression):
+    """IF BLOCK expression."""
+
+    required_args = {"this", "true"}
     arg_types = {"this": True, "true": True, "false": False}
 
 
 class WhileBlock(Expression):
+    """WHILE BLOCK expression."""
+
+    required_args = {"this", "body"}
     arg_types = {"this": True, "body": True}
 
 
 class EndStatement(Expression):
+    """END STATEMENT expression. e.g. ``END``"""
+
+    required_args = set()
     arg_types = {}
 
 
 class Execute(Expression):
+    """EXECUTE expression."""
+
     arg_types = {"this": True, "expressions": False}
 
     @property
@@ -8640,6 +11077,8 @@ class Execute(Expression):
 
 
 class ExecuteSql(Execute):
+    """EXECUTE SQL expression."""
+
     pass
 
 

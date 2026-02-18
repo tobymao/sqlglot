@@ -184,6 +184,9 @@ BINARY;
 TO_BINARY('test', 'HEX');
 BINARY;
 
+ARRAY_CONTAINS(tbl.array_col, '1');
+BOOLEAN;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

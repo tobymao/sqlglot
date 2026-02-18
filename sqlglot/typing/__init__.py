@@ -47,6 +47,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         for expr_type in {
             exp.All,
             exp.Any,
+            exp.ArrayContains,
             exp.Between,
             exp.Boolean,
             exp.Contains,

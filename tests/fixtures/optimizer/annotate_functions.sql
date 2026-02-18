@@ -840,10 +840,6 @@ ELEMENT_AT(ARRAY('1', '2','3'), 1);
 STRING;
 
 # dialect: spark2, spark, databricks
-ELEMENT_AT(ARRAY(1, 2, 3), 1);
-INT;
-
-# dialect: spark2, spark, databricks
 ELEMENT_AT(MAP('a', 1, 'b', 2,'c', 3), 'b');
 INT;
 

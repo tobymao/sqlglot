@@ -21,9 +21,8 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.optimizer.scope import build_scope
-from sqlglot._typing import E
+from sqlglot.tokens import TokenType
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -248,24 +247,6 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
     return self.func(f"ADD_{unit}S", expression.this, offset_expr)
 
 
-def _build_extract_json(expr_type: t.Type[E]):
-    def _builder(args, dialect):
-        paths = [dialect.to_json_path(p) for p in args[1:]] or [exp.Literal.string("$")]
-        return expr_type(this=seq_get(args, 0), expression=paths[0], expressions=paths[1:])
-
-    return _builder
-
-
-def _json_extract_sql(self, e: exp.JSONExtract) -> str:
-    path = [e.expression, *e.args.get("expressions", [])]
-    sql = self.func("JSON_EXTRACT", e.this, *path)
-    columns = e.args.get("columns")
-    if columns:
-        emits = self.expressions(sqls=columns)
-        sql = f"{sql} EMITS ({emits})"
-    return sql
-
-
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
@@ -366,7 +347,7 @@ class Exasol(Dialect):
                 this=seq_get(args, 0), length=exp.Literal.number(512)
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
-            "JSON_EXTRACT": _build_extract_json(exp.JSONExtract),
+            "JSON_EXTRACT": parser.build_extract_json_with_path(exp.JSONExtract),
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_nullifzero,
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
@@ -426,20 +407,13 @@ class Exasol(Dialect):
                 column.set("table", None)
             return column
 
-        def _parse_function(self, *args, **kwargs):
-            func = super()._parse_function(*args, **kwargs)
-
-            if isinstance(func, exp.JSONExtract):
-                if not self._match_texts("EMITS"):
-                    self.raise_error("Expected EMITS")
-
+        def _parse_field(self, *args, **kwargs):
+            expression = super()._parse_field(*args, **kwargs)
+            if isinstance(expression, exp.JSONExtract) and self._match_texts("EMITS"):
                 schema = self._parse_schema()
-                func.set("columns", schema.expressions)
-                expressions = func.args.get("expressions") or []
+                expression.set("columns", schema.expressions)
 
-                func.set("expressions", [e for e in expressions if isinstance(e, exp.JSONPath)])
-
-            return func
+            return expression
 
         ODBC_DATETIME_LITERALS = {
             "d": exp.Date,
@@ -504,7 +478,7 @@ class Exasol(Dialect):
             exp.CurrentSchema: lambda *_: "CURRENT_SCHEMA",
             exp.DateDiff: _date_diff_sql,
             exp.DateAdd: _add_date_sql,
-            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtract: lambda self, e: self.jsonextract_sql(e),
             exp.TsOrDsAdd: _add_date_sql,
             exp.DateSub: _add_date_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
@@ -1072,3 +1046,12 @@ class Exasol(Dialect):
             if expression.args.get("expressions"):
                 self.unsupported("Exasol does not support arguments in RANK")
             return self.func("RANK")
+
+        def jsonextract_sql(self, e: exp.JSONExtract) -> str:
+            path = [e.expression, *e.args.get("expressions", [])]
+            sql = self.func("JSON_EXTRACT", e.this, *path)
+            columns = e.args.get("columns")
+            if columns:
+                emits = self.expressions(sqls=columns)
+                sql = f"{sql} EMITS ({emits})"
+            return sql

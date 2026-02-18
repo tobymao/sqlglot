@@ -791,11 +791,11 @@ DOUBLE;
 PERCENTILE(3, array(0.2, 0.3));
 ARRAY<DOUBLE>;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: spark2, spark, databricks
 PERCENTILE(3.1, 0.2);
 DOUBLE;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: spark2, spark, databricks
 PERCENTILE(3.1, array(0.2, 0.3));
 ARRAY<DOUBLE>;
 

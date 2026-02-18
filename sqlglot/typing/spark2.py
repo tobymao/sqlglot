@@ -65,8 +65,13 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Substring,
         }
     },
-    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
     exp.AddMonths: {"returns": exp.DataType.Type.DATE},
+    exp.ApproxQuantile: {
+        "annotator": lambda self, e: self._annotate_by_args(
+            e, "this", array=e.args["quantile"].is_type(exp.DataType.Type.ARRAY)
+        )
+    },
+    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
             self, e, "expressions", target_type=exp.DataType.Type.TEXT

@@ -767,6 +767,78 @@ ARRAY<STRING>;
 ARRAY_INTERSECT(array(1, 2, 3), array(1, 3, 5));
 ARRAY<INT>;
 
+# dialect: hive
+QUANTILE(3, 0.2);
+DOUBLE;
+
+# dialect: hive
+QUANTILE(3, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: hive
+QUANTILE(3.1, 0.2);
+DOUBLE;
+
+# dialect: hive
+QUANTILE(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: hive
+PERCENTILE_APPROX(3, 0.2);
+DOUBLE;
+
+# dialect: hive
+PERCENTILE_APPROX(3, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: hive
+PERCENTILE_APPROX(3.1, 0.2);
+DOUBLE;
+
+# dialect: hive
+PERCENTILE_APPROX(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3, 0.2);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3.1, 0.2);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3.1, 0.2);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3, 0.2);
+INT;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3, array(0.2, 0.3));
+ARRAY<INT>;
+
+# dialect: spark2, spark, databricks
+APPROX_PERCENTILE(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+APPROX_PERCENTILE(3, array(0.2, 0.3));
+ARRAY<INT>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

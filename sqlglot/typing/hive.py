@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA
 
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -47,11 +48,13 @@ EXPRESSION_METADATA = {
             exp.Second,
         }
     },
+    exp.ApproxQuantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
     exp.ArrayIntersect: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
+    exp.Quantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
     exp.RegexpSplit: {"returns": exp.DataType.build("ARRAY<STRING>")},
     exp.Reverse: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

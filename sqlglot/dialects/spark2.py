@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import build_trim
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -148,6 +148,11 @@ class Spark2(Hive):
             "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DOUBLE": _build_as_cast("double"),
+            "ELEMENT_AT": lambda args: exp.Bracket(
+                this=seq_get(args, 0),
+                expressions=ensure_list(seq_get(args, 1)),
+                offset=1,
+            ),
             "FLOAT": _build_as_cast("float"),
             "FORMAT_STRING": exp.Format.from_arg_list,
             "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(

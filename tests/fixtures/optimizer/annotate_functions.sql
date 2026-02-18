@@ -831,6 +831,26 @@ INT;
 BIT_OR(tbl.bigint_col);
 BIGINT;
 
+# dialect: spark2, spark, databricks
+ELEMENT_AT(ARRAY(1, 2, 3), 1);
+INT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(ARRAY('1', '2','3'), 1);
+VARCHAR;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(ARRAY(1, 2, 3), 1);
+INT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(MAP('a', 1, 'b', 2,'c', 3), 'b');
+INT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(MAP('a', 'k1', 'b', 'k2', 'c', 'k3'), 'b');
+STRING;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

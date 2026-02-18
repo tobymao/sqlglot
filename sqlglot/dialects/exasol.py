@@ -478,7 +478,6 @@ class Exasol(Dialect):
             exp.CurrentSchema: lambda *_: "CURRENT_SCHEMA",
             exp.DateDiff: _date_diff_sql,
             exp.DateAdd: _add_date_sql,
-            exp.JSONExtract: lambda self, e: self.jsonextract_sql(e),
             exp.TsOrDsAdd: _add_date_sql,
             exp.DateSub: _add_date_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV

@@ -1962,12 +1962,15 @@ class Parser(metaclass=_Parser):
         return self._prev and self._curr and self._prev.end + 1 == self._curr.start
 
     def _advance(self, times: int = 1) -> None:
-        self._index += times
-        self._curr = seq_get(self._tokens, self._index)
-        self._next = seq_get(self._tokens, self._index + 1)
+        index = self._index + times
+        self._index = index
+        tokens = self._tokens
+        size = len(tokens)
+        self._curr = tokens[index] if index < size else None
+        self._next = tokens[index + 1] if index + 1 < size else None
 
-        if self._index > 0:
-            self._prev = self._tokens[self._index - 1]
+        if index > 0:
+            self._prev = tokens[index - 1]
             self._prev_comments = self._prev.comments
         else:
             self._prev = None

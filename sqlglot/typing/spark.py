@@ -32,6 +32,7 @@ EXPRESSION_METADATA = {
             exp.ArrayCompact,
             exp.ArrayInsert,
             exp.BitwiseOrAgg,
+            exp.BitwiseAndAgg,
             exp.Overlay,
         }
     },

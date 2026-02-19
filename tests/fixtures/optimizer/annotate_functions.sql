@@ -847,6 +847,14 @@ INT;
 ELEMENT_AT(MAP('a', 'k1', 'b', 'k2', 'c', 'k3'), 'b');
 STRING;
 
+# dialect: spark, databricks
+BIT_AND(tbl.int_col);
+INT;
+
+# dialect: spark, databricks
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

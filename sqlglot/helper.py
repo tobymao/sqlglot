@@ -36,15 +36,6 @@ class AutoName(Enum):
         return name
 
 
-class classproperty(property):
-    """
-    Similar to a normal property but works for class methods
-    """
-
-    def __get__(self, obj: t.Any, owner: t.Any = None) -> t.Any:
-        return classmethod(self.fget).__get__(None, owner)()  # type: ignore
-
-
 def suggest_closest_match_and_fail(
     kind: str,
     word: str,

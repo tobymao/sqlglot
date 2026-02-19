@@ -47,6 +47,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
         for expr_type in {
             exp.All,
             exp.Any,
+            exp.ArrayContains,
             exp.Between,
             exp.Boolean,
             exp.Contains,
@@ -221,6 +222,7 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Initcap,
             exp.Lower,
             exp.MD5,
+            exp.Monthname,
             exp.SHA,
             exp.SHA2,
             exp.Substring,

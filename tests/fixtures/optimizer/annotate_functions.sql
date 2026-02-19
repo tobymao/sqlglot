@@ -79,6 +79,9 @@ ARRAY<STRING>;
 CURRENT_SCHEMA();
 VARCHAR;
 
+MONTHNAME(tbl.date_col);
+VARCHAR;
+
 CHR(65);
 VARCHAR;
 
@@ -180,6 +183,9 @@ BINARY;
 # dialect: snowflake
 TO_BINARY('test', 'HEX');
 BINARY;
+
+ARRAY_CONTAINS(tbl.array_col, '1');
+BOOLEAN;
 
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
@@ -760,6 +766,102 @@ ARRAY<STRING>;
 # dialect: hive, spark2, spark, databricks
 ARRAY_INTERSECT(array(1, 2, 3), array(1, 3, 5));
 ARRAY<INT>;
+
+# dialect: hive
+PERCENTILE_APPROX(3, 0.2);
+DOUBLE;
+
+# dialect: hive
+PERCENTILE_APPROX(3, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: hive
+PERCENTILE_APPROX(3.1, 0.2);
+DOUBLE;
+
+# dialect: hive
+PERCENTILE_APPROX(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE(3, 0.2);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE(3, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3.1, 0.2);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+PERCENTILE(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3.1, 0.2);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3, 0.2);
+INT;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+PERCENTILE_APPROX(3, array(0.2, 0.3));
+ARRAY<INT>;
+
+# dialect: spark2, spark, databricks
+APPROX_PERCENTILE(3.1, array(0.2, 0.3));
+ARRAY<DOUBLE>;
+
+# dialect: spark2, spark, databricks
+APPROX_PERCENTILE(3, array(0.2, 0.3));
+ARRAY<INT>;
+
+# dialect: spark, databricks
+BIT_OR(tbl.int_col);
+INT;
+
+# dialect: spark, databricks
+BIT_OR(tbl.bigint_col);
+BIGINT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(ARRAY(1, 2, 3), 1);
+INT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(ARRAY('1', '2','3'), 1);
+STRING;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(MAP('a', 1, 'b', 2,'c', 3), 'b');
+INT;
+
+# dialect: spark2, spark, databricks
+ELEMENT_AT(MAP('a', 'k1', 'b', 'k2', 'c', 'k3'), 'b');
+STRING;
+
+# dialect: spark, databricks
+BIT_AND(tbl.int_col);
+INT;
+
+# dialect: spark, databricks
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
+# dialect: spark, databricks
+BIT_XOR(tbl.int_col);
+INT;
+
+# dialect: spark, databricks
+BIT_XOR(tbl.bigint_col);
+BIGINT;
 
 --------------------------------------
 -- BigQuery

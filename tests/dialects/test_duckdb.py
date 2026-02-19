@@ -828,7 +828,10 @@ class TestDuckDB(Validator):
             "SELECT ARRAY_LENGTH([0], 1) AS x",
             write={"duckdb": "SELECT ARRAY_LENGTH([0], 1) AS x"},
         )
-        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, modifiers)")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement)")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'g')")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'gi')")
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'ims')")
 
         self.validate_identity(
             "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table"
@@ -935,6 +938,8 @@ class TestDuckDB(Validator):
                 "spark": "ARRAY_SUM(ARRAY(1, 2))",
             },
         )
+        self.validate_identity("SELECT LIST_MAX(values) FROM table1")
+        self.validate_identity("SELECT LIST_MIN(values) FROM table1")
         self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
@@ -1424,6 +1429,13 @@ class TestDuckDB(Validator):
             "CASE WHEN NULL > 0 THEN ((NULL - 1) // 32768) + 1 ELSE NULL // 32768 END",
             read={
                 "snowflake": "BITMAP_BUCKET_NUMBER(NULL)",
+            },
+        )
+
+        self.validate_all(
+            "ARRAY_CONTAINS(MAP_KEYS(CAST({'k1': 'v1', 'k2': 'v2', 'k3': 'v3'} AS MAP(TEXT, TEXT))), 'k1')",
+            read={
+                "snowflake": "MAP_CONTAINS_KEY('k1', {'k1': 'v1', 'k2': 'v2', 'k3': 'v3'}::MAP(VARCHAR, VARCHAR))",
             },
         )
 

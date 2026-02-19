@@ -4994,7 +4994,10 @@ class DataType(Expression):
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
 
-        return DataType(**{**data_type_exp.args, **kwargs})
+        if kwargs:
+            for k, v in kwargs.items():
+                data_type_exp.set(k, v)
+        return data_type_exp
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """
@@ -6197,6 +6200,10 @@ class ArrayIntersect(Func):
     _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
 
 
+class ArrayExcept(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class StPoint(Func):
     arg_types = {"this": True, "expression": True, "null": False}
     _sql_names = ["ST_POINT", "ST_MAKEPOINT"]
@@ -6231,6 +6238,18 @@ class ArraySort(Func):
 
 class ArraySum(Func):
     arg_types = {"this": True, "expression": False}
+
+
+class ArrayDistinct(Func):
+    arg_types = {"this": True, "check_null": False}
+
+
+class ArrayMax(Func):
+    pass
+
+
+class ArrayMin(Func):
+    pass
 
 
 class ArrayUnionAgg(AggFunc):
@@ -8630,8 +8649,6 @@ class ExecuteSql(Execute):
 
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
-
-JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, {JSONPathPart})
 
 PERCENTILES = (PercentileCont, PercentileDisc)
 

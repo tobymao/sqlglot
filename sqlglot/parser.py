@@ -3714,7 +3714,11 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
+            comments = self._prev_comments
             this = self._parse_wrapped_select(table=table)
+
+            if this:
+                this.add_comments(comments, prepend=True)
 
             # We return early here so that the UNION isn't attached to the subquery by the
             # following call to _parse_set_operations, but instead becomes the parent node

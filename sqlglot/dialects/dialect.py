@@ -13,6 +13,7 @@ from sqlglot.dialects import DIALECT_MODULE_NAMES
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
 from sqlglot.helper import (
+    apply_index_offset,
     AutoName,
     flatten,
     is_int,
@@ -1215,6 +1216,19 @@ DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expression], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
+
+
+def bracket_to_element_at_sql(self: Generator, expression: exp.Bracket) -> str:
+    index = seq_get(
+        apply_index_offset(
+            expression.this,
+            expression.expressions,
+            1 - expression.args.get("offset", 0),
+            dialect=self.dialect,
+        ),
+        0,
+    )
+    return self.func("ELEMENT_AT", expression.this, index)
 
 
 @unsupported_args("accuracy")

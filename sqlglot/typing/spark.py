@@ -23,7 +23,6 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.Collation,
             exp.CurrentTimezone,
-            exp.Monthname,
             exp.Randstr,
         }
     },
@@ -32,6 +31,9 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.ArrayCompact,
             exp.ArrayInsert,
+            exp.BitwiseAndAgg,
+            exp.BitwiseOrAgg,
+            exp.BitwiseXorAgg,
             exp.Overlay,
         }
     },

@@ -356,7 +356,10 @@ class ClickHouse(Dialect):
                 for unit in TIMESTAMP_TRUNC_UNITS
             },
             "ANY": exp.AnyValue.from_arg_list,
+            "ARRAYCOMPACT": exp.ArrayCompact.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
+            "ARRAYMAX": exp.ArrayMax.from_arg_list,
+            "ARRAYMIN": exp.ArrayMin.from_arg_list,
             "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
             "ARRAYSLICE": exp.ArraySlice.from_arg_list,
             "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
@@ -404,6 +407,7 @@ class ClickHouse(Dialect):
             "EDITDISTANCE": exp.Levenshtein.from_arg_list,
             "JAROWINKLERSIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,
+            "UTCTIMESTAMP": exp.UtcTimestamp.from_arg_list,
         }
         FUNCTIONS.pop("TRANSFORM")
         FUNCTIONS.pop("APPROX_TOP_SUM")
@@ -1160,6 +1164,8 @@ class ClickHouse(Dialect):
             exp.ArrayReverse: rename_func("arrayReverse"),
             exp.ArraySlice: rename_func("arraySlice"),
             exp.ArraySum: rename_func("arraySum"),
+            exp.ArrayMax: rename_func("arrayMax"),
+            exp.ArrayMin: rename_func("arrayMin"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
             exp.Array: inline_array_sql,

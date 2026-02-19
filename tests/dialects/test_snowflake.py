@@ -114,6 +114,21 @@ class TestSnowflake(Validator):
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => ARRAY_CONSTRUCT(1, 2, 3, 5)))",
             "SELECT BITMAP_COUNT(BITMAP_CONSTRUCT_AGG(value)) FROM TABLE(FLATTEN(INPUT => [1, 2, 3, 5]))",
         )
+        self.validate_all(
+            "SELECT ARRAY_MAX([1, 2, 3])",
+            write={
+                "duckdb": "SELECT LIST_MAX([1, 2, 3])",
+                "snowflake": "SELECT ARRAY_MAX([1, 2, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_MIN([1, 2, 3])",
+            write={
+                "duckdb": "SELECT LIST_MIN([1, 2, 3])",
+                "snowflake": "SELECT ARRAY_MIN([1, 2, 3])",
+            },
+        )
+
         self.validate_identity("SELECT BOOLAND(1, -2)")
         self.validate_identity("SELECT BOOLXOR(2, 0)")
         self.validate_identity("SELECT BOOLOR(1, 0)")
@@ -1337,6 +1352,22 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
                 "duckdb": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+            write={
+                "snowflake": "SELECT LAST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+                "duckdb": "SELECT LAST_VALUE(is_deleted RESPECT NULLS) OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+            write={
+                "snowflake": "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
+                "duckdb": "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
             },
         )
 
@@ -2827,6 +2858,24 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT ARRAY_CONTAINS(x, [1, NULL, 3])",
                 "duckdb": "SELECT CASE WHEN x IS NULL THEN NULLIF(ARRAY_LENGTH([1, NULL, 3]) <> LIST_COUNT([1, NULL, 3]), FALSE) ELSE ARRAY_CONTAINS([1, NULL, 3], x) END",
+            },
+        )
+
+        self.validate_identity("SELECT ARRAY_DISTINCT(['A', 'B', 'A'])")
+
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(['A', NULL, 'B', NULL]) <> LIST_COUNT(['A', NULL, 'B', NULL]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(['A', NULL, 'B', NULL], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(['A', NULL, 'B', NULL]) END",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH([1, 2, 2, 3, 1]) <> LIST_COUNT([1, 2, 2, 3, 1]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER([1, 2, 2, 3, 1], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT([1, 2, 2, 3, 1]) END",
             },
         )
 
@@ -4387,7 +4436,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             ast.sql()  # check that this doesn't raise
 
     @mock.patch("sqlglot.generator.logger")
-    def test_regexp_substr(self, logger):
+    def test_regexp_functions(self, logger):
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
             write={
@@ -4586,6 +4635,45 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
+        self.validate_identity("SELECT REGEXP_INSTR('abc', 'a')")
+        self.validate_identity("SELECT REGEXP_INSTR('abc', 'a', 1, 1, 0, 'i')")
+
+        # Basic transpilation
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
+            },
+        )
+
+        # With position offset
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 5)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 5)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 5 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(SUBSTRING(subject, 5), pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 5 - 1 END",
+            },
+        )
+
+        # With occurrence
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 2 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 2 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:2], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:2 - 1], x -> LENGTH(x))), 0) + 0 END",
+            },
+        )
+
+        # With flags
+        self.validate_all(
+            "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
+            write={
+                "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 1 IS NULL OR 0 IS NULL OR 'im' IS NULL THEN NULL WHEN '(?im)' || pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, '(?im)' || pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
+            },
+        )
+
     @mock.patch("sqlglot.generator.logger")
     def test_regexp_replace(self, logger):
         self.validate_all(
@@ -4647,6 +4735,35 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'c')",
                 "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'cg')",
                 "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'cg')",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "postgres": "REGEXP_REPLACE(subject, pattern, replacement, 1, 1)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 3, 0)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 3, 0)",
+                "duckdb": "SUBSTRING(subject, 1, 2) || REGEXP_REPLACE(SUBSTRING(subject, 3), pattern, replacement, 'g')",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 3, 1)",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 3, 1)",
+                "duckdb": "SUBSTRING(subject, 1, 2) || REGEXP_REPLACE(SUBSTRING(subject, 3), pattern, replacement)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'i')",
+            write={
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, 1, 0, 'i')",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, 'ig')",
             },
         )
 
@@ -6050,6 +6167,15 @@ FROM SEMANTIC_VIEW(
             write={
                 "snowflake": "SELECT ARRAY_FLATTEN([[]])",
                 "duckdb": "SELECT FLATTEN([[]])",
+            },
+        )
+
+    def test_array_except(self):
+        self.validate_all(
+            "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
+            write={
+                "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
             },
         )
 

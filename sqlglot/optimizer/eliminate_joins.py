@@ -1,9 +1,16 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
-def eliminate_joins(expression):
+
+def eliminate_joins(expression: E) -> E:
     """
     Remove unused joins from an expression.
 
@@ -17,18 +24,21 @@ def eliminate_joins(expression):
         'SELECT x.a FROM x'
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression: expression to optimize
+
     Returns:
-        sqlglot.Expression: optimized expression
+        The optimized expression
     """
     for scope in traverse_scope(expression):
+        joins = scope.expression.args.get("joins", [])
+        if not joins:
+            continue
+
         # If any columns in this scope aren't qualified, it's hard to determine if a join isn't used.
         # It's probably possible to infer this from the outputs of derived tables.
         # But for now, let's just skip this rule.
         if scope.unqualified_columns:
             continue
-
-        joins = scope.expression.args.get("joins", [])
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
@@ -39,6 +49,7 @@ def eliminate_joins(expression):
             if _should_eliminate_join(scope, join, alias):
                 join.pop()
                 scope.remove_source(alias)
+
     return expression
 
 

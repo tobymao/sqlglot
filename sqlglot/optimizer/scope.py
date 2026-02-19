@@ -139,7 +139,6 @@ class Scope:
                 continue
 
             node_type = type(node)
-            parent_type = type(node.parent)
 
             if node_type is exp.Dot and node.is_star:
                 self._stars.append(node)
@@ -150,9 +149,9 @@ class Scope:
                     self._stars.append(node)
                 else:
                     self._raw_columns.append(node)
-            elif node_type is exp.Table and parent_type is not exp.JoinHint:
+            elif node_type is exp.Table and type(node.parent) is not exp.JoinHint:
                 parent = node.parent
-                if parent_type is exp.Join and parent.is_semi_or_anti_join:
+                if type(parent) is exp.Join and parent.is_semi_or_anti_join:
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)

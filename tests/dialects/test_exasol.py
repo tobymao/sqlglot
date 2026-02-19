@@ -21,6 +21,13 @@ class TestExasol(Validator):
         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
 
+    def test_exasol_keywords(self):
+        keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]
+
+        for keyword in keywords:
+            with self.subTest(keyword=keyword):
+                self.validate_identity(f"SELECT 1 AS {keyword}", f'SELECT 1 AS "{keyword}"')
+
     def test_qualify_unscoped_star(self):
         self.validate_all(
             "SELECT TEST.*, 1 FROM TEST",
@@ -829,3 +836,13 @@ class TestExasol(Validator):
                     exasol_sql,
                     write={"exasol": exasol_sql, "databricks": dbx_sql},
                 )
+
+    def test_json(self):
+        self.validate_identity("""SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""")
+        self.validate_all(
+            """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+            write={
+                "exasol": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+                "trino": """SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""",
+            },
+        )

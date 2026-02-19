@@ -38,7 +38,6 @@ from sqlglot.dialects.dialect import (
     no_time_sql,
     no_timestamp_sql,
     pivot_column_names,
-    regexp_replace_global_modifier,
     rename_func,
     remove_from_array_using_filter,
     strposition_sql,
@@ -1629,6 +1628,8 @@ class DuckDB(Dialect):
             "LIST_FILTER": exp.ArrayFilter.from_arg_list,
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+            "LIST_MAX": exp.ArrayMax.from_arg_list,
+            "LIST_MIN": exp.ArrayMin.from_arg_list,
             "LIST_PREPEND": _build_array_prepend,
             "LIST_REVERSE_SORT": _build_sort_array_desc,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -1925,6 +1926,8 @@ class DuckDB(Dialect):
             exp.ArraySort: _array_sort_sql,
             exp.ArrayPrepend: array_append_sql("LIST_PREPEND", swap_params=True),
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.ArrayMax: rename_func("LIST_MAX"),
+            exp.ArrayMin: rename_func("LIST_MIN"),
             exp.ArrayUniqueAgg: lambda self, e: self.func(
                 "LIST", exp.Distinct(expressions=[e.this])
             ),
@@ -2034,13 +2037,6 @@ class DuckDB(Dialect):
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
             exp.PreviousDay: _day_navigation_sql,
-            exp.RegexpReplace: lambda self, e: self.func(
-                "REGEXP_REPLACE",
-                e.this,
-                e.expression,
-                e.args.get("replacement"),
-                regexp_replace_global_modifier(e),
-            ),
             exp.RegexpILike: lambda self, e: self.func(
                 "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
             ),
@@ -2460,6 +2456,27 @@ class DuckDB(Dialect):
             CASE WHEN :null_check THEN NULL
             WHEN :all_empty_check THEN [:empty_struct]
             ELSE LIST_TRANSFORM(RANGE(0, :max_len), __i -> :transform_struct)
+            END
+            """,
+        )
+
+        # ARRAY_EXCEPT with bag semantics: N - M occurrences via cumulative counting
+        # 0-based indices in template (SQLGlot internal), converted to 1-based for DuckDB
+        # IS NOT DISTINCT FROM for NULL-safe element comparison
+        ARRAY_EXCEPT_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :source IS NULL OR :exclude IS NULL THEN NULL
+                ELSE LIST_TRANSFORM(
+                    LIST_FILTER(
+                        LIST_ZIP(:source, GENERATE_SERIES(1, LEN(:source))),
+                        pair -> (
+                            LEN(LIST_FILTER(:source[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
+                            > LEN(LIST_FILTER(:exclude, e -> e IS NOT DISTINCT FROM pair[0]))
+                        )
+                    ),
+                    pair -> pair[0]
+                )
             END
             """,
         )
@@ -3273,6 +3290,57 @@ class DuckDB(Dialect):
 
             return self.sql(result)
 
+        def regexpreplace_sql(self, expression: exp.RegexpReplace) -> str:
+            subject = expression.this
+            pattern = expression.expression
+            replacement = expression.args.get("replacement") or exp.Literal.string("")
+            position = expression.args.get("position")
+            occurrence = expression.args.get("occurrence")
+            modifiers = expression.args.get("modifiers")
+
+            validated_flags = self._validate_regexp_flags(modifiers, supported_flags="cimsg") or ""
+
+            # Handle occurrence (only literals supported)
+            if occurrence and not occurrence.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal occurrence")
+            else:
+                occurrence = occurrence.to_py() if occurrence and occurrence.is_int else 0
+                if occurrence > 1:
+                    self.unsupported(f"REGEXP_REPLACE occurrence={occurrence} not supported")
+                # flag duckdb to do either all or none, single_replace check is for duckdb round trip
+                elif (
+                    occurrence == 0
+                    and "g" not in validated_flags
+                    and not expression.args.get("single_replace")
+                ):
+                    validated_flags += "g"
+
+            # Handle position (only literals supported)
+            prefix = None
+            if position and not position.is_int:
+                self.unsupported("REGEXP_REPLACE with non-literal position")
+            elif position and position.is_int and position.to_py() > 1:
+                pos = position.to_py()
+                prefix = exp.Substring(
+                    this=subject, start=exp.Literal.number(1), length=exp.Literal.number(pos - 1)
+                )
+                subject = exp.Substring(this=subject, start=exp.Literal.number(pos))
+
+            result: exp.Expression = exp.Anonymous(
+                this="REGEXP_REPLACE",
+                expressions=[
+                    subject,
+                    pattern,
+                    replacement,
+                    exp.Literal.string(validated_flags) if validated_flags else None,
+                ],
+            )
+
+            if prefix:
+                result = exp.Concat(expressions=[prefix, result])
+
+            return self.sql(result)
+
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:
             this = expression.this
             pattern = expression.expression
@@ -3366,6 +3434,33 @@ class DuckDB(Dialect):
                 self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr
             )
             return f"({self.sql(result)})"
+
+        def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+            arr = expression.this
+            func = self.func("LIST_DISTINCT", arr)
+
+            if expression.args.get("check_null"):
+                add_null_to_array = exp.func(
+                    "LIST_APPEND", exp.func("LIST_DISTINCT", exp.ArrayCompact(this=arr)), exp.Null()
+                )
+                return self.sql(
+                    exp.If(
+                        this=exp.NEQ(
+                            this=exp.ArraySize(this=arr), expression=exp.func("LIST_COUNT", arr)
+                        ),
+                        true=add_null_to_array,
+                        false=func,
+                    )
+                )
+
+            return func
+
+        def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
+            source = expression.this
+            exclude = expression.expression
+
+            replacements = {"source": source, "exclude": exclude}
+            return self.sql(exp.replace_placeholders(self.ARRAY_EXCEPT_TEMPLATE, **replacements))
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
@@ -3514,6 +3609,11 @@ class DuckDB(Dialect):
             )
             return self.sql(result)
 
+        def mapcontainskey_sql(self, expression: exp.MapContainsKey) -> str:
+            return self.func(
+                "ARRAY_CONTAINS", exp.func("MAP_KEYS", expression.args["key"]), expression.this
+            )
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",
@@ -3656,6 +3756,90 @@ class DuckDB(Dialect):
 
         def regexpextractall_sql(self, expression: exp.RegexpExtractAll) -> str:
             return self._regexp_extract_sql(expression)
+
+        def regexpinstr_sql(self, expression: exp.RegexpInstr) -> str:
+            this = expression.this
+            pattern = expression.expression
+            position = expression.args.get("position")
+            orig_occ = expression.args.get("occurrence")
+            occurrence = orig_occ or exp.Literal.number(1)
+            option = expression.args.get("option")
+            parameters = expression.args.get("parameters")
+
+            validated_flags = self._validate_regexp_flags(parameters, supported_flags="ims")
+            if validated_flags:
+                pattern = exp.Concat(
+                    expressions=[exp.Literal.string(f"(?{validated_flags})"), pattern]
+                )
+
+            # Handle starting position offset
+            pos_offset: exp.Expression = exp.Literal.number(0)
+            if position and (not position.is_int or position.to_py() > 1):
+                this = exp.Substring(this=this, start=position)
+                pos_offset = position - exp.Literal.number(1)
+
+            # Helper: LIST_SUM(LIST_TRANSFORM(list[1:end], x -> LENGTH(x)))
+            def sum_lengths(func_name: str, end: exp.Expression) -> exp.Expression:
+                lst = exp.Bracket(
+                    this=exp.Anonymous(this=func_name, expressions=[this, pattern]),
+                    expressions=[exp.Slice(this=exp.Literal.number(1), expression=end)],
+                    offset=1,
+                )
+                transform = exp.Anonymous(
+                    this="LIST_TRANSFORM",
+                    expressions=[
+                        lst,
+                        exp.Lambda(
+                            this=exp.Length(this=exp.to_identifier("x")),
+                            expressions=[exp.to_identifier("x")],
+                        ),
+                    ],
+                )
+                return exp.Coalesce(
+                    this=exp.Anonymous(this="LIST_SUM", expressions=[transform]),
+                    expressions=[exp.Literal.number(0)],
+                )
+
+            # Position = 1 + sum(split_lengths[1:occ]) + sum(match_lengths[1:occ-1]) + offset
+            base_pos: exp.Expression = (
+                exp.Literal.number(1)
+                + sum_lengths("STRING_SPLIT_REGEX", occurrence)
+                + sum_lengths("REGEXP_EXTRACT_ALL", occurrence - exp.Literal.number(1))
+                + pos_offset
+            )
+
+            # option=1: add match length for end position
+            if option and option.is_int and option.to_py() == 1:
+                match_at_occ = exp.Bracket(
+                    this=exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern]),
+                    expressions=[occurrence],
+                    offset=1,
+                )
+                base_pos = base_pos + exp.Coalesce(
+                    this=exp.Length(this=match_at_occ), expressions=[exp.Literal.number(0)]
+                )
+
+            # NULL checks for all provided arguments
+            # .copy() is used strictly because .is_() alters the node's parent pointer, mutating the parsed AST
+            null_args = [
+                expression.this,
+                expression.expression,
+                position,
+                orig_occ,
+                option,
+                parameters,
+            ]
+            null_checks = [arg.copy().is_(exp.Null()) for arg in null_args if arg]
+
+            matches = exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern])
+
+            return self.sql(
+                exp.case()
+                .when(exp.or_(*null_checks), exp.Null())
+                .when(pattern.copy().eq(exp.Literal.string("")), exp.Literal.number(0))
+                .when(exp.Length(this=matches) < occurrence, exp.Literal.number(0))
+                .else_(base_pos)
+            )
 
         @unsupported_args("culture")
         def numbertostr_sql(self, expression: exp.NumberToStr) -> str:

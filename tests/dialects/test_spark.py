@@ -390,6 +390,19 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            read={
+                "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "spark": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            },
+            write={
+                "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            },
+        )
+
+        self.validate_all(
             "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.costs) c",
             write={
                 "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c",

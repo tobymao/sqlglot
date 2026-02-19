@@ -1,11 +1,19 @@
+from __future__ import annotations
+
+import typing as t
+
 from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+    from sqlglot.dialects.dialect import DialectType
 
-def pushdown_predicates(expression, dialect=None):
+
+def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
     """
     Rewrite sqlglot AST to pushdown predicates in FROMS and JOINS
 

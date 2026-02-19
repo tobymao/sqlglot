@@ -600,6 +600,41 @@ FROM tbl1""",
             pretty=True,
         )
 
+        self.validate(
+            """
+            WITH x /* a */ AS (
+              SELECT 2 AS n /* b */
+              FROM (/* c */ SELECT /* c2 */ a /* d */ FROM t) AS x
+            )
+            SELECT * FROM x /* e */
+            WHERE n >= (/* f */ SELECT MAX(x) FROM t)
+            ORDER BY n /* g */
+            -- h
+            """,
+            """WITH x /* a */ AS (
+  SELECT
+    2 AS n /* b */
+  FROM (
+    /* c */ /* c2 */
+    SELECT
+      a /* d */
+    FROM t
+  ) AS x
+)
+SELECT
+  *
+FROM x /* e */
+WHERE
+  n >= (
+    SELECT
+      MAX(x)
+    FROM t
+  ) /* f */
+ORDER BY
+  n /* g */ /* h */""",
+            pretty=True,
+        )
+
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")
         self.validate("VARCHAR 'x' y", "CAST('x' AS VARCHAR) AS y")

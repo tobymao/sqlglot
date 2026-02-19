@@ -996,21 +996,19 @@ class Generator(metaclass=_Generator):
 
         transform = self.TRANSFORMS.get(expression.__class__)
 
-        if callable(transform):
+        if transform:
             sql = transform(self, expression)
-        elif isinstance(expression, exp.Expression):
-            exp_handler_name = f"{expression.key}_sql"
+        else:
+            exp_handler_name = expression.key + "_sql"
 
-            if hasattr(self, exp_handler_name):
-                sql = getattr(self, exp_handler_name)(expression)
+            if handler := getattr(self, exp_handler_name, None):
+                sql = handler(expression)
             elif isinstance(expression, exp.Func):
                 sql = self.function_fallback_sql(expression)
             elif isinstance(expression, exp.Property):
                 sql = self.property_sql(expression)
             else:
                 raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
-        else:
-            raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
@@ -1096,7 +1094,7 @@ class Generator(metaclass=_Generator):
 
         return f"AS {this}{persisted}"
 
-    def autoincrementcolumnconstraint_sql(self, _) -> str:
+    def autoincrementcolumnconstraint_sql(self, _: exp.AutoIncrementColumnConstraint) -> str:
         return self.token_sql(TokenType.AUTO_INCREMENT)
 
     def compresscolumnconstraint_sql(self, expression: exp.CompressColumnConstraint) -> str:
@@ -1786,10 +1784,11 @@ class Generator(metaclass=_Generator):
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
         lower = text.lower()
-        text = lower if self.normalize and not expression.quoted else text
+        quoted = expression.quoted
+        text = lower if self.normalize and not quoted else text
         text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
-            expression.quoted
+            quoted
             or self.dialect.can_quote(expression, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
@@ -5042,9 +5041,6 @@ class Generator(metaclass=_Generator):
         return f"JSON{this}{with_sql}{unique_sql}"
 
     def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
-        def _generate_on_options(arg: t.Any) -> str:
-            return arg if isinstance(arg, str) else f"DEFAULT {self.sql(arg)}"
-
         path = self.sql(expression, "path")
         returning = self.sql(expression, "returning")
         returning = f" RETURNING {returning}" if returning else ""
@@ -5214,14 +5210,14 @@ class Generator(metaclass=_Generator):
             grant_option_prefix="GRANT OPTION FOR ",
         )
 
-    def grantprivilege_sql(self, expression: exp.GrantPrivilege):
+    def grantprivilege_sql(self, expression: exp.GrantPrivilege) -> str:
         this = self.sql(expression, "this")
         columns = self.expressions(expression, flat=True)
         columns = f"({columns})" if columns else ""
 
         return f"{this}{columns}"
 
-    def grantprincipal_sql(self, expression: exp.GrantPrincipal):
+    def grantprincipal_sql(self, expression: exp.GrantPrincipal) -> str:
         this = self.sql(expression, "this")
 
         kind = self.sql(expression, "kind")
@@ -5229,14 +5225,14 @@ class Generator(metaclass=_Generator):
 
         return f"{kind}{this}"
 
-    def columns_sql(self, expression: exp.Columns):
+    def columns_sql(self, expression: exp.Columns) -> str:
         func = self.function_fallback_sql(expression)
         if expression.args.get("unpack"):
             func = f"*{func}"
 
         return func
 
-    def overlay_sql(self, expression: exp.Overlay):
+    def overlay_sql(self, expression: exp.Overlay) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         from_sql = self.sql(expression, "from_")
@@ -5264,7 +5260,7 @@ class Generator(metaclass=_Generator):
 
         return self.sql(exp.cast(this, exp.DataType.Type.VARCHAR))
 
-    def median_sql(self, expression: exp.Median):
+    def median_sql(self, expression: exp.Median) -> str:
         if not self.SUPPORTS_MEDIAN:
             return self.sql(
                 exp.PercentileCont(this=expression.this, expression=exp.Literal.number(0.5))
@@ -5530,7 +5526,7 @@ class Generator(metaclass=_Generator):
         else:
             return f"GET {target} {this}{props_sql}"
 
-    def translatecharacters_sql(self, expression: exp.TranslateCharacters):
+    def translatecharacters_sql(self, expression: exp.TranslateCharacters) -> str:
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         with_error = " WITH ERROR" if expression.args.get("with_error") else ""

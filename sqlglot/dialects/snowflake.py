@@ -833,6 +833,10 @@ class Snowflake(Dialect):
                 ensure_variant=False,
                 check_null=True,
             ),
+            "ARRAY_DISTINCT": lambda args: exp.ArrayDistinct(
+                this=seq_get(args, 0),
+                check_null=True,
+            ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
                 start=seq_get(args, 0),

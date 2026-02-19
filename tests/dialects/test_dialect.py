@@ -1691,6 +1691,74 @@ class TestDialect(Validator):
         expr = parse_one("ARRAY_CAT(arr1)", dialect="snowflake")
         self.assertEqual(expr.sql("duckdb"), "LIST_CONCAT(arr1)")
 
+        # Test ARRAY_MAX transpilation across dialects
+        self.validate_all(
+            "ARRAY_MAX(x)",
+            read={
+                "athena": "array_max(x)",
+                "clickhouse": "arrayMax(x)",
+                "databricks": "array_max(x)",
+                "duckdb": "list_max(x)",
+                "presto": "array_max(x)",
+                "snowflake": "ARRAY_MAX(x)",
+                "spark": "array_max(x)",
+                "trino": "array_max(x)",
+            },
+            write={
+                "athena": "ARRAY_MAX(x)",
+                "clickhouse": "arrayMax(x)",
+                "databricks": "ARRAY_MAX(x)",
+                "duckdb": "LIST_MAX(x)",
+                "presto": "ARRAY_MAX(x)",
+                "snowflake": "ARRAY_MAX(x)",
+                "spark": "ARRAY_MAX(x)",
+                "trino": "ARRAY_MAX(x)",
+            },
+        )
+
+        # Test ARRAY_MIN transpilation across dialects
+        self.validate_all(
+            "ARRAY_MIN(x)",
+            read={
+                "athena": "array_min(x)",
+                "clickhouse": "arrayMin(x)",
+                "databricks": "array_min(x)",
+                "duckdb": "list_min(x)",
+                "presto": "array_min(x)",
+                "snowflake": "ARRAY_MIN(x)",
+                "spark": "array_min(x)",
+                "trino": "array_min(x)",
+            },
+            write={
+                "athena": "ARRAY_MIN(x)",
+                "clickhouse": "arrayMin(x)",
+                "databricks": "ARRAY_MIN(x)",
+                "duckdb": "LIST_MIN(x)",
+                "presto": "ARRAY_MIN(x)",
+                "snowflake": "ARRAY_MIN(x)",
+                "spark": "ARRAY_MIN(x)",
+                "trino": "ARRAY_MIN(x)",
+            },
+        )
+
+        # Test ARRAY_EXCEPT transpilation across dialects
+        self.validate_all(
+            "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
+            read={
+                "spark": "SELECT array_except(array(1, 2, 3), array(2))",
+                "databricks": "SELECT array_except(array(1, 2, 3), array(2))",
+            },
+            write={
+                "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
+                "spark": "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
+                "databricks": "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
+                "trino": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "presto": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "athena": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

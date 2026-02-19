@@ -22,6 +22,8 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
     dialect = Dialect.get_or_raise(dialect)
 
     def _canonicalize(expression: exp.Expression) -> exp.Expression:
+        if not isinstance(expression, _CANONICALIZE_TYPES):
+            return expression
         expression = add_text_to_concat(expression)
         expression = replace_date_funcs(expression, dialect=dialect)
         expression = coerce_type(expression, dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
@@ -31,6 +33,51 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
         return expression
 
     return exp.replace_tree(expression, _canonicalize)
+
+
+COERCIBLE_DATE_OPS = (
+    exp.Add,
+    exp.Sub,
+    exp.EQ,
+    exp.NEQ,
+    exp.GT,
+    exp.GTE,
+    exp.LT,
+    exp.LTE,
+    exp.NullSafeEQ,
+    exp.NullSafeNEQ,
+)
+
+
+# All expression types that any of the canonicalize functions can act on
+_CANONICALIZE_TYPES = tuple(
+    {
+        # add_text_to_concat
+        exp.Add,
+        # replace_date_funcs
+        exp.Date,
+        exp.TsOrDsToDate,
+        exp.Timestamp,
+        # coerce_type (COERCIBLE_DATE_OPS + Between, Extract, DateAdd, DateSub, DateTrunc, DateDiff)
+        *COERCIBLE_DATE_OPS,
+        exp.Between,
+        exp.Extract,
+        exp.DateAdd,
+        exp.DateSub,
+        exp.DateTrunc,
+        exp.DateDiff,
+        # remove_redundant_casts
+        exp.Cast,
+        # ensure_bools (Connector, Not, If, Where, Having)
+        exp.Connector,
+        exp.Not,
+        exp.If,
+        exp.Where,
+        exp.Having,
+        # remove_ascending_order
+        exp.Ordered,
+    }
+)
 
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
@@ -61,20 +108,6 @@ def replace_date_funcs(node: exp.Expression, dialect: DialectType) -> exp.Expres
         return exp.cast(node.this, to=node.type or exp.DataType.Type.TIMESTAMP)
 
     return node
-
-
-COERCIBLE_DATE_OPS = (
-    exp.Add,
-    exp.Sub,
-    exp.EQ,
-    exp.NEQ,
-    exp.GT,
-    exp.GTE,
-    exp.LT,
-    exp.LTE,
-    exp.NullSafeEQ,
-    exp.NullSafeNEQ,
-)
 
 
 def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -> exp.Expression:

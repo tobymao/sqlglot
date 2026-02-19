@@ -838,7 +838,7 @@ class Snowflake(Dialect):
                 check_null=True,
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
-                # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
+                # ARRAY_GENERATE_RANGE has an exclusive end; we normalize it to be inclusive
                 start=seq_get(args, 0),
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),

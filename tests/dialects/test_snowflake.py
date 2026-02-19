@@ -1276,6 +1276,21 @@ class TestSnowflake(Validator):
                 "presto": "SEQUENCE(0, 3)",
             },
         )
+
+        self.validate_all(
+            "SELECT ARRAY_GENERATE_RANGE(-5, -25, -10)",
+            write={
+                "duckdb": "SELECT RANGE(-5, -25, -10)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(-5, (-25 - 1) + 1, -10)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
+            write={
+                "duckdb": "SELECT RANGE(5, 1, -1)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, (1 - 1) + 1, -1)",
+            },
+        )
         self.validate_all(
             "SELECT DATE_PART('year', TIMESTAMP '2020-01-01')",
             write={

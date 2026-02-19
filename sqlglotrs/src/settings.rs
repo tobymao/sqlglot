@@ -6,7 +6,6 @@ pub type TokenType = u16;
 
 #[derive(Clone, Debug)]
 #[pyclass]
-#[cfg_attr(feature = "profiling", derive(serde::Serialize, serde::Deserialize))]
 pub struct TokenTypeSettings {
     pub bit_string: TokenType,
     pub byte_string: TokenType,
@@ -45,7 +44,7 @@ impl TokenTypeSettings {
         heredoc_string_alternative: TokenType,
         hint: TokenType,
     ) -> Self {
-        let token_type_settings = TokenTypeSettings {
+        TokenTypeSettings {
             bit_string,
             byte_string,
             break_,
@@ -61,31 +60,12 @@ impl TokenTypeSettings {
             var,
             heredoc_string_alternative,
             hint,
-        };
-
-        #[cfg(feature = "profiling")]
-        {
-            token_type_settings.write_json_to_string();
         }
-
-        token_type_settings
-    }
-}
-
-#[cfg(feature = "profiling")]
-impl TokenTypeSettings {
-    pub fn write_json_to_string(&self) {
-        let json = serde_json::to_string(self).unwrap();
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("benches/token_type_settings.json");
-        // Write to file
-        std::fs::write(path, &json).unwrap();
     }
 }
 
 #[derive(Clone, Debug)]
 #[pyclass]
-#[cfg_attr(feature = "profiling", derive(serde::Serialize, serde::Deserialize))]
 pub struct TokenizerSettings {
     pub single_tokens: HashMap<char, TokenType>,
     pub keywords: HashMap<String, TokenType>,
@@ -164,7 +144,7 @@ impl TokenizerSettings {
         let var_single_tokens_native: HashSet<char> =
             var_single_tokens.iter().map(&to_char).collect();
 
-        let tokenizer_settings = TokenizerSettings {
+        TokenizerSettings {
             single_tokens: single_tokens_native,
             keywords,
             numeric_literals,
@@ -186,31 +166,12 @@ impl TokenizerSettings {
             nested_comments,
             hint_start,
             escape_follow_chars: escape_follow_chars_native,
-        };
-
-        #[cfg(feature = "profiling")]
-        {
-            tokenizer_settings.write_json_to_string();
         }
-
-        tokenizer_settings
-    }
-}
-
-#[cfg(feature = "profiling")]
-impl TokenizerSettings {
-    pub fn write_json_to_string(&self) {
-        let json = serde_json::to_string(self).unwrap();
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("benches/tokenizer_settings.json");
-        // Write to file
-        std::fs::write(path, &json).unwrap();
     }
 }
 
 #[derive(Clone, Debug)]
 #[pyclass]
-#[cfg_attr(feature = "profiling", derive(serde::Serialize, serde::Deserialize))]
 pub struct TokenizerDialectSettings {
     pub unescaped_sequences: HashMap<String, String>,
     pub identifiers_can_start_with_digit: bool,
@@ -225,27 +186,10 @@ impl TokenizerDialectSettings {
         identifiers_can_start_with_digit: bool,
         numbers_can_be_underscore_separated: bool,
     ) -> Self {
-        let settings = TokenizerDialectSettings {
+        TokenizerDialectSettings {
             unescaped_sequences,
             identifiers_can_start_with_digit,
             numbers_can_be_underscore_separated,
-        };
-
-        #[cfg(feature = "profiling")]
-        {
-            settings.write_json_to_string();
         }
-
-        settings
-    }
-}
-
-#[cfg(feature = "profiling")]
-impl TokenizerDialectSettings {
-    pub fn write_json_to_string(&self) {
-        let json = serde_json::to_string(self).unwrap();
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("benches/tokenizer_dialect_settings.json");
-        std::fs::write(path, &json).unwrap();
     }
 }

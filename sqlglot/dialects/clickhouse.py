@@ -548,6 +548,10 @@ class ClickHouse(Dialect):
             "ArgMax",
         ]
 
+        # Sorted longest-first so that compound suffixes (e.g. "SimpleState") are matched
+        # before their sub-suffixes (e.g. "State") when resolving multi-combinator functions.
+        AGG_FUNCTIONS_SUFFIXES_SORTED = sorted(AGG_FUNCTIONS_SUFFIXES, key=len, reverse=True)
+
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
             TokenType.AND,
@@ -562,11 +566,56 @@ class ClickHouse(Dialect):
             TokenType.LIKE,
         }
 
-        AGG_FUNC_MAPPING = (
+        # memoized examples of all 0- and 1-suffix aggregate function names
+        AGG_FUNC_MAPPING: t.Mapping[str, t.Tuple[str, str | None]] = (
             lambda functions, suffixes: {
-                f"{f}{sfx}": (f, sfx) for sfx in (suffixes + [""]) for f in functions
+                f"{f}{sfx}": (f, sfx) for sfx in suffixes for f in functions
+            }
+            | {
+                # some function names could (but should not) be interpreted as combined
+                # versions of other function names. For example, `minMap`. To avoid this,
+                # the 0-suffix function dict must be on the RHS of the | operator, above
+                f"{f}": (f, None)
+                for f in functions
             }
         )(AGG_FUNCTIONS, AGG_FUNCTIONS_SUFFIXES)
+
+        @classmethod
+        def _resolve_clickhouse_agg(cls, name: str) -> t.Optional[t.Tuple[str, t.List[str]]]:
+            # ClickHouse allows chaining multiple combinators on aggregate functions.
+            # See https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
+
+            # Until we are able to identify a 1- or 0-suffix aggregate function by name,
+            # repeatedly strip and stack suffixes (longer suffixes first, see comment on
+            # AGG_FUNCTIONS_SUFFIXES_SORTED). This loop only runs for 2 or more suffixes,
+            # as AGG_FUNC_MAPPING memoizes all 0- and 1-suffix
+            accumulated_suffix_stack: t.List[str] = []
+            while (parts := cls.AGG_FUNC_MAPPING.get(name)) is None:
+                for suffix in cls.AGG_FUNCTIONS_SUFFIXES_SORTED:
+                    if name.endswith(suffix) and len(name) != len(suffix):
+                        accumulated_suffix_stack.append(suffix)
+                        name = name[: -len(suffix)]
+                        break
+                else:
+                    return None
+
+            # We now have a 0- or 1-suffix aggregate
+            agg_func_name, inner_suffix = parts
+            if inner_suffix:
+                # this is a 1-suffix aggregate (either naturally or via repeated suffix
+                # stripping). stack the innermost suffix.
+                accumulated_suffix_stack.append(inner_suffix)
+
+            # Reverse the stack into natural order, rejecting if there are adjacent
+            # duplicate combinators (e.g. sumMergeMerge is invalid; sumMergeIfMerge is fine).
+            suffixes_list: t.List[str] = []
+            last_seen_suffix = None
+            for suffix in reversed(accumulated_suffix_stack):
+                if suffix == last_seen_suffix:
+                    return None  # reject: there are adjacent duplicate combinators
+                suffixes_list.append(suffix)
+                last_seen_suffix = suffix
+            return (agg_func_name, suffixes_list)
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
@@ -863,9 +912,9 @@ class ClickHouse(Dialect):
 
             func = expr.this if isinstance(expr, exp.Window) else expr
 
-            # Aggregate functions can be split in 2 parts: <func_name><suffix>
+            # Aggregate functions can be split in 2 parts: <func_name><suffix[es]>
             parts = (
-                self.AGG_FUNC_MAPPING.get(func.this) if isinstance(func, exp.Anonymous) else None
+                self._resolve_clickhouse_agg(func.this) if isinstance(func, exp.Anonymous) else None
             )
 
             if parts:
@@ -876,7 +925,7 @@ class ClickHouse(Dialect):
                     "this": anon_func.this,
                     "expressions": anon_func.expressions,
                 }
-                if parts[1]:
+                if len(parts[1]) > 0:
                     exp_class: t.Type[exp.Expression] = (
                         exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
                     )

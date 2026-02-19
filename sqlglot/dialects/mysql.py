@@ -533,7 +533,7 @@ class MySQL(Dialect):
             this = super()._parse_generated_as_identity()
 
             if self._match_texts(("STORED", "VIRTUAL")):
-                persisted = self._prev.text.upper() == "STORED"
+                persisted = self._prev.text_upper == "STORED"
 
                 if isinstance(this, exp.ComputedColumnConstraint):
                     this.set("persisted", persisted)

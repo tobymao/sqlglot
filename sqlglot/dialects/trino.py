@@ -59,7 +59,7 @@ class Trino(Presto):
 
             return self.expression(
                 exp.JSONExtractQuote,
-                option=self._tokens[self._index - 2].text.upper(),
+                option=self._tokens[self._index - 2].text_upper,
                 scalar=self._match_text_seq("ON", "SCALAR", "STRING"),
             )
 

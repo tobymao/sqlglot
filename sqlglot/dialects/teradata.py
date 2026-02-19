@@ -204,7 +204,7 @@ class Teradata(Dialect):
             return self.expression(
                 exp.TranslateCharacters,
                 this=this,
-                expression=self._prev.text.upper(),
+                expression=self._prev.text_upper,
                 with_error=self._match_text_seq("WITH", "ERROR"),
             )
 
@@ -247,7 +247,7 @@ class Teradata(Dialect):
             if self._match_text_seq("SESSION", "VOLATILE"):
                 scope = "SESSION VOLATILE"
             elif self._match_texts(("SESSION", "TRANSACTION")):
-                scope = self._prev.text.upper()
+                scope = self._prev.text_upper
             else:
                 scope = None
 

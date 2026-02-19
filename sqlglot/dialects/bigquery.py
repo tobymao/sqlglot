@@ -1005,7 +1005,7 @@ class BigQuery(Dialect):
         def _parse_translate(self) -> exp.Translate | exp.MLTranslate:
             # Check if this is ML.TRANSLATE by looking at previous tokens
             token = seq_get(self._tokens, self._index - 4)
-            if token and token.text.upper() == "ML":
+            if token and token.text_upper == "ML":
                 return self._parse_ml(exp.MLTranslate)
 
             return exp.Translate.from_arg_list(self._parse_function_args())

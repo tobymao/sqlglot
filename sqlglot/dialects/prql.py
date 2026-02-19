@@ -97,7 +97,7 @@ class PRQL(Dialect):
             query = exp.select("*").from_(from_, copy=False)
 
             while self._match_texts(self.TRANSFORM_PARSERS):
-                query = self.TRANSFORM_PARSERS[self._prev.text.upper()](self, query)
+                query = self.TRANSFORM_PARSERS[self._prev.text_upper](self, query)
 
             return query
 
@@ -162,7 +162,7 @@ class PRQL(Dialect):
                 alias = self._parse_id_var(any_token=True)
                 self._match(TokenType.ALIAS)
 
-            name = self._curr and self._curr.text.upper()
+            name = self._curr and self._curr.text_upper
             func_builder = self.FUNCTIONS.get(name)
             if func_builder:
                 self._advance()

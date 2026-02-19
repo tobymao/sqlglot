@@ -189,8 +189,8 @@ class StarRocks(MySQL):
             REFRESH [DEFERRED | IMMEDIATE]
                     [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
             """
-            method = self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
-            kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
+            method = self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text_upper
+            kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text_upper
             start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
 
             if self._match_text_seq("EVERY"):

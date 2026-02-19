@@ -164,9 +164,9 @@ def _tokenize_as_hive(tokens: t.List[Token]) -> bool:
     first, second, *rest = tokens
 
     first_type = first.token_type
-    first_text = first.text.upper()
+    first_text = first.text_upper
     second_type = second.token_type
-    second_text = second.text.upper()
+    second_text = second.text_upper
 
     if first_type in (TokenType.DESCRIBE, TokenType.SHOW) or first_text == "MSCK REPAIR":
         return True

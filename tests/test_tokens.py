@@ -16,7 +16,7 @@ class TestTokens(unittest.TestCase):
             ("group \r", 1),
         ):
             tokens = Tokenizer().tokenize(string)
-            self.assertTrue("GROUP" in tokens[0].text.upper())
+            self.assertTrue("GROUP" in tokens[0].text_upper)
             self.assertEqual(len(tokens), length)
 
     def test_comment_attachment(self):

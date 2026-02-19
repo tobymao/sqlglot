@@ -138,7 +138,7 @@ class Doris(MySQL):
 
             self._match(TokenType.ON)
 
-            kind = self._match_texts(("MANUAL", "COMMIT", "SCHEDULE")) and self._prev.text.upper()
+            kind = self._match_texts(("MANUAL", "COMMIT", "SCHEDULE")) and self._prev.text_upper
             every = self._match_text_seq("EVERY") and self._parse_number()
             unit = self._parse_var(any_token=True) if every else None
             starts = self._match_text_seq("STARTS") and self._parse_string()

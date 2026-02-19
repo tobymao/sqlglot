@@ -473,7 +473,7 @@ _TOKEN_TYPE_TO_INDEX = {token_type: i for i, token_type in enumerate(_ALL_TOKEN_
 
 
 class Token:
-    __slots__ = ("token_type", "text", "line", "col", "start", "end", "comments")
+    __slots__ = ("token_type", "text", "line", "col", "start", "end", "comments", "text_upper")
 
     @classmethod
     def number(cls, number: int) -> Token:
@@ -523,6 +523,7 @@ class Token:
         self.start = start
         self.end = end
         self.comments = [] if comments is None else comments
+        self.text_upper = text.upper()
 
     def __repr__(self) -> str:
         attributes = ", ".join(
@@ -530,6 +531,7 @@ class Token:
             if k == "token_type"
             else f"{k}: {getattr(self, k)}"
             for k in self.__slots__
+            if k != "text_upper"
         )
         return f"<Token {attributes}>"
 

@@ -135,7 +135,7 @@ class Redshift(Postgres):
 
         def _parse_projections(self) -> t.Tuple[t.List[exp.Expression], t.List[exp.Expression]]:
             projections, _ = super()._parse_projections()
-            if self._prev and self._prev.text.upper() == "EXCLUDE" and self._curr:
+            if self._prev and self._prev.text_upper == "EXCLUDE" and self._curr:
                 self._retreat(self._index - 1)
 
             # EXCLUDE clause always comes at the end of the projection list and applies to it as a whole

@@ -140,7 +140,7 @@ class SQLite(Dialect):
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
             # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
-            if self._curr.text.upper() in self.CONSTRAINT_PARSERS:
+            if self._curr.text_upper in self.CONSTRAINT_PARSERS:
                 return self.expression(exp.UniqueColumnConstraint)
 
             return super()._parse_unique()

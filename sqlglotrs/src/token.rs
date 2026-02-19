@@ -13,6 +13,8 @@ pub struct Token {
     #[pyo3(get)]
     pub text: Py<PyString>,
     #[pyo3(get)]
+    pub text_upper: Py<PyString>,
+    #[pyo3(get)]
     pub line: usize,
     #[pyo3(get)]
     pub col: usize,
@@ -37,6 +39,7 @@ impl Token {
         Python::with_gil(|py| Token {
             token_type,
             token_type_py: py.None(),
+            text_upper: PyString::new(py, &text.to_uppercase()).unbind(),
             text: PyString::new(py, &text).unbind(),
             line,
             col,

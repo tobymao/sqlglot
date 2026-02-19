@@ -1177,7 +1177,7 @@ class Snowflake(Dialect):
 
         def _parse_use(self) -> exp.Use:
             if self._match_text_seq("SECONDARY", "ROLES"):
-                this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text.upper())
+                this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text_upper)
                 roles = None if this else self._parse_csv(lambda: self._parse_table(schema=False))
                 return self.expression(
                     exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles
@@ -1371,7 +1371,7 @@ class Snowflake(Dialect):
 
             # will identity SHOW TERSE SCHEMAS but not SHOW TERSE PRIMARY KEYS
             # which is syntactically valid but has no effect on the output
-            terse = self._tokens[self._index - 2].text.upper() == "TERSE"
+            terse = self._tokens[self._index - 2].text_upper == "TERSE"
 
             history = self._match_text_seq("HISTORY")
 
@@ -1389,7 +1389,7 @@ class Snowflake(Dialect):
                         scope_kind += " PACKAGE"
                     scope = self._parse_table_parts()
                 elif self._match_set(self.DB_CREATABLES):
-                    scope_kind = self._prev.text.upper()
+                    scope_kind = self._prev.text_upper
                     if self._curr:
                         scope = self._parse_table_parts()
                 elif self._curr:
@@ -1540,7 +1540,7 @@ class Snowflake(Dialect):
             if isinstance(this, exp.NthValue):
                 if self._match_text_seq("FROM"):
                     if self._match_texts(("FIRST", "LAST")):
-                        from_first = self._prev.text.upper() == "FIRST"
+                        from_first = self._prev.text_upper == "FIRST"
                         this.set("from_first", from_first)
 
             result = super()._parse_window(this, alias)

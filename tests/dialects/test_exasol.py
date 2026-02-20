@@ -273,14 +273,16 @@ class TestExasol(Validator):
             },
         )
 
-        self.validate_all(
-            "SELECT a, b, rank(b) OVER (ORDER BY b) FROM (VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1)) AS tab(a, b)",
-            write={
-                "exasol": "SELECT a, b, RANK() OVER (ORDER BY b) FROM (VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1)) AS tab(a, b)",
-                "databricks": "SELECT a, b, RANK(b) OVER (ORDER BY b NULLS LAST) FROM VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1) AS tab(a, b)",
-                "spark": "SELECT a, b, RANK(b) OVER (ORDER BY b NULLS LAST) FROM VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1) AS tab(a, b)",
-            },
-        )
+        for func in ("RANK", "DENSE_RANK"):
+            with self.subTest(func=func):
+                self.validate_all(
+                    f"SELECT a, b, {func}(b) OVER (ORDER BY b) FROM (VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1)) AS tab(a, b)",
+                    write={
+                        "exasol": f"SELECT a, b, {func}() OVER (ORDER BY b) FROM (VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1)) AS tab(a, b)",
+                        "databricks": f"SELECT a, b, {func}(b) OVER (ORDER BY b NULLS LAST) FROM VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1) AS tab(a, b)",
+                        "spark": f"SELECT a, b, {func}(b) OVER (ORDER BY b NULLS LAST) FROM VALUES ('A1', 2), ('A1', 1), ('A2', 3), ('A1', 1) AS tab(a, b)",
+                    },
+                )
 
     def test_stringFunctions(self):
         self.validate_identity(

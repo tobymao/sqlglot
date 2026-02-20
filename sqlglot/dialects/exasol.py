@@ -1030,8 +1030,15 @@ class Exasol(Dialect):
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
 
+        def _no_arg_window_func(self, expression: exp.Expression, name: str) -> str:
+            if expression.args.get("expressions"):
+                self.unsupported(f"Exasol does not support arguments in {name}")
+            return self.func(name)
+
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
         def rank_sql(self, expression: exp.Rank) -> str:
-            if expression.args.get("expressions"):
-                self.unsupported("Exasol does not support arguments in RANK")
-            return self.func("RANK")
+            return self._no_arg_window_func(expression, "RANK")
+
+        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/dense_rank.htm
+        def denserank_sql(self, expression: exp.DenseRank) -> str:
+            return self._no_arg_window_func(expression, "DENSE_RANK")

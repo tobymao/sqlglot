@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 from copy import deepcopy
 from collections import defaultdict
 
@@ -45,6 +46,7 @@ class Databricks(Spark):
     class Tokenizer(Spark.Tokenizer):
         KEYWORDS = {
             **Spark.Tokenizer.KEYWORDS,
+            "DECLARE": TokenType.DECLARE,
             "VOID": TokenType.VOID,
         }
 
@@ -86,11 +88,30 @@ class Databricks(Spark):
             ),
         }
 
+        STATEMENT_PARSERS = {
+            **Spark.Parser.STATEMENT_PARSERS,
+            TokenType.DECLARE: lambda self: self._parse_declare(),
+        }
+
         def _parse_curdate(self) -> exp.CurrentDate:
             # CURDATE, an alias for CURRENT_DATE, has optional parentheses
             if self._match(TokenType.L_PAREN):
                 self._match_r_paren()
             return self.expression(exp.CurrentDate)
+
+        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
+            self._match_text_seq("VARIABLE")
+
+            vars = self._parse_csv(self._parse_id_var)
+            if not vars:
+                return None
+
+            kind = self._parse_types()
+            default = (
+                self._match(TokenType.DEFAULT) or self._match(TokenType.EQ)
+            ) and self._parse_bitwise()
+
+            return self.expression(exp.DeclareItem, this=vars, kind=kind, default=default)
 
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
@@ -174,3 +195,12 @@ class Databricks(Spark):
                 seed = gen.this
 
             return self.func("UNIFORM", expression.this, expression.expression, seed)
+
+        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
+            variables = self.expressions(expression, "this")
+            default = self.sql(expression, "default")
+            default = f" DEFAULT {default}" if default else ""
+            kind = self.sql(expression, "kind")
+            kind = f" {kind}" if kind else ""
+
+            return f"{variables}{kind}{default}"

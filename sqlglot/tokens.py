@@ -28,65 +28,94 @@ _ALL_TOKEN_TYPES = list(TokenType)
 _TOKEN_TYPE_TO_INDEX = {token_type: i for i, token_type in enumerate(_ALL_TOKEN_TYPES)}
 
 
-class _Tokenizer(type):
-    def __new__(cls, clsname, bases, attrs):
-        klass = super().__new__(cls, clsname, bases, attrs)
+def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
+    return dict((item, item) if isinstance(item, str) else (item[0], item[1]) for item in arr)
 
-        def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
-            return dict(
-                (item, item) if isinstance(item, str) else (item[0], item[1]) for item in arr
-            )
 
-        def _quotes_to_format(
-            token_type: TokenType, arr: t.List[str | t.Tuple[str, str]]
-        ) -> t.Dict[str, t.Tuple[str, TokenType]]:
-            return {k: (v, token_type) for k, v in _convert_quotes(arr).items()}
+def _quotes_to_format(
+    token_type: TokenType, arr: t.List[str | t.Tuple[str, str]]
+) -> t.Dict[str, t.Tuple[str, TokenType]]:
+    return {k: (v, token_type) for k, v in _convert_quotes(arr).items()}
 
-        klass._QUOTES = _convert_quotes(klass.QUOTES)
-        klass._IDENTIFIERS = _convert_quotes(klass.IDENTIFIERS)
 
-        klass._FORMAT_STRINGS = {
+class _TokenizerBase:
+    QUOTES: t.ClassVar[t.List[t.Tuple[str, str] | str]]
+    IDENTIFIERS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    BIT_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    BYTE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    HEX_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    RAW_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    HEREDOC_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    UNICODE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    STRING_ESCAPES: t.ClassVar[t.List[str]]
+    BYTE_STRING_ESCAPES: t.ClassVar[t.List[str]]
+    ESCAPE_FOLLOW_CHARS: t.ClassVar[t.List[str]]
+    IDENTIFIER_ESCAPES: t.ClassVar[t.List[str]]
+    HINT_START: t.ClassVar[str]
+    KEYWORDS: t.ClassVar[t.Dict[str, TokenType]]
+    SINGLE_TOKENS: t.ClassVar[t.Dict[str, TokenType]]
+    NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]]
+    VAR_SINGLE_TOKENS: t.ClassVar[t.Set[str]]
+    COMMANDS: t.ClassVar[t.Set[TokenType]]
+    COMMAND_PREFIX_TOKENS: t.ClassVar[t.Set[TokenType]]
+    HEREDOC_TAG_IS_IDENTIFIER: t.ClassVar[bool]
+    STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
+    NESTED_COMMENTS: t.ClassVar[bool]
+    TOKENS_PRECEDING_HINT: t.ClassVar[t.Set[TokenType]]
+    HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
+    COMMENTS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
+    _QUOTES: t.ClassVar[t.Dict[str, str]]
+    _IDENTIFIERS: t.ClassVar[t.Dict[str, str]]
+    _FORMAT_STRINGS: t.ClassVar[t.Dict[str, t.Tuple[str, TokenType]]]
+    _STRING_ESCAPES: t.ClassVar[t.Set[str]]
+    _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]]
+    _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]]
+    _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]]
+    _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]]
+    _KEYWORD_TRIE: t.ClassVar[t.Dict]
+    _RS_TOKENIZER: t.ClassVar[t.Optional[t.Any]]
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs: t.Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._QUOTES = _convert_quotes(cls.QUOTES)
+        cls._IDENTIFIERS = _convert_quotes(cls.IDENTIFIERS)
+        cls._FORMAT_STRINGS = {
             **{
                 p + s: (e, TokenType.NATIONAL_STRING)
-                for s, e in klass._QUOTES.items()
+                for s, e in cls._QUOTES.items()
                 for p in ("n", "N")
             },
-            **_quotes_to_format(TokenType.BIT_STRING, klass.BIT_STRINGS),
-            **_quotes_to_format(TokenType.BYTE_STRING, klass.BYTE_STRINGS),
-            **_quotes_to_format(TokenType.HEX_STRING, klass.HEX_STRINGS),
-            **_quotes_to_format(TokenType.RAW_STRING, klass.RAW_STRINGS),
-            **_quotes_to_format(TokenType.HEREDOC_STRING, klass.HEREDOC_STRINGS),
-            **_quotes_to_format(TokenType.UNICODE_STRING, klass.UNICODE_STRINGS),
+            **_quotes_to_format(TokenType.BIT_STRING, cls.BIT_STRINGS),
+            **_quotes_to_format(TokenType.BYTE_STRING, cls.BYTE_STRINGS),
+            **_quotes_to_format(TokenType.HEX_STRING, cls.HEX_STRINGS),
+            **_quotes_to_format(TokenType.RAW_STRING, cls.RAW_STRINGS),
+            **_quotes_to_format(TokenType.HEREDOC_STRING, cls.HEREDOC_STRINGS),
+            **_quotes_to_format(TokenType.UNICODE_STRING, cls.UNICODE_STRINGS),
         }
-
-        if "BYTE_STRING_ESCAPES" not in klass.__dict__:
-            klass.BYTE_STRING_ESCAPES = klass.STRING_ESCAPES.copy()
-
-        klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
-        klass._BYTE_STRING_ESCAPES = set(klass.BYTE_STRING_ESCAPES)
-        klass._ESCAPE_FOLLOW_CHARS = set(klass.ESCAPE_FOLLOW_CHARS)
-        klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
-        klass._COMMENTS = {
-            **dict(
-                (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
-                for comment in klass.COMMENTS
-            ),
+        if "BYTE_STRING_ESCAPES" not in cls.__dict__:
+            cls.BYTE_STRING_ESCAPES = cls.STRING_ESCAPES.copy()
+        cls._STRING_ESCAPES = set(cls.STRING_ESCAPES)
+        cls._BYTE_STRING_ESCAPES = set(cls.BYTE_STRING_ESCAPES)
+        cls._ESCAPE_FOLLOW_CHARS = set(cls.ESCAPE_FOLLOW_CHARS)
+        cls._IDENTIFIER_ESCAPES = set(cls.IDENTIFIER_ESCAPES)
+        cls._COMMENTS = {
+            **{c: None for c in cls.COMMENTS if isinstance(c, str)},
+            **{c[0]: c[1] for c in cls.COMMENTS if not isinstance(c, str)},
             "{#": "#}",  # Ensure Jinja comments are tokenized correctly in all dialects
         }
-        if klass.HINT_START in klass.KEYWORDS:
-            klass._COMMENTS[klass.HINT_START] = "*/"
-
-        klass._KEYWORD_TRIE = new_trie(
+        if cls.HINT_START in cls.KEYWORDS:
+            cls._COMMENTS[cls.HINT_START] = "*/"
+        cls._KEYWORD_TRIE = new_trie(
             key.upper()
             for key in (
-                *klass.KEYWORDS,
-                *klass._COMMENTS,
-                *klass._QUOTES,
-                *klass._FORMAT_STRINGS,
+                *cls.KEYWORDS,
+                *cls._COMMENTS,
+                *cls._QUOTES,
+                *cls._FORMAT_STRINGS,
             )
-            if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
+            if " " in key or any(single in key for single in cls.SINGLE_TOKENS)
         )
-
         if USE_RS_TOKENIZER:
             from sqlglotrs import (  # type: ignore
                 Tokenizer as RsTokenizer,
@@ -95,34 +124,29 @@ class _Tokenizer(type):
             )
 
             settings = RsTokenizerSettings(
-                single_tokens={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.SINGLE_TOKENS.items()},
-                keywords={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in klass.KEYWORDS.items()},
-                numeric_literals=klass.NUMERIC_LITERALS,
-                identifiers=klass._IDENTIFIERS,
-                identifier_escapes=klass._IDENTIFIER_ESCAPES,
-                string_escapes=klass._STRING_ESCAPES,
-                byte_string_escapes=klass._BYTE_STRING_ESCAPES,
-                quotes=klass._QUOTES,
+                single_tokens={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in cls.SINGLE_TOKENS.items()},
+                keywords={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in cls.KEYWORDS.items()},
+                numeric_literals=cls.NUMERIC_LITERALS,
+                identifiers=cls._IDENTIFIERS,
+                identifier_escapes=cls._IDENTIFIER_ESCAPES,
+                string_escapes=cls._STRING_ESCAPES,
+                byte_string_escapes=cls._BYTE_STRING_ESCAPES,
+                quotes=cls._QUOTES,
                 format_strings={
-                    k: (v1, _TOKEN_TYPE_TO_INDEX[v2])
-                    for k, (v1, v2) in klass._FORMAT_STRINGS.items()
+                    k: (v1, _TOKEN_TYPE_TO_INDEX[v2]) for k, (v1, v2) in cls._FORMAT_STRINGS.items()
                 },
-                has_bit_strings=bool(klass.BIT_STRINGS),
-                has_hex_strings=bool(klass.HEX_STRINGS),
-                comments=klass._COMMENTS,
-                var_single_tokens=klass.VAR_SINGLE_TOKENS,
-                commands={_TOKEN_TYPE_TO_INDEX[v] for v in klass.COMMANDS},
-                command_prefix_tokens={
-                    _TOKEN_TYPE_TO_INDEX[v] for v in klass.COMMAND_PREFIX_TOKENS
-                },
-                heredoc_tag_is_identifier=klass.HEREDOC_TAG_IS_IDENTIFIER,
-                string_escapes_allowed_in_raw_strings=klass.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
-                nested_comments=klass.NESTED_COMMENTS,
-                hint_start=klass.HINT_START,
-                tokens_preceding_hint={
-                    _TOKEN_TYPE_TO_INDEX[v] for v in klass.TOKENS_PRECEDING_HINT
-                },
-                escape_follow_chars=klass._ESCAPE_FOLLOW_CHARS,
+                has_bit_strings=bool(cls.BIT_STRINGS),
+                has_hex_strings=bool(cls.HEX_STRINGS),
+                comments=cls._COMMENTS,
+                var_single_tokens=cls.VAR_SINGLE_TOKENS,
+                commands={_TOKEN_TYPE_TO_INDEX[v] for v in cls.COMMANDS},
+                command_prefix_tokens={_TOKEN_TYPE_TO_INDEX[v] for v in cls.COMMAND_PREFIX_TOKENS},
+                heredoc_tag_is_identifier=cls.HEREDOC_TAG_IS_IDENTIFIER,
+                string_escapes_allowed_in_raw_strings=cls.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
+                nested_comments=cls.NESTED_COMMENTS,
+                hint_start=cls.HINT_START,
+                tokens_preceding_hint={_TOKEN_TYPE_TO_INDEX[v] for v in cls.TOKENS_PRECEDING_HINT},
+                escape_follow_chars=cls._ESCAPE_FOLLOW_CHARS,
             )
             token_types = RsTokenTypeSettings(
                 bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
@@ -138,17 +162,15 @@ class _Tokenizer(type):
                 semicolon=_TOKEN_TYPE_TO_INDEX[TokenType.SEMICOLON],
                 string=_TOKEN_TYPE_TO_INDEX[TokenType.STRING],
                 var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
-                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[klass.HEREDOC_STRING_ALTERNATIVE],
+                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[cls.HEREDOC_STRING_ALTERNATIVE],
                 hint=_TOKEN_TYPE_TO_INDEX[TokenType.HINT],
             )
-            klass._RS_TOKENIZER = RsTokenizer(settings, token_types)
+            cls._RS_TOKENIZER = RsTokenizer(settings, token_types)
         else:
-            klass._RS_TOKENIZER = None
-
-        return klass
+            cls._RS_TOKENIZER = None
 
 
-class Tokenizer(metaclass=_Tokenizer):
+class Tokenizer(_TokenizerBase):
     SINGLE_TOKENS = {
         "(": TokenType.L_PAREN,
         ")": TokenType.R_PAREN,
@@ -183,23 +205,23 @@ class Tokenizer(metaclass=_Tokenizer):
         '"': TokenType.UNKNOWN,
     }
 
-    BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    BYTE_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    RAW_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    HEREDOC_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    UNICODE_STRINGS: t.List[str | t.Tuple[str, str]] = []
-    IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
-    QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
+    BIT_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    BYTE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    HEX_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    RAW_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    HEREDOC_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    UNICODE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
+    IDENTIFIERS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = ['"']
+    QUOTES: t.ClassVar[t.List[t.Tuple[str, str] | str]] = ["'"]
     STRING_ESCAPES = ["'"]
-    BYTE_STRING_ESCAPES: t.List[str] = []
-    VAR_SINGLE_TOKENS: t.Set[str] = set()
-    ESCAPE_FOLLOW_CHARS: t.List[str] = []
+    BYTE_STRING_ESCAPES: t.ClassVar[t.List[str]] = []
+    VAR_SINGLE_TOKENS: t.ClassVar[t.Set[str]] = set()
+    ESCAPE_FOLLOW_CHARS: t.ClassVar[t.List[str]] = []
 
     # The strings in this list can always be used as escapes, regardless of the surrounding
     # identifier delimiters. By default, the closing delimiter is assumed to also act as an
     # identifier escape, e.g. if we use double-quotes, then they also act as escapes: "x"""
-    IDENTIFIER_ESCAPES: t.List[str] = []
+    IDENTIFIER_ESCAPES: t.ClassVar[t.List[str]] = []
 
     # Whether the heredoc tags follow the same lexical rules as unquoted identifiers
     HEREDOC_TAG_IS_IDENTIFIER = False
@@ -217,18 +239,18 @@ class Tokenizer(metaclass=_Tokenizer):
     TOKENS_PRECEDING_HINT = {TokenType.SELECT, TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE}
 
     # Autofilled
-    _COMMENTS: t.Dict[str, str] = {}
-    _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
-    _IDENTIFIERS: t.Dict[str, str] = {}
-    _IDENTIFIER_ESCAPES: t.Set[str] = set()
-    _QUOTES: t.Dict[str, str] = {}
-    _STRING_ESCAPES: t.Set[str] = set()
-    _BYTE_STRING_ESCAPES: t.Set[str] = set()
-    _KEYWORD_TRIE: t.Dict = {}
-    _RS_TOKENIZER: t.Optional[t.Any] = None
-    _ESCAPE_FOLLOW_CHARS: t.Set[str] = set()
+    _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]] = {}
+    _FORMAT_STRINGS: t.ClassVar[t.Dict[str, t.Tuple[str, TokenType]]] = {}
+    _IDENTIFIERS: t.ClassVar[t.Dict[str, str]] = {}
+    _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]] = set()
+    _QUOTES: t.ClassVar[t.Dict[str, str]] = {}
+    _STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
+    _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
+    _KEYWORD_TRIE: t.ClassVar[t.Dict] = {}
+    _RS_TOKENIZER: t.ClassVar[t.Optional[t.Any]] = None
+    _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]] = set()
 
-    KEYWORDS: t.Dict[str, TokenType] = {
+    KEYWORDS: t.ClassVar[t.Dict[str, TokenType]] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
@@ -556,7 +578,7 @@ class Tokenizer(metaclass=_Tokenizer):
     COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
 
     # Handle numeric literals like in hive (3L = BIGINT)
-    NUMERIC_LITERALS: t.Dict[str, str] = {}
+    NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]] = {}
 
     COMMENTS = ["--", ("/*", "*/")]
 

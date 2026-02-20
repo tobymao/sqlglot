@@ -12,8 +12,8 @@ from sqlglot import exp
 from sqlglot.dialects import DIALECT_MODULE_NAMES
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator, unsupported_args
+from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import (
-    apply_index_offset,
     AutoName,
     flatten,
     is_int,

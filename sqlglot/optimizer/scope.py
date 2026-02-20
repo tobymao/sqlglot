@@ -887,7 +887,7 @@ def walk_in_scope(expression, bfs=True, prune=None):
     crossed_scope_boundary = False
 
     for node in expression.walk(
-        bfs=bfs, prune=lambda n: crossed_scope_boundary or (prune and prune(n))
+        bfs=bfs, prune=lambda n: bool(crossed_scope_boundary or (prune and prune(n)))
     ):
         crossed_scope_boundary = False
 

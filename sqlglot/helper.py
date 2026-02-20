@@ -12,11 +12,11 @@ from difflib import get_close_matches
 from enum import Enum
 from itertools import count
 
+T = t.TypeVar("T")
+E = t.TypeVar("E")
+
 if t.TYPE_CHECKING:
-    from sqlglot import exp
-    from sqlglot._typing import A, E, T
-    from sqlglot.dialects.dialect import DialectType
-    from sqlglot.expressions import Expression
+    from sqlglot.expression_core import ExpressionCore
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
@@ -152,60 +152,12 @@ def subclasses(
     ]
 
 
-def apply_index_offset(
-    this: exp.Expression,
-    expressions: t.List[E],
-    offset: int,
-    dialect: DialectType = None,
-) -> t.List[E]:
-    """
-    Applies an offset to a given integer literal expression.
-
-    Args:
-        this: The target of the index.
-        expressions: The expression the offset will be applied to, wrapped in a list.
-        offset: The offset that will be applied.
-        dialect: the dialect of interest.
-
-    Returns:
-        The original expression with the offset applied to it, wrapped in a list. If the provided
-        `expressions` argument contains more than one expression, it's returned unaffected.
-    """
-    if not offset or len(expressions) != 1:
-        return expressions
-
-    expression = expressions[0]
-
-    from sqlglot import exp
-    from sqlglot.optimizer.annotate_types import annotate_types
-    from sqlglot.optimizer.simplify import simplify
-
-    if not this.type:
-        annotate_types(this, dialect=dialect)
-
-    if t.cast(exp.DataType, this.type).this not in (
-        exp.DataType.Type.UNKNOWN,
-        exp.DataType.Type.ARRAY,
-    ):
-        return expressions
-
-    if not expression.type:
-        annotate_types(expression, dialect=dialect)
-
-    if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
-        logger.info("Applying array index offset (%s)", offset)
-        expression = simplify(expression + offset)
-        return [expression]
-
-    return expressions
-
-
 def camel_to_snake_case(name: str) -> str:
     """Converts `name` from camelCase to snake_case and returns the result."""
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
-def while_changing(expression: Expression, func: t.Callable[[Expression], E]) -> E:
+def while_changing(expression: E, func: t.Callable[[E], E]) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.
 
@@ -360,9 +312,9 @@ def is_iterable(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is an iterable.
     """
-    from sqlglot import Expression
+    from sqlglot.expression_core import ExpressionCore
 
-    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, ExpressionCore))
 
 
 def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
@@ -389,7 +341,7 @@ def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
             yield value
 
 
-def dict_depth(d: t.Dict) -> int:
+def dict_depth(d: t.Any) -> int:
     """
     Get the nesting depth of a dictionary.
 
@@ -434,7 +386,7 @@ def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:
     return value
 
 
-def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
+def merge_ranges(ranges: t.List[t.Tuple[t.Any, t.Any]]) -> t.List[t.Tuple[t.Any, t.Any]]:
     """
     Merges a sequence of ranges, represented as tuples (low, high) whose values
     belong to some totally-ordered set.
@@ -481,7 +433,7 @@ def is_iso_datetime(text: str) -> bool:
 DATE_UNITS = {"day", "week", "month", "quarter", "year", "year_month"}
 
 
-def is_date_unit(expression: t.Optional[exp.Expression]) -> bool:
+def is_date_unit(expression: t.Optional[ExpressionCore]) -> bool:
     return expression is not None and expression.name.lower() in DATE_UNITS
 
 

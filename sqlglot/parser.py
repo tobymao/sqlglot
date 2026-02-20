@@ -15,7 +15,8 @@ from sqlglot.errors import (
     highlight_sql,
     merge_errors,
 )
-from sqlglot.helper import apply_index_offset, ensure_list, seq_get
+from sqlglot.expressions import apply_index_offset
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
@@ -1755,7 +1756,7 @@ class Parser(metaclass=_Parser):
         self._pipe_cte_counter = 0
 
         # State necessary for parsing imperative SQL
-        self._chunks: t.List[t.List[Token]] = []
+        self._chunks = []
         self._chunk_index = 0
 
     def parse(self, raw_tokens: t.List[Token], sql: str) -> t.List[t.Optional[exp.Expression]]:

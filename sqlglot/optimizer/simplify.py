@@ -586,7 +586,7 @@ class Simplifier:
                 group.meta[FINAL] = True
 
                 for s in node.selects:
-                    for n in s.walk(FINAL):
+                    for n in s.walk():
                         if n in groups:
                             s.meta[FINAL] = True
                             break

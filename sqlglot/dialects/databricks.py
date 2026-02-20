@@ -7,7 +7,6 @@ from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
-    declareitem_sql,
     timestamptrunc_sql,
     build_formatted_time,
     groupconcat_sql,
@@ -46,7 +45,6 @@ class Databricks(Spark):
     class Tokenizer(Spark.Tokenizer):
         KEYWORDS = {
             **Spark.Tokenizer.KEYWORDS,
-            "DECLARE": TokenType.DECLARE,
             "VOID": TokenType.VOID,
         }
 
@@ -88,11 +86,6 @@ class Databricks(Spark):
             ),
         }
 
-        STATEMENT_PARSERS = {
-            **Spark.Parser.STATEMENT_PARSERS,
-            TokenType.DECLARE: lambda self: self._parse_declare(),
-        }
-
         def _parse_curdate(self) -> exp.CurrentDate:
             # CURDATE, an alias for CURRENT_DATE, has optional parentheses
             if self._match(TokenType.L_PAREN):
@@ -122,7 +115,6 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeTrunc: timestamptrunc_sql(),
-            exp.DeclareItem: lambda self, e: declareitem_sql(self, e),
             exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [

@@ -126,6 +126,11 @@ class Spark(Spark2):
             for prefix in ("r", "R")
         ]
 
+        KEYWORDS = {
+            **Spark2.Tokenizer.KEYWORDS,
+            "DECLARE": TokenType.DECLARE,
+        }
+
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
@@ -179,6 +184,11 @@ class Spark(Spark2):
         FUNCTION_PARSERS = {
             **Spark2.Parser.FUNCTION_PARSERS,
             "SUBSTR": lambda self: self._parse_substring(),
+        }
+
+        STATEMENT_PARSERS = {
+            **Spark2.Parser.STATEMENT_PARSERS,
+            TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 
         def _parse_generated_as_identity(

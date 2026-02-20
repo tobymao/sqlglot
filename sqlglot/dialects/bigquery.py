@@ -16,7 +16,6 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     date_add_interval_sql,
     datestrtodate_sql,
-    declareitem_sql,
     build_formatted_time,
     filter_array_using_unnest,
     if_sql,
@@ -1114,6 +1113,7 @@ class BigQuery(Dialect):
         SUPPORTS_EXPLODING_PROJECTIONS = False
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
         SUPPORTS_UNIX_SECONDS = True
+        DECLARE_DEFAULT_ASSIGNMENT = "DEFAULT"
 
         SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
 
@@ -1156,7 +1156,6 @@ class BigQuery(Dialect):
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: date_add_interval_sql("DATE", "SUB"),
-            exp.DeclareItem: lambda self, e: declareitem_sql(self, e),
             exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
             exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
             exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),

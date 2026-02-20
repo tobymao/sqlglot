@@ -526,6 +526,9 @@ class Generator(metaclass=_Generator):
     # Whether to include the VARIABLE keyword for SET assignments
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = False
 
+    # The keyword to use for default value assignment in DECLARE statements ("=" or "DEFAULT")
+    DECLARE_DEFAULT_ASSIGNMENT = "="
+
     # Whether FROM is supported in UPDATE statements or if joins must be generated instead, e.g:
     # Supported (Postgres, Doris etc): UPDATE t1 SET t1.a = t2.b FROM t2
     # Unsupported (MySQL, SingleStore): UPDATE t1 JOIN t2 ON TRUE SET t1.a = t2.b
@@ -5470,15 +5473,17 @@ class Generator(metaclass=_Generator):
         return f"DECLARE {self.expressions(expression, flat=True)}"
 
     def declareitem_sql(self, expression: exp.DeclareItem) -> str:
-        variable = self.sql(expression, "this")
+        variables = self.expressions(expression, "this")
         default = self.sql(expression, "default")
-        default = f" = {default}" if default else ""
+        default = f" {self.DECLARE_DEFAULT_ASSIGNMENT} {default}" if default else ""
 
         kind = self.sql(expression, "kind")
         if isinstance(expression.args.get("kind"), exp.Schema):
             kind = f"TABLE {kind}"
 
-        return f"{variable} AS {kind}{default}"
+        kind = f" {kind}" if kind else ""
+
+        return f"{variables}{kind}{default}"
 
     def recursivewithsearch_sql(self, expression: exp.RecursiveWithSearch) -> str:
         kind = self.sql(expression, "kind")

@@ -984,19 +984,6 @@ class TSQL(Dialect):
 
             return partition
 
-        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
-            var = self._parse_id_var()
-            if not var:
-                return None
-
-            self._match(TokenType.ALIAS)
-            return self.expression(
-                exp.DeclareItem,
-                this=var,
-                kind=self._parse_schema() if self._match(TokenType.TABLE) else self._parse_types(),
-                default=self._match(TokenType.EQ) and self._parse_bitwise(),
-            )
-
         def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
             expression = super()._parse_alter_table_alter()
 

@@ -9383,13 +9383,13 @@ class Parser(metaclass=_Parser):
         if not vars:
             return None
 
-        return self.expression(
-            exp.DeclareItem,
-            this=vars,
-            kind=self._parse_types(),
-            default=(self._match(TokenType.DEFAULT) or self._match(TokenType.EQ))
-            and self._parse_bitwise(),
-        )
+        self._match(TokenType.ALIAS)
+        kind = self._parse_schema() if self._match(TokenType.TABLE) else self._parse_types()
+        default = (
+            self._match(TokenType.DEFAULT) or self._match(TokenType.EQ)
+        ) and self._parse_bitwise()
+
+        return self.expression(exp.DeclareItem, this=vars, kind=kind, default=default)
 
     def _parse_declare(self) -> exp.Declare | exp.Command:
         start = self._prev

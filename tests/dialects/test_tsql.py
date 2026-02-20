@@ -357,6 +357,7 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
         self.validate_identity(
             "DECLARE @TestVariable AS VARCHAR(100) = 'Save Our Planet'",
+            "DECLARE @TestVariable VARCHAR(100) = 'Save Our Planet'",
         )
         self.validate_identity(
             "SELECT a = 1 UNION ALL SELECT a = b", "SELECT 1 AS a UNION ALL SELECT b AS a"
@@ -524,7 +525,10 @@ class TestTSQL(Validator):
             parse_one("SELECT begin", read="tsql")
 
         self.validate_identity("CREATE PROCEDURE test(@v1 INTEGER = 1, @v2 CHAR(1) = 'c')")
-        self.validate_identity("DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'")
+        self.validate_identity(
+            "DECLARE @v1 AS INTEGER = 1, @v2 AS CHAR(1) = 'c'",
+            "DECLARE @v1 INTEGER = 1, @v2 CHAR(1) = 'c'",
+        )
 
         for output in ("OUT", "OUTPUT", "READONLY"):
             self.validate_identity(
@@ -1257,6 +1261,7 @@ WHERE
     def test_udf(self):
         self.validate_identity(
             "DECLARE @DWH_DateCreated AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_DateCreated DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
         )
         self.validate_identity(
             "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
@@ -2194,26 +2199,26 @@ FROM OPENJSON(@json) WITH (
 
     def test_declare(self):
         # supported cases
-        self.validate_identity("DECLARE @X INT", "DECLARE @X AS INTEGER")
-        self.validate_identity("DECLARE @X INT = 1", "DECLARE @X AS INTEGER = 1")
+        self.validate_identity("DECLARE @X INT", "DECLARE @X INTEGER")
+        self.validate_identity("DECLARE @X INT = 1", "DECLARE @X INTEGER = 1")
         self.validate_identity(
-            "DECLARE @X INT, @Y VARCHAR(10)", "DECLARE @X AS INTEGER, @Y AS VARCHAR(10)"
+            "DECLARE @X INT, @Y VARCHAR(10)", "DECLARE @X INTEGER, @Y VARCHAR(10)"
         )
         self.validate_identity(
             "declare @X int = (select col from table where id = 1)",
-            "DECLARE @X AS INTEGER = (SELECT col FROM table WHERE id = 1)",
+            "DECLARE @X INTEGER = (SELECT col FROM table WHERE id = 1)",
         )
         self.validate_identity(
             "declare @X TABLE (Id INT NOT NULL, Name VARCHAR(100) NOT NULL)",
-            "DECLARE @X AS TABLE (Id INTEGER NOT NULL, Name VARCHAR(100) NOT NULL)",
+            "DECLARE @X TABLE (Id INTEGER NOT NULL, Name VARCHAR(100) NOT NULL)",
         )
         self.validate_identity(
             "declare @X TABLE (Id INT NOT NULL, constraint PK_Id primary key (Id))",
-            "DECLARE @X AS TABLE (Id INTEGER NOT NULL, CONSTRAINT PK_Id PRIMARY KEY (Id))",
+            "DECLARE @X TABLE (Id INTEGER NOT NULL, CONSTRAINT PK_Id PRIMARY KEY (Id))",
         )
         self.validate_identity(
             "declare @X UserDefinedTableType",
-            "DECLARE @X AS UserDefinedTableType",
+            "DECLARE @X UserDefinedTableType",
         )
         self.validate_identity(
             "DECLARE @MyTableVar TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID))",
@@ -2471,7 +2476,7 @@ FROM OPENJSON(@json) WITH (
             CREATE PROCEDURE test(@in1 INTEGER)
             AS
             BEGIN
-                DECLARE @q1 AS INTEGER, @q2 AS INTEGER, @q3 AS INTEGER;
+                DECLARE @q1 INTEGER, @q2 INTEGER, @q3 INTEGER;
                 SET @q1 = (SELECT MAX(col1) FROM t1);
                 SET @q2 = (SELECT MIN(col1) FROM t2);
                 IF @in1 > 1
@@ -2525,7 +2530,7 @@ FROM OPENJSON(@json) WITH (
             CREATE PROCEDURE test(@in1 INTEGER)
             AS
             BEGIN
-                DECLARE @temp AS INTEGER;
+                DECLARE @temp INTEGER;
                 WHILE @in1 > 100
                 BEGIN
                     SET @temp = (SELECT MAX(col1) FROM t WHERE t.col2 = @in1);
@@ -2549,7 +2554,7 @@ FROM OPENJSON(@json) WITH (
             AS
             BEGIN
                 EXECUTE dbo.test;
-                DECLARE @i AS INTEGER = 0;
+                DECLARE @i INTEGER = 0;
                 WHILE @i < 100
                 BEGIN
                     EXECUTE test @in2 = 'temp_new';
@@ -2562,7 +2567,7 @@ FROM OPENJSON(@json) WITH (
                 @TableName NVARCHAR(128)
             AS
             BEGIN
-                DECLARE @SQL AS NVARCHAR(MAX);
+                DECLARE @SQL NVARCHAR(MAX);
                 SET @SQL = N'DROP TABLE IF EXISTS [' + @TableName + ']';
                 EXECUTE sp_executesql 'SELECT 1 AS c';
                 EXECUTE sp_executesql N'SELECT 1 AS c';
@@ -2574,7 +2579,7 @@ FROM OPENJSON(@json) WITH (
             CREATE PROCEDURE test
             AS
             BEGIN
-                DECLARE @x AS INTEGER = 100;
+                DECLARE @x INTEGER = 100;
                 IF @x > ANY (SELECT 100)
                 BEGIN
                     SET @x = 100;
@@ -2618,11 +2623,11 @@ FROM OPENJSON(@json) WITH (
 
         expected_sqls = [
             "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN SET XACT_ABORT ON",
-            "DECLARE @DWH_DateCreated AS DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
-            "DECLARE @DWH_DateModified AS DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
-            "DECLARE @DWH_IdUserCreated AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @DWH_IdUserModified AS INTEGER = SUSER_ID(CURRENT_USER())",
-            "DECLARE @SalesAmountBefore AS FLOAT",
+            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, GETDATE(), 104)",
+            "DECLARE @DWH_DateModified DATETIME2 = CONVERT(DATETIME2, GETDATE(), 104)",
+            "DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @DWH_IdUserModified INTEGER = SUSER_ID(CURRENT_USER())",
+            "DECLARE @SalesAmountBefore FLOAT",
             "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
             "END",
         ]
@@ -2642,7 +2647,7 @@ FROM OPENJSON(@json) WITH (
         """
 
         expected_sqls = [
-            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate AS VARCHAR(20)",
+            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate VARCHAR(20)",
             "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]

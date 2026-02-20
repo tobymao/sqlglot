@@ -1301,6 +1301,16 @@ def no_map_from_entries_sql(self: Generator, expression: exp.MapFromEntries) -> 
     return ""
 
 
+def declareitem_sql(self: Generator, expression: exp.DeclareItem) -> str:
+    variables = self.expressions(expression, "this")
+    default = self.sql(expression, "default")
+    default = f" DEFAULT {default}" if default else ""
+    kind = self.sql(expression, "kind")
+    kind = f" {kind}" if kind else ""
+
+    return f"{variables}{kind}{default}"
+
+
 def property_sql(self: Generator, expression: exp.Property) -> str:
     return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 

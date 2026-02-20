@@ -9377,6 +9377,8 @@ class Parser(metaclass=_Parser):
         return query
 
     def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
+        self._match_text_seq("VARIABLE")
+
         vars = self._parse_csv(self._parse_id_var)
         if not vars:
             return None
@@ -9385,7 +9387,8 @@ class Parser(metaclass=_Parser):
             exp.DeclareItem,
             this=vars,
             kind=self._parse_types(),
-            default=self._match(TokenType.DEFAULT) and self._parse_bitwise(),
+            default=(self._match(TokenType.DEFAULT) or self._match(TokenType.EQ))
+            and self._parse_bitwise(),
         )
 
     def _parse_declare(self) -> exp.Declare | exp.Command:

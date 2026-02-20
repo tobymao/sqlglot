@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     date_add_interval_sql,
     datestrtodate_sql,
+    declareitem_sql,
     build_formatted_time,
     filter_array_using_unnest,
     if_sql,
@@ -1155,6 +1156,7 @@ class BigQuery(Dialect):
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: date_add_interval_sql("DATE", "SUB"),
+            exp.DeclareItem: lambda self, e: declareitem_sql(self, e),
             exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
             exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
             exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
@@ -1544,12 +1546,3 @@ class BigQuery(Dialect):
                     return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
-
-        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
-            variables = self.expressions(expression, "this")
-            default = self.sql(expression, "default")
-            default = f" DEFAULT {default}" if default else ""
-            kind = self.sql(expression, "kind")
-            kind = f" {kind}" if kind else ""
-
-            return f"{variables}{kind}{default}"

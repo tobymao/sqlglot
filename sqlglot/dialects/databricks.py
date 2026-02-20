@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 from copy import deepcopy
 from collections import defaultdict
 
@@ -8,6 +7,7 @@ from sqlglot import exp, transforms, jsonpath, parser
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     build_date_delta,
+    declareitem_sql,
     timestamptrunc_sql,
     build_formatted_time,
     groupconcat_sql,
@@ -99,20 +99,6 @@ class Databricks(Spark):
                 self._match_r_paren()
             return self.expression(exp.CurrentDate)
 
-        def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
-            self._match_text_seq("VARIABLE")
-
-            vars = self._parse_csv(self._parse_id_var)
-            if not vars:
-                return None
-
-            kind = self._parse_types()
-            default = (
-                self._match(TokenType.DEFAULT) or self._match(TokenType.EQ)
-            ) and self._parse_bitwise()
-
-            return self.expression(exp.DeclareItem, this=vars, kind=kind, default=default)
-
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         COPY_PARAMS_ARE_WRAPPED = False
@@ -136,6 +122,7 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeTrunc: timestamptrunc_sql(),
+            exp.DeclareItem: lambda self, e: declareitem_sql(self, e),
             exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [
@@ -195,12 +182,3 @@ class Databricks(Spark):
                 seed = gen.this
 
             return self.func("UNIFORM", expression.this, expression.expression, seed)
-
-        def declareitem_sql(self, expression: exp.DeclareItem) -> str:
-            variables = self.expressions(expression, "this")
-            default = self.sql(expression, "default")
-            default = f" DEFAULT {default}" if default else ""
-            kind = self.sql(expression, "kind")
-            kind = f" {kind}" if kind else ""
-
-            return f"{variables}{kind}{default}"

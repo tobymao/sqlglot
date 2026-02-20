@@ -475,6 +475,7 @@ class TestDatabricks(Validator):
         )
 
     def test_declare(self):
+        self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
         self.validate_identity("DECLARE x INT")
         self.validate_identity("DECLARE VARIABLE myvar INT DEFAULT 1", "DECLARE myvar INT = 1")
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")

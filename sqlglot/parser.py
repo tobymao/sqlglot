@@ -9377,7 +9377,7 @@ class Parser(metaclass=_Parser):
         return query
 
     def _parse_declareitem(self) -> t.Optional[exp.DeclareItem]:
-        self._match_text_seq("VAR", "VARIABLE")
+        self._match_texts(("VAR", "VARIABLE"))
 
         vars = self._parse_csv(self._parse_id_var)
         if not vars:

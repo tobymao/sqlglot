@@ -526,7 +526,7 @@ class Generator(metaclass=_Generator):
     # Whether to include the VARIABLE keyword for SET assignments
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = False
 
-    # The keyword to use for default value assignment in DECLARE statements ("=" or "DEFAULT")
+    # The keyword to use for default value assignment in DECLARE statements
     DECLARE_DEFAULT_ASSIGNMENT = "="
 
     # Whether FROM is supported in UPDATE statements or if joins must be generated instead, e.g:

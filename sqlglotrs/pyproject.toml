@@ -1,25 +1,15 @@
-[build-system]
-requires = ["maturin>=1.4,<2.0"]
-build-backend = "maturin"
-
 [project]
 name = "sqlglotrs"
-description = "An easily customizable SQL parser and transpiler"
-requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-    "License :: OSI Approved :: MIT License",
-]
-authors = [
-  { name="Toby Mao", email="toby.mao@gmail.com" },
-]
-dynamic = ["version"]
+version = "0.13.0"
+description = "Deprecated: use sqlglotc instead"
+authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
+license = "MIT"
+requires-python = ">= 3.9"
 
 [project.urls]
-Homepage = "https://github.com/tobymao/sqlglot"
-Issues = "https://github.com/tobymao/sqlglot/issues"
+Homepage = "https://sqlglot.com/"
+Repository = "https://github.com/tobymao/sqlglot"
 
-[tool.maturin]
-features = ["pyo3/extension-module"]
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"

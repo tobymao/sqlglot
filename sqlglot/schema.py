@@ -9,12 +9,16 @@ from sqlglot.errors import SchemaError
 from sqlglot.helper import dict_depth, first
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
+from sqlglot.helper import mypyc_attr, trait
+
+
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
     ColumnMapping = t.Union[t.Dict, str, t.List]
 
 
+@trait
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
@@ -143,6 +147,7 @@ class Schema(abc.ABC):
         return True
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class AbstractMappingSchema:
     def __init__(
         self,
@@ -747,15 +752,16 @@ def nested_get(
     Returns:
         The value or None if it doesn't exist.
     """
+    result: t.Any = d
     for name, key in path:
-        d = d.get(key)  # type: ignore
-        if d is None:
+        result = result.get(key)
+        if result is None:
             if raise_on_missing:
                 name = "table" if name == "this" else name
                 raise ValueError(f"Unknown {name}: {key}")
             return None
 
-    return d
+    return result
 
 
 def nested_set(d: t.Dict, keys: t.Sequence[str], value: t.Any) -> t.Dict:

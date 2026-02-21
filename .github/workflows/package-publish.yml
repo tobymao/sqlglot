@@ -1,4 +1,4 @@
-name: Publish sqlglot and sqlglotrs to PyPI
+name: Publish sqlglot to PyPI
 
 on:
   push:
@@ -9,161 +9,131 @@ permissions:
   contents: read
 
 jobs:
-  should-deploy-rs:
-    runs-on: ubuntu-latest
-    outputs:
-      deploy: ${{ steps.check_deploy.outputs.deploy }}
+  # Build mypyc wheels for each platform and Python version.
+  build-wheels:
+    name: Build wheels (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - id: check_deploy
+      - name: Set up QEMU (Linux aarch64)
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: pypa/cibuildwheel@v3.3.1
+        with:
+          package-dir: sqlglotc
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*
+          CIBW_ARCHS_LINUX: x86_64 aarch64
+          CIBW_ARCHS_MACOS: universal2
+          CIBW_ARCHS_WINDOWS: AMD64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  # Build the sqlglotc sdist (source-only, no wheels — always compiles on install).
+  sdist-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install build tools
+        run: pip install build
+      - name: Build sdist
         run: |
-          bash ./.github/workflows/should_deploy_sqlglotrs.sh \
-          && echo "deploy=true" >> $GITHUB_OUTPUT \
-          || echo "deploy=false" >> $GITHUB_OUTPUT
+          cd sqlglotc
+          python -m build --sdist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqlglotc-sdist
+          path: sqlglotc/dist/*.tar.gz
 
-  build-rs:
-    needs: should-deploy-rs
-    if: needs.should-deploy-rs.outputs.deploy == 'true'
-    strategy:
-      matrix:
-        os: [linux, macos, windows]
-        target: [x86_64, aarch64]
-        include:
-        - os: linux
-          target: i686
-        - os: linux
-          target: armv7
-        - os: linux
-          target: s390x
-        - os: linux
-          target: ppc64le
-        - os: windows
-          target: i686
-          python-architecture: x86
-        exclude:
-        - os: windows
-          target: aarch64
-    runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
-    steps:
-    - uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-        architecture: ${{ matrix.python-architecture || 'x64' }}
-    - uses: actions/setup-python@v5
-      if: matrix.os == 'windows'
-      with:
-        python-version: '3.9'
-        architecture: ${{ matrix.python-architecture || 'x64' }}
-    - name: Build wheels
-      uses: PyO3/maturin-action@v1
-      with:
-        target: ${{ matrix.target }}
-        args: --release --out dist --interpreter 3.9 3.10 3.11 3.12 3.13 3.14
-        sccache: 'true'
-        manylinux: auto
-        working-directory: ./sqlglotrs
-    - name: Upload wheels
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheels-${{ matrix.os }}-${{ matrix.target }}
-        path: sqlglotrs/dist
-
-  sdist-rs:
-    needs: should-deploy-rs
-    if: needs.should-deploy-rs.outputs.deploy == 'true'
+  # Publish sqlglotc wheels and sdist to PyPI.
+  publish-sqlglotc:
+    needs: [build-wheels, sdist-c]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
-    - name: Build sdist
-      uses: PyO3/maturin-action@v1
-      with:
-        command: sdist
-        args: --out dist
-        working-directory: ./sqlglotrs
-    - name: Upload sdist
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheels-sdist
-        path: sqlglotrs/dist
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist/
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: sqlglotc-sdist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
-  deploy-rs:
-    needs: [should-deploy-rs, build-rs, sdist-rs]
-    if: needs.should-deploy-rs.outputs.deploy == 'true'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: wheels-*
-        path: sqlglotrs/dist
-    - name: Publish to PyPI
-      uses: PyO3/maturin-action@v1
-      env:
-        MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-      with:
-        command: upload
-        args: --non-interactive --skip-existing dist/wheels-*/*
-        working-directory: ./sqlglotrs
-
+  # Publish the main sqlglot package.
   deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source ./.venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install build twine
-        make install-dev
-    - name: Build and publish
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        source ./.venv/bin/activate
-        python -m build
-        twine upload dist/*
-    - name: Update CHANGELOG
-      id: changelog
-      continue-on-error: true
-      uses: requarks/changelog-action@v1
-      with:
-        token: ${{ github.token }}
-        tag: ${{ github.ref_name }}
-    - name: Commit CHANGELOG.md
-      continue-on-error: true
-      uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        branch: main
-        commit_message: "Update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
-        file_pattern: "CHANGELOG.md"
-    - name: Update API docs
-      run: |
-        source ./.venv/bin/activate
-        make docs
-        echo "sqlglot.com" > docs/CNAME
-        mv docs /tmp/generated-docs
-        git checkout api-docs
-        rm -rf docs
-        mv /tmp/generated-docs docs
-    - name: Commit API docs
-      uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        branch: api-docs
-        commit_message: 'Update API docs for ${{ github.ref_name }} [skip ci]'
-        file_pattern: 'docs'
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source ./.venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install build twine
+          make install-dev
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          source ./.venv/bin/activate
+          python -m build
+          twine upload dist/*
+      - name: Update CHANGELOG
+        id: changelog
+        continue-on-error: true
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
+      - name: Commit CHANGELOG.md
+        continue-on-error: true
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: main
+          commit_message: "Update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+          file_pattern: "CHANGELOG.md"
+      - name: Update API docs
+        run: |
+          source ./.venv/bin/activate
+          make docs
+          echo "sqlglot.com" > docs/CNAME
+          mv docs /tmp/generated-docs
+          git checkout api-docs
+          rm -rf docs
+          mv /tmp/generated-docs docs
+      - name: Commit API docs
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: api-docs
+          commit_message: 'Update API docs for ${{ github.ref_name }} [skip ci]'
+          file_pattern: 'docs'

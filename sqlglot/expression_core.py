@@ -4,9 +4,8 @@ import sys
 import typing as t
 from collections import deque
 from copy import deepcopy
-from mypy_extensions import mypyc_attr
 
-from sqlglot.helper import to_bool
+from sqlglot.helper import mypyc_attr, to_bool
 
 
 EC = t.TypeVar("EC", bound="ExpressionCore")
@@ -43,7 +42,7 @@ class ExpressionCore:
         self.arg_key: t.Optional[str] = None
         self.index: t.Optional[int] = None
         self.comments: t.Optional[t.List[str]] = None
-        self._type: t.Optional[t.Any] = None
+        self._type: t.Optional[ExpressionCore] = None
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
         self._hash: t.Optional[int] = None
 

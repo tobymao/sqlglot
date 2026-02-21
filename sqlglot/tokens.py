@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import os
-
 import typing as t
 
-from sqlglot.errors import SqlglotError, TokenError
 from sqlglot.trie import new_trie
 
 # Import Token and TokenType from tokenizer_core (compiled with mypyc)
@@ -12,20 +9,6 @@ from sqlglot.tokenizer_core import Token, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
-
-
-try:
-    from sqlglotrs import (  # type: ignore
-        TokenizerDialectSettings as RsTokenizerDialectSettings,
-    )
-
-    USE_RS_TOKENIZER = os.environ.get("SQLGLOTRS_TOKENIZER", "1") == "1"
-except ImportError:
-    USE_RS_TOKENIZER = False
-
-
-_ALL_TOKEN_TYPES = list(TokenType)
-_TOKEN_TYPE_TO_INDEX = {token_type: i for i, token_type in enumerate(_ALL_TOKEN_TYPES)}
 
 
 def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
@@ -73,7 +56,6 @@ class _TokenizerBase:
     _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]]
     _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]]
     _KEYWORD_TRIE: t.ClassVar[t.Dict]
-    _RS_TOKENIZER: t.ClassVar[t.Optional[t.Any]]
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -116,58 +98,6 @@ class _TokenizerBase:
             )
             if " " in key or any(single in key for single in cls.SINGLE_TOKENS)
         )
-        if USE_RS_TOKENIZER:
-            from sqlglotrs import (  # type: ignore
-                Tokenizer as RsTokenizer,
-                TokenizerSettings as RsTokenizerSettings,
-                TokenTypeSettings as RsTokenTypeSettings,
-            )
-
-            settings = RsTokenizerSettings(
-                single_tokens={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in cls.SINGLE_TOKENS.items()},
-                keywords={k: _TOKEN_TYPE_TO_INDEX[v] for k, v in cls.KEYWORDS.items()},
-                numeric_literals=cls.NUMERIC_LITERALS,
-                identifiers=cls._IDENTIFIERS,
-                identifier_escapes=cls._IDENTIFIER_ESCAPES,
-                string_escapes=cls._STRING_ESCAPES,
-                byte_string_escapes=cls._BYTE_STRING_ESCAPES,
-                quotes=cls._QUOTES,
-                format_strings={
-                    k: (v1, _TOKEN_TYPE_TO_INDEX[v2]) for k, (v1, v2) in cls._FORMAT_STRINGS.items()
-                },
-                has_bit_strings=bool(cls.BIT_STRINGS),
-                has_hex_strings=bool(cls.HEX_STRINGS),
-                comments=cls._COMMENTS,
-                var_single_tokens=cls.VAR_SINGLE_TOKENS,
-                commands={_TOKEN_TYPE_TO_INDEX[v] for v in cls.COMMANDS},
-                command_prefix_tokens={_TOKEN_TYPE_TO_INDEX[v] for v in cls.COMMAND_PREFIX_TOKENS},
-                heredoc_tag_is_identifier=cls.HEREDOC_TAG_IS_IDENTIFIER,
-                string_escapes_allowed_in_raw_strings=cls.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
-                nested_comments=cls.NESTED_COMMENTS,
-                hint_start=cls.HINT_START,
-                tokens_preceding_hint={_TOKEN_TYPE_TO_INDEX[v] for v in cls.TOKENS_PRECEDING_HINT},
-                escape_follow_chars=cls._ESCAPE_FOLLOW_CHARS,
-            )
-            token_types = RsTokenTypeSettings(
-                bit_string=_TOKEN_TYPE_TO_INDEX[TokenType.BIT_STRING],
-                byte_string=_TOKEN_TYPE_TO_INDEX[TokenType.BYTE_STRING],
-                break_=_TOKEN_TYPE_TO_INDEX[TokenType.BREAK],
-                dcolon=_TOKEN_TYPE_TO_INDEX[TokenType.DCOLON],
-                heredoc_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEREDOC_STRING],
-                raw_string=_TOKEN_TYPE_TO_INDEX[TokenType.RAW_STRING],
-                hex_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEX_STRING],
-                identifier=_TOKEN_TYPE_TO_INDEX[TokenType.IDENTIFIER],
-                number=_TOKEN_TYPE_TO_INDEX[TokenType.NUMBER],
-                parameter=_TOKEN_TYPE_TO_INDEX[TokenType.PARAMETER],
-                semicolon=_TOKEN_TYPE_TO_INDEX[TokenType.SEMICOLON],
-                string=_TOKEN_TYPE_TO_INDEX[TokenType.STRING],
-                var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
-                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[cls.HEREDOC_STRING_ALTERNATIVE],
-                hint=_TOKEN_TYPE_TO_INDEX[TokenType.HINT],
-            )
-            cls._RS_TOKENIZER = RsTokenizer(settings, token_types)
-        else:
-            cls._RS_TOKENIZER = None
 
 
 class Tokenizer(_TokenizerBase):
@@ -247,7 +177,6 @@ class Tokenizer(_TokenizerBase):
     _STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
     _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
     _KEYWORD_TRIE: t.ClassVar[t.Dict] = {}
-    _RS_TOKENIZER: t.ClassVar[t.Optional[t.Any]] = None
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]] = set()
 
     KEYWORDS: t.ClassVar[t.Dict[str, TokenType]] = {
@@ -584,110 +513,63 @@ class Tokenizer(_TokenizerBase):
 
     __slots__ = (
         "dialect",
-        "use_rs_tokenizer",
-        "_rs_dialect_settings",
-        "_tokens",
         "_core",
     )
 
     def __init__(
         self,
         dialect: DialectType = None,
-        use_rs_tokenizer: t.Optional[bool] = None,
         **opts: t.Any,
     ) -> None:
         from sqlglot.dialects import Dialect
+        from sqlglot.tokenizer_core import TokenizerCore as _TokenizerCore
 
         self.dialect = Dialect.get_or_raise(dialect)
 
-        # initialize `use_rs_tokenizer`, and allow it to be overwritten per Tokenizer instance
-        self.use_rs_tokenizer = (
-            use_rs_tokenizer if use_rs_tokenizer is not None else USE_RS_TOKENIZER
+        self._core = _TokenizerCore(
+            single_tokens=self.SINGLE_TOKENS,
+            keywords=self.KEYWORDS,
+            quotes=self._QUOTES,
+            format_strings=self._FORMAT_STRINGS,
+            identifiers=self._IDENTIFIERS,
+            comments=self._COMMENTS,
+            string_escapes=self._STRING_ESCAPES,
+            byte_string_escapes=self._BYTE_STRING_ESCAPES,
+            identifier_escapes=self._IDENTIFIER_ESCAPES,
+            escape_follow_chars=self._ESCAPE_FOLLOW_CHARS,
+            commands=self.COMMANDS,
+            command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
+            nested_comments=self.NESTED_COMMENTS,
+            hint_start=self.HINT_START,
+            tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
+            bit_strings=list(self.BIT_STRINGS),
+            hex_strings=list(self.HEX_STRINGS),
+            numeric_literals=self.NUMERIC_LITERALS,
+            var_single_tokens=self.VAR_SINGLE_TOKENS,
+            string_escapes_allowed_in_raw_strings=self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
+            heredoc_tag_is_identifier=self.HEREDOC_TAG_IS_IDENTIFIER,
+            heredoc_string_alternative=self.HEREDOC_STRING_ALTERNATIVE,
+            keyword_trie=self._KEYWORD_TRIE,
+            numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,
+            identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
+            unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
         )
-
-        self._tokens: t.List[Token] = []
-
-        if self.use_rs_tokenizer:
-            self._rs_dialect_settings = RsTokenizerDialectSettings(
-                unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
-                identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
-                numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,
-            )
-            self._core = None
-        else:
-            # Import core tokenizer after Token/TokenType are defined to avoid circular imports
-            from sqlglot.tokenizer_core import (  # type: ignore
-                TokenizerCore as _TokenizerCore,
-                TokenizerConfig as _TokenizerConfig,
-            )
-
-            # Initialize core tokenizer (compiled with mypyc when available)
-            config = _TokenizerConfig(
-                single_tokens=self.SINGLE_TOKENS,
-                keywords=self.KEYWORDS,
-                quotes=self._QUOTES,
-                format_strings=self._FORMAT_STRINGS,
-                identifiers=self._IDENTIFIERS,
-                comments=self._COMMENTS,
-                string_escapes=self._STRING_ESCAPES,
-                byte_string_escapes=self._BYTE_STRING_ESCAPES,
-                identifier_escapes=self._IDENTIFIER_ESCAPES,
-                escape_follow_chars=self._ESCAPE_FOLLOW_CHARS,
-                commands=self.COMMANDS,
-                command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
-                nested_comments=self.NESTED_COMMENTS,
-                hint_start=self.HINT_START,
-                tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
-                bit_strings=list(self.BIT_STRINGS),
-                hex_strings=list(self.HEX_STRINGS),
-                numeric_literals=self.NUMERIC_LITERALS,
-                var_single_tokens=self.VAR_SINGLE_TOKENS,
-                string_escapes_allowed_in_raw_strings=self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
-                heredoc_tag_is_identifier=self.HEREDOC_TAG_IS_IDENTIFIER,
-                heredoc_string_alternative=self.HEREDOC_STRING_ALTERNATIVE,
-                keyword_trie=self._KEYWORD_TRIE,
-                numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,
-                identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
-                unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
-            )
-            self._core = _TokenizerCore(config)
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
-        if self.use_rs_tokenizer:
-            return self.tokenize_rs(sql)
-
         return self._core.tokenize(sql)  # type: ignore
 
     @property
     def sql(self) -> str:
         """The SQL string being tokenized."""
-        return self._core.sql if self._core else ""
+        return self._core.sql
 
     @property
     def size(self) -> int:
         """Length of the SQL string."""
-        return self._core.size if self._core else 0
+        return self._core.size
 
     @property
     def tokens(self) -> t.List[Token]:
         """The list of tokens produced by tokenization."""
-        if self._core:
-            return self._core.tokens
-        return self._tokens
-
-    def tokenize_rs(self, sql: str) -> t.List[Token]:
-        if not self._RS_TOKENIZER:
-            raise SqlglotError("Rust tokenizer is not available")
-
-        tokens, error_msg = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
-        for token in tokens:
-            token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
-
-        # Setting this here so partial token lists can be inspected even if there is a failure
-        self._tokens = tokens
-
-        if error_msg is not None:
-            raise TokenError(error_msg)
-
-        return tokens
+        return self._core.tokens

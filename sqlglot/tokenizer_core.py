@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import typing as t
-from dataclasses import dataclass
 from enum import IntEnum, auto
 
-from sqlglot.trie import TrieResult, in_trie
 from sqlglot.errors import TokenError
 
 
@@ -453,7 +451,17 @@ class TokenType(IntEnum):
 
 
 class Token:
-    __slots__ = ("token_type", "text", "line", "col", "start", "end", "comments")
+    # mypyc doesn't expose slots
+    _attrs: t.ClassVar[t.Tuple[str, ...]] = (
+        "token_type",
+        "text",
+        "line",
+        "col",
+        "start",
+        "end",
+        "comments",
+    )
+    __slots__ = _attrs
 
     @classmethod
     def number(cls, number: int) -> Token:
@@ -498,44 +506,9 @@ class Token:
             f"{k}: TokenType.{self.token_type.name}"
             if k == "token_type"
             else f"{k}: {getattr(self, k)}"
-            for k in self.__slots__
+            for k in self._attrs
         )
         return f"<Token {attributes}>"
-
-
-@dataclass
-class TokenizerConfig:
-    """Configuration passed from Tokenizer to TokenizerCore."""
-
-    # Class-level config from Tokenizer
-    single_tokens: t.Dict[str, TokenType]
-    keywords: t.Dict[str, TokenType]
-    quotes: t.Dict[str, str]
-    format_strings: t.Dict[str, t.Tuple[str, TokenType]]
-    identifiers: t.Dict[str, str]
-    comments: t.Dict[str, t.Any]  # values can be str or None
-    string_escapes: t.Set[str]
-    byte_string_escapes: t.Set[str]
-    identifier_escapes: t.Set[str]
-    escape_follow_chars: t.Set[str]
-    commands: t.Set[TokenType]
-    command_prefix_tokens: t.Set[TokenType]
-    nested_comments: bool
-    hint_start: str
-    tokens_preceding_hint: t.Set[TokenType]
-    bit_strings: t.List[t.Any]
-    hex_strings: t.List[t.Any]
-    numeric_literals: t.Dict[str, str]
-    var_single_tokens: t.Set[str]
-    string_escapes_allowed_in_raw_strings: bool
-    heredoc_tag_is_identifier: bool
-    heredoc_string_alternative: TokenType
-    keyword_trie: t.Dict[t.Any, t.Any]
-
-    # Dialect-specific config
-    numbers_can_be_underscore_separated: bool
-    identifiers_can_start_with_digit: bool
-    unescaped_sequences: t.Dict[str, str]
 
 
 class TokenizerCore:
@@ -552,11 +525,89 @@ class TokenizerCore:
         "_end",
         "_peek",
         "_prev_token_line",
-        "_config",
+        "single_tokens",
+        "keywords",
+        "quotes",
+        "format_strings",
+        "identifiers",
+        "comments",
+        "string_escapes",
+        "byte_string_escapes",
+        "identifier_escapes",
+        "escape_follow_chars",
+        "commands",
+        "command_prefix_tokens",
+        "nested_comments",
+        "hint_start",
+        "tokens_preceding_hint",
+        "bit_strings",
+        "hex_strings",
+        "numeric_literals",
+        "var_single_tokens",
+        "string_escapes_allowed_in_raw_strings",
+        "heredoc_tag_is_identifier",
+        "heredoc_string_alternative",
+        "keyword_trie",
+        "numbers_can_be_underscore_separated",
+        "identifiers_can_start_with_digit",
+        "unescaped_sequences",
     )
 
-    def __init__(self, config: TokenizerConfig) -> None:
-        self._config = config
+    def __init__(
+        self,
+        single_tokens: t.Dict[str, TokenType],
+        keywords: t.Dict[str, TokenType],
+        quotes: t.Dict[str, str],
+        format_strings: t.Dict[str, t.Tuple[str, TokenType]],
+        identifiers: t.Dict[str, str],
+        comments: t.Dict[str, t.Optional[str]],
+        string_escapes: t.Set[str],
+        byte_string_escapes: t.Set[str],
+        identifier_escapes: t.Set[str],
+        escape_follow_chars: t.Set[str],
+        commands: t.Set[TokenType],
+        command_prefix_tokens: t.Set[TokenType],
+        nested_comments: bool,
+        hint_start: str,
+        tokens_preceding_hint: t.Set[TokenType],
+        bit_strings: t.List[t.Union[str, t.Tuple[str, str]]],
+        hex_strings: t.List[t.Union[str, t.Tuple[str, str]]],
+        numeric_literals: t.Dict[str, str],
+        var_single_tokens: t.Set[str],
+        string_escapes_allowed_in_raw_strings: bool,
+        heredoc_tag_is_identifier: bool,
+        heredoc_string_alternative: TokenType,
+        keyword_trie: t.Dict,
+        numbers_can_be_underscore_separated: bool,
+        identifiers_can_start_with_digit: bool,
+        unescaped_sequences: t.Dict[str, str],
+    ) -> None:
+        self.single_tokens = single_tokens
+        self.keywords = keywords
+        self.quotes = quotes
+        self.format_strings = format_strings
+        self.identifiers = identifiers
+        self.comments = comments
+        self.string_escapes = string_escapes
+        self.byte_string_escapes = byte_string_escapes
+        self.identifier_escapes = identifier_escapes
+        self.escape_follow_chars = escape_follow_chars
+        self.commands = commands
+        self.command_prefix_tokens = command_prefix_tokens
+        self.nested_comments = nested_comments
+        self.hint_start = hint_start
+        self.tokens_preceding_hint = tokens_preceding_hint
+        self.bit_strings = bit_strings
+        self.hex_strings = hex_strings
+        self.numeric_literals = numeric_literals
+        self.var_single_tokens = var_single_tokens
+        self.string_escapes_allowed_in_raw_strings = string_escapes_allowed_in_raw_strings
+        self.heredoc_tag_is_identifier = heredoc_tag_is_identifier
+        self.heredoc_string_alternative = heredoc_string_alternative
+        self.keyword_trie = keyword_trie
+        self.numbers_can_be_underscore_separated = numbers_can_be_underscore_separated
+        self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
+        self.unescaped_sequences = unescaped_sequences
         self.reset()
 
     def reset(self) -> None:
@@ -590,7 +641,7 @@ class TokenizerCore:
         return self.tokens
 
     def _scan(self, check_semicolon: bool = False) -> None:
-        cfg = self._config
+        identifiers = self.identifiers
 
         while self.size and not self._end:
             current = self._current
@@ -599,7 +650,7 @@ class TokenizerCore:
             while current < self.size:
                 char = self.sql[current]
 
-                if char.isspace() and (char == " " or char == "\t"):
+                if char == " " or char == "\t":
                     current += 1
                 else:
                     break
@@ -612,8 +663,8 @@ class TokenizerCore:
             if not self._char.isspace():
                 if self._char.isdigit():
                     self._scan_number()
-                elif self._char in cfg.identifiers:
-                    self._scan_identifier(cfg.identifiers[self._char])
+                elif self._char in identifiers:
+                    self._scan_identifier(identifiers[self._char])
                 else:
                     self._scan_keywords()
 
@@ -674,7 +725,6 @@ class TokenizerCore:
         return self.sql[self._start : self._current]
 
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
-        cfg = self._config
         self._prev_token_line = self._line
 
         if self._comments and token_type == TokenType.SEMICOLON and self.tokens:
@@ -700,9 +750,9 @@ class TokenizerCore:
         # If we have either a semicolon or a begin token before the command's token, we'll parse
         # whatever follows the command's token as a string
         if (
-            token_type in cfg.commands
+            token_type in self.commands
             and self._peek != ";"
-            and (len(self.tokens) == 1 or self.tokens[-2].token_type in cfg.command_prefix_tokens)
+            and (len(self.tokens) == 1 or self.tokens[-2].token_type in self.command_prefix_tokens)
         ):
             start = self._current
             tokens = len(self.tokens)
@@ -713,29 +763,26 @@ class TokenizerCore:
                 self._add(TokenType.STRING, text)
 
     def _scan_keywords(self) -> None:
-        cfg = self._config
         sql = self.sql
         sql_size = self.size
-        single_tokens = cfg.single_tokens
+        single_tokens = self.single_tokens
         size = 0
         word = None
         chars = self._char
         char = chars
         prev_space = False
         skip = False
-        trie = cfg.keyword_trie
+        trie = self.keyword_trie
         single_token = char in single_tokens
 
         while chars:
-            if skip:
-                result = TrieResult.PREFIX
-            else:
-                result, trie = in_trie(trie, char.upper())
-
-            if result == TrieResult.FAILED:
-                break
-            if result == TrieResult.EXISTS:
-                word = chars
+            if not skip:
+                sub = trie.get(char.upper())
+                if sub is None:
+                    break
+                trie = sub
+                if 0 in trie:
+                    word = chars
 
             end = self._current + size
             size += 1
@@ -765,7 +812,7 @@ class TokenizerCore:
             if prev_space or single_token or not char:
                 self._advance(size - 1)
                 word = word.upper()
-                self._add(cfg.keywords[word], text=word)
+                self._add(self.keywords[word], text=word)
                 return
 
         if self._char in single_tokens:
@@ -775,13 +822,12 @@ class TokenizerCore:
         self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
-        cfg = self._config
-        if comment_start not in cfg.comments:
+        if comment_start not in self.comments:
             return False
 
         comment_start_line = self._line
         comment_start_size = len(comment_start)
-        comment_end = cfg.comments[comment_start]
+        comment_end = self.comments[comment_start]
 
         if comment_end:
             # Skip the comment's start delimiter
@@ -789,6 +835,7 @@ class TokenizerCore:
 
             comment_count = 1
             comment_end_size = len(comment_end)
+            nested_comments = self.nested_comments
 
             while not self._end:
                 if self._chars(comment_end_size) == comment_end:
@@ -800,7 +847,7 @@ class TokenizerCore:
 
                 # Nested comments are allowed by some dialects, e.g. databricks, duckdb, postgres
                 if (
-                    cfg.nested_comments
+                    nested_comments
                     and not self._end
                     and self._chars(comment_end_size) == comment_start
                 ):
@@ -817,9 +864,9 @@ class TokenizerCore:
             self._comments.append(self._text[comment_start_size:])
 
         if (
-            comment_start == cfg.hint_start
+            comment_start == self.hint_start
             and self.tokens
-            and self.tokens[-1].token_type in cfg.tokens_preceding_hint
+            and self.tokens[-1].token_type in self.tokens_preceding_hint
         ):
             self._add(TokenType.HINT)
 
@@ -833,17 +880,20 @@ class TokenizerCore:
         return True
 
     def _scan_number(self) -> None:
-        cfg = self._config
-
         if self._char == "0":
             peek = self._peek.upper()
             if peek == "B":
-                return self._scan_bits() if cfg.bit_strings else self._add(TokenType.NUMBER)
+                return self._scan_bits() if self.bit_strings else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return self._scan_hex() if cfg.hex_strings else self._add(TokenType.NUMBER)
+                return self._scan_hex() if self.hex_strings else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0
+        numbers_can_be_underscore_separated = self.numbers_can_be_underscore_separated
+        single_tokens = self.single_tokens
+        keywords = self.keywords
+        numeric_literals = self.numeric_literals
+        identifiers_can_start_with_digit = self.identifiers_can_start_with_digit
 
         while True:
             if self._peek.isdigit():
@@ -863,23 +913,23 @@ class TokenizerCore:
             elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()
-            elif self._peek == "_" and cfg.numbers_can_be_underscore_separated:
+            elif self._peek == "_" and numbers_can_be_underscore_separated:
                 self._advance()
             elif self._peek.isidentifier():
                 number_text = self._text
                 literal = ""
 
-                while self._peek.strip() and self._peek not in cfg.single_tokens:
+                while self._peek.strip() and self._peek not in single_tokens:
                     literal += self._peek
                     self._advance()
 
-                token_type = cfg.keywords.get(cfg.numeric_literals.get(literal.upper(), ""))
+                token_type = keywords.get(numeric_literals.get(literal.upper(), ""))
 
                 if token_type:
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif cfg.identifiers_can_start_with_digit:
+                elif identifiers_can_start_with_digit:
                     return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))
@@ -908,10 +958,11 @@ class TokenizerCore:
             self._add(TokenType.IDENTIFIER)
 
     def _extract_value(self) -> str:
-        cfg = self._config
+        single_tokens = self.single_tokens
+
         while True:
             char = self._peek.strip()
-            if char and char not in cfg.single_tokens:
+            if char and char not in single_tokens:
                 self._advance(alnum=True)
             else:
                 break
@@ -919,14 +970,13 @@ class TokenizerCore:
         return self._text
 
     def _scan_string(self, start: str) -> bool:
-        cfg = self._config
         base = None
         token_type = TokenType.STRING
 
-        if start in cfg.quotes:
-            end = cfg.quotes[start]
-        elif start in cfg.format_strings:
-            end, token_type = cfg.format_strings[start]
+        if start in self.quotes:
+            end = self.quotes[start]
+        elif start in self.format_strings:
+            end, token_type = self.format_strings[start]
 
             if token_type == TokenType.HEX_STRING:
                 base = 16
@@ -941,19 +991,19 @@ class TokenizerCore:
                     tag = self._extract_string(
                         end,
                         raw_string=True,
-                        raise_unmatched=not cfg.heredoc_tag_is_identifier,
+                        raise_unmatched=not self.heredoc_tag_is_identifier,
                     )
 
                 if (
                     tag
-                    and cfg.heredoc_tag_is_identifier
+                    and self.heredoc_tag_is_identifier
                     and (self._end or tag.isdigit() or any(c.isspace() for c in tag))
                 ):
                     if not self._end:
                         self._advance(-1)
 
                     self._advance(-len(tag))
-                    self._add(cfg.heredoc_string_alternative)
+                    self._add(self.heredoc_string_alternative)
                     return True
 
                 end = f"{start}{tag}{end}"
@@ -964,9 +1014,9 @@ class TokenizerCore:
         text = self._extract_string(
             end,
             escapes=(
-                cfg.byte_string_escapes
+                self.byte_string_escapes
                 if token_type == TokenType.BYTE_STRING
-                else cfg.string_escapes
+                else self.string_escapes
             ),
             raw_string=token_type == TokenType.RAW_STRING,
         )
@@ -983,17 +1033,15 @@ class TokenizerCore:
         return True
 
     def _scan_identifier(self, identifier_end: str) -> None:
-        cfg = self._config
         self._advance()
         text = self._extract_string(
-            identifier_end, escapes=cfg.identifier_escapes | {identifier_end}
+            identifier_end, escapes=self.identifier_escapes | {identifier_end}
         )
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
-        cfg = self._config
-        var_single_tokens = cfg.var_single_tokens
-        single_tokens = cfg.single_tokens
+        var_single_tokens = self.var_single_tokens
+        single_tokens = self.single_tokens
 
         while True:
             peek = self._peek
@@ -1006,7 +1054,7 @@ class TokenizerCore:
         self._add(
             TokenType.VAR
             if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
-            else cfg.keywords.get(self.sql[self._start : self._current].upper(), TokenType.VAR)
+            else self.keywords.get(self.sql[self._start : self._current].upper(), TokenType.VAR)
         )
 
     def _extract_string(
@@ -1016,30 +1064,31 @@ class TokenizerCore:
         raw_string: bool = False,
         raise_unmatched: bool = True,
     ) -> str:
-        cfg = self._config
         text = ""
         delim_size = len(delimiter)
-        escapes = cfg.string_escapes if escapes is None else escapes
+        escapes = self.string_escapes if escapes is None else escapes
+        unescaped_sequences = self.unescaped_sequences
+        escape_follow_chars = self.escape_follow_chars
+        string_escapes_allowed_in_raw_strings = self.string_escapes_allowed_in_raw_strings
+        quotes = self.quotes
 
         while True:
-            if not raw_string and cfg.unescaped_sequences and self._peek and self._char in escapes:
-                unescaped_sequence = cfg.unescaped_sequences.get(self._char + self._peek)
+            if not raw_string and unescaped_sequences and self._peek and self._char in escapes:
+                unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
                 if unescaped_sequence:
                     self._advance(2)
                     text += unescaped_sequence
                     continue
 
             is_valid_custom_escape = (
-                cfg.escape_follow_chars
-                and self._char == "\\"
-                and self._peek not in cfg.escape_follow_chars
+                escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars
             )
 
             if (
-                (cfg.string_escapes_allowed_in_raw_strings or not raw_string)
+                (string_escapes_allowed_in_raw_strings or not raw_string)
                 and self._char in escapes
                 and (self._peek == delimiter or self._peek in escapes or is_valid_custom_escape)
-                and (self._char not in cfg.quotes or self._char == self._peek)
+                and (self._char not in quotes or self._char == self._peek)
             ):
                 if self._peek == delimiter:
                     text += self._peek

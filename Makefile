@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pre-commit bench bench-parse bench-optimize test test-fast test-fast-rs unit style check docs docs-serve
+.PHONY: install install-dev install-devc install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean
 
 ifdef UV
     PIP := uv pip
@@ -6,54 +6,56 @@ else
     PIP := pip
 endif
 
+SO_BACKUP := /tmp/sqlglot_so_backup
+
+hidec:
+	mkdir -p $(SO_BACKUP) && mv -f sqlglot/*.so $(SO_BACKUP)/ 2>/dev/null; true
+
+showc:
+	mv -f $(SO_BACKUP)/*.so sqlglot/ 2>/dev/null; true
+
+clean:
+	rm -rf sqlglot/*.so sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
+
 install:
 	$(PIP) install -e .
 
-install-dev: install-dev-core install-dev-rs
-
-install-dev-rs-release:
-	cd sqlglotrs/ && python -m maturin develop -r
-
-install-dev-rs:
-	@unset CONDA_PREFIX && \
-	cd sqlglotrs/ && python -m maturin develop
-
-install-dev-core:
+install-dev:
 	$(PIP) install -e ".[dev]"
+
+install-devc: clean
+	cd sqlglotc && pip install -e .
 
 install-pre-commit:
 	pre-commit install
 
 bench: bench-parse bench-optimize
 
-bench-parse: install-dev-rs-release
+bench-parse:
 	python -m benchmarks.parse
 
-bench-optimize: install-dev-rs-release
+bench-optimize:
 	python -m benchmarks.optimize
 
-test:
-	SQLGLOTRS_TOKENIZER=0 python -m unittest
+test: hidec
+	trap '$(MAKE) showc' EXIT; python -m unittest
 
 test-fast:
-	SQLGLOTRS_TOKENIZER=0 python -m unittest --failfast
+	python -m unittest --failfast
 
-test-rs:
-	RUST_BACKTRACE=1 python -m unittest
+unit: hidec
+	trap '$(MAKE) showc' EXIT; SKIP_INTEGRATION=1 python -m unittest
 
-test-fast-rs:
-	RUST_BACKTRACE=1 python -m unittest --failfast
+testc: install-devc
+	python -m unittest
 
-unit:
-	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest
-
-unit-rs:
-	SKIP_INTEGRATION=1 RUST_BACKTRACE=1 python -m unittest
+unitc: install-devc
+	SKIP_INTEGRATION=1 python -m unittest
 
 style:
 	pre-commit run --all-files
 
-check: style test test-rs
+check: style test testc
 
 docs:
 	python pdoc/cli.py -o docs

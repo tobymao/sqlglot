@@ -1653,3 +1653,20 @@ LIFETIME(MIN 0 MAX 0)""",
         # currently expression is a Column, but I don't have strong enough feelings
         # on that to assert on it.
         self.assertEqual(nested.expression.sql(), "nested.twice")
+
+    def test_sql_security(self):
+        stmts = [
+            "CREATE VIEW v DEFINER = 'alice' SQL SECURITY DEFINER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER = 'alice' AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER = CURRENT_USER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY NONE AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY DEFINER DEFINER = 'alice' AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY NONE AS SELECT 1",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER = 'alice'",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER = CURRENT_USER",
+        ]
+        for stmt in stmts:
+            with self.subTest(stmt):
+                self.validate_identity(stmt)

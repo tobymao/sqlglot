@@ -4591,6 +4591,11 @@ class ReplacePartition(Expression):
     arg_types = {"expression": True, "source": True}
 
 
+# https://clickhouse.com/docs/en/sql-reference/statements/alter/view#alter-modify-sql-security
+class AlterModifySqlSecurity(Expression):
+    arg_types = {"this": True, "definer": False}
+
+
 # Binary expressions like (ADD a b)
 class Binary(Condition):
     arg_types = {"this": True, "expression": True}

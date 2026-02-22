@@ -116,6 +116,7 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
+        self.validate_identity("SELECT col.^nested FROM t")
 
         # Numeric trunc
         self.validate_identity("trunc(3.14159, 2)").assert_is(exp.Trunc)

@@ -116,7 +116,6 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
-        self.validate_identity("SELECT col.^nested FROM t")
 
         # Numeric trunc
         self.validate_identity("trunc(3.14159, 2)").assert_is(exp.Trunc)
@@ -1617,3 +1616,15 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_json_nested(self):
+        self.validate_identity("SELECT col.^nested, t.col2.^nested, t.col3.^nested.twice FROM t")
+
+        nested = parse_one("t.col3.^nested.twice", read="clickhouse")
+
+        self.assertIsInstance(nested, exp.NestedJSONSelect)
+        self.assertIsInstance(nested.this, exp.Column)
+        self.assertEqual(nested.this.sql(), "t.col3")
+        # currently expression is a Column, but I don't have strong enough feelings
+        # on that to assert on it.
+        self.assertEqual(nested.expression.sql(), "nested.twice")

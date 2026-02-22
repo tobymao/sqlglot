@@ -23,6 +23,7 @@ class TokenType(IntEnum):
     PLUS = auto()
     COLON = auto()
     DOTCOLON = auto()
+    DOTCARET = auto()
     DCOLON = auto()
     DCOLONDOLLAR = auto()
     DCOLONPERCENT = auto()

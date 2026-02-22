@@ -4684,6 +4684,11 @@ class Dot(Binary):
 DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DataType.Type]
 
 
+# ClickHouse nested JSON subcolumn access: col.^nested
+class NestedSelect(Binary):
+    pass
+
+
 class DPipe(Binary):
     arg_types = {"this": True, "expression": True, "safe": False}
 

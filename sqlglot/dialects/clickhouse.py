@@ -670,6 +670,22 @@ class ClickHouse(Dialect):
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
+            # ClickHouse JSON type supports arguments: JSON(col Type, SKIP col, param=value)
+            # https://clickhouse.com/docs/sql-reference/data-types/newjson
+            if self._curr and self._curr.token_type == TokenType.JSON:
+                self._advance()
+                if self._match(TokenType.L_PAREN):
+                    expressions = self._parse_csv(self._parse_json_type_arg)
+                    self._match_r_paren()
+                else:
+                    expressions = None
+                dtype = exp.DataType(
+                    this=exp.DataType.Type.JSON,
+                    expressions=expressions or None,
+                )
+                dtype.set("nullable", False)
+                return dtype
+
             dtype = super()._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
@@ -682,6 +698,51 @@ class ClickHouse(Dialect):
                 dtype.set("nullable", False)
 
             return dtype
+
+        def _parse_json_type_arg(self) -> t.Optional[exp.Expression]:
+            """Parse a single argument to ClickHouse's JSON type.
+
+            Handles:
+            - Column type hints: col_name Type
+            - Skip hints: SKIP col_name
+            - Parameters: name=value
+            """
+            if not self._curr:
+                return None
+
+            # SKIP col or SKIP REGEXP 'pattern'
+            if self._curr.text.upper() == "SKIP":
+                self._advance()
+                if self._curr and self._curr.token_type == TokenType.RLIKE:
+                    self._advance()
+                    return self.expression(
+                        exp.DataTypeParam,
+                        this=exp.Var(**{"this": "SKIP REGEXP"}),
+                        expression=self._parse_primary(),
+                    )
+                path = self._parse_id_var()
+                return self.expression(
+                    exp.DataTypeParam, this=exp.Var(**{"this": "SKIP"}), expression=path
+                )
+
+            # Parameter: name=value (e.g., max_dynamic_paths=2)
+            if self._next and self._next.token_type == TokenType.EQ:
+                name = self._parse_id_var()
+                self._match(TokenType.EQ)
+                value = self._parse_primary()
+                return self.expression(
+                    exp.EQ,
+                    this=exp.Var(**{"this": name.name}),
+                    expression=value,
+                )
+
+            # Column type hint: col_name Type
+            path = self._parse_id_var()
+            if path:
+                kind = self._parse_types(check_func=False, allow_identifiers=False)
+                if kind:
+                    return self.expression(exp.ColumnDef, this=path, kind=kind)
+            return None
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
@@ -1367,6 +1428,20 @@ class ClickHouse(Dialect):
             return self.func("match", expression.this, regex)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
+            # ClickHouse JSON type with arguments: JSON(col Type, SKIP col, param=value)
+            if expression.this == exp.DataType.Type.JSON and expression.expressions:
+                args = []
+                for arg in expression.expressions:
+                    if isinstance(arg, exp.ColumnDef):
+                        args.append(f"{self.sql(arg.this)} {self.sql(arg, 'kind')}")
+                    elif isinstance(arg, exp.DataTypeParam):
+                        skip = self.sql(arg, "this")
+                        path = self.sql(arg, "expression")
+                        args.append(f"{skip} {path}" if path else skip)
+                    elif isinstance(arg, exp.EQ):
+                        args.append(f"{self.sql(arg, 'this')}={self.sql(arg, 'expression')}")
+                return f"JSON({', '.join(args)})"
+
             # String is the standard ClickHouse type, every other variant is just an alias.
             # Additionally, any supplied length parameter will be ignored.
             #

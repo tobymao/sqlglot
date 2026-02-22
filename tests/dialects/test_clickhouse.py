@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from textwrap import dedent
 from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
@@ -846,6 +847,31 @@ class TestClickhouse(Validator):
         for data_type in data_types:
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+    def test_json_type(self):
+        data_types = [
+            "JSON",
+            "JSON(col1 String, SKIP col2)",
+            "JSON(col1 String, SKIP REGEXP 'col[0-9]+')",
+            "JSON(col1 String, max_dynamic_paths=2)",
+        ]
+        for i, data_type in enumerate(data_types):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+        # Multiline JSON type normalizes to single line
+        self.validate_identity(
+            """SELECT CAST(val AS JSON(
+                col1 String,
+                SKIP col2,
+                max_dynamic_paths=2
+            ))""",
+            "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths=2))",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(val AS JSON(col1 String, col2 JSON(colA String, SKIP colB)))"
+        )
 
     def test_aggregate_function_column_with_any_keyword(self):
         # Regression test for https://github.com/tobymao/sqlglot/issues/4723

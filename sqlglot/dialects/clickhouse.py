@@ -606,7 +606,7 @@ class ClickHouse(Dialect):
         COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
         COLUMN_OPERATORS[TokenType.DOTCARET] = lambda self, this, field: self.expression(
-            exp.NestedSelect, this=this, expression=field
+            exp.NestedJSONSelect, this=this, expression=field
         )
 
         JOIN_KINDS = {
@@ -1493,7 +1493,7 @@ class ClickHouse(Dialect):
         def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
             return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
 
-        def nestedselect_sql(self, expression: exp.NestedSelect) -> str:
+        def nestedjsonselect_sql(self, expression: exp.NestedJSONSelect) -> str:
             return f"{self.sql(expression, 'this')}.^{self.sql(expression, 'expression')}"
 
         def is_sql(self, expression: exp.Is) -> str:

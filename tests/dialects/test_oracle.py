@@ -87,6 +87,9 @@ class TestOracle(Validator):
             "SELECT COUNT(1) INTO V_Temp FROM TABLE(CAST(somelist AS data_list)) WHERE col LIKE '%contact'"
         )
         self.validate_identity(
+            "SELECT * FROM t WHERE c LIKE (:v)",
+        )
+        self.validate_identity(
             "SELECT department_id INTO v_department_id FROM departments FETCH FIRST 1 ROWS ONLY"
         )
         self.validate_identity(

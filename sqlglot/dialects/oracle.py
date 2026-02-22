@@ -293,8 +293,8 @@ class Oracle(Dialect):
             index = self._index
 
             # https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Expressions.html
-            interval_span = self._parse_interval_span(this)
-            if isinstance(interval_span.args.get("unit"), exp.IntervalSpan):
+            interval_span = self._try_parse(lambda: self._parse_interval_span(this))
+            if interval_span and isinstance(interval_span.args.get("unit"), exp.IntervalSpan):
                 return interval_span
 
             self._retreat(index)

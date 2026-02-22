@@ -1,5 +1,4 @@
 from datetime import date, datetime, timezone
-from textwrap import dedent
 from sqlglot import exp, parse_one
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
@@ -859,11 +858,11 @@ class TestClickhouse(Validator):
             with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
 
-        # Multiline JSON type normalizes to single line
+        # Multiline JSON type and non-case-sensitive SKIP
         self.validate_identity(
             """SELECT CAST(val AS JSON(
                 col1 String,
-                SKIP col2,
+                skip col2,
                 max_dynamic_paths=2
             ))""",
             "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths=2))",

@@ -2268,6 +2268,11 @@ class WithFill(Expression):
     }
 
 
+# https://clickhouse.com/docs/sql-reference/data-types/newjson
+class SkipJSONColumn(Expression):
+    arg_types = {"regexp": False}
+
+
 # hive specific sorts
 # https://cwiki.apache.org/confluence/display/Hive/LanguageManual+SortBy
 class Cluster(Order):

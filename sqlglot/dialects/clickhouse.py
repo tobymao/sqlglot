@@ -683,12 +683,9 @@ class ClickHouse(Dialect):
                     self._match_r_paren()
                 else:
                     expressions = None
-                dtype = exp.DataType(
-                    this=exp.DataType.Type.JSON,
-                    expressions=expressions or None,
+                return exp.DataType.build(
+                    exp.DataType.Type.JSON, expressions=expressions or None, nullable=False
                 )
-                dtype.set("nullable", False)
-                return dtype
 
             dtype = super()._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
@@ -719,26 +716,24 @@ class ClickHouse(Dialect):
                 self._advance()
                 if self._curr and self._curr.token_type == TokenType.RLIKE:
                     self._advance()
-                    return self.expression(
-                        exp.DataTypeParam,
-                        this=exp.Var(**{"this": "SKIP REGEXP"}),
-                        expression=self._parse_primary(),
-                    )
-                path = self._parse_id_var()
-                return self.expression(
-                    exp.DataTypeParam, this=exp.Var(**{"this": "SKIP"}), expression=path
-                )
+                    skip = self.expression(exp.SkipJSONColumn, regexp=exp.var("REGEX"))
+                    arg = self._parse_string()
+                else:
+                    skip = self.expression(exp.SkipJSONColumn)
+                    arg = self._parse_id_var()
+                return self.expression(exp.DataTypeParam, this=skip, expression=arg)
 
             # Parameter: name=value (e.g., max_dynamic_paths=2)
             if self._next and self._next.token_type == TokenType.EQ:
                 name = self._parse_id_var()
-                self._match(TokenType.EQ)
-                value = self._parse_primary()
-                return self.expression(
-                    exp.EQ,
-                    this=exp.Var(**{"this": name.name}),
-                    expression=value,
-                )
+                if name:
+                    self._match(TokenType.EQ)
+                    value = self._parse_primary()
+                    return self.expression(
+                        exp.EQ,
+                        this=exp.var(name.name),
+                        expression=value,
+                    )
 
             # Column type hint: col_name Type
             path = self._parse_id_var()
@@ -1473,6 +1468,11 @@ class ClickHouse(Dialect):
                 dtype = f"Nullable({dtype})"
 
             return dtype
+
+        def skipjsoncolumn_sql(self, expression: exp.SkipJSONColumn) -> str:
+            if expression.args.get("regexp"):
+                return "SKIP REGEXP"
+            return "SKIP"
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

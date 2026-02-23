@@ -33,18 +33,13 @@ class Firebolt(Dialect):
     dialect = "firebolt"
 
     class Tokenizer(tokens.Tokenizer):
-        # Support single quotes and dollar-quoted strings: $$...$$
-        QUOTES = ["'", ("$$", "$$")]
-        STRING_ESCAPES = ["'", "$$"]  # Both ' and $$ can be escaped by doubling
-
         # Support PostgreSQL-style escaped strings: E'...'
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
 
-        # Add $ to SINGLE_TOKENS so tokenizer checks trie for $$
-        SINGLE_TOKENS = {
-            **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": tokens.TokenType.PARAMETER,
-        }
+        # Support dollar-quoted strings: $$...$$, $tag$...$tag$
+        HEREDOC_STRINGS = ["$"]
+        HEREDOC_TAG_IS_IDENTIFIER = True
+        HEREDOC_STRING_ALTERNATIVE = tokens.TokenType.PARAMETER
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

@@ -45,7 +45,7 @@ From PyPI:
 # Pure python version
 pip3 install sqlglot
 
-# C extensions comiled with mypyc
+# C extensions compiled with mypyc
 # prebuilt wheel if available for your platform, otherwise builds from source
 pip3 install "sqlglot[c]"
 ```

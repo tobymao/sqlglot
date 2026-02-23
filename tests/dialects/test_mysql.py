@@ -650,6 +650,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y')",
                 "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy')",
+                "exasol": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'YYYY')",
             },
         )
         self.validate_all(
@@ -671,6 +672,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
                 "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy-mm-DD')",
+                "exasol": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'YYYY-MM-DD')",
             },
         )
         self.validate_all(
@@ -706,6 +708,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%T')",
                 "snowflake": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMP), 'hh24:mi:ss')",
+                "exasol": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMP), 'HH:MI:SS')",
             },
         )
         self.validate_all(

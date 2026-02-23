@@ -505,7 +505,6 @@ class Exasol(Dialect):
             exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
-            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimestampTrunc: _timestamp_trunc_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
@@ -1033,3 +1032,9 @@ class Exasol(Dialect):
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
+
+        def timetostr_sql(self, expression: exp.TimeToStr) -> str:
+            this = expression.this
+            if this.is_string:
+                this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+            return self.func("TO_CHAR", this, self.format_time(expression))

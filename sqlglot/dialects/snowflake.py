@@ -838,10 +838,11 @@ class Snowflake(Dialect):
                 check_null=True,
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
-                # ARRAY_GENERATE_RANGE has an exclusive end; we normalize it to be inclusive
+                # Exclusive end: store arithmetic (backward compat) + flag (semantics)
                 start=seq_get(args, 0),
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
+                is_end_exclusive=True,
             ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
@@ -1699,7 +1700,12 @@ class Snowflake(Dialect):
                 "CONVERT_TIMEZONE", e.args.get("zone"), "'UTC'", e.this
             ),
             exp.GenerateSeries: lambda self, e: self.func(
-                "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
+                "ARRAY_GENERATE_RANGE",
+                e.args["start"],
+                (e.args["end"].this if isinstance(e.args["end"], exp.Sub) else e.args["end"])
+                if e.args.get("is_end_exclusive")
+                else e.args["end"] + 1,
+                e.args.get("step"),
             ),
             exp.GetExtract: rename_func("GET"),
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),

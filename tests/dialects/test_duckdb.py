@@ -245,6 +245,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT RANGE(1, 5)",
                 "spark": "SELECT SEQUENCE(1, 4)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(1, 5)",
             },
         )
         self.validate_all(
@@ -266,6 +267,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT RANGE(5, 1, -1)",
                 "spark": "SELECT SEQUENCE(5, 2, -1)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },
         )
         self.validate_all(

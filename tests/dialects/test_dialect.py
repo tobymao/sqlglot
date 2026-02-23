@@ -5045,16 +5045,18 @@ FROM subquery2""",
                 for sign in ("", "-", "+"):
                     with self.subTest(f"Testing notation: {notation}, sign: {sign} for {dialect}"):
                         number = f"1_2{notation}{sign}1_0"
-                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
+                        expected = f"12{notation}{sign}10"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), expected)
 
                         number = f"12.3_4{notation}{sign}5_6_7"
-                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), number)
+                        expected = f"12.34{notation}{sign}567"
+                        self.assertEqual(parse_one(number, read=dialect).sql(dialect), expected)
 
             with self.subTest(f"Testing underscore separated numbers for {dialect}"):
                 ast = parse_one("1_2_3_4_5", read=dialect)
                 self.assertTrue(ast.is_int)
                 self.assertEqual(ast.to_py(), 12345)
-                self.assertEqual(ast.sql(dialect), "1_2_3_4_5")
+                self.assertEqual(ast.sql(dialect), "12345")
 
     def test_localtime_and_localtimestamp(self):
         for func in ("LOCALTIME", "LOCALTIMESTAMP"):

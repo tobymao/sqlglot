@@ -1397,8 +1397,11 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT * FROM t PIVOT(SUM(y) FOR foo IN y_enum)")
-        self.validate_identity("SELECT 20_000 AS literal")
-        self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(1_2E+1_0 AS REAL)")
+        self.validate_identity(
+            "SELECT 20_000 AS literal",
+            "SELECT 20000 AS literal",
+        )
+        self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(12E+10 AS REAL)")
 
         # Test BITMAP_BUCKET_NUMBER transpilation from Snowflake to DuckDB
         self.validate_all(

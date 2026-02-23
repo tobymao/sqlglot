@@ -746,6 +746,10 @@ class TokenizerCore:
         if text is None:
             text = self.sql[self._start : self._current]
 
+        if token_type == TokenType.NUMBER:
+            # Normalize underscore separators (e.g., "1_000" -> "1000") for equality and cross-dialect compatibility
+            text = text.replace("_", "")
+
         self.tokens.append(
             Token(
                 token_type,

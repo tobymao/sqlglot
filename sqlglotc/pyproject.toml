@@ -25,3 +25,7 @@ local_scheme = "no-local-version"
 [tool.mypy]
 # Allow mypyc to resolve sqlglot.* from the repo root (../sqlglot/) or sdist root (./sqlglot/).
 mypy_path = [".", ".."]
+
+[[tool.mypy.overrides]]
+module = "sqlglot._version"
+ignore_missing_imports = true

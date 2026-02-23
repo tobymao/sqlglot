@@ -5,6 +5,19 @@ from enum import IntEnum, auto
 
 from sqlglot.errors import TokenError
 
+# dict lookup is faster than .upper(), .isspace(), .isdigit(), .isalnum()
+_CHAR_UPPER: t.Dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
+
+_SPACE_CHARS: t.FrozenSet[str] = frozenset(
+    "\t\n\r \x0b\x0c\x1c\x1d\x1e\x1f\x85\xa0"
+    "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000"
+)
+_DIGIT_CHARS: t.FrozenSet[str] = frozenset("0123456789")
+_ALNUM_CHARS: t.FrozenSet[str] = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
+
 
 class TokenType(IntEnum):
     L_PAREN = auto()
@@ -642,6 +655,8 @@ class TokenizerCore:
 
     def _scan(self, check_semicolon: bool = False) -> None:
         identifiers = self.identifiers
+        space_chars = _SPACE_CHARS
+        digit_chars = _DIGIT_CHARS
 
         while self.size and not self._end:
             current = self._current
@@ -660,8 +675,8 @@ class TokenizerCore:
             self._start = current
             self._advance(offset)
 
-            if not self._char.isspace():
-                if self._char.isdigit():
+            if self._char not in space_chars:
+                if self._char in digit_chars:
                     self._scan_number()
                 elif self._char in identifiers:
                     self._scan_identifier(identifiers[self._char])
@@ -701,14 +716,15 @@ class TokenizerCore:
         self._char = sql[self._current - 1]
         self._peek = "" if self._end else sql[self._current]
 
-        if alnum and self._char.isalnum():
+        alnum_chars = _ALNUM_CHARS
+        if alnum and self._char in alnum_chars:
             # Cache to local variables instead of attributes for better performance
             _col = self._col
             _current = self._current
             _end = self._end
             _peek = self._peek
 
-            while _peek.isalnum():
+            while _peek in alnum_chars:
                 _col += 1
                 _current += 1
                 _end = _current >= size
@@ -766,6 +782,8 @@ class TokenizerCore:
         sql = self.sql
         sql_size = self.size
         single_tokens = self.single_tokens
+        char_upper = _CHAR_UPPER
+        space_chars = _SPACE_CHARS
         size = 0
         word = None
         chars = self._char
@@ -777,7 +795,7 @@ class TokenizerCore:
 
         while chars:
             if not skip:
-                sub = trie.get(char.upper())
+                sub = trie.get(char_upper.get(char, char))
                 if sub is None:
                     break
                 trie = sub
@@ -790,7 +808,7 @@ class TokenizerCore:
             if end < sql_size:
                 char = sql[end]
                 single_token = single_token or char in single_tokens
-                is_space = char.isspace()
+                is_space = char in space_chars
 
                 if not is_space or not prev_space:
                     if is_space:
@@ -881,7 +899,7 @@ class TokenizerCore:
 
     def _scan_number(self) -> None:
         if self._char == "0":
-            peek = self._peek.upper()
+            peek = _CHAR_UPPER.get(self._peek, self._peek)
             if peek == "B":
                 return self._scan_bits() if self.bit_strings else self._add(TokenType.NUMBER)
             elif peek == "X":
@@ -896,7 +914,7 @@ class TokenizerCore:
         identifiers_can_start_with_digit = self.identifiers_can_start_with_digit
 
         while True:
-            if self._peek.isdigit():
+            if self._peek in _DIGIT_CHARS:
                 self._advance()
             elif self._peek == "." and not decimal:
                 if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER:
@@ -905,12 +923,12 @@ class TokenizerCore:
                 self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
                 # Only consume +/- if followed by a digit
-                if self._current + 1 < self.size and self.sql[self._current + 1].isdigit():
+                if self._current + 1 < self.size and self.sql[self._current + 1] in _DIGIT_CHARS:
                     scientific += 1
                     self._advance()
                 else:
                     return self._add(TokenType.NUMBER)
-            elif self._peek.upper() == "E" and not scientific:
+            elif _CHAR_UPPER.get(self._peek, self._peek) == "E" and not scientific:
                 scientific += 1
                 self._advance()
             elif self._peek == "_" and numbers_can_be_underscore_separated:
@@ -919,7 +937,11 @@ class TokenizerCore:
                 number_text = self._text
                 literal = ""
 
-                while self._peek.strip() and self._peek not in single_tokens:
+                while (
+                    self._peek
+                    and self._peek not in _SPACE_CHARS
+                    and self._peek not in single_tokens
+                ):
                     literal += self._peek
                     self._advance()
 
@@ -1045,7 +1067,7 @@ class TokenizerCore:
 
         while True:
             peek = self._peek
-            if not peek or peek.isspace():
+            if not peek or peek in _SPACE_CHARS:
                 break
             if peek not in var_single_tokens and peek in single_tokens:
                 break

@@ -82,6 +82,7 @@ jobs:
 
   # Publish the main sqlglot package.
   deploy:
+    needs: publish-sqlglotc
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -5,7 +5,7 @@ from enum import IntEnum, auto
 
 from sqlglot.errors import TokenError
 
-# dict lookup is faster than .upper(), .isspace(), .isdigit(), .isalnum()
+# dict lookup is faster than .upper(), .isspace(), .isdigit()
 _CHAR_UPPER: t.Dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 
 _SPACE_CHARS: t.FrozenSet[str] = frozenset(
@@ -14,9 +14,6 @@ _SPACE_CHARS: t.FrozenSet[str] = frozenset(
     "\u2028\u2029\u202f\u205f\u3000"
 )
 _DIGIT_CHARS: t.FrozenSet[str] = frozenset("0123456789")
-_ALNUM_CHARS: t.FrozenSet[str] = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-)
 
 
 class TokenType(IntEnum):
@@ -716,15 +713,14 @@ class TokenizerCore:
         self._char = sql[self._current - 1]
         self._peek = "" if self._end else sql[self._current]
 
-        alnum_chars = _ALNUM_CHARS
-        if alnum and self._char in alnum_chars:
+        if alnum and self._char.isalnum():
             # Cache to local variables instead of attributes for better performance
             _col = self._col
             _current = self._current
             _end = self._end
             _peek = self._peek
 
-            while _peek in alnum_chars:
+            while _peek.isalnum():
                 _col += 1
                 _current += 1
                 _end = _current >= size

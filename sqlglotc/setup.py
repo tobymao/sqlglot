@@ -14,6 +14,7 @@ SOURCE_FILES = [
     "errors.py",
     "expression_core.py",
     "helper.py",
+    "parser_core.py",
     "schema.py",
     "serde.py",
     "time.py",

@@ -77,6 +77,7 @@ DIALECTS = [
     "Dune",
     "Exasol",
     "Fabric",
+    "Firebolt",
     "Hive",
     "Materialize",
     "MySQL",

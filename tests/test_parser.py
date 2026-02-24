@@ -43,7 +43,9 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("foo INT NOT NULL", into=exp.ColumnDef), exp.ColumnDef)
 
     def test_parse_into_error(self):
-        expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>]"
+        expected_message = (
+            "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expression_core.From'>]"
+        )
         expected_errors = [
             {
                 "description": "Invalid expression / Unexpected token",
@@ -62,7 +64,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(ctx.exception.errors, expected_errors)
 
     def test_parse_into_errors(self):
-        expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>, <class 'sqlglot.expressions.Join'>]"
+        expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expression_core.From'>, <class 'sqlglot.expressions.Join'>]"
         expected_errors = [
             {
                 "description": "Invalid expression / Unexpected token",
@@ -572,7 +574,7 @@ class TestParser(unittest.TestCase):
         )
 
         assert_logger_contains(
-            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Sum'>. Line 4, Col: 1.",
+            "Required keyword: 'this' missing for <class 'sqlglot.expression_core.Sum'>. Line 4, Col: 1.",
             logger,
         )
 
@@ -584,7 +586,7 @@ class TestParser(unittest.TestCase):
         )
 
         assert_logger_contains(
-            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Sum'>. Line 2, Col: 1.",
+            "Required keyword: 'this' missing for <class 'sqlglot.expression_core.Sum'>. Line 2, Col: 1.",
             logger,
         )
 

@@ -423,8 +423,8 @@ def explode_projection_to_unnest(
                 explode = select.find(exp.Explode)
 
                 if explode:
-                    pos_alias = ""
-                    explode_alias = ""
+                    pos_alias: t.Any = ""
+                    explode_alias: t.Any = ""
 
                     if isinstance(select, exp.Alias):
                         explode_alias = select.args["alias"]

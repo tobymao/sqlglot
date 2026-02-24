@@ -6390,7 +6390,8 @@ class Parser(metaclass=_Parser):
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                if "dialect" in func_builder.__code__.co_varnames:
+                code = getattr(func_builder, "__code__", None)
+                if code is not None and "dialect" in code.co_varnames:
                     func = func_builder(args, dialect=self.dialect)
                 else:
                     func = func_builder(args)

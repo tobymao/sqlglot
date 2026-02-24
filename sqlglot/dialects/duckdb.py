@@ -3128,8 +3128,6 @@ class DuckDB(Dialect):
             step = expression.args.get("step")
 
             if expression.args.get("is_end_exclusive"):
-                if isinstance(end, exp.Sub):
-                    return self.func("RANGE", start, end.this, step)
                 return self.func("RANGE", start, end, step)
 
             return self.function_fallback_sql(expression)

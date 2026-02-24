@@ -709,6 +709,17 @@ class Postgres(Dialect):
 
             return sql
 
+        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+            start = expression.args.get("start")
+            end = expression.args.get("end")
+            step = expression.args.get("step")
+
+            if expression.args.get("is_end_exclusive"):
+                adjusted_end = exp.Sub(this=end, expression=exp.Literal.number(1))
+                return self.func("GENERATE_SERIES", start, adjusted_end, step)
+
+            return self.func("GENERATE_SERIES", start, end, step)
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "SMALLINT",

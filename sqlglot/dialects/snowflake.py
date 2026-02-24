@@ -838,9 +838,9 @@ class Snowflake(Dialect):
                 check_null=True,
             ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
-                # Exclusive end: store arithmetic (backward compat) + flag (semantics)
+                # Snowflake has exclusive end semantics
                 start=seq_get(args, 0),
-                end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
+                end=seq_get(args, 1),
                 step=seq_get(args, 2),
                 is_end_exclusive=True,
             ),
@@ -1702,9 +1702,7 @@ class Snowflake(Dialect):
             exp.GenerateSeries: lambda self, e: self.func(
                 "ARRAY_GENERATE_RANGE",
                 e.args["start"],
-                (e.args["end"].this if isinstance(e.args["end"], exp.Sub) else e.args["end"])
-                if e.args.get("is_end_exclusive")
-                else e.args["end"] + 1,
+                e.args["end"] if e.args.get("is_end_exclusive") else e.args["end"] + 1,
                 e.args.get("step"),
             ),
             exp.GetExtract: rename_func("GET"),

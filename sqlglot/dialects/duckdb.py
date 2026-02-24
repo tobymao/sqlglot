@@ -3616,6 +3616,39 @@ class DuckDB(Dialect):
                 "ARRAY_CONTAINS", exp.func("MAP_KEYS", expression.args["key"]), expression.this
             )
 
+        def mapdelete_sql(self, expression: exp.MapDelete) -> str:
+            map_arg = expression.this
+            keys_to_delete = expression.expressions
+
+            x_dot_key = exp.Dot(
+                this=exp.to_identifier("x", quoted=False),
+                expression=exp.to_identifier("key", quoted=False),
+            )
+
+            condition = exp.Not(
+                this=exp.In(
+                    this=x_dot_key,
+                    expressions=keys_to_delete,
+                )
+            )
+
+            lambda_expr = exp.Lambda(
+                this=condition,
+                expressions=[exp.to_identifier("x", quoted=False)],
+            )
+
+            filtered = exp.ArrayFilter(
+                this=exp.func("map_entries", map_arg),
+                expression=lambda_expr,
+            )
+
+            result = exp.func(
+                "map_from_entries",
+                filtered,
+            )
+
+            return self.sql(result)
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",

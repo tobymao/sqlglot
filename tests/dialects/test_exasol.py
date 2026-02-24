@@ -20,6 +20,17 @@ class TestExasol(Validator):
         self.validate_identity("SELECT CURRENT_USER", "SELECT CURRENT_USER")
         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
+        self.validate_identity("SELECT FROM_POSIX_TIME(1234567890)")
+        self.validate_all(
+            "SELECT FROM_POSIX_TIME(col)",
+            read={
+                "mysql": "SELECT FROM_UNIXTIME(col)",
+            },
+            write={
+                "exasol": "SELECT FROM_POSIX_TIME(col)",
+                "mysql": "SELECT FROM_UNIXTIME(col)",
+            },
+        )
 
     def test_exasol_keywords(self):
         keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]

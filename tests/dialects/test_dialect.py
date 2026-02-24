@@ -988,6 +988,7 @@ class TestDialect(Validator):
                 "presto": "FROM_UNIXTIME(x)",
                 "starrocks": "FROM_UNIXTIME(x)",
                 "doris": "FROM_UNIXTIME(x)",
+                "exasol": "FROM_POSIX_TIME(x)",
             },
         )
         self.validate_all(

@@ -336,6 +336,7 @@ class Exasol(Dialect):
             "DIV": binary_from_function(exp.IntDiv),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
+            "FROM_POSIX_TIME": exp.UnixToTime.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
             "HASH_SHA1": exp.SHA.from_arg_list,
             "HASH_MD5": exp.MD5.from_arg_list,
@@ -485,6 +486,8 @@ class Exasol(Dialect):
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/from_posix_time.htm
+            exp.UnixToTime: lambda self, e: self.func("FROM_POSIX_TIME", e.this),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
             exp.Rank: unsupported_args("expressions")(lambda *_: "RANK()"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/dense_rank.htm

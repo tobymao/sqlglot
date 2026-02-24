@@ -1218,7 +1218,10 @@ class ClickHouse(Dialect):
                 use_ansi_position=False,
             ),
             exp.TimeToStr: lambda self, e: self.func(
-                "formatDateTime", e.this, self.format_time(e), e.args.get("zone")
+                "formatDateTime",
+                e.this.this if isinstance(e.this, exp.TsOrDsToTimestamp) else e.this,
+                self.format_time(e),
+                e.args.get("zone"),
             ),
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),

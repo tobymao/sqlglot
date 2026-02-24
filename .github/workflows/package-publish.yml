@@ -130,7 +130,7 @@ jobs:
           make docs
           echo "sqlglot.com" > docs/CNAME
           mv docs /tmp/generated-docs
-          git checkout api-docs
+          git checkout -B api-docs origin/main
           rm -rf docs
           mv /tmp/generated-docs docs
       - name: Commit API docs
@@ -139,3 +139,4 @@ jobs:
           branch: api-docs
           commit_message: 'Update API docs for ${{ github.ref_name }} [skip ci]'
           file_pattern: 'docs'
+          push_options: '--force'

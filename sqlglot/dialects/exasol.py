@@ -1054,7 +1054,6 @@ class Exasol(Dialect):
         @unsupported_args("flag")
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:
             if not expression.args.get("full_match"):
-                expression = expression.copy()
                 pattern = expression.expression
                 if pattern.is_string:
                     expression.set("expression", exp.Literal.string(f".*{pattern.name}.*"))

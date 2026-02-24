@@ -601,13 +601,15 @@ class ClickHouse(Dialect):
             TokenType.GLOBAL: lambda self, this: self._parse_global_in(this),
         }
 
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.DOTCARET: lambda self, this, field: self.expression(
+                exp.NestedJSONSelect, this=this, expression=field
+            ),
+        }
         # The PLACEHOLDER entry is popped because 1) it doesn't affect Clickhouse (it corresponds to
         # the postgres-specific JSONBContains parser) and 2) it makes parsing the ternary op simpler.
-        COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
-        COLUMN_OPERATORS[TokenType.DOTCARET] = lambda self, this, field: self.expression(
-            exp.NestedJSONSelect, this=this, expression=field
-        )
 
         JOIN_KINDS = {
             *parser.Parser.JOIN_KINDS,

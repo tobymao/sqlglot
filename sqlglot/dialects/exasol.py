@@ -21,9 +21,8 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.optimizer.scope import build_scope
-from sqlglot._typing import E
+from sqlglot.tokens import TokenType
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -246,25 +245,6 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
         offset_expr = exp.Neg(this=offset_expr)
 
     return self.func(f"ADD_{unit}S", expression.this, offset_expr)
-
-
-def _build_extract_json(expr_type: t.Type[E]):
-    def _builder(args, dialect):
-        paths = [dialect.to_json_path(p) for p in args[1:]] or [exp.Literal.string("$")]
-        return expr_type(this=seq_get(args, 0), expression=paths[0], expressions=paths[1:])
-
-    return _builder
-
-
-def _json_extract_sql(self, e: exp.JSONExtract) -> str:
-    path = [e.expression, *e.args.get("expressions", [])]
-    sql = self.func("JSON_EXTRACT", e.this, *path)
-    columns = e.args.get("columns")
-    if columns:
-        emits = self.expressions(sqls=columns)
-        sql = f"{sql} EMITS ({emits})"
-    return sql
-
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
@@ -504,7 +484,6 @@ class Exasol(Dialect):
             exp.CurrentSchema: lambda *_: "CURRENT_SCHEMA",
             exp.DateDiff: _date_diff_sql,
             exp.DateAdd: _add_date_sql,
-            exp.JSONExtract: _json_extract_sql,
             exp.TsOrDsAdd: _add_date_sql,
             exp.DateSub: _add_date_sql,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
@@ -1070,3 +1049,12 @@ class Exasol(Dialect):
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
+
+        def jsonextract_sql(self, e: exp.JSONExtract) -> str:
+            path = [e.expression, *e.args.get("expressions", [])]
+            sql = self.func("JSON_EXTRACT", e.this, *path)
+            columns = e.args.get("columns")
+            if columns:
+                emits = self.expressions(sqls=columns)
+                sql = f"{sql} EMITS ({emits})"
+            return sql

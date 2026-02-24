@@ -20,6 +20,17 @@ class TestExasol(Validator):
         self.validate_identity("SELECT CURRENT_USER", "SELECT CURRENT_USER")
         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
+        self.validate_identity("SELECT FROM_POSIX_TIME(1234567890)")
+        self.validate_all(
+            "SELECT FROM_POSIX_TIME(col)",
+            read={
+                "mysql": "SELECT FROM_UNIXTIME(col)",
+            },
+            write={
+                "exasol": "SELECT FROM_POSIX_TIME(col)",
+                "mysql": "SELECT FROM_UNIXTIME(col)",
+            },
+        )
 
     def test_exasol_keywords(self):
         keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]
@@ -838,6 +849,24 @@ class TestExasol(Validator):
                     exasol_sql,
                     write={"exasol": exasol_sql, "databricks": dbx_sql},
                 )
+
+    def test_regexp_like(self):
+        # Exasol uses binary predicate syntax: col REGEXP_LIKE pattern
+        self.validate_identity("SELECT x REGEXP_LIKE '.*pattern.*'")
+
+        # Cross-dialect: partial match semantics from other dialects get .* wrapping
+        self.validate_all(
+            "SELECT a REGEXP_LIKE '.*x.*'",
+            read={
+                "hive": "SELECT a RLIKE 'x'",
+                "presto": "SELECT REGEXP_LIKE(a, 'x')",
+            },
+            write={
+                "exasol": "SELECT a REGEXP_LIKE '.*x.*'",
+                "hive": "SELECT a RLIKE '.*x.*'",
+                "presto": "SELECT REGEXP_LIKE(a, '.*x.*')",
+            },
+        )
 
     def test_json(self):
         self.validate_identity("""SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""")

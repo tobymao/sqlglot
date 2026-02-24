@@ -1397,8 +1397,11 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT * FROM t PIVOT(SUM(y) FOR foo IN y_enum)")
-        self.validate_identity("SELECT 20_000 AS literal")
-        self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(1_2E+1_0 AS REAL)")
+        self.validate_identity(
+            "SELECT 20_000 AS literal",
+            "SELECT 20000 AS literal",
+        )
+        self.validate_identity("SELECT 1_2E+1_0::FLOAT", "SELECT CAST(12E+10 AS REAL)")
 
         # Test BITMAP_BUCKET_NUMBER transpilation from Snowflake to DuckDB
         self.validate_all(
@@ -1442,6 +1445,10 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT [1, 2, 3][1 + 1:LENGTH([1, 2, 3]) + -1]")
         self.validate_identity("VERSION()")
         self.validate_identity("SELECT TODAY()", "SELECT CURRENT_DATE")
+        self.validate_identity("SELECT GET_CURRENT_TIME()", "SELECT CURRENT_TIME")
+        self.validate_identity("CURRENT_LOCALTIMESTAMP()", "LOCALTIMESTAMP").assert_is(
+            exp.Localtimestamp
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

@@ -202,6 +202,10 @@ x"""
         self.assertEqual(partial_tokens[0].token_type, TokenType.VAR)
         self.assertEqual(partial_tokens[0].text, "foo")
 
+    def test_unicode_identifiers(self):
+        tokens = Tokenizer().tokenize("SELECT café FROM t")
+        self.assertEqual(next(t for t in tokens if t.token_type == TokenType.VAR).text, "café")
+
     def test_token_repr(self):
         # Ensures both the Python and the Rust tokenizer produce a human-friendly representation
         self.assertEqual(

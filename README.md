@@ -42,10 +42,12 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 From PyPI:
 
 ```bash
-pip3 install "sqlglot[rs]"
+# Pure python version
+pip3 install sqlglot
 
-# Without Rust tokenizer (slower):
-# pip3 install sqlglot
+# C extensions compiled with mypyc
+# prebuilt wheel if available for your platform, otherwise builds from source
+pip3 install "sqlglot[c]"
 ```
 
 Or with a local checkout:
@@ -521,10 +523,13 @@ make docs-serve
 ## Run Tests and Lint
 
 ```
-make style  # Only linter checks
-make unit   # Only unit tests (or unit-rs, to use the Rust tokenizer)
-make test   # Unit and integration tests (or test-rs, to use the Rust tokenizer)
-make check  # Full test suite & linter checks
+make style   # Only linter checks
+make unit    # Only unit tests (pure Python)
+make test    # Unit and integration tests (pure Python)
+make unitc   # Only unit tests (mypyc compiled)
+make testc   # Unit and integration tests (mypyc compiled)
+make check   # Full test suite & linter checks
+make clean   # Remove compiled C artifacts (.so files, build dirs)
 ```
 
 ## Deployment
@@ -532,26 +537,19 @@ make check  # Full test suite & linter checks
 To deploy a new SQLGlot version, follow these steps:
 
 1. Run `git pull` to make sure the local git repo is at the head of the main branch
-2. If the Rust tokenizer code changed since the last version release:
-   1. Bump the `version` attribute under the `package` header in `sqlglotrs/Cargo.toml`
-   2. Run `make install-dev`. This will update the `Cargo.lock` file
-   3. Commit the changes made to `Cargo.toml` and `Cargo.lock`
-3. Do a `git tag` operation to bump the SQLGlot version, e.g. `git tag v28.5.0`
-4. Run `git push && git push --tags` to deploy the new version
-
-> [!IMPORTANT]
-> If there are any breaking changes since the last version release, make sure to deploy either a minor or major version for both sqlglot and sqlglotrs. Refer to SQLGlot's [versioning scheme](#versioning) for more information.
+2. Do a `git tag` operation to bump the SQLGlot version, e.g. `git tag v28.5.0`
+3. Run `git push && git push --tags` to deploy the new version
 
 ## Benchmarks
 
-[Benchmarks](https://github.com/tobymao/sqlglot/blob/main/benchmarks/bench.py) run on Python 3.10.12 in seconds.
+[Benchmarks](https://github.com/tobymao/sqlglot/blob/main/benchmarks/parse.py) run on Python 3.13.11 in seconds.
 
-|           Query |         sqlglot |       sqlglotrs |        sqlfluff |         sqltree |        sqlparse |  moz_sql_parser |        sqloxide |
+|           Query |         sqlglot |      sqlglot[c] |        sqlfluff |         sqltree |        sqlparse |  moz_sql_parser |        sqloxide |
 | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
-|            tpch |   0.00944 (1.0) | 0.00590 (0.625) | 0.32116 (33.98) | 0.00693 (0.734) | 0.02858 (3.025) | 0.03337 (3.532) | 0.00073 (0.077) |
-|           short |   0.00065 (1.0) | 0.00044 (0.687) | 0.03511 (53.82) | 0.00049 (0.759) | 0.00163 (2.506) | 0.00234 (3.601) | 0.00005 (0.073) |
-|            long |   0.00889 (1.0) | 0.00572 (0.643) | 0.36982 (41.56) | 0.00614 (0.690) | 0.02530 (2.844) | 0.02931 (3.294) | 0.00059 (0.066) |
-|           crazy |   0.02918 (1.0) | 0.01991 (0.682) | 1.88695 (64.66) | 0.02003 (0.686) | 7.46894 (255.9) | 0.64994 (22.27) | 0.00327 (0.112) |
+|            tpch |  0.00444 (1.0)  | 0.00287 (0.646) | 0.25600 (57.66) | 0.00242 (0.545) | 0.01520 (3.423) | 0.02720 (6.126) | 0.00056 (0.126) |
+|           short |  0.00037 (1.0)  | 0.00026 (0.707) | 0.04200 (114.1) | 0.00022 (0.587) | 0.00097 (2.638) | 0.00212 (5.761) | 0.00004 (0.106) |
+|            long |  0.00428 (1.0)  | 0.00268 (0.626) | 0.31800 (74.30) | 0.00220 (0.514) | 0.01360 (3.178) | 0.02660 (6.215) | 0.00052 (0.121) |
+|           crazy |  0.01300 (1.0)  | 0.00941 (0.724) | 1.45000 (111.5) | 0.00836 (0.643) |             N/A | 0.43800 (33.69) | 0.00280 (0.215) |
 
 ```
 make bench            # Run parsing benchmark

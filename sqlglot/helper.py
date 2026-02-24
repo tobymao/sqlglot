@@ -12,6 +12,17 @@ from difflib import get_close_matches
 from enum import Enum
 from itertools import count
 
+try:
+    from mypy_extensions import mypyc_attr, trait
+except ImportError:
+
+    def mypyc_attr(*attrs: str, **kwattrs: object) -> t.Callable[[t.Any], t.Any]:  # type: ignore[misc]
+        return lambda f: f
+
+    def trait(f: t.Any) -> t.Any:  # type: ignore[misc]
+        return f
+
+
 T = t.TypeVar("T")
 E = t.TypeVar("E")
 

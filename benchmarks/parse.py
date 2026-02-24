@@ -1,14 +1,35 @@
+import collections
 import collections.abc
-import pyperf
 
-# moz_sql_parser 3.10 compatibility
+# Patch for Python 3.10+ compatibility with legacy parsers (moz_sql_parser)
 collections.Iterable = collections.abc.Iterable
 
-# import sqlfluff
-# import moz_sql_parser
-# import sqloxide
-# import sqlparse
-# import sqltree
+import pyperf
+
+try:
+    import sqlfluff
+except ImportError:
+    sqlfluff = None
+
+try:
+    import moz_sql_parser
+except ImportError:
+    moz_sql_parser = None
+
+try:
+    import sqloxide
+except ImportError:
+    sqloxide = None
+
+try:
+    import sqlparse
+except ImportError:
+    sqlparse = None
+
+try:
+    import sqltree
+except ImportError:
+    sqltree = None
 
 import sqlglot
 
@@ -157,12 +178,6 @@ LIMIT 100
 
 
 def sqlglot_parse(sql):
-    sqlglot.tokens.USE_RS_TOKENIZER = False
-    sqlglot.parse_one(sql, error_level=sqlglot.ErrorLevel.IGNORE)
-
-
-def sqlglotrs_parse(sql):
-    sqlglot.tokens.USE_RS_TOKENIZER = True
     sqlglot.parse_one(sql, error_level=sqlglot.ErrorLevel.IGNORE)
 
 
@@ -189,16 +204,33 @@ def sqlfluff_parse(sql):
 QUERIES = {"tpch": tpch, "short": short, "long": long, "crazy": crazy}
 
 
+def _can_parse(fn, sql):
+    try:
+        fn(sql)
+        return True
+    except Exception:
+        return False
+
+
 def run_benchmarks():
-    runner = pyperf.Runner()
+    runner = pyperf.Runner(values=3, warmups=1, loops=10, processes=4)
 
-    libs = ["sqlglot", "sqlglotrs"]
-    for lib in libs:
-        for query_name, sql in QUERIES.items():
-            bench_name = f"parse_{lib}_{query_name}"
-            parse_func = globals()[f"{lib}_parse"]
+    import sqlglot.expression_core as _ec
 
-            runner.bench_func(bench_name, parse_func, sql)
+    prefix = "sqlglotc" if _ec.__file__.endswith(".so") else "sqlglot"
+
+    for query_name, sql in QUERIES.items():
+        runner.bench_func(f"parse_{prefix}_{query_name}", sqlglot_parse, sql)
+        if sqltree and _can_parse(sqltree_parse, sql):
+            runner.bench_func(f"parse_sqltree_{query_name}", sqltree_parse, sql)
+        if sqlparse and _can_parse(sqlparse_parse, sql):
+            runner.bench_func(f"parse_sqlparse_{query_name}", sqlparse_parse, sql)
+        if moz_sql_parser and _can_parse(moz_sql_parser_parse, sql):
+            runner.bench_func(f"parse_moz_sql_parser_{query_name}", moz_sql_parser_parse, sql)
+        if sqloxide and _can_parse(sqloxide_parse, sql):
+            runner.bench_func(f"parse_sqloxide_{query_name}", sqloxide_parse, sql)
+        if sqlfluff and _can_parse(sqlfluff_parse, sql):
+            runner.bench_func(f"parse_sqlfluff_{query_name}", sqlfluff_parse, sql)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## About SQLGlot
 
-SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine written in pure Python. It supports 31+ SQL dialects and can transpile between them while preserving semantics. The codebase is performance-critical despite being pure Python, with an optional Rust tokenizer for speed improvements.
+SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine written in pure Python. It supports 31+ SQL dialects and can transpile between them while preserving semantics. The codebase is performance-critical despite being pure Python, with an optional mypyc-compiled C extension for speed improvements (`sqlglotc/`).
 
 ## Development Commands
 
@@ -13,8 +13,11 @@ SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine written
 # Basic installation
 make install
 
-# Development installation (includes dev dependencies + Rust tokenizer in debug mode)
+# Development installation (Python only, no C extension)
 make install-dev
+
+# Development installation with mypyc C extension
+make install-devc
 
 # Install pre-commit hooks
 make install-pre-commit
@@ -25,17 +28,17 @@ UV=1 make install-dev
 
 ### Testing
 ```bash
-# Run all tests (Python tokenizer)
+# Run all tests (pure Python, hides .so files during run)
 make test
 
-# Run all tests (Rust tokenizer)
-make test-rs
+# Run all tests with mypyc C extension (builds extension first)
+make testc
 
-# Run only unit tests (skip integration tests, Python tokenizer)
+# Run only unit tests (skip integration tests, pure Python)
 make unit
 
-# Run only unit tests (Rust tokenizer)
-make unit-rs
+# Run only unit tests with C extension
+make unitc
 
 # Run specific test file
 python -m unittest tests.test_expressions
@@ -52,7 +55,7 @@ python -m unittest tests.test_expressions.TestExpressions.test_alias
 # Run linter and formatter only
 make style
 
-# Run full checks (style + all tests with both tokenizers)
+# Run full checks (style + pure Python tests + C extension tests)
 make check
 ```
 
@@ -71,8 +74,7 @@ SQLGlot follows a classic compiler architecture with three main phases:
 
 ### 1. Tokenizer (`tokens.py`)
 - Converts SQL strings into a sequence of tokens (lexical analysis)
-- Two implementations: Python (`tokens.py`) and Rust (`sqlglotrs/tokenizer.rs`)
-- **IMPORTANT**: Changes to tokenization logic MUST be reflected in BOTH implementations
+- Pure Python implementation in `tokens.py`; core logic in `tokenizer_core.py` (mypyc-compiled when using `[c]` extra)
 - Maps lexemes to `TokenType` enum values via `KEYWORDS` and `SINGLE_TOKENS` dictionaries
 - Dialects can override tokenizer behavior by customizing these mappings
 
@@ -219,6 +221,7 @@ transformed = tree.transform(transformer)
 - Update docstrings if APIs change
 - Run `make check` before submitting
 - Use comments for complex logic only
+- Don't change license or license files in setup.py, there's nothing wrong with it.
 
 ## Important Files
 
@@ -230,8 +233,9 @@ transformed = tree.transform(transformer)
 
 ## Performance Considerations
 
-- Pure Python implementation with optional Rust tokenizer (`sqlglotrs/`)
-- Install with `pip install "sqlglot[rs]"` for Rust tokenizer speed boost
+- Pure Python implementation with optional mypyc-compiled C extension (`sqlglotc/`)
+- Install with `pip install "sqlglot[c]"` for C extension speed boost
+- The `[c]` extra compiles core modules (`expression_core`, `tokenizer_core`, `parser_core`, etc.) via mypyc
 - Performance is a key feature despite Python implementation
 - Benchmarks compare against other SQL parsers - see `benchmarks/`
 - Avoid use of typing.Protocol, prefer Union Type and Duck Typing
@@ -275,9 +279,9 @@ class Generator:
         ...
 ```
 
-Generator methods named `<lowercase_expr_name>_sql` are automatically discovered. 
+Generator methods named `<lowercase_expr_name>_sql` are automatically discovered.
 
-Important: Only use TRANSFORMS for simple one-liners like `rename_func("OTHER_NAME")` or lambdas or functions with multiple entry points. For any single entry point function, always use an auto-discovered method inside the Generator class. 
+Important: Only use TRANSFORMS for simple one-liners like `rename_func("OTHER_NAME")` or lambdas or functions with multiple entry points. For any single entry point function, always use an auto-discovered method inside the Generator class.
 
 SQLGlot automatically applies transformations based on the structure of the name, but when this fails, you must rename the function.  This is only when the SQL name is not covered by auto mapping:
 

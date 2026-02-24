@@ -871,6 +871,14 @@ ARRAY<STRING>;
 ARRAY_DISTINCT(array(1, 2, 3, null, 3));
 ARRAY<INT>;
 
+# dialect: hive, spark2, spark, databricks
+ARRAY_EXCEPT(array(1, 2, 3), array(1, 3, 5));
+ARRAY<INT>;
+
+# dialect: hive, spark2, spark, databricks
+ARRAY_EXCEPT(tbl.array_col, tbl.array_col);
+ARRAY<STRING>;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -6238,6 +6246,10 @@ VARCHAR;
 # dialect: duckdb
 COUNTIF(tbl.int_col > tbl.int_col);
 HUGEINT;
+
+# dialect: duckdb
+DATE_DIFF('year', tbl.timestamp_col, tbl.timestamp_col);
+BIGINT;
 
 --------------------------------------
 -- Presto / Trino

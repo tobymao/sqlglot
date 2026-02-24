@@ -298,6 +298,7 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
             "LONG VARCHAR": TokenType.TEXT,
+            "REGEXP_LIKE": TokenType.RLIKE,
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
         }
@@ -336,6 +337,7 @@ class Exasol(Dialect):
             "DIV": binary_from_function(exp.IntDiv),
             "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
             "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
+            "FROM_POSIX_TIME": exp.UnixToTime.from_arg_list,
             "HASH_SHA": exp.SHA.from_arg_list,
             "HASH_SHA1": exp.SHA.from_arg_list,
             "HASH_MD5": exp.MD5.from_arg_list,
@@ -348,6 +350,12 @@ class Exasol(Dialect):
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_nullifzero,
+            "REGEXP_LIKE": lambda args: exp.RegexpLike(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                flag=seq_get(args, 2),
+                full_match=True,
+            ),
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
@@ -369,6 +377,16 @@ class Exasol(Dialect):
             "COMMENT": lambda self: self.expression(
                 exp.CommentColumnConstraint,
                 this=self._match(TokenType.IS) and self._parse_string(),
+            ),
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.RLIKE: lambda self, this: self.expression(
+                exp.RegexpLike,
+                this=this,
+                expression=self._parse_bitwise(),
+                full_match=True,
             ),
         }
 
@@ -502,6 +520,8 @@ class Exasol(Dialect):
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
             exp.Mod: rename_func("MOD"),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/from_posix_time.htm
+            exp.UnixToTime: lambda self, e: self.func("FROM_POSIX_TIME", e.this),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm
             exp.Rank: unsupported_args("expressions")(lambda *_: "RANK()"),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/dense_rank.htm
@@ -1059,3 +1079,24 @@ class Exasol(Dialect):
                 emits = self.expressions(sqls=columns)
                 sql = f"{sql} EMITS ({emits})"
             return sql
+          
+        @unsupported_args("flag")
+        def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+            if not expression.args.get("full_match"):
+                pattern = expression.expression
+                if pattern.is_string:
+                    expression.set("expression", exp.Literal.string(f".*{pattern.name}.*"))
+                else:
+                    expression.set(
+                        "expression",
+                        exp.Paren(
+                            this=exp.Concat(
+                                expressions=[
+                                    exp.Literal.string(".*"),
+                                    pattern,
+                                    exp.Literal.string(".*"),
+                                ]
+                            )
+                        ),
+                    )
+            return self.binary(expression, "REGEXP_LIKE")

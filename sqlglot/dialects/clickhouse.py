@@ -763,8 +763,8 @@ class ClickHouse(Dialect):
 
         def _parse_global_in(self, this: t.Optional[exp.Expression]) -> exp.Not | exp.In:
             is_negated = self._match(TokenType.NOT)
-            this = self._match(TokenType.IN) and self._parse_in(this, is_global=True)
-            return self.expression(exp.Not, this=this) if is_negated else this
+            in_expr = self._parse_in(this, is_global=True) if self._match(TokenType.IN) else None
+            return self.expression(exp.Not, this=in_expr) if is_negated else t.cast(exp.In, in_expr)
 
         def _parse_table(
             self,
@@ -818,18 +818,18 @@ class ClickHouse(Dialect):
         def _parse_join_parts(
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
-            is_global = self._match(TokenType.GLOBAL) and self._prev
-            kind_pre = self._match_set(self.JOIN_KINDS, advance=False) and self._prev
+            is_global = self._prev if self._match(TokenType.GLOBAL) else None
+            kind_pre = self._prev if self._match_set(self.JOIN_KINDS, advance=False) else None
 
             if kind_pre:
-                kind = self._match_set(self.JOIN_KINDS) and self._prev
-                side = self._match_set(self.JOIN_SIDES) and self._prev
+                kind = self._prev if self._match_set(self.JOIN_KINDS) else None
+                side = self._prev if self._match_set(self.JOIN_SIDES) else None
                 return is_global, side, kind
 
             return (
                 is_global,
-                self._match_set(self.JOIN_SIDES) and self._prev,
-                self._match_set(self.JOIN_KINDS) and self._prev,
+                self._prev if self._match_set(self.JOIN_SIDES) else None,
+                self._prev if self._match_set(self.JOIN_KINDS) else None,
             )
 
         def _parse_join(

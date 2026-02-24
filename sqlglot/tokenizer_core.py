@@ -5,14 +5,8 @@ from enum import IntEnum, auto
 
 from sqlglot.errors import TokenError
 
-# dict lookup is faster than .upper(), .isspace(), .isdigit()
+# dict lookup is faster than .upper() and .isdigit()
 _CHAR_UPPER: t.Dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
-
-_SPACE_CHARS: t.FrozenSet[str] = frozenset(
-    "\t\n\r \x0b\x0c\x1c\x1d\x1e\x1f\x85\xa0"
-    "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
-    "\u2028\u2029\u202f\u205f\u3000"
-)
 _DIGIT_CHARS: t.FrozenSet[str] = frozenset("0123456789")
 
 
@@ -652,7 +646,6 @@ class TokenizerCore:
 
     def _scan(self, check_semicolon: bool = False) -> None:
         identifiers = self.identifiers
-        space_chars = _SPACE_CHARS
         digit_chars = _DIGIT_CHARS
 
         while self.size and not self._end:
@@ -672,7 +665,7 @@ class TokenizerCore:
             self._start = current
             self._advance(offset)
 
-            if self._char not in space_chars:
+            if not self._char.isspace():
                 if self._char in digit_chars:
                     self._scan_number()
                 elif self._char in identifiers:
@@ -779,7 +772,6 @@ class TokenizerCore:
         sql_size = self.size
         single_tokens = self.single_tokens
         char_upper = _CHAR_UPPER
-        space_chars = _SPACE_CHARS
         size = 0
         word = None
         chars = self._char
@@ -804,7 +796,7 @@ class TokenizerCore:
             if end < sql_size:
                 char = sql[end]
                 single_token = single_token or char in single_tokens
-                is_space = char in space_chars
+                is_space = char.isspace()
 
                 if not is_space or not prev_space:
                     if is_space:
@@ -938,11 +930,7 @@ class TokenizerCore:
             elif self._peek.isidentifier():
                 number_text = self._text
 
-                while (
-                    self._peek
-                    and self._peek not in _SPACE_CHARS
-                    and self._peek not in single_tokens
-                ):
+                while self._peek and not self._peek.isspace() and self._peek not in single_tokens:
                     numeric_literal += self._peek
                     self._advance()
 
@@ -1079,7 +1067,7 @@ class TokenizerCore:
 
         while True:
             peek = self._peek
-            if not peek or peek in _SPACE_CHARS:
+            if not peek or peek.isspace():
                 break
             if peek not in var_single_tokens and peek in single_tokens:
                 break

@@ -746,10 +746,6 @@ class TokenizerCore:
         if text is None:
             text = self.sql[self._start : self._current]
 
-        if token_type == TokenType.NUMBER:
-            # Normalize underscore separators (e.g., "1_000" -> "1000") for equality and cross-dialect compatibility
-            text = text.replace("_", "")
-
         self.tokens.append(
             Token(
                 token_type,
@@ -913,12 +909,17 @@ class TokenizerCore:
         numeric_literals = self.numeric_literals
         identifiers_can_start_with_digit = self.identifiers_can_start_with_digit
 
+        is_underscore_separated: bool = False
+        number_text: str = ""
+        numeric_literal: str = ""
+        numeric_type: t.Optional[TokenType] = None
+
         while True:
             if self._peek in _DIGIT_CHARS:
                 self._advance()
             elif self._peek == "." and not decimal:
                 if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER:
-                    return self._add(TokenType.NUMBER)
+                    break
                 decimal = True
                 self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
@@ -927,37 +928,48 @@ class TokenizerCore:
                     scientific += 1
                     self._advance()
                 else:
-                    return self._add(TokenType.NUMBER)
+                    break
             elif _CHAR_UPPER.get(self._peek, self._peek) == "E" and not scientific:
                 scientific += 1
                 self._advance()
             elif self._peek == "_" and numbers_can_be_underscore_separated:
+                is_underscore_separated = True
                 self._advance()
             elif self._peek.isidentifier():
                 number_text = self._text
-                literal = ""
 
                 while (
                     self._peek
                     and self._peek not in _SPACE_CHARS
                     and self._peek not in single_tokens
                 ):
-                    literal += self._peek
+                    numeric_literal += self._peek
                     self._advance()
 
-                token_type = keywords.get(numeric_literals.get(literal.upper(), ""))
+                numeric_type = keywords.get(numeric_literals.get(numeric_literal.upper(), ""))
 
-                if token_type:
-                    self._add(TokenType.NUMBER, number_text)
-                    self._add(TokenType.DCOLON, "::")
-                    return self._add(token_type, literal)
+                if numeric_type:
+                    break
                 elif identifiers_can_start_with_digit:
                     return self._add(TokenType.VAR)
 
-                self._advance(-len(literal))
-                return self._add(TokenType.NUMBER, number_text)
+                self._advance(-len(numeric_literal))
+                break
             else:
-                return self._add(TokenType.NUMBER)
+                break
+
+        number_text = number_text or self.sql[self._start : self._current]
+
+        # Normalize inputs such as 100_000 to 100000
+        if is_underscore_separated:
+            number_text = number_text.replace("_", "")
+
+        self._add(TokenType.NUMBER, number_text)
+
+        # Normalize inputs such as 123L to 123::BIGINT so that they're parsed as casts
+        if numeric_type:
+            self._add(TokenType.DCOLON, "::")
+            self._add(numeric_type, numeric_literal)
 
     def _scan_bits(self) -> None:
         self._advance()

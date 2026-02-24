@@ -298,6 +298,7 @@ class Exasol(Dialect):
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
             "ENDIF": TokenType.END,
             "LONG VARCHAR": TokenType.TEXT,
+            "REGEXP_LIKE": TokenType.RLIKE,
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
         }
@@ -348,6 +349,12 @@ class Exasol(Dialect):
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "NULLIFZERO": _build_nullifzero,
+            "REGEXP_LIKE": lambda args: exp.RegexpLike(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                flag=seq_get(args, 2),
+                full_match=True,
+            ),
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
                 this=seq_get(args, 0),
@@ -369,6 +376,16 @@ class Exasol(Dialect):
             "COMMENT": lambda self: self.expression(
                 exp.CommentColumnConstraint,
                 this=self._match(TokenType.IS) and self._parse_string(),
+            ),
+        }
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.RLIKE: lambda self, this: self.expression(
+                exp.RegexpLike,
+                this=this,
+                expression=self._parse_bitwise(),
+                full_match=True,
             ),
         }
 
@@ -1033,3 +1050,25 @@ class Exasol(Dialect):
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
+
+        @unsupported_args("flag")
+        def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+            if not expression.args.get("full_match"):
+                expression = expression.copy()
+                pattern = expression.expression
+                if pattern.is_string:
+                    expression.set("expression", exp.Literal.string(f".*{pattern.name}.*"))
+                else:
+                    expression.set(
+                        "expression",
+                        exp.Paren(
+                            this=exp.Concat(
+                                expressions=[
+                                    exp.Literal.string(".*"),
+                                    pattern,
+                                    exp.Literal.string(".*"),
+                                ]
+                            )
+                        ),
+                    )
+            return self.binary(expression, "REGEXP_LIKE")

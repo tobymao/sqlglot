@@ -839,6 +839,24 @@ class TestExasol(Validator):
                     write={"exasol": exasol_sql, "databricks": dbx_sql},
                 )
 
+    def test_regexp_like(self):
+        # Exasol uses binary predicate syntax: col REGEXP_LIKE pattern
+        self.validate_identity("SELECT x REGEXP_LIKE '.*pattern.*'")
+
+        # Cross-dialect: partial match semantics from other dialects get .* wrapping
+        self.validate_all(
+            "SELECT a REGEXP_LIKE '.*x.*'",
+            read={
+                "hive": "SELECT a RLIKE 'x'",
+                "presto": "SELECT REGEXP_LIKE(a, 'x')",
+            },
+            write={
+                "exasol": "SELECT a REGEXP_LIKE '.*x.*'",
+                "hive": "SELECT a RLIKE '.*x.*'",
+                "presto": "SELECT REGEXP_LIKE(a, '.*x.*')",
+            },
+        )
+
     def test_json(self):
         self.validate_identity("""SELECT JSON_VALUE('{"d":"a"}', '$.d' NULL ON ERROR) AS x""")
         self.validate_all(

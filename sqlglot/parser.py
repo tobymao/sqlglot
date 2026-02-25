@@ -2780,7 +2780,6 @@ class Parser(metaclass=_Parser):
         if not user:
             return None
 
-        # NOTE: this was written for MySQl, and is buggy for dialects where PARAMETER is not "@".
         if self._match(TokenType.PARAMETER):
             host = self._parse_id_var() or (self._match(TokenType.MOD) and self._prev.text)
             if host:

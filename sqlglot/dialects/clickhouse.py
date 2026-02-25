@@ -726,16 +726,12 @@ class ClickHouse(Dialect):
             if len(param_or_col.parts) == 1 and self._match(TokenType.EQ):
                 param = param_or_col.name
                 value = self._parse_primary()
-                return self.expression(
-                    exp.EQ,
-                    this=exp.var(param),
-                    expression=value,
-                )
-            else:
-                # Column type hint: col_name Type
-                col = param_or_col.to_dot()
-                kind = self._parse_types(check_func=False, allow_identifiers=False)
-                return self.expression(exp.ColumnDef, this=col, kind=kind)
+                return self.expression(exp.EQ, this=exp.var(param), expression=value)
+
+            # Column type hint: col_name Type
+            col = param_or_col.to_dot()
+            kind = self._parse_types(check_func=False, allow_identifiers=False)
+            return self.expression(exp.ColumnDef, this=col, kind=kind)
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index

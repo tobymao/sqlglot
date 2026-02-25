@@ -444,38 +444,38 @@ class Exasol(Dialect):
     class Generator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
         STRING_TYPE_MAPPING = {
-            exp.DataType.Type.BLOB: "VARCHAR",
-            exp.DataType.Type.LONGBLOB: "VARCHAR",
-            exp.DataType.Type.LONGTEXT: "VARCHAR",
-            exp.DataType.Type.MEDIUMBLOB: "VARCHAR",
-            exp.DataType.Type.MEDIUMTEXT: "VARCHAR",
-            exp.DataType.Type.TINYBLOB: "VARCHAR",
-            exp.DataType.Type.TINYTEXT: "VARCHAR",
+            exp.DType.BLOB: "VARCHAR",
+            exp.DType.LONGBLOB: "VARCHAR",
+            exp.DType.LONGTEXT: "VARCHAR",
+            exp.DType.MEDIUMBLOB: "VARCHAR",
+            exp.DType.MEDIUMTEXT: "VARCHAR",
+            exp.DType.TINYBLOB: "VARCHAR",
+            exp.DType.TINYTEXT: "VARCHAR",
             # https://docs.exasol.com/db/latest/sql_references/data_types/datatypealiases.htm
-            exp.DataType.Type.TEXT: "LONG VARCHAR",
-            exp.DataType.Type.VARBINARY: "VARCHAR",
+            exp.DType.TEXT: "LONG VARCHAR",
+            exp.DType.VARBINARY: "VARCHAR",
         }
 
         # https://docs.exasol.com/db/latest/sql_references/data_types/datatypealiases.htm
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             **STRING_TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "SMALLINT",
-            exp.DataType.Type.MEDIUMINT: "INT",
-            exp.DataType.Type.DECIMAL32: "DECIMAL",
-            exp.DataType.Type.DECIMAL64: "DECIMAL",
-            exp.DataType.Type.DECIMAL128: "DECIMAL",
-            exp.DataType.Type.DECIMAL256: "DECIMAL",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TINYINT: "SMALLINT",
+            exp.DType.MEDIUMINT: "INT",
+            exp.DType.DECIMAL32: "DECIMAL",
+            exp.DType.DECIMAL64: "DECIMAL",
+            exp.DType.DECIMAL128: "DECIMAL",
+            exp.DType.DECIMAL256: "DECIMAL",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
         }
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
             # and does not allow specifying a different custom precision
-            if expression.is_type(exp.DataType.Type.TIMESTAMPLTZ):
+            if expression.is_type(exp.DType.TIMESTAMPLTZ):
                 return "TIMESTAMP WITH LOCAL TIME ZONE"
 
             return super().datatype_sql(expression)

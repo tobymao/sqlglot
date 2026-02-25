@@ -790,7 +790,7 @@ class Dialect(metaclass=_Dialect):
     so we map the ExplodingGenerateSeries expression to "generate_series" string.
     """
 
-    DEFAULT_NULL_TYPE = exp.DataType.Type.UNKNOWN
+    DEFAULT_NULL_TYPE = exp.DType.UNKNOWN
     """
     The default type of NULL for producing the correct projection type.
 
@@ -946,7 +946,7 @@ class Dialect(metaclass=_Dialect):
     }
 
     # Specifies what types a given type can be coerced into
-    COERCES_TO: t.Dict[exp.DataType.Type, t.Set[exp.DataType.Type]] = {}
+    COERCES_TO: t.Dict[exp.DType, t.Set[exp.DType]] = {}
 
     # Specifies type inference & validation rules for expressions
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
@@ -1253,7 +1253,7 @@ def if_sql(
 def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
-        this.replace(exp.cast(this, exp.DataType.Type.JSON))
+        this.replace(exp.cast(this, exp.DType.JSON))
 
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
@@ -1551,8 +1551,8 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
     date2 = expression.expression
 
     # Cast to DATE to ensure consistent behavior
-    date1_cast = exp.cast(date1, exp.DataType.Type.DATE, copy=False)
-    date2_cast = exp.cast(date2, exp.DataType.Type.DATE, copy=False)
+    date1_cast = exp.cast(date1, exp.DType.DATE, copy=False)
+    date2_cast = exp.cast(date2, exp.DType.DATE, copy=False)
 
     # Whole months: DATEDIFF('month', date2, date1)
     whole_months = exp.DateDiff(this=date1_cast, expression=date2_cast, unit=exp.var("month"))
@@ -1706,14 +1706,12 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if not zone:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        target_type = (
-            annotate_types(expression, dialect=self.dialect).type or exp.DataType.Type.TIMESTAMP
-        )
+        target_type = annotate_types(expression, dialect=self.dialect).type or exp.DType.TIMESTAMP
         return self.sql(exp.cast(expression.this, target_type))
     if zone.name.lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
-                this=exp.cast(expression.this, exp.DataType.Type.TIMESTAMP),
+                this=exp.cast(expression.this, exp.DType.TIMESTAMP),
                 zone=zone,
             )
         )
@@ -1722,10 +1720,8 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
 
 def no_time_sql(self: Generator, expression: exp.Time) -> str:
     # Transpile BQ's TIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIME)
-    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ)
-    expr = exp.cast(
-        exp.AtTimeZone(this=this, zone=expression.args.get("zone")), exp.DataType.Type.TIME
-    )
+    this = exp.cast(expression.this, exp.DType.TIMESTAMPTZ)
+    expr = exp.cast(exp.AtTimeZone(this=this, zone=expression.args.get("zone")), exp.DType.TIME)
     return self.sql(expr)
 
 
@@ -1735,14 +1731,14 @@ def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
 
     if expr.name.lower() in TIMEZONES:
         # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIMESTAMP)
-        this = exp.cast(this, exp.DataType.Type.TIMESTAMPTZ)
-        this = exp.cast(exp.AtTimeZone(this=this, zone=expr), exp.DataType.Type.TIMESTAMP)
+        this = exp.cast(this, exp.DType.TIMESTAMPTZ)
+        this = exp.cast(exp.AtTimeZone(this=this, zone=expr), exp.DType.TIMESTAMP)
         return self.sql(this)
 
-    this = exp.cast(this, exp.DataType.Type.DATE)
-    expr = exp.cast(expr, exp.DataType.Type.TIME)
+    this = exp.cast(this, exp.DType.DATE)
+    expr = exp.cast(expr, exp.DType.TIME)
 
-    return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DataType.Type.TIMESTAMP))
+    return self.sql(exp.cast(exp.Add(this=this, expression=expr), exp.DType.TIMESTAMP))
 
 
 def left_to_substring_sql(self: Generator, expression: exp.Left) -> str:
@@ -1768,9 +1764,7 @@ def timestrtotime_sql(
     include_precision: bool = False,
 ) -> str:
     datatype = exp.DataType.build(
-        exp.DataType.Type.TIMESTAMPTZ
-        if expression.args.get("zone")
-        else exp.DataType.Type.TIMESTAMP
+        exp.DType.TIMESTAMPTZ if expression.args.get("zone") else exp.DType.TIMESTAMP
     )
 
     if isinstance(expression.this, exp.Literal) and include_precision:
@@ -1784,7 +1778,7 @@ def timestrtotime_sql(
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
-    return self.sql(exp.cast(expression.this, exp.DataType.Type.DATE))
+    return self.sql(exp.cast(expression.this, exp.DType.DATE))
 
 
 # Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
@@ -1986,10 +1980,10 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     this = expression.this.copy()
 
     return_type = expression.return_type
-    if return_type.is_type(exp.DataType.Type.DATE):
+    if return_type.is_type(exp.DType.DATE):
         # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
         # can truncate timestamp strings, because some dialects can't cast them to DATE
-        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+        this = exp.cast(this, exp.DType.TIMESTAMP)
 
     expression.this.replace(exp.cast(this, return_type))
     return expression
@@ -2025,9 +2019,9 @@ def date_delta_to_binary_interval_op(
             elif this.is_string:
                 # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
                 to_type = (
-                    exp.DataType.Type.DATETIME
+                    exp.DType.DATETIME
                     if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
-                    else exp.DataType.Type.DATE
+                    else exp.DType.DATE
                 )
 
         this = exp.cast(this, to_type) if to_type else this
@@ -2090,7 +2084,7 @@ def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     plus_one_month = exp.func("date_add", trunc_curr_date, 1, "month")
     minus_one_day = exp.func("date_sub", plus_one_month, 1, "day")
 
-    return self.sql(exp.cast(minus_one_day, exp.DataType.Type.DATE))
+    return self.sql(exp.cast(minus_one_day, exp.DType.DATE))
 
 
 def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:

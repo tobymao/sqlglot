@@ -206,13 +206,13 @@ class Redshift(Postgres):
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BINARY: "VARBYTE",
-            exp.DataType.Type.BLOB: "VARBYTE",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.VARBINARY: "VARBYTE",
-            exp.DataType.Type.ROWVERSION: "VARBYTE",
+            exp.DType.BINARY: "VARBYTE",
+            exp.DType.BLOB: "VARBYTE",
+            exp.DType.INT: "INTEGER",
+            exp.DType.TIMETZ: "TIME",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.VARBINARY: "VARBYTE",
+            exp.DType.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {
@@ -456,7 +456,7 @@ class Redshift(Postgres):
             return f"{arg} AS {alias}" if alias else arg
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.is_type(exp.DataType.Type.JSON):
+            if expression.is_type(exp.DType.JSON):
                 # Redshift doesn't support a JSON type, so casting to it is treated as a noop
                 return self.sql(expression, "this")
 
@@ -470,7 +470,7 @@ class Redshift(Postgres):
             `TEXT` to `VARCHAR`.
             """
             if expression.is_type("text"):
-                expression.set("this", exp.DataType.Type.VARCHAR)
+                expression.set("this", exp.DType.VARCHAR)
                 precision = expression.args.get("expressions")
 
                 if not precision:

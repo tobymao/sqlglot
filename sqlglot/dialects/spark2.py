@@ -51,7 +51,7 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
     timestamp = expression.this
 
     if scale is None:
-        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), exp.DataType.Type.TIMESTAMP))
+        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), exp.DType.TIMESTAMP))
     if scale == exp.UnixToTime.SECONDS:
         return self.func("TIMESTAMP_SECONDS", timestamp)
     if scale == exp.UnixToTime.MILLIS:
@@ -160,7 +160,7 @@ class Spark2(Hive):
             "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
                 this=exp.cast(
                     seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.Type.TIMESTAMP,
+                    exp.DType.TIMESTAMP,
                     dialect=dialect,
                 ),
                 zone=seq_get(args, 1),
@@ -184,7 +184,7 @@ class Spark2(Hive):
             "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(
                 this=exp.cast(
                     seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.Type.TIMESTAMP,
+                    exp.DType.TIMESTAMP,
                     dialect=dialect,
                 ),
                 zone=seq_get(args, 1),

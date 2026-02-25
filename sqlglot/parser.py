@@ -311,7 +311,7 @@ class Parser(metaclass=_Parser):
         "CONVERT_TIMEZONE": build_convert_timezone,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
-            to=exp.DataType(this=exp.DataType.Type.TEXT),
+            to=exp.DataType(this=exp.DType.TEXT),
         ),
         "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
             start=seq_get(args, 0),
@@ -360,13 +360,13 @@ class Parser(metaclass=_Parser):
         "LOCATE": lambda args: build_locate_strposition(args),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
-            to=exp.DataType(this=exp.DataType.Type.TEXT),
+            to=exp.DataType(this=exp.DType.TEXT),
         ),
         "TO_HEX": build_hex,
         "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
             this=exp.Cast(
                 this=seq_get(args, 0),
-                to=exp.DataType(this=exp.DataType.Type.TEXT),
+                to=exp.DataType(this=exp.DType.TEXT),
             ),
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
@@ -1432,10 +1432,10 @@ class Parser(metaclass=_Parser):
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
 
     TYPE_LITERAL_PARSERS = {
-        exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
+        exp.DType.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
     }
 
-    TYPE_CONVERTERS: t.Dict[exp.DataType.Type, t.Callable[[exp.DataType], exp.DataType]] = {}
+    TYPE_CONVERTERS: t.Dict[exp.DType, t.Callable[[exp.DataType], exp.DataType]] = {}
 
     DDL_SELECT_TOKENS = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
@@ -5680,7 +5680,7 @@ class Parser(metaclass=_Parser):
 
                 if (
                     self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
-                    and data_type.is_type(exp.DataType.Type.TIMESTAMP)
+                    and data_type.is_type(exp.DType.TIMESTAMP)
                     and TIME_ZONE_RE.search(literal)
                 ):
                     data_type = exp.DataType.build("TIMESTAMPTZ")
@@ -5789,7 +5789,7 @@ class Parser(metaclass=_Parser):
                 return None
 
             return exp.DataType(
-                this=exp.DataType.Type.MAP,
+                this=exp.DType.MAP,
                 expressions=[key_type, value_type],
                 nested=True,
             )
@@ -5876,15 +5876,11 @@ class Parser(metaclass=_Parser):
         if type_token in self.TIMESTAMPS:
             if self._match_text_seq("WITH", "TIME", "ZONE"):
                 maybe_func = False
-                tz_type = (
-                    exp.DataType.Type.TIMETZ
-                    if type_token in self.TIMES
-                    else exp.DataType.Type.TIMESTAMPTZ
-                )
+                tz_type = exp.DType.TIMETZ if type_token in self.TIMES else exp.DType.TIMESTAMPTZ
                 this = exp.DataType(this=tz_type, expressions=expressions)
             elif self._match_text_seq("WITH", "LOCAL", "TIME", "ZONE"):
                 maybe_func = False
-                this = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
+                this = exp.DataType(this=exp.DType.TIMESTAMPLTZ, expressions=expressions)
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
@@ -5895,9 +5891,9 @@ class Parser(metaclass=_Parser):
 
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
             else:
-                this = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)
+                this = self.expression(exp.DataType, this=exp.DType.INTERVAL)
         elif type_token == TokenType.VOID:
-            this = exp.DataType(this=exp.DataType.Type.NULL)
+            this = exp.DataType(this=exp.DType.NULL)
 
         if maybe_func and check_func:
             index2 = self._index
@@ -5923,7 +5919,7 @@ class Parser(metaclass=_Parser):
                 return None
 
             this = exp.DataType(
-                this=exp.DataType.Type[type_token.name],
+                this=exp.DType[type_token.name],
                 expressions=expressions,
                 nested=nested,
             )
@@ -5938,7 +5934,7 @@ class Parser(metaclass=_Parser):
 
         # https://materialize.com/docs/sql/types/list/#type-name
         while self._match(TokenType.LIST):
-            this = exp.DataType(this=exp.DataType.Type.LIST, expressions=[this], nested=True)
+            this = exp.DataType(this=exp.DType.LIST, expressions=[this], nested=True)
 
         index = self._index
 
@@ -5973,11 +5969,11 @@ class Parser(metaclass=_Parser):
                 break
 
             this = exp.DataType(
-                this=exp.DataType.Type.ARRAY, expressions=[this], values=values, nested=True
+                this=exp.DType.ARRAY, expressions=[this], values=values, nested=True
             )
             self._match(TokenType.R_BRACKET)
 
-        if self.TYPE_CONVERTERS and isinstance(this.this, exp.DataType.Type):
+        if self.TYPE_CONVERTERS and isinstance(this.this, exp.DType):
             converter = self.TYPE_CONVERTERS.get(this.this)
             if converter:
                 this = converter(t.cast(exp.DataType, this))
@@ -7140,10 +7136,10 @@ class Parser(metaclass=_Parser):
             fmt = self._parse_at_time_zone(fmt_string)
 
             if not to:
-                to = exp.DataType.build(exp.DataType.Type.UNKNOWN)
+                to = exp.DataType.build(exp.DType.UNKNOWN)
             if to.this in exp.DataType.TEMPORAL_TYPES:
                 this = self.expression(
-                    exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
+                    exp.StrToDate if to.this == exp.DType.DATE else exp.StrToTime,
                     this=this,
                     format=exp.Literal.string(
                         format_time(
@@ -7162,7 +7158,7 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DataType.Type.CHAR:
+        elif to.this == exp.DType.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 

@@ -403,7 +403,7 @@ class Python(Dialect):
             exp.And: lambda self, e: self.binary(e, "and"),
             exp.Between: _rename,
             exp.Boolean: lambda self, e: "True" if e.this else "False",
-            exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DataType.Type.{e.args['to']})",
+            exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DType.{e.args['to']})",
             exp.Column: lambda self,
             e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
             exp.Concat: lambda self, e: self.func(

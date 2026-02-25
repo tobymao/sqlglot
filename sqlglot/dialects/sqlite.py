@@ -180,22 +180,22 @@ class SQLite(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BOOLEAN: "INTEGER",
-            exp.DataType.Type.TINYINT: "INTEGER",
-            exp.DataType.Type.SMALLINT: "INTEGER",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.BIGINT: "INTEGER",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.DOUBLE: "REAL",
-            exp.DataType.Type.DECIMAL: "REAL",
-            exp.DataType.Type.CHAR: "TEXT",
-            exp.DataType.Type.NCHAR: "TEXT",
-            exp.DataType.Type.VARCHAR: "TEXT",
-            exp.DataType.Type.NVARCHAR: "TEXT",
-            exp.DataType.Type.BINARY: "BLOB",
-            exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DType.BOOLEAN: "INTEGER",
+            exp.DType.TINYINT: "INTEGER",
+            exp.DType.SMALLINT: "INTEGER",
+            exp.DType.INT: "INTEGER",
+            exp.DType.BIGINT: "INTEGER",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.DOUBLE: "REAL",
+            exp.DType.DECIMAL: "REAL",
+            exp.DType.CHAR: "TEXT",
+            exp.DType.NCHAR: "TEXT",
+            exp.DType.VARCHAR: "TEXT",
+            exp.DType.NVARCHAR: "TEXT",
+            exp.DType.BINARY: "BLOB",
+            exp.DType.VARBINARY: "BLOB",
         }
-        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
+        TYPE_MAPPING.pop(exp.DType.BLOB)
 
         TOKEN_MAPPING = {
             TokenType.AUTO_INCREMENT: "AUTOINCREMENT",

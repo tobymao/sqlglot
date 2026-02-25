@@ -34,9 +34,9 @@ class Databricks(Spark):
         COERCES_TO[text_type] |= {
             *exp.DataType.NUMERIC_TYPES,
             *exp.DataType.TEMPORAL_TYPES,
-            exp.DataType.Type.BINARY,
-            exp.DataType.Type.BOOLEAN,
-            exp.DataType.Type.INTERVAL,
+            exp.DType.BINARY,
+            exp.DType.BOOLEAN,
+            exp.DType.INTERVAL,
         }
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
@@ -139,7 +139,7 @@ class Databricks(Spark):
 
         TYPE_MAPPING = {
             **Spark.Generator.TYPE_MAPPING,
-            exp.DataType.Type.NULL: "VOID",
+            exp.DType.NULL: "VOID",
         }
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:

@@ -164,7 +164,7 @@ class Generator(metaclass=_Generator):
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
         exp.Intersect: lambda self, e: self.set_operations(e),
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
-        exp.Int64: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.BIGINT)),
+        exp.Int64: lambda self, e: self.sql(exp.cast(e.this, exp.DType.BIGINT)),
         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
@@ -541,22 +541,22 @@ class Generator(metaclass=_Generator):
     STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
 
     TYPE_MAPPING = {
-        exp.DataType.Type.DATETIME2: "TIMESTAMP",
-        exp.DataType.Type.NCHAR: "CHAR",
-        exp.DataType.Type.NVARCHAR: "VARCHAR",
-        exp.DataType.Type.MEDIUMTEXT: "TEXT",
-        exp.DataType.Type.LONGTEXT: "TEXT",
-        exp.DataType.Type.TINYTEXT: "TEXT",
-        exp.DataType.Type.BLOB: "VARBINARY",
-        exp.DataType.Type.MEDIUMBLOB: "BLOB",
-        exp.DataType.Type.LONGBLOB: "BLOB",
-        exp.DataType.Type.TINYBLOB: "BLOB",
-        exp.DataType.Type.INET: "INET",
-        exp.DataType.Type.ROWVERSION: "VARBINARY",
-        exp.DataType.Type.SMALLDATETIME: "TIMESTAMP",
+        exp.DType.DATETIME2: "TIMESTAMP",
+        exp.DType.NCHAR: "CHAR",
+        exp.DType.NVARCHAR: "VARCHAR",
+        exp.DType.MEDIUMTEXT: "TEXT",
+        exp.DType.LONGTEXT: "TEXT",
+        exp.DType.TINYTEXT: "TEXT",
+        exp.DType.BLOB: "VARBINARY",
+        exp.DType.MEDIUMBLOB: "BLOB",
+        exp.DType.LONGBLOB: "BLOB",
+        exp.DType.TINYBLOB: "BLOB",
+        exp.DType.INET: "INET",
+        exp.DType.ROWVERSION: "VARBINARY",
+        exp.DType.SMALLDATETIME: "TIMESTAMP",
     }
 
-    UNSUPPORTED_TYPES: set[exp.DataType.Type] = set()
+    UNSUPPORTED_TYPES: set[exp.DType] = set()
 
     TIME_PART_SINGULARS = {
         "MICROSECONDS": "MICROSECOND",
@@ -731,10 +731,10 @@ class Generator(metaclass=_Generator):
     )
 
     PARAMETERIZABLE_TEXT_TYPES = {
-        exp.DataType.Type.NVARCHAR,
-        exp.DataType.Type.VARCHAR,
-        exp.DataType.Type.CHAR,
-        exp.DataType.Type.NCHAR,
+        exp.DType.NVARCHAR,
+        exp.DType.VARCHAR,
+        exp.DType.CHAR,
+        exp.DType.NCHAR,
     }
 
     # Expressions that need to have all CTEs under them bubbled up to them
@@ -1509,11 +1509,11 @@ class Generator(metaclass=_Generator):
             )
             if is_bytes and not self.dialect.BYTE_STRING_IS_BYTES_TYPE:
                 return self.sql(
-                    exp.cast(delimited_byte_string, exp.DataType.Type.BINARY, dialect=self.dialect)
+                    exp.cast(delimited_byte_string, exp.DType.BINARY, dialect=self.dialect)
                 )
             if not is_bytes and self.dialect.BYTE_STRING_IS_BYTES_TYPE:
                 return self.sql(
-                    exp.cast(delimited_byte_string, exp.DataType.Type.VARCHAR, dialect=self.dialect)
+                    exp.cast(delimited_byte_string, exp.DType.VARCHAR, dialect=self.dialect)
                 )
 
             return delimited_byte_string
@@ -1575,12 +1575,12 @@ class Generator(metaclass=_Generator):
                 f"Data type {type_value.value} is not supported when targeting {self.dialect.__class__.__name__}"
             )
 
-        if type_value == exp.DataType.Type.USERDEFINED and expression.args.get("kind"):
+        if type_value == exp.DType.USERDEFINED and expression.args.get("kind"):
             type_sql = self.sql(expression, "kind")
         else:
             type_sql = (
                 self.TYPE_MAPPING.get(type_value, type_value.value)
-                if isinstance(type_value, exp.DataType.Type)
+                if isinstance(type_value, exp.DType)
                 else type_value
             )
 
@@ -1588,18 +1588,18 @@ class Generator(metaclass=_Generator):
             if expr_nested:
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
                 if expression.args.get("values") is not None:
-                    delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
+                    delimiters = ("[", "]") if type_value == exp.DType.ARRAY else ("(", ")")
                     values = self.expressions(expression, key="values", flat=True)
                     values = f"{delimiters[0]}{values}{delimiters[1]}"
-            elif type_value == exp.DataType.Type.INTERVAL:
+            elif type_value == exp.DType.INTERVAL:
                 nested = f" {interior}"
             else:
                 nested = f"({interior})"
 
         type_sql = f"{type_sql}{nested}{values}"
         if self.TZ_TO_WITH_TIME_ZONE and type_value in (
-            exp.DataType.Type.TIMETZ,
-            exp.DataType.Type.TIMESTAMPTZ,
+            exp.DType.TIMETZ,
+            exp.DType.TIMESTAMPTZ,
         ):
             type_sql = f"{type_sql} WITH TIME ZONE"
 
@@ -3274,7 +3274,7 @@ class Generator(metaclass=_Generator):
             args = args[1:]  # Skip the delimiter
 
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
+            args = [exp.cast(e, exp.DType.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
 
@@ -3284,7 +3284,7 @@ class Generator(metaclass=_Generator):
 
                     e = annotate_types(e, dialect=self.dialect)
 
-                if e.is_string or e.is_type(exp.DataType.Type.ARRAY):
+                if e.is_string or e.is_type(exp.DType.ARRAY):
                     return e
 
                 return exp.func("coalesce", e, exp.Literal.string(""))
@@ -3950,15 +3950,13 @@ class Generator(metaclass=_Generator):
         return self.sql(
             exp.Cast(
                 this=exp.Div(this=expression.this, expression=expression.expression),
-                to=exp.DataType(this=exp.DataType.Type.INT),
+                to=exp.DataType(this=exp.DType.INT),
             )
         )
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            return self.func(
-                "CONCAT", *(exp.cast(e, exp.DataType.Type.TEXT) for e in expression.flatten())
-            )
+            return self.func("CONCAT", *(exp.cast(e, exp.DType.TEXT) for e in expression.flatten()))
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
@@ -3969,14 +3967,14 @@ class Generator(metaclass=_Generator):
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
             if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
-                l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
+                l.replace(exp.cast(l.copy(), to=exp.DType.DOUBLE))
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
             if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
                 return self.sql(
                     exp.cast(
                         l / r,
-                        to=exp.DataType.Type.BIGINT,
+                        to=exp.DType.BIGINT,
                     )
                 )
 
@@ -4355,17 +4353,17 @@ class Generator(metaclass=_Generator):
 
     @unsupported_args("format")
     def tochar_sql(self, expression: exp.ToChar) -> str:
-        return self.sql(exp.cast(expression.this, exp.DataType.Type.TEXT))
+        return self.sql(exp.cast(expression.this, exp.DType.TEXT))
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if not self.SUPPORTS_TO_NUMBER:
             self.unsupported("Unsupported TO_NUMBER function")
-            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
+            return self.sql(exp.cast(expression.this, exp.DType.DOUBLE))
 
         fmt = expression.args.get("format")
         if not fmt:
             self.unsupported("Conversion format is required for TO_NUMBER")
-            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
+            return self.sql(exp.cast(expression.this, exp.DType.DOUBLE))
 
         return self.func("TO_NUMBER", expression.this, fmt)
 
@@ -4595,7 +4593,7 @@ class Generator(metaclass=_Generator):
 
             arg = annotate_types(arg, dialect=self.dialect)
 
-        if arg.is_type(exp.DataType.Type.ARRAY):
+        if arg.is_type(exp.DType.ARRAY):
             return self.sql(arg)
 
         cond_for_null = arg.is_(exp.null())
@@ -4609,28 +4607,28 @@ class Generator(metaclass=_Generator):
             return self.sql(
                 exp.cast(
                     exp.StrToTime(this=this, format=expression.args["format"]),
-                    exp.DataType.Type.TIME,
+                    exp.DType.TIME,
                 )
             )
 
-        if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
+        if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DType.TIME):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.TIME))
+        return self.sql(exp.cast(this, exp.DType.TIME))
 
     def tsordstotimestamp_sql(self, expression: exp.TsOrDsToTimestamp) -> str:
         this = expression.this
-        if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DataType.Type.TIMESTAMP):
+        if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DType.TIMESTAMP):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP, dialect=self.dialect))
+        return self.sql(exp.cast(this, exp.DType.TIMESTAMP, dialect=self.dialect))
 
     def tsordstodatetime_sql(self, expression: exp.TsOrDsToDatetime) -> str:
         this = expression.this
-        if isinstance(this, exp.TsOrDsToDatetime) or this.is_type(exp.DataType.Type.DATETIME):
+        if isinstance(this, exp.TsOrDsToDatetime) or this.is_type(exp.DType.DATETIME):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, exp.DataType.Type.DATETIME, dialect=self.dialect))
+        return self.sql(exp.cast(this, exp.DType.DATETIME, dialect=self.dialect))
 
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this
@@ -4640,24 +4638,24 @@ class Generator(metaclass=_Generator):
             return self.sql(
                 exp.cast(
                     exp.StrToTime(this=this, format=expression.args["format"], safe=safe),
-                    exp.DataType.Type.DATE,
+                    exp.DType.DATE,
                 )
             )
 
-        if isinstance(this, exp.TsOrDsToDate) or this.is_type(exp.DataType.Type.DATE):
+        if isinstance(this, exp.TsOrDsToDate) or this.is_type(exp.DType.DATE):
             return self.sql(this)
 
         if safe:
-            return self.sql(exp.TryCast(this=this, to=exp.DataType(this=exp.DataType.Type.DATE)))
+            return self.sql(exp.TryCast(this=this, to=exp.DataType(this=exp.DType.DATE)))
 
-        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
+        return self.sql(exp.cast(this, exp.DType.DATE))
 
     def unixdate_sql(self, expression: exp.UnixDate) -> str:
         return self.sql(
             exp.func(
                 "DATEDIFF",
                 expression.this,
-                exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
+                exp.cast(exp.Literal.string("1970-01-01"), exp.DType.DATE),
                 "day",
             )
         )
@@ -4763,13 +4761,13 @@ class Generator(metaclass=_Generator):
 
             fmt = exp.Literal.string(converted_style)
 
-            if to.this == exp.DataType.Type.DATE:
+            if to.this == exp.DType.DATE:
                 transformed = exp.StrToDate(this=value, format=fmt)
-            elif to.this in (exp.DataType.Type.DATETIME, exp.DataType.Type.DATETIME2):
+            elif to.this in (exp.DType.DATETIME, exp.DType.DATETIME2):
                 transformed = exp.StrToTime(this=value, format=fmt)
             elif to.this in self.PARAMETERIZABLE_TEXT_TYPES:
                 transformed = cast(this=exp.TimeToStr(this=value, format=fmt), to=to, safe=safe)
-            elif to.this == exp.DataType.Type.TEXT:
+            elif to.this == exp.DType.TEXT:
                 transformed = exp.TimeToStr(this=value, format=fmt)
 
         if not transformed:
@@ -5024,7 +5022,7 @@ class Generator(metaclass=_Generator):
 
         if source_tz and timestamp:
             timestamp = exp.AtTimeZone(
-                this=exp.cast(timestamp, exp.DataType.Type.TIMESTAMPNTZ), zone=source_tz
+                this=exp.cast(timestamp, exp.DType.TIMESTAMPNTZ), zone=source_tz
             )
 
         expr = exp.AtTimeZone(this=timestamp, zone=target_tz)
@@ -5256,7 +5254,7 @@ class Generator(metaclass=_Generator):
     @unsupported_args("format")
     def todouble_sql(self, expression: exp.ToDouble) -> str:
         cast = exp.TryCast if expression.args.get("safe") else exp.Cast
-        return self.sql(cast(this=expression.this, to=exp.DataType.build(exp.DataType.Type.DOUBLE)))
+        return self.sql(cast(this=expression.this, to=exp.DataType.build(exp.DType.DOUBLE)))
 
     def string_sql(self, expression: exp.String) -> str:
         this = expression.this
@@ -5270,7 +5268,7 @@ class Generator(metaclass=_Generator):
                 source_tz=exp.Literal.string("UTC"), target_tz=zone, timestamp=this
             )
 
-        return self.sql(exp.cast(this, exp.DataType.Type.VARCHAR))
+        return self.sql(exp.cast(this, exp.DType.VARCHAR))
 
     def median_sql(self, expression: exp.Median) -> str:
         if not self.SUPPORTS_MEDIAN:
@@ -5290,9 +5288,7 @@ class Generator(metaclass=_Generator):
         if self.SUPPORTS_UNIX_SECONDS:
             return self.function_fallback_sql(expression)
 
-        start_ts = exp.cast(
-            exp.Literal.string("1970-01-01 00:00:00+00"), to=exp.DataType.Type.TIMESTAMPTZ
-        )
+        start_ts = exp.cast(exp.Literal.string("1970-01-01 00:00:00+00"), to=exp.DType.TIMESTAMPTZ)
 
         return self.sql(
             exp.TimestampDiff(this=expression.this, expression=start_ts, unit=exp.var("SECONDS"))
@@ -5599,7 +5595,7 @@ class Generator(metaclass=_Generator):
 
             this = annotate_types(this, dialect=self.dialect)
 
-        if this.is_type(*(exp.DataType.Type.ARRAY, exp.DataType.Type.MAP)):
+        if this.is_type(*(exp.DType.ARRAY, exp.DType.MAP)):
             return self.sql(exp.Bracket(this=this, expressions=[expr]))
 
         return self.sql(exp.JSONExtract(this=this, expression=self.dialect.to_json_path(expr)))
@@ -5607,7 +5603,7 @@ class Generator(metaclass=_Generator):
     def datefromunixdate_sql(self, expression: exp.DateFromUnixDate) -> str:
         return self.sql(
             exp.DateAdd(
-                this=exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
+                this=exp.cast(exp.Literal.string("1970-01-01"), exp.DType.DATE),
                 expression=expression.this,
                 unit=exp.var("DAY"),
             )
@@ -5645,9 +5641,7 @@ class Generator(metaclass=_Generator):
         uuid_func_sql = self.func("UUID")
 
         if is_string and not self.dialect.UUID_IS_STRING_TYPE:
-            return self.sql(
-                exp.cast(uuid_func_sql, exp.DataType.Type.VARCHAR, dialect=self.dialect)
-            )
+            return self.sql(exp.cast(uuid_func_sql, exp.DType.VARCHAR, dialect=self.dialect))
 
         return uuid_func_sql
 

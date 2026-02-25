@@ -20,7 +20,7 @@ def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
+        return self.sql(exp.cast(this, exp.DType.DATE))
     return self.func("TO_DATE", this, time_format)
 
 
@@ -99,15 +99,15 @@ class Drill(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.SMALLINT: "INTEGER",
-            exp.DataType.Type.TINYINT: "INTEGER",
-            exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.NCHAR: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DType.INT: "INTEGER",
+            exp.DType.SMALLINT: "INTEGER",
+            exp.DType.TINYINT: "INTEGER",
+            exp.DType.BINARY: "VARBINARY",
+            exp.DType.TEXT: "VARCHAR",
+            exp.DType.NCHAR: "VARCHAR",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.DATETIME: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {
@@ -143,7 +143,7 @@ class Drill(Dialect):
             ),
             exp.StrPosition: strposition_sql,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),

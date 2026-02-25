@@ -641,7 +641,7 @@ def _expand_struct_stars_no_parens(
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
     dot_column = expression.find(exp.Column)
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
         return []
 
     # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
@@ -658,7 +658,7 @@ def _expand_struct_stars_no_parens(
             if not isinstance(field.this, exp.Identifier):
                 return []
 
-            if field.name == part.name and field.kind.is_type(exp.DataType.Type.STRUCT):
+            if field.name == part.name and field.kind.is_type(exp.DType.STRUCT):
                 starting_struct = field
                 break
         else:
@@ -698,7 +698,7 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
 
     # find column definition to get data-type
     dot_column = expression.find(exp.Column)
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
         return []
 
     parent = dot_column.parent

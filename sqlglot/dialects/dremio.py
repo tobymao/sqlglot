@@ -208,16 +208,16 @@ class Dremio(Dialect):
         # https://docs.dremio.com/current/reference/sql/data-types/
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.SMALLINT: "INT",
-            exp.DataType.Type.TINYINT: "INT",
-            exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.NCHAR: "VARCHAR",
-            exp.DataType.Type.CHAR: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.ARRAY: "LIST",
-            exp.DataType.Type.BIT: "BOOLEAN",
+            exp.DType.SMALLINT: "INT",
+            exp.DType.TINYINT: "INT",
+            exp.DType.BINARY: "VARBINARY",
+            exp.DType.TEXT: "VARCHAR",
+            exp.DType.NCHAR: "VARCHAR",
+            exp.DType.CHAR: "VARCHAR",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.ARRAY: "LIST",
+            exp.DType.BIT: "BOOLEAN",
         }
 
         TRANSFORMS = {
@@ -237,8 +237,8 @@ class Dremio(Dialect):
             Reject time-zone–aware TIMESTAMPs, which Dremio does not accept
             """
             if expression.is_type(
-                exp.DataType.Type.TIMESTAMPTZ,
-                exp.DataType.Type.TIMESTAMPLTZ,
+                exp.DType.TIMESTAMPTZ,
+                exp.DType.TIMESTAMPLTZ,
             ):
                 self.unsupported("Dremio does not support time-zone-aware TIMESTAMP")
 
@@ -246,7 +246,7 @@ class Dremio(Dialect):
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
             # Match: CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE)
-            if expression.is_type(exp.DataType.Type.DATE):
+            if expression.is_type(exp.DType.DATE):
                 at_time_zone = expression.this
 
                 if (

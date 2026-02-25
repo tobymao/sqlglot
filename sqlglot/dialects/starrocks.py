@@ -230,10 +230,10 @@ class StarRocks(MySQL):
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT128: "LARGEINT",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.TIMESTAMP: "DATETIME",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
+            exp.DType.INT128: "LARGEINT",
+            exp.DType.TEXT: "STRING",
+            exp.DType.TIMESTAMP: "DATETIME",
+            exp.DType.TIMESTAMPTZ: "DATETIME",
         }
 
         PROPERTIES_LOCATION = {

@@ -6,7 +6,7 @@ from sqlglot.typing import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
-        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        expr_type: {"returns": exp.DType.BIGINT}
         for expr_type in {
             exp.BitLength,
             exp.DateDiff,
@@ -27,14 +27,14 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.INT128}
+        expr_type: {"returns": exp.DType.INT128}
         for expr_type in {
             exp.CountIf,
             exp.Factorial,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.Atan2,
             exp.JarowinklerSimilarity,
@@ -42,14 +42,14 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        expr_type: {"returns": exp.DType.VARCHAR}
         for expr_type in {
             exp.Format,
             exp.Reverse,
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
-    exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMP},
-    exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
-    exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
+    exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},
+    exp.ToDays: {"returns": exp.DType.INTERVAL},
+    exp.TimeFromParts: {"returns": exp.DType.TIME},
 }

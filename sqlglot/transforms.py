@@ -709,7 +709,7 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
             node.is_number
             or (
                 not isinstance(node, exp.SubqueryPredicate)
-                and node.is_type(exp.DataType.Type.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+                and node.is_type(exp.DType.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
             )
             or (isinstance(node, exp.Column) and not node.type)
         ):

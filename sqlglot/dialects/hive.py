@@ -233,7 +233,7 @@ class Hive(Dialect):
     for target_type in {
         *exp.DataType.NUMERIC_TYPES,
         *exp.DataType.TEMPORAL_TYPES,
-        exp.DataType.Type.INTERVAL,
+        exp.DType.INTERVAL,
     }:
         COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
@@ -580,16 +580,16 @@ class Hive(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.BLOB: "BINARY",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.ROWVERSION: "BINARY",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.TIME: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.UTINYINT: "SMALLINT",
-            exp.DataType.Type.VARBINARY: "BINARY",
+            exp.DType.BIT: "BOOLEAN",
+            exp.DType.BLOB: "BINARY",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.ROWVERSION: "BINARY",
+            exp.DType.TEXT: "STRING",
+            exp.DType.TIME: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.UTINYINT: "SMALLINT",
+            exp.DType.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {
@@ -781,15 +781,15 @@ class Hive(Dialect):
         # could preserve decimals: CASE WHEN x >= 0 THEN FLOOR(x, d) ELSE CEIL(x, d) END
         @unsupported_args("decimals")
         def trunc_sql(self, expression: exp.Trunc) -> str:
-            return self.sql(exp.cast(expression.this, exp.DataType.Type.BIGINT))
+            return self.sql(exp.cast(expression.this, exp.DType.BIGINT))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
                 not expression.expressions or expression.expressions[0].name == "MAX"
             ):
                 expression = exp.DataType.build("text")
-            elif expression.is_type(exp.DataType.Type.TEXT) and expression.expressions:
-                expression.set("this", exp.DataType.Type.VARCHAR)
+            elif expression.is_type(exp.DType.TEXT) and expression.expressions:
+                expression.set("this", exp.DType.VARCHAR)
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
             elif expression.is_type("float"):

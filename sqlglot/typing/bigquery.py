@@ -22,7 +22,7 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
 
     self._set_type(
         expression,
-        exp.DataType.Type.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
+        exp.DType.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
     )
     return expression
 
@@ -41,7 +41,7 @@ def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> ex
     if expression.this.is_type(*exp.DataType.INTEGER_TYPES) and expression.expression.is_type(
         *exp.DataType.INTEGER_TYPES
     ):
-        return self._set_type(expression, exp.DataType.Type.DOUBLE)
+        return self._set_type(expression, exp.DType.DOUBLE)
 
     return _annotate_by_args_with_coerce(self, expression)
 
@@ -65,13 +65,13 @@ def _annotate_by_args_with_coerce(
 
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
     struct_type = exp.DataType(
-        this=exp.DataType.Type.STRUCT,
-        expressions=[expression.this.type, exp.DataType(this=exp.DataType.Type.BIGINT)],
+        this=exp.DType.STRUCT,
+        expressions=[expression.this.type, exp.DataType(this=exp.DType.BIGINT)],
         nested=True,
     )
     self._set_type(
         expression,
-        exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[struct_type], nested=True),
+        exp.DataType(this=exp.DType.ARRAY, expressions=[struct_type], nested=True),
     )
 
     return expression
@@ -82,8 +82,8 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
 
     # Args must be BYTES or types that can be cast to STRING, return type is either BYTES or STRING
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#concat
-    if not annotated.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.UNKNOWN):
-        self._set_type(annotated, exp.DataType.Type.VARCHAR)
+    if not annotated.is_type(exp.DType.BINARY, exp.DType.UNKNOWN):
+        self._set_type(annotated, exp.DType.VARCHAR)
 
     return annotated
 
@@ -98,17 +98,17 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
     if len(array_args) == 1:
         unnested = array_args[0].unnest()
-        projection_type: t.Optional[exp.DataType | exp.DataType.Type] = None
+        projection_type: t.Optional[exp.DataType | exp.DType] = None
 
         # Handle ARRAY(SELECT ...) - single SELECT query
         if isinstance(unnested, exp.Select):
             if (
                 (query_type := unnested.meta.get("query_type")) is not None
-                and query_type.is_type(exp.DataType.Type.STRUCT)
+                and query_type.is_type(exp.DType.STRUCT)
                 and len(query_type.expressions) == 1
                 and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
                 and (col_type := col_def.kind) is not None
-                and not col_type.is_type(exp.DataType.Type.UNKNOWN)
+                and not col_type.is_type(exp.DType.UNKNOWN)
             ):
                 projection_type = col_type
 
@@ -126,9 +126,9 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
         if projection_type and not (
             (
                 isinstance(projection_type, exp.DataType)
-                and projection_type.is_type(exp.DataType.Type.UNKNOWN)
+                and projection_type.is_type(exp.DType.UNKNOWN)
             )
-            or projection_type == exp.DataType.Type.UNKNOWN
+            or projection_type == exp.DType.UNKNOWN
         ):
             element_type = (
                 projection_type.copy()
@@ -136,7 +136,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
                 else exp.DataType(this=projection_type)
             )
             array_type = exp.DataType(
-                this=exp.DataType.Type.ARRAY,
+                this=exp.DType.ARRAY,
                 expressions=[element_type],
                 nested=True,
             )
@@ -197,7 +197,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        expr_type: {"returns": exp.DType.BIGINT}
         for expr_type in {
             exp.BitwiseAndAgg,
             exp.BitwiseCount,
@@ -218,7 +218,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BINARY}
+        expr_type: {"returns": exp.DType.BINARY}
         for expr_type in {
             exp.ByteString,
             exp.CodePointsToBytes,
@@ -231,21 +231,21 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BOOLEAN}
+        expr_type: {"returns": exp.DType.BOOLEAN}
         for expr_type in {
             exp.JSONBool,
             exp.LaxBool,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.DATETIME}
+        expr_type: {"returns": exp.DType.DATETIME}
         for expr_type in {
             exp.ParseDatetime,
             exp.TimestampFromParts,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.Atan2,
             exp.Corr,
@@ -265,7 +265,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.JSON}
+        expr_type: {"returns": exp.DType.JSON}
         for expr_type in {
             exp.JSONArray,
             exp.JSONArrayAppend,
@@ -277,7 +277,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.TIME}
+        expr_type: {"returns": exp.DType.TIME}
         for expr_type in {
             exp.ParseTime,
             exp.TimeFromParts,
@@ -286,7 +286,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        expr_type: {"returns": exp.DType.VARCHAR}
         for expr_type in {
             exp.CodePointsToString,
             exp.Format,
@@ -321,14 +321,12 @@ EXPRESSION_METADATA = {
             exp.Split,
         }
     },
-    **{
-        expr_type: {"returns": exp.DataType.Type.TIMESTAMPTZ} for expr_type in TIMESTAMP_EXPRESSIONS
-    },
+    **{expr_type: {"returns": exp.DType.TIMESTAMPTZ} for expr_type in TIMESTAMP_EXPRESSIONS},
     exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ApproxTopSum: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.Array: {"annotator": _annotate_array},
     exp.Concat: {"annotator": _annotate_concat},
-    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
+    exp.DateFromUnixDate: {"returns": exp.DType.DATE},
     exp.GenerateTimestampArray: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
@@ -336,7 +334,7 @@ EXPRESSION_METADATA = {
     },
     exp.JSONFormat: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.Type.JSON if e.args.get("to_json") else exp.DataType.Type.VARCHAR
+            e, exp.DType.JSON if e.args.get("to_json") else exp.DType.VARCHAR
         )
     },
     exp.JSONKeysAtDepth: {
@@ -350,8 +348,8 @@ EXPRESSION_METADATA = {
         )
     },
     exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
-    exp.ParseBignumeric: {"returns": exp.DataType.Type.BIGDECIMAL},
-    exp.ParseNumeric: {"returns": exp.DataType.Type.DECIMAL},
+    exp.ParseBignumeric: {"returns": exp.DType.BIGDECIMAL},
+    exp.ParseNumeric: {"returns": exp.DType.DECIMAL},
     exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
     exp.ToCodePoints: {
         "annotator": lambda self, e: self._set_type(

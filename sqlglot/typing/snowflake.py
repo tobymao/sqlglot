@@ -18,9 +18,9 @@ MAX_SCALE = 37
 
 def _annotate_reverse(self: TypeAnnotator, expression: exp.Reverse) -> exp.Reverse:
     expression = self._annotate_by_args(expression, "this")
-    if expression.is_type(exp.DataType.Type.NULL):
+    if expression.is_type(exp.DType.NULL):
         # Snowflake treats REVERSE(NULL) as a VARCHAR
-        self._set_type(expression, exp.DataType.Type.VARCHAR)
+        self._set_type(expression, exp.DType.VARCHAR)
 
     return expression
 
@@ -33,19 +33,19 @@ def _annotate_timestamp_from_parts(
     TIMESTAMP_FROM_PARTS without time_zone -> TIMESTAMP (defaults to TIMESTAMP_NTZ)
     """
     if expression.args.get("zone"):
-        self._set_type(expression, exp.DataType.Type.TIMESTAMPTZ)
+        self._set_type(expression, exp.DType.TIMESTAMPTZ)
     else:
-        self._set_type(expression, exp.DataType.Type.TIMESTAMP)
+        self._set_type(expression, exp.DType.TIMESTAMP)
 
     return expression
 
 
 def _annotate_date_or_time_add(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
     if (
-        expression.this.is_type(exp.DataType.Type.DATE)
+        expression.this.is_type(exp.DType.DATE)
         and expression.text("unit").upper() not in DATE_PARTS
     ):
-        self._set_type(expression, exp.DataType.Type.TIMESTAMPNTZ)
+        self._set_type(expression, exp.DType.TIMESTAMPNTZ)
     else:
         self._annotate_by_args(expression, "this")
     return expression
@@ -83,7 +83,7 @@ def _annotate_decode_case(self: TypeAnnotator, expression: exp.DecodeCase) -> ex
 def _annotate_arg_max_min(self, expression):
     self._set_type(
         expression,
-        exp.DataType.Type.ARRAY if expression.args.get("count") else expression.this.type,
+        exp.DType.ARRAY if expression.args.get("count") else expression.this.type,
     )
     return expression
 
@@ -119,9 +119,9 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     # Get the input type
     input_type = expression.this.type
 
-    if input_type.is_type(exp.DataType.Type.DOUBLE):
+    if input_type.is_type(exp.DType.DOUBLE):
         # If input is FLOAT/DOUBLE, return DOUBLE (FLOAT is normalized to DOUBLE in Snowflake)
-        self._set_type(expression, exp.DataType.Type.DOUBLE)
+        self._set_type(expression, exp.DType.DOUBLE)
     else:
         # If input is NUMBER(p, s), return NUMBER(min(p+3, 38), min(s+3, 37))
         exprs = input_type.expressions
@@ -158,11 +158,11 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.E
     input_type = expression.this.type
 
     # Special case: DECFLOAT -> DECFLOAT(38)
-    if input_type.is_type(exp.DataType.Type.DECFLOAT):
+    if input_type.is_type(exp.DType.DECFLOAT):
         self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
     # Special case: FLOAT/DOUBLE -> DOUBLE
-    elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
-        self._set_type(expression, exp.DataType.Type.DOUBLE)
+    elif input_type.is_type(exp.DType.FLOAT, exp.DType.DOUBLE):
+        self._set_type(expression, exp.DType.DOUBLE)
     # For NUMBER types: determine the scale
     else:
         exprs = input_type.expressions
@@ -191,10 +191,10 @@ def _annotate_kurtosis(self: TypeAnnotator, expression: exp.Kurtosis) -> exp.Kur
     expression = self._annotate_by_args(expression, "this")
     input_type = expression.this.type
 
-    if input_type.is_type(exp.DataType.Type.DECFLOAT):
+    if input_type.is_type(exp.DType.DECFLOAT):
         self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
-    elif input_type.is_type(exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE):
-        self._set_type(expression, exp.DataType.Type.DOUBLE)
+    elif input_type.is_type(exp.DType.FLOAT, exp.DType.DOUBLE):
+        self._set_type(expression, exp.DType.DOUBLE)
     else:
         self._set_type(
             expression, exp.DataType.build(f"NUMBER({MAX_PRECISION}, 12)", dialect="snowflake")
@@ -216,11 +216,11 @@ def _annotate_math_with_float_decfloat(
     expression = self._annotate_by_args(expression, "this")
 
     # If input is DECFLOAT, preserve
-    if expression.this.is_type(exp.DataType.Type.DECFLOAT):
+    if expression.this.is_type(exp.DType.DECFLOAT):
         self._set_type(expression, expression.this.type)
     else:
         # For all other types (integers, decimals, etc.), return DOUBLE
-        self._set_type(expression, exp.DataType.Type.DOUBLE)
+        self._set_type(expression, exp.DType.DOUBLE)
 
     return expression
 
@@ -229,9 +229,7 @@ def _annotate_str_to_time(self: TypeAnnotator, expression: exp.StrToTime) -> exp
     # target_type is stored as a DataType instance
     target_type_arg = expression.args.get("target_type")
     target_type = (
-        target_type_arg.this
-        if isinstance(target_type_arg, exp.DataType)
-        else exp.DataType.Type.TIMESTAMP
+        target_type_arg.this if isinstance(target_type_arg, exp.DataType) else exp.DType.TIMESTAMP
     )
     self._set_type(expression, target_type)
     return expression
@@ -258,7 +256,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.ARRAY}
+        expr_type: {"returns": exp.DType.ARRAY}
         for expr_type in (
             exp.ApproxTopK,
             exp.ApproxTopKEstimate,
@@ -280,7 +278,7 @@ EXPRESSION_METADATA = {
         )
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BIGINT}
+        expr_type: {"returns": exp.DType.BIGINT}
         for expr_type in {
             exp.BitmapBitPosition,
             exp.BitmapBucketNumber,
@@ -295,7 +293,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BINARY}
+        expr_type: {"returns": exp.DType.BINARY}
         for expr_type in {
             exp.Base64DecodeBinary,
             exp.BitmapConstructAgg,
@@ -317,7 +315,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.BOOLEAN}
+        expr_type: {"returns": exp.DType.BOOLEAN}
         for expr_type in {
             exp.Booland,
             exp.Boolnot,
@@ -332,7 +330,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.DATE}
+        expr_type: {"returns": exp.DType.DATE}
         for expr_type in {
             exp.NextDay,
             exp.PreviousDay,
@@ -354,7 +352,7 @@ EXPRESSION_METADATA = {
         )
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
@@ -370,7 +368,7 @@ EXPRESSION_METADATA = {
     },
     exp.Kurtosis: {"annotator": _annotate_kurtosis},
     **{
-        expr_type: {"returns": exp.DataType.Type.DECFLOAT}
+        expr_type: {"returns": exp.DType.DECFLOAT}
         for expr_type in {
             exp.ToDecfloat,
             exp.TryToDecfloat,
@@ -410,7 +408,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.INT}
+        expr_type: {"returns": exp.DType.INT}
         for expr_type in {
             exp.ByteLength,
             exp.Grouping,
@@ -426,7 +424,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.OBJECT}
+        expr_type: {"returns": exp.DType.OBJECT}
         for expr_type in {
             exp.ApproxPercentileAccumulate,
             exp.ApproxPercentileCombine,
@@ -439,7 +437,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.MAP}
+        expr_type: {"returns": exp.DType.MAP}
         for expr_type in {
             exp.MapCat,
             exp.MapDelete,
@@ -448,27 +446,27 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.FILE}
+        expr_type: {"returns": exp.DType.FILE}
         for expr_type in {
             exp.ToFile,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.TIME}
+        expr_type: {"returns": exp.DType.TIME}
         for expr_type in {
             exp.TimeFromParts,
             exp.TsOrDsToTime,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.TIMESTAMPLTZ}
+        expr_type: {"returns": exp.DType.TIMESTAMPLTZ}
         for expr_type in {
             exp.CurrentTimestamp,
             exp.Localtimestamp,
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.TINYINT}
+        expr_type: {"returns": exp.DType.TINYINT}
         for expr_type in {
             exp.DayOfMonth,
             exp.DayOfWeek,
@@ -477,7 +475,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        expr_type: {"returns": exp.DType.VARCHAR}
         for expr_type in {
             exp.AIAgg,
             exp.AIClassify,
@@ -522,7 +520,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.VARIANT}
+        expr_type: {"returns": exp.DType.VARIANT}
         for expr_type in {
             exp.Minhash,
             exp.MinhashCombine,
@@ -541,9 +539,7 @@ EXPRESSION_METADATA = {
     exp.ConvertTimezone: {
         "annotator": lambda self, e: self._set_type(
             e,
-            exp.DataType.Type.TIMESTAMPNTZ
-            if e.args.get("source_tz")
-            else exp.DataType.Type.TIMESTAMPTZ,
+            exp.DType.TIMESTAMPNTZ if e.args.get("source_tz") else exp.DType.TIMESTAMPTZ,
         )
     },
     exp.DateAdd: {"annotator": _annotate_date_or_time_add},

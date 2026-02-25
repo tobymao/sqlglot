@@ -7,19 +7,19 @@ from sqlglot.typing.spark2 import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
-        exp_type: {"returns": exp.DataType.Type.DOUBLE}
+        exp_type: {"returns": exp.DType.DOUBLE}
         for exp_type in {
             exp.Sec,
         }
     },
     **{
-        exp_type: {"returns": exp.DataType.Type.INT}
+        exp_type: {"returns": exp.DType.INT}
         for exp_type in {
             exp.ArraySize,
         }
     },
     **{
-        exp_type: {"returns": exp.DataType.Type.VARCHAR}
+        exp_type: {"returns": exp.DType.VARCHAR}
         for exp_type in {
             exp.Collation,
             exp.CurrentTimezone,
@@ -37,8 +37,8 @@ EXPRESSION_METADATA = {
             exp.Overlay,
         }
     },
-    exp.BitmapCount: {"returns": exp.DataType.Type.BIGINT},
-    exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMPNTZ},
-    exp.ToBinary: {"returns": exp.DataType.Type.BINARY},
-    exp.DateFromUnixDate: {"returns": exp.DataType.Type.DATE},
+    exp.BitmapCount: {"returns": exp.DType.BIGINT},
+    exp.Localtimestamp: {"returns": exp.DType.TIMESTAMPNTZ},
+    exp.ToBinary: {"returns": exp.DType.BINARY},
+    exp.DateFromUnixDate: {"returns": exp.DType.DATE},
 }

@@ -6845,6 +6845,17 @@ class Tags(Property, ColumnConstraintKind):
     arg_types = {"expressions": True}
 
 
+class PropertiesLocation(AutoName):
+    POST_CREATE = auto()
+    POST_NAME = auto()
+    POST_SCHEMA = auto()
+    POST_WITH = auto()
+    POST_ALIAS = auto()
+    POST_EXPRESSION = auto()
+    POST_INDEX = auto()
+    UNSUPPORTED = auto()
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 
@@ -6891,15 +6902,7 @@ class Properties(Expression):
     #     table a [POST_NAME]
     #     as [POST_ALIAS] (select * from b) [POST_EXPRESSION]
     #     index (c) [POST_INDEX]
-    class Location(AutoName):
-        POST_CREATE = auto()
-        POST_NAME = auto()
-        POST_SCHEMA = auto()
-        POST_WITH = auto()
-        POST_ALIAS = auto()
-        POST_EXPRESSION = auto()
-        POST_INDEX = auto()
-        UNSUPPORTED = auto()
+    Location: t.ClassVar[t.Type[PropertiesLocation]] = PropertiesLocation
 
     @classmethod
     def from_dict(cls, properties_dict: t.Dict) -> Properties:
@@ -7991,6 +7994,136 @@ class _IntervalOp(_TimeUnit, IntervalOp):
     arg_types = {"unit": False, "expression": True}
 
 
+class DType(AutoName):
+    ARRAY = auto()
+    AGGREGATEFUNCTION = auto()
+    SIMPLEAGGREGATEFUNCTION = auto()
+    BIGDECIMAL = auto()
+    BIGINT = auto()
+    BIGNUM = auto()
+    BIGSERIAL = auto()
+    BINARY = auto()
+    BIT = auto()
+    BLOB = auto()
+    BOOLEAN = auto()
+    BPCHAR = auto()
+    CHAR = auto()
+    DATE = auto()
+    DATE32 = auto()
+    DATEMULTIRANGE = auto()
+    DATERANGE = auto()
+    DATETIME = auto()
+    DATETIME2 = auto()
+    DATETIME64 = auto()
+    DECIMAL = auto()
+    DECIMAL32 = auto()
+    DECIMAL64 = auto()
+    DECIMAL128 = auto()
+    DECIMAL256 = auto()
+    DECFLOAT = auto()
+    DOUBLE = auto()
+    DYNAMIC = auto()
+    ENUM = auto()
+    ENUM8 = auto()
+    ENUM16 = auto()
+    FILE = auto()
+    FIXEDSTRING = auto()
+    FLOAT = auto()
+    GEOGRAPHY = auto()
+    GEOGRAPHYPOINT = auto()
+    GEOMETRY = auto()
+    POINT = auto()
+    RING = auto()
+    LINESTRING = auto()
+    MULTILINESTRING = auto()
+    POLYGON = auto()
+    MULTIPOLYGON = auto()
+    HLLSKETCH = auto()
+    HSTORE = auto()
+    IMAGE = auto()
+    INET = auto()
+    INT = auto()
+    INT128 = auto()
+    INT256 = auto()
+    INT4MULTIRANGE = auto()
+    INT4RANGE = auto()
+    INT8MULTIRANGE = auto()
+    INT8RANGE = auto()
+    INTERVAL = auto()
+    IPADDRESS = auto()
+    IPPREFIX = auto()
+    IPV4 = auto()
+    IPV6 = auto()
+    JSON = auto()
+    JSONB = auto()
+    LIST = auto()
+    LONGBLOB = auto()
+    LONGTEXT = auto()
+    LOWCARDINALITY = auto()
+    MAP = auto()
+    MEDIUMBLOB = auto()
+    MEDIUMINT = auto()
+    MEDIUMTEXT = auto()
+    MONEY = auto()
+    NAME = auto()
+    NCHAR = auto()
+    NESTED = auto()
+    NOTHING = auto()
+    NULL = auto()
+    NUMMULTIRANGE = auto()
+    NUMRANGE = auto()
+    NVARCHAR = auto()
+    OBJECT = auto()
+    RANGE = auto()
+    ROWVERSION = auto()
+    SERIAL = auto()
+    SET = auto()
+    SMALLDATETIME = auto()
+    SMALLINT = auto()
+    SMALLMONEY = auto()
+    SMALLSERIAL = auto()
+    STRUCT = auto()
+    SUPER = auto()
+    TEXT = auto()
+    TINYBLOB = auto()
+    TINYTEXT = auto()
+    TIME = auto()
+    TIMETZ = auto()
+    TIME_NS = auto()
+    TIMESTAMP = auto()
+    TIMESTAMPNTZ = auto()
+    TIMESTAMPLTZ = auto()
+    TIMESTAMPTZ = auto()
+    TIMESTAMP_S = auto()
+    TIMESTAMP_MS = auto()
+    TIMESTAMP_NS = auto()
+    TINYINT = auto()
+    TSMULTIRANGE = auto()
+    TSRANGE = auto()
+    TSTZMULTIRANGE = auto()
+    TSTZRANGE = auto()
+    UBIGINT = auto()
+    UINT = auto()
+    UINT128 = auto()
+    UINT256 = auto()
+    UMEDIUMINT = auto()
+    UDECIMAL = auto()
+    UDOUBLE = auto()
+    UNION = auto()
+    UNKNOWN = auto()  # Sentinel value, useful for type annotation
+    USERDEFINED = "USER-DEFINED"
+    USMALLINT = auto()
+    UTINYINT = auto()
+    UUID = auto()
+    VARBINARY = auto()
+    VARCHAR = auto()
+    VARIANT = auto()
+    VECTOR = auto()
+    XML = auto()
+    YEAR = auto()
+    TDIGEST = auto()
+
+
 # The `nullable` arg is helpful when transpiling types from other dialects to ClickHouse, which
 # assumes non-nullable types by default. Values `None` and `True` mean the type is nullable.
 class DataType(Expression):
@@ -8003,230 +8136,103 @@ class DataType(Expression):
         "nullable": False,
     }
 
-    class Type(AutoName):
-        ARRAY = auto()
-        AGGREGATEFUNCTION = auto()
-        SIMPLEAGGREGATEFUNCTION = auto()
-        BIGDECIMAL = auto()
-        BIGINT = auto()
-        BIGNUM = auto()
-        BIGSERIAL = auto()
-        BINARY = auto()
-        BIT = auto()
-        BLOB = auto()
-        BOOLEAN = auto()
-        BPCHAR = auto()
-        CHAR = auto()
-        DATE = auto()
-        DATE32 = auto()
-        DATEMULTIRANGE = auto()
-        DATERANGE = auto()
-        DATETIME = auto()
-        DATETIME2 = auto()
-        DATETIME64 = auto()
-        DECIMAL = auto()
-        DECIMAL32 = auto()
-        DECIMAL64 = auto()
-        DECIMAL128 = auto()
-        DECIMAL256 = auto()
-        DECFLOAT = auto()
-        DOUBLE = auto()
-        DYNAMIC = auto()
-        ENUM = auto()
-        ENUM8 = auto()
-        ENUM16 = auto()
-        FILE = auto()
-        FIXEDSTRING = auto()
-        FLOAT = auto()
-        GEOGRAPHY = auto()
-        GEOGRAPHYPOINT = auto()
-        GEOMETRY = auto()
-        POINT = auto()
-        RING = auto()
-        LINESTRING = auto()
-        MULTILINESTRING = auto()
-        POLYGON = auto()
-        MULTIPOLYGON = auto()
-        HLLSKETCH = auto()
-        HSTORE = auto()
-        IMAGE = auto()
-        INET = auto()
-        INT = auto()
-        INT128 = auto()
-        INT256 = auto()
-        INT4MULTIRANGE = auto()
-        INT4RANGE = auto()
-        INT8MULTIRANGE = auto()
-        INT8RANGE = auto()
-        INTERVAL = auto()
-        IPADDRESS = auto()
-        IPPREFIX = auto()
-        IPV4 = auto()
-        IPV6 = auto()
-        JSON = auto()
-        JSONB = auto()
-        LIST = auto()
-        LONGBLOB = auto()
-        LONGTEXT = auto()
-        LOWCARDINALITY = auto()
-        MAP = auto()
-        MEDIUMBLOB = auto()
-        MEDIUMINT = auto()
-        MEDIUMTEXT = auto()
-        MONEY = auto()
-        NAME = auto()
-        NCHAR = auto()
-        NESTED = auto()
-        NOTHING = auto()
-        NULL = auto()
-        NUMMULTIRANGE = auto()
-        NUMRANGE = auto()
-        NVARCHAR = auto()
-        OBJECT = auto()
-        RANGE = auto()
-        ROWVERSION = auto()
-        SERIAL = auto()
-        SET = auto()
-        SMALLDATETIME = auto()
-        SMALLINT = auto()
-        SMALLMONEY = auto()
-        SMALLSERIAL = auto()
-        STRUCT = auto()
-        SUPER = auto()
-        TEXT = auto()
-        TINYBLOB = auto()
-        TINYTEXT = auto()
-        TIME = auto()
-        TIMETZ = auto()
-        TIME_NS = auto()
-        TIMESTAMP = auto()
-        TIMESTAMPNTZ = auto()
-        TIMESTAMPLTZ = auto()
-        TIMESTAMPTZ = auto()
-        TIMESTAMP_S = auto()
-        TIMESTAMP_MS = auto()
-        TIMESTAMP_NS = auto()
-        TINYINT = auto()
-        TSMULTIRANGE = auto()
-        TSRANGE = auto()
-        TSTZMULTIRANGE = auto()
-        TSTZRANGE = auto()
-        UBIGINT = auto()
-        UINT = auto()
-        UINT128 = auto()
-        UINT256 = auto()
-        UMEDIUMINT = auto()
-        UDECIMAL = auto()
-        UDOUBLE = auto()
-        UNION = auto()
-        UNKNOWN = auto()  # Sentinel value, useful for type annotation
-        USERDEFINED = "USER-DEFINED"
-        USMALLINT = auto()
-        UTINYINT = auto()
-        UUID = auto()
-        VARBINARY = auto()
-        VARCHAR = auto()
-        VARIANT = auto()
-        VECTOR = auto()
-        XML = auto()
-        YEAR = auto()
-        TDIGEST = auto()
+    Type: t.ClassVar[t.Type[DType]] = DType
 
-    STRUCT_TYPES = {
-        Type.FILE,
-        Type.NESTED,
-        Type.OBJECT,
-        Type.STRUCT,
-        Type.UNION,
+    STRUCT_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.FILE,
+        DType.NESTED,
+        DType.OBJECT,
+        DType.STRUCT,
+        DType.UNION,
     }
 
-    ARRAY_TYPES = {
-        Type.ARRAY,
-        Type.LIST,
+    ARRAY_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.ARRAY,
+        DType.LIST,
     }
 
-    NESTED_TYPES = {
+    NESTED_TYPES: t.ClassVar[t.Set[DType]] = {
         *STRUCT_TYPES,
         *ARRAY_TYPES,
-        Type.MAP,
+        DType.MAP,
     }
 
-    TEXT_TYPES = {
-        Type.CHAR,
-        Type.NCHAR,
-        Type.NVARCHAR,
-        Type.TEXT,
-        Type.VARCHAR,
-        Type.NAME,
+    TEXT_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.CHAR,
+        DType.NCHAR,
+        DType.NVARCHAR,
+        DType.TEXT,
+        DType.VARCHAR,
+        DType.NAME,
     }
 
-    SIGNED_INTEGER_TYPES = {
-        Type.BIGINT,
-        Type.INT,
-        Type.INT128,
-        Type.INT256,
-        Type.MEDIUMINT,
-        Type.SMALLINT,
-        Type.TINYINT,
+    SIGNED_INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.BIGINT,
+        DType.INT,
+        DType.INT128,
+        DType.INT256,
+        DType.MEDIUMINT,
+        DType.SMALLINT,
+        DType.TINYINT,
     }
 
-    UNSIGNED_INTEGER_TYPES = {
-        Type.UBIGINT,
-        Type.UINT,
-        Type.UINT128,
-        Type.UINT256,
-        Type.UMEDIUMINT,
-        Type.USMALLINT,
-        Type.UTINYINT,
+    UNSIGNED_INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.UBIGINT,
+        DType.UINT,
+        DType.UINT128,
+        DType.UINT256,
+        DType.UMEDIUMINT,
+        DType.USMALLINT,
+        DType.UTINYINT,
     }
 
-    INTEGER_TYPES = {
+    INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
         *SIGNED_INTEGER_TYPES,
         *UNSIGNED_INTEGER_TYPES,
-        Type.BIT,
+        DType.BIT,
     }
 
-    FLOAT_TYPES = {
-        Type.DOUBLE,
-        Type.FLOAT,
+    FLOAT_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.DOUBLE,
+        DType.FLOAT,
     }
 
-    REAL_TYPES = {
+    REAL_TYPES: t.ClassVar[t.Set[DType]] = {
         *FLOAT_TYPES,
-        Type.BIGDECIMAL,
-        Type.DECIMAL,
-        Type.DECIMAL32,
-        Type.DECIMAL64,
-        Type.DECIMAL128,
-        Type.DECIMAL256,
-        Type.DECFLOAT,
-        Type.MONEY,
-        Type.SMALLMONEY,
-        Type.UDECIMAL,
-        Type.UDOUBLE,
+        DType.BIGDECIMAL,
+        DType.DECIMAL,
+        DType.DECIMAL32,
+        DType.DECIMAL64,
+        DType.DECIMAL128,
+        DType.DECIMAL256,
+        DType.DECFLOAT,
+        DType.MONEY,
+        DType.SMALLMONEY,
+        DType.UDECIMAL,
+        DType.UDOUBLE,
     }
 
-    NUMERIC_TYPES = {
+    NUMERIC_TYPES: t.ClassVar[t.Set[DType]] = {
         *INTEGER_TYPES,
         *REAL_TYPES,
     }
 
-    TEMPORAL_TYPES = {
-        Type.DATE,
-        Type.DATE32,
-        Type.DATETIME,
-        Type.DATETIME2,
-        Type.DATETIME64,
-        Type.SMALLDATETIME,
-        Type.TIME,
-        Type.TIMESTAMP,
-        Type.TIMESTAMPNTZ,
-        Type.TIMESTAMPLTZ,
-        Type.TIMESTAMPTZ,
-        Type.TIMESTAMP_MS,
-        Type.TIMESTAMP_NS,
-        Type.TIMESTAMP_S,
-        Type.TIMETZ,
+    TEMPORAL_TYPES: t.ClassVar[t.Set[DType]] = {
+        DType.DATE,
+        DType.DATE32,
+        DType.DATETIME,
+        DType.DATETIME2,
+        DType.DATETIME64,
+        DType.SMALLDATETIME,
+        DType.TIME,
+        DType.TIMESTAMP,
+        DType.TIMESTAMPNTZ,
+        DType.TIMESTAMPLTZ,
+        DType.TIMESTAMPTZ,
+        DType.TIMESTAMP_MS,
+        DType.TIMESTAMP_NS,
+        DType.TIMESTAMP_S,
+        DType.TIMETZ,
     }
 
     @classmethod
@@ -8256,7 +8262,7 @@ class DataType(Expression):
 
         if isinstance(dtype, str):
             if dtype.upper() == "UNKNOWN":
-                return DataType(this=DataType.Type.UNKNOWN, **kwargs)
+                return DataType(this=DType.UNKNOWN, **kwargs)
 
             try:
                 data_type_exp = parse_one(
@@ -8264,16 +8270,16 @@ class DataType(Expression):
                 )
             except ParseError:
                 if udt:
-                    return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
+                    return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
                 raise
         elif isinstance(dtype, (Identifier, Dot)) and udt:
-            return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
-        elif isinstance(dtype, DataType.Type):
+            return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
+        elif isinstance(dtype, DType):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):
             return maybe_copy(dtype, copy)
         else:
-            raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
+            raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
 
         if kwargs:
             for k, v in kwargs.items():
@@ -8300,8 +8306,8 @@ class DataType(Expression):
             if (
                 other_type.expressions
                 or (check_nullable and (self_is_nullable or other_is_nullable))
-                or self.this == DataType.Type.USERDEFINED
-                or other_type.this == DataType.Type.USERDEFINED
+                or self.this == DType.USERDEFINED
+                or other_type.this == DType.USERDEFINED
             ):
                 matches = self == other_type
             else:
@@ -8312,7 +8318,7 @@ class DataType(Expression):
         return False
 
 
-DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DataType.Type]
+DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DType]
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -8635,7 +8641,7 @@ class TsOrDsAdd(Func, TimeUnit):
 
     @property
     def return_type(self) -> DataType:
-        return DataType.build(self.args.get("return_type") or DataType.Type.DATE)
+        return DataType.build(self.args.get("return_type") or DType.DATE)
 
 
 class TsOrDsDiff(Func, TimeUnit):
@@ -9858,8 +9864,8 @@ def cast(
         target_dialect = Dialect.get_or_raise(dialect)
         type_mapping = target_dialect.generator_class.TYPE_MAPPING
 
-        existing_cast_type: DataType.Type = expr.to.this
-        new_cast_type: DataType.Type = data_type.this
+        existing_cast_type: DType = expr.to.this
+        new_cast_type: DType = data_type.this
         types_are_equivalent = type_mapping.get(
             existing_cast_type, existing_cast_type.value
         ) == type_mapping.get(new_cast_type, new_cast_type.value)
@@ -10539,8 +10545,8 @@ def apply_index_offset(
         annotate_types(this, dialect=dialect)
 
     if t.cast(DataType, this.type).this not in (
-        DataType.Type.UNKNOWN,
-        DataType.Type.ARRAY,
+        DType.UNKNOWN,
+        DType.ARRAY,
     ):
         return expressions
 

@@ -127,12 +127,12 @@ def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
         expression.args["constraints"].remove(auto.parent)
         kind = expression.args["kind"]
 
-        if kind.this == exp.DataType.Type.INT:
-            kind.replace(exp.DataType(this=exp.DataType.Type.SERIAL))
-        elif kind.this == exp.DataType.Type.SMALLINT:
-            kind.replace(exp.DataType(this=exp.DataType.Type.SMALLSERIAL))
-        elif kind.this == exp.DataType.Type.BIGINT:
-            kind.replace(exp.DataType(this=exp.DataType.Type.BIGSERIAL))
+        if kind.this == exp.DType.INT:
+            kind.replace(exp.DataType(this=exp.DType.SERIAL))
+        elif kind.this == exp.DType.SMALLINT:
+            kind.replace(exp.DataType(this=exp.DType.SMALLSERIAL))
+        elif kind.this == exp.DType.BIGINT:
+            kind.replace(exp.DataType(this=exp.DType.BIGSERIAL))
 
     return expression
 
@@ -144,12 +144,12 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
     if not kind:
         return expression
 
-    if kind.this == exp.DataType.Type.SERIAL:
-        data_type = exp.DataType(this=exp.DataType.Type.INT)
-    elif kind.this == exp.DataType.Type.SMALLSERIAL:
-        data_type = exp.DataType(this=exp.DataType.Type.SMALLINT)
-    elif kind.this == exp.DataType.Type.BIGSERIAL:
-        data_type = exp.DataType(this=exp.DataType.Type.BIGINT)
+    if kind.this == exp.DType.SERIAL:
+        data_type = exp.DataType(this=exp.DType.INT)
+    elif kind.this == exp.DType.SMALLSERIAL:
+        data_type = exp.DataType(this=exp.DType.SMALLINT)
+    elif kind.this == exp.DType.BIGSERIAL:
+        data_type = exp.DataType(this=exp.DType.BIGINT)
     else:
         data_type = None
 
@@ -212,7 +212,7 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     if len(args) > 3:
         last = args[-1]
         if not is_int(last.name):
-            if not last.type or last.is_type(exp.DataType.Type.UNKNOWN, exp.DataType.Type.NULL):
+            if not last.type or last.is_type(exp.DType.UNKNOWN, exp.DType.NULL):
                 from sqlglot.optimizer.annotate_types import annotate_types
 
                 last = annotate_types(last, dialect=dialect)
@@ -286,10 +286,8 @@ def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
 
     # ROUND(double precision, integer) is not permitted in Postgres
     # so it's necessary to cast to decimal before rounding.
-    if expression.this.is_type(exp.DataType.Type.DOUBLE):
-        decimal_type = exp.DataType.build(
-            exp.DataType.Type.DECIMAL, expressions=expression.expressions
-        )
+    if expression.this.is_type(exp.DType.DOUBLE):
+        decimal_type = exp.DataType.build(exp.DType.DECIMAL, expressions=expression.expressions)
         this = self.sql(exp.Cast(this=this, to=decimal_type))
 
     return self.func("ROUND", this, decimals)
@@ -436,9 +434,7 @@ class Postgres(Dialect):
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
             "VERSION": exp.CurrentVersion.from_arg_list,
             "DATE_TRUNC": build_timestamp_trunc,
-            "DIV": lambda args: exp.cast(
-                binary_from_function(exp.IntDiv)(args), exp.DataType.Type.DECIMAL
-            ),
+            "DIV": lambda args: exp.cast(binary_from_function(exp.IntDiv)(args), exp.DType.DECIMAL),
             "GENERATE_SERIES": _build_generate_series,
             "GET_BIT": lambda args: exp.Getbit(
                 this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
@@ -712,15 +708,15 @@ class Postgres(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "SMALLINT",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
-            exp.DataType.Type.BINARY: "BYTEA",
-            exp.DataType.Type.VARBINARY: "BYTEA",
-            exp.DataType.Type.ROWVERSION: "BYTEA",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.BLOB: "BYTEA",
+            exp.DType.TINYINT: "SMALLINT",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.DOUBLE: "DOUBLE PRECISION",
+            exp.DType.BINARY: "BYTEA",
+            exp.DType.VARBINARY: "BYTEA",
+            exp.DType.ROWVERSION: "BYTEA",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.BLOB: "BYTEA",
         }
 
         TRANSFORMS = {
@@ -761,7 +757,7 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
-            exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.JSON)),
+            exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DType.JSON)),
             exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
@@ -883,7 +879,7 @@ class Postgres(Dialect):
                     while isinstance(this, exp.Cast):
                         this = this.this
 
-                    arg_as_json = self.sql(exp.cast(this, exp.DataType.Type.JSON))
+                    arg_as_json = self.sql(exp.cast(this, exp.DType.JSON))
                     alias = self.sql(expression, "alias")
                     alias = f" AS {alias}" if alias else ""
 
@@ -920,16 +916,13 @@ class Postgres(Dialect):
             return f"SET {exprs}{access_method}{tablespace}{option}"
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            if expression.is_type(exp.DataType.Type.ARRAY):
+            if expression.is_type(exp.DType.ARRAY):
                 if expression.expressions:
                     values = self.expressions(expression, key="values", flat=True)
                     return f"{self.expressions(expression, flat=True)}[{values}]"
                 return "ARRAY"
 
-            if (
-                expression.is_type(exp.DataType.Type.DOUBLE, exp.DataType.Type.FLOAT)
-                and expression.expressions
-            ):
+            if expression.is_type(exp.DType.DOUBLE, exp.DType.FLOAT) and expression.expressions:
                 # Postgres doesn't support precision for REAL and DOUBLE PRECISION types
                 return f"FLOAT({self.expressions(expression, flat=True)})"
 

@@ -206,8 +206,8 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 
 
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
-    expression.this.replace(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
-    expression.expression.replace(exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP))
+    expression.this.replace(exp.cast(expression.this, exp.DType.TIMESTAMP))
+    expression.expression.replace(exp.cast(expression.expression, exp.DType.TIMESTAMP))
     unit = unit_to_var(expression)
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
@@ -224,7 +224,7 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
         return self.func("TIMESTAMP_MICROS", timestamp)
 
     unix_seconds = exp.cast(
-        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DType.BIGINT
     )
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
@@ -393,7 +393,7 @@ class BigQuery(Dialect):
     QUERY_RESULTS_ARE_STRUCTS = True
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
     LEAST_GREATEST_IGNORES_NULLS = False
-    DEFAULT_NULL_TYPE = exp.DataType.Type.BIGINT
+    DEFAULT_NULL_TYPE = exp.DType.BIGINT
     PRIORITIZE_NON_LITERAL_TYPES = True
     ALIAS_POST_VERSION = False
 
@@ -457,16 +457,16 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions#percentile_cont
     COERCES_TO = {
         **TypeAnnotator.COERCES_TO,
-        exp.DataType.Type.BIGDECIMAL: {exp.DataType.Type.DOUBLE},
+        exp.DType.BIGDECIMAL: {exp.DType.DOUBLE},
     }
-    COERCES_TO[exp.DataType.Type.DECIMAL] |= {exp.DataType.Type.BIGDECIMAL}
-    COERCES_TO[exp.DataType.Type.BIGINT] |= {exp.DataType.Type.BIGDECIMAL}
-    COERCES_TO[exp.DataType.Type.VARCHAR] |= {
-        exp.DataType.Type.DATE,
-        exp.DataType.Type.DATETIME,
-        exp.DataType.Type.TIME,
-        exp.DataType.Type.TIMESTAMP,
-        exp.DataType.Type.TIMESTAMPTZ,
+    COERCES_TO[exp.DType.DECIMAL] |= {exp.DType.BIGDECIMAL}
+    COERCES_TO[exp.DType.BIGINT] |= {exp.DType.BIGDECIMAL}
+    COERCES_TO[exp.DType.VARCHAR] |= {
+        exp.DType.DATE,
+        exp.DType.DATETIME,
+        exp.DType.TIME,
+        exp.DType.TIMESTAMP,
+        exp.DType.TIMESTAMPTZ,
     }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
@@ -953,8 +953,8 @@ class BigQuery(Dialect):
 
                 # Unnesting a nested array (i.e array of structs) explodes the top-level struct fields,
                 # in contrast to other dialects such as DuckDB which flattens only the array by default
-                if unnest_expr.is_type(exp.DataType.Type.ARRAY) and any(
-                    array_elem.is_type(exp.DataType.Type.STRUCT)
+                if unnest_expr.is_type(exp.DType.ARRAY) and any(
+                    array_elem.is_type(exp.DType.STRUCT)
                     for array_elem in unnest_expr._type.expressions
                 ):
                     unnest.set("explode_array", True)
@@ -1269,30 +1269,30 @@ class BigQuery(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BIGDECIMAL: "BIGNUMERIC",
-            exp.DataType.Type.BIGINT: "INT64",
-            exp.DataType.Type.BINARY: "BYTES",
-            exp.DataType.Type.BLOB: "BYTES",
-            exp.DataType.Type.BOOLEAN: "BOOL",
-            exp.DataType.Type.CHAR: "STRING",
-            exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.DOUBLE: "FLOAT64",
-            exp.DataType.Type.FLOAT: "FLOAT64",
-            exp.DataType.Type.INT: "INT64",
-            exp.DataType.Type.NCHAR: "STRING",
-            exp.DataType.Type.NVARCHAR: "STRING",
-            exp.DataType.Type.SMALLINT: "INT64",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.TIMESTAMP: "DATETIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TINYINT: "INT64",
-            exp.DataType.Type.ROWVERSION: "BYTES",
-            exp.DataType.Type.UUID: "STRING",
-            exp.DataType.Type.VARBINARY: "BYTES",
-            exp.DataType.Type.VARCHAR: "STRING",
-            exp.DataType.Type.VARIANT: "ANY TYPE",
+            exp.DType.BIGDECIMAL: "BIGNUMERIC",
+            exp.DType.BIGINT: "INT64",
+            exp.DType.BINARY: "BYTES",
+            exp.DType.BLOB: "BYTES",
+            exp.DType.BOOLEAN: "BOOL",
+            exp.DType.CHAR: "STRING",
+            exp.DType.DECIMAL: "NUMERIC",
+            exp.DType.DOUBLE: "FLOAT64",
+            exp.DType.FLOAT: "FLOAT64",
+            exp.DType.INT: "INT64",
+            exp.DType.NCHAR: "STRING",
+            exp.DType.NVARCHAR: "STRING",
+            exp.DType.SMALLINT: "INT64",
+            exp.DType.TEXT: "STRING",
+            exp.DType.TIMESTAMP: "DATETIME",
+            exp.DType.TIMESTAMPNTZ: "DATETIME",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DType.TINYINT: "INT64",
+            exp.DType.ROWVERSION: "BYTES",
+            exp.DType.UUID: "STRING",
+            exp.DType.VARBINARY: "BYTES",
+            exp.DType.VARCHAR: "STRING",
+            exp.DType.VARIANT: "ANY TYPE",
         }
 
         PROPERTIES_LOCATION = {
@@ -1490,7 +1490,7 @@ class BigQuery(Dialect):
             this = expression.this
             expressions = expression.expressions
 
-            if len(expressions) == 1 and this and this.is_type(exp.DataType.Type.STRUCT):
+            if len(expressions) == 1 and this and this.is_type(exp.DType.STRUCT):
                 arg = expressions[0]
                 if arg.type is None:
                     from sqlglot.optimizer.annotate_types import annotate_types

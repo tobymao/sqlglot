@@ -46,10 +46,10 @@ if t.TYPE_CHECKING:
 
 # Timestamp types used in _build_datetime
 TIMESTAMP_TYPES = {
-    exp.DataType.Type.TIMESTAMP: "TO_TIMESTAMP",
-    exp.DataType.Type.TIMESTAMPLTZ: "TO_TIMESTAMP_LTZ",
-    exp.DataType.Type.TIMESTAMPNTZ: "TO_TIMESTAMP_NTZ",
-    exp.DataType.Type.TIMESTAMPTZ: "TO_TIMESTAMP_TZ",
+    exp.DType.TIMESTAMP: "TO_TIMESTAMP",
+    exp.DType.TIMESTAMPLTZ: "TO_TIMESTAMP_LTZ",
+    exp.DType.TIMESTAMPNTZ: "TO_TIMESTAMP_NTZ",
+    exp.DType.TIMESTAMPTZ: "TO_TIMESTAMP_TZ",
 }
 
 
@@ -90,7 +90,7 @@ def _build_date_from_parts(args: t.List) -> exp.DateFromParts:
 
 
 def _build_datetime(
-    name: str, kind: exp.DataType.Type, safe: bool = False
+    name: str, kind: exp.DType, safe: bool = False
 ) -> t.Callable[[t.List], exp.Func]:
     def _builder(args: t.List) -> exp.Func:
         value = seq_get(args, 0)
@@ -128,10 +128,8 @@ def _build_datetime(
 
         # Handle DATE/TIME with format strings - allow int_value if a format string is provided
         has_format_string = scale_or_fmt and not int_scale_or_fmt
-        if kind in (exp.DataType.Type.DATE, exp.DataType.Type.TIME) and (
-            not int_value or has_format_string
-        ):
-            klass = exp.TsOrDsToDate if kind == exp.DataType.Type.DATE else exp.TsOrDsToTime
+        if kind in (exp.DType.DATE, exp.DType.TIME) and (not int_value or has_format_string):
+            klass = exp.TsOrDsToDate if kind == exp.DType.DATE else exp.TsOrDsToTime
             formatted_exp = build_formatted_time(klass, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp
@@ -283,7 +281,7 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
     unit = map_date_part(trunc.args["unit"])
     trunc.set("unit", unit)
-    is_time_input = trunc.this.is_type(exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ)
+    is_time_input = trunc.this.is_type(exp.DType.TIME, exp.DType.TIMETZ)
     if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit) or is_time_input) or (
         isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
     ):
@@ -470,7 +468,7 @@ def _json_extract_value_array_sql(
     ident = exp.to_identifier("x")
 
     if isinstance(expression, exp.JSONValueArray):
-        this: exp.Expression = exp.cast(ident, to=exp.DataType.Type.VARCHAR)
+        this: exp.Expression = exp.cast(ident, to=exp.DType.VARCHAR)
     else:
         this = exp.ParseJSON(this=f"TO_JSON({ident})")
 
@@ -886,7 +884,7 @@ class Snowflake(Dialect):
                 expression=seq_get(args, 1),
                 null_on_zero_variance=True,
             ),
-            "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
+            "DATE": _build_datetime("DATE", exp.DType.DATE),
             "DATEFROMPARTS": _build_date_from_parts,
             "DATE_FROM_PARTS": _build_date_from_parts,
             "DATE_TRUNC": _date_trunc_to_time,
@@ -998,7 +996,7 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), format=seq_get(args, 1), safe=True
             ),
             "TRY_TO_BOOLEAN": lambda args: exp.ToBoolean(this=seq_get(args, 0), safe=True),
-            "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
+            "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DType.DATE, safe=True),
             **dict.fromkeys(
                 ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"), _build_try_to_number
             ),
@@ -1008,21 +1006,19 @@ class Snowflake(Dialect):
             "TRY_TO_FILE": lambda args: exp.ToFile(
                 this=seq_get(args, 0), path=seq_get(args, 1), safe=True
             ),
-            "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DataType.Type.TIME, safe=True),
-            "TRY_TO_TIMESTAMP": _build_datetime(
-                "TRY_TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP, safe=True
-            ),
+            "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DType.TIME, safe=True),
+            "TRY_TO_TIMESTAMP": _build_datetime("TRY_TO_TIMESTAMP", exp.DType.TIMESTAMP, safe=True),
             "TRY_TO_TIMESTAMP_LTZ": _build_datetime(
-                "TRY_TO_TIMESTAMP_LTZ", exp.DataType.Type.TIMESTAMPLTZ, safe=True
+                "TRY_TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ, safe=True
             ),
             "TRY_TO_TIMESTAMP_NTZ": _build_datetime(
-                "TRY_TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMPNTZ, safe=True
+                "TRY_TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ, safe=True
             ),
             "TRY_TO_TIMESTAMP_TZ": _build_datetime(
-                "TRY_TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ, safe=True
+                "TRY_TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ, safe=True
             ),
             "TO_CHAR": build_timetostr_or_tochar,
-            "TO_DATE": _build_datetime("TO_DATE", exp.DataType.Type.DATE),
+            "TO_DATE": _build_datetime("TO_DATE", exp.DType.DATE),
             **dict.fromkeys(
                 ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
                 lambda args: exp.ToNumber(
@@ -1032,11 +1028,11 @@ class Snowflake(Dialect):
                     scale=seq_get(args, 3),
                 ),
             ),
-            "TO_TIME": _build_datetime("TO_TIME", exp.DataType.Type.TIME),
-            "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DataType.Type.TIMESTAMP),
-            "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DataType.Type.TIMESTAMPLTZ),
-            "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DataType.Type.TIMESTAMPNTZ),
-            "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DataType.Type.TIMESTAMPTZ),
+            "TO_TIME": _build_datetime("TO_TIME", exp.DType.TIME),
+            "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DType.TIMESTAMP),
+            "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),
+            "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ),
+            "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ),
             "TO_VARCHAR": build_timetostr_or_tochar,
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
@@ -1097,7 +1093,7 @@ class Snowflake(Dialect):
 
         TYPE_CONVERTERS = {
             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
-            exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=38, scale=0),
+            exp.DType.DECIMAL: build_default_decimal_type(precision=38, scale=0),
         }
 
         SHOW_PARSERS = {
@@ -1635,7 +1631,7 @@ class Snowflake(Dialect):
                 "ARRAY_CONTAINS",
                 e.expression
                 if e.args.get("ensure_variant") is False
-                else exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),
+                else exp.cast(e.expression, exp.DType.VARIANT, copy=False),
                 e.this,
             ),
             exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
@@ -1858,10 +1854,10 @@ class Snowflake(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BIGDECIMAL: "DOUBLE",
-            exp.DataType.Type.NESTED: "OBJECT",
-            exp.DataType.Type.STRUCT: "OBJECT",
-            exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DType.BIGDECIMAL: "DOUBLE",
+            exp.DType.NESTED: "OBJECT",
+            exp.DType.STRUCT: "OBJECT",
+            exp.DType.TEXT: "VARCHAR",
         }
 
         TOKEN_MAPPING = {
@@ -1899,9 +1895,9 @@ class Snowflake(Dialect):
             # Check if this is a FLOAT type nested inside a VECTOR type
             # VECTOR only accepts FLOAT (not DOUBLE), INT, and STRING as element types
             # https://docs.snowflake.com/en/sql-reference/data-types-vector
-            if expression.is_type(exp.DataType.Type.DOUBLE):
+            if expression.is_type(exp.DType.DOUBLE):
                 parent = expression.parent
-                if isinstance(parent, exp.DataType) and parent.is_type(exp.DataType.Type.VECTOR):
+                if isinstance(parent, exp.DataType) and parent.is_type(exp.DType.VECTOR):
                     # Preserve FLOAT for VECTOR types instead of mapping to synonym DOUBLE
                     return "FLOAT"
 
@@ -1944,9 +1940,9 @@ class Snowflake(Dialect):
             return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.is_type(exp.DataType.Type.GEOGRAPHY):
+            if expression.is_type(exp.DType.GEOGRAPHY):
                 return self.func("TO_GEOGRAPHY", expression.this)
-            if expression.is_type(exp.DataType.Type.GEOMETRY):
+            if expression.is_type(exp.DType.GEOMETRY):
                 return self.func("TO_GEOMETRY", expression.this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
@@ -2139,7 +2135,7 @@ class Snowflake(Dialect):
             elif expression.type:
                 type_enum = expression.type.this
             else:
-                type_enum = exp.DataType.Type.TIMESTAMP
+                type_enum = exp.DType.TIMESTAMP
 
             func_name = TIMESTAMP_TYPES.get(type_enum, "TO_TIMESTAMP")
 
@@ -2177,7 +2173,7 @@ class Snowflake(Dialect):
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this
             if this.is_string:
-                this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+                this = exp.cast(this, exp.DType.TIMESTAMP)
 
             return self.func("TO_CHAR", this, self.format_time(expression))
 
@@ -2268,7 +2264,7 @@ class Snowflake(Dialect):
 
             expr = exp.Cast(
                 this=exp.ConvertTimezone(target_tz=zone, timestamp=exp.CurrentTimestamp()),
-                to=exp.DataType(this=exp.DataType.Type.DATE),
+                to=exp.DataType(this=exp.DType.DATE),
             )
             return self.sql(expr)
 
@@ -2280,7 +2276,7 @@ class Snowflake(Dialect):
 
                 this = annotate_types(this, dialect=self.dialect)
 
-            if not isinstance(this, exp.Dot) and this.is_type(exp.DataType.Type.STRUCT):
+            if not isinstance(this, exp.Dot) and this.is_type(exp.DType.STRUCT):
                 # Generate colon notation for the top level STRUCT
                 return f"{self.sql(this)}:{self.sql(expression, 'expression')}"
 

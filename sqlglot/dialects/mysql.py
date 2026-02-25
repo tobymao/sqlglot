@@ -912,22 +912,22 @@ class MySQL(Dialect):
         }
 
         UNSIGNED_TYPE_MAPPING = {
-            exp.DataType.Type.UBIGINT: "BIGINT",
-            exp.DataType.Type.UINT: "INT",
-            exp.DataType.Type.UMEDIUMINT: "MEDIUMINT",
-            exp.DataType.Type.USMALLINT: "SMALLINT",
-            exp.DataType.Type.UTINYINT: "TINYINT",
-            exp.DataType.Type.UDECIMAL: "DECIMAL",
-            exp.DataType.Type.UDOUBLE: "DOUBLE",
+            exp.DType.UBIGINT: "BIGINT",
+            exp.DType.UINT: "INT",
+            exp.DType.UMEDIUMINT: "MEDIUMINT",
+            exp.DType.USMALLINT: "SMALLINT",
+            exp.DType.UTINYINT: "TINYINT",
+            exp.DType.UDECIMAL: "DECIMAL",
+            exp.DType.UDOUBLE: "DOUBLE",
         }
 
         TIMESTAMP_TYPE_MAPPING = {
-            exp.DataType.Type.DATETIME2: "DATETIME",
-            exp.DataType.Type.SMALLDATETIME: "DATETIME",
-            exp.DataType.Type.TIMESTAMP: "DATETIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DType.DATETIME2: "DATETIME",
+            exp.DType.SMALLDATETIME: "DATETIME",
+            exp.DType.TIMESTAMP: "DATETIME",
+            exp.DType.TIMESTAMPNTZ: "DATETIME",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMP",
         }
 
         TYPE_MAPPING = {
@@ -936,13 +936,13 @@ class MySQL(Dialect):
             **TIMESTAMP_TYPE_MAPPING,
         }
 
-        TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
-        TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
-        TYPE_MAPPING.pop(exp.DataType.Type.TINYTEXT)
-        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
-        TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
-        TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
-        TYPE_MAPPING.pop(exp.DataType.Type.TINYBLOB)
+        TYPE_MAPPING.pop(exp.DType.MEDIUMTEXT)
+        TYPE_MAPPING.pop(exp.DType.LONGTEXT)
+        TYPE_MAPPING.pop(exp.DType.TINYTEXT)
+        TYPE_MAPPING.pop(exp.DType.BLOB)
+        TYPE_MAPPING.pop(exp.DType.MEDIUMBLOB)
+        TYPE_MAPPING.pop(exp.DType.LONGBLOB)
+        TYPE_MAPPING.pop(exp.DType.TINYBLOB)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -959,25 +959,25 @@ class MySQL(Dialect):
 
         CHAR_CAST_MAPPING = dict.fromkeys(
             (
-                exp.DataType.Type.LONGTEXT,
-                exp.DataType.Type.LONGBLOB,
-                exp.DataType.Type.MEDIUMBLOB,
-                exp.DataType.Type.MEDIUMTEXT,
-                exp.DataType.Type.TEXT,
-                exp.DataType.Type.TINYBLOB,
-                exp.DataType.Type.TINYTEXT,
-                exp.DataType.Type.VARCHAR,
+                exp.DType.LONGTEXT,
+                exp.DType.LONGBLOB,
+                exp.DType.MEDIUMBLOB,
+                exp.DType.MEDIUMTEXT,
+                exp.DType.TEXT,
+                exp.DType.TINYBLOB,
+                exp.DType.TINYTEXT,
+                exp.DType.VARCHAR,
             ),
             "CHAR",
         )
         SIGNED_CAST_MAPPING = dict.fromkeys(
             (
-                exp.DataType.Type.BIGINT,
-                exp.DataType.Type.BOOLEAN,
-                exp.DataType.Type.INT,
-                exp.DataType.Type.SMALLINT,
-                exp.DataType.Type.TINYINT,
-                exp.DataType.Type.MEDIUMINT,
+                exp.DType.BIGINT,
+                exp.DType.BOOLEAN,
+                exp.DType.INT,
+                exp.DType.SMALLINT,
+                exp.DType.TINYINT,
+                exp.DType.MEDIUMINT,
             ),
             "SIGNED",
         )
@@ -987,12 +987,12 @@ class MySQL(Dialect):
         CAST_MAPPING = {
             **CHAR_CAST_MAPPING,
             **SIGNED_CAST_MAPPING,
-            exp.DataType.Type.UBIGINT: "UNSIGNED",
+            exp.DType.UBIGINT: "UNSIGNED",
         }
 
         TIMESTAMP_FUNC_TYPES = {
-            exp.DataType.Type.TIMESTAMPTZ,
-            exp.DataType.Type.TIMESTAMPLTZ,
+            exp.DType.TIMESTAMPTZ,
+            exp.DType.TIMESTAMPLTZ,
         }
 
         # https://dev.mysql.com/doc/refman/8.0/en/keywords.html
@@ -1286,7 +1286,7 @@ class MySQL(Dialect):
         def datatype_sql(self, expression: exp.DataType) -> str:
             if (
                 self.VARCHAR_REQUIRES_SIZE
-                and expression.is_type(exp.DataType.Type.VARCHAR)
+                and expression.is_type(exp.DType.VARCHAR)
                 and not expression.expressions
             ):
                 # `VARCHAR` must always have a size - if it doesn't, we always generate `TEXT`

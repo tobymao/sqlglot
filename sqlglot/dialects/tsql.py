@@ -149,7 +149,7 @@ def _build_formatted_time(
 
         this = seq_get(args, 1)
         if isinstance(this, exp.Expression):
-            this = exp.cast(this, exp.DataType.Type.DATETIME2)
+            this = exp.cast(this, exp.DType.DATETIME2)
 
         return exp_class(this=this, format=fmt)
 
@@ -335,7 +335,7 @@ def _build_with_arg_as_text(
         this = seq_get(args, 0)
 
         if this and not this.is_string:
-            this = exp.cast(this, exp.DataType.Type.TEXT)
+            this = exp.cast(this, exp.DType.TEXT)
 
         expression = seq_get(args, 1)
         kwargs = {"this": this}
@@ -399,7 +399,7 @@ def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     this = seq_get(args, 1)
 
     if this and this.is_string:
-        this = exp.cast(this, exp.DataType.Type.DATETIME2)
+        this = exp.cast(this, exp.DType.DATETIME2)
 
     return exp.TimestampTrunc(this=this, unit=unit)
 
@@ -692,7 +692,7 @@ class TSQL(Dialect):
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
             TokenType.DCOLON: lambda self, this, to: self.expression(exp.Cast, this=this, to=to)
-            if isinstance(to, exp.DataType) and to.this != exp.DataType.Type.USERDEFINED
+            if isinstance(to, exp.DataType) and to.this != exp.DType.USERDEFINED
             else self.expression(exp.ScopeResolution, this=this, expression=to),
         }
 
@@ -1042,24 +1042,24 @@ class TSQL(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BOOLEAN: "BIT",
-            exp.DataType.Type.DATETIME2: "DATETIME2",
-            exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.DOUBLE: "FLOAT",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.ROWVERSION: "ROWVERSION",
-            exp.DataType.Type.TEXT: "VARCHAR(MAX)",
-            exp.DataType.Type.TIMESTAMP: "DATETIME2",
-            exp.DataType.Type.TIMESTAMPNTZ: "DATETIME2",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
-            exp.DataType.Type.SMALLDATETIME: "SMALLDATETIME",
-            exp.DataType.Type.UTINYINT: "TINYINT",
-            exp.DataType.Type.VARIANT: "SQL_VARIANT",
-            exp.DataType.Type.UUID: "UNIQUEIDENTIFIER",
+            exp.DType.BOOLEAN: "BIT",
+            exp.DType.DATETIME2: "DATETIME2",
+            exp.DType.DECIMAL: "NUMERIC",
+            exp.DType.DOUBLE: "FLOAT",
+            exp.DType.INT: "INTEGER",
+            exp.DType.ROWVERSION: "ROWVERSION",
+            exp.DType.TEXT: "VARCHAR(MAX)",
+            exp.DType.TIMESTAMP: "DATETIME2",
+            exp.DType.TIMESTAMPNTZ: "DATETIME2",
+            exp.DType.TIMESTAMPTZ: "DATETIMEOFFSET",
+            exp.DType.SMALLDATETIME: "SMALLDATETIME",
+            exp.DType.UTINYINT: "TINYINT",
+            exp.DType.VARIANT: "SQL_VARIANT",
+            exp.DType.UUID: "UNIQUEIDENTIFIER",
         }
 
-        TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
-        TYPE_MAPPING.pop(exp.DataType.Type.NVARCHAR)
+        TYPE_MAPPING.pop(exp.DType.NCHAR)
+        TYPE_MAPPING.pop(exp.DType.NVARCHAR)
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -1430,7 +1430,7 @@ class TSQL(Dialect):
 
         def _uncast_text(self, expression: exp.Expression, name: str) -> str:
             this = expression.this
-            if isinstance(this, exp.Cast) and this.is_type(exp.DataType.Type.TEXT):
+            if isinstance(this, exp.Cast) and this.is_type(exp.DType.TEXT):
                 this_sql = self.sql(this, "this")
             else:
                 this_sql = self.sql(this)

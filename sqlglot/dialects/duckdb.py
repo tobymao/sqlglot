@@ -196,7 +196,7 @@ def _last_day_sql(self: DuckDB.Generator, expression: exp.LastDay) -> str:
         )
         interval_expr = exp.Interval(this=days_to_sunday_expr, unit=exp.var("DAY"))
         add_expr = exp.Add(this=date_expr, expression=interval_expr)
-        cast_expr = exp.cast(add_expr, exp.DataType.Type.DATE)
+        cast_expr = exp.cast(add_expr, exp.DType.DATE)
         return self.sql(cast_expr)
 
     self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
@@ -213,8 +213,8 @@ def _handle_nanosecond_diff(
     start_time: exp.Expression,
 ) -> str:
     """Generate NANOSECOND diff using EPOCH_NS since DATE_DIFF doesn't support it."""
-    end_ns = exp.cast(end_time, exp.DataType.Type.TIMESTAMP_NS)
-    start_ns = exp.cast(start_time, exp.DataType.Type.TIMESTAMP_NS)
+    end_ns = exp.cast(end_time, exp.DType.TIMESTAMP_NS)
+    start_ns = exp.cast(start_time, exp.DType.TIMESTAMP_NS)
 
     # Build expression tree: EPOCH_NS(end) - EPOCH_NS(start)
     return self.sql(
@@ -242,12 +242,12 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
         exp.case()
         .when(
             # Handle 'on' -> TRUE (case insensitive)
-            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("ON")),
+            exp.Upper(this=exp.cast(arg, exp.DType.VARCHAR)).eq(exp.Literal.string("ON")),
             exp.true(),
         )
         .when(
             # Handle 'off' -> FALSE (case insensitive)
-            exp.Upper(this=exp.cast(arg, exp.DataType.Type.VARCHAR)).eq(exp.Literal.string("OFF")),
+            exp.Upper(this=exp.cast(arg, exp.DType.VARCHAR)).eq(exp.Literal.string("OFF")),
             exp.false(),
         )
     )
@@ -270,7 +270,7 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
                 "ERROR",
                 exp.Literal.string("TO_BOOLEAN: Non-numeric values NaN and INF are not supported"),
             ),
-        ).else_(exp.cast(arg, exp.DataType.Type.BOOLEAN))
+        ).else_(exp.cast(arg, exp.DType.BOOLEAN))
 
     return self.sql(case_expr)
 
@@ -286,11 +286,11 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
         # To micmic that, we:
         #   (1) Cast to TIMESTAMP to remove DuckDB's local tz
         #   (2) Apply consecutive AtTimeZone calls for UTC -> zone conversion
-        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+        this = exp.cast(this, exp.DType.TIMESTAMP)
         at_utc = exp.AtTimeZone(this=this, zone=exp.Literal.string("UTC"))
         this = exp.AtTimeZone(this=at_utc, zone=zone)
 
-    return self.sql(exp.cast(expression=this, to=exp.DataType.Type.DATE))
+    return self.sql(exp.cast(expression=this, to=exp.DType.DATE))
 
 
 # BigQuery -> DuckDB conversion for the TIME_DIFF function
@@ -300,8 +300,8 @@ def _timediff_sql(self: DuckDB.Generator, expression: exp.TimeDiff) -> str:
     if _is_nanosecond_unit(unit):
         return _handle_nanosecond_diff(self, expression.expression, expression.this)
 
-    this = exp.cast(expression.this, exp.DataType.Type.TIME)
-    expr = exp.cast(expression.expression, exp.DataType.Type.TIME)
+    this = exp.cast(expression.this, exp.DType.TIME)
+    expr = exp.cast(expression.expression, exp.DType.TIME)
 
     # Although the 2 dialects share similar signatures, BQ seems to inverse
     # the sign of the result so the start/end time operands are flipped
@@ -327,7 +327,7 @@ def _date_delta_to_binary_interval_op(
             if isinstance(interval_value, exp.Interval):
                 interval_value = interval_value.this
 
-            timestamp_ns = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP_NS)
+            timestamp_ns = exp.cast(expression.this, exp.DType.TIMESTAMP_NS)
 
             return self.sql(
                 exp.func(
@@ -612,7 +612,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
 
     # Empty struct cast works with MAP() since DuckDB can't parse {}
     if not expression.expressions:
-        if isinstance(ancestor_cast, exp.Cast) and ancestor_cast.to.is_type(exp.DataType.Type.MAP):
+        if isinstance(ancestor_cast, exp.Cast) and ancestor_cast.to.is_type(exp.DType.MAP):
             return "MAP()"
 
     args: t.List[str] = []
@@ -626,7 +626,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
         (expression.find(exp.PropertyEQ) is None)
         and ancestor_cast
         and any(
-            casted_type.is_type(exp.DataType.Type.STRUCT)
+            casted_type.is_type(exp.DType.STRUCT)
             for casted_type in ancestor_cast.find_all(exp.DataType)
         )
     )
@@ -658,9 +658,7 @@ def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
         return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
 
     # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
-    if expression.is_type(
-        exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ, exp.DataType.Type.TIMESTAMPTZ
-    ):
+    if expression.is_type(exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ):
         return expression.this.value
 
     return self.datatype_sql(expression)
@@ -742,8 +740,8 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
 
     # Check if we need NTZ (naive timestamp in UTC)
     is_ntz = target_type and target_type.this in (
-        exp.DataType.Type.TIMESTAMP,
-        exp.DataType.Type.TIMESTAMPNTZ,
+        exp.DType.TIMESTAMP,
+        exp.DType.TIMESTAMPNTZ,
     )
 
     if scale == exp.UnixToTime.MILLIS:
@@ -778,16 +776,12 @@ def _arrow_json_extract_sql(self: DuckDB.Generator, expression: JSON_EXTRACT_TYP
 
 
 def _implicit_datetime_cast(
-    arg: t.Optional[exp.Expression], type: exp.DataType.Type = exp.DataType.Type.DATE
+    arg: t.Optional[exp.Expression], type: exp.DType = exp.DType.DATE
 ) -> t.Optional[exp.Expression]:
     if isinstance(arg, exp.Literal) and arg.is_string:
         ts = arg.name
-        if type == exp.DataType.Type.DATE and ":" in ts:
-            type = (
-                exp.DataType.Type.TIMESTAMPTZ
-                if TIMEZONE_PATTERN.search(ts)
-                else exp.DataType.Type.TIMESTAMP
-            )
+        if type == exp.DType.DATE and ":" in ts:
+            type = exp.DType.TIMESTAMPTZ if TIMEZONE_PATTERN.search(ts) else exp.DType.TIMESTAMP
 
         arg = exp.cast(arg, type)
 
@@ -887,7 +881,7 @@ def _generate_datetime_array_sql(
 ) -> str:
     is_generate_date_array = isinstance(expression, exp.GenerateDateArray)
 
-    type = exp.DataType.Type.DATE if is_generate_date_array else exp.DataType.Type.TIMESTAMP
+    type = exp.DType.DATE if is_generate_date_array else exp.DType.TIMESTAMP
     start = _implicit_datetime_cast(expression.args.get("start"), type=type)
     end = _implicit_datetime_cast(expression.args.get("end"), type=type)
 
@@ -913,22 +907,22 @@ def _json_extract_value_array_sql(
 
 
 def _cast_to_varchar(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    if arg and arg.type and not arg.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
-        return exp.cast(arg, exp.DataType.Type.VARCHAR)
+    if arg and arg.type and not arg.is_type(*exp.DataType.TEXT_TYPES, exp.DType.UNKNOWN):
+        return exp.cast(arg, exp.DType.VARCHAR)
     return arg
 
 
 def _cast_to_boolean(arg: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    if arg and not arg.is_type(exp.DataType.Type.BOOLEAN):
-        return exp.cast(arg, exp.DataType.Type.BOOLEAN)
+    if arg and not arg.is_type(exp.DType.BOOLEAN):
+        return exp.cast(arg, exp.DType.BOOLEAN)
     return arg
 
 
 def _is_binary(arg: exp.Expression) -> bool:
     return arg.is_type(
-        exp.DataType.Type.BINARY,
-        exp.DataType.Type.VARBINARY,
-        exp.DataType.Type.BLOB,
+        exp.DType.BINARY,
+        exp.DType.VARBINARY,
+        exp.DType.BLOB,
     )
 
 
@@ -948,7 +942,7 @@ def _cast_to_bit(arg: exp.Expression) -> exp.Expression:
     if isinstance(arg, exp.HexString):
         arg = exp.Unhex(this=exp.Literal.string(arg.this))
 
-    return exp.cast(arg, exp.DataType.Type.BIT)
+    return exp.cast(arg, exp.DType.BIT)
 
 
 def _prepare_binary_bitwise_args(expression: exp.Binary) -> None:
@@ -1025,7 +1019,7 @@ def _day_navigation_sql(
         date_with_offset = date_expr - exp.Interval(this=days_offset, unit=exp.var("DAY"))
 
     # Build final: CAST(date_with_offset AS DATE)
-    return self.sql(exp.cast(date_with_offset, exp.DataType.Type.DATE))
+    return self.sql(exp.cast(date_with_offset, exp.DType.DATE))
 
 
 def _anyvalue_sql(self: DuckDB.Generator, expression: exp.AnyValue) -> str:
@@ -1065,7 +1059,7 @@ def _bitwise_agg_sql(
             # float types need to be rounded first due to precision loss
             arg = exp.func("ROUND", arg)
 
-        arg = exp.cast(arg, exp.DataType.Type.INT)
+        arg = exp.cast(arg, exp.DType.INT)
 
     return self.func(func_name, arg)
 
@@ -1198,9 +1192,9 @@ def _bitshift_sql(
 
     if _is_binary(this):
         result_is_blob = True
-        expression.set("this", exp.cast(this, exp.DataType.Type.BIT))
+        expression.set("this", exp.cast(this, exp.DType.BIT))
     elif expression.args.get("requires_int128"):
-        this.replace(exp.cast(this, exp.DataType.Type.INT128))
+        this.replace(exp.cast(this, exp.DType.INT128))
 
     result_sql = self.binary(expression, operator)
 
@@ -1247,7 +1241,7 @@ def _scale_rounding_sql(
 
     n_int = decimals
     if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
-        n_int = exp.cast(decimals, exp.DataType.Type.INT)
+        n_int = exp.cast(decimals, exp.DType.INT)
 
     pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
     rounded = rounding_func(this=exp.Mul(this=this, expression=pow_))
@@ -1296,7 +1290,7 @@ def _regr_val_sql(
     result_type = return_value.type
 
     # If no type info, annotate the expression to infer types
-    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
+    if not result_type or result_type.this == exp.DType.UNKNOWN:
         try:
             annotated = annotate_types(expression.copy(), dialect=self.dialect)
             result_type = getattr(annotated, return_value_attr).type
@@ -1304,7 +1298,7 @@ def _regr_val_sql(
             pass
 
     # Default to DOUBLE for regression functions if type still unknown
-    if not result_type or result_type.this == exp.DataType.Type.UNKNOWN:
+    if not result_type or result_type.this == exp.DType.UNKNOWN:
         result_type = exp.DataType.build("DOUBLE")
 
     # Cast NULL to the same type as return_value to avoid DuckDB type inference issues
@@ -1359,7 +1353,7 @@ def _date_from_parts_sql(self, expression: exp.DateFromParts) -> str:
         if day_expr:
             base_date = base_date + exp.Interval(this=day_expr - 1, unit=exp.var("DAY"))
 
-        return self.sql(exp.cast(expression=base_date, to=exp.DataType.Type.DATE))
+        return self.sql(exp.cast(expression=base_date, to=exp.DType.DATE))
 
     return self.func("MAKE_DATE", year_expr, month_expr, day_expr)
 
@@ -1448,11 +1442,11 @@ def _sha_sql(
     # Cast if type is incompatible with DuckDB
     if (
         arg.type
-        and arg.type.this != exp.DataType.Type.UNKNOWN
+        and arg.type.this != exp.DType.UNKNOWN
         and not arg.is_type(*exp.DataType.TEXT_TYPES)
         and not _is_binary(arg)
     ):
-        arg = exp.cast(arg, exp.DataType.Type.VARCHAR)
+        arg = exp.cast(arg, exp.DType.VARCHAR)
 
     result = self.func(hash_func, arg)
     return self.func("UNHEX", result) if is_binary else result
@@ -1704,9 +1698,9 @@ class DuckDB(Dialect):
 
         TYPE_CONVERTERS = {
             # https://duckdb.org/docs/sql/data_types/numeric
-            exp.DataType.Type.DECIMAL: build_default_decimal_type(precision=18, scale=3),
+            exp.DType.DECIMAL: build_default_decimal_type(precision=18, scale=3),
             # https://duckdb.org/docs/sql/data_types/text
-            exp.DataType.Type.TEXT: lambda dtype: exp.DataType.build("TEXT"),
+            exp.DType.TEXT: lambda dtype: exp.DataType.build("TEXT"),
         }
 
         STATEMENT_PARSERS = {
@@ -2068,10 +2062,10 @@ class DuckDB(Dialect):
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
             exp.TimestampSub: _date_delta_to_binary_interval_op(),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: self.func(
-                "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
+                "EPOCH", exp.cast(e.this, exp.DType.TIMESTAMP)
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.ToBoolean: _to_boolean_sql,
@@ -2082,21 +2076,19 @@ class DuckDB(Dialect):
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",
-                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP),
-                exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
+                exp.cast(e.expression, exp.DType.TIMESTAMP),
+                exp.cast(e.this, exp.DType.TIMESTAMP),
             ),
             exp.UnixMicros: lambda self, e: self.func("EPOCH_US", _implicit_datetime_cast(e.this)),
             exp.UnixMillis: lambda self, e: self.func("EPOCH_MS", _implicit_datetime_cast(e.this)),
             exp.UnixSeconds: lambda self, e: self.sql(
-                exp.cast(
-                    self.func("EPOCH", _implicit_datetime_cast(e.this)), exp.DataType.Type.BIGINT
-                )
+                exp.cast(self.func("EPOCH", _implicit_datetime_cast(e.this)), exp.DType.BIGINT)
             ),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
             ),
             exp.DatetimeTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", unit_to_str(e), exp.cast(e.this, exp.DataType.Type.DATETIME)
+                "DATE_TRUNC", unit_to_str(e), exp.cast(e.this, exp.DType.DATETIME)
             ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
@@ -2130,25 +2122,25 @@ class DuckDB(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BINARY: "BLOB",
-            exp.DataType.Type.BPCHAR: "TEXT",
-            exp.DataType.Type.CHAR: "TEXT",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.DECFLOAT: "DECIMAL(38, 5)",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.JSONB: "JSON",
-            exp.DataType.Type.NCHAR: "TEXT",
-            exp.DataType.Type.NVARCHAR: "TEXT",
-            exp.DataType.Type.UINT: "UINTEGER",
-            exp.DataType.Type.VARBINARY: "BLOB",
-            exp.DataType.Type.ROWVERSION: "BLOB",
-            exp.DataType.Type.VARCHAR: "TEXT",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMPTZ",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
-            exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
-            exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP_NS",
-            exp.DataType.Type.BIGDECIMAL: "DECIMAL(38, 5)",
+            exp.DType.BINARY: "BLOB",
+            exp.DType.BPCHAR: "TEXT",
+            exp.DType.CHAR: "TEXT",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.DECFLOAT: "DECIMAL(38, 5)",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.JSONB: "JSON",
+            exp.DType.NCHAR: "TEXT",
+            exp.DType.NVARCHAR: "TEXT",
+            exp.DType.UINT: "UINTEGER",
+            exp.DType.VARBINARY: "BLOB",
+            exp.DType.ROWVERSION: "BLOB",
+            exp.DType.VARCHAR: "TEXT",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMPTZ",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMP_S: "TIMESTAMP_S",
+            exp.DType.TIMESTAMP_MS: "TIMESTAMP_MS",
+            exp.DType.TIMESTAMP_NS: "TIMESTAMP_NS",
+            exp.DType.BIGDECIMAL: "DECIMAL(38, 5)",
         }
 
         # https://github.com/duckdb/duckdb/blob/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords/reserved_keywords.list#L1-L77
@@ -2516,8 +2508,8 @@ class DuckDB(Dialect):
 
             # If input is DATE type, cast result back to DATE to preserve type
             # DuckDB converts DATE to TIMESTAMP when adding intervals
-            if date_expr.is_type(exp.DataType.Type.DATE):
-                return self.sql(exp.cast(add_expr, exp.DataType.Type.DATE))
+            if date_expr.is_type(exp.DType.DATE):
+                return self.sql(exp.cast(add_expr, exp.DType.DATE))
 
             return self.sql(add_expr)
 
@@ -2759,21 +2751,19 @@ class DuckDB(Dialect):
             return self.function_fallback_sql(expression)
 
         def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
-            return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMPTZ))
+            return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)
             target_type = expression.args.get("target_type")
             needs_tz = target_type and target_type.this in (
-                exp.DataType.Type.TIMESTAMPLTZ,
-                exp.DataType.Type.TIMESTAMPTZ,
+                exp.DType.TIMESTAMPLTZ,
+                exp.DType.TIMESTAMPTZ,
             )
 
             if expression.args.get("safe"):
                 formatted_time = self.format_time(expression)
-                cast_type = (
-                    exp.DataType.Type.TIMESTAMPTZ if needs_tz else exp.DataType.Type.TIMESTAMP
-                )
+                cast_type = exp.DType.TIMESTAMPTZ if needs_tz else exp.DType.TIMESTAMP
                 return self.sql(
                     exp.cast(self.func("TRY_STRPTIME", expression.this, formatted_time), cast_type)
                 )
@@ -2783,7 +2773,7 @@ class DuckDB(Dialect):
                 return self.sql(
                     exp.cast(
                         base_sql,
-                        exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ),
+                        exp.DataType(this=exp.DType.TIMESTAMPTZ),
                     )
                 )
             return base_sql
@@ -2794,7 +2784,7 @@ class DuckDB(Dialect):
             return self.sql(
                 exp.cast(
                     self.func(function_name, expression.this, formatted_time),
-                    exp.DataType(this=exp.DataType.Type.DATE),
+                    exp.DataType(this=exp.DType.DATE),
                 )
             )
 
@@ -2810,7 +2800,7 @@ class DuckDB(Dialect):
                 strptime = exp.Anonymous(this=func_name, expressions=[this, time_format])
                 return self.sql(cast_expr(this=strptime, to=time_type))
 
-            if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
+            if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DType.TIME):
                 return self.sql(this)
 
             return self.sql(cast_expr(this=this, to=time_type))
@@ -2821,7 +2811,7 @@ class DuckDB(Dialect):
 
             expr = exp.Cast(
                 this=exp.AtTimeZone(this=exp.CurrentTimestamp(), zone=expression.this),
-                to=exp.DataType(this=exp.DataType.Type.DATE),
+                to=exp.DataType(this=exp.DType.DATE),
             )
             return self.sql(expr)
 
@@ -2968,7 +2958,7 @@ class DuckDB(Dialect):
 
             # TIMESTAMPTZ extractions may produce different results between Snowflake and DuckDB
             # because Snowflake applies server timezone while DuckDB uses local timezone
-            if datetime_expr.is_type(exp.DataType.Type.TIMESTAMPTZ, exp.DataType.Type.TIMESTAMPLTZ):
+            if datetime_expr.is_type(exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ):
                 self.unsupported(
                     "EXTRACT from TIMESTAMPTZ / TIMESTAMPLTZ may produce different results due to timezone handling differences"
                 )
@@ -2981,7 +2971,7 @@ class DuckDB(Dialect):
                 # Problem: strftime doesn't accept TIME and there's no NANOSECOND function
                 # So, for NANOSECOND with TIME, fallback to MICROSECOND * 1000
                 is_nano_time = part_name == "NANOSECOND" and datetime_expr.is_type(
-                    exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
+                    exp.DType.TIME, exp.DType.TIMETZ
                 )
 
                 if is_nano_time:
@@ -3003,7 +2993,7 @@ class DuckDB(Dialect):
                 # For NANOSECOND, cast to TIMESTAMP_NS to preserve nanosecond precision
                 strftime_input = datetime_expr
                 if part_name == "NANOSECOND":
-                    strftime_input = exp.cast(datetime_expr, exp.DataType.Type.TIMESTAMP_NS)
+                    strftime_input = exp.cast(datetime_expr, exp.DType.TIMESTAMP_NS)
 
                 return self.sql(
                     exp.cast(
@@ -3147,7 +3137,7 @@ class DuckDB(Dialect):
 
                     this = annotate_types(this, dialect=self.dialect)
 
-                if this.is_type(exp.DataType.Type.MAP):
+                if this.is_type(exp.DType.MAP):
                     bracket = f"({bracket})[1]"
 
             return bracket
@@ -3211,8 +3201,8 @@ class DuckDB(Dialect):
                 return self.func("LENGTH", arg)
 
             # We need these casts to make duckdb's static type checker happy
-            blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
-            varchar = exp.cast(arg, exp.DataType.Type.VARCHAR)
+            blob = exp.cast(arg, exp.DType.VARBINARY)
+            varchar = exp.cast(arg, exp.DType.VARCHAR)
 
             case = (
                 exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))
@@ -3661,7 +3651,7 @@ class DuckDB(Dialect):
             return self.sql(
                 exp.Repeat(
                     this=exp.Literal.string(" "),
-                    times=exp.cast(expression.this, exp.DataType.Type.BIGINT),
+                    times=exp.cast(expression.this, exp.DType.BIGINT),
                 )
             )
 
@@ -3948,7 +3938,7 @@ class DuckDB(Dialect):
                 this = annotate_types(this, dialect=self.dialect)
 
             if this.is_type(*exp.DataType.TEXT_TYPES):
-                this = exp.Cast(this=this, to=exp.DataType(this=exp.DataType.Type.TIMESTAMP))
+                this = exp.Cast(this=this, to=exp.DataType(this=exp.DType.TIMESTAMP))
 
             # Detect float/decimal months to apply rounding (Snowflake behavior)
             # DuckDB INTERVAL syntax doesn't support non-integer expressions, so use TO_MONTHS
@@ -3961,9 +3951,9 @@ class DuckDB(Dialect):
             interval_or_to_months = (
                 exp.func("TO_MONTHS", exp.cast(exp.func("ROUND", months_expr), "INT"))
                 if months_expr.is_type(
-                    exp.DataType.Type.FLOAT,
-                    exp.DataType.Type.DOUBLE,
-                    exp.DataType.Type.DECIMAL,
+                    exp.DType.FLOAT,
+                    exp.DType.DOUBLE,
+                    exp.DType.DECIMAL,
                 )
                 # Integer case: standard INTERVAL N MONTH syntax
                 else exp.Interval(this=months_expr, unit=exp.var("MONTH"))
@@ -3989,7 +3979,7 @@ class DuckDB(Dialect):
             # To match for example Snowflake's ADD_MONTHS behavior (which preserves the input type)
             # We need to cast the result back to the original type when the input is DATE or TIMESTAMPTZ
             # Example: ADD_MONTHS('2023-01-31'::date, 1) should return DATE, not TIMESTAMP
-            if this.is_type(exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMPTZ):
+            if this.is_type(exp.DType.DATE, exp.DType.TIMESTAMPTZ):
                 return self.sql(exp.Cast(this=result_expr, to=this.type))
             return self.sql(result_expr)
 
@@ -4013,7 +4003,7 @@ class DuckDB(Dialect):
             if (
                 expression.args.get("input_type_preserved")
                 and date.is_type(*exp.DataType.TEMPORAL_TYPES)
-                and not (is_date_unit(unit) and date.is_type(exp.DataType.Type.DATE))
+                and not (is_date_unit(unit) and date.is_type(exp.DType.DATE))
             ):
                 return self.sql(exp.Cast(this=result, to=date.type))
 
@@ -4036,19 +4026,17 @@ class DuckDB(Dialect):
 
             result = self.func("DATE_TRUNC", unit, timestamp)
             if expression.args.get("input_type_preserved"):
-                if timestamp.type and timestamp.is_type(
-                    exp.DataType.Type.TIME, exp.DataType.Type.TIMETZ
-                ):
+                if timestamp.type and timestamp.is_type(exp.DType.TIME, exp.DType.TIMETZ):
                     dummy_date = exp.Cast(
                         this=exp.Literal.string("1970-01-01"),
-                        to=exp.DataType(this=exp.DataType.Type.DATE),
+                        to=exp.DataType(this=exp.DType.DATE),
                     )
                     date_time = exp.Add(this=dummy_date, expression=timestamp)
                     result = self.func("DATE_TRUNC", unit, date_time)
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
 
                 if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES) and not (
-                    date_unit and timestamp.is_type(exp.DataType.Type.DATE)
+                    date_unit and timestamp.is_type(exp.DType.DATE)
                 ):
                     return self.sql(exp.Cast(this=result, to=timestamp.type))
 
@@ -4071,7 +4059,7 @@ class DuckDB(Dialect):
             # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
             if decimals is not None and expression.args.get("casts_non_integer_decimals"):
                 if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
-                    decimals = exp.cast(decimals, exp.DataType.Type.INT)
+                    decimals = exp.cast(decimals, exp.DType.INT)
 
             func = "ROUND"
             if truncate:

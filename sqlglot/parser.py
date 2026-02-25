@@ -2772,14 +2772,17 @@ class Parser(metaclass=_Parser):
     def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:
         self._match(TokenType.EQ)
 
-        user = self._parse_id_var()
-        self._match(TokenType.PARAMETER)
-        host = self._parse_id_var() or (self._match(TokenType.MOD) and self._prev.text)
-
-        if not user or not host:
+        user = self._parse_string() or self._parse_id_var()
+        if not user:
             return None
 
-        return exp.DefinerProperty(this=f"{user}@{host}")
+        # NOTE: this was written for MySQl, and is buggy for dialects where PARAMETER is not "@".
+        if self._match(TokenType.PARAMETER):
+            host = self._parse_id_var() or (self._match(TokenType.MOD) and self._prev.text)
+            if host:
+                return exp.DefinerProperty(this=f"{user}@{host}")
+
+        return exp.DefinerProperty(this=user)
 
     def _parse_withjournaltable(self) -> exp.WithJournalTableProperty:
         self._match(TokenType.TABLE)

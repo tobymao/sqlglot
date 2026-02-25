@@ -585,7 +585,6 @@ class ClickHouse(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "DEFINER": lambda self: self._parse_clickhouse_definer(),
             "ENGINE": lambda self: self._parse_engine_property(),
         }
         PROPERTY_PARSERS.pop("DYNAMIC")
@@ -987,32 +986,27 @@ class ClickHouse(Dialect):
 
             return self.expression(exp.Partition, expressions=expressions)
 
-        def _parse_clickhouse_definer(self) -> t.Optional[exp.DefinerProperty]:
-            self._match(TokenType.EQ)
-            if self._match(TokenType.CURRENT_USER):
-                this: t.Optional[exp.Expression] = exp.var("CURRENT_USER")
-            else:
-                this = self._parse_string() or self._parse_id_var()
-            if not this:
-                return None
-            return self.expression(exp.DefinerProperty, this=this)
+        def _parse_sql_security(self) -> t.Optional[exp.SqlSecurityProperty]:
+            if self._match_text_seq("SQL", "SECURITY"):
+                security = self._parse_id_var()
+                return self.expression(exp.SqlSecurityProperty, this=security)
+            return None
 
         def _parse_property(self) -> t.Optional[exp.Expression]:
-            if self._match_text_seq("SQL", "SECURITY"):
-                security = (
-                    self._match_texts(("DEFINER", "INVOKER", "NONE")) and self._prev.text.upper()
-                )
-                return self.expression(exp.SqlSecurityProperty, this=security)
+            sql_security = self._parse_sql_security()
+            if sql_security:
+                return sql_security
             return super()._parse_property()
 
         def _parse_alter_table_modify_sql_security(self) -> t.Optional[exp.Expression]:
-            if not self._match_text_seq("SQL", "SECURITY"):
+            sql_security = self._parse_sql_security()
+            if not sql_security:
                 return None
-            security = self._match_texts(("DEFINER", "INVOKER", "NONE")) and self._prev.text.upper()
-            definer = None
-            if self._match_texts(("DEFINER",)):
-                definer = self._parse_clickhouse_definer()
-            return self.expression(exp.AlterModifySqlSecurity, this=security, definer=definer)
+            if self._match_text_seq("DEFINER"):
+                definer = self._parse_definer()
+            else:
+                definer = None
+            return self.expression(exp.AlterModifySqlSecurity, this=sql_security, definer=definer)
 
         def _parse_alter_table_replace(self) -> t.Optional[exp.Expression]:
             partition = self._parse_partition()
@@ -1460,7 +1454,7 @@ class ClickHouse(Dialect):
         def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
             definer = self.sql(expression, "definer")
             definer = f" {definer}" if definer else ""
-            return f"MODIFY SQL SECURITY {expression.this}{definer}"
+            return f"MODIFY {expression.this}{definer}"
 
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"

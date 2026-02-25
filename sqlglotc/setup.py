@@ -4,11 +4,11 @@ import shutil
 from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.sdist import sdist as _sdist
+from mypyc.build import mypycify
 
 here = os.path.dirname(os.path.abspath(__file__))
 sqlglot_src = os.path.join(here, "..", "sqlglot")
 
-from mypyc.build import mypycify
 
 SOURCE_FILES = [
     "errors.py",

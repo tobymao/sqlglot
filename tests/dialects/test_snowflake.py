@@ -370,6 +370,16 @@ class TestSnowflake(Validator):
             },
         )
 
+        expr = self.validate_identity("RIGHT('GAJGSKD', 2)")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "RIGHT('GAJGSKD', 2)")
+
+        expr = self.validate_identity("RIGHT(TO_BINARY('SNOWIKOPN', 'utf-8'), ABS(-3))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"), "UNHEX(RIGHT(HEX(ENCODE('SNOWIKOPN')), ABS(-3) * 2))"
+        )
+
         self.validate_all(
             "SELECT ZIPF(1, 10, 1234)",
             write={

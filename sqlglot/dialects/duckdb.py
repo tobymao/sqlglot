@@ -3524,6 +3524,25 @@ class DuckDB(Dialect):
             result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
             return _gen_with_cast_to_blob(self, expression, result_sql)
 
+        def right_sql(self, expression: exp.Right) -> str:
+            arg = expression.this
+            length = expression.expression
+
+            # For BINARY/BLOB: DuckDB doesn't support RIGHT on BLOB
+            # Convert to HEX string, use RIGHT, then convert back to BLOB
+            if _is_binary(arg):
+                # RIGHT(blob, n) becomes UNHEX(RIGHT(HEX(blob), n * 2))
+                # Each byte becomes 2 hex chars, so multiply length by 2
+                hex_arg = exp.Hex(this=arg)
+                hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
+                # since this exp.Right is not annotated, it won't enter this _is_binary branch during the recursive call
+                hex_right = exp.Right(this=hex_arg, expression=hex_length)
+                result = exp.Unhex(this=hex_right)
+                return self.sql(result)
+
+            # For VARCHAR: Use native RIGHT function
+            return self.func("RIGHT", arg, length)
+
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input
             # Snowflake BASE64_ENCODE accepts both VARCHAR and BINARY - for VARCHAR it implicitly

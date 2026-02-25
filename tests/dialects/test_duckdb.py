@@ -245,6 +245,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT RANGE(1, 5)",
                 "spark": "SELECT SEQUENCE(1, 4)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(1, 5)",
             },
         )
         self.validate_all(
@@ -266,6 +267,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT RANGE(5, 1, -1)",
                 "spark": "SELECT SEQUENCE(5, 2, -1)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },
         )
         self.validate_all(
@@ -2500,5 +2502,25 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT CURRENT_SCHEMAS(TRUE)",
                 "snowflake": "SELECT CURRENT_SCHEMAS()",
+            },
+        )
+
+    def test_map_delete(self):
+        self.validate_all(
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+            read={
+                "snowflake": "SELECT MAP_DELETE({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b')",
+            },
+            write={
+                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+            },
+        )
+        self.validate_all(
+            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
+            read={
+                "snowflake": "SELECT id, MAP_DELETE(attrs, del_key1, del_key2) AS attrs_after_delete FROM demo_maps",
+            },
+            write={
+                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             },
         )

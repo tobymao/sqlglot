@@ -310,6 +310,12 @@ class TestExasol(Validator):
         )
         self.validate_identity("SELECT TO_CHAR(12345.6789) AS TO_CHAR")
         self.validate_identity("SELECT TO_CHAR(-12345.67890, '000G000G000D000000MI') AS TO_CHAR")
+        self.validate_all(
+            "SELECT TO_CHAR(CAST('2009-10-04 22:23:00' AS TIMESTAMP), 'DAY MONTH YYYY')",
+            read={
+                "mysql": "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y')",
+            },
+        )
 
         self.validate_identity(
             "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows between 1 preceding and 1 following) GROUP_CONCAT_RESULT from employee_table ORDER BY department, hire_date",

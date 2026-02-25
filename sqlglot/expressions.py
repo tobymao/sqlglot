@@ -4769,6 +4769,12 @@ class NEQ(Binary, Predicate):
     pass
 
 
+# ClickHouse nested JSON subcolumn access: col.^nested
+# https://clickhouse.com/docs/sql-reference/data-types/newjson#reading-json-sub-objects-as-sub-columns
+class NestedJSONSelect(Binary):
+    pass
+
+
 # https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
 class Operator(Binary):
     arg_types = {"this": True, "operator": True, "expression": True}

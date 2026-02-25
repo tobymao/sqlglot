@@ -138,7 +138,9 @@ def _remove_ts_or_ds_to_date(
     def func(self: MySQL.Generator, expression: exp.Func) -> str:
         for arg_key in args:
             arg = expression.args.get(arg_key)
-            if isinstance(arg, exp.TsOrDsToDate) and not arg.args.get("format"):
+            if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(
+                "format"
+            ):
                 expression.set(arg_key, arg.this)
 
         return to_sql(self, expression) if to_sql else self.function_fallback_sql(expression)
@@ -341,7 +343,10 @@ class MySQL(Dialect):
             "CURTIME": exp.CurrentTime.from_arg_list,
             "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
             "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
+            "DATE_FORMAT": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToTimestamp(this=seq_get(args, 0)),
+                format=Dialect["mysql"].format_time(seq_get(args, 1)),
+            ),
             "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
             "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),

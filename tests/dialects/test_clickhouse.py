@@ -14,6 +14,10 @@ class TestClickhouse(Validator):
 
     def test_clickhouse(self):
         self.validate_identity(
+            "SELECT col.^nested, t.col2.^nested, t.col3.^nested.twice FROM t"
+        ).selects[0].assert_is(exp.NestedJSONSelect)
+
+        self.validate_identity(
             "cast(notEmpty(report_task_id)?report_task_id:'-1' AS text)",
             "CAST(CASE WHEN notEmpty(report_task_id) THEN report_task_id ELSE '-1' END AS String)",
         )

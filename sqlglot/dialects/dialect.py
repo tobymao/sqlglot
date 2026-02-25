@@ -1418,6 +1418,25 @@ def array_append_sql(
     return _array_append_sql
 
 
+def generate_series_sql(
+    func_name: str, exclusive_func_name: t.Optional[str] = None
+) -> t.Callable[[Generator, exp.GenerateSeries], str]:
+    def _generate_series_sql(self: Generator, expression: exp.GenerateSeries) -> str:
+        start = expression.args.get("start")
+        end = expression.args.get("end")
+        step = expression.args.get("step")
+
+        if expression.args.get("is_end_exclusive"):
+            if exclusive_func_name:
+                return self.func(exclusive_func_name, start, end, step)
+            adjusted_end = exp.Sub(this=end, expression=exp.Literal.number(1))
+            return self.func(func_name, start, adjusted_end, step)
+
+        return self.func(func_name, start, end, step)
+
+    return _generate_series_sql
+
+
 def array_concat_sql(
     name: str,
 ) -> t.Callable[[Generator, exp.ArrayConcat], str]:

@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     filter_array_using_unnest,
+    generate_series_sql,
     if_sql,
     inline_array_unless_query,
     max_or_greatest,
@@ -1162,7 +1163,7 @@ class BigQuery(Dialect):
             exp.FromTimeZone: lambda self, e: self.func(
                 "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
             ),
-            exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
+            exp.GenerateSeries: generate_series_sql("GENERATE_ARRAY"),
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="STRING_AGG", within_group=False, sep=None
             ),

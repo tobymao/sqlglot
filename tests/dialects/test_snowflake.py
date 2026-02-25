@@ -1263,9 +1263,10 @@ class TestSnowflake(Validator):
             "ARRAY_GENERATE_RANGE(0, 3)",
             write={
                 "bigquery": "GENERATE_ARRAY(0, 3 - 1)",
+                "duckdb": "RANGE(0, 3)",
                 "postgres": "GENERATE_SERIES(0, 3 - 1)",
-                "presto": "SEQUENCE(0, 3 - 1)",
-                "snowflake": "ARRAY_GENERATE_RANGE(0, (3 - 1) + 1)",
+                "presto": "SEQUENCE(0, 2)",
+                "snowflake": "ARRAY_GENERATE_RANGE(0, 3)",
             },
         )
         self.validate_all(
@@ -1274,6 +1275,21 @@ class TestSnowflake(Validator):
                 "bigquery": "GENERATE_ARRAY(0, 3)",
                 "postgres": "GENERATE_SERIES(0, 3)",
                 "presto": "SEQUENCE(0, 3)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT ARRAY_GENERATE_RANGE(-5, -25, -10)",
+            write={
+                "duckdb": "SELECT RANGE(-5, -25, -10)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(-5, -25, -10)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
+            write={
+                "duckdb": "SELECT RANGE(5, 1, -1)",
+                "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },
         )
         self.validate_all(
@@ -1384,6 +1400,30 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT LEAD(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
                 "duckdb": "SELECT LEAD(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAG(amount) OVER (ORDER BY seq) AS basic_lag",
+            write={
+                "snowflake": "SELECT LAG(amount) OVER (ORDER BY seq) AS basic_lag",
+                "duckdb": "SELECT LAG(amount) OVER (ORDER BY seq) AS basic_lag",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAG(amount, 2) IGNORE NULLS OVER (PARTITION BY category ORDER BY seq) AS lag_offset_ignore_nulls",
+            write={
+                "snowflake": "SELECT LAG(amount, 2) IGNORE NULLS OVER (PARTITION BY category ORDER BY seq) AS lag_offset_ignore_nulls",
+                "duckdb": "SELECT LAG(amount, 2 IGNORE NULLS) OVER (PARTITION BY category ORDER BY seq) AS lag_offset_ignore_nulls",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAG(amount, 2, -777) RESPECT NULLS OVER (PARTITION BY category ORDER BY seq ASC) AS lag_full_ignore_nulls",
+            write={
+                "snowflake": "SELECT LAG(amount, 2, -777) RESPECT NULLS OVER (PARTITION BY category ORDER BY seq ASC) AS lag_full_ignore_nulls",
+                "duckdb": "SELECT LAG(amount, 2, -777 RESPECT NULLS) OVER (PARTITION BY category ORDER BY seq ASC) AS lag_full_ignore_nulls",
             },
         )
 

@@ -539,10 +539,10 @@ class Exasol(Dialect):
                 rename_func("APPROXIMATE_COUNT_DISTINCT")
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_char%20(datetime).htm
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
-            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimestampTrunc: _timestamp_trunc_sql,
             exp.StrToTime: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),

@@ -297,6 +297,7 @@ class ClickHouse(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             ".:": TokenType.DOTCOLON,
+            ".^": TokenType.DOTCARET,
             "ATTACH": TokenType.COMMAND,
             "DATE32": TokenType.DATE32,
             "DATETIME64": TokenType.DATETIME64,
@@ -600,9 +601,14 @@ class ClickHouse(Dialect):
             TokenType.GLOBAL: lambda self, this: self._parse_global_in(this),
         }
 
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.DOTCARET: lambda self, this, field: self.expression(
+                exp.NestedJSONSelect, this=this, expression=field
+            ),
+        }
         # The PLACEHOLDER entry is popped because 1) it doesn't affect Clickhouse (it corresponds to
         # the postgres-specific JSONBContains parser) and 2) it makes parsing the ternary op simpler.
-        COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
         JOIN_KINDS = {
@@ -1218,7 +1224,10 @@ class ClickHouse(Dialect):
                 use_ansi_position=False,
             ),
             exp.TimeToStr: lambda self, e: self.func(
-                "formatDateTime", e.this, self.format_time(e), e.args.get("zone")
+                "formatDateTime",
+                e.this.this if isinstance(e.this, exp.TsOrDsToTimestamp) else e.this,
+                self.format_time(e),
+                e.args.get("zone"),
             ),
             exp.TimeStrToTime: _timestrtotime_sql,
             exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
@@ -1488,6 +1497,9 @@ class ClickHouse(Dialect):
 
         def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
             return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
+
+        def nestedjsonselect_sql(self, expression: exp.NestedJSONSelect) -> str:
+            return f"{self.sql(expression, 'this')}.^{self.sql(expression, 'expression')}"
 
         def is_sql(self, expression: exp.Is) -> str:
             is_sql = super().is_sql(expression)

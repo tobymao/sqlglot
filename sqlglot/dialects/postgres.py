@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     build_formatted_time,
     filter_array_using_unnest,
+    generate_series_sql,
     getbit_sql,
     inline_array_sql,
     json_extract_segments,
@@ -744,6 +745,7 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
+            exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),
             exp.Getbit: getbit_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(
                 self, e, func_name="STRING_AGG", within_group=False

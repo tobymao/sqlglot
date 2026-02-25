@@ -27,6 +27,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     encode_decode_sql,
     explode_to_unnest_sql,
+    generate_series_sql,
     getbit_sql,
     groupconcat_sql,
     inline_array_unless_query,
@@ -1994,6 +1995,7 @@ class DuckDB(Dialect):
             ),
             exp.EuclideanDistance: rename_func("LIST_DISTANCE"),
             exp.GenerateDateArray: _generate_datetime_array_sql,
+            exp.GenerateSeries: generate_series_sql("GENERATE_SERIES", "RANGE"),
             exp.GenerateTimestampArray: _generate_datetime_array_sql,
             exp.Getbit: getbit_sql,
             exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
@@ -3121,13 +3123,6 @@ class DuckDB(Dialect):
 
             return super().join_sql(expression)
 
-        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-            # GENERATE_SERIES(a, b) -> [a, b], RANGE(a, b) -> [a, b)
-            if expression.args.get("is_end_exclusive"):
-                return rename_func("RANGE")(self, expression)
-
-            return self.function_fallback_sql(expression)
-
         def countif_sql(self, expression: exp.CountIf) -> str:
             if self.dialect.version >= (1, 2):
                 return self.function_fallback_sql(expression)
@@ -3615,6 +3610,22 @@ class DuckDB(Dialect):
             return self.func(
                 "ARRAY_CONTAINS", exp.func("MAP_KEYS", expression.args["key"]), expression.this
             )
+
+        def mapdelete_sql(self, expression: exp.MapDelete) -> str:
+            map_arg = expression.this
+            keys_to_delete = expression.expressions
+
+            x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
+
+            lambda_expr = exp.Lambda(
+                this=exp.In(this=x_dot_key, expressions=keys_to_delete).not_(),
+                expressions=[exp.to_identifier("x")],
+            )
+            result = exp.func(
+                "MAP_FROM_ENTRIES",
+                exp.ArrayFilter(this=exp.func("MAP_ENTRIES", map_arg), expression=lambda_expr),
+            )
+            return self.sql(result)
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(

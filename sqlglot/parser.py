@@ -5987,14 +5987,10 @@ class Parser(metaclass=_Parser):
 
         # SKIP col or SKIP REGEXP 'pattern'
         if self._match_text_seq("SKIP"):
-            if self._match(TokenType.RLIKE):
-                regexp = True
-                arg = self._parse_string()
-            else:
-                regexp = False
-                arg = self._parse_column()
-                if isinstance(arg, exp.Column):
-                    arg = arg.to_dot()
+            regexp = self._match(TokenType.RLIKE)
+            arg = self._parse_column()
+            if isinstance(arg, exp.Column):
+                arg = arg.to_dot()
             return self.expression(exp.SkipJSONColumn, regexp=regexp, expression=arg)
 
         param_or_col = self._parse_column()

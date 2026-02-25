@@ -1138,6 +1138,10 @@ class Parser(metaclass=_Parser):
         "ENVIRONMENT": lambda self: self.expression(
             exp.EnviromentProperty, expressions=self._parse_wrapped_csv(self._parse_assignment)
         ),
+        "HANDLER": lambda self: self._parse_property_assignment(
+            exp.HandlerProperty
+        ),
+        "PARAMETER STYLE": lambda self: self._parse_parameter_style(),
         "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
         "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
         "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),
@@ -2537,6 +2541,8 @@ class Parser(metaclass=_Parser):
                 exp.SqlSecurityProperty,
                 this=self._match_texts(("DEFINER", "INVOKER")) and self._prev.text.upper(),
             )
+        if self._match_text_seq("PARAMETER", "STYLE", "PANDAS"):
+            return self.expression(exp.ParameterStyleProperty, this="PANDAS")
 
         index = self._index
 
@@ -2918,6 +2924,11 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.IsolatedLoadingProperty, no=no, concurrent=concurrent, target=target
         )
+
+    def _parse_parameter_style(self) -> exp.ParameterStyleProperty | None:
+        if self._match_text_seq("PANDAS"):
+            return self.expression(exp.ParameterStyleProperty, this="PANDAS")
+        return None
 
     def _parse_locking(self) -> exp.LockingProperty:
         if self._match(TokenType.TABLE):

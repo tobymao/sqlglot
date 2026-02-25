@@ -2407,9 +2407,12 @@ class ToTableProperty(Property):
     arg_types = {"this": True}
 
 
-class ExecuteAsProperty(Property):
+class HandlerProperty(Property):
     arg_types = {"this": True}
 
+
+class ExecuteAsProperty(Property):
+    arg_types = {"this": True}
 
 class ExternalProperty(Property):
     arg_types = {"this": False}
@@ -2469,6 +2472,8 @@ class JournalProperty(Property):
 class LanguageProperty(Property):
     arg_types = {"this": True}
 
+class ParameterStyleProperty(Property):
+    arg_types = {"this": True}
 
 class EnviromentProperty(Property):
     arg_types = {"expressions": True}

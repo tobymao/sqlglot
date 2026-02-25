@@ -444,6 +444,17 @@ class TestDatabricks(Validator):
             """CREATE FUNCTION a() ENVIRONMENT (dependencies = '["foo1==1", "foo2==2"]', environment_version = 'None')"""
         )
 
+    def test_udf_handler_property(self):
+        self.validate_identity(
+            """CREATE FUNCTION a() HANDLER 'handler_function'"""
+        )
+
+    def test_udf_parameter_style_property(self):
+        self.validate_identity(
+            """CREATE FUNCTION a() PARAMETER STYLE PANDAS"""
+        )
+
+
     def test_to_char_is_numeric_transpile_to_cast(self):
         # The input SQL simulates a TO_CHAR with is_numeric flag set (from dremio dialect)
         sql = "SELECT TO_CHAR(12345, '#')"

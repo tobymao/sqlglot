@@ -5057,8 +5057,7 @@ class Generator(metaclass=_Generator):
     def skipjsoncolumn_sql(self, expression: exp.SkipJSONColumn) -> str:
         # Clickhouse JSON(skip) arg
         regexp = " REGEXP" if expression.args.get("regexp") else ""
-        arg = expression.args.get("expression")
-        return f"SKIP{regexp} {self.sql(arg)}"
+        return f"SKIP{regexp} {self.sql(expression.expression)}"
 
     def conditionalinsert_sql(self, expression: exp.ConditionalInsert) -> str:
         else_ = "ELSE " if expression.args.get("else_") else ""

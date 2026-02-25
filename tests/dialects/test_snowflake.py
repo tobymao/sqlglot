@@ -1066,6 +1066,7 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
                 "starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])",
+                "duckdb": "SELECT CASE WHEN [1, 2] IS NULL OR [2, 3] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2], GENERATE_SERIES(1, LENGTH([1, 2]))), pair -> (LENGTH(LIST_FILTER([1, 2][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) <= LENGTH(LIST_FILTER([2, 3], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
             },
         )
         self.validate_all(

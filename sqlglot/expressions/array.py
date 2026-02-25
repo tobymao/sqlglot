@@ -116,11 +116,11 @@ class ArrayContainsAll(Binary, Func):
 
 
 class ArrayExcept(Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "check_semantics": False}
 
 
 class ArrayIntersect(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "check_semantics": False}
     is_var_len_args = True
     _sql_names = ["ARRAY_INTERSECT", "ARRAY_INTERSECTION"]
 

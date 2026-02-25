@@ -2486,6 +2486,24 @@ class DuckDB(Dialect):
             """,
         )
 
+        ARRAY_INTERSECTION_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
+                ELSE LIST_TRANSFORM(
+                    LIST_FILTER(
+                        LIST_ZIP(:arr1, GENERATE_SERIES(1, LEN(:arr1))),
+                        pair -> (
+                            LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
+                            <= LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))
+                        )
+                    ),
+                    pair -> pair[0]
+                )
+            END
+            """,
+        )
+
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
             Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
@@ -3450,6 +3468,16 @@ class DuckDB(Dialect):
                 )
 
             return func
+
+        def arrayintersect_sql(self, expression: exp.ArrayIntersect) -> str:
+            if expression.args.get("check_semantics") is True:
+                exprs = list(expression.iter_expressions())
+                replacements = {"arr1": exprs[0], "arr2": exprs[1]}
+                return self.sql(
+                    exp.replace_placeholders(self.ARRAY_INTERSECTION_TEMPLATE, **replacements)
+                )
+
+            return self.function_fallback_sql(expression)
 
         def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
             source = expression.this

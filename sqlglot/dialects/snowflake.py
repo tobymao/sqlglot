@@ -842,6 +842,10 @@ class Snowflake(Dialect):
                 step=seq_get(args, 2),
                 is_end_exclusive=True,
             ),
+            "ARRAY_INTERSECTION": lambda args: exp.ArrayIntersect(
+                expressions=args,
+                check_semantics=True,
+            ),
             "ARRAY_POSITION": lambda args: exp.ArrayPosition(
                 this=seq_get(args, 1),
                 expression=seq_get(args, 0),

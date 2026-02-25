@@ -5055,7 +5055,6 @@ class Generator(metaclass=_Generator):
         return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_condition}")
 
     def skipjsoncolumn_sql(self, expression: exp.SkipJSONColumn) -> str:
-        # Clickhouse JSON(skip) arg
         regexp = " REGEXP" if expression.args.get("regexp") else ""
         return f"SKIP{regexp} {self.sql(expression.expression)}"
 

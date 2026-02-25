@@ -1128,7 +1128,7 @@ class Dialect(metaclass=_Dialect):
             return True
         if not identify:
             return False
-        if isinstance(identifier.parent, exp.Func):
+        if identifier.parent is not None and isinstance(identifier.parent, exp.Func):
             return False
         if identify is True:
             return True
@@ -1264,7 +1264,7 @@ def inline_array_sql(self: Generator, expression: exp.Expression) -> str:
 
 def inline_array_unless_query(self: Generator, expression: exp.Expression) -> str:
     elem = seq_get(expression.expressions, 0)
-    if isinstance(elem, exp.Expression) and elem.find(exp.Query):
+    if isinstance(elem, exp.Expression) and (elem.find(exp.Query) or elem.find(exp.Subquery)):
         return self.func("ARRAY", elem)
     return inline_array_sql(self, expression)
 

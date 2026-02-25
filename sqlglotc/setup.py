@@ -12,7 +12,7 @@ sqlglot_src = os.path.join(here, "..", "sqlglot")
 
 SOURCE_FILES = [
     "errors.py",
-    "expression_core.py",
+    "expressions.py",
     "helper.py",
     "parser_core.py",
     "schema.py",

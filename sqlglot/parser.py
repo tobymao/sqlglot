@@ -3563,7 +3563,7 @@ class Parser(metaclass=_Parser):
         if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
             if not query and from_:
                 query = exp.select("*").from_(from_)
-            if isinstance(query, exp.Query):
+            if query and isinstance(query, exp.Query):
                 query = self._parse_pipe_syntax_query(query)
                 query = query.subquery(copy=False) if query and table else query
 

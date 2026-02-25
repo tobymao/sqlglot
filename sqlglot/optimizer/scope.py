@@ -12,7 +12,7 @@ from sqlglot.helper import ensure_collection, find_new_name, seq_get
 
 logger = logging.getLogger("sqlglot")
 
-TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
+TRAVERSABLES = (exp.Query, exp.DDL, exp.DML, exp.Subquery)
 
 
 class ScopeType(Enum):
@@ -624,13 +624,13 @@ def _traverse_scope(scope):
     elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
     elif isinstance(expression, exp.DDL):
-        if isinstance(expression.expression, exp.Query):
+        if expression.expression is not None and isinstance(expression.expression, exp.Query):
             yield from _traverse_ctes(scope)
             yield from _traverse_scope(Scope(expression.expression, cte_sources=scope.cte_sources))
         return
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
-        for query in find_all_in_scope(expression, exp.Query):
+        for query in find_all_in_scope(expression, (exp.Query, exp.Subquery)):
             # This check ensures we don't yield the CTE/nested queries twice
             if not isinstance(query.parent, (exp.CTE, exp.Subquery)):
                 yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
@@ -786,7 +786,7 @@ def _traverse_tables(scope):
 
             continue
 
-        if not isinstance(expression, exp.DerivedTable):
+        if not isinstance(expression, exp.DerivedTable) and not isinstance(expression, exp.UDTF):
             continue
 
         if isinstance(expression, exp.UDTF):
@@ -901,7 +901,11 @@ def walk_in_scope(expression, bfs=True, prune=None):
         if (
             node_type is exp.CTE
             or (parent_type in (exp.From, exp.Join) and _is_derived_table(node))
-            or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
+            or (
+                node.parent is not None
+                and isinstance(node.parent, exp.UDTF)
+                and isinstance(node, exp.Query)
+            )
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
             crossed_scope_boundary = True

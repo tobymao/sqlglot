@@ -418,7 +418,9 @@ class TestDuckDB(Validator):
         self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
         self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
         self.validate_identity("CAST(x AS FOO)")
-        self.validate_identity("SELECT UNNEST([1, 2])").selects[0].assert_is(exp.UDTF)
+        self.assertTrue(
+            isinstance(self.validate_identity("SELECT UNNEST([1, 2])").selects[0], exp.UDTF)
+        )
         self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)
         self.validate_identity("'red' IN tbl.flags")
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")

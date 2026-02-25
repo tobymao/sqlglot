@@ -10,7 +10,7 @@ if t.TYPE_CHECKING:
 # A little hack for backwards compatibility with Python 3.7.
 # For example, we might want a TypeVar for objects that support comparison e.g. SupportsRichComparisonT from typeshed.
 # But Python 3.7 doesn't support Protocols, so we'd also need typing_extensions, which we don't want as a dependency.
-from sqlglot.expression_core import E  # noqa: F401
+from sqlglot.expressions import E  # noqa: F401
 
 A = t.TypeVar("A", bound=t.Any)
 B = t.TypeVar("B", bound="sqlglot.exp.Binary")

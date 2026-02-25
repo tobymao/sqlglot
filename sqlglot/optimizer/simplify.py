@@ -139,7 +139,7 @@ def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Exp
     if isinstance(this, exp.Select):
         return expression
 
-    if isinstance(parent, (exp.SubqueryPredicate, exp.Bracket)):
+    if isinstance(parent, exp.Bracket) or (parent and isinstance(parent, exp.SubqueryPredicate)):
         return expression
 
     if (

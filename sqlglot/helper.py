@@ -27,7 +27,7 @@ T = t.TypeVar("T")
 E = t.TypeVar("E")
 
 if t.TYPE_CHECKING:
-    from sqlglot.expression_core import Expression
+    from sqlglot.expressions import Expression
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
@@ -323,7 +323,7 @@ def is_iterable(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is an iterable.
     """
-    from sqlglot.expression_core import Expression
+    from sqlglot.expressions import Expression
 
     return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
 

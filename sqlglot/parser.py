@@ -1187,7 +1187,8 @@ class Parser(metaclass=_Parser):
             exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
         ),
         "SECURE": lambda self: self.expression(exp.SecureProperty),
-        "SECURITY": lambda self: self._parse_security(),
+        "SECURITY": lambda self: self._parse_sql_security(),
+        "SQL SECURITY": lambda self: self._parse_sql_security(),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self._parse_settings_property(),
         "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
@@ -2532,10 +2533,6 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("COMPOUND", "SORTKEY"):
             return self._parse_sortkey(compound=True)
 
-        sql_security = self._parse_sql_security()
-        if sql_security:
-            return sql_security
-
         index = self._index
 
         seq_props = self._parse_sequence_properties()
@@ -2619,15 +2616,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_sql_security(self) -> t.Optional[exp.SqlSecurityProperty]:
-        if self._match_text_seq("SQL", "SECURITY"):
-            security = self._parse_id_var()
-            return self.expression(exp.SqlSecurityProperty, this=security)
-        return None
-
-    def _parse_security(self) -> t.Optional[exp.SecurityProperty]:
         if self._match_texts(("NONE", "DEFINER", "INVOKER")):
             security_specifier = self._prev.text.upper()
-            return self.expression(exp.SecurityProperty, this=security_specifier)
+            return self.expression(exp.SqlSecurityProperty, this=security_specifier)
         return None
 
     def _parse_settings_property(self) -> exp.SettingsProperty:

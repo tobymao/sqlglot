@@ -405,6 +405,7 @@ class TokenType(IntEnum):
     SOME = auto()
     SORT_BY = auto()
     SOUNDS_LIKE = auto()
+    SQL_SECURITY = auto()
     START_WITH = auto()
     STORAGE_INTEGRATION = auto()
     STRAIGHT_JOIN = auto()

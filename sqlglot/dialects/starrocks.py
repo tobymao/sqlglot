@@ -239,6 +239,7 @@ class StarRocks(MySQL):
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
+            exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
@@ -262,6 +263,7 @@ class StarRocks(MySQL):
             exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
+            exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
             exp.StDistance: st_distance_sphere,
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

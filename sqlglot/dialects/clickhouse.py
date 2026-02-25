@@ -987,6 +987,8 @@ class ClickHouse(Dialect):
             return self.expression(exp.Partition, expressions=expressions)
 
         def _parse_alter_table_modify_sql_security(self) -> t.Optional[exp.Expression]:
+            if not self._match_text_seq("SQL SECURITY"):
+                return None
             sql_security = self._parse_sql_security()
             if not sql_security:
                 return None

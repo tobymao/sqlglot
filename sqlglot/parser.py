@@ -6423,7 +6423,10 @@ class Parser(metaclass=_Parser):
         if isinstance(this, exp.Expression):
             this.add_comments(comments)
 
-        self._match_r_paren(this)
+        if parser:
+            self._match(TokenType.R_PAREN, expression=this)
+        else:
+            self._match_r_paren(this)
         return self._parse_window(this)
 
     def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:

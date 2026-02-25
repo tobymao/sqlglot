@@ -5589,7 +5589,27 @@ class ArrayFilter(Func):
 
 
 class ArrayFirst(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
+
+    @classmethod
+    def from_arg_list(cls, args):
+        if len(args) not in (1, 2):
+            raise ValueError(
+                "ARRAY_FIRST expects 1 or 2 arguments: ARRAY_FIRST(array[, x -> predicate])"
+            )
+
+        if len(args) == 2:
+            predicate = args[1]
+            if not isinstance(predicate, Lambda):
+                raise ValueError("ARRAY_FIRST 2nd argument must be a lamba, e.g. x -> x = '1'")
+
+            params = [predicate.expressions or []]
+            if len(params) != 1:
+                raise ValueError(
+                    "ARRAY_FIRST lambda must have exactly one parameter, e.g. x -> ..."
+                )
+
+        return super(ArrayFirst, cls).from_arg_list(args)
 
 
 class ArrayLast(Func):

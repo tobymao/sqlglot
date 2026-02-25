@@ -6294,3 +6294,7 @@ BIGINT;
 # dialect: presto, trino
 WIDTH_BUCKET(tbl.double_col, tbl.array_col);
 BIGINT;
+
+# dialect: trino
+ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b');
+VARCHAR;

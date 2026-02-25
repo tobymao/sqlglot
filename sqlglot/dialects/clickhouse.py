@@ -672,15 +672,14 @@ class ClickHouse(Dialect):
         ) -> t.Optional[exp.Expression]:
             # ClickHouse JSON type supports arguments: JSON(col Type, SKIP col, param=value)
             # https://clickhouse.com/docs/sql-reference/data-types/newjson
-            if self._curr and self._curr.token_type == TokenType.JSON:
-                self._advance()
+            if self._match(TokenType.JSON):
                 if self._match(TokenType.L_PAREN):
                     expressions = self._parse_csv(self._parse_json_type_arg)
                     self._match_r_paren()
                 else:
                     expressions = None
                 return exp.DataType.build(
-                    exp.DataType.Type.JSON, expressions=expressions or None, nullable=False
+                    exp.DataType.Type.JSON, expressions=expressions, nullable=False
                 )
 
             dtype = super()._parse_types(
@@ -708,36 +707,35 @@ class ClickHouse(Dialect):
                 return None
 
             # SKIP col or SKIP REGEXP 'pattern'
-            if self._curr.text.upper() == "SKIP":
-                self._advance()
-                if self._curr and self._curr.token_type == TokenType.RLIKE:
-                    self._advance()
+            if self._match_text_seq("SKIP"):
+                if self._match(TokenType.RLIKE):
                     skip = self.expression(exp.SkipJSONColumn, regexp=exp.var("REGEX"))
                     arg = self._parse_string()
                 else:
                     skip = self.expression(exp.SkipJSONColumn)
-                    arg = self._parse_id_var()
+                    arg = self._parse_column()
+                    if isinstance(arg, exp.Column):
+                        arg = arg.to_dot()
                 return self.expression(exp.DataTypeParam, this=skip, expression=arg)
 
-            # Parameter: name=value (e.g., max_dynamic_paths=2)
-            if self._next and self._next.token_type == TokenType.EQ:
-                name = self._parse_id_var()
-                if name:
-                    self._match(TokenType.EQ)
-                    value = self._parse_primary()
-                    return self.expression(
-                        exp.EQ,
-                        this=exp.var(name.name),
-                        expression=value,
-                    )
+            param_or_col = self._parse_column()
+            if not isinstance(param_or_col, exp.Column):
+                return None
 
-            # Column type hint: col_name Type
-            path = self._parse_id_var()
-            if path:
+            # Parameter: name=value (e.g., max_dynamic_paths=2)
+            if len(param_or_col.parts) == 1 and self._match(TokenType.EQ):
+                param = param_or_col.name
+                value = self._parse_primary()
+                return self.expression(
+                    exp.EQ,
+                    this=exp.var(param),
+                    expression=value,
+                )
+            else:
+                # Column type hint: col_name Type
+                col = param_or_col.to_dot()
                 kind = self._parse_types(check_func=False, allow_identifiers=False)
-                if kind:
-                    return self.expression(exp.ColumnDef, this=path, kind=kind)
-            return None
+                return self.expression(exp.ColumnDef, this=col, kind=kind)
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index

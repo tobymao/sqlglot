@@ -853,10 +853,20 @@ class TestClickhouse(Validator):
             "JSON(col1 String, SKIP col2)",
             "JSON(col1 String, SKIP REGEXP 'col[0-9]+')",
             "JSON(col1 String, max_dynamic_paths=2)",
+            "JSON(col1.nested String, SKIP col2.nested)",
         ]
         for i, data_type in enumerate(data_types):
             with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+        data_types_non_idempotent = [
+            ("JSON()", "JSON"),
+        ]
+        for i, (dt_in, dt_out) in enumerate(data_types_non_idempotent):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(
+                    f"SELECT CAST(val as {dt_in})", write_sql=f"SELECT CAST(val AS {dt_out})"
+                )
 
         # Multiline JSON type and non-case-sensitive SKIP
         self.validate_identity(

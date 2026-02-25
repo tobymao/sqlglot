@@ -986,18 +986,6 @@ class ClickHouse(Dialect):
 
             return self.expression(exp.Partition, expressions=expressions)
 
-        def _parse_sql_security(self) -> t.Optional[exp.SqlSecurityProperty]:
-            if self._match_text_seq("SQL", "SECURITY"):
-                security = self._parse_id_var()
-                return self.expression(exp.SqlSecurityProperty, this=security)
-            return None
-
-        def _parse_property(self) -> t.Optional[exp.Expression]:
-            sql_security = self._parse_sql_security()
-            if sql_security:
-                return sql_security
-            return super()._parse_property()
-
         def _parse_alter_table_modify_sql_security(self) -> t.Optional[exp.Expression]:
             sql_security = self._parse_sql_security()
             if not sql_security:
@@ -1444,14 +1432,6 @@ class ClickHouse(Dialect):
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"
-
-        def definerproperty_sql(self, expression: exp.DefinerProperty) -> str:
-            return f"DEFINER = {self.sql(expression, 'this')}"
-
-        def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
-            definer = self.sql(expression, "definer")
-            definer = f" {definer}" if definer else ""
-            return f"MODIFY {expression.this}{definer}"
 
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"

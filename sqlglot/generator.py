@@ -3885,6 +3885,12 @@ class Generator(metaclass=_Generator):
 
         return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
 
+    def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
+        # clickhouse alter table modify sql security
+        definer = self.sql(expression, "definer")
+        definer = f" {definer}" if definer else ""
+        return f"MODIFY {expression.this}{definer}"
+
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)
         keyword = "UNSET" if expression.args.get("unset") else "SET"

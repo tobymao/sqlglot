@@ -2532,11 +2532,9 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("COMPOUND", "SORTKEY"):
             return self._parse_sortkey(compound=True)
 
-        if self._match_text_seq("SQL", "SECURITY"):
-            return self.expression(
-                exp.SqlSecurityProperty,
-                this=self._match_texts(("DEFINER", "INVOKER")) and self._prev.text.upper(),
-            )
+        sql_security = self._parse_sql_security()
+        if sql_security:
+            return sql_security
 
         index = self._index
 
@@ -2619,6 +2617,12 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
+
+    def _parse_sql_security(self) -> t.Optional[exp.SqlSecurityProperty]:
+        if self._match_text_seq("SQL", "SECURITY"):
+            security = self._parse_id_var()
+            return self.expression(exp.SqlSecurityProperty, this=security)
+        return None
 
     def _parse_security(self) -> t.Optional[exp.SecurityProperty]:
         if self._match_texts(("NONE", "DEFINER", "INVOKER")):

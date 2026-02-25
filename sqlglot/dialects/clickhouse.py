@@ -1002,10 +1002,7 @@ class ClickHouse(Dialect):
             sql_security = self._parse_sql_security()
             if not sql_security:
                 return None
-            if self._match_text_seq("DEFINER"):
-                definer = self._parse_definer()
-            else:
-                definer = None
+            definer = self._parse_definer() if self._match_text_seq("DEFINER") else None
             return self.expression(exp.AlterModifySqlSecurity, this=sql_security, definer=definer)
 
         def _parse_alter_table_replace(self) -> t.Optional[exp.Expression]:

@@ -709,7 +709,7 @@ class ClickHouse(Dialect):
             # SKIP col or SKIP REGEXP 'pattern'
             if self._match_text_seq("SKIP"):
                 if self._match(TokenType.RLIKE):
-                    skip = self.expression(exp.SkipJSONColumn, regexp=exp.var("REGEX"))
+                    skip = self.expression(exp.SkipJSONColumn, regexp=True)
                     arg = self._parse_string()
                 else:
                     skip = self.expression(exp.SkipJSONColumn)

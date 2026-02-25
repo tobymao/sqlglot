@@ -1079,7 +1079,7 @@ class Exasol(Dialect):
                 emits = self.expressions(sqls=columns)
                 sql = f"{sql} EMITS ({emits})"
             return sql
-          
+
         @unsupported_args("flag")
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:
             if not expression.args.get("full_match"):

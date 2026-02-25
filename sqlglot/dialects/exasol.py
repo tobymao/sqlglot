@@ -1072,8 +1072,7 @@ class Exasol(Dialect):
             return self.sql(expression.this)
 
         def jsonextract_sql(self, e: exp.JSONExtract) -> str:
-            path = [e.expression, *e.args.get("expressions", [])]
-            sql = self.func("JSON_EXTRACT", e.this, *path)
+            sql = self.func("JSON_EXTRACT", e.this, e.expression, *e.expressions)
             columns = e.args.get("emits")
             if columns:
                 emits = self.expressions(sqls=columns)

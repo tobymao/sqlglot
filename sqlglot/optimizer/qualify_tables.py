@@ -137,7 +137,7 @@ def qualify_tables(
                 table_this = source.this
                 table_alias = source.args.get("alias")
                 function_columns: t.List[t.Union[str, exp.Identifier]] = []
-                if table_this and isinstance(table_this, exp.Func):
+                if isinstance(table_this, exp.Func):
                     if not table_alias:
                         function_columns = ensure_list(
                             dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(table_this))

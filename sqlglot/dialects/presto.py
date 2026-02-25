@@ -71,9 +71,7 @@ def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
         expression.transform(lambda n: n.name if isinstance(n, exp.Identifier) else n, copy=False)
 
         partition_exprs = [
-            self.sql(c)
-            if isinstance(c, str) or isinstance(c, exp.Func) or isinstance(c, exp.Property)
-            else self.sql(c, "this")
+            self.sql(c) if isinstance(c, (exp.Func, exp.Property)) else self.sql(c, "this")
             for c in expression.expressions
         ]
         return self.sql(exp.Array(expressions=[exp.Literal.string(c) for c in partition_exprs]))

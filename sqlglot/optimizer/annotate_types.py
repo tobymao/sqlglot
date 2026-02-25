@@ -57,7 +57,7 @@ def annotate_types(
         >>> sql = "SELECT x.cola + 2.5 AS cola FROM (SELECT y.cola AS cola FROM y AS y) AS x"
         >>> annotated_expr = annotate_types(sqlglot.parse_one(sql), schema=schema)
         >>> annotated_expr.expressions[0].type.this  # Get the type of "x.cola + 2.5 AS cola"
-        <Type.DOUBLE: 'DOUBLE'>
+        <DType.DOUBLE: 'DOUBLE'>
 
     Args:
         expression: Expression to annotate.

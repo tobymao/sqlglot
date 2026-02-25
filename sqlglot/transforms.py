@@ -441,7 +441,7 @@ def explode_projection_to_unnest(
                     is_posexplode = isinstance(explode, exp.Posexplode)
                     explode_arg = explode.this
 
-                    if isinstance(explode, exp.ExplodeOuter):
+                    if isinstance(explode, (exp.ExplodeOuter, exp.PosexplodeOuter)):
                         bracket = explode_arg[0]
                         bracket.set("safe", True)
                         bracket.set("offset", True)
@@ -611,7 +611,7 @@ def eliminate_semi_and_anti_joins(expression: exp.Expression) -> exp.Expression:
             on = join.args.get("on")
             if on and join.kind in ("SEMI", "ANTI"):
                 subquery = exp.select("1").from_(join.this).where(on)
-                exists = exp.Exists(this=subquery)
+                exists: exp.Exists | exp.Not = exp.Exists(this=subquery)
                 if join.kind == "ANTI":
                     exists = exists.not_(copy=False)
 

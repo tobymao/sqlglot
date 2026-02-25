@@ -3563,7 +3563,7 @@ class Parser(metaclass=_Parser):
         if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
             if not query and from_:
                 query = exp.select("*").from_(from_)
-            if query and isinstance(query, exp.Query):
+            if isinstance(query, exp.Query):
                 query = self._parse_pipe_syntax_query(query)
                 query = query.subquery(copy=False) if query and table else query
 
@@ -3588,6 +3588,7 @@ class Parser(metaclass=_Parser):
             while isinstance(this, exp.Subquery) and this.is_wrapper:
                 this = this.this
 
+            assert this is not None
             if "with_" in this.arg_types:
                 this.set("with_", cte)
             else:
@@ -4964,7 +4965,7 @@ class Parser(metaclass=_Parser):
         else:
             return None
 
-        return self.expression(
+        return self.expression(  # type: ignore
             kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_bitwise)
         )
 
@@ -6386,8 +6387,7 @@ class Parser(metaclass=_Parser):
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                code = getattr(func_builder, "__code__", None)
-                if code is not None and "dialect" in code.co_varnames:
+                if "dialect" in func_builder.__code__.co_varnames:
                     func = func_builder(args, dialect=self.dialect)
                 else:
                     func = func_builder(args)

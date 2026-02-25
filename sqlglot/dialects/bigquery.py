@@ -1542,7 +1542,7 @@ class BigQuery(Dialect):
             # because they aren't literals and so the above syntax is invalid BigQuery.
             if isinstance(this, exp.Array):
                 elem = seq_get(this.expressions, 0)
-                if not (elem and (elem.find(exp.Query) or elem.find(exp.Subquery))):
+                if not (elem and elem.find(exp.Query)):
                     return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)

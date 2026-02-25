@@ -139,7 +139,7 @@ def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Exp
     if isinstance(this, exp.Select):
         return expression
 
-    if isinstance(parent, exp.Bracket) or (parent and isinstance(parent, exp.SubqueryPredicate)):
+    if isinstance(parent, (exp.SubqueryPredicate, exp.Bracket)):
         return expression
 
     if (
@@ -1052,8 +1052,8 @@ class Simplifier:
 
             if l.__class__ in self.INVERSE_DATE_OPS:
                 l = t.cast(exp.IntervalOp, l)
-                a = l.this
-                b = l.interval()
+                a: exp.Expression = l.this
+                b: exp.Expression = l.interval()
             else:
                 l = t.cast(exp.Binary, l)
                 a, b = l.left, l.right

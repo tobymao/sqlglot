@@ -1189,7 +1189,7 @@ class Snowflake(Dialect):
                 return this
 
             query = this.args.get("query")
-            if isinstance(this, exp.In) and query is not None and isinstance(query, exp.Query):
+            if isinstance(this, exp.In) and isinstance(query, exp.Query):
                 # Snowflake treats `value NOT IN (subquery)` as `VALUE <> ALL (subquery)`, so
                 # we do this conversion here to avoid parsing it into `NOT value IN (subquery)`
                 # which can produce different results (most likely a SnowFlake bug).

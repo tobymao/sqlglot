@@ -19,14 +19,14 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
         expression: The expression to canonicalize.
     """
 
-    dialect = Dialect.get_or_raise(dialect)
+    _dialect = Dialect.get_or_raise(dialect)
 
     def _canonicalize(expression: exp.Expression) -> exp.Expression:
         if not isinstance(expression, _CANONICALIZE_TYPES):
             return expression
         expression = add_text_to_concat(expression)
-        expression = replace_date_funcs(expression, dialect=dialect)
-        expression = coerce_type(expression, dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
+        expression = replace_date_funcs(expression, dialect=_dialect)
+        expression = coerce_type(expression, _dialect.PROMOTE_TO_INFERRED_DATETIME_TYPE)
         expression = remove_redundant_casts(expression)
         expression = ensure_bools(expression, _replace_int_predicate)
         expression = remove_ascending_order(expression)

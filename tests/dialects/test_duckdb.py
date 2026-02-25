@@ -2524,3 +2524,23 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             },
         )
+
+    def test_map_size(self):
+        self.validate_all(
+            "SELECT CARDINALITY(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))) AS map_size",
+            read={
+                "snowflake": "SELECT MAP_SIZE({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER)) AS map_size",
+            },
+            write={
+                "duckdb": "SELECT CARDINALITY(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))) AS map_size",
+            },
+        )
+        self.validate_all(
+            "SELECT id, CARDINALITY(attrs) AS attr_count FROM demo_maps",
+            read={
+                "snowflake": "SELECT id, MAP_SIZE(attrs) AS attr_count FROM demo_maps",
+            },
+            write={
+                "duckdb": "SELECT id, CARDINALITY(attrs) AS attr_count FROM demo_maps",
+            },
+        )

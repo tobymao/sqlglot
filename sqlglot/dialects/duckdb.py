@@ -3627,6 +3627,9 @@ class DuckDB(Dialect):
             )
             return self.sql(result)
 
+        def mapsize_sql(self, expression: exp.MapSize) -> str:
+            return self.func("CARDINALITY", expression.this)
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",

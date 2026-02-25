@@ -1074,3 +1074,24 @@ class Exasol(Dialect):
                         ),
                     )
             return self.binary(expression, "REGEXP_LIKE")
+
+        # Exasol supports grouping by position https://docs.exasol.com/db/latest/sql/select.htm#:~:text=preference_term%3A%3A%3D-,group_by_clause%3A%3A%3D,-cube_rollup_clause%3A%3A%3D
+        def group_sql(self, expression: exp.Group) -> str:
+            if expression.args.get("all"):
+                select = expression.find_ancestor(exp.Select)
+
+                if select:
+                    group_indexes = []
+
+                    for i, projection in enumerate(select.expressions, start=1):
+                        if projection.find(exp.AggFunc):
+                            continue
+
+                        group_indexes.append(str(i))
+
+                    if group_indexes:
+                        return " GROUP BY " + ", ".join(group_indexes)
+
+                    return ""
+
+            return super().group_sql(expression)

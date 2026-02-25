@@ -670,18 +670,6 @@ class ClickHouse(Dialect):
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
-            # ClickHouse JSON type supports arguments: JSON(col Type, SKIP col, param=value)
-            # https://clickhouse.com/docs/sql-reference/data-types/newjson
-            if self._match(TokenType.JSON):
-                if self._match(TokenType.L_PAREN):
-                    expressions = self._parse_csv(self._parse_json_type_arg)
-                    self._match_r_paren()
-                else:
-                    expressions = None
-                return exp.DataType.build(
-                    exp.DataType.Type.JSON, expressions=expressions, nullable=False
-                )
-
             dtype = super()._parse_types(
                 check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
             )
@@ -694,44 +682,6 @@ class ClickHouse(Dialect):
                 dtype.set("nullable", False)
 
             return dtype
-
-        def _parse_json_type_arg(self) -> t.Optional[exp.Expression]:
-            """Parse a single argument to ClickHouse's JSON type.
-
-            Handles:
-            - Column type hints: col_name Type
-            - Skip hints: SKIP col_name
-            - Parameters: name=value
-            """
-            if not self._curr:
-                return None
-
-            # SKIP col or SKIP REGEXP 'pattern'
-            if self._match_text_seq("SKIP"):
-                if self._match(TokenType.RLIKE):
-                    skip = self.expression(exp.SkipJSONColumn, regexp=True)
-                    arg = self._parse_string()
-                else:
-                    skip = self.expression(exp.SkipJSONColumn)
-                    arg = self._parse_column()
-                    if isinstance(arg, exp.Column):
-                        arg = arg.to_dot()
-                return self.expression(exp.DataTypeParam, this=skip, expression=arg)
-
-            param_or_col = self._parse_column()
-            if not isinstance(param_or_col, exp.Column):
-                return None
-
-            # Parameter: name=value (e.g., max_dynamic_paths=2)
-            if len(param_or_col.parts) == 1 and self._match(TokenType.EQ):
-                param = param_or_col.name
-                value = self._parse_primary()
-                return self.expression(exp.EQ, this=exp.var(param), expression=value)
-
-            # Column type hint: col_name Type
-            col = param_or_col.to_dot()
-            kind = self._parse_types(check_func=False, allow_identifiers=False)
-            return self.expression(exp.ColumnDef, this=col, kind=kind)
 
         def _parse_extract(self) -> exp.Extract | exp.Anonymous:
             index = self._index
@@ -1417,20 +1367,6 @@ class ClickHouse(Dialect):
             return self.func("match", expression.this, regex)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            # ClickHouse JSON type with arguments: JSON(col Type, SKIP col, param=value)
-            if expression.this == exp.DataType.Type.JSON and expression.expressions:
-                args = []
-                for arg in expression.expressions:
-                    if isinstance(arg, exp.ColumnDef):
-                        args.append(f"{self.sql(arg.this)} {self.sql(arg, 'kind')}")
-                    elif isinstance(arg, exp.DataTypeParam):
-                        skip = self.sql(arg, "this")
-                        path = self.sql(arg, "expression")
-                        args.append(f"{skip} {path}" if path else skip)
-                    elif isinstance(arg, exp.EQ):
-                        args.append(f"{self.sql(arg, 'this')}={self.sql(arg, 'expression')}")
-                return f"JSON({', '.join(args)})"
-
             # String is the standard ClickHouse type, every other variant is just an alias.
             # Additionally, any supplied length parameter will be ignored.
             #
@@ -1461,11 +1397,6 @@ class ClickHouse(Dialect):
                 dtype = f"Nullable({dtype})"
 
             return dtype
-
-        def skipjsoncolumn_sql(self, expression: exp.SkipJSONColumn) -> str:
-            if expression.args.get("regexp"):
-                return "SKIP REGEXP"
-            return "SKIP"
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

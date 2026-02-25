@@ -852,7 +852,7 @@ class TestClickhouse(Validator):
             "JSON",
             "JSON(col1 String, SKIP col2)",
             "JSON(col1 String, SKIP REGEXP 'col[0-9]+')",
-            "JSON(col1 String, max_dynamic_paths=2)",
+            "JSON(col1 String, max_dynamic_paths = 2)",
             "JSON(col1.nested String, SKIP col2.nested)",
         ]
         for i, data_type in enumerate(data_types):
@@ -875,7 +875,7 @@ class TestClickhouse(Validator):
                 skip col2,
                 max_dynamic_paths=2
             ))""",
-            "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths=2))",
+            "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths = 2))",
         )
 
         self.validate_identity(

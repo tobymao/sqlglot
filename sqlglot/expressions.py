@@ -2270,7 +2270,7 @@ class WithFill(Expression):
 
 # https://clickhouse.com/docs/sql-reference/data-types/newjson
 class SkipJSONColumn(Expression):
-    arg_types = {"regexp": False}
+    arg_types = {"regexp": False, "expression": True}
 
 
 # hive specific sorts

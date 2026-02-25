@@ -24,7 +24,7 @@ from decimal import Decimal
 from enum import auto
 from functools import reduce
 
-from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.errors import ErrorLevel, ParseError, TokenError
 from sqlglot.expression_core import ExpressionCore
 from sqlglot.helper import (
     AutoName,
@@ -36,7 +36,7 @@ from sqlglot.helper import (
     subclasses,
 )
 
-from sqlglot.tokens import Token, TokenError
+from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self
@@ -156,8 +156,8 @@ class Expression(ExpressionCore):
     @property
     def type(self) -> t.Optional[DataType]:
         if isinstance(self, Cast):
-            return self._type or self.to
-        return self._type
+            return self._type or self.to  # type: ignore[return-value]
+        return self._type  # type: ignore[return-value]
 
     @type.setter
     def type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:

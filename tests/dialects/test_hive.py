@@ -365,6 +365,7 @@ class TestHive(Validator):
             "a RLIKE 'x'",
             write={
                 "duckdb": "REGEXP_MATCHES(a, 'x')",
+                "exasol": "a REGEXP_LIKE '.*x.*'",
                 "presto": "REGEXP_LIKE(a, 'x')",
                 "hive": "a RLIKE 'x'",
                 "spark": "a RLIKE 'x'",
@@ -375,6 +376,7 @@ class TestHive(Validator):
             "a REGEXP 'x'",
             write={
                 "duckdb": "REGEXP_MATCHES(a, 'x')",
+                "exasol": "a REGEXP_LIKE '.*x.*'",
                 "presto": "REGEXP_LIKE(a, 'x')",
                 "hive": "a RLIKE 'x'",
                 "spark": "a RLIKE 'x'",

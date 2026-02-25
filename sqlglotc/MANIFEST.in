@@ -1,0 +1,3 @@
+include pyproject.toml
+include setup.py
+recursive-include sqlglot *.py

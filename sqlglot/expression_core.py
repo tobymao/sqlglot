@@ -4,9 +4,9 @@ import sys
 import typing as t
 from collections import deque
 from copy import deepcopy
-from mypy_extensions import mypyc_attr
 
-from sqlglot.helper import to_bool
+from sqlglot.helper import mypyc_attr, to_bool
+from sqlglot.tokenizer_core import Token
 
 
 EC = t.TypeVar("EC", bound="ExpressionCore")
@@ -37,20 +37,20 @@ class ExpressionCore:
     is_func: t.ClassVar[bool] = False
     _hash_raw_args: t.ClassVar[bool] = False
 
-    def __init__(self, **args: t.Any) -> None:
+    def __init__(self, **args: object) -> None:
         self.args: t.Dict[str, t.Any] = args
         self.parent: t.Optional[ExpressionCore] = None
         self.arg_key: t.Optional[str] = None
         self.index: t.Optional[int] = None
         self.comments: t.Optional[t.List[str]] = None
-        self._type: t.Optional[t.Any] = None
+        self._type: t.Optional[ExpressionCore] = None
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
         self._hash: t.Optional[int] = None
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
 
-    def _set_parent(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
+    def _set_parent(self, arg_key: str, value: object, index: t.Optional[int] = None) -> None:
         if isinstance(value, ExpressionCore):
             value.parent = self
             value.arg_key = arg_key
@@ -130,11 +130,11 @@ class ExpressionCore:
             return self.parent.depth + 1
         return 0
 
-    def find_ancestor(self, *expression_types: t.Any) -> t.Optional[t.Any]:
+    def find_ancestor(self, *expression_types: t.Type[EC]) -> t.Optional[EC]:
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-        return ancestor
+        return ancestor  # type: ignore[return-value]
 
     @property
     def same_parent(self) -> bool:
@@ -210,7 +210,7 @@ class ExpressionCore:
 
     def update_positions(
         self: EC,
-        other: t.Optional[t.Any] = None,
+        other: t.Optional[ExpressionCore | Token] = None,
         line: t.Optional[int] = None,
         col: t.Optional[int] = None,
         start: t.Optional[int] = None,
@@ -290,14 +290,14 @@ class ExpressionCore:
                 copy._hash = node._hash
 
             for k, vs in node.args.items():
-                if hasattr(vs, "parent"):
+                if isinstance(vs, ExpressionCore):
                     stack.append((vs, vs.__class__()))
                     copy.set(k, stack[-1][-1])
                 elif type(vs) is list:
                     copy.args[k] = []
 
                     for v in vs:
-                        if hasattr(v, "parent"):
+                        if isinstance(v, ExpressionCore):
                             stack.append((v, v.__class__()))
                             copy.append(k, stack[-1][-1])
                         else:
@@ -320,8 +320,7 @@ class ExpressionCore:
                 if meta:
                     for kv in "".join(meta).split(","):
                         k, *v = kv.split("=")
-                        value: t.Any = v[0].strip() if v else True
-                        self.meta[k.strip()] = to_bool(value)
+                        self.meta[k.strip()] = to_bool(v[0].strip() if v else True)
 
                 if not prepend:
                     self.comments.append(comment)
@@ -332,7 +331,7 @@ class ExpressionCore:
     def set(
         self,
         arg_key: str,
-        value: t.Any,
+        value: object,
         index: t.Optional[int] = None,
         overwrite: bool = True,
     ) -> None:
@@ -373,10 +372,10 @@ class ExpressionCore:
         self.args[arg_key] = value
         self._set_parent(arg_key, value, index)
 
-    def find(self, *expression_types: t.Any, bfs: bool = True) -> t.Optional[t.Any]:
+    def find(self, *expression_types: t.Type[EC], bfs: bool = True) -> t.Optional[EC]:
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types: t.Any, bfs: bool = True) -> t.Iterator[t.Any]:
+    def find_all(self, *expression_types: t.Type[EC], bfs: bool = True) -> t.Iterator[EC]:
         for expression in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
@@ -420,14 +419,16 @@ class ExpressionCore:
         self.replace(None)
         return self
 
-    def assert_is(self, type_: t.Any) -> t.Any:
+    def assert_is(self, type_: t.Type[EC]) -> EC:
         if not isinstance(self, type_):
             raise AssertionError(f"{self} is not {type_}.")
         return self
 
-    def transform(self, fun: t.Callable, *args: t.Any, copy: bool = True, **kwargs: t.Any) -> t.Any:
-        root: t.Optional[t.Any] = None
-        new_node: t.Optional[t.Any] = None
+    def transform(
+        self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
+    ) -> t.Any:
+        root: t.Any = None
+        new_node: t.Any = None
 
         for node in (self.copy() if copy else self).dfs(prune=lambda n: n is not new_node):
             parent, arg_key, index = node.parent, node.arg_key, node.index

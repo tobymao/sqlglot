@@ -207,8 +207,10 @@ class Spark2(Hive):
         }
 
         def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
-            return self._match_text_seq("DROP", "COLUMNS") and self.expression(
-                exp.Drop, this=self._parse_schema(), kind="COLUMNS"
+            return (
+                self.expression(exp.Drop, this=self._parse_schema(), kind="COLUMNS")
+                if self._match_text_seq("DROP", "COLUMNS")
+                else None
             )
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:

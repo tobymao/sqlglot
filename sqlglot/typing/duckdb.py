@@ -9,6 +9,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DataType.Type.BIGINT}
         for expr_type in {
             exp.BitLength,
+            exp.DateDiff,
             exp.Day,
             exp.DayOfMonth,
             exp.DayOfWeek,
@@ -47,6 +48,7 @@ EXPRESSION_METADATA = {
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
+    exp.Localtimestamp: {"returns": exp.DataType.Type.TIMESTAMP},
     exp.ToDays: {"returns": exp.DataType.Type.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DataType.Type.TIME},
 }

@@ -139,8 +139,10 @@ class Redshift(Postgres):
                 self._retreat(self._index - 1)
 
             # EXCLUDE clause always comes at the end of the projection list and applies to it as a whole
-            exclude = self._match_text_seq("EXCLUDE") and self._parse_wrapped_csv(
-                self._parse_expression, optional=True
+            exclude = (
+                self._parse_wrapped_csv(self._parse_expression, optional=True)
+                if self._match_text_seq("EXCLUDE")
+                else []
             )
 
             if (

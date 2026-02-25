@@ -1597,6 +1597,7 @@ class DuckDB(Dialect):
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
             "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+            "CURRENT_LOCALTIMESTAMP": exp.Localtimestamp.from_arg_list,
             "DATEDIFF": _build_date_diff,
             "DATE_DIFF": _build_date_diff,
             "DATE_TRUNC": date_trunc_to_time,
@@ -1605,7 +1606,6 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
             "EDITDIST3": exp.Levenshtein.from_arg_list,
-            "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "ENCODE": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
@@ -1614,9 +1614,11 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "GENERATE_SERIES": _build_generate_series(),
+            "GET_CURRENT_TIME": exp.CurrentTime.from_arg_list,
             "GET_BIT": lambda args: exp.Getbit(
                 this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
             ),
+            "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),

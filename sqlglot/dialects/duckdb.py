@@ -1924,6 +1924,11 @@ class DuckDB(Dialect):
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
+            exp.ArrayPosition: lambda self, e: (
+                f"{self.func('ARRAY_POSITION', e.this, e.expression)} - 1"
+                if e.args.get("zero_based")
+                else self.func("ARRAY_POSITION", e.this, e.expression)
+            ),
             exp.ArrayRemoveAt: _array_remove_at_sql,
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,

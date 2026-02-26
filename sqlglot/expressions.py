@@ -5596,6 +5596,10 @@ class ArrayLast(Func):
     pass
 
 
+class ArrayPosition(Binary, Func):
+    arg_types = {"this": True, "expression": True, "zero_based": False, "ensure_variant": False}
+
+
 class ArrayReverse(Func):
     pass
 

@@ -844,6 +844,12 @@ class Snowflake(Dialect):
                 step=seq_get(args, 2),
                 is_end_exclusive=True,
             ),
+            "ARRAY_POSITION": lambda args: exp.ArrayPosition(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                zero_based=True,
+                ensure_variant=False,
+            ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
             "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
@@ -1633,6 +1639,13 @@ class Snowflake(Dialect):
             exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),
             exp.ArrayContains: lambda self, e: self.func(
                 "ARRAY_CONTAINS",
+                e.expression
+                if e.args.get("ensure_variant") is False
+                else exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),
+                e.this,
+            ),
+            exp.ArrayPosition: lambda self, e: self.func(
+                "ARRAY_POSITION",
                 e.expression
                 if e.args.get("ensure_variant") is False
                 else exp.cast(e.expression, exp.DataType.Type.VARIANT, copy=False),

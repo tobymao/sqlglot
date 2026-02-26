@@ -708,6 +708,13 @@ class TestClickhouse(Validator):
         self.validate_identity("arrayDistinct([1, 2, 2, 3, 1])").assert_is(exp.ArrayDistinct)
         self.validate_identity("SELECT UTCTimestamp()", "SELECT CURRENT_TIMESTAMP('UTC')")
 
+        for global_ in ["", "GLOBAL "]:
+            for side in ["", "LEFT ", "RIGHT ", "FULL "]:
+                for strictness in ["ANY ", "ALL "]:
+                    sql = f"SELECT * FROM foo1 {global_}{side}{strictness}JOIN foo2 ON foo1.id = foo2.id"
+                    with self.subTest(sql=sql):
+                        self.validate_identity(sql)
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

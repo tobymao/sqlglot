@@ -613,14 +613,17 @@ class ClickHouse(Dialect):
 
         JOIN_KINDS = {
             *parser.Parser.JOIN_KINDS,
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ASOF,
             TokenType.ARRAY,
         }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ARRAY,
+            TokenType.ASOF,
             TokenType.FINAL,
             TokenType.FORMAT,
             TokenType.SETTINGS,
@@ -825,18 +828,12 @@ class ClickHouse(Dialect):
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
             is_global = self._prev if self._match(TokenType.GLOBAL) else None
-            kind_pre = self._prev if self._match_set(self.JOIN_KINDS, advance=False) else None
 
-            if kind_pre:
-                kind = self._prev if self._match_set(self.JOIN_KINDS) else None
-                side = self._prev if self._match_set(self.JOIN_SIDES) else None
-                return is_global, side, kind
+            kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
+            side = self._prev if self._match_set(self.JOIN_SIDES) else None
+            kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
-            return (
-                is_global,
-                self._prev if self._match_set(self.JOIN_SIDES) else None,
-                self._prev if self._match_set(self.JOIN_KINDS) else None,
-            )
+            return is_global, side or kind, kind_pre or kind
 
         def _parse_join(
             self, skip_join_token: bool = False, parse_bracket: bool = False

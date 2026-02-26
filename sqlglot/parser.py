@@ -9223,7 +9223,7 @@ class Parser(metaclass=_Parser):
         if not first_setop:
             return None
 
-        def _parse_and_unwrap_query() -> t.Optional[exp.Select]:
+        def _parse_and_unwrap_query() -> t.Optional[exp.Query]:
             expr = self._parse_paren()
             return expr.assert_is(exp.Subquery).unnest() if expr else None
 

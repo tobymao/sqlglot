@@ -40,6 +40,7 @@ from sqlglot.helper import (
     trait,
 )
 
+from sqlglot._typing import E
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
@@ -54,14 +55,11 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+SQLGLOT_META: str = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
-
-E = t.TypeVar("E", bound="Expression")
-
 POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
-SQLGLOT_META: str = "sqlglot.meta"
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
@@ -270,7 +268,7 @@ class Expression:
         Returns the alias of the expression, or an empty string if it's not aliased.
         """
         alias = self.args.get("alias")
-        if isinstance(alias, Expression):
+        if isinstance(alias, TableAlias):
             return alias.name
         return self.text("alias")
 
@@ -316,9 +314,8 @@ class Expression:
     @type.setter
     def type(self, dtype: t.Optional[DataType | DType | str]) -> None:
         if dtype and not isinstance(dtype, DataType):
-            self._type = DataType.build(dtype)
-        else:
-            self._type = None
+            dtype = DataType.build(dtype)
+        self._type = t.cast(DataType, dtype)
 
     def is_type(self, *dtypes: DATA_TYPE) -> bool:
         return self.type is not None and self.type.is_type(*dtypes)
@@ -439,10 +436,7 @@ class Expression:
         if index is not None:
             expressions = self.args.get(arg_key) or []
 
-            try:
-                if expressions[index] is None:
-                    return
-            except IndexError:
+            if seq_get(expressions, index) is None:
                 return
 
             if value is None:
@@ -565,10 +559,8 @@ class Expression:
         return expression
 
     def walk(
-        self: E,
-        bfs: bool = True,
-        prune: t.Optional[t.Callable[[E], bool]] = None,
-    ) -> t.Iterator[E]:
+        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree.
 
@@ -586,7 +578,9 @@ class Expression:
         else:
             yield from self.dfs(prune=prune)
 
-    def dfs(self: E, prune: t.Optional[t.Callable[[E], bool]] = None) -> t.Iterator[E]:
+    def dfs(
+        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.
@@ -594,7 +588,8 @@ class Expression:
         Returns:
             The generator object.
         """
-        stack: t.List[E] = [self]
+        stack = [self]
+
         while stack:
             node = stack.pop()
             yield node
@@ -603,7 +598,9 @@ class Expression:
             for v in node.iter_expressions(reverse=True):
                 stack.append(v)
 
-    def bfs(self: E, prune: t.Optional[t.Callable[[E], bool]] = None) -> t.Iterator[E]:
+    def bfs(
+        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree in
         the BFS (Breadth-first) order.
@@ -611,8 +608,9 @@ class Expression:
         Returns:
             The generator object.
         """
-        queue: t.Deque[E] = deque()
+        queue: t.Deque[Expression] = deque()
         queue.append(self)
+
         while queue:
             node = queue.popleft()
             yield node
@@ -739,18 +737,17 @@ class Expression:
             return expression
 
         key = self.arg_key
-        if not key:
-            return expression
 
-        value = parent.args.get(key)
+        if key:
+            value = parent.args.get(key)
 
-        if type(expression) is list and isinstance(value, Expression):
-            # We are trying to replace an Expression with a list, so it's assumed that
-            # the intention was to really replace the parent of this expression.
-            if value.parent:
-                value.parent.replace(expression)
-        else:
-            parent.set(key, expression, self.index)
+            if type(expression) is list and isinstance(value, Expression):
+                # We are trying to replace an Expression with a list, so it's assumed that
+                # the intention was to really replace the parent of this expression.
+                if value.parent:
+                    value.parent.replace(expression)
+            else:
+                parent.set(key, expression, self.index)
 
         if expression is not self:
             self.parent = None
@@ -920,7 +917,7 @@ class Expression:
 
     def update_positions(
         self: E,
-        other: t.Optional[t.Union[Expression, Token]] = None,
+        other: t.Optional[Token | Expression] = None,
         line: t.Optional[int] = None,
         col: t.Optional[int] = None,
         start: t.Optional[int] = None,
@@ -949,7 +946,6 @@ class Expression:
                 if k in other.meta:
                     self.meta[k] = other.meta[k]
         else:
-            # Token
             self.meta["line"] = other.line
             self.meta["col"] = other.col
             self.meta["start"] = other.start
@@ -1516,10 +1512,6 @@ class UDTF(DerivedTable):
         alias = self.args.get("alias")
         return alias.columns if alias else []
 
-    @property
-    def named_selects(self) -> t.List[str]:
-        return [select.output_name for select in self.selects]
-
 
 class Cache(Expression):
     arg_types = {
@@ -1881,7 +1873,7 @@ class Column(Condition):
         return self.name
 
     @property
-    def parts(self) -> t.List[Expression]:
+    def parts(self) -> t.List[Identifier]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)
@@ -2116,7 +2108,6 @@ class WithOperator(Expression):
     arg_types = {"this": True, "op": True}
 
 
-# https://docs.risingwave.com/processing/watermarks#syntax
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {
@@ -2227,7 +2218,6 @@ class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements
 class Delete(DML):
     arg_types = {
         "with_": False,
@@ -3270,7 +3260,6 @@ class PartitionBoundSpec(Expression):
     }
 
 
-# https://spark.apache.org/docs/3.1.2/sql-ref-syntax-qry-select-transform.html
 class PartitionedOfProperty(Property):
     # this -> parent_table (schema), expression -> FOR VALUES ... / DEFAULT
     arg_types = {"this": True, "expression": True}
@@ -3753,7 +3742,7 @@ class SetOperation(Query):
 
     @property
     def named_selects(self) -> t.List[str]:
-        expression: t.Any = self
+        expression = self
         while isinstance(expression, SetOperation):
             expression = expression.this.unnest()
         return expression.named_selects
@@ -3764,7 +3753,7 @@ class SetOperation(Query):
 
     @property
     def selects(self) -> t.List[Expression]:
-        expression: t.Any = self
+        expression = self
         while isinstance(expression, SetOperation):
             expression = expression.this.unnest()
         return expression.selects
@@ -4591,7 +4580,7 @@ class Subquery(DerivedTable, Query):
         **QUERY_MODIFIERS,
     }
 
-    def unnest(self):
+    def unnest(self) -> Query:
         """Returns the first non subquery."""
         expression = self
         while isinstance(expression, Subquery):
@@ -4751,10 +4740,7 @@ class Placeholder(Condition):
 
     @property
     def name(self) -> str:
-        this = self.this
-        if isinstance(this, str):
-            return this or "?"
-        return this.name if this else "?"
+        return self.this or "?"
 
 
 class Null(Condition):
@@ -8733,6 +8719,73 @@ class Merge(DML):
     }
 
 
+class When(Expression):
+    arg_types = {"matched": True, "source": False, "condition": False, "then": True}
+
+
+class Whens(Expression):
+    """Wraps around one or more WHEN [NOT] MATCHED [...] clauses."""
+
+    arg_types = {"expressions": True}
+
+
+# https://docs.oracle.com/javadb/10.8.3.0/ref/rrefsqljnextvaluefor.html
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/next-value-for-transact-sql?view=sql-server-ver16
+class NextValueFor(Func):
+    arg_types = {"this": True, "order": False}
+
+
+# Refers to a trailing semi-colon. This is only used to preserve trailing comments
+# select 1; -- my comment
+class Semicolon(Expression):
+    arg_types = {}
+
+
+# BigQuery allows SELECT t FROM t and treats the projection as a struct value. This expression
+# type is intended to be constructed by qualify so that we can properly annotate its type later
+class TableColumn(Expression):
+    pass
+
+
+# https://www.postgresql.org/docs/current/typeconv-func.html
+# https://www.postgresql.org/docs/current/xfunc-sql.html
+class Variadic(Expression):
+    pass
+
+
+class StoredProcedure(Expression):
+    arg_types = {"this": True, "expressions": False, "wrapped": False}
+
+
+class Block(Expression):
+    arg_types = {"expressions": True}
+
+
+class IfBlock(Expression):
+    arg_types = {"this": True, "true": True, "false": False}
+
+
+class WhileBlock(Expression):
+    arg_types = {"this": True, "body": True}
+
+
+class EndStatement(Expression):
+    arg_types = {}
+
+
+@mypyc_attr(allow_interpreted_subclasses=True)
+class Execute(Expression):
+    arg_types = {"this": True, "expressions": False}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+
+class ExecuteSql(Execute):
+    pass
+
+
 PERCENTILES = (PercentileCont, PercentileDisc)
 
 
@@ -9970,7 +10023,7 @@ def table_(
 
 
 def values(
-    values: t.Iterable[t.Any],
+    values: t.Iterable[t.Tuple[t.Any, ...]],
     alias: t.Optional[str] = None,
     columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
 ) -> Values:
@@ -10240,7 +10293,7 @@ def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
     }
 
 
-def table_name(table: Expression | str, dialect: DialectType = None, identify: bool = False) -> str:
+def table_name(table: Table | str, dialect: DialectType = None, identify: bool = False) -> str:
     """Get the full name of a table as a string.
 
     Args:
@@ -10259,20 +10312,18 @@ def table_name(table: Expression | str, dialect: DialectType = None, identify: b
         The table name.
     """
 
-    if isinstance(table, str):
-        table = maybe_parse(table, into=Table, dialect=dialect)
+    expr = maybe_parse(table, into=Table, dialect=dialect)
 
-    if not table:
+    if not expr:
         raise ValueError(f"Cannot parse {table}")
 
-    tbl: t.Any = table
     return ".".join(
         (
             part.sql(dialect=dialect, identify=True, copy=False, comments=False)
             if identify or not SAFE_IDENTIFIER_RE.match(part.name)
             else part.name
         )
-        for part in tbl.parts
+        for part in expr.parts
     )
 
 
@@ -10458,8 +10509,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
     if constructor:
         if converted:
-            code = getattr(constructor, "__code__", None)
-            if code is not None and "dialect" in code.co_varnames:
+            if "dialect" in constructor.__code__.co_varnames:
                 function = constructor(converted, dialect=dialect)
             else:
                 function = constructor(converted)
@@ -10580,18 +10630,6 @@ def null() -> Null:
     return Null()
 
 
-NONNULL_CONSTANTS = (
-    Literal,
-    Boolean,
-)
-
-CONSTANTS = (
-    Literal,
-    Boolean,
-    Null,
-)
-
-
 def apply_index_offset(
     this: Expression,
     expressions: t.List[E],
@@ -10626,73 +10664,16 @@ def apply_index_offset(
     return expressions
 
 
-class When(Expression):
-    arg_types = {"matched": True, "source": False, "condition": False, "then": True}
+NONNULL_CONSTANTS = (
+    Literal,
+    Boolean,
+)
 
-
-class Whens(Expression):
-    """Wraps around one or more WHEN [NOT] MATCHED [...] clauses."""
-
-    arg_types = {"expressions": True}
-
-
-# https://docs.oracle.com/javadb/10.8.3.0/ref/rrefsqljnextvaluefor.html
-# https://learn.microsoft.com/en-us/sql/t-sql/functions/next-value-for-transact-sql?view=sql-server-ver16
-class NextValueFor(Func):
-    arg_types = {"this": True, "order": False}
-
-
-# Refers to a trailing semi-colon. This is only used to preserve trailing comments
-# select 1; -- my comment
-class Semicolon(Expression):
-    arg_types = {}
-
-
-# BigQuery allows SELECT t FROM t and treats the projection as a struct value. This expression
-# type is intended to be constructed by qualify so that we can properly annotate its type later
-class TableColumn(Expression):
-    pass
-
-
-# https://www.postgresql.org/docs/current/typeconv-func.html
-# https://www.postgresql.org/docs/current/xfunc-sql.html
-class Variadic(Expression):
-    pass
-
-
-class StoredProcedure(Expression):
-    arg_types = {"this": True, "expressions": False, "wrapped": False}
-
-
-class Block(Expression):
-    arg_types = {"expressions": True}
-
-
-class IfBlock(Expression):
-    arg_types = {"this": True, "true": True, "false": False}
-
-
-class WhileBlock(Expression):
-    arg_types = {"this": True, "body": True}
-
-
-class EndStatement(Expression):
-    arg_types = {}
-
-
-@mypyc_attr(allow_interpreted_subclasses=True)
-class Execute(Expression):
-    arg_types = {"this": True, "expressions": False}
-
-    @property
-    def name(self) -> str:
-        return self.this.name
-
-
-class ExecuteSql(Execute):
-    pass
-
-
+CONSTANTS = (
+    Literal,
+    Boolean,
+    Null,
+)
 # mypyc sets ClassVar overrides after __init_subclass__ runs, so required_args
 # is computed from the parent's arg_types. Re-fix all subclasses now that all
 # ClassVars are set.

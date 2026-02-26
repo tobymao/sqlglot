@@ -441,7 +441,7 @@ def explode_projection_to_unnest(
                     is_posexplode = isinstance(explode, exp.Posexplode)
                     explode_arg = explode.this
 
-                    if isinstance(explode, (exp.ExplodeOuter, exp.PosexplodeOuter)):
+                    if isinstance(explode, exp.ExplodeOuter):
                         bracket = explode_arg[0]
                         bracket.set("safe", True)
                         bracket.set("offset", True)

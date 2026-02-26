@@ -137,6 +137,8 @@ class Expression:
         # to be the lowercase version of the class' name.
         cls.key = cls.__name__.lower()
         cls.required_args = {k for k, v in cls.arg_types.items() if v}
+        # This is so that docstrings are not inherited in pdoc
+        cls.__doc__ = cls.__doc__ or ""
 
     def __eq__(self, other: object) -> bool:
         return self is other or (type(self) is type(other) and hash(self) == hash(other))
@@ -3486,11 +3488,9 @@ class Properties(Expression):
         "INCLUDE": IncludeProperty,
     }
 
-    PROPERTY_TO_NAME: t.ClassVar[t.Dict[t.Type[Property], str]] = {}
-
-    @classmethod
-    def _init_property_to_name(cls) -> None:
-        cls.PROPERTY_TO_NAME = {v: k for k, v in cls.NAME_TO_PROPERTY.items()}
+    PROPERTY_TO_NAME: t.ClassVar[t.Dict[t.Type[Property], str]] = {
+        v: k for k, v in NAME_TO_PROPERTY.items()
+    }
 
     # CREATE property locations
     # Form: schema specified
@@ -3518,9 +3518,6 @@ class Properties(Expression):
                 expressions.append(Property(this=Literal.string(key), value=convert(value)))
 
         return cls(expressions=expressions)
-
-
-Properties._init_property_to_name()
 
 
 class Qualify(Expression):
@@ -7047,15 +7044,21 @@ class Inline(Func):
     pass
 
 
-class ExplodeOuter(Explode):
+@trait
+@mypyc_attr(allow_interpreted_subclasses=True)
+class ExplodeOuter:
     pass
+
+
+class _ExplodeOuter(Explode, ExplodeOuter):
+    _sql_names = ["EXPLODE_OUTER"]
 
 
 class Posexplode(Explode):
     pass
 
 
-class PosexplodeOuter(Posexplode):
+class PosexplodeOuter(Posexplode, ExplodeOuter):
     pass
 
 

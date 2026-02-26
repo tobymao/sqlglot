@@ -928,7 +928,6 @@ class TestExasol(Validator):
             },
         )
 
-        # alias
         self.validate_all(
             "SELECT city AS c, COUNT(*) + 1 FROM dealer GROUP BY ALL",
             write={

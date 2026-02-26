@@ -21,8 +21,8 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
 from sqlglot.optimizer.scope import build_scope
+from sqlglot.tokens import TokenType
 
 
 def _sha2_sql(self: Exasol.Generator, expression: exp.SHA2) -> str:
@@ -408,6 +408,8 @@ class Exasol(Dialect):
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
             "JSON_VALUE": lambda self: self._parse_json_value(),
+            # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+            "JSON_EXTRACT": lambda self: self._parse_json_extract(),
         }
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
@@ -422,6 +424,17 @@ class Exasol(Dialect):
             ):
                 column.set("table", None)
             return column
+
+        def _parse_json_extract(self) -> exp.JSONExtract:
+            args = self._parse_expressions()
+            self._match_r_paren()
+
+            expression = exp.JSONExtract(expressions=args)
+
+            if self._match_texts("EMITS"):
+                expression.set("emits", self._parse_schema())
+
+            return expression
 
         ODBC_DATETIME_LITERALS = {
             "d": exp.Date,
@@ -1053,6 +1066,17 @@ class Exasol(Dialect):
 
         def collate_sql(self, expression: exp.Collate) -> str:
             return self.sql(expression.this)
+
+        def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
+            sql = self.func(
+                "JSON_EXTRACT", expression.this, expression.expression, *expression.expressions
+            )
+
+            emits = self.sql(expression, "emits")
+            if emits:
+                sql = f"{sql} EMITS {emits}"
+
+            return sql
 
         @unsupported_args("flag")
         def regexplike_sql(self, expression: exp.RegexpLike) -> str:

@@ -168,6 +168,8 @@ class Generator(metaclass=_Generator):
         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
+        exp.JSONObject: lambda self, e: self._jsonobject_sql(e),
+        exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",
@@ -3404,7 +3406,9 @@ class Generator(metaclass=_Generator):
         fmt = self.sql(expression, "format")
         return f"{this} (FORMAT {fmt})"
 
-    def jsonobject_sql(self, expression: exp.JSONObject | exp.JSONObjectAgg) -> str:
+    def _jsonobject_sql(
+        self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""
+    ) -> str:
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
 
@@ -3419,14 +3423,14 @@ class Generator(metaclass=_Generator):
         encoding = self.sql(expression, "encoding")
         encoding = f" ENCODING {encoding}" if encoding else ""
 
+        if not name:
+            name = "JSON_OBJECT" if isinstance(expression, exp.JSONObject) else "JSON_OBJECTAGG"
+
         return self.func(
-            "JSON_OBJECT" if isinstance(expression, exp.JSONObject) else "JSON_OBJECTAGG",
+            name,
             *expression.expressions,
             suffix=f"{null_handling}{unique_keys}{return_type}{encoding})",
         )
-
-    def jsonobjectagg_sql(self, expression: exp.JSONObjectAgg) -> str:
-        return self.jsonobject_sql(expression)
 
     def jsonarray_sql(self, expression: exp.JSONArray) -> str:
         null_handling = expression.args.get("null_handling")
@@ -5054,6 +5058,10 @@ class Generator(metaclass=_Generator):
 
         return self.func("JSON_VALUE", expression.this, f"{path}{returning}{on_condition}")
 
+    def skipjsoncolumn_sql(self, expression: exp.SkipJSONColumn) -> str:
+        regexp = " REGEXP" if expression.args.get("regexp") else ""
+        return f"SKIP{regexp} {self.sql(expression.expression)}"
+
     def conditionalinsert_sql(self, expression: exp.ConditionalInsert) -> str:
         else_ = "ELSE " if expression.args.get("else_") else ""
         condition = self.sql(expression, "expression")
@@ -5704,3 +5712,7 @@ class Generator(metaclass=_Generator):
     def executesql_sql(self, expression: exp.ExecuteSql) -> str:
         self.unsupported("Unsupported Execute syntax")
         return ""
+
+    def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
+        props = self.expressions(expression, sep=" ")
+        return f"MODIFY {props}"

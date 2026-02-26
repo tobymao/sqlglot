@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
+from sqlglot.typing.redshift import EXPRESSION_METADATA
 from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     array_concat_sql,
@@ -43,6 +44,7 @@ class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False

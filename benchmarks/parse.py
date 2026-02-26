@@ -1,10 +1,9 @@
 import collections
 import collections.abc
+import pyperf
 
 # Patch for Python 3.10+ compatibility with legacy parsers (moz_sql_parser)
 collections.Iterable = collections.abc.Iterable
-
-import pyperf
 
 try:
     import sqlfluff
@@ -31,7 +30,7 @@ try:
 except ImportError:
     sqltree = None
 
-import sqlglot
+import sqlglot  # noqa: E402
 
 long = """
 SELECT

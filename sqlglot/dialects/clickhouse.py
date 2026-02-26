@@ -613,14 +613,17 @@ class ClickHouse(Dialect):
 
         JOIN_KINDS = {
             *parser.Parser.JOIN_KINDS,
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ASOF,
             TokenType.ARRAY,
         }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ARRAY,
+            TokenType.ASOF,
             TokenType.FINAL,
             TokenType.FORMAT,
             TokenType.SETTINGS,
@@ -649,6 +652,7 @@ class ClickHouse(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_modify(),
             "REPLACE": lambda self: self._parse_alter_table_replace(),
         }
 
@@ -825,18 +829,12 @@ class ClickHouse(Dialect):
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
             is_global = self._prev if self._match(TokenType.GLOBAL) else None
-            kind_pre = self._prev if self._match_set(self.JOIN_KINDS, advance=False) else None
 
-            if kind_pre:
-                kind = self._prev if self._match_set(self.JOIN_KINDS) else None
-                side = self._prev if self._match_set(self.JOIN_SIDES) else None
-                return is_global, side, kind
+            kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
+            side = self._prev if self._match_set(self.JOIN_SIDES) else None
+            kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
-            return (
-                is_global,
-                self._prev if self._match_set(self.JOIN_SIDES) else None,
-                self._prev if self._match_set(self.JOIN_KINDS) else None,
-            )
+            return is_global, side or kind, kind_pre or kind
 
         def _parse_join(
             self, skip_join_token: bool = False, parse_bracket: bool = False
@@ -1000,6 +998,19 @@ class ClickHouse(Dialect):
             return self.expression(
                 exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
             )
+
+        def _parse_alter_table_modify(self) -> t.Optional[exp.Expression]:
+            if properties := self._parse_properties():
+                return self.expression(
+                    exp.AlterModifySqlSecurity, expressions=properties.expressions
+                )
+            return None
+
+        def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:
+            self._match(TokenType.EQ)
+            if self._match(TokenType.CURRENT_USER):
+                return exp.DefinerProperty(this=exp.Var(this=self._prev.text.upper()))
+            return exp.DefinerProperty(this=self._parse_string())
 
         def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
             if not self._match_text_seq("PROJECTION"):
@@ -1268,8 +1279,10 @@ class ClickHouse(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.DefinerProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
             exp.ToTableProperty: exp.Properties.Location.POST_NAME,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

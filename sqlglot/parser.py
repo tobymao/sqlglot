@@ -1613,6 +1613,8 @@ class Parser(metaclass=_Parser):
 
     RECURSIVE_CTE_SEARCH_KIND = {"BREADTH", "DEPTH", "CYCLE"}
 
+    SECURITY_PROPERTY_KEYWORDS = {"DEFINER", "INVOKER", "NONE"}
+
     MODIFIABLES = (exp.Query, exp.Table, exp.TableFromRows, exp.Values)
 
     STRICT_CAST = True
@@ -2535,7 +2537,7 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(
                 exp.SqlSecurityProperty,
-                this=self._match_texts(("DEFINER", "INVOKER")) and self._prev.text.upper(),
+                this=self._match_texts(self.SECURITY_PROPERTY_KEYWORDS) and self._prev.text.upper(),
             )
 
         index = self._index
@@ -5814,6 +5816,10 @@ class Parser(metaclass=_Parser):
                     return this
             elif type_token in self.ENUM_TYPE_TOKENS:
                 expressions = self._parse_csv(self._parse_equality)
+            elif type_token == TokenType.JSON:
+                # ClickHouse JSON type supports arguments: JSON(col Type, SKIP col, param=value)
+                # https://clickhouse.com/docs/sql-reference/data-types/newjson
+                expressions = self._parse_csv(self._parse_json_type_arg)
             elif is_aggregate:
                 func_or_ident = self._parse_function(anonymous=True) or self._parse_id_var(
                     any_token=False, tokens=(TokenType.VAR, TokenType.ANY)
@@ -5977,6 +5983,32 @@ class Parser(metaclass=_Parser):
                 this = converter(t.cast(exp.DataType, this))
 
         return this
+
+    def _parse_json_type_arg(self) -> t.Optional[exp.Expression]:
+        """Parse a single argument to ClickHouse's JSON type."""
+
+        # SKIP col or SKIP REGEXP 'pattern'
+        if self._match_text_seq("SKIP"):
+            regexp = self._match(TokenType.RLIKE)
+            arg = self._parse_column()
+            if isinstance(arg, exp.Column):
+                arg = arg.to_dot()
+            return self.expression(exp.SkipJSONColumn, regexp=regexp, expression=arg)
+
+        param_or_col = self._parse_column()
+        if not isinstance(param_or_col, exp.Column):
+            return None
+
+        # Parameter: name=value (e.g., max_dynamic_paths=2)
+        if len(param_or_col.parts) == 1 and self._match(TokenType.EQ):
+            param = param_or_col.name
+            value = self._parse_primary()
+            return self.expression(exp.EQ, this=exp.var(param), expression=value)
+
+        # Column type hint: col_name Type
+        col = param_or_col.to_dot()
+        kind = self._parse_types(check_func=False, allow_identifiers=False)
+        return self.expression(exp.ColumnDef, this=col, kind=kind)
 
     def _parse_vector_expressions(
         self, expressions: t.List[exp.Expression]
@@ -6379,7 +6411,10 @@ class Parser(metaclass=_Parser):
         if isinstance(this, exp.Expression):
             this.add_comments(comments)
 
-        self._match_r_paren(this)
+        if parser:
+            self._match(TokenType.R_PAREN, expression=this)
+        else:
+            self._match_r_paren(this)
         return self._parse_window(this)
 
     def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:

@@ -6,19 +6,14 @@ repos:
         description: "Run 'ruff' for extremely fast Python linting"
         entry: ruff check
           --force-exclude --fix
-          --ignore E721
-          --ignore E741
         language: python
         types_or: [python, pyi]
         require_serial: true
         additional_dependencies: []
-        files: ^(sqlglot/|tests/|setup.py)
       - id: ruff-format
         name: ruff-format
         description: "Run 'ruff format' for extremely fast Python formatting"
         entry: ruff format
-          --force-exclude
-          --line-length 100
         language: python
         types_or: [python, pyi]
         require_serial: true

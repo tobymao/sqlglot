@@ -15,6 +15,7 @@ EXPRESSION_METADATA = {
             exp.DayOfWeek,
             exp.DayOfWeekIso,
             exp.DayOfYear,
+            exp.Extract,
             exp.Hour,
             exp.Length,
             exp.Minute,

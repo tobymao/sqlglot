@@ -1332,6 +1332,10 @@ class AlterRename(Expression):
     pass
 
 
+class AlterModifySqlSecurity(Expression):
+    arg_types = {"expressions": True}
+
+
 class SwapTable(Expression):
     pass
 
@@ -2266,6 +2270,11 @@ class WithFill(Expression):
         "step": False,
         "interpolate": False,
     }
+
+
+# https://clickhouse.com/docs/sql-reference/data-types/newjson
+class SkipJSONColumn(Expression):
+    arg_types = {"regexp": False, "expression": True}
 
 
 # hive specific sorts
@@ -5584,7 +5593,7 @@ class ArrayFilter(Func):
 
 
 class ArrayFirst(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class ArrayLast(Func):
@@ -6844,6 +6853,7 @@ class JSONExtract(Binary, Func):
         "quote": False,
         "on_condition": False,
         "requires_json": False,
+        "emits": False,
     }
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True

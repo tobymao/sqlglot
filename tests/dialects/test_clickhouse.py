@@ -708,6 +708,13 @@ class TestClickhouse(Validator):
         self.validate_identity("arrayDistinct([1, 2, 2, 3, 1])").assert_is(exp.ArrayDistinct)
         self.validate_identity("SELECT UTCTimestamp()", "SELECT CURRENT_TIMESTAMP('UTC')")
 
+        for global_ in ["", "GLOBAL "]:
+            for side in ["", "LEFT ", "RIGHT ", "FULL "]:
+                for strictness in ["ANY ", "ALL "]:
+                    sql = f"SELECT * FROM foo1 {global_}{side}{strictness}JOIN foo2 ON foo1.id = foo2.id"
+                    with self.subTest(sql=sql):
+                        self.validate_identity(sql)
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)
@@ -850,6 +857,41 @@ class TestClickhouse(Validator):
         for data_type in data_types:
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+    def test_json_type(self):
+        data_types = [
+            "JSON",
+            "JSON(col1 String, SKIP col2)",
+            "JSON(col1 String, SKIP REGEXP 'col[0-9]+')",
+            "JSON(col1 String, max_dynamic_paths = 2)",
+            "JSON(col1.nested String, SKIP col2.nested)",
+        ]
+        for i, data_type in enumerate(data_types):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+        data_types_non_idempotent = [
+            ("JSON()", "JSON"),
+        ]
+        for i, (dt_in, dt_out) in enumerate(data_types_non_idempotent):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(
+                    f"SELECT CAST(val as {dt_in})", write_sql=f"SELECT CAST(val AS {dt_out})"
+                )
+
+        # Multiline JSON type and non-case-sensitive SKIP
+        self.validate_identity(
+            """SELECT CAST(val AS JSON(
+                col1 String,
+                skip col2,
+                max_dynamic_paths=2
+            ))""",
+            "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths = 2))",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(val AS JSON(col1 String, col2 JSON(colA String, SKIP colB)))"
+        )
 
     def test_aggregate_function_column_with_any_keyword(self):
         # Regression test for https://github.com/tobymao/sqlglot/issues/4723
@@ -1620,3 +1662,20 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_sql_security(self):
+        stmts = [
+            "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER=CURRENT_USER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY NONE AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY NONE AS SELECT 1",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER='alice'",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER=CURRENT_USER",
+        ]
+        for stmt in stmts:
+            with self.subTest(stmt):
+                self.validate_identity(stmt)

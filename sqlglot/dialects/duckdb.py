@@ -3536,7 +3536,7 @@ class DuckDB(Dialect):
                 hex_arg = exp.Hex(this=arg)
                 hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
                 # since this exp.Right is not annotated, it won't enter this _is_binary branch during the recursive call
-                hex_right = exp.Right(this=hex_arg, expression=hex_length)
+                hex_right = self.func("RIGHT", hex_arg, hex_length)
                 result = exp.Unhex(this=hex_right)
                 return self.sql(result)
 

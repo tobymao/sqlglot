@@ -629,6 +629,7 @@ class ClickHouse(Dialect):
 
         ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
             TokenType.FORMAT,
+            TokenType.SETTINGS,
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -640,6 +641,11 @@ class ClickHouse(Dialect):
                 self._advance() or self._parse_csv(self._parse_assignment),
             ),
             TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
+        }
+
+        QUERY_MODIFIER_TOKENS = parser.Parser.QUERY_MODIFIER_TOKENS | {
+            TokenType.SETTINGS,
+            TokenType.FORMAT,
         }
 
         CONSTRAINT_PARSERS = {

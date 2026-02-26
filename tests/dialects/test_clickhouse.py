@@ -81,7 +81,7 @@ class TestClickhouse(Validator):
             "SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS SETTINGS totals_mode = 'before_having'"
         )
         self.validate_identity("SELECT 1 SETTINGS max_threads = 1")
-        self.validate_identity("SELECT * FROM (SELECT 1 AS x) WITH TOTALS FORMAT JSON")
+        self.validate_identity("SELECT * FROM (SELECT 1 AS x) GROUP BY x WITH TOTALS FORMAT JSON")
         self.validate_identity("SELECT INTERVAL t.days DAY")
         self.validate_identity("SELECT match('abc', '([a-z]+)')")
         self.validate_identity("dictGet(x, 'y')")

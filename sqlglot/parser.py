@@ -4932,9 +4932,7 @@ class Parser(metaclass=_Parser):
             elements["expressions"].extend(
                 self._parse_csv(
                     lambda: None
-                    if self._match_set(
-                        (TokenType.CUBE, TokenType.ROLLUP), advance=False
-                    )
+                    if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
                     or self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False)
                     else self._parse_disjunction()
                 )

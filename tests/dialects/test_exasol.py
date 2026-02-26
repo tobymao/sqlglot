@@ -888,7 +888,6 @@ class TestExasol(Validator):
         )
 
     def test_group_by_all(self):
-
         self.validate_all(
             "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",
             write={

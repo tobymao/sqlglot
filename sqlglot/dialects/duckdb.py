@@ -1918,16 +1918,6 @@ class DuckDB(Dialect):
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
-            exp.ArrayPosition: lambda self, e: (
-                self.sql(
-                    exp.Sub(
-                        this=exp.ArrayPosition(this=e.this, expression=e.expression),
-                        expression=exp.Literal.number(1),
-                    )
-                )
-                if e.args.get("zero_based")
-                else self.func("ARRAY_POSITION", e.this, e.expression)
-            ),
             exp.ArrayRemoveAt: _array_remove_at_sql,
             exp.ArrayRemove: remove_from_array_using_filter,
             exp.ArraySort: _array_sort_sql,
@@ -2465,44 +2455,27 @@ class DuckDB(Dialect):
             """,
         )
 
-        # ARRAY_EXCEPT with bag semantics: N - M occurrences via cumulative counting
-        # 0-based indices in template (SQLGlot internal), converted to 1-based for DuckDB
-        # IS NOT DISTINCT FROM for NULL-safe element comparison
-        ARRAY_EXCEPT_TEMPLATE: exp.Expression = exp.maybe_parse(
-            """
-            CASE
-                WHEN :source IS NULL OR :exclude IS NULL THEN NULL
-                ELSE LIST_TRANSFORM(
-                    LIST_FILTER(
-                        LIST_ZIP(:source, GENERATE_SERIES(1, LEN(:source))),
-                        pair -> (
-                            LEN(LIST_FILTER(:source[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
-                            > LEN(LIST_FILTER(:exclude, e -> e IS NOT DISTINCT FROM pair[0]))
-                        )
-                    ),
-                    pair -> pair[0]
-                )
-            END
-            """,
-        )
-
-        ARRAY_INTERSECTION_TEMPLATE: exp.Expression = exp.maybe_parse(
-            """
-            CASE
-                WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
-                ELSE LIST_TRANSFORM(
-                    LIST_FILTER(
-                        LIST_ZIP(:arr1, GENERATE_SERIES(1, LEN(:arr1))),
-                        pair -> (
-                            LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
-                            <= LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))
-                        )
-                    ),
-                    pair -> pair[0]
-                )
-            END
-            """,
-        )
+        def _array_bag_sql(self, arr1: exp.Expression, arr2: exp.Expression, op: str) -> str:
+            """Bag semantics: keep elements from arr1 based on cumulative occurrence count vs arr2.
+            Uses IS NOT DISTINCT FROM for NULL-safe element comparison."""
+            template: exp.Expression = exp.maybe_parse(
+                f"""
+                CASE
+                    WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
+                    ELSE LIST_TRANSFORM(
+                        LIST_FILTER(
+                            LIST_ZIP(:arr1, GENERATE_SERIES(1, LEN(:arr1))),
+                            pair -> (
+                                LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
+                                {op} LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))
+                            )
+                        ),
+                        pair -> pair[0]
+                    )
+                END
+                """
+            )
+            return self.sql(exp.replace_placeholders(template, arr1=arr1, arr2=arr2))
 
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
@@ -3449,6 +3422,18 @@ class DuckDB(Dialect):
             )
             return f"({self.sql(result)})"
 
+        def arrayposition_sql(self, expression: exp.ArrayPosition) -> str:
+            if expression.args.get("zero_based"):
+                return self.sql(
+                    exp.Sub(
+                        this=exp.ArrayPosition(
+                            this=expression.this, expression=expression.expression
+                        ),
+                        expression=exp.Literal.number(1),
+                    )
+                )
+            return self.func("ARRAY_POSITION", expression.this, expression.expression)
+
         def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
             arr = expression.this
             func = self.func("LIST_DISTINCT", arr)
@@ -3470,21 +3455,18 @@ class DuckDB(Dialect):
             return func
 
         def arrayintersect_sql(self, expression: exp.ArrayIntersect) -> str:
-            if expression.args.get("check_semantics") is True:
-                exprs = list(expression.iter_expressions())
-                replacements = {"arr1": exprs[0], "arr2": exprs[1]}
-                return self.sql(
-                    exp.replace_placeholders(self.ARRAY_INTERSECTION_TEMPLATE, **replacements)
+            if expression.args.get("is_multiset") is True:
+                return self._array_bag_sql(
+                    expression.expressions[0], expression.expressions[1], "<="
                 )
 
             return self.function_fallback_sql(expression)
 
         def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
-            source = expression.this
-            exclude = expression.expression
+            if expression.args.get("is_multiset") is True:
+                return self._array_bag_sql(expression.this, expression.expression, ">")
 
-            replacements = {"source": source, "exclude": exclude}
-            return self.sql(exp.replace_placeholders(self.ARRAY_EXCEPT_TEMPLATE, **replacements))
+            return self.function_fallback_sql(expression)
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions

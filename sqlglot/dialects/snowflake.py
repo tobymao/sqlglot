@@ -947,6 +947,13 @@ class Snowflake(Dialect):
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "RANDOM": lambda args: exp.Rand(
+                this=seq_get(args, 0),
+                lower=exp.Literal.number(
+                    -9223372036854775808.0
+                ),  # -2^63 as float to avoid overflow
+                upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            ),
             "REPLACE": build_replace_with_optional_replacement,
             "RLIKE": _build_regexp_like,
             "ROUND": _build_round,
@@ -1767,7 +1774,6 @@ class Snowflake(Dialect):
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,
-            exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_window_clause,
@@ -1855,6 +1861,13 @@ class Snowflake(Dialect):
                     result = result + " FROM LAST"
 
             return result
+
+        def rand_sql(self, expression: exp.Rand) -> str:
+            seed = expression.this
+            if seed is not None:
+                return self.func("RANDOM", seed)
+            else:
+                return self.func("RANDOM")
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

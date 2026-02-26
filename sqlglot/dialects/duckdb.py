@@ -2053,7 +2053,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.Rand: rename_func("RANDOM"),
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -3542,6 +3541,30 @@ class DuckDB(Dialect):
 
             # For VARCHAR: Use native RIGHT function
             return self.func("RIGHT", arg, length)
+
+        def rand_sql(self, expression: exp.Rand) -> str:
+            seed = expression.this
+            if seed is not None:
+                self.unsupported("RANDOM with seed is not supported in DuckDB")
+
+            lower = expression.args.get("lower")
+            upper = expression.args.get("upper")
+
+            if lower and upper:
+                # scale DuckDB's [0,1) to the specified range
+                range_size = exp.Paren(this=exp.Sub(this=upper, expression=lower))
+
+                # lower + RANDOM() * (upper - lower)
+                scaled = exp.Add(
+                    this=lower, expression=exp.Mul(this="RANDOM()", expression=range_size)
+                )
+
+                # For now we assume that if bounds are set, return type is BIGINT. Snowflake/Teradata
+                result = exp.Cast(this=scaled, to=exp.DataType.build("BIGINT"))
+                return self.sql(result)
+            else:
+                # Default DuckDB behavior - just return RANDOM() as float
+                return "RANDOM()"
 
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input

@@ -915,7 +915,7 @@ class TestExasol(Validator):
             },
         )
 
-        # no aggregate → remove GROUP BY
+        # no aggregate → expand all
         self.validate_all(
             "SELECT car_model, city FROM dealer GROUP BY ALL",
             write={
@@ -951,7 +951,7 @@ class TestExasol(Validator):
             },
         )
 
-        # window function (not aggregate)
+        # aggregate window function
         self.validate_all(
             "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY ALL",
             write={

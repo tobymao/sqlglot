@@ -98,7 +98,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
         >>> from sqlglot import parse_one
         >>> expr = parse_one("SELECT * FROM tbl PIVOT (SUM(tbl.sales) FOR tbl.quarter IN ('Q1', 'Q2'))")
         >>> print(_unqualify_pivot_columns(expr).sql(dialect="spark"))
-        SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q1'))
+        SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q2'))
     """
     if isinstance(expression, exp.Pivot):
         expression.set(

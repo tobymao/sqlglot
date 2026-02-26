@@ -1,10 +1,9 @@
 import doctest
-import inspect
+import importlib
+import pkgutil
 import unittest
 
 import sqlglot
-import sqlglot.optimizer
-import sqlglot.transforms
 
 
 def load_tests(loader, tests, ignore):
@@ -12,15 +11,18 @@ def load_tests(loader, tests, ignore):
     This finds and runs all the doctests
     """
 
-    modules = {
-        mod
-        for module in [sqlglot, sqlglot.transforms, sqlglot.optimizer]
-        for _, mod in inspect.getmembers(module, inspect.ismodule)
-    }
+    modules = set()
+    for info in pkgutil.walk_packages(sqlglot.__path__, prefix="sqlglot."):
+        if info.name == "sqlglot.__main__":
+            continue
+        try:
+            modules.add(importlib.import_module(info.name))
+        except Exception:
+            continue
 
     assert len(modules) >= 20
 
-    for module in modules:
+    for module in sorted(modules, key=lambda m: m.__name__):
         tests.addTests(doctest.DocTestSuite(module))
 
     return tests

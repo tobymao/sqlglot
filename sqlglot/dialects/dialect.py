@@ -968,8 +968,9 @@ class Dialect(metaclass=_Dialect):
                 dialect settings, such as whether the dialect's identifiers are case-sensitive.
 
         Example:
-            >>> dialect = dialect_class = get_or_raise("duckdb")
-            >>> dialect = get_or_raise("mysql, normalization_strategy = case_sensitive")
+            >>> from sqlglot.dialects.dialect import Dialect
+            >>> dialect = Dialect.get_or_raise("duckdb")
+            >>> dialect = Dialect.get_or_raise("mysql, normalization_strategy = case_sensitive")
 
         Returns:
             The corresponding Dialect instance.

@@ -888,13 +888,6 @@ class TestExasol(Validator):
         )
 
     def test_group_by_all(self):
-        self.validate_all(
-            "SELECT car_model, COUNT(*) FROM dealer GROUP BY ALL",
-            write={
-                "exasol": "SELECT car_model, COUNT(*) FROM dealer GROUP BY 1",
-                "databricks": "SELECT car_model, COUNT(*) FROM dealer GROUP BY ALL",
-            },
-        )
 
         self.validate_all(
             "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",

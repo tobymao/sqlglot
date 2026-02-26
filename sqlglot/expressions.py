@@ -138,15 +138,6 @@ class Expression:
         cls.key = cls.__name__.lower()
         cls.required_args = {k for k, v in cls.arg_types.items() if v}
 
-        # Inject _post_init from traits that appear after Expression in the MRO.
-        # This bypasses MRO shadowing where Expression's no-op _post_init shadows trait overrides.
-        for base in cls.__mro__:
-            if base is Expression:
-                for trait_base in cls.__mro__[cls.__mro__.index(Expression) + 1 :]:
-                    if "_post_init" in trait_base.__dict__ and trait_base.__dict__["_post_init"]:
-                        setattr(cls, "_post_init", trait_base.__dict__["_post_init"])
-                break
-
     def __eq__(self, other: object) -> bool:
         return self is other or (type(self) is type(other) and hash(self) == hash(other))
 
@@ -1889,7 +1880,7 @@ class Column(Condition):
                 parts.append(parent.expression)
                 parent = parent.parent
 
-        return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0].assert_is(Identifier)
+        return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
 class Pseudocolumn(Column):
@@ -2033,7 +2024,7 @@ class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
     @property
-    def kind(self) -> Expression:
+    def kind(self) -> ColumnConstraintKind:
         return self.args["kind"]
 
 
@@ -2048,7 +2039,7 @@ class AutoIncrementColumnConstraint(ColumnConstraintKind):
 
 
 class ZeroFillColumnConstraint(ColumnConstraint):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class PeriodForSystemTimeConstraint(ColumnConstraintKind):
@@ -2150,7 +2141,7 @@ class NonClusteredColumnConstraint(ColumnConstraintKind):
 
 
 class NotForReplicationColumnConstraint(ColumnConstraintKind):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
@@ -2186,7 +2177,7 @@ class UniqueColumnConstraint(ColumnConstraintKind):
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
-    arg_types: t.ClassVar[t.Dict[str, t.Any]] = {}
+    arg_types = {}
 
 
 # https://docs.risingwave.com/processing/watermarks#syntax
@@ -2995,7 +2986,7 @@ class CollateProperty(Property):
 
 
 class CopyGrantsProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class DataBlocksizeProperty(Property):
@@ -3039,7 +3030,7 @@ class EngineProperty(Property):
 
 
 class HeapProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class ToTableProperty(Property):
@@ -3072,11 +3063,11 @@ class FreespaceProperty(Property):
 
 
 class GlobalProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class IcebergProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class InheritsProperty(Property):
@@ -3131,7 +3122,7 @@ class DictRange(Property):
 
 
 class DynamicProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 # Clickhouse CREATE ... ON CLUSTER modifier
@@ -3142,7 +3133,7 @@ class OnCluster(Property):
 
 # Clickhouse EMPTY table "property"
 class EmptyProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class LikeProperty(Property):
@@ -3180,7 +3171,7 @@ class MergeBlockRatioProperty(Property):
 
 
 class NoPrimaryIndexProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class OnProperty(Property):
@@ -3266,7 +3257,7 @@ class PartitionedOfProperty(Property):
 
 
 class StreamingTableProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class RemoteWithConnectionModelProperty(Property):
@@ -3278,7 +3269,7 @@ class ReturnsProperty(Property):
 
 
 class StrictProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class RowFormatProperty(Property):
@@ -3383,7 +3374,7 @@ class TemporaryProperty(Property):
 
 
 class SecureProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table
@@ -3411,7 +3402,7 @@ class TransientProperty(Property):
 
 
 class UnloggedProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-table#create-table-using-template
@@ -3463,7 +3454,7 @@ class IncludeProperty(Property):
 
 
 class ForceProperty(Property):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {}
+    arg_types = {}
 
 
 class Properties(Expression):
@@ -4744,7 +4735,7 @@ class Placeholder(Condition):
 
 
 class Null(Condition):
-    arg_types: t.ClassVar[t.Dict[str, t.Any]] = {}
+    arg_types = {}
 
     @property
     def name(self) -> str:
@@ -5656,7 +5647,7 @@ class TimeUnit(Expression):
             unit.set("this", Var(this=unit.this.name.upper()))
 
     @property
-    def unit(self) -> t.Optional[Expression]:
+    def unit(self) -> t.Optional[Var | IntervalSpan]:
         return self.args.get("unit")
 
 
@@ -5675,11 +5666,6 @@ class IntervalOp(TimeUnit):
             this=self.expression.copy(),
             unit=self.unit.copy() if self.unit else None,
         )
-
-
-@mypyc_attr(allow_interpreted_subclasses=True)
-class _IntervalOp(_TimeUnit, IntervalOp):
-    arg_types = {"unit": False, "expression": True}
 
 
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
@@ -9701,7 +9687,7 @@ INTERVAL_DAY_TIME_RE = re.compile(
 )
 
 
-def to_interval(interval: str | Literal | Expression) -> Interval:
+def to_interval(interval: str | Expression) -> Interval:
     """Builds an interval expression from a string like '1 day' or '5 months'."""
     if isinstance(interval, Literal):
         if not interval.is_string:
@@ -10674,14 +10660,5 @@ CONSTANTS = (
     Boolean,
     Null,
 )
-# mypyc sets ClassVar overrides after __init_subclass__ runs, so required_args
-# is computed from the parent's arg_types. Re-fix all subclasses now that all
-# ClassVars are set.
-stack = list(Expression.__subclasses__())
-while stack:
-    cls = stack.pop()
-    cls.required_args = {k for k, v in cls.arg_types.items() if v}
-    stack.extend(cls.__subclasses__())
-
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}

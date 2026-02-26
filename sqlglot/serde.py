@@ -99,7 +99,7 @@ def load(
     return root
 
 
-def _load(payload: t.Dict[str, t.Any]) -> t.Any:
+def _load(payload: t.Dict[str, t.Any]) -> exp.Expression | exp.DType:
     class_name = payload.get(CLASS)
 
     if not class_name:

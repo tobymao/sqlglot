@@ -4965,7 +4965,7 @@ class Parser(metaclass=_Parser):
         else:
             return None
 
-        return self.expression(  # type: ignore
+        return self.expression(
             kind, expressions=[] if with_prefix else self._parse_wrapped_csv(self._parse_bitwise)
         )
 

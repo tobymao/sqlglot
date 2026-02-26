@@ -608,19 +608,16 @@ class MappingSchema(AbstractMappingSchema, Schema):
         ):
             return cached
 
-        expr = exp.maybe_parse(table, into=exp.Table, dialect=dialect)
-        normalized_table = expr
+        normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
 
         if normalize:
-            normalized_table = expr.copy()
-
             for part in normalized_table.parts:
                 if isinstance(part, exp.Identifier):
                     part.replace(
                         normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
                     )
 
-        self._normalized_table_cache[(expr, dialect, normalize)] = normalized_table
+        self._normalized_table_cache[(normalized_table, dialect, normalize)] = normalized_table
         return normalized_table
 
     def _normalize_name(

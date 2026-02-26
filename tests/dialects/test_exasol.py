@@ -888,7 +888,6 @@ class TestExasol(Validator):
         )
 
     def test_group_by_all(self):
-        # aggregate + column → expand
         self.validate_all(
             "SELECT car_model, COUNT(*) FROM dealer GROUP BY ALL",
             write={
@@ -897,7 +896,6 @@ class TestExasol(Validator):
             },
         )
 
-        # multiple columns
         self.validate_all(
             "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",
             write={
@@ -906,7 +904,6 @@ class TestExasol(Validator):
             },
         )
 
-        # distinct aggregate
         self.validate_all(
             "SELECT car_model, COUNT(DISTINCT city) FROM dealer GROUP BY ALL",
             write={
@@ -915,7 +912,6 @@ class TestExasol(Validator):
             },
         )
 
-        # no aggregate → expand all
         self.validate_all(
             "SELECT car_model, city FROM dealer GROUP BY ALL",
             write={
@@ -924,7 +920,6 @@ class TestExasol(Validator):
             },
         )
 
-        # only aggregate → remove GROUP BY
         self.validate_all(
             "SELECT COUNT(*) FROM dealer GROUP BY ALL",
             write={
@@ -933,7 +928,6 @@ class TestExasol(Validator):
             },
         )
 
-        # expression column
         self.validate_all(
             "SELECT UPPER(city), COUNT(*) FROM dealer GROUP BY ALL",
             write={
@@ -951,7 +945,6 @@ class TestExasol(Validator):
             },
         )
 
-        # aggregate window function
         self.validate_all(
             "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY ALL",
             write={

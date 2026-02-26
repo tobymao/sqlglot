@@ -1588,6 +1588,7 @@ class DuckDB(Dialect):
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_PREPEND": _build_array_prepend,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+            "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -2465,8 +2466,14 @@ class DuckDB(Dialect):
             """,
         )
 
-        # Bag semantics: Keep elements from arr1 based on cumulative occurrence count vs arr2.
-        # IS NOT DISTINCT FROM for NULL-safe element comparison.
+        # Shared bag semantics outer frame for ARRAY_EXCEPT and ARRAY_INTERSECTION.
+        # Each element is paired with its 1-based position via LIST_ZIP, then filtered
+        # by a comparison operator (supplied via :cond) that determines the operation:
+        #   EXCEPT (>):        keep the N-th occurrence only if N > count in arr2
+        #                      e.g. [2,2,2] EXCEPT [2,2] -> [2]
+        #   INTERSECTION (<=): keep the N-th occurrence only if N <= count in arr2
+        #                      e.g. [2,2,2] INTERSECT [2,2] -> [2,2]
+        # IS NOT DISTINCT FROM is used for NULL-safe element comparison.
         ARRAY_BAG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             CASE
@@ -2490,6 +2497,22 @@ class DuckDB(Dialect):
         ARRAY_INTERSECTION_CONDITION: exp.Expression = exp.maybe_parse(
             "LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))"
             " <= LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))"
+        )
+
+        # Set semantics for ARRAY_EXCEPT. Deduplicates arr1 via LIST_DISTINCT, then
+        # filters out any element that appears at least once in arr2.
+        #   e.g. [1,1,2,3] EXCEPT [1] -> [2,3]
+        # IS NOT DISTINCT FROM is used for NULL-safe element comparison.
+        ARRAY_EXCEPT_SET_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
+                ELSE LIST_FILTER(
+                    LIST_DISTINCT(:arr1),
+                    e -> LEN(LIST_FILTER(:arr2, x -> x IS NOT DISTINCT FROM e)) = 0
+                )
+            END
+            """
         )
 
         def _array_bag_sql(
@@ -3466,18 +3489,20 @@ class DuckDB(Dialect):
             return func
 
         def arrayintersect_sql(self, expression: exp.ArrayIntersect) -> str:
-            if expression.args.get("is_multiset") is True:
+            if expression.args.get("is_multiset") and len(expression.expressions) == 2:
                 return self._array_bag_sql(
                     self.ARRAY_INTERSECTION_CONDITION,
                     expression.expressions[0],
                     expression.expressions[1],
                 )
-
             return self.function_fallback_sql(expression)
 
         def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
-            return self._array_bag_sql(
-                self.ARRAY_EXCEPT_CONDITION, expression.this, expression.expression
+            arr1, arr2 = expression.this, expression.expression
+            if expression.args.get("is_multiset"):
+                return self._array_bag_sql(self.ARRAY_EXCEPT_CONDITION, arr1, arr2)
+            return self.sql(
+                exp.replace_placeholders(self.ARRAY_EXCEPT_SET_TEMPLATE, arr1=arr1, arr2=arr2)
             )
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:

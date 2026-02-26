@@ -8612,7 +8612,7 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.L_PAREN):
             while True:
                 key = self._parse_id_var()
-                value = self._parse_primary()
+                value = self._parse_function() or self._parse_primary_or_var()
                 if not key and value is None:
                     break
                 settings.append(self.expression(exp.DictSubProperty, this=key, value=value))

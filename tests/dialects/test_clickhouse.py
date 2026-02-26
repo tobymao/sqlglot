@@ -1313,6 +1313,19 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(CLICKHOUSE(HOST 'localhost' PORT tcpPort() USER 'default' DB CURRENT_DATABASE())) LIFETIME(MIN 1 MAX 10) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(FILE(PATH '/tmp/test.csv' FORMAT CSVWithNames)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(NULL()) LAYOUT(CACHE(SIZE_IN_CELLS 1000)) LIFETIME(MIN 0 MAX 1)"
+        )
+        self.validate_identity(
+            """CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(EXECUTABLE(COMMAND 'echo "1"' FORMAT TabSeparated)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"""
+        )
+
         self.validate_all(
             """
             CREATE TABLE t (

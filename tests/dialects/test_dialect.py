@@ -1770,7 +1770,7 @@ class TestDialect(Validator):
                 "athena": "SELECT array_position(array[1, 2, 3], 2)",
             },
             write={
-                "snowflake": "SELECT ARRAY_POSITION(CAST(2 AS VARIANT), [1, 2, 3])",
+                "snowflake": "SELECT ARRAY_POSITION(2, [1, 2, 3])",
                 "spark": "SELECT ARRAY_POSITION(ARRAY(1, 2, 3), 2)",
                 "databricks": "SELECT ARRAY_POSITION(ARRAY(1, 2, 3), 2)",
                 "trino": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",

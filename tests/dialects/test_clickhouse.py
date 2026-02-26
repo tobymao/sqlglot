@@ -1411,25 +1411,7 @@ LIFETIME(MIN 0 MAX 0)""",
             exp.CombinedAggFunc
         )
 
-        # Duplicate consecutive combinators are NOT allowed.
-        # resolved suffixes are ["If","Merge","Merge"] — Merge+Merge adjacent
-        self.validate_identity("SELECT countIfMergeMerge(s) FROM t").selects[0].assert_is(
-            exp.Anonymous
-        )
-
-        # Same combinator separated by a different combinator IS allowed (Merge-If-Merge pattern).
-
-        # 1-suffix base (sumMerge): suffixes ["Merge","If","Merge"] — no adjacent duplicates
-        self.validate_identity("SELECT sumMergeIfMerge(s) FROM t").selects[0].assert_is(
-            exp.CombinedAggFunc
-        )
-
-        # 1-suffix base (countIf): suffixes ["If","Merge","If","Merge"] — no adjacent duplicates
-        self.validate_identity("SELECT countIfMergeIfMerge(s) FROM t").selects[0].assert_is(
-            exp.CombinedAggFunc
-        )
-
-        # example of a functional query:
+        # example of a nontrivial query:
         sum_merge_if_merge = (
             self.validate_identity(
                 "SELECT sumMergeIfMerge(s) FROM (SELECT sumMergeIfState(agg, 1 = 1) AS s "

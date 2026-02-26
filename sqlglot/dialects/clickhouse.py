@@ -1,6 +1,7 @@
 from __future__ import annotations
 import typing as t
 import datetime
+from collections import deque
 from sqlglot import exp, generator, parser, tokens
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
@@ -530,27 +531,29 @@ class ClickHouse(Dialect):
             "exponentialTimeDecayedAvg",
         }
 
-        AGG_FUNCTIONS_SUFFIXES = [
-            "If",
-            "Array",
-            "ArrayIf",
-            "Map",
-            "SimpleState",
-            "State",
-            "Merge",
-            "MergeState",
-            "ForEach",
-            "Distinct",
-            "OrDefault",
-            "OrNull",
-            "Resample",
-            "ArgMin",
-            "ArgMax",
-        ]
-
         # Sorted longest-first so that compound suffixes (e.g. "SimpleState") are matched
         # before their sub-suffixes (e.g. "State") when resolving multi-combinator functions.
-        AGG_FUNCTIONS_SUFFIXES_SORTED = sorted(AGG_FUNCTIONS_SUFFIXES, key=len, reverse=True)
+        AGG_FUNCTIONS_SUFFIXES = sorted(
+            [
+                "If",
+                "Array",
+                "ArrayIf",
+                "Map",
+                "SimpleState",
+                "State",
+                "Merge",
+                "MergeState",
+                "ForEach",
+                "Distinct",
+                "OrDefault",
+                "OrNull",
+                "Resample",
+                "ArgMin",
+                "ArgMax",
+            ],
+            key=len,
+            reverse=True,
+        )
 
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
@@ -575,25 +578,27 @@ class ClickHouse(Dialect):
                 # some function names could (but should not) be interpreted as combined
                 # versions of other function names. For example, `minMap`. To avoid this,
                 # the 0-suffix function dict must be on the RHS of the | operator, above
-                f"{f}": (f, None)
+                f: (f, None)
                 for f in functions
             }
         )(AGG_FUNCTIONS, AGG_FUNCTIONS_SUFFIXES)
 
         @classmethod
-        def _resolve_clickhouse_agg(cls, name: str) -> t.Optional[t.Tuple[str, t.List[str]]]:
+        def _resolve_clickhouse_agg(cls, name: str) -> t.Optional[t.Tuple[str, t.Sequence[str]]]:
             # ClickHouse allows chaining multiple combinators on aggregate functions.
             # See https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
+            # N.B. this resolution allows any suffix stack, including ones that ClickHouse rejects
+            # syntactically such as sumMergeMerge (due to repeated adjacent suffixes)
 
             # Until we are able to identify a 1- or 0-suffix aggregate function by name,
-            # repeatedly strip and stack suffixes (longer suffixes first, see comment on
+            # repeatedly strip and queue suffixes (checking longer suffixes first, see comment on
             # AGG_FUNCTIONS_SUFFIXES_SORTED). This loop only runs for 2 or more suffixes,
             # as AGG_FUNC_MAPPING memoizes all 0- and 1-suffix
-            accumulated_suffix_stack: t.List[str] = []
+            accumulated_suffixes: t.Deque[str] = deque()
             while (parts := cls.AGG_FUNC_MAPPING.get(name)) is None:
-                for suffix in cls.AGG_FUNCTIONS_SUFFIXES_SORTED:
+                for suffix in cls.AGG_FUNCTIONS_SUFFIXES:
                     if name.endswith(suffix) and len(name) != len(suffix):
-                        accumulated_suffix_stack.append(suffix)
+                        accumulated_suffixes.appendleft(suffix)
                         name = name[: -len(suffix)]
                         break
                 else:
@@ -603,19 +608,10 @@ class ClickHouse(Dialect):
             agg_func_name, inner_suffix = parts
             if inner_suffix:
                 # this is a 1-suffix aggregate (either naturally or via repeated suffix
-                # stripping). stack the innermost suffix.
-                accumulated_suffix_stack.append(inner_suffix)
+                # stripping). prepend the innermost suffix.
+                accumulated_suffixes.appendleft(inner_suffix)
 
-            # Reverse the stack into natural order, rejecting if there are adjacent
-            # duplicate combinators (e.g. sumMergeMerge is invalid; sumMergeIfMerge is fine).
-            suffixes_list: t.List[str] = []
-            last_seen_suffix = None
-            for suffix in reversed(accumulated_suffix_stack):
-                if suffix == last_seen_suffix:
-                    return None  # reject: there are adjacent duplicate combinators
-                suffixes_list.append(suffix)
-                last_seen_suffix = suffix
-            return (agg_func_name, suffixes_list)
+            return (agg_func_name, accumulated_suffixes)
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,

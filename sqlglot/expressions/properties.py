@@ -113,11 +113,14 @@ class EngineProperty(Property):
 class HeapProperty(Property):
     arg_types = {}
 
+
 class HandlerProperty(Property):
     arg_types = {"this": True}
 
+
 class ParameterStyleProperty(Property):
     arg_types = {"this": True}
+
 
 class ToTableProperty(Property):
     arg_types = {"this": True}

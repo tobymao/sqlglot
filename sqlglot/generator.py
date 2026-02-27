@@ -5479,7 +5479,8 @@ class Generator(metaclass=_Generator):
         return f"EXPORT DATA {connection}{options} AS {this}"
 
     def declare_sql(self, expression: exp.Declare) -> str:
-        return f"DECLARE {self.expressions(expression, flat=True)}"
+        replace = "OR REPLACE " if expression.args.get("replace") else ""
+        return f"DECLARE {replace}{self.expressions(expression, flat=True)}"
 
     def declareitem_sql(self, expression: exp.DeclareItem) -> str:
         variables = self.expressions(expression, "this")

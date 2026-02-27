@@ -486,3 +486,4 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE VARIABLE myvar INT DEFAULT 1", "DECLARE myvar INT = 1")
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
         self.validate_identity("DECLARE x INT = 1")
+        self.validate_identity("DECLARE OR REPLACE x INT = 1")

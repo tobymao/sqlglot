@@ -9333,12 +9333,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_declare(self) -> exp.Declare | exp.Command:
         start = self._prev
+        replace = self._match_text_seq("OR", "REPLACE")
         expressions = self._try_parse(lambda: self._parse_csv(self._parse_declareitem))
 
         if not expressions or self._curr:
             return self._parse_as_command(start)
 
-        return self.expression(exp.Declare, expressions=expressions)
+        return self.expression(exp.Declare, expressions=expressions, replace=replace)
 
     def build_cast(self, strict: bool, **kwargs) -> exp.Cast:
         exp_class = exp.Cast if strict else exp.TryCast

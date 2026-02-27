@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot.errors import UnsupportedError
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
@@ -248,6 +249,39 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
 
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
+
+
+def _group_by_all(expression: exp.Expression) -> exp.Expression:
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    group = expression.args.get("group")
+    if not group or not group.args.get("all"):
+        return expression
+
+    if expression.is_star:
+        if any(proj.find(exp.AggFunc) for proj in expression.expressions):
+            raise UnsupportedError(
+                "GROUP BY ALL with star projection and aggregates is not supported by Exasol"
+            )
+        expression.set("distinct", exp.Distinct())
+        expression.set("group", None)
+        return expression
+
+    group_positions = [
+        exp.Literal.number(i)
+        for i, proj in enumerate(expression.expressions, start=1)
+        if not proj.find(exp.AggFunc)
+    ]
+
+    if not group_positions:
+        expression.set("group", None)
+        return expression
+
+    group.set("expressions", group_positions)
+    group.set("all", False)
+
+    return expression
 
 
 class Exasol(Dialect):
@@ -569,6 +603,7 @@ class Exasol(Dialect):
                 [
                     _qualify_unscoped_star,
                     _add_local_prefix_for_aliases,
+                    _group_by_all,
                 ]
             ),
             exp.SubstringIndex: _substring_index_sql,

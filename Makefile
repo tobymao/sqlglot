@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean
+.PHONY: install install-dev install-devc install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
 
 ifdef UV
     PIP := uv pip
@@ -23,12 +23,16 @@ install:
 
 install-dev:
 	$(PIP) install -e ".[dev]"
+	git submodule update --init 2>/dev/null || true
 
 install-devc: clean
 	cd sqlglotc && $(PIP) install -e .
 
 install-pre-commit:
 	pre-commit install
+	pre-commit install --hook-type post-checkout
+	pre-commit install --hook-type pre-push
+	pre-commit install --hook-type post-merge
 
 bench: bench-parse bench-optimize
 
@@ -63,3 +67,6 @@ docs:
 
 docs-serve:
 	python pdoc/cli.py --port 8002
+
+resolve-integration-conflicts:
+	cd sqlglot-integration-tests && git pull --rebase --autostash

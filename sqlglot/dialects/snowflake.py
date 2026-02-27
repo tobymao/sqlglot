@@ -842,6 +842,15 @@ class Snowflake(Dialect):
                 step=seq_get(args, 2),
                 is_end_exclusive=True,
             ),
+            "ARRAY_EXCEPT": lambda args: exp.ArrayExcept(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                is_multiset=True,
+            ),
+            "ARRAY_INTERSECTION": lambda args: exp.ArrayIntersect(
+                expressions=args,
+                is_multiset=True,
+            ),
             "ARRAY_POSITION": lambda args: exp.ArrayPosition(
                 this=seq_get(args, 1),
                 expression=seq_get(args, 0),
@@ -947,6 +956,13 @@ class Snowflake(Dialect):
             "REGEXP_REPLACE": _build_regexp_replace,
             "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
             "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "RANDOM": lambda args: exp.Rand(
+                this=seq_get(args, 0),
+                lower=exp.Literal.number(
+                    -9223372036854775808.0
+                ),  # -2^63 as float to avoid overflow
+                upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            ),
             "REPLACE": build_replace_with_optional_replacement,
             "RLIKE": _build_regexp_like,
             "ROUND": _build_round,
@@ -1767,7 +1783,6 @@ class Snowflake(Dialect):
             exp.RegexpExtract: _regexpextract_sql,
             exp.RegexpExtractAll: _regexpextract_sql,
             exp.RegexpILike: _regexpilike_sql,
-            exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_window_clause,
@@ -1790,6 +1805,7 @@ class Snowflake(Dialect):
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.EndsWith: rename_func("ENDSWITH"),
+            exp.Rand: lambda self, e: self.func("RANDOM", e.this),
             exp.StrPosition: lambda self, e: strposition_sql(
                 self, e, func_name="CHARINDEX", supports_position=True
             ),

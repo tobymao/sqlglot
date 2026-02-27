@@ -1742,7 +1742,6 @@ class TestDialect(Validator):
             },
         )
 
-        # Test ARRAY_EXCEPT transpilation across dialects
         self.validate_all(
             "SELECT ARRAY_EXCEPT(ARRAY(1, 2, 3), ARRAY(2))",
             read={
@@ -1756,7 +1755,7 @@ class TestDialect(Validator):
                 "trino": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "presto": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "athena": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
-                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_FILTER(LIST_DISTINCT([1, 2, 3]), e -> LENGTH(LIST_FILTER([2], x -> x IS NOT DISTINCT FROM e)) = 0) END",
             },
         )
 

@@ -1588,6 +1588,7 @@ class DuckDB(Dialect):
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_PREPEND": _build_array_prepend,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+            "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -2053,7 +2054,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.Rand: rename_func("RANDOM"),
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
@@ -2466,26 +2466,62 @@ class DuckDB(Dialect):
             """,
         )
 
-        # ARRAY_EXCEPT with bag semantics: N - M occurrences via cumulative counting
-        # 0-based indices in template (SQLGlot internal), converted to 1-based for DuckDB
-        # IS NOT DISTINCT FROM for NULL-safe element comparison
-        ARRAY_EXCEPT_TEMPLATE: exp.Expression = exp.maybe_parse(
+        # Shared bag semantics outer frame for ARRAY_EXCEPT and ARRAY_INTERSECTION.
+        # Each element is paired with its 1-based position via LIST_ZIP, then filtered
+        # by a comparison operator (supplied via :cond) that determines the operation:
+        #   EXCEPT (>):        keep the N-th occurrence only if N > count in arr2
+        #                      e.g. [2,2,2] EXCEPT [2,2] -> [2]
+        #   INTERSECTION (<=): keep the N-th occurrence only if N <= count in arr2
+        #                      e.g. [2,2,2] INTERSECT [2,2] -> [2,2]
+        # IS NOT DISTINCT FROM is used for NULL-safe element comparison.
+        ARRAY_BAG_TEMPLATE: exp.Expression = exp.maybe_parse(
             """
             CASE
-                WHEN :source IS NULL OR :exclude IS NULL THEN NULL
+                WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
                 ELSE LIST_TRANSFORM(
                     LIST_FILTER(
-                        LIST_ZIP(:source, GENERATE_SERIES(1, LEN(:source))),
-                        pair -> (
-                            LEN(LIST_FILTER(:source[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))
-                            > LEN(LIST_FILTER(:exclude, e -> e IS NOT DISTINCT FROM pair[0]))
-                        )
+                        LIST_ZIP(:arr1, GENERATE_SERIES(1, LEN(:arr1))),
+                        pair -> :cond
                     ),
                     pair -> pair[0]
                 )
             END
-            """,
+            """
         )
+
+        ARRAY_EXCEPT_CONDITION: exp.Expression = exp.maybe_parse(
+            "LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))"
+            " > LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))"
+        )
+
+        ARRAY_INTERSECTION_CONDITION: exp.Expression = exp.maybe_parse(
+            "LEN(LIST_FILTER(:arr1[1:pair[1]], e -> e IS NOT DISTINCT FROM pair[0]))"
+            " <= LEN(LIST_FILTER(:arr2, e -> e IS NOT DISTINCT FROM pair[0]))"
+        )
+
+        # Set semantics for ARRAY_EXCEPT. Deduplicates arr1 via LIST_DISTINCT, then
+        # filters out any element that appears at least once in arr2.
+        #   e.g. [1,1,2,3] EXCEPT [1] -> [2,3]
+        # IS NOT DISTINCT FROM is used for NULL-safe element comparison.
+        ARRAY_EXCEPT_SET_TEMPLATE: exp.Expression = exp.maybe_parse(
+            """
+            CASE
+                WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL
+                ELSE LIST_FILTER(
+                    LIST_DISTINCT(:arr1),
+                    e -> LEN(LIST_FILTER(:arr2, x -> x IS NOT DISTINCT FROM e)) = 0
+                )
+            END
+            """
+        )
+
+        def _array_bag_sql(
+            self, condition: exp.Expression, arr1: exp.Expression, arr2: exp.Expression
+        ) -> str:
+            cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
+            return self.sql(
+                exp.replace_placeholders(self.ARRAY_BAG_TEMPLATE, arr1=arr1, arr2=arr2, cond=cond)
+            )
 
         def timeslice_sql(self: DuckDB.Generator, expression: exp.TimeSlice) -> str:
             """
@@ -3452,12 +3488,22 @@ class DuckDB(Dialect):
 
             return func
 
-        def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
-            source = expression.this
-            exclude = expression.expression
+        def arrayintersect_sql(self, expression: exp.ArrayIntersect) -> str:
+            if expression.args.get("is_multiset") and len(expression.expressions) == 2:
+                return self._array_bag_sql(
+                    self.ARRAY_INTERSECTION_CONDITION,
+                    expression.expressions[0],
+                    expression.expressions[1],
+                )
+            return self.function_fallback_sql(expression)
 
-            replacements = {"source": source, "exclude": exclude}
-            return self.sql(exp.replace_placeholders(self.ARRAY_EXCEPT_TEMPLATE, **replacements))
+        def arrayexcept_sql(self, expression: exp.ArrayExcept) -> str:
+            arr1, arr2 = expression.this, expression.expression
+            if expression.args.get("is_multiset"):
+                return self._array_bag_sql(self.ARRAY_EXCEPT_CONDITION, arr1, arr2)
+            return self.sql(
+                exp.replace_placeholders(self.ARRAY_EXCEPT_SET_TEMPLATE, arr1=arr1, arr2=arr2)
+            )
 
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
@@ -3542,6 +3588,26 @@ class DuckDB(Dialect):
 
             # For VARCHAR: Use native RIGHT function
             return self.func("RIGHT", arg, length)
+
+        def rand_sql(self, expression: exp.Rand) -> str:
+            seed = expression.this
+            if seed is not None:
+                self.unsupported("RANDOM with seed is not supported in DuckDB")
+
+            lower = expression.args.get("lower")
+            upper = expression.args.get("upper")
+
+            if lower and upper:
+                # scale DuckDB's [0,1) to the specified range
+                range_size = exp.paren(upper - lower)
+                scaled = exp.Add(this=lower, expression=exp.func("random") * range_size)
+
+                # For now we assume that if bounds are set, return type is BIGINT. Snowflake/Teradata
+                result = exp.cast(scaled, exp.DType.BIGINT)
+                return self.sql(result)
+
+            # Default DuckDB behavior - just return RANDOM() as float
+            return "RANDOM()"
 
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input

@@ -1418,6 +1418,72 @@ LIFETIME(MIN 0 MAX 0)""",
             0
         ].assert_is(exp.ParameterizedAgg)
 
+    def test_agg_functions_multiple_suffixes(self):
+        # Regression test: single-suffix
+        self.validate_identity("SELECT uniqExactIf(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Double suffix: If + Merge
+        self.validate_identity("SELECT countIfMerge(state) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT uniqExactIfMerge(state) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Triple suffix: ArgMin + If + State (#4814)
+        self.validate_identity("SELECT avgArgMinIfState(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Double suffix + parameters: If + State with quantile parameter
+        self.validate_identity("SELECT quantileIfState(0.5)(col, cond) FROM t").selects[
+            0
+        ].assert_is(exp.CombinedParameterizedAgg)
+
+        # Collision-prone bases: "Map" is both a valid suffix and part of the function name.
+        # These must parse as the base function (AnonymousAggFunc), not as sum/min/max + Map suffix.
+        self.validate_identity("SELECT sumMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT minMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT maxMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+
+        # Single-suffix chains on collision-prone bases
+        self.validate_identity("SELECT sumMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT minMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT maxMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT sumMapState(k, v) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Multi-suffix chain on a collision-prone base
+        self.validate_identity("SELECT sumMapIfState(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # example of a nontrivial query:
+        sum_merge_if_merge = (
+            self.validate_identity(
+                "SELECT sumMergeIfMerge(s) FROM (SELECT sumMergeIfState(agg, 1 = 1) AS s "
+                "FROM (SELECT sumState(toFloat64(number)) AS agg FROM numbers(10)))"
+            )
+            .selects[0]
+            .assert_is(exp.CombinedAggFunc)
+        )
+        assert sum_merge_if_merge.name == "sumMergeIfMerge"
+
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

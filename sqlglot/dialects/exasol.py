@@ -1126,7 +1126,7 @@ class Exasol(Dialect):
 
             if has_star and has_agg:
                 self.unsupported(
-                    "GROUP BY ALL with STAR projection and aggregates is not supported by Exasol"
+                    "GROUP BY ALL with star projection and aggregates is not supported by Exasol"
                 )
                 return ""
 

@@ -2541,9 +2541,8 @@ class Parser(metaclass=_Parser):
                 exp.SqlSecurityProperty,
                 this=self._match_texts(("DEFINER", "INVOKER")) and self._prev.text.upper(),
             )
-        parameter_style = self._parse_parameter_style()
-        if parameter_style:
-            return parameter_style
+        if self._match_text_seq("PARAMETER", "STYLE", "PANDAS"):
+            return self.expression(exp.ParameterStyleProperty)
 
         index = self._index
 

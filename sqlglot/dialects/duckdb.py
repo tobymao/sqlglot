@@ -3558,9 +3558,9 @@ class DuckDB(Dialect):
                 # For now we assume that if bounds are set, return type is BIGINT. Snowflake/Teradata
                 result = exp.cast(scaled, exp.DType.BIGINT")
                 return self.sql(result)
-            else:
-                # Default DuckDB behavior - just return RANDOM() as float
-                return "RANDOM()"
+
+            # Default DuckDB behavior - just return RANDOM() as float
+            return "RANDOM()"
 
         def base64encode_sql(self, expression: exp.Base64Encode) -> str:
             # DuckDB TO_BASE64 requires BLOB input

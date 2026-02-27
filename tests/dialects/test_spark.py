@@ -1322,10 +1322,10 @@ TBLPROPERTIES (
 
     def test_set_variable(self):
         self.validate_all(
-            "SET VAR myvar = 5",
+            "SET VAR v = 5",
             write={
-                "spark": "SET VARIABLE myvar = 5",
-                "databricks": "SET VARIABLE myvar = 5",
+                "spark": "SET VARIABLE v = 5",
+                "databricks": "SET VARIABLE v = 5",
             },
         )
         self.validate_all(

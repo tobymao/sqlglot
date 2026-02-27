@@ -4,15 +4,14 @@ import shutil
 from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.sdist import sdist as _sdist
+from mypyc.build import mypycify
 
 here = os.path.dirname(os.path.abspath(__file__))
 sqlglot_src = os.path.join(here, "..", "sqlglot")
 
-from mypyc.build import mypycify
 
 SOURCE_FILES = [
     "errors.py",
-    "expression_core.py",
     "helper.py",
     "parser_core.py",
     "schema.py",
@@ -40,9 +39,10 @@ class build_ext(_build_ext):
             filename = self.get_ext_filename(fullname)
             src = os.path.join(self.build_lib, filename)
             parts = fullname.split(".")
-            if parts[0] == "sqlglot" and len(parts) == 2 and os.path.isdir(sqlglot_src):
-                # Place compiled sqlglot.* modules directly in the sqlglot source package.
-                dst = os.path.join(sqlglot_src, self.get_ext_filename(parts[1]))
+            if parts[0] == "sqlglot" and os.path.isdir(sqlglot_src):
+                # Place compiled sqlglot.* / sqlglot.sub.* modules in the sqlglot source tree.
+                sub_module = ".".join(parts[1:])
+                dst = os.path.join(sqlglot_src, self.get_ext_filename(sub_module))
             else:
                 # Default: mypyc runtime helper (e.g., HASH__mypyc) goes in current dir.
                 package = ".".join(parts[:-1])
@@ -62,8 +62,15 @@ class sdist(_sdist):
         local_sqlglot = os.path.join(here, "sqlglot")
         os.makedirs(local_sqlglot, exist_ok=True)
         open(os.path.join(local_sqlglot, "__init__.py"), "w").close()
+        subpkgs = {os.path.dirname(f) for f in SOURCE_FILES if os.path.dirname(f)}
+        for subpkg in subpkgs:
+            pkg_dir = os.path.join(local_sqlglot, subpkg)
+            os.makedirs(pkg_dir, exist_ok=True)
+            open(os.path.join(pkg_dir, "__init__.py"), "w").close()
         for fname in SOURCE_FILES:
-            shutil.copy2(os.path.join(sqlglot_src, fname), os.path.join(local_sqlglot, fname))
+            dst_path = os.path.join(local_sqlglot, fname)
+            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            shutil.copy2(os.path.join(sqlglot_src, fname), dst_path)
         try:
             super().run()
         finally:

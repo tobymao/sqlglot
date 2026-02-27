@@ -1760,6 +1760,26 @@ class TestDialect(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT ARRAY_POSITION(ARRAY(1, 2, 3), 2)",
+            read={
+                "spark": "SELECT array_position(array(1, 2, 3), 2)",
+                "databricks": "SELECT array_position(array(1, 2, 3), 2)",
+                "trino": "SELECT array_position(array[1, 2, 3], 2)",
+                "presto": "SELECT array_position(array[1, 2, 3], 2)",
+                "athena": "SELECT array_position(array[1, 2, 3], 2)",
+            },
+            write={
+                "snowflake": "SELECT ARRAY_POSITION(2, [1, 2, 3])",
+                "spark": "SELECT ARRAY_POSITION(ARRAY(1, 2, 3), 2)",
+                "databricks": "SELECT ARRAY_POSITION(ARRAY(1, 2, 3), 2)",
+                "trino": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+                "presto": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+                "athena": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_identity(
             "SELECT c FROM t ORDER BY a, b,",

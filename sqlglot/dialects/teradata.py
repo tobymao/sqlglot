@@ -318,9 +318,9 @@ class Teradata(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
-            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.GEOMETRY: "ST_GEOMETRY",
+            exp.DType.DOUBLE: "DOUBLE PRECISION",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {
@@ -361,7 +361,7 @@ class Teradata(Dialect):
             return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get("format"):
+            if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):
                 # We don't actually want to print the unknown type in CAST(<value> AS FORMAT <format>)
                 expression.to.pop()
 
@@ -428,7 +428,7 @@ class Teradata(Dialect):
                 return super().extract_sql(expression)
 
             to_char = exp.func("to_char", expression.expression, exp.Literal.string("Q"))
-            return self.sql(exp.cast(to_char, exp.DataType.Type.INT))
+            return self.sql(exp.cast(to_char, exp.DType.INT))
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier = 0

@@ -101,7 +101,7 @@ if __name__ == "__main__":
     github_output = os.environ.get("GITHUB_OUTPUT")
 
     if not os.environ.get("GITHUB_ACTIONS") or not github_event_path or not github_output:
-        print(f"This script needs to run within GitHub Actions")
+        print("This script needs to run within GitHub Actions")
         sys.exit(1)
 
     github_event_path = Path(github_event_path)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     with github_event_path.open("r") as f:
         event: t.Dict[str, t.Any] = json.load(f)
 
-    print(f"Handling event: \n" + json.dumps(event, indent=2))
+    print("Handling event: \n" + json.dumps(event, indent=2))
 
     # for pull_request events, the body is located at github.event.pull_request.body
     pr_description: str = event.get("pull_request", {}).get("body") or ""
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         should_run = True
     else:
         # otherwise, do a git diff and inspect the changed files
-        print(f"Explicit trigger line not detected; performing git diff")
+        print("Explicit trigger line not detected; performing git diff")
         pull_request_base_ref = event.get("pull_request", {}).get("base", {}).get("sha")
         if not pull_request_base_ref:
             raise ValueError("Unable to determine base ref")
@@ -147,11 +147,11 @@ if __name__ == "__main__":
         dialects_str = (
             f"the following dialects: {', '.join(dialects)}"
             if dialects
-            else f"all supported dialects"
+            else "all supported dialects"
         )
         print(f"Conclusion: should run tests for {dialects_str}")
     else:
-        print(f"Conclusion: No tests to run")
+        print("Conclusion: No tests to run")
 
     # write output variables
     lines = []

@@ -423,8 +423,8 @@ def explode_projection_to_unnest(
                 explode = select.find(exp.Explode)
 
                 if explode:
-                    pos_alias = ""
-                    explode_alias = ""
+                    pos_alias: t.Any = ""
+                    explode_alias: t.Any = ""
 
                     if isinstance(select, exp.Alias):
                         explode_alias = select.args["alias"]
@@ -611,7 +611,7 @@ def eliminate_semi_and_anti_joins(expression: exp.Expression) -> exp.Expression:
             on = join.args.get("on")
             if on and join.kind in ("SEMI", "ANTI"):
                 subquery = exp.select("1").from_(join.this).where(on)
-                exists = exp.Exists(this=subquery)
+                exists: exp.Exists | exp.Not = exp.Exists(this=subquery)
                 if join.kind == "ANTI":
                     exists = exists.not_(copy=False)
 
@@ -709,7 +709,7 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
             node.is_number
             or (
                 not isinstance(node, exp.SubqueryPredicate)
-                and node.is_type(exp.DataType.Type.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+                and node.is_type(exp.DType.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
             )
             or (isinstance(node, exp.Column) and not node.type)
         ):

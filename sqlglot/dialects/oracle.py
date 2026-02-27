@@ -175,11 +175,9 @@ class Oracle(Dialect):
         }
 
         TYPE_LITERAL_PARSERS = {
-            exp.DataType.Type.DATE: lambda self, this, _: self.expression(
-                exp.DateStrToDate, this=this
-            ),
+            exp.DType.DATE: lambda self, this, _: self.expression(exp.DateStrToDate, this=this),
             # https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/NLS_TIMESTAMP_FORMAT.html
-            exp.DataType.Type.TIMESTAMP: lambda self, this, _: _build_to_timestamp(
+            exp.DType.TIMESTAMP: lambda self, this, _: _build_to_timestamp(
                 [this, '"%Y-%m-%d %H:%M:%S.%f"']
             ),
         }
@@ -335,24 +333,24 @@ class Oracle(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "SMALLINT",
-            exp.DataType.Type.SMALLINT: "SMALLINT",
-            exp.DataType.Type.INT: "INT",
-            exp.DataType.Type.BIGINT: "INT",
-            exp.DataType.Type.DECIMAL: "NUMBER",
-            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
-            exp.DataType.Type.VARCHAR: "VARCHAR2",
-            exp.DataType.Type.NVARCHAR: "NVARCHAR2",
-            exp.DataType.Type.NCHAR: "NCHAR",
-            exp.DataType.Type.TEXT: "CLOB",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.BINARY: "BLOB",
-            exp.DataType.Type.VARBINARY: "BLOB",
-            exp.DataType.Type.ROWVERSION: "BLOB",
+            exp.DType.TINYINT: "SMALLINT",
+            exp.DType.SMALLINT: "SMALLINT",
+            exp.DType.INT: "INT",
+            exp.DType.BIGINT: "INT",
+            exp.DType.DECIMAL: "NUMBER",
+            exp.DType.DOUBLE: "DOUBLE PRECISION",
+            exp.DType.VARCHAR: "VARCHAR2",
+            exp.DType.NVARCHAR: "NVARCHAR2",
+            exp.DType.NCHAR: "NCHAR",
+            exp.DType.TEXT: "CLOB",
+            exp.DType.TIMETZ: "TIME",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.BINARY: "BLOB",
+            exp.DType.VARBINARY: "BLOB",
+            exp.DType.ROWVERSION: "BLOB",
         }
-        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
+        TYPE_MAPPING.pop(exp.DType.BLOB)
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

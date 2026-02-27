@@ -42,15 +42,15 @@ class Custom(Dialect):
 
         # Specifies how AST nodes representing data types should be converted into SQL
         TYPE_MAPPING = {
-            exp.DataType.Type.TINYINT: "INT64",
-            exp.DataType.Type.SMALLINT: "INT64",
-            exp.DataType.Type.INT: "INT64",
-            exp.DataType.Type.BIGINT: "INT64",
-            exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.FLOAT: "FLOAT64",
-            exp.DataType.Type.DOUBLE: "FLOAT64",
-            exp.DataType.Type.BOOLEAN: "BOOL",
-            exp.DataType.Type.TEXT: "STRING",
+            exp.DType.TINYINT: "INT64",
+            exp.DType.SMALLINT: "INT64",
+            exp.DType.INT: "INT64",
+            exp.DType.BIGINT: "INT64",
+            exp.DType.DECIMAL: "NUMERIC",
+            exp.DType.FLOAT: "FLOAT64",
+            exp.DType.DOUBLE: "FLOAT64",
+            exp.DType.BOOLEAN: "BOOL",
+            exp.DType.TEXT: "STRING",
         }
 ```
 

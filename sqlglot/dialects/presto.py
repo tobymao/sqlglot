@@ -102,10 +102,8 @@ def _str_to_time_sql(
 def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
-        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DataType.Type.DATE))
-    return self.sql(
-        exp.cast(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP), exp.DataType.Type.DATE)
-    )
+        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DType.DATE))
+    return self.sql(exp.cast(exp.cast(expression.this, exp.DType.TIMESTAMP), exp.DType.DATE))
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
@@ -115,8 +113,8 @@ def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
-    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP)
-    expr = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP)
+    this = exp.cast(expression.this, exp.DType.TIMESTAMP)
+    expr = exp.cast(expression.expression, exp.DType.TIMESTAMP)
     unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
 
@@ -178,7 +176,7 @@ def _to_int(self: Presto.Generator, expression: exp.Expression) -> exp.Expressio
 
         annotate_types(expression, dialect=self.dialect)
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
-        return exp.cast(expression, to=exp.DataType.Type.BIGINT)
+        return exp.cast(expression, to=exp.DType.BIGINT)
     return expression
 
 
@@ -218,9 +216,9 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
         if (
             isinstance(alias, exp.TableAlias)
             and isinstance(exploded_type, exp.DataType)
-            and exploded_type.is_type(exp.DataType.Type.ARRAY)
+            and exploded_type.is_type(exp.DType.ARRAY)
             and exploded_type.expressions
-            and exploded_type.expressions[0].is_type(exp.DataType.Type.STRUCT)
+            and exploded_type.expressions[0].is_type(exp.DType.STRUCT)
         ):
             # When unnesting a ROW in Presto, it produces N columns, so we need to fix the alias
             alias.set("columns", [c.this.copy() for c in exploded_type.expressions[0].expressions])
@@ -410,18 +408,18 @@ class Presto(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.DATETIME64: "TIMESTAMP",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.HLLSKETCH: "HYPERLOGLOG",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.STRUCT: "ROW",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMETZ: "TIME",
+            exp.DType.BINARY: "VARBINARY",
+            exp.DType.BIT: "BOOLEAN",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.DATETIME64: "TIMESTAMP",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.HLLSKETCH: "HYPERLOGLOG",
+            exp.DType.INT: "INTEGER",
+            exp.DType.STRUCT: "ROW",
+            exp.DType.TEXT: "VARCHAR",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMETZ: "TIME",
         }
 
         TRANSFORMS = {
@@ -655,8 +653,8 @@ class Presto(Dialect):
 
                 this = annotate_types(this, dialect=self.dialect)
 
-            if not (is_json or this.is_type(exp.DataType.Type.JSON)):
-                this.replace(exp.cast(this, exp.DataType.Type.JSON))
+            if not (is_json or this.is_type(exp.DType.JSON)):
+                this.replace(exp.cast(this, exp.DType.JSON))
 
             return self.function_fallback_sql(expression)
 
@@ -680,10 +678,8 @@ class Presto(Dialect):
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
             this = expression.this
-            value_as_text = exp.cast(this, exp.DataType.Type.TEXT)
-            value_as_timestamp = (
-                exp.cast(this, exp.DataType.Type.TIMESTAMP) if this.is_string else this
-            )
+            value_as_text = exp.cast(this, exp.DType.TEXT)
+            value_as_timestamp = exp.cast(this, exp.DType.TIMESTAMP) if this.is_string else this
 
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
 
@@ -715,7 +711,7 @@ class Presto(Dialect):
 
             for e in expression.expressions:
                 if isinstance(e, exp.PropertyEQ):
-                    if e.type and e.type.is_type(exp.DataType.Type.UNKNOWN):
+                    if e.type and e.type.is_type(exp.DType.UNKNOWN):
                         unknown_type = True
                     else:
                         schema.append(f"{self.sql(e, 'this')} {self.sql(e.type)}")

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
+from sqlglot.typing.redshift import EXPRESSION_METADATA
 from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     array_concat_sql,
@@ -43,6 +44,7 @@ class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0
     COPY_PARAMS_ARE_CSV = False
@@ -204,13 +206,13 @@ class Redshift(Postgres):
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BINARY: "VARBYTE",
-            exp.DataType.Type.BLOB: "VARBYTE",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.TIMETZ: "TIME",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.VARBINARY: "VARBYTE",
-            exp.DataType.Type.ROWVERSION: "VARBYTE",
+            exp.DType.BINARY: "VARBYTE",
+            exp.DType.BLOB: "VARBYTE",
+            exp.DType.INT: "INTEGER",
+            exp.DType.TIMETZ: "TIME",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.VARBINARY: "VARBYTE",
+            exp.DType.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {
@@ -454,7 +456,7 @@ class Redshift(Postgres):
             return f"{arg} AS {alias}" if alias else arg
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.is_type(exp.DataType.Type.JSON):
+            if expression.is_type(exp.DType.JSON):
                 # Redshift doesn't support a JSON type, so casting to it is treated as a noop
                 return self.sql(expression, "this")
 
@@ -468,7 +470,7 @@ class Redshift(Postgres):
             `TEXT` to `VARCHAR`.
             """
             if expression.is_type("text"):
-                expression.set("this", exp.DataType.Type.VARCHAR)
+                expression.set("this", exp.DType.VARCHAR)
                 precision = expression.args.get("expressions")
 
                 if not precision:

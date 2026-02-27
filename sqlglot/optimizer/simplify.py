@@ -352,7 +352,7 @@ def cast_as_datetime(value: t.Any) -> t.Optional[datetime.datetime]:
 def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.date, datetime.date]]:
     if not value:
         return None
-    if to.is_type(exp.DataType.Type.DATE):
+    if to.is_type(exp.DType.DATE):
         return cast_as_date(value)
     if to.is_type(*exp.DataType.TEMPORAL_TYPES):
         return cast_as_datetime(value)
@@ -363,7 +363,7 @@ def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, date
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
-        to = exp.DataType.build(exp.DataType.Type.DATE)
+        to = exp.DataType.build(exp.DType.DATE)
     else:
         return None
 
@@ -401,11 +401,7 @@ def extract_type(*expressions):
 
 def date_literal(date, target_type=None):
     if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
-        target_type = (
-            exp.DataType.Type.DATETIME
-            if isinstance(date, datetime.datetime)
-            else exp.DataType.Type.DATE
-        )
+        target_type = exp.DType.DATETIME if isinstance(date, datetime.datetime) else exp.DType.DATE
 
     return exp.cast(exp.Literal.string(date), target_type)
 
@@ -768,7 +764,7 @@ class Simplifier:
                 return exp.true()
             if isinstance(this, exp.Not) and self.dialect.SAFE_TO_ELIMINATE_DOUBLE_NEGATION:
                 inner = this.this
-                if inner.is_type(exp.DataType.Type.BOOLEAN):
+                if inner.is_type(exp.DType.BOOLEAN):
                     # double negation
                     # NOT NOT x -> x, if x is BOOLEAN type
                     return inner
@@ -822,7 +818,7 @@ class Simplifier:
             #          ~ this is safe to keep because it will eventually be part of another connector
             if not isinstance(
                 expression, self.SAFE_CONNECTOR_ELIMINATION_RESULT
-            ) and not expression.is_type(exp.DataType.Type.BOOLEAN):
+            ) and not expression.is_type(exp.DType.BOOLEAN):
                 while True:
                     if isinstance(original_parent, exp.Connector):
                         break
@@ -1056,8 +1052,8 @@ class Simplifier:
 
             if l.__class__ in self.INVERSE_DATE_OPS:
                 l = t.cast(exp.IntervalOp, l)
-                a = l.this
-                b = l.interval()
+                a: exp.Expression = l.this
+                b: exp.Expression = l.interval()
             else:
                 l = t.cast(exp.Binary, l)
                 a, b = l.left, l.right

@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 
 
 def _annotate_by_similar_args(
-    self: TypeAnnotator, expression: E, *args: str, target_type: exp.DataType | exp.DataType.Type
+    self: TypeAnnotator, expression: E, *args: str, target_type: exp.DataType | exp.DType
 ) -> E:
     """
     Infers the type of the expression according to the following rules:
@@ -29,7 +29,7 @@ def _annotate_by_similar_args(
 
     has_unknown = False
     for expr in expressions:
-        if expr.is_type(exp.DataType.Type.UNKNOWN):
+        if expr.is_type(exp.DType.UNKNOWN):
             has_unknown = True
         elif expr.is_type(target_type):
             has_unknown = False
@@ -38,21 +38,21 @@ def _annotate_by_similar_args(
         else:
             last_datatype = expr.type
 
-    self._set_type(expression, exp.DataType.Type.UNKNOWN if has_unknown else last_datatype)
+    self._set_type(expression, exp.DType.UNKNOWN if has_unknown else last_datatype)
     return expression
 
 
 EXPRESSION_METADATA: ExpressionMetadataType = {
     **HIVE_EXPRESSION_METADATA,
     **{
-        expr_type: {"returns": exp.DataType.Type.DOUBLE}
+        expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.Atan2,
             exp.Randn,
         }
     },
     **{
-        exp_type: {"returns": exp.DataType.Type.VARCHAR}
+        exp_type: {"returns": exp.DType.VARCHAR}
         for exp_type in {
             exp.Format,
             exp.Right,
@@ -65,22 +65,22 @@ EXPRESSION_METADATA: ExpressionMetadataType = {
             exp.Substring,
         }
     },
-    exp.AddMonths: {"returns": exp.DataType.Type.DATE},
+    exp.AddMonths: {"returns": exp.DType.DATE},
     exp.ApproxQuantile: {
         "annotator": lambda self, e: self._annotate_by_args(
-            e, "this", array=e.args["quantile"].is_type(exp.DataType.Type.ARRAY)
+            e, "this", array=e.args["quantile"].is_type(exp.DType.ARRAY)
         )
     },
-    exp.AtTimeZone: {"returns": exp.DataType.Type.TIMESTAMP},
+    exp.AtTimeZone: {"returns": exp.DType.TIMESTAMP},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
-            self, e, "expressions", target_type=exp.DataType.Type.TEXT
+            self, e, "expressions", target_type=exp.DType.TEXT
         )
     },
-    exp.NextDay: {"returns": exp.DataType.Type.DATE},
+    exp.NextDay: {"returns": exp.DType.DATE},
     exp.Pad: {
         "annotator": lambda self, e: _annotate_by_similar_args(
-            self, e, "this", "fill_pattern", target_type=exp.DataType.Type.TEXT
+            self, e, "this", "fill_pattern", target_type=exp.DType.TEXT
         )
     },
 }

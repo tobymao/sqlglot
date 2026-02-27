@@ -39,3 +39,9 @@ include = ["sqlglot", "sqlglot.*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = ["E721", "E741"]

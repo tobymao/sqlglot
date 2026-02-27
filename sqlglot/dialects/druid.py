@@ -7,10 +7,10 @@ class Druid(Dialect):
         # https://druid.apache.org/docs/latest/querying/sql-data-types/
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.NCHAR: "STRING",
-            exp.DataType.Type.NVARCHAR: "STRING",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.UUID: "STRING",
+            exp.DType.NCHAR: "STRING",
+            exp.DType.NVARCHAR: "STRING",
+            exp.DType.TEXT: "STRING",
+            exp.DType.UUID: "STRING",
         }
 
         TRANSFORMS = {

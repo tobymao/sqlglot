@@ -370,6 +370,16 @@ class TestSnowflake(Validator):
             },
         )
 
+        expr = self.validate_identity("RIGHT('GAJGSKD', 2)")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(annotated.sql("duckdb"), "RIGHT('GAJGSKD', 2)")
+
+        expr = self.validate_identity("RIGHT(TO_BINARY('SNOWIKOPN', 'utf-8'), ABS(-3))")
+        annotated = annotate_types(expr, dialect="snowflake")
+        self.assertEqual(
+            annotated.sql("duckdb"), "UNHEX(RIGHT(HEX(ENCODE('SNOWIKOPN')), ABS(-3) * 2))"
+        )
+
         self.validate_all(
             "SELECT ZIPF(1, 10, 1234)",
             write={
@@ -6216,6 +6226,15 @@ FROM SEMANTIC_VIEW(
             write={
                 "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
                 "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+            },
+        )
+
+    def test_array_position(self):
+        self.validate_all(
+            "SELECT ARRAY_POSITION(2, ARRAY_CONSTRUCT(1, 2, 3))",
+            write={
+                "snowflake": "SELECT ARRAY_POSITION(2, [1, 2, 3])",
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2) - 1",
             },
         )
 

@@ -617,9 +617,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
                         normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
                     )
 
-        self._normalized_table_cache[(t.cast(exp.Table, table), dialect, normalize)] = (
-            normalized_table
-        )
+        self._normalized_table_cache[(normalized_table, dialect, normalize)] = normalized_table
         return normalized_table
 
     def _normalize_name(

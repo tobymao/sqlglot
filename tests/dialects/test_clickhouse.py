@@ -706,7 +706,15 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("arrayConcat([1, 2], [3, 4])").assert_is(exp.ArrayConcat)
         self.validate_identity("arrayDistinct([1, 2, 2, 3, 1])").assert_is(exp.ArrayDistinct)
+        self.validate_identity("arrayExcept([1, 2, 3, 2, 4], [3, 5])").assert_is(exp.ArrayExcept)
         self.validate_identity("SELECT UTCTimestamp()", "SELECT CURRENT_TIMESTAMP('UTC')")
+
+        for global_ in ["", "GLOBAL "]:
+            for side in ["", "LEFT ", "RIGHT ", "FULL "]:
+                for strictness in ["ANY ", "ALL "]:
+                    sql = f"SELECT * FROM foo1 {global_}{side}{strictness}JOIN foo2 ON foo1.id = foo2.id"
+                    with self.subTest(sql=sql):
+                        self.validate_identity(sql)
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
@@ -1306,6 +1314,19 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(CLICKHOUSE(HOST 'localhost' PORT tcpPort() USER 'default' DB CURRENT_DATABASE())) LIFETIME(MIN 1 MAX 10) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(FILE(PATH '/tmp/test.csv' FORMAT CSVWithNames)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(NULL()) LAYOUT(CACHE(SIZE_IN_CELLS 1000)) LIFETIME(MIN 0 MAX 1)"
+        )
+        self.validate_identity(
+            """CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(EXECUTABLE(COMMAND 'echo "1"' FORMAT TabSeparated)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"""
+        )
+
         self.validate_all(
             """
             CREATE TABLE t (
@@ -1655,3 +1676,20 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_sql_security(self):
+        stmts = [
+            "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER=CURRENT_USER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY NONE AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY NONE AS SELECT 1",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER='alice'",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER=CURRENT_USER",
+        ]
+        for stmt in stmts:
+            with self.subTest(stmt):
+                self.validate_identity(stmt)

@@ -9,13 +9,14 @@ endif
 SO_BACKUP := /tmp/sqlglot_so_backup
 
 hidec:
-	mkdir -p $(SO_BACKUP) && mv -f sqlglot/*.so $(SO_BACKUP)/ 2>/dev/null; true
+	mkdir -p $(SO_BACKUP) && find sqlglot -name "*.so" | xargs -I{} mv -f {} $(SO_BACKUP)/ 2>/dev/null; true
 
 showc:
 	mv -f $(SO_BACKUP)/*.so sqlglot/ 2>/dev/null; true
 
 clean:
-	rm -rf sqlglot/*.so sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
+	rm -rf sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
+	find sqlglot -name "*.so" -delete
 
 install:
 	$(PIP) install -e .

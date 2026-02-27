@@ -118,11 +118,13 @@ class SQLite(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "EDITDIST3": exp.Levenshtein.from_arg_list,
-            "STRFTIME": _build_strftime,
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
-            "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
+            "EDITDIST3": exp.Levenshtein.from_arg_list,
+            "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
+            "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
+            "STRFTIME": _build_strftime,
             "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
+            "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         }
 
         STATEMENT_PARSERS = {
@@ -178,22 +180,22 @@ class SQLite(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BOOLEAN: "INTEGER",
-            exp.DataType.Type.TINYINT: "INTEGER",
-            exp.DataType.Type.SMALLINT: "INTEGER",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.BIGINT: "INTEGER",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.DOUBLE: "REAL",
-            exp.DataType.Type.DECIMAL: "REAL",
-            exp.DataType.Type.CHAR: "TEXT",
-            exp.DataType.Type.NCHAR: "TEXT",
-            exp.DataType.Type.VARCHAR: "TEXT",
-            exp.DataType.Type.NVARCHAR: "TEXT",
-            exp.DataType.Type.BINARY: "BLOB",
-            exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DType.BOOLEAN: "INTEGER",
+            exp.DType.TINYINT: "INTEGER",
+            exp.DType.SMALLINT: "INTEGER",
+            exp.DType.INT: "INTEGER",
+            exp.DType.BIGINT: "INTEGER",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.DOUBLE: "REAL",
+            exp.DType.DECIMAL: "REAL",
+            exp.DType.CHAR: "TEXT",
+            exp.DType.NCHAR: "TEXT",
+            exp.DType.VARCHAR: "TEXT",
+            exp.DType.NVARCHAR: "TEXT",
+            exp.DType.BINARY: "BLOB",
+            exp.DType.VARBINARY: "BLOB",
         }
-        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
+        TYPE_MAPPING.pop(exp.DType.BLOB)
 
         TOKEN_MAPPING = {
             TokenType.AUTO_INCREMENT: "AUTOINCREMENT",
@@ -214,7 +216,11 @@ class SQLite(Dialect):
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.If: rename_func("IIF"),
             exp.ILike: no_ilike_sql,
+            exp.JSONArrayAgg: unsupported_args("order", "null_handling", "return_type", "strict")(
+                rename_func("JSON_GROUP_ARRAY")
+            ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e, name="JSON_GROUP_OBJECT"),
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDITDIST3")
             ),
@@ -250,6 +256,18 @@ class SQLite(Dialect):
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
         LIMIT_FETCH = "LIMIT"
+
+        def bitwiseandagg_sql(self, expression: exp.BitwiseAndAgg) -> str:
+            self.unsupported("BITWISE_AND aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
+
+        def bitwiseoragg_sql(self, expression: exp.BitwiseOrAgg) -> str:
+            self.unsupported("BITWISE_OR aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
+
+        def bitwisexoragg_sql(self, expression: exp.BitwiseXorAgg) -> str:
+            self.unsupported("BITWISE_XOR aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
 
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             if expression.expressions:
@@ -339,7 +357,7 @@ class SQLite(Dialect):
             return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
 
         def least_sql(self, expression: exp.Least) -> str:
-            if len(expression.expressions) > 1:
+            if expression.expressions:
                 return rename_func("MIN")(self, expression)
 
             return self.sql(expression, "this")

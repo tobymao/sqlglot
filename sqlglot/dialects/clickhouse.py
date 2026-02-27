@@ -56,19 +56,17 @@ def _unix_to_time_sql(self: ClickHouse.Generator, expression: exp.UnixToTime) ->
     timestamp = expression.this
 
     if scale in (None, exp.UnixToTime.SECONDS):
-        return self.func("fromUnixTimestamp", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func("fromUnixTimestamp", exp.cast(timestamp, exp.DType.BIGINT))
     if scale == exp.UnixToTime.MILLIS:
-        return self.func("fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func("fromUnixTimestamp64Milli", exp.cast(timestamp, exp.DType.BIGINT))
     if scale == exp.UnixToTime.MICROS:
-        return self.func("fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func("fromUnixTimestamp64Micro", exp.cast(timestamp, exp.DType.BIGINT))
     if scale == exp.UnixToTime.NANOS:
-        return self.func("fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DataType.Type.BIGINT))
+        return self.func("fromUnixTimestamp64Nano", exp.cast(timestamp, exp.DType.BIGINT))
 
     return self.func(
         "fromUnixTimestamp",
-        exp.cast(
-            exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
-        ),
+        exp.cast(exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DType.BIGINT),
     )
 
 
@@ -101,7 +99,7 @@ def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
         return exp.Anonymous(this="STR_TO_DATE", expressions=args)
 
     strtodate = exp.StrToDate.from_arg_list(args)
-    return exp.cast(strtodate, exp.DataType.build(exp.DataType.Type.DATETIME))
+    return exp.cast(strtodate, exp.DataType.build(exp.DType.DATETIME))
 
 
 def _datetime_delta_sql(name: str) -> t.Callable[[Generator, DATEΤΙΜΕ_DELTA], str]:
@@ -164,7 +162,7 @@ def _timestrtotime_sql(self: ClickHouse.Generator, expression: exp.TimeStrToTime
     # Non-nullable DateTime64 with microsecond precision
     expressions = [exp.DataTypeParam(this=tz)] if tz else []
     datatype = exp.DataType.build(
-        exp.DataType.Type.DATETIME64,
+        exp.DType.DATETIME64,
         expressions=[exp.DataTypeParam(this=exp.Literal.number(6)), *expressions],
         nullable=False,
     )
@@ -360,6 +358,7 @@ class ClickHouse(Dialect):
             "ARRAYCOMPACT": exp.ArrayCompact.from_arg_list,
             "ARRAYCONCAT": exp.ArrayConcat.from_arg_list,
             "ARRAYDISTINCT": exp.ArrayDistinct.from_arg_list,
+            "ARRAYEXCEPT": exp.ArrayExcept.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
             "ARRAYMAX": exp.ArrayMax.from_arg_list,
             "ARRAYMIN": exp.ArrayMin.from_arg_list,
@@ -613,14 +612,17 @@ class ClickHouse(Dialect):
 
         JOIN_KINDS = {
             *parser.Parser.JOIN_KINDS,
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ASOF,
             TokenType.ARRAY,
         }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+            TokenType.ALL,
             TokenType.ANY,
             TokenType.ARRAY,
+            TokenType.ASOF,
             TokenType.FINAL,
             TokenType.FORMAT,
             TokenType.SETTINGS,
@@ -649,6 +651,7 @@ class ClickHouse(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_modify(),
             "REPLACE": lambda self: self._parse_alter_table_replace(),
         }
 
@@ -825,18 +828,12 @@ class ClickHouse(Dialect):
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
             is_global = self._prev if self._match(TokenType.GLOBAL) else None
-            kind_pre = self._prev if self._match_set(self.JOIN_KINDS, advance=False) else None
 
-            if kind_pre:
-                kind = self._prev if self._match_set(self.JOIN_KINDS) else None
-                side = self._prev if self._match_set(self.JOIN_SIDES) else None
-                return is_global, side, kind
+            kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
+            side = self._prev if self._match_set(self.JOIN_SIDES) else None
+            kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
-            return (
-                is_global,
-                self._prev if self._match_set(self.JOIN_SIDES) else None,
-                self._prev if self._match_set(self.JOIN_KINDS) else None,
-            )
+            return is_global, side or kind, kind_pre or kind
 
         def _parse_join(
             self, skip_join_token: bool = False, parse_bracket: bool = False
@@ -1001,6 +998,19 @@ class ClickHouse(Dialect):
                 exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
             )
 
+        def _parse_alter_table_modify(self) -> t.Optional[exp.Expression]:
+            if properties := self._parse_properties():
+                return self.expression(
+                    exp.AlterModifySqlSecurity, expressions=properties.expressions
+                )
+            return None
+
+        def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:
+            self._match(TokenType.EQ)
+            if self._match(TokenType.CURRENT_USER):
+                return exp.DefinerProperty(this=exp.Var(this=self._prev.text.upper()))
+            return exp.DefinerProperty(this=self._parse_string())
+
         def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
             if not self._match_text_seq("PROJECTION"):
                 return None
@@ -1087,17 +1097,17 @@ class ClickHouse(Dialect):
         WRAP_DERIVED_VALUES = False
 
         STRING_TYPE_MAPPING = {
-            exp.DataType.Type.BLOB: "String",
-            exp.DataType.Type.CHAR: "String",
-            exp.DataType.Type.LONGBLOB: "String",
-            exp.DataType.Type.LONGTEXT: "String",
-            exp.DataType.Type.MEDIUMBLOB: "String",
-            exp.DataType.Type.MEDIUMTEXT: "String",
-            exp.DataType.Type.TINYBLOB: "String",
-            exp.DataType.Type.TINYTEXT: "String",
-            exp.DataType.Type.TEXT: "String",
-            exp.DataType.Type.VARBINARY: "String",
-            exp.DataType.Type.VARCHAR: "String",
+            exp.DType.BLOB: "String",
+            exp.DType.CHAR: "String",
+            exp.DType.LONGBLOB: "String",
+            exp.DType.LONGTEXT: "String",
+            exp.DType.MEDIUMBLOB: "String",
+            exp.DType.MEDIUMTEXT: "String",
+            exp.DType.TINYBLOB: "String",
+            exp.DType.TINYTEXT: "String",
+            exp.DType.TEXT: "String",
+            exp.DType.VARBINARY: "String",
+            exp.DType.VARCHAR: "String",
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
@@ -1109,56 +1119,56 @@ class ClickHouse(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             **STRING_TYPE_MAPPING,
-            exp.DataType.Type.ARRAY: "Array",
-            exp.DataType.Type.BOOLEAN: "Bool",
-            exp.DataType.Type.BIGINT: "Int64",
-            exp.DataType.Type.DATE32: "Date32",
-            exp.DataType.Type.DATETIME: "DateTime",
-            exp.DataType.Type.DATETIME2: "DateTime",
-            exp.DataType.Type.SMALLDATETIME: "DateTime",
-            exp.DataType.Type.DATETIME64: "DateTime64",
-            exp.DataType.Type.DECIMAL: "Decimal",
-            exp.DataType.Type.DECIMAL32: "Decimal32",
-            exp.DataType.Type.DECIMAL64: "Decimal64",
-            exp.DataType.Type.DECIMAL128: "Decimal128",
-            exp.DataType.Type.DECIMAL256: "Decimal256",
-            exp.DataType.Type.TIMESTAMP: "DateTime",
-            exp.DataType.Type.TIMESTAMPNTZ: "DateTime",
-            exp.DataType.Type.TIMESTAMPTZ: "DateTime",
-            exp.DataType.Type.DOUBLE: "Float64",
-            exp.DataType.Type.ENUM: "Enum",
-            exp.DataType.Type.ENUM8: "Enum8",
-            exp.DataType.Type.ENUM16: "Enum16",
-            exp.DataType.Type.FIXEDSTRING: "FixedString",
-            exp.DataType.Type.FLOAT: "Float32",
-            exp.DataType.Type.INT: "Int32",
-            exp.DataType.Type.MEDIUMINT: "Int32",
-            exp.DataType.Type.INT128: "Int128",
-            exp.DataType.Type.INT256: "Int256",
-            exp.DataType.Type.LOWCARDINALITY: "LowCardinality",
-            exp.DataType.Type.MAP: "Map",
-            exp.DataType.Type.NESTED: "Nested",
-            exp.DataType.Type.NOTHING: "Nothing",
-            exp.DataType.Type.SMALLINT: "Int16",
-            exp.DataType.Type.STRUCT: "Tuple",
-            exp.DataType.Type.TINYINT: "Int8",
-            exp.DataType.Type.UBIGINT: "UInt64",
-            exp.DataType.Type.UINT: "UInt32",
-            exp.DataType.Type.UINT128: "UInt128",
-            exp.DataType.Type.UINT256: "UInt256",
-            exp.DataType.Type.USMALLINT: "UInt16",
-            exp.DataType.Type.UTINYINT: "UInt8",
-            exp.DataType.Type.IPV4: "IPv4",
-            exp.DataType.Type.IPV6: "IPv6",
-            exp.DataType.Type.POINT: "Point",
-            exp.DataType.Type.RING: "Ring",
-            exp.DataType.Type.LINESTRING: "LineString",
-            exp.DataType.Type.MULTILINESTRING: "MultiLineString",
-            exp.DataType.Type.POLYGON: "Polygon",
-            exp.DataType.Type.MULTIPOLYGON: "MultiPolygon",
-            exp.DataType.Type.AGGREGATEFUNCTION: "AggregateFunction",
-            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
-            exp.DataType.Type.DYNAMIC: "Dynamic",
+            exp.DType.ARRAY: "Array",
+            exp.DType.BOOLEAN: "Bool",
+            exp.DType.BIGINT: "Int64",
+            exp.DType.DATE32: "Date32",
+            exp.DType.DATETIME: "DateTime",
+            exp.DType.DATETIME2: "DateTime",
+            exp.DType.SMALLDATETIME: "DateTime",
+            exp.DType.DATETIME64: "DateTime64",
+            exp.DType.DECIMAL: "Decimal",
+            exp.DType.DECIMAL32: "Decimal32",
+            exp.DType.DECIMAL64: "Decimal64",
+            exp.DType.DECIMAL128: "Decimal128",
+            exp.DType.DECIMAL256: "Decimal256",
+            exp.DType.TIMESTAMP: "DateTime",
+            exp.DType.TIMESTAMPNTZ: "DateTime",
+            exp.DType.TIMESTAMPTZ: "DateTime",
+            exp.DType.DOUBLE: "Float64",
+            exp.DType.ENUM: "Enum",
+            exp.DType.ENUM8: "Enum8",
+            exp.DType.ENUM16: "Enum16",
+            exp.DType.FIXEDSTRING: "FixedString",
+            exp.DType.FLOAT: "Float32",
+            exp.DType.INT: "Int32",
+            exp.DType.MEDIUMINT: "Int32",
+            exp.DType.INT128: "Int128",
+            exp.DType.INT256: "Int256",
+            exp.DType.LOWCARDINALITY: "LowCardinality",
+            exp.DType.MAP: "Map",
+            exp.DType.NESTED: "Nested",
+            exp.DType.NOTHING: "Nothing",
+            exp.DType.SMALLINT: "Int16",
+            exp.DType.STRUCT: "Tuple",
+            exp.DType.TINYINT: "Int8",
+            exp.DType.UBIGINT: "UInt64",
+            exp.DType.UINT: "UInt32",
+            exp.DType.UINT128: "UInt128",
+            exp.DType.UINT256: "UInt256",
+            exp.DType.USMALLINT: "UInt16",
+            exp.DType.UTINYINT: "UInt8",
+            exp.DType.IPV4: "IPv4",
+            exp.DType.IPV6: "IPv6",
+            exp.DType.POINT: "Point",
+            exp.DType.RING: "Ring",
+            exp.DType.LINESTRING: "LineString",
+            exp.DType.MULTILINESTRING: "MultiLineString",
+            exp.DType.POLYGON: "Polygon",
+            exp.DType.MULTIPOLYGON: "MultiPolygon",
+            exp.DType.AGGREGATEFUNCTION: "AggregateFunction",
+            exp.DType.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
+            exp.DType.DYNAMIC: "Dynamic",
         }
 
         TRANSFORMS = {
@@ -1268,8 +1278,10 @@ class ClickHouse(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.DefinerProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
             exp.ToTableProperty: exp.Properties.Location.POST_NAME,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
@@ -1289,15 +1301,15 @@ class ClickHouse(Dialect):
 
         # https://clickhouse.com/docs/en/sql-reference/data-types/nullable
         NON_NULLABLE_TYPES = {
-            exp.DataType.Type.ARRAY,
-            exp.DataType.Type.MAP,
-            exp.DataType.Type.STRUCT,
-            exp.DataType.Type.POINT,
-            exp.DataType.Type.RING,
-            exp.DataType.Type.LINESTRING,
-            exp.DataType.Type.MULTILINESTRING,
-            exp.DataType.Type.POLYGON,
-            exp.DataType.Type.MULTIPOLYGON,
+            exp.DType.ARRAY,
+            exp.DType.MAP,
+            exp.DType.STRUCT,
+            exp.DType.POINT,
+            exp.DType.RING,
+            exp.DType.LINESTRING,
+            exp.DType.MULTILINESTRING,
+            exp.DType.POLYGON,
+            exp.DType.MULTIPOLYGON,
         }
 
         def offset_sql(self, expression: exp.Offset) -> str:
@@ -1395,7 +1407,7 @@ class ClickHouse(Dialect):
                 nullable is None
                 and not (
                     isinstance(parent, exp.DataType)
-                    and parent.is_type(exp.DataType.Type.MAP, check_nullable=True)
+                    and parent.is_type(exp.DType.MAP, check_nullable=True)
                     and expression.index in (None, 0)
                 )
                 and not expression.is_type(*self.NON_NULLABLE_TYPES, check_nullable=True)

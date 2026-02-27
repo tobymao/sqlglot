@@ -152,12 +152,12 @@ class Resolver:
                     unnest = source.expression
 
                     # if type is not annotated yet, try to get it from the schema
-                    if not unnest.type or unnest.type.is_type(exp.DataType.Type.UNKNOWN):
+                    if not unnest.type or unnest.type.is_type(exp.DType.UNKNOWN):
                         unnest_expr = seq_get(unnest.expressions, 0)
                         if isinstance(unnest_expr, exp.Column) and self.scope.parent:
                             col_type = self._get_unnest_column_type(unnest_expr)
                             # extract element type if it's an ARRAY
-                            if col_type and col_type.is_type(exp.DataType.Type.ARRAY):
+                            if col_type and col_type.is_type(exp.DType.ARRAY):
                                 element_types = col_type.expressions
                                 if element_types:
                                     unnest.type = element_types[0].copy()
@@ -165,7 +165,7 @@ class Resolver:
                                 if col_type:
                                     unnest.type = col_type.copy()
                     # check if the result type is a STRUCT - extract struct field names
-                    if unnest.is_type(exp.DataType.Type.STRUCT):
+                    if unnest.is_type(exp.DType.STRUCT):
                         for k in unnest.type.expressions:  # type: ignore
                             columns.append(k.name)
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
@@ -381,13 +381,13 @@ class Resolver:
         if isinstance(source, exp.Table):
             # base table - get the column type from schema
             col_type: t.Optional[exp.DataType] = self.schema.get_column_type(source, column)
-            if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+            if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 return col_type
         elif isinstance(source, Scope):
             # iterate over all sources in the scope
             for source_name, nested_source in source.sources.items():
                 col_type = self._get_column_type_from_scope(nested_source, column)
-                if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+                if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                     return col_type
 
         return None

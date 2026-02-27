@@ -6,7 +6,7 @@ from sqlglot.typing import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
-        expr_type: {"returns": exp.DataType.Type.FLOAT}
+        expr_type: {"returns": exp.DType.FLOAT}
         for expr_type in {
             exp.Acos,
             exp.Asin,
@@ -19,7 +19,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"returns": exp.DataType.Type.VARCHAR}
+        expr_type: {"returns": exp.DType.VARCHAR}
         for expr_type in {
             exp.Soundex,
             exp.Stuff,
@@ -32,5 +32,5 @@ EXPRESSION_METADATA = {
             exp.Radians,
         }
     },
-    exp.CurrentTimezone: {"returns": exp.DataType.Type.NVARCHAR},
+    exp.CurrentTimezone: {"returns": exp.DType.NVARCHAR},
 }

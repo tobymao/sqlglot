@@ -49,6 +49,14 @@ class CheckColumnConstraint(Expression, ColumnConstraintKind):
     arg_types = {"this": True, "enforced": False}
 
 
+class AssumeColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
+
+
+class AssumeColumnConstraint(Expression, ColumnConstraintKind):
+    arg_types = {"this": True}
+
+
 class ClusteredColumnConstraint(Expression, ColumnConstraintKind):
     pass
 

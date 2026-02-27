@@ -692,6 +692,14 @@ class ClickHouse(Dialect):
             **parser.Parser.CONSTRAINT_PARSERS,
             "INDEX": lambda self: self._parse_index_constraint(),
             "CODEC": lambda self: self._parse_compress(),
+            "CHECK": lambda self: self.expression(
+                exp.CheckColumnConstraint,
+                this=self._parse_wrapped(self._parse_assignment, optional=True),
+            ),
+            "ASSUME": lambda self: self.expression(
+                exp.AssumeColumnConstraint,
+                this=self._parse_wrapped(self._parse_assignment, optional=True),
+            ),
         }
 
         ALTER_PARSERS = {
@@ -703,7 +711,7 @@ class ClickHouse(Dialect):
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "INDEX",
-        }
+        } - {"CHECK"}
 
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,

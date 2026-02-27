@@ -1355,7 +1355,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SET VARIABLE v1 = 1, v2 = '2'",
             write={
-                "spark": "SET VARIABLE v = 1, v2 = '2'",
+                "spark": "SET VARIABLE v1 = 1, v2 = '2'",
                 "databricks": "SET VARIABLE v1 = 1, v2 = '2'",
             },
         )

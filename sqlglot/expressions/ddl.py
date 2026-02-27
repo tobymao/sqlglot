@@ -328,6 +328,7 @@ class Drop(Expression):
         "purge": False,
         "cluster": False,
         "concurrently": False,
+        "sync": False,
     }
 
     @property

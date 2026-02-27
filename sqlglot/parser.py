@@ -2120,6 +2120,7 @@ class Parser(metaclass=_Parser):
             purge=self._match_text_seq("PURGE"),
             cluster=cluster,
             concurrently=concurrently,
+            sync=self._match_text_seq("SYNC"),
         )
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:

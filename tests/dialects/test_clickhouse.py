@@ -1404,6 +1404,9 @@ LIFETIME(MIN 0 MAX 0)""",
             pretty=True,
         )
 
+        self.validate_identity("DROP TABLE t SYNC")
+        self.validate_identity("DROP DATABASE IF EXISTS d SYNC")
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this

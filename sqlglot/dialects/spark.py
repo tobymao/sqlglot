@@ -132,6 +132,12 @@ class Spark(Spark2):
         }
 
     class Parser(Spark2.Parser):
+        SET_PARSERS = {
+            **Spark2.Parser.SET_PARSERS,
+            "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),
+            "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
+        }
+
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
@@ -216,6 +222,7 @@ class Spark(Spark2):
         SUPPORTS_MEDIAN = True
         SUPPORTS_UNIX_SECONDS = True
         SUPPORTS_DECODE_CASE = True
+        SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,

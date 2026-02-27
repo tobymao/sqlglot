@@ -250,6 +250,19 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
+def _group_by_all_info(select: exp.Select):
+    projections = select.expressions
+
+    has_projection_star = any(
+        isinstance(p, exp.Star) or (isinstance(p, exp.Column) and isinstance(p.this, exp.Star))
+        for p in projections
+    )
+
+    has_agg = any(select.find_all(exp.AggFunc))
+
+    return has_projection_star, has_agg
+
+
 class Exasol(Dialect):
     # https://docs.exasol.com/db/latest/sql_references/basiclanguageelements.htm#SQLidentifier
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -1101,21 +1114,47 @@ class Exasol(Dialect):
 
         # Exasol supports grouping by position https://docs.exasol.com/db/latest/sql/select.htm#:~:text=preference_term%3A%3A%3D-,group_by_clause%3A%3A%3D,-cube_rollup_clause%3A%3A%3D
         def group_sql(self, expression: exp.Group) -> str:
-            if expression.args.get("all"):
-                select = expression.find_ancestor(exp.Select)
+            if not expression.args.get("all"):
+                return super().group_sql(expression)
 
-                if select:
-                    group_indexes = []
+            select = expression.find_ancestor(exp.Select)
 
-                    for i, projection in enumerate(select.expressions, start=1):
-                        if projection.find(exp.AggFunc):
-                            continue
+            if not select:
+                return super().group_sql(expression)
 
-                        group_indexes.append(str(i))
+            has_star, has_agg = _group_by_all_info(select)
 
-                    if group_indexes:
-                        return " GROUP BY " + ", ".join(group_indexes)
+            if has_star and has_agg:
+                self.unsupported(
+                    "GROUP BY ALL with STAR projection and aggregates is not supported by Exasol"
+                )
+                return ""
 
-                    return ""
+            group_positions = [
+                exp.Literal.number(i)
+                for i, proj in enumerate(select.expressions, start=1)
+                if not proj.find(exp.AggFunc)
+            ]
+
+            if not group_positions:
+                return ""
+            expression = expression.copy()
+            expression.set("expressions", group_positions)
+            expression.set("all", False)
+            expression.set("distinct", False)
 
             return super().group_sql(expression)
+
+        def select_sql(self, expression: exp.Select) -> str:
+            expression = expression.copy()
+
+            group = expression.args.get("group")
+
+            if group and group.args.get("all"):
+                has_star, has_agg = _group_by_all_info(expression)
+
+                if has_star and not has_agg:
+                    expression.set("distinct", exp.Distinct())
+                    expression.set("group", None)
+
+            return super().select_sql(expression)

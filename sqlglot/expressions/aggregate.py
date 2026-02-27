@@ -2,232 +2,232 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import Func, AggFunc, Binary
+from sqlglot.expressions.core import ExpressionBase, Func, AggFunc, Binary
 
 
-class AIAgg(AggFunc):
+class AIAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["AI_AGG"]
 
 
-class AISummarizeAgg(AggFunc):
+class AISummarizeAgg(ExpressionBase, AggFunc):
     _sql_names = ["AI_SUMMARIZE_AGG"]
 
 
-class AnyValue(AggFunc):
+class AnyValue(ExpressionBase, AggFunc):
     pass
 
 
-class ApproximateSimilarity(AggFunc):
+class ApproximateSimilarity(ExpressionBase, AggFunc):
     _sql_names = ["APPROXIMATE_SIMILARITY", "APPROXIMATE_JACCARD_INDEX"]
 
 
-class ApproxPercentileAccumulate(AggFunc):
+class ApproxPercentileAccumulate(ExpressionBase, AggFunc):
     pass
 
 
-class ApproxPercentileCombine(AggFunc):
+class ApproxPercentileCombine(ExpressionBase, AggFunc):
     pass
 
 
-class ApproxPercentileEstimate(Func):
+class ApproxPercentileEstimate(ExpressionBase, Func):
     arg_types = {"this": True, "percentile": True}
 
 
-class ApproxQuantiles(AggFunc):
+class ApproxQuantiles(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class ApproxTopK(AggFunc):
+class ApproxTopK(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
 
 
-class ApproxTopKAccumulate(AggFunc):
+class ApproxTopKAccumulate(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class ApproxTopKCombine(AggFunc):
+class ApproxTopKCombine(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class ApproxTopKEstimate(Func):
+class ApproxTopKEstimate(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class ApproxTopSum(AggFunc):
+class ApproxTopSum(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True, "count": True}
 
 
-class ArgMax(AggFunc):
+class ArgMax(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True, "count": False}
     _sql_names = ["ARG_MAX", "ARGMAX", "MAX_BY"]
 
 
-class ArgMin(AggFunc):
+class ArgMin(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True, "count": False}
     _sql_names = ["ARG_MIN", "ARGMIN", "MIN_BY"]
 
 
-class ArrayAgg(AggFunc):
+class ArrayAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "nulls_excluded": False}
 
 
-class ArrayConcatAgg(AggFunc):
+class ArrayConcatAgg(ExpressionBase, AggFunc):
     pass
 
 
-class ArrayUnionAgg(AggFunc):
+class ArrayUnionAgg(ExpressionBase, AggFunc):
     pass
 
 
-class ArrayUniqueAgg(AggFunc):
+class ArrayUniqueAgg(ExpressionBase, AggFunc):
     pass
 
 
-class Avg(AggFunc):
+class Avg(ExpressionBase, AggFunc):
     pass
 
 
-class Corr(AggFunc, Binary):
+class Corr(ExpressionBase, AggFunc, Binary):
     # Correlation divides by variance(column). If a column has 0 variance, the denominator
     # is 0 - some dialects return NaN (DuckDB) while others return NULL (Snowflake).
     # `null_on_zero_variance` is set to True at parse time for dialects that return NULL.
     arg_types = {"this": True, "expression": True, "null_on_zero_variance": False}
 
 
-class Count(AggFunc):
+class Count(ExpressionBase, AggFunc):
     arg_types = {"this": False, "expressions": False, "big_int": False}
     is_var_len_args = True
 
 
-class CountIf(AggFunc):
+class CountIf(ExpressionBase, AggFunc):
     _sql_names = ["COUNT_IF", "COUNTIF"]
 
 
-class CovarPop(AggFunc):
+class CovarPop(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class CovarSamp(AggFunc):
+class CovarSamp(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class CumeDist(AggFunc):
+class CumeDist(ExpressionBase, AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
-class DenseRank(AggFunc):
+class DenseRank(ExpressionBase, AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
-class First(AggFunc):
+class First(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class FirstValue(AggFunc):
+class FirstValue(ExpressionBase, AggFunc):
     pass
 
 
-class GroupConcat(AggFunc):
+class GroupConcat(ExpressionBase, AggFunc):
     arg_types = {"this": True, "separator": False, "on_overflow": False}
 
 
-class Grouping(AggFunc):
+class Grouping(ExpressionBase, AggFunc):
     arg_types = {"expressions": True}
     is_var_len_args = True
 
 
-class GroupingId(AggFunc):
+class GroupingId(ExpressionBase, AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
-class Kurtosis(AggFunc):
+class Kurtosis(ExpressionBase, AggFunc):
     pass
 
 
-class Lag(AggFunc):
+class Lag(ExpressionBase, AggFunc):
     arg_types = {"this": True, "offset": False, "default": False}
 
 
-class Last(AggFunc):
+class Last(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class LastValue(AggFunc):
+class LastValue(ExpressionBase, AggFunc):
     pass
 
 
-class Lead(AggFunc):
+class Lead(ExpressionBase, AggFunc):
     arg_types = {"this": True, "offset": False, "default": False}
 
 
-class LogicalAnd(AggFunc):
+class LogicalAnd(ExpressionBase, AggFunc):
     _sql_names = ["LOGICAL_AND", "BOOL_AND", "BOOLAND_AGG"]
 
 
-class LogicalOr(AggFunc):
+class LogicalOr(ExpressionBase, AggFunc):
     _sql_names = ["LOGICAL_OR", "BOOL_OR", "BOOLOR_AGG"]
 
 
-class Max(AggFunc):
+class Max(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class Median(AggFunc):
+class Median(ExpressionBase, AggFunc):
     pass
 
 
-class Min(AggFunc):
+class Min(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class Minhash(AggFunc):
+class Minhash(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
-class MinhashCombine(AggFunc):
+class MinhashCombine(ExpressionBase, AggFunc):
     pass
 
 
-class Mode(AggFunc):
+class Mode(ExpressionBase, AggFunc):
     arg_types = {"this": False, "deterministic": False}
 
 
-class Ntile(AggFunc):
+class Ntile(ExpressionBase, AggFunc):
     arg_types = {"this": False}
 
 
-class NthValue(AggFunc):
+class NthValue(ExpressionBase, AggFunc):
     arg_types = {"this": True, "offset": True, "from_first": False}
 
 
-class ObjectAgg(AggFunc):
+class ObjectAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class PercentileCont(AggFunc):
+class PercentileCont(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
-class PercentileDisc(AggFunc):
+class PercentileDisc(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": False}
 
 
 PERCENTILES = (PercentileCont, PercentileDisc)
 
 
-class PercentRank(AggFunc):
+class PercentRank(ExpressionBase, AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
-class Quantile(AggFunc):
+class Quantile(ExpressionBase, AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
@@ -241,82 +241,82 @@ class ApproxQuantile(Quantile):
     }
 
 
-class Rank(AggFunc):
+class Rank(ExpressionBase, AggFunc):
     arg_types = {"expressions": False}
     is_var_len_args = True
 
 
-class RegrAvgx(AggFunc):
+class RegrAvgx(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrAvgy(AggFunc):
+class RegrAvgy(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrCount(AggFunc):
+class RegrCount(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrIntercept(AggFunc):
+class RegrIntercept(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrR2(AggFunc):
+class RegrR2(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSlope(AggFunc):
+class RegrSlope(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSxx(AggFunc):
+class RegrSxx(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSxy(AggFunc):
+class RegrSxy(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrSyy(AggFunc):
+class RegrSyy(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrValx(AggFunc):
+class RegrValx(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RegrValy(AggFunc):
+class RegrValy(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class RowNumber(Func):
+class RowNumber(ExpressionBase, Func):
     arg_types = {"this": False}
 
 
-class Skewness(AggFunc):
+class Skewness(ExpressionBase, AggFunc):
     pass
 
 
-class Stddev(AggFunc):
+class Stddev(ExpressionBase, AggFunc):
     _sql_names = ["STDDEV", "STDEV"]
 
 
-class StddevPop(AggFunc):
+class StddevPop(ExpressionBase, AggFunc):
     pass
 
 
-class StddevSamp(AggFunc):
+class StddevSamp(ExpressionBase, AggFunc):
     pass
 
 
-class Sum(AggFunc):
+class Sum(ExpressionBase, AggFunc):
     pass
 
 
-class Variance(AggFunc):
+class Variance(ExpressionBase, AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
-class VariancePop(AggFunc):
+class VariancePop(ExpressionBase, AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]

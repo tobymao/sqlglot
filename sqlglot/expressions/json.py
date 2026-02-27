@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import Func, AggFunc, Binary, Predicate
+from sqlglot.expressions.core import ExpressionBase, Func, AggFunc, Binary, Predicate
 
 
-class CheckJson(Func):
+class CheckJson(ExpressionBase, Func):
     arg_types = {"this": True}
 
 
-class JSONArray(Func):
+class JSONArray(ExpressionBase, Func):
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -18,7 +18,7 @@ class JSONArray(Func):
     }
 
 
-class JSONArrayAgg(AggFunc):
+class JSONArrayAgg(ExpressionBase, AggFunc):
     arg_types = {
         "this": True,
         "order": False,
@@ -28,62 +28,62 @@ class JSONArrayAgg(AggFunc):
     }
 
 
-class JSONArrayAppend(Func):
+class JSONArrayAppend(ExpressionBase, Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_ARRAY_APPEND"]
 
 
-class JSONArrayContains(Binary, Predicate, Func):
+class JSONArrayContains(ExpressionBase, Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSON_ARRAY_CONTAINS"]
 
 
-class JSONArrayInsert(Func):
+class JSONArrayInsert(ExpressionBase, Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_ARRAY_INSERT"]
 
 
-class JSONBContains(Binary, Func):
+class JSONBContains(ExpressionBase, Binary, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
 
-class JSONBContainsAllTopKeys(Binary, Func):
+class JSONBContainsAllTopKeys(ExpressionBase, Binary, Func):
     pass
 
 
-class JSONBContainsAnyTopKeys(Binary, Func):
+class JSONBContainsAnyTopKeys(ExpressionBase, Binary, Func):
     pass
 
 
-class JSONBDeleteAtPath(Binary, Func):
+class JSONBDeleteAtPath(ExpressionBase, Binary, Func):
     pass
 
 
-class JSONBExists(Func):
+class JSONBExists(ExpressionBase, Func):
     arg_types = {"this": True, "path": True}
     _sql_names = ["JSONB_EXISTS"]
 
 
-class JSONBExtract(Binary, Func):
+class JSONBExtract(ExpressionBase, Binary, Func):
     _sql_names = ["JSONB_EXTRACT"]
 
 
-class JSONBExtractScalar(Binary, Func):
+class JSONBExtractScalar(ExpressionBase, Binary, Func):
     arg_types = {"this": True, "expression": True, "json_type": False}
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
-class JSONBObjectAgg(AggFunc):
+class JSONBObjectAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expression": True}
 
 
-class JSONBool(Func):
+class JSONBool(ExpressionBase, Func):
     pass
 
 
-class JSONExists(Func):
+class JSONExists(ExpressionBase, Func):
     arg_types = {
         "this": True,
         "path": True,
@@ -93,7 +93,7 @@ class JSONExists(Func):
     }
 
 
-class JSONExtract(Binary, Func):
+class JSONExtract(ExpressionBase, Binary, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -115,12 +115,12 @@ class JSONExtract(Binary, Func):
         return self.expression.output_name if not self.expressions else ""
 
 
-class JSONExtractArray(Func):
+class JSONExtractArray(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
     _sql_names = ["JSON_EXTRACT_ARRAY"]
 
 
-class JSONExtractScalar(Binary, Func):
+class JSONExtractScalar(ExpressionBase, Binary, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -137,22 +137,22 @@ class JSONExtractScalar(Binary, Func):
         return self.expression.output_name
 
 
-class JSONFormat(Func):
+class JSONFormat(ExpressionBase, Func):
     arg_types = {"this": False, "options": False, "is_json": False, "to_json": False}
     _sql_names = ["JSON_FORMAT"]
 
 
-class JSONKeys(Func):
+class JSONKeys(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False, "expressions": False}
     is_var_len_args = True
     _sql_names = ["JSON_KEYS"]
 
 
-class JSONKeysAtDepth(Func):
+class JSONKeysAtDepth(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False, "mode": False}
 
 
-class JSONObject(Func):
+class JSONObject(ExpressionBase, Func):
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -162,7 +162,7 @@ class JSONObject(Func):
     }
 
 
-class JSONObjectAgg(AggFunc):
+class JSONObjectAgg(ExpressionBase, AggFunc):
     arg_types = {
         "expressions": False,
         "null_handling": False,
@@ -172,19 +172,19 @@ class JSONObjectAgg(AggFunc):
     }
 
 
-class JSONRemove(Func):
+class JSONRemove(ExpressionBase, Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_REMOVE"]
 
 
-class JSONSet(Func):
+class JSONSet(ExpressionBase, Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
     _sql_names = ["JSON_SET"]
 
 
-class JSONStripNulls(Func):
+class JSONStripNulls(ExpressionBase, Func):
     arg_types = {
         "this": True,
         "expression": False,
@@ -194,7 +194,7 @@ class JSONStripNulls(Func):
     _sql_names = ["JSON_STRIP_NULLS"]
 
 
-class JSONTable(Func):
+class JSONTable(ExpressionBase, Func):
     arg_types = {
         "this": True,
         "schema": True,
@@ -204,16 +204,16 @@ class JSONTable(Func):
     }
 
 
-class JSONType(Func):
+class JSONType(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
     _sql_names = ["JSON_TYPE"]
 
 
-class ObjectId(Func):
+class ObjectId(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class ObjectInsert(Func):
+class ObjectInsert(ExpressionBase, Func):
     arg_types = {
         "this": True,
         "key": True,
@@ -222,11 +222,11 @@ class ObjectInsert(Func):
     }
 
 
-class OpenJSON(Func):
+class OpenJSON(ExpressionBase, Func):
     arg_types = {"this": True, "path": False, "expressions": False}
 
 
-class ParseJSON(Func):
+class ParseJSON(ExpressionBase, Func):
     # BigQuery, Snowflake have PARSE_JSON, Presto has JSON_PARSE
     # Snowflake also has TRY_PARSE_JSON, which is represented using `safe`
     _sql_names = ["PARSE_JSON", "JSON_PARSE"]

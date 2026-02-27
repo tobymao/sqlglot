@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot.helper import mypyc_attr
+from sqlglot.helper import trait
 from sqlglot.expressions.core import (
     Expression,
+    ExpressionBase,
     ExpOrStr,
     _apply_builder,
     _apply_list_builder,
     maybe_copy,
     _apply_conjunction_builder,
 )
-from sqlglot.expressions.ddl import DDL, DML
+from sqlglot.expressions.ddl import DDL
 from sqlglot.expressions.query import (
     Table,
     Where,
@@ -26,8 +27,10 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
-class _DML(Expression, DML):
+@trait
+class DML(Expression):
+    """Trait for data manipulation language statements."""
+
     def returning(
         self,
         expression: ExpOrStr,
@@ -64,7 +67,7 @@ class _DML(Expression, DML):
         )
 
 
-class Delete(_DML):
+class Delete(ExpressionBase, DML):
     arg_types = {
         "with_": False,
         "this": False,
@@ -158,7 +161,7 @@ class CopyParameter(Expression):
     arg_types = {"this": True, "expression": False, "expressions": False}
 
 
-class Copy(_DML):
+class Copy(ExpressionBase, DML):
     arg_types = {
         "this": True,
         "kind": True,
@@ -187,7 +190,7 @@ class DirectoryStage(Expression):
     pass
 
 
-class Insert(DDL, _DML):
+class Insert(ExpressionBase, DDL, DML):
     arg_types = {
         "hint": False,
         "with_": False,
@@ -285,7 +288,7 @@ class LoadData(Expression):
     }
 
 
-class Update(_DML):
+class Update(ExpressionBase, DML):
     arg_types = {
         "with_": False,
         "this": False,
@@ -493,7 +496,7 @@ class Update(_DML):
         )
 
 
-class Merge(_DML):
+class Merge(ExpressionBase, DML):
     arg_types = {
         "this": True,
         "using": True,

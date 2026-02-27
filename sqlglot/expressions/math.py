@@ -2,168 +2,168 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import Func, AggFunc
+from sqlglot.expressions.core import ExpressionBase, Func, AggFunc
 
 
 # Trigonometric
 
 
-class Acos(Func):
+class Acos(ExpressionBase, Func):
     pass
 
 
-class Acosh(Func):
+class Acosh(ExpressionBase, Func):
     pass
 
 
-class Asin(Func):
+class Asin(ExpressionBase, Func):
     pass
 
 
-class Asinh(Func):
+class Asinh(ExpressionBase, Func):
     pass
 
 
-class Atan(Func):
+class Atan(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class Atanh(Func):
+class Atanh(ExpressionBase, Func):
     pass
 
 
-class Atan2(Func):
+class Atan2(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Cos(Func):
+class Cos(ExpressionBase, Func):
     pass
 
 
-class Cosh(Func):
+class Cosh(ExpressionBase, Func):
     pass
 
 
-class Cot(Func):
+class Cot(ExpressionBase, Func):
     pass
 
 
-class Coth(Func):
+class Coth(ExpressionBase, Func):
     pass
 
 
-class Csc(Func):
+class Csc(ExpressionBase, Func):
     pass
 
 
-class Csch(Func):
+class Csch(ExpressionBase, Func):
     pass
 
 
-class Degrees(Func):
+class Degrees(ExpressionBase, Func):
     pass
 
 
-class Radians(Func):
+class Radians(ExpressionBase, Func):
     pass
 
 
-class Sec(Func):
+class Sec(ExpressionBase, Func):
     pass
 
 
-class Sech(Func):
+class Sech(ExpressionBase, Func):
     pass
 
 
-class Sin(Func):
+class Sin(ExpressionBase, Func):
     pass
 
 
-class Sinh(Func):
+class Sinh(ExpressionBase, Func):
     pass
 
 
-class Tan(Func):
+class Tan(ExpressionBase, Func):
     pass
 
 
-class Tanh(Func):
+class Tanh(ExpressionBase, Func):
     pass
 
 
 # Geometric distance / similarity
 
 
-class CosineDistance(Func):
+class CosineDistance(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class DotProduct(Func):
+class DotProduct(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class EuclideanDistance(Func):
+class EuclideanDistance(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class JarowinklerSimilarity(Func):
+class JarowinklerSimilarity(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True, "case_insensitive": False}
 
 
-class ManhattanDistance(Func):
+class ManhattanDistance(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
 # Basic arithmetic / math
 
 
-class Abs(Func):
+class Abs(ExpressionBase, Func):
     pass
 
 
-class Cbrt(Func):
+class Cbrt(ExpressionBase, Func):
     pass
 
 
-class Ceil(Func):
+class Ceil(ExpressionBase, Func):
     arg_types = {"this": True, "decimals": False, "to": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
-class Exp(Func):
+class Exp(ExpressionBase, Func):
     pass
 
 
-class Factorial(Func):
+class Factorial(ExpressionBase, Func):
     pass
 
 
-class Floor(Func):
+class Floor(ExpressionBase, Func):
     arg_types = {"this": True, "decimals": False, "to": False}
 
 
-class IsInf(Func):
+class IsInf(ExpressionBase, Func):
     _sql_names = ["IS_INF", "ISINF"]
 
 
-class IsNan(Func):
+class IsNan(ExpressionBase, Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
-class Ln(Func):
+class Ln(ExpressionBase, Func):
     pass
 
 
-class Log(Func):
+class Log(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class Pi(Func):
+class Pi(ExpressionBase, Func):
     arg_types = {}
 
 
-class Round(Func):
+class Round(ExpressionBase, Func):
     arg_types = {
         "this": True,
         "decimals": False,
@@ -172,15 +172,15 @@ class Round(Func):
     }
 
 
-class Sign(Func):
+class Sign(ExpressionBase, Func):
     _sql_names = ["SIGN", "SIGNUM"]
 
 
-class Sqrt(Func):
+class Sqrt(ExpressionBase, Func):
     pass
 
 
-class Trunc(Func):
+class Trunc(ExpressionBase, Func):
     arg_types = {"this": True, "decimals": False}
     _sql_names = ["TRUNC", "TRUNCATE"]
 
@@ -188,82 +188,82 @@ class Trunc(Func):
 # Safe arithmetic
 
 
-class SafeAdd(Func):
+class SafeAdd(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeDivide(Func):
+class SafeDivide(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeMultiply(Func):
+class SafeMultiply(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeNegate(Func):
+class SafeNegate(ExpressionBase, Func):
     pass
 
 
-class SafeSubtract(Func):
+class SafeSubtract(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True}
 
 
 # Bitwise
 
 
-class BitwiseAndAgg(AggFunc):
+class BitwiseAndAgg(ExpressionBase, AggFunc):
     pass
 
 
-class BitwiseCount(Func):
+class BitwiseCount(ExpressionBase, Func):
     pass
 
 
-class BitwiseOrAgg(AggFunc):
+class BitwiseOrAgg(ExpressionBase, AggFunc):
     pass
 
 
-class BitwiseXorAgg(AggFunc):
+class BitwiseXorAgg(ExpressionBase, AggFunc):
     pass
 
 
-class BitmapBitPosition(Func):
+class BitmapBitPosition(ExpressionBase, Func):
     pass
 
 
-class BitmapBucketNumber(Func):
+class BitmapBucketNumber(ExpressionBase, Func):
     pass
 
 
-class BitmapConstructAgg(AggFunc):
+class BitmapConstructAgg(ExpressionBase, AggFunc):
     pass
 
 
-class BitmapCount(Func):
+class BitmapCount(ExpressionBase, Func):
     pass
 
 
-class BitmapOrAgg(AggFunc):
+class BitmapOrAgg(ExpressionBase, AggFunc):
     pass
 
 
-class Booland(Func):
+class Booland(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
-class Boolnot(Func):
+class Boolnot(ExpressionBase, Func):
     arg_types = {"this": True, "round_input": False}
 
 
-class Boolor(Func):
+class Boolor(ExpressionBase, Func):
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
-class BoolxorAgg(AggFunc):
+class BoolxorAgg(ExpressionBase, AggFunc):
     pass
 
 
-class Getbit(Func):
+class Getbit(ExpressionBase, Func):
     _sql_names = ["GETBIT", "GET_BIT"]
     # zero_is_msb means the most significant bit is indexed 0
     arg_types = {"this": True, "expression": True, "zero_is_msb": False}

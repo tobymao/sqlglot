@@ -16,7 +16,6 @@ from sqlglot.expressions.core import (  # noqa: F401 (private names)
     _apply_conjunction_builder,
     _apply_set_operation,
     _combine,
-    _Predicate,
     _TimeUnit,
     ExpOrStr,
     QUERY_MODIFIERS,

@@ -19,7 +19,6 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
     ensure_list,
-    mypyc_attr,
     seq_get,
     to_bool,
     trait,
@@ -43,7 +42,6 @@ POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Expression:
     """
     The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
@@ -1114,6 +1112,10 @@ class Expression:
         return not_(self.copy())
 
 
+class ExpressionBase(Expression):
+    __slots__ = ()
+
+
 IntoType = t.Union[
     str,
     t.Type[Expression],
@@ -1123,20 +1125,13 @@ ExpOrStr = t.Union[str, Expression]
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Condition(Expression):
     """Logical conditions like x AND y, or simply x"""
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
-class Predicate:
+class Predicate(Condition):
     """Relationships like x = y, x > 1, x >= y."""
-
-
-@mypyc_attr(allow_interpreted_subclasses=True)
-class _Predicate(Condition, Predicate):
-    pass
 
 
 class Cache(Expression):
@@ -1161,29 +1156,26 @@ class LockingStatement(Expression):
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class ColumnConstraintKind(Expression):
     pass
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
-class SubqueryPredicate(_Predicate):
+class SubqueryPredicate(Predicate):
     pass
 
 
-class All(SubqueryPredicate):
+class All(ExpressionBase, SubqueryPredicate):
     pass
 
 
-class Any(SubqueryPredicate):
+class Any(ExpressionBase, SubqueryPredicate):
     pass
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Binary(Condition):
-    arg_types = {"this": True, "expression": True}
+    arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True, "expression": True}
 
     @property
     def left(self) -> Expression:
@@ -1194,13 +1186,12 @@ class Binary(Condition):
         return self.expression
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+@trait
 class Connector(Binary):
     pass
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Func(Condition):
     """
     The base class for all function expressions.
@@ -1214,7 +1205,7 @@ class Func(Condition):
             name is set to the expression's class name transformed to snake case.
     """
 
-    is_var_len_args = False
+    is_var_len_args: t.ClassVar[bool] = False
     _sql_names: t.ClassVar[t.List[str]] = []
 
     @classmethod
@@ -1254,18 +1245,11 @@ class Func(Condition):
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
-class ExplodeOuter:
-    pass
-
-
-@mypyc_attr(allow_interpreted_subclasses=True)
 class AggFunc(Func):
     pass
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
-class Column(Condition):
+class Column(ExpressionBase, Condition):
     arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 
     @property
@@ -1304,7 +1288,7 @@ class Column(Condition):
         return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
-class Literal(Condition):
+class Literal(ExpressionBase, Condition):
     arg_types = {"this": True, "is_string": True}
     _hash_raw_args = True
 
@@ -1386,15 +1370,15 @@ class Star(Expression):
         return self.name
 
 
-class Parameter(Condition):
+class Parameter(ExpressionBase, Condition):
     arg_types = {"this": True, "expression": False}
 
 
-class SessionParameter(Condition):
+class SessionParameter(ExpressionBase, Condition):
     arg_types = {"this": True, "kind": False}
 
 
-class Placeholder(Condition):
+class Placeholder(ExpressionBase, Condition):
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
 
     @property
@@ -1402,7 +1386,7 @@ class Placeholder(Condition):
         return self.this or "?"
 
 
-class Null(Condition):
+class Null(ExpressionBase, Condition):
     arg_types = {}
 
     @property
@@ -1413,12 +1397,12 @@ class Null(Condition):
         return None
 
 
-class Boolean(Condition):
+class Boolean(ExpressionBase, Condition):
     def to_py(self) -> bool:
         return self.this
 
 
-class Dot(Binary):
+class Dot(ExpressionBase, Binary):
     @property
     def is_star(self) -> bool:
         return self.expression.is_star
@@ -1456,11 +1440,10 @@ class Dot(Binary):
         return parts
 
 
-class Kwarg(Binary):
+class Kwarg(ExpressionBase, Binary):
     """Kwarg in special functions like func(kwarg => y)."""
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Alias(Expression):
     arg_types = {"this": True, "alias": False}
 
@@ -1485,7 +1468,7 @@ class Aliases(Expression):
         return self.expressions
 
 
-class Bracket(Condition):
+class Bracket(ExpressionBase, Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
     arg_types = {
         "this": True,
@@ -1519,19 +1502,19 @@ class HavingMax(Expression):
     arg_types = {"this": True, "expression": True, "max": True}
 
 
-class SafeFunc(Func):
+class SafeFunc(ExpressionBase, Func):
     pass
 
 
-class Typeof(Func):
+class Typeof(ExpressionBase, Func):
     pass
 
 
-class ParameterizedAgg(AggFunc):
+class ParameterizedAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
-class Anonymous(Func):
+class Anonymous(ExpressionBase, Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -1540,7 +1523,7 @@ class Anonymous(Func):
         return self.this if isinstance(self.this, str) else self.this.name
 
 
-class AnonymousAggFunc(AggFunc):
+class AnonymousAggFunc(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -1553,17 +1536,17 @@ class CombinedParameterizedAgg(ParameterizedAgg):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
-class HashAgg(AggFunc):
+class HashAgg(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class Hll(AggFunc):
+class Hll(ExpressionBase, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class ApproxDistinct(AggFunc):
+class ApproxDistinct(ExpressionBase, AggFunc):
     arg_types = {"this": True, "accuracy": False}
     _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
 
@@ -1573,7 +1556,6 @@ class Slice(Expression):
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class TimeUnit(Expression):
     """Automatically converts unit arg into a var."""
 
@@ -1610,15 +1592,13 @@ class TimeUnit(Expression):
         return self.args.get("unit")
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
-class _TimeUnit(TimeUnit):
+class _TimeUnit(ExpressionBase, TimeUnit):
     """Automatically converts unit arg into a var."""
 
     arg_types = {"unit": False}
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class IntervalOp(TimeUnit):
     def interval(self) -> "Interval":
         from sqlglot.expressions.datatypes import Interval
@@ -1645,148 +1625,147 @@ class Ordered(Expression):
         return self.this.name
 
 
-class Add(Binary):
+class Add(ExpressionBase, Binary):
     pass
 
 
-class BitwiseAnd(Binary):
+class BitwiseAnd(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class BitwiseLeftShift(Binary):
+class BitwiseLeftShift(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
-class BitwiseOr(Binary):
+class BitwiseOr(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class BitwiseRightShift(Binary):
+class BitwiseRightShift(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
-class BitwiseXor(Binary):
+class BitwiseXor(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class Div(Binary):
+class Div(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
-class Overlaps(Binary):
+class Overlaps(ExpressionBase, Binary):
     pass
 
 
-class ExtendsLeft(Binary):
+class ExtendsLeft(ExpressionBase, Binary):
     pass
 
 
-class ExtendsRight(Binary):
+class ExtendsRight(ExpressionBase, Binary):
     pass
 
 
-class DPipe(Binary):
+class DPipe(ExpressionBase, Binary):
     arg_types = {"this": True, "expression": True, "safe": False}
 
 
-class EQ(Binary, Predicate):
+class EQ(ExpressionBase, Binary, Predicate):
     pass
 
 
-class NullSafeEQ(Binary, Predicate):
+class NullSafeEQ(ExpressionBase, Binary, Predicate):
     pass
 
 
-class NullSafeNEQ(Binary, Predicate):
+class NullSafeNEQ(ExpressionBase, Binary, Predicate):
     pass
 
 
-class PropertyEQ(Binary):
+class PropertyEQ(ExpressionBase, Binary):
     pass
 
 
-class Distance(Binary):
+class Distance(ExpressionBase, Binary):
     pass
 
 
-class Escape(Binary):
+class Escape(ExpressionBase, Binary):
     pass
 
 
-class Glob(Binary, Predicate):
+class Glob(ExpressionBase, Binary, Predicate):
     pass
 
 
-class GT(Binary, Predicate):
+class GT(ExpressionBase, Binary, Predicate):
     pass
 
 
-class GTE(Binary, Predicate):
+class GTE(ExpressionBase, Binary, Predicate):
     pass
 
 
-class ILike(Binary, Predicate):
+class ILike(ExpressionBase, Binary, Predicate):
     pass
 
 
-class IntDiv(Binary):
+class IntDiv(ExpressionBase, Binary):
     pass
 
 
-class Is(Binary, Predicate):
+class Is(ExpressionBase, Binary, Predicate):
     pass
 
 
-class Like(Binary, Predicate):
+class Like(ExpressionBase, Binary, Predicate):
     pass
 
 
-class Match(Binary, Predicate):
+class Match(ExpressionBase, Binary, Predicate):
     pass
 
 
-class LT(Binary, Predicate):
+class LT(ExpressionBase, Binary, Predicate):
     pass
 
 
-class LTE(Binary, Predicate):
+class LTE(ExpressionBase, Binary, Predicate):
     pass
 
 
-class Mod(Binary):
+class Mod(ExpressionBase, Binary):
     pass
 
 
-class Mul(Binary):
+class Mul(ExpressionBase, Binary):
     pass
 
 
-class NEQ(Binary, Predicate):
+class NEQ(ExpressionBase, Binary, Predicate):
     pass
 
 
-class NestedJSONSelect(Binary):
+class NestedJSONSelect(ExpressionBase, Binary):
     pass
 
 
-class Operator(Binary):
+class Operator(ExpressionBase, Binary):
     arg_types = {"this": True, "operator": True, "expression": True}
 
 
-class SimilarTo(Binary, Predicate):
+class SimilarTo(ExpressionBase, Binary, Predicate):
     pass
 
 
-class Sub(Binary):
+class Sub(ExpressionBase, Binary):
     pass
 
 
-class Adjacent(Binary):
+class Adjacent(ExpressionBase, Binary):
     pass
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
-class Unary(Condition):
+class Unary(ExpressionBase, Condition):
     pass
 
 
@@ -1833,7 +1812,7 @@ class FormatPhrase(Expression):
     arg_types = {"this": True, "format": True}
 
 
-class Between(_Predicate):
+class Between(ExpressionBase, Predicate):
     arg_types = {"this": True, "low": True, "high": True, "symmetric": False}
 
 
@@ -1841,7 +1820,7 @@ class Distinct(Expression):
     arg_types = {"expressions": False, "on": False}
 
 
-class In(_Predicate):
+class In(ExpressionBase, Predicate):
     arg_types = {
         "this": True,
         "expressions": False,
@@ -1852,24 +1831,24 @@ class In(_Predicate):
     }
 
 
-class And(Connector, Func):
+class And(ExpressionBase, Connector, Func):
     pass
 
 
-class Or(Connector, Func):
+class Or(ExpressionBase, Connector, Func):
     pass
 
 
-class Xor(Connector, Func):
+class Xor(ExpressionBase, Connector, Func):
     arg_types = {"this": False, "expression": False, "expressions": False, "round_input": False}
     is_var_len_args = True
 
 
-class Pow(Binary, Func):
+class Pow(ExpressionBase, Binary, Func):
     _sql_names = ["POWER", "POW"]
 
 
-class RegexpLike(Binary, Func):
+class RegexpLike(ExpressionBase, Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 
@@ -2289,7 +2268,7 @@ def _apply_conjunction_builder(
 
 def _combine(
     expressions: t.Sequence[t.Optional[ExpOrStr]],
-    operator: t.Type[Connector],
+    operator: t.Any,
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,

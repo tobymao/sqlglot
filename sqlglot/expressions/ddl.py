@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot.helper import mypyc_attr, trait
-from sqlglot.expressions.core import Expression, Func
+from sqlglot.helper import trait
+from sqlglot.expressions.core import ExpressionBase, Expression, Func
 from sqlglot.expressions.query import Query
 
 if t.TYPE_CHECKING:
     from sqlglot.expressions.query import CTE
 
 
+@trait
 class DDL(Expression):
     @property
     def ctes(self) -> t.List[CTE]:
@@ -33,13 +34,7 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
-@trait
-@mypyc_attr(allow_interpreted_subclasses=True)
-class DML:
-    """Trait for data manipulation language statements."""
-
-
-class Create(DDL):
+class Create(ExpressionBase, DDL):
     arg_types = {
         "with_": False,
         "this": True,
@@ -389,11 +384,10 @@ class Use(Expression):
     arg_types = {"this": False, "expressions": False, "kind": False}
 
 
-class NextValueFor(Func):
+class NextValueFor(ExpressionBase, Func):
     arg_types = {"this": True, "order": False}
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Execute(Expression):
     arg_types = {"this": True, "expressions": False}
 

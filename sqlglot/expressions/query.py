@@ -5,16 +5,16 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot.helper import mypyc_attr, trait, ensure_list
+from sqlglot.helper import trait, ensure_list
 from sqlglot.expressions.core import *  # noqa: F401, F403
 from sqlglot.expressions.core import (  # noqa: F401 (private names not in *)
+    ExpressionBase,
     _apply_builder,
     _apply_child_list_builder,
     _apply_list_builder,
     _apply_conjunction_builder,
     _apply_set_operation,
     _combine,
-    _Predicate,
     _TimeUnit,
     ExpOrStr,
     QUERY_MODIFIERS,
@@ -72,7 +72,6 @@ def _apply_cte_builder(
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DerivedTable(Expression):
     @property
     def selects(self) -> t.List[Expression]:
@@ -84,7 +83,6 @@ class DerivedTable(Expression):
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class UDTF(DerivedTable):
     @property
     def selects(self) -> t.List[Expression]:
@@ -96,7 +94,6 @@ Q = t.TypeVar("Q", bound="Query")
 
 
 @trait
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Query(Expression):
     """Trait for any SELECT/UNION/etc. query expression."""
 
@@ -424,7 +421,7 @@ class With(Expression):
         return bool(self.args.get("recursive"))
 
 
-class CTE(DerivedTable):
+class CTE(ExpressionBase, DerivedTable):
     arg_types = {
         "this": True,
         "alias": True,
@@ -446,23 +443,23 @@ class TableAlias(Expression):
         return self.args.get("columns") or []
 
 
-class BitString(Condition):
+class BitString(ExpressionBase, Condition):
     pass
 
 
-class HexString(Condition):
+class HexString(ExpressionBase, Condition):
     arg_types = {"this": True, "is_integer": False}
 
 
-class ByteString(Condition):
+class ByteString(ExpressionBase, Condition):
     arg_types = {"this": True, "is_bytes": False}
 
 
-class RawString(Condition):
+class RawString(ExpressionBase, Condition):
     pass
 
 
-class UnicodeString(Condition):
+class UnicodeString(ExpressionBase, Condition):
     arg_types = {"this": True, "escape": False}
 
 
@@ -764,7 +761,7 @@ class Join(Expression):
         return join
 
 
-class Lateral(UDTF):
+class Lateral(ExpressionBase, UDTF):
     arg_types = {
         "this": True,
         "view": False,
@@ -775,7 +772,7 @@ class Lateral(UDTF):
     }
 
 
-class TableFromRows(UDTF):
+class TableFromRows(ExpressionBase, UDTF):
     arg_types = {
         "this": True,
         "alias": False,
@@ -988,7 +985,7 @@ class Table(Expression):
         return col
 
 
-class SetOperation(Query):
+class SetOperation(ExpressionBase, Query):
     arg_types = {
         "with_": False,
         "this": True,
@@ -1063,7 +1060,7 @@ class Intersect(SetOperation):
     pass
 
 
-class Values(UDTF):
+class Values(ExpressionBase, UDTF):
     arg_types = {
         "expressions": True,
         "alias": False,
@@ -1095,7 +1092,7 @@ class Lock(Expression):
     arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
-class Select(Query):
+class Select(ExpressionBase, Query):
     arg_types = {
         "with_": False,
         "kind": False,
@@ -1632,7 +1629,7 @@ class Select(Query):
         return self.expressions
 
 
-class Subquery(DerivedTable, Query):
+class Subquery(ExpressionBase, DerivedTable, Query):
     is_subquery: t.ClassVar[bool] = True
     arg_types = {
         "this": True,
@@ -1739,7 +1736,7 @@ class UnpivotColumns(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class Window(Condition):
+class Window(ExpressionBase, Condition):
     arg_types = {
         "this": True,
         "partition_by": False,
@@ -1869,7 +1866,6 @@ class JSONPath(Expression):
         return last_segment if isinstance(last_segment, str) else ""
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class JSONPathPart(Expression):
     arg_types = {}
 
@@ -1945,7 +1941,7 @@ class JSONValue(Expression):
     }
 
 
-class JSONValueArray(Func):
+class JSONValueArray(ExpressionBase, Func):
     arg_types = {"this": True, "expression": False}
 
 

@@ -5,11 +5,10 @@ from __future__ import annotations
 import typing as t
 from enum import auto
 
-from sqlglot.helper import AutoName, mypyc_attr
+from sqlglot.helper import AutoName
 from sqlglot.expressions.core import Expression, ColumnConstraintKind, Literal, convert
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Property(Expression):
     arg_types = {"this": True, "value": True}
 

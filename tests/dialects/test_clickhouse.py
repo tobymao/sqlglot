@@ -1009,6 +1009,29 @@ ORDER BY (
             "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY (tuple())",
         )
 
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK (a < 10)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME (a > 5)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK a < 10) ENGINE=MergeTree ORDER BY a",
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK (a < 10)) ENGINE=MergeTree ORDER BY a",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME a > 5) ENGINE=MergeTree ORDER BY a",
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME (a > 5)) ENGINE=MergeTree ORDER BY a",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT t CHECK (SELECT 1)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT t ASSUME (SELECT 1)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity("CREATE TABLE t (check UInt32)")
+        self.validate_identity("CREATE TABLE t (assume UInt32)")
+
         self.validate_all(
             "CREATE DATABASE x",
             read={

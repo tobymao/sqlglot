@@ -692,6 +692,7 @@ class ClickHouse(Dialect):
             **parser.Parser.CONSTRAINT_PARSERS,
             "INDEX": lambda self: self._parse_index_constraint(),
             "CODEC": lambda self: self._parse_compress(),
+            "ASSUME": lambda self: self._parse_assume_constraint(),
         }
 
         ALTER_PARSERS = {
@@ -703,12 +704,27 @@ class ClickHouse(Dialect):
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "INDEX",
-        }
+        } - {"CHECK"}
 
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
+
+        def _parse_wrapped_select_or_assignment(self) -> t.Optional[exp.Expression]:
+            return self._parse_wrapped(
+                lambda: self._parse_select() or self._parse_assignment(), optional=True
+            )
+
+        def _parse_check_constraint(self) -> t.Optional[exp.CheckColumnConstraint]:
+            return self.expression(
+                exp.CheckColumnConstraint, this=self._parse_wrapped_select_or_assignment()
+            )
+
+        def _parse_assume_constraint(self) -> t.Optional[exp.AssumeColumnConstraint]:
+            return self.expression(
+                exp.AssumeColumnConstraint, this=self._parse_wrapped_select_or_assignment()
+            )
 
         def _parse_engine_property(self) -> exp.EngineProperty:
             self._match(TokenType.EQ)

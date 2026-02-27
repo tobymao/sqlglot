@@ -42,11 +42,15 @@ class CaseSpecificColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class CharacterSetColumnConstraint(Expression, ColumnConstraintKind):
-    arg_types = {"this": True}
+    pass
 
 
 class CheckColumnConstraint(Expression, ColumnConstraintKind):
     arg_types = {"this": True, "enforced": False}
+
+
+class AssumeColumnConstraint(Expression, ColumnConstraintKind):
+    pass
 
 
 class ClusteredColumnConstraint(Expression, ColumnConstraintKind):
@@ -66,7 +70,7 @@ class CompressColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class DateFormatColumnConstraint(Expression, ColumnConstraintKind):
-    arg_types = {"this": True}
+    pass
 
 
 class DefaultColumnConstraint(Expression, ColumnConstraintKind):

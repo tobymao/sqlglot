@@ -91,7 +91,7 @@ class Resolver:
             }
         return self._all_columns
 
-    def get_source_columns_from_set_op(self, expression: exp.Expression) -> t.List[str]:
+    def get_source_columns_from_set_op(self, expression: exp.Expr) -> t.List[str]:
         if isinstance(expression, exp.Select):
             return expression.named_selects
         if isinstance(expression, exp.Subquery) and isinstance(expression.this, exp.SetOperation):
@@ -184,7 +184,7 @@ class Resolver:
             node, _ = self.scope.selected_sources.get(name) or (None, None)
             if isinstance(node, Scope):
                 column_aliases = node.expression.alias_column_names
-            elif isinstance(node, exp.Expression):
+            elif isinstance(node, exp.Expr):
                 column_aliases = node.alias_column_names
             else:
                 column_aliases = []

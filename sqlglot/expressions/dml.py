@@ -6,8 +6,8 @@ import typing as t
 
 from sqlglot.helper import trait
 from sqlglot.expressions.core import (
+    Expr,
     Expression,
-    ExpressionBase,
     ExpOrStr,
     _apply_builder,
     _apply_list_builder,
@@ -28,7 +28,7 @@ if t.TYPE_CHECKING:
 
 
 @trait
-class DML(Expression):
+class DML(Expr):
     """Trait for data manipulation language statements."""
 
     def returning(
@@ -47,7 +47,7 @@ class DML(Expression):
 
         Args:
             expression: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             dialect: the dialect used to parse the input expressions.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -67,7 +67,7 @@ class DML(Expression):
         )
 
 
-class Delete(ExpressionBase, DML):
+class Delete(Expression, DML):
     arg_types = {
         "with_": False,
         "this": False,
@@ -130,7 +130,7 @@ class Delete(ExpressionBase, DML):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
             append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
@@ -161,7 +161,7 @@ class CopyParameter(Expression):
     arg_types = {"this": True, "expression": False, "expressions": False}
 
 
-class Copy(ExpressionBase, DML):
+class Copy(Expression, DML):
     arg_types = {
         "this": True,
         "kind": True,
@@ -190,7 +190,7 @@ class DirectoryStage(Expression):
     pass
 
 
-class Insert(ExpressionBase, DDL, DML):
+class Insert(Expression, DDL, DML):
     arg_types = {
         "hint": False,
         "with_": False,
@@ -233,9 +233,9 @@ class Insert(ExpressionBase, DDL, DML):
 
         Args:
             alias: the SQL code string to parse as the table name.
-                If an `Expression` instance is passed, this is used as-is.
+                If an `Expr` instance is passed, this is used as-is.
             as_: the SQL code string to parse as the table expression.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             recursive: set the RECURSIVE part of the expression. Defaults to `False`.
             materialized: set the MATERIALIZED part of the expression.
             append: if `True`, add to any existing expressions.
@@ -288,7 +288,7 @@ class LoadData(Expression):
     }
 
 
-class Update(ExpressionBase, DML):
+class Update(Expression, DML):
     arg_types = {
         "with_": False,
         "this": False,
@@ -314,7 +314,7 @@ class Update(ExpressionBase, DML):
         Args:
             expression : the SQL code strings to parse.
                 If a `Table` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Table`.
+                If another `Expr` instance is passed, it will be wrapped in a `Table`.
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -350,7 +350,7 @@ class Update(ExpressionBase, DML):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If `Expression` instance(s) are passed, they will be used as-is.
+                If `Expr` instance(s) are passed, they will be used as-is.
                 Multiple expressions are combined with a comma.
             append: if `True`, add the new expressions to any existing SET expressions.
                 Otherwise, this resets the expressions.
@@ -363,7 +363,7 @@ class Update(ExpressionBase, DML):
             instance=self,
             arg="expressions",
             append=append,
-            into=Expression,
+            into=Expr,
             prefix=None,
             dialect=dialect,
             copy=copy,
@@ -387,7 +387,7 @@ class Update(ExpressionBase, DML):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
             append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
@@ -426,7 +426,7 @@ class Update(ExpressionBase, DML):
         Args:
             expression : the SQL code strings to parse.
                 If a `From` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `From`.
+                If another `Expr` instance is passed, it will be wrapped in a `From`.
                 If nothing is passed in then a from is not applied to the expression
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
@@ -469,9 +469,9 @@ class Update(ExpressionBase, DML):
 
         Args:
             alias: the SQL code string to parse as the table name.
-                If an `Expression` instance is passed, this is used as-is.
+                If an `Expr` instance is passed, this is used as-is.
             as_: the SQL code string to parse as the table expression.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             recursive: set the RECURSIVE part of the expression. Defaults to `False`.
             materialized: set the MATERIALIZED part of the expression.
             append: if `True`, add to any existing expressions.
@@ -496,7 +496,7 @@ class Update(ExpressionBase, DML):
         )
 
 
-class Merge(ExpressionBase, DML):
+class Merge(Expression, DML):
     arg_types = {
         "this": True,
         "using": True,

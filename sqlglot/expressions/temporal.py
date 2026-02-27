@@ -5,8 +5,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot.expressions.core import (
+    Expr,
     Expression,
-    ExpressionBase,
     Func,
     TimeUnit,
     IntervalOp,
@@ -21,70 +21,70 @@ from sqlglot.expressions.datatypes import DataType, DType
 # Current date/time
 
 
-class CurrentDate(ExpressionBase, Func):
+class CurrentDate(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentDatetime(ExpressionBase, Func):
+class CurrentDatetime(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentTime(ExpressionBase, Func):
+class CurrentTime(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentTimestamp(ExpressionBase, Func):
+class CurrentTimestamp(Expression, Func):
     arg_types = {"this": False, "sysdate": False}
 
 
-class CurrentTimestampLTZ(ExpressionBase, Func):
+class CurrentTimestampLTZ(Expression, Func):
     arg_types = {}
 
 
-class CurrentTimezone(ExpressionBase, Func):
+class CurrentTimezone(Expression, Func):
     arg_types = {}
 
 
-class Localtime(ExpressionBase, Func):
+class Localtime(Expression, Func):
     arg_types = {"this": False}
 
 
-class Localtimestamp(ExpressionBase, Func):
+class Localtimestamp(Expression, Func):
     arg_types = {"this": False}
 
 
-class Systimestamp(ExpressionBase, Func):
+class Systimestamp(Expression, Func):
     arg_types = {"this": False}
 
 
-class UtcDate(ExpressionBase, Func):
+class UtcDate(Expression, Func):
     arg_types = {}
 
 
-class UtcTime(ExpressionBase, Func):
+class UtcTime(Expression, Func):
     arg_types = {"this": False}
 
 
-class UtcTimestamp(ExpressionBase, Func):
+class UtcTimestamp(Expression, Func):
     arg_types = {"this": False}
 
 
 # Date arithmetic
 
 
-class AddMonths(ExpressionBase, Func):
+class AddMonths(Expression, Func):
     arg_types = {"this": True, "expression": True, "preserve_end_of_month": False}
 
 
-class DateAdd(ExpressionBase, Func, IntervalOp):
+class DateAdd(Expression, Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DateBin(ExpressionBase, Func, IntervalOp):
+class DateBin(Expression, Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False, "zone": False, "origin": False}
 
 
-class DateDiff(ExpressionBase, Func, TimeUnit):
+class DateDiff(Expression, Func, TimeUnit):
     _sql_names = ["DATEDIFF", "DATE_DIFF"]
     arg_types = {
         "this": True,
@@ -96,52 +96,52 @@ class DateDiff(ExpressionBase, Func, TimeUnit):
     }
 
 
-class DateSub(ExpressionBase, Func, IntervalOp):
+class DateSub(Expression, Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DatetimeAdd(ExpressionBase, Func, IntervalOp):
+class DatetimeAdd(Expression, Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DatetimeDiff(ExpressionBase, Func, TimeUnit):
+class DatetimeDiff(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DatetimeSub(ExpressionBase, Func, IntervalOp):
+class DatetimeSub(Expression, Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class MonthsBetween(ExpressionBase, Func):
+class MonthsBetween(Expression, Func):
     arg_types = {"this": True, "expression": True, "roundoff": False}
 
 
-class TimeAdd(ExpressionBase, Func, TimeUnit):
+class TimeAdd(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TimeDiff(ExpressionBase, Func, TimeUnit):
+class TimeDiff(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TimeSub(ExpressionBase, Func, TimeUnit):
+class TimeSub(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TimestampAdd(ExpressionBase, Func, TimeUnit):
+class TimestampAdd(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TimestampDiff(ExpressionBase, Func, TimeUnit):
+class TimestampDiff(Expression, Func, TimeUnit):
     _sql_names = ["TIMESTAMPDIFF", "TIMESTAMP_DIFF"]
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TimestampSub(ExpressionBase, Func, TimeUnit):
+class TimestampSub(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class TsOrDsAdd(ExpressionBase, Func, TimeUnit):
+class TsOrDsAdd(Expression, Func, TimeUnit):
     # return_type is used to correctly cast the arguments of this expression when transpiling it
     arg_types = {"this": True, "expression": True, "unit": False, "return_type": False}
 
@@ -150,18 +150,18 @@ class TsOrDsAdd(ExpressionBase, Func, TimeUnit):
         return DataType.build(self.args.get("return_type") or DType.DATE)
 
 
-class TsOrDsDiff(ExpressionBase, Func, TimeUnit):
+class TsOrDsDiff(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
 # Truncation
 
 
-class DatetimeTrunc(ExpressionBase, Func, TimeUnit):
+class DatetimeTrunc(Expression, Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
-class DateTrunc(ExpressionBase, Func):
+class DateTrunc(Expression, Func):
     arg_types = {"unit": True, "this": True, "zone": False, "input_type_preserved": False}
 
     def __init__(self, **args):
@@ -182,127 +182,127 @@ class DateTrunc(ExpressionBase, Func):
         super().__init__(**args)
 
     @property
-    def unit(self) -> Expression:
+    def unit(self) -> Expr:
         return self.args["unit"]
 
 
-class TimestampTrunc(ExpressionBase, Func, TimeUnit):
+class TimestampTrunc(Expression, Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False, "input_type_preserved": False}
 
 
-class TimeSlice(ExpressionBase, Func, TimeUnit):
+class TimeSlice(Expression, Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": True, "kind": False}
 
 
-class TimeTrunc(ExpressionBase, Func, TimeUnit):
+class TimeTrunc(Expression, Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
 
 # Date/time extraction
 
 
-class Day(ExpressionBase, Func):
+class Day(Expression, Func):
     pass
 
 
-class DayOfMonth(ExpressionBase, Func):
+class DayOfMonth(Expression, Func):
     _sql_names = ["DAY_OF_MONTH", "DAYOFMONTH"]
 
 
-class DayOfWeek(ExpressionBase, Func):
+class DayOfWeek(Expression, Func):
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
-class DayOfWeekIso(ExpressionBase, Func):
+class DayOfWeekIso(Expression, Func):
     _sql_names = ["DAYOFWEEK_ISO", "ISODOW"]
 
 
-class DayOfYear(ExpressionBase, Func):
+class DayOfYear(Expression, Func):
     _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
-class Dayname(ExpressionBase, Func):
+class Dayname(Expression, Func):
     arg_types = {"this": True, "abbreviated": False}
 
 
-class Extract(ExpressionBase, Func):
+class Extract(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class GetExtract(ExpressionBase, Func):
+class GetExtract(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Hour(ExpressionBase, Func):
+class Hour(Expression, Func):
     pass
 
 
-class Minute(ExpressionBase, Func):
+class Minute(Expression, Func):
     pass
 
 
-class Month(ExpressionBase, Func):
+class Month(Expression, Func):
     pass
 
 
-class Monthname(ExpressionBase, Func):
+class Monthname(Expression, Func):
     arg_types = {"this": True, "abbreviated": False}
 
 
-class Quarter(ExpressionBase, Func):
+class Quarter(Expression, Func):
     pass
 
 
-class Second(ExpressionBase, Func):
+class Second(Expression, Func):
     pass
 
 
-class ToDays(ExpressionBase, Func):
+class ToDays(Expression, Func):
     pass
 
 
-class Week(ExpressionBase, Func):
+class Week(Expression, Func):
     arg_types = {"this": True, "mode": False}
 
 
-class WeekOfYear(ExpressionBase, Func):
+class WeekOfYear(Expression, Func):
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
-class Year(ExpressionBase, Func):
+class Year(Expression, Func):
     pass
 
 
-class YearOfWeek(ExpressionBase, Func):
+class YearOfWeek(Expression, Func):
     _sql_names = ["YEAR_OF_WEEK", "YEAROFWEEK"]
 
 
-class YearOfWeekIso(ExpressionBase, Func):
+class YearOfWeekIso(Expression, Func):
     _sql_names = ["YEAR_OF_WEEK_ISO", "YEAROFWEEKISO"]
 
 
 # Date/time construction
 
 
-class Date(ExpressionBase, Func):
+class Date(Expression, Func):
     arg_types = {"this": False, "zone": False, "expressions": False}
     is_var_len_args = True
 
 
-class DateFromParts(ExpressionBase, Func):
+class DateFromParts(Expression, Func):
     _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
     arg_types = {"year": True, "month": False, "day": False, "allow_overflow": False}
 
 
-class DateFromUnixDate(ExpressionBase, Func):
+class DateFromUnixDate(Expression, Func):
     pass
 
 
-class Datetime(ExpressionBase, Func):
+class Datetime(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class GapFill(ExpressionBase, Func):
+class GapFill(Expression, Func):
     arg_types = {
         "this": True,
         "ts_column": True,
@@ -314,32 +314,32 @@ class GapFill(ExpressionBase, Func):
     }
 
 
-class GenerateDateArray(ExpressionBase, Func):
+class GenerateDateArray(Expression, Func):
     arg_types = {"start": True, "end": True, "step": False}
 
 
-class GenerateTimestampArray(ExpressionBase, Func):
+class GenerateTimestampArray(Expression, Func):
     arg_types = {"start": True, "end": True, "step": True}
 
 
-class JustifyDays(ExpressionBase, Func):
+class JustifyDays(Expression, Func):
     pass
 
 
-class JustifyHours(ExpressionBase, Func):
+class JustifyHours(Expression, Func):
     pass
 
 
-class JustifyInterval(ExpressionBase, Func):
+class JustifyInterval(Expression, Func):
     pass
 
 
-class LastDay(ExpressionBase, Func, TimeUnit):
+class LastDay(Expression, Func, TimeUnit):
     _sql_names = ["LAST_DAY", "LAST_DAY_OF_MONTH"]
     arg_types = {"this": True, "unit": False}
 
 
-class MakeInterval(ExpressionBase, Func):
+class MakeInterval(Expression, Func):
     arg_types = {
         "year": False,
         "month": False,
@@ -351,19 +351,19 @@ class MakeInterval(ExpressionBase, Func):
     }
 
 
-class NextDay(ExpressionBase, Func):
+class NextDay(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class PreviousDay(ExpressionBase, Func):
+class PreviousDay(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Time(ExpressionBase, Func):
+class Time(Expression, Func):
     arg_types = {"this": False, "zone": False}
 
 
-class TimeFromParts(ExpressionBase, Func):
+class TimeFromParts(Expression, Func):
     _sql_names = ["TIME_FROM_PARTS", "TIMEFROMPARTS"]
     arg_types = {
         "hour": True,
@@ -376,11 +376,11 @@ class TimeFromParts(ExpressionBase, Func):
     }
 
 
-class Timestamp(ExpressionBase, Func):
+class Timestamp(Expression, Func):
     arg_types = {"this": False, "zone": False, "with_tz": False}
 
 
-class TimestampFromParts(ExpressionBase, Func):
+class TimestampFromParts(Expression, Func):
     _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
         **TIMESTAMP_PARTS,
@@ -391,12 +391,12 @@ class TimestampFromParts(ExpressionBase, Func):
     }
 
 
-class TimestampLtzFromParts(ExpressionBase, Func):
+class TimestampLtzFromParts(Expression, Func):
     _sql_names = ["TIMESTAMP_LTZ_FROM_PARTS", "TIMESTAMPLTZFROMPARTS"]
     arg_types = TIMESTAMP_PARTS.copy()
 
 
-class TimestampTzFromParts(ExpressionBase, Func):
+class TimestampTzFromParts(Expression, Func):
     _sql_names = ["TIMESTAMP_TZ_FROM_PARTS", "TIMESTAMPTZFROMPARTS"]
     arg_types = {
         **TIMESTAMP_PARTS,
@@ -407,7 +407,7 @@ class TimestampTzFromParts(ExpressionBase, Func):
 # Date/time conversion
 
 
-class ConvertTimezone(ExpressionBase, Func):
+class ConvertTimezone(Expression, Func):
     arg_types = {
         "source_tz": False,
         "target_tz": True,
@@ -416,115 +416,115 @@ class ConvertTimezone(ExpressionBase, Func):
     }
 
 
-class DateStrToDate(ExpressionBase, Func):
+class DateStrToDate(Expression, Func):
     pass
 
 
-class DateToDateStr(ExpressionBase, Func):
+class DateToDateStr(Expression, Func):
     pass
 
 
-class DateToDi(ExpressionBase, Func):
+class DateToDi(Expression, Func):
     pass
 
 
-class DiToDate(ExpressionBase, Func):
+class DiToDate(Expression, Func):
     pass
 
 
-class FromISO8601Timestamp(ExpressionBase, Func):
+class FromISO8601Timestamp(Expression, Func):
     _sql_names = ["FROM_ISO8601_TIMESTAMP"]
 
 
-class ParseDatetime(ExpressionBase, Func):
+class ParseDatetime(Expression, Func):
     arg_types = {"this": True, "format": False, "zone": False}
 
 
-class ParseTime(ExpressionBase, Func):
+class ParseTime(Expression, Func):
     arg_types = {"this": True, "format": True}
 
 
-class StrToDate(ExpressionBase, Func):
+class StrToDate(Expression, Func):
     arg_types = {"this": True, "format": False, "safe": False}
 
 
-class StrToTime(ExpressionBase, Func):
+class StrToTime(Expression, Func):
     arg_types = {"this": True, "format": True, "zone": False, "safe": False, "target_type": False}
 
 
-class StrToUnix(ExpressionBase, Func):
+class StrToUnix(Expression, Func):
     arg_types = {"this": False, "format": False}
 
 
-class TimeStrToDate(ExpressionBase, Func):
+class TimeStrToDate(Expression, Func):
     pass
 
 
-class TimeStrToTime(ExpressionBase, Func):
+class TimeStrToTime(Expression, Func):
     arg_types = {"this": True, "zone": False}
 
 
-class TimeStrToUnix(ExpressionBase, Func):
+class TimeStrToUnix(Expression, Func):
     pass
 
 
-class TimeToStr(ExpressionBase, Func):
+class TimeToStr(Expression, Func):
     arg_types = {"this": True, "format": True, "culture": False, "zone": False}
 
 
-class TimeToTimeStr(ExpressionBase, Func):
+class TimeToTimeStr(Expression, Func):
     pass
 
 
-class TimeToUnix(ExpressionBase, Func):
+class TimeToUnix(Expression, Func):
     pass
 
 
-class TsOrDiToDi(ExpressionBase, Func):
+class TsOrDiToDi(Expression, Func):
     pass
 
 
-class TsOrDsToDate(ExpressionBase, Func):
+class TsOrDsToDate(Expression, Func):
     arg_types = {"this": True, "format": False, "safe": False}
 
 
-class TsOrDsToDateStr(ExpressionBase, Func):
+class TsOrDsToDateStr(Expression, Func):
     pass
 
 
-class TsOrDsToDatetime(ExpressionBase, Func):
+class TsOrDsToDatetime(Expression, Func):
     pass
 
 
-class TsOrDsToTime(ExpressionBase, Func):
+class TsOrDsToTime(Expression, Func):
     arg_types = {"this": True, "format": False, "safe": False}
 
 
-class TsOrDsToTimestamp(ExpressionBase, Func):
+class TsOrDsToTimestamp(Expression, Func):
     pass
 
 
-class UnixDate(ExpressionBase, Func):
+class UnixDate(Expression, Func):
     pass
 
 
-class UnixMicros(ExpressionBase, Func):
+class UnixMicros(Expression, Func):
     pass
 
 
-class UnixMillis(ExpressionBase, Func):
+class UnixMillis(Expression, Func):
     pass
 
 
-class UnixSeconds(ExpressionBase, Func):
+class UnixSeconds(Expression, Func):
     pass
 
 
-class UnixToStr(ExpressionBase, Func):
+class UnixToStr(Expression, Func):
     arg_types = {"this": True, "format": False}
 
 
-class UnixToTime(ExpressionBase, Func):
+class UnixToTime(Expression, Func):
     arg_types = {
         "this": True,
         "scale": False,
@@ -547,5 +547,5 @@ class UnixToTime(ExpressionBase, Func):
     NANOS: t.ClassVar[Literal | Neg] = Literal.number(9)
 
 
-class UnixToTimeStr(ExpressionBase, Func):
+class UnixToTimeStr(Expression, Func):
     pass

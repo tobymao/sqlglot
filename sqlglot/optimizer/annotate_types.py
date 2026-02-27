@@ -19,14 +19,14 @@ from sqlglot.schema import MappingSchema, Schema, ensure_schema
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
 
-    BinaryCoercionFunc = t.Callable[[exp.Expression, exp.Expression], exp.DType]
+    BinaryCoercionFunc = t.Callable[[exp.Expr, exp.Expr], exp.DType]
     BinaryCoercions = t.Dict[
         t.Tuple[exp.DType, exp.DType],
         BinaryCoercionFunc,
     ]
 
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.typing import ExpressionMetadataType
+    from sqlglot.typing import ExprMetadataType
 
 logger = logging.getLogger("sqlglot")
 
@@ -43,7 +43,7 @@ BIGINT_EXTRACT_DATE_PARTS = {
 def annotate_types(
     expression: E,
     schema: t.Optional[t.Dict | Schema] = None,
-    expression_metadata: t.Optional[ExpressionMetadataType] = None,
+    expression_metadata: t.Optional[ExprMetadataType] = None,
     coerces_to: t.Optional[t.Dict[exp.DType, t.Set[exp.DType]]] = None,
     dialect: DialectType = None,
     overwrite_types: bool = True,
@@ -60,7 +60,7 @@ def annotate_types(
         <DType.DOUBLE: 'DOUBLE'>
 
     Args:
-        expression: Expression to annotate.
+        expression: Expr to annotate.
         schema: Database schema.
         expression_metadata: Maps expression type to corresponding annotation function.
         coerces_to: Maps expression type to set of types that it can be coerced into.
@@ -80,7 +80,7 @@ def annotate_types(
     ).annotate(expression)
 
 
-def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DType:
+def _coerce_date_literal(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
     date_text = l.name
     is_iso_date_ = is_iso_date(date_text)
 
@@ -94,7 +94,7 @@ def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) ->
     return exp.DType.UNKNOWN
 
 
-def _coerce_date(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DType:
+def _coerce_date(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
     if not is_date_unit(unit):
         return exp.DType.DATETIME
     return l.type.this if l.type else exp.DType.UNKNOWN
@@ -102,7 +102,7 @@ def _coerce_date(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DTy
 
 def swap_args(func: BinaryCoercionFunc) -> BinaryCoercionFunc:
     @functools.wraps(func)
-    def _swapped(l: exp.Expression, r: exp.Expression) -> exp.DType:
+    def _swapped(l: exp.Expr, r: exp.Expr) -> exp.DType:
         return func(r, l)
 
     return _swapped
@@ -191,7 +191,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def __init__(
         self,
         schema: Schema,
-        expression_metadata: t.Optional[ExpressionMetadataType] = None,
+        expression_metadata: t.Optional[ExprMetadataType] = None,
         coerces_to: t.Optional[t.Dict[exp.DType, t.Set[exp.DType]]] = None,
         binary_coercions: t.Optional[BinaryCoercions] = None,
         overwrite_types: bool = True,
@@ -203,11 +203,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
-        # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
+        # Caches the ids of annotated sub-Exprs, to ensure we only visit them once
         self._visited: t.Set[int] = set()
 
         # Caches NULL-annotated expressions to set them to UNKNOWN after type inference is completed
-        self._null_expressions: t.Dict[int, exp.Expression] = {}
+        self._null_expressions: t.Dict[int, exp.Expr] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
@@ -368,7 +368,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _annotate_expression(
         self,
-        expression: exp.Expression,
+        expression: exp.Expr,
         scope: t.Optional[Scope] = None,
     ) -> None:
         stack = [(expression, False)]
@@ -583,7 +583,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_by_args(
         self,
         expression: E,
-        *args: str | exp.Expression,
+        *args: str | exp.Expr,
         promote: bool = False,
         array: bool = False,
     ) -> E:
@@ -751,10 +751,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     def _annotate_struct_value(
-        self, expression: exp.Expression
+        self, expression: exp.Expr
     ) -> t.Optional[exp.DataType] | exp.ColumnDef:
         # Case: STRUCT(key AS value)
-        this: t.Optional[exp.Expression] = None
+        this: t.Optional[exp.Expr] = None
         kind = expression.type
 
         if alias := expression.args.get("alias"):
@@ -839,7 +839,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DType.INT)
         return expression
 
-    def _annotate_by_array_element(self, expression: exp.Expression) -> exp.Expression:
+    def _annotate_by_array_element(self, expression: exp.Expr) -> exp.Expr:
         array_arg = expression.this
         if array_arg.type.is_type(exp.DType.ARRAY):
             element_type = seq_get(array_arg.type.expressions, 0) or exp.DType.UNKNOWN

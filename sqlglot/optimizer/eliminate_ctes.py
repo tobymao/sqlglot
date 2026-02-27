@@ -21,9 +21,9 @@ def eliminate_ctes(expression: E) -> E:
         'SELECT a FROM z'
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression (sqlglot.Expr): expression to optimize
     Returns:
-        sqlglot.Expression: optimized expression
+        sqlglot.Expr: optimized expression
     """
     root = build_scope(expression)
 

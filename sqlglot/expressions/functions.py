@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot.expressions.core import (
-    ExpressionBase,
+    Expression,
     Func,
     Binary,
     SubqueryPredicate,
@@ -27,7 +27,7 @@ from sqlglot.expressions.json import *  # noqa: F401,F403
 # Cast / type conversion
 
 
-class Cast(ExpressionBase, Func):
+class Cast(Expression, Func):
     is_cast: t.ClassVar[bool] = True
     arg_types = {
         "this": True,
@@ -73,23 +73,23 @@ class JSONCast(Cast):
     pass
 
 
-class CastToStrType(ExpressionBase, Func):
+class CastToStrType(Expression, Func):
     arg_types = {"this": True, "to": True}
 
 
-class Convert(ExpressionBase, Func):
+class Convert(Expression, Func):
     arg_types = {"this": True, "expression": True, "style": False, "safe": False}
 
 
 # Conditional
 
 
-class If(ExpressionBase, Func):
+class If(Expression, Func):
     arg_types = {"this": True, "true": True, "false": False}
     _sql_names = ["IF", "IIF"]
 
 
-class Case(ExpressionBase, Func):
+class Case(Expression, Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
@@ -109,225 +109,225 @@ class Case(ExpressionBase, Func):
         return instance
 
 
-class Coalesce(ExpressionBase, Func):
+class Coalesce(Expression, Func):
     arg_types = {"this": True, "expressions": False, "is_nvl": False, "is_null": False}
     is_var_len_args = True
     _sql_names = ["COALESCE", "IFNULL", "NVL"]
 
 
-class DecodeCase(ExpressionBase, Func):
+class DecodeCase(Expression, Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
 
 
-class EqualNull(ExpressionBase, Func):
+class EqualNull(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Greatest(ExpressionBase, Func):
+class Greatest(Expression, Func):
     arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
 
-class Least(ExpressionBase, Func):
+class Least(Expression, Func):
     arg_types = {"this": True, "expressions": False, "ignore_nulls": True}
     is_var_len_args = True
 
 
-class Nullif(ExpressionBase, Func):
+class Nullif(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Nvl2(ExpressionBase, Func):
+class Nvl2(Expression, Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
-class Try(ExpressionBase, Func):
+class Try(Expression, Func):
     pass
 
 
 # Predicates / misc functions
 
 
-class Collate(ExpressionBase, Binary, Func):
+class Collate(Expression, Binary, Func):
     pass
 
 
-class Collation(ExpressionBase, Func):
+class Collation(Expression, Func):
     pass
 
 
-class ConnectByRoot(ExpressionBase, Func):
+class ConnectByRoot(Expression, Func):
     pass
 
 
-class CheckXml(ExpressionBase, Func):
+class CheckXml(Expression, Func):
     arg_types = {"this": True, "disable_auto_convert": False}
 
 
-class Exists(ExpressionBase, Func, SubqueryPredicate):
+class Exists(Expression, Func, SubqueryPredicate):
     arg_types = {"this": True, "expression": False}
 
 
 # Type coercions / lax types
 
 
-class Float64(ExpressionBase, Func):
+class Float64(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class Int64(ExpressionBase, Func):
+class Int64(Expression, Func):
     pass
 
 
-class IsArray(ExpressionBase, Func):
+class IsArray(Expression, Func):
     pass
 
 
-class IsNullValue(ExpressionBase, Func):
+class IsNullValue(Expression, Func):
     pass
 
 
-class LaxBool(ExpressionBase, Func):
+class LaxBool(Expression, Func):
     pass
 
 
-class LaxFloat64(ExpressionBase, Func):
+class LaxFloat64(Expression, Func):
     pass
 
 
-class LaxInt64(ExpressionBase, Func):
+class LaxInt64(Expression, Func):
     pass
 
 
-class LaxString(ExpressionBase, Func):
+class LaxString(Expression, Func):
     pass
 
 
-class ToBoolean(ExpressionBase, Func):
+class ToBoolean(Expression, Func):
     arg_types = {"this": True, "safe": False}
 
 
 # Session / context functions
 
 
-class CurrentAccount(ExpressionBase, Func):
+class CurrentAccount(Expression, Func):
     arg_types = {}
 
 
-class CurrentAccountName(ExpressionBase, Func):
+class CurrentAccountName(Expression, Func):
     arg_types = {}
 
 
-class CurrentAvailableRoles(ExpressionBase, Func):
+class CurrentAvailableRoles(Expression, Func):
     arg_types = {}
 
 
-class CurrentCatalog(ExpressionBase, Func):
+class CurrentCatalog(Expression, Func):
     arg_types = {}
 
 
-class CurrentClient(ExpressionBase, Func):
+class CurrentClient(Expression, Func):
     arg_types = {}
 
 
-class CurrentDatabase(ExpressionBase, Func):
+class CurrentDatabase(Expression, Func):
     arg_types = {}
 
 
-class CurrentIpAddress(ExpressionBase, Func):
+class CurrentIpAddress(Expression, Func):
     arg_types = {}
 
 
-class CurrentOrganizationName(ExpressionBase, Func):
+class CurrentOrganizationName(Expression, Func):
     arg_types = {}
 
 
-class CurrentOrganizationUser(ExpressionBase, Func):
+class CurrentOrganizationUser(Expression, Func):
     arg_types = {}
 
 
-class CurrentRegion(ExpressionBase, Func):
+class CurrentRegion(Expression, Func):
     arg_types = {}
 
 
-class CurrentRole(ExpressionBase, Func):
+class CurrentRole(Expression, Func):
     arg_types = {}
 
 
-class CurrentRoleType(ExpressionBase, Func):
+class CurrentRoleType(Expression, Func):
     arg_types = {}
 
 
-class CurrentSchema(ExpressionBase, Func):
+class CurrentSchema(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentSchemas(ExpressionBase, Func):
+class CurrentSchemas(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentSecondaryRoles(ExpressionBase, Func):
+class CurrentSecondaryRoles(Expression, Func):
     arg_types = {}
 
 
-class CurrentSession(ExpressionBase, Func):
+class CurrentSession(Expression, Func):
     arg_types = {}
 
 
-class CurrentStatement(ExpressionBase, Func):
+class CurrentStatement(Expression, Func):
     arg_types = {}
 
 
-class CurrentTransaction(ExpressionBase, Func):
+class CurrentTransaction(Expression, Func):
     arg_types = {}
 
 
-class CurrentUser(ExpressionBase, Func):
+class CurrentUser(Expression, Func):
     arg_types = {"this": False}
 
 
-class CurrentVersion(ExpressionBase, Func):
+class CurrentVersion(Expression, Func):
     arg_types = {}
 
 
-class CurrentWarehouse(ExpressionBase, Func):
+class CurrentWarehouse(Expression, Func):
     arg_types = {}
 
 
-class SessionUser(ExpressionBase, Func):
+class SessionUser(Expression, Func):
     arg_types = {}
 
 
 # ML / AI
 
 
-class AIClassify(ExpressionBase, Func):
+class AIClassify(Expression, Func):
     arg_types = {"this": True, "categories": True, "config": False}
     _sql_names = ["AI_CLASSIFY"]
 
 
-class FeaturesAtTime(ExpressionBase, Func):
+class FeaturesAtTime(Expression, Func):
     arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
 
 
-class GenerateEmbedding(ExpressionBase, Func):
+class GenerateEmbedding(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": False, "is_text": False}
 
 
-class MLForecast(ExpressionBase, Func):
+class MLForecast(Expression, Func):
     arg_types = {"this": True, "expression": False, "params_struct": False}
 
 
-class MLTranslate(ExpressionBase, Func):
+class MLTranslate(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": True}
 
 
-class Predict(ExpressionBase, Func):
+class Predict(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": False}
 
 
-class VectorSearch(ExpressionBase, Func):
+class VectorSearch(Expression, Func):
     arg_types = {
         "this": True,
         "column_to_search": True,
@@ -342,13 +342,13 @@ class VectorSearch(ExpressionBase, Func):
 # Data reading
 
 
-class ReadCSV(ExpressionBase, Func):
+class ReadCSV(Expression, Func):
     _sql_names = ["READ_CSV"]
     is_var_len_args = True
     arg_types = {"this": True, "expressions": False}
 
 
-class ReadParquet(ExpressionBase, Func):
+class ReadParquet(Expression, Func):
     is_var_len_args = True
     arg_types = {"expressions": True}
 
@@ -356,17 +356,17 @@ class ReadParquet(ExpressionBase, Func):
 # XML
 
 
-class XMLElement(ExpressionBase, Func):
+class XMLElement(Expression, Func):
     _sql_names = ["XMLELEMENT"]
     arg_types = {"this": True, "expressions": False, "evalname": False}
 
 
-class XMLGet(ExpressionBase, Func):
+class XMLGet(Expression, Func):
     _sql_names = ["XMLGET"]
     arg_types = {"this": True, "expression": True, "instance": False}
 
 
-class XMLTable(ExpressionBase, Func):
+class XMLTable(Expression, Func):
     arg_types = {
         "this": True,
         "namespaces": False,
@@ -379,81 +379,81 @@ class XMLTable(ExpressionBase, Func):
 # Network / domain
 
 
-class Host(ExpressionBase, Func):
+class Host(Expression, Func):
     pass
 
 
-class NetFunc(ExpressionBase, Func):
+class NetFunc(Expression, Func):
     pass
 
 
-class ParseIp(ExpressionBase, Func):
+class ParseIp(Expression, Func):
     arg_types = {"this": True, "type": True, "permissive": False}
 
 
-class RegDomain(ExpressionBase, Func):
+class RegDomain(Expression, Func):
     pass
 
 
 # Misc utility
 
 
-class Columns(ExpressionBase, Func):
+class Columns(Expression, Func):
     arg_types = {"this": True, "unpack": False}
 
 
-class Normal(ExpressionBase, Func):
+class Normal(Expression, Func):
     arg_types = {"this": True, "stddev": True, "gen": True}
 
 
-class Rand(ExpressionBase, Func):
+class Rand(Expression, Func):
     _sql_names = ["RAND", "RANDOM"]
     arg_types = {"this": False, "lower": False, "upper": False}
 
 
-class Randn(ExpressionBase, Func):
+class Randn(Expression, Func):
     arg_types = {"this": False}
 
 
-class Randstr(ExpressionBase, Func):
+class Randstr(Expression, Func):
     arg_types = {"this": True, "generator": False}
 
 
-class RangeBucket(ExpressionBase, Func):
+class RangeBucket(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class RangeN(ExpressionBase, Func):
+class RangeN(Expression, Func):
     arg_types = {"this": True, "expressions": True, "each": False}
 
 
-class Seq1(ExpressionBase, Func):
+class Seq1(Expression, Func):
     arg_types = {"this": False}
 
 
-class Seq2(ExpressionBase, Func):
+class Seq2(Expression, Func):
     arg_types = {"this": False}
 
 
-class Seq4(ExpressionBase, Func):
+class Seq4(Expression, Func):
     arg_types = {"this": False}
 
 
-class Seq8(ExpressionBase, Func):
+class Seq8(Expression, Func):
     arg_types = {"this": False}
 
 
-class Uniform(ExpressionBase, Func):
+class Uniform(Expression, Func):
     arg_types = {"this": True, "expression": True, "gen": False, "seed": False}
 
 
-class Uuid(ExpressionBase, Func):
+class Uuid(Expression, Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
     arg_types = {"this": False, "name": False, "is_string": False}
 
 
-class WidthBucket(ExpressionBase, Func):
+class WidthBucket(Expression, Func):
     arg_types = {
         "this": True,
         "min_value": False,
@@ -463,5 +463,5 @@ class WidthBucket(ExpressionBase, Func):
     }
 
 
-class Zipf(ExpressionBase, Func):
+class Zipf(Expression, Func):
     arg_types = {"this": True, "elementcount": True, "gen": True}

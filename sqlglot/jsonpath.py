@@ -213,7 +213,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     return exp.JSONPath(expressions=expressions)
 
 
-JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
+JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = {
     exp.JSONPathFilter: lambda _, e: f"?{e.this}",
     exp.JSONPathKey: lambda self, e: self._jsonpathkey_sql(e),
     exp.JSONPathRecursive: lambda _, e: f"..{e.this or ''}",

@@ -120,7 +120,7 @@ def _substring_sql(self: Postgres.Generator, expression: exp.Substring) -> str:
     return f"SUBSTRING({this}{from_part}{for_part})"
 
 
-def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
+def _auto_increment_to_serial(expression: exp.Expr) -> exp.Expr:
     auto = expression.find(exp.AutoIncrementColumnConstraint)
 
     if auto:
@@ -137,7 +137,7 @@ def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
+def _serial_to_generated(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.ColumnDef):
         return expression
     kind = expression.kind
@@ -591,7 +591,7 @@ class Postgres(Dialect):
                 variadic=(param_mode == TokenType.VARIADIC),
             )
 
-        def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
+        def _parse_function_parameter(self) -> t.Optional[exp.Expr]:
             param_mode = self._parse_parameter_mode()
 
             if param_mode:
@@ -610,7 +610,7 @@ class Postgres(Dialect):
 
             return column_def
 
-        def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
+        def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
             this = (
                 self._parse_wrapped(self._parse_id_var)
                 if self._match(TokenType.L_PAREN, advance=False)
@@ -619,7 +619,7 @@ class Postgres(Dialect):
             self._match_text_seq("S")
             return self.expression(exp.Placeholder, this=this)
 
-        def _parse_date_part(self) -> exp.Expression:
+        def _parse_date_part(self) -> exp.Expr:
             part = self._parse_type()
             self._match(TokenType.COMMA)
             value = self._parse_bitwise()
@@ -629,7 +629,7 @@ class Postgres(Dialect):
 
             return self.expression(exp.Extract, this=part, expression=value)
 
-        def _parse_unique_key(self) -> t.Optional[exp.Expression]:
+        def _parse_unique_key(self) -> t.Optional[exp.Expr]:
             return None
 
         def _parse_jsonb_exists(self) -> exp.JSONBExists:
@@ -654,9 +654,7 @@ class Postgres(Dialect):
 
             return this
 
-        def _parse_user_defined_type(
-            self, identifier: exp.Identifier
-        ) -> t.Optional[exp.Expression]:
+        def _parse_user_defined_type(self, identifier: exp.Identifier) -> t.Optional[exp.Expr]:
             udt_type: exp.Identifier | exp.Dot = identifier
 
             while self._match(TokenType.DOT):
@@ -863,7 +861,7 @@ class Postgres(Dialect):
             if len(expression.expressions) == 1:
                 arg = expression.expressions[0]
                 if isinstance(arg, exp.GenerateDateArray):
-                    generate_series: exp.Expression = exp.GenerateSeries(**arg.args)
+                    generate_series: exp.Expr = exp.GenerateSeries(**arg.args)
                     if isinstance(expression.parent, (exp.From, exp.Join)):
                         generate_series = (
                             exp.select("value::date")

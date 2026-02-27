@@ -18,14 +18,14 @@ if t.TYPE_CHECKING:
 
 
 def qualify_columns(
-    expression: exp.Expression,
+    expression: exp.Expr,
     schema: t.Dict | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
     allow_partial_qualification: bool = False,
     dialect: DialectType = None,
-) -> exp.Expression:
+) -> exp.Expr:
     """
     Rewrite sqlglot AST to have fully qualified columns.
 
@@ -37,7 +37,7 @@ def qualify_columns(
         'SELECT tbl.col AS col FROM tbl'
 
     Args:
-        expression: Expression to qualify.
+        expression: Expr to qualify.
         schema: Database schema.
         expand_alias_refs: Whether to expand references to aliases.
         expand_stars: Whether to expand star queries. This is a necessary step
@@ -261,7 +261,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             table = table or source_table
 
             if i == 0 or using_identifier_count == 1:
-                lhs: exp.Expression = exp.column(identifier, table=table)
+                lhs: exp.Expr = exp.column(identifier, table=table)
             else:
                 coalesce_columns = [
                     exp.column(identifier, table=t)
@@ -294,7 +294,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
                 coalesce_args = [exp.column(column.name, table=table) for table in tables]
-                replacement: exp.Expression = exp.func("coalesce", *coalesce_args)
+                replacement: exp.Expr = exp.func("coalesce", *coalesce_args)
 
                 if isinstance(column.parent, exp.Select):
                     # Ensure the USING column keeps its name if it's projected
@@ -324,12 +324,12 @@ def _expand_alias_refs(
     if not isinstance(expression, exp.Select) or dialect.DISABLES_ALIAS_REF_EXPANSION:
         return
 
-    alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
+    alias_to_expression: t.Dict[str, t.Tuple[exp.Expr, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
     def replace_columns(
-        node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
+        node: t.Optional[exp.Expr], resolve_table: bool = False, literal_index: bool = False
     ) -> None:
         nonlocal replaced
         is_group_by = isinstance(node, exp.Group)
@@ -445,7 +445,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         if isinstance(modifier, exp.Distinct):
             modifier = modifier.args.get("on")
 
-        if not isinstance(modifier, exp.Expression):
+        if not isinstance(modifier, exp.Expr):
             continue
 
         modifier_expressions = modifier.expressions
@@ -477,9 +477,9 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: Dialect, alias: bool = False
-) -> t.List[exp.Expression]:
-    new_nodes: t.List[exp.Expression] = []
+    scope: Scope, expressions: t.Iterable[exp.Expr], dialect: Dialect, alias: bool = False
+) -> t.List[exp.Expr]:
+    new_nodes: t.List[exp.Expr] = []
     ambiguous_projections = None
 
     for node in expressions:
@@ -760,7 +760,7 @@ def _expand_stars(
 ) -> None:
     """Expand stars to lists of column selections"""
 
-    new_selections: t.List[exp.Expression] = []
+    new_selections: t.List[exp.Expr] = []
     except_columns: t.Dict[int, t.Set[str]] = {}
     replace_columns: t.Dict[int, t.Dict[str, exp.Alias]] = {}
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
@@ -885,7 +885,7 @@ def _expand_stars(
 
 
 def _add_except_columns(
-    expression: exp.Expression, tables, except_columns: t.Dict[int, t.Set[str]]
+    expression: exp.Expr, tables, except_columns: t.Dict[int, t.Set[str]]
 ) -> None:
     except_ = expression.args.get("except_")
 
@@ -899,7 +899,7 @@ def _add_except_columns(
 
 
 def _add_rename_columns(
-    expression: exp.Expression, tables, rename_columns: t.Dict[int, t.Dict[str, str]]
+    expression: exp.Expr, tables, rename_columns: t.Dict[int, t.Dict[str, str]]
 ) -> None:
     rename = expression.args.get("rename")
 
@@ -913,7 +913,7 @@ def _add_rename_columns(
 
 
 def _add_replace_columns(
-    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Dict[str, exp.Alias]]
+    expression: exp.Expr, tables, replace_columns: t.Dict[int, t.Dict[str, exp.Alias]]
 ) -> None:
     replace = expression.args.get("replace")
 
@@ -926,9 +926,9 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expr) -> None:
     """Ensure all output columns are aliased"""
-    if isinstance(scope_or_expression, exp.Expression):
+    if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
         if not isinstance(scope, Scope):
             return

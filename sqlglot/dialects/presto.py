@@ -119,7 +119,7 @@ def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> st
     return self.func("DATE_DIFF", unit, expr, this)
 
 
-def _build_approx_percentile(args: t.List) -> exp.Expression:
+def _build_approx_percentile(args: t.List) -> exp.Expr:
     if len(args) == 4:
         return exp.ApproxQuantile(
             this=seq_get(args, 0),
@@ -134,7 +134,7 @@ def _build_approx_percentile(args: t.List) -> exp.Expression:
     return exp.ApproxQuantile.from_arg_list(args)
 
 
-def _build_from_unixtime(args: t.List) -> exp.Expression:
+def _build_from_unixtime(args: t.List) -> exp.Expr:
     if len(args) == 3:
         return exp.UnixToTime(
             this=seq_get(args, 0),
@@ -170,7 +170,7 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
-def _to_int(self: Presto.Generator, expression: exp.Expression) -> exp.Expression:
+def _to_int(self: Presto.Generator, expression: exp.Expr) -> exp.Expr:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
@@ -228,7 +228,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
     return explode_to_unnest_sql(self, expression)
 
 
-def amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
+def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
     # We check for expression.type because the columns can be amended only if types were inferred
     if isinstance(expression, exp.Select) and expression.type:
         for lateral in expression.args.get("laterals") or []:
@@ -637,7 +637,7 @@ class Presto(Dialect):
             value = expression.expression
 
             ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
-            to_unix: exp.Expression = exp.TimeToUnix(this=ts)
+            to_unix: exp.Expr = exp.TimeToUnix(this=ts)
 
             if scale:
                 to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
@@ -740,7 +740,7 @@ class Presto(Dialect):
             return f"START TRANSACTION{modes}"
 
         def offset_limit_modifiers(
-            self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
+            self, expression: exp.Expr, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
         ) -> t.List[str]:
             return [
                 self.sql(expression, "offset"),

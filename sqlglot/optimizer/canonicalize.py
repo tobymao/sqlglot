@@ -9,7 +9,7 @@ from sqlglot.helper import is_date_unit, is_iso_date, is_iso_datetime
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
-def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp.Expression:
+def canonicalize(expression: exp.Expr, dialect: DialectType = None) -> exp.Expr:
     """Converts a sql expression into a standard form.
 
     This method relies on annotate_types because many of the
@@ -21,7 +21,7 @@ def canonicalize(expression: exp.Expression, dialect: DialectType = None) -> exp
 
     _dialect = Dialect.get_or_raise(dialect)
 
-    def _canonicalize(expression: exp.Expression) -> exp.Expression:
+    def _canonicalize(expression: exp.Expr) -> exp.Expr:
         if not isinstance(expression, _CANONICALIZE_TYPES):
             return expression
         expression = add_text_to_concat(expression)
@@ -80,7 +80,7 @@ _CANONICALIZE_TYPES = tuple(
 )
 
 
-def add_text_to_concat(node: exp.Expression) -> exp.Expression:
+def add_text_to_concat(node: exp.Expr) -> exp.Expr:
     if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
         node = exp.Concat(
             expressions=[node.left, node.right],
@@ -91,7 +91,7 @@ def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     return node
 
 
-def replace_date_funcs(node: exp.Expression, dialect: DialectType) -> exp.Expression:
+def replace_date_funcs(node: exp.Expr, dialect: DialectType) -> exp.Expr:
     if (
         isinstance(node, (exp.Date, exp.TsOrDsToDate))
         and not node.expressions
@@ -110,7 +110,7 @@ def replace_date_funcs(node: exp.Expression, dialect: DialectType) -> exp.Expres
     return node
 
 
-def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -> exp.Expression:
+def coerce_type(node: exp.Expr, promote_to_inferred_datetime_type: bool) -> exp.Expr:
     if isinstance(node, COERCIBLE_DATE_OPS):
         _coerce_date(node.left, node.right, promote_to_inferred_datetime_type)
     elif isinstance(node, exp.Between):
@@ -127,7 +127,7 @@ def coerce_type(node: exp.Expression, promote_to_inferred_datetime_type: bool) -
     return node
 
 
-def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
+def remove_redundant_casts(expression: exp.Expr) -> exp.Expr:
     if (
         isinstance(expression, exp.Cast)
         and expression.this.type
@@ -146,9 +146,7 @@ def remove_redundant_casts(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def ensure_bools(
-    expression: exp.Expression, replace_func: t.Callable[[exp.Expression], None]
-) -> exp.Expression:
+def ensure_bools(expression: exp.Expr, replace_func: t.Callable[[exp.Expr], None]) -> exp.Expr:
     if isinstance(expression, exp.Connector):
         replace_func(expression.left)
         replace_func(expression.right)
@@ -165,7 +163,7 @@ def ensure_bools(
     return expression
 
 
-def remove_ascending_order(expression: exp.Expression) -> exp.Expression:
+def remove_ascending_order(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Ordered) and expression.args.get("desc") is False:
         # Convert ORDER BY a ASC to ORDER BY a
         expression.set("desc", None)
@@ -174,8 +172,8 @@ def remove_ascending_order(expression: exp.Expression) -> exp.Expression:
 
 
 def _coerce_date(
-    a: exp.Expression,
-    b: exp.Expression,
+    a: exp.Expr,
+    b: exp.Expr,
     promote_to_inferred_datetime_type: bool,
 ) -> None:
     for a, b in itertools.permutations([a, b]):
@@ -217,7 +215,7 @@ def _coerce_date(
         _replace_cast(b, target_type)
 
 
-def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:
+def _coerce_timeunit_arg(arg: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.Expr:
     if not arg.type:
         return arg
 
@@ -244,7 +242,7 @@ def _coerce_datediff_args(node: exp.DateDiff) -> None:
             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
 
 
-def _replace_cast(node: exp.Expression, to: exp.DATA_TYPE) -> None:
+def _replace_cast(node: exp.Expr, to: exp.DATA_TYPE) -> None:
     node.replace(exp.cast(node.copy(), to=to))
 
 
@@ -252,7 +250,7 @@ def _replace_cast(node: exp.Expression, to: exp.DATA_TYPE) -> None:
 # this is different in that it only operates on int types, this is because
 # presto has a boolean type whereas tsql doesn't (people use bits)
 # with y as (select true as x) select x = 0 FROM y -- illegal presto query
-def _replace_int_predicate(expression: exp.Expression) -> None:
+def _replace_int_predicate(expression: exp.Expr) -> None:
     if isinstance(expression, exp.Coalesce):
         for child in expression.iter_expressions():
             _replace_int_predicate(child)

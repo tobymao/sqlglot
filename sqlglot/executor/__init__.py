@@ -24,12 +24,12 @@ logger = logging.getLogger("sqlglot")
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.expressions import Expression
+    from sqlglot.expressions import Expr
     from sqlglot.schema import Schema
 
 
 def execute(
-    sql: str | Expression,
+    sql: str | Expr,
     schema: t.Optional[t.Dict | Schema] = None,
     dialect: DialectType = None,
     tables: t.Optional[t.Dict] = None,

@@ -35,7 +35,7 @@ def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
     return self.func("MAP_FROM_ARRAYS", keys, values)
 
 
-def _build_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:
+def _build_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expr]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 
@@ -63,7 +63,7 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 
-def _unalias_pivot(expression: exp.Expression) -> exp.Expression:
+def _unalias_pivot(expression: exp.Expr) -> exp.Expr:
     """
     Spark doesn't allow PIVOT aliases, so we need to remove them and possibly wrap a
     pivoted source in a subquery with the same alias to preserve the query's semantics.
@@ -89,7 +89,7 @@ def _unalias_pivot(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
+def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
     """
     Spark doesn't allow the column referenced in the PIVOT's field to be qualified,
     so we need to unqualify it.
@@ -108,7 +108,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def temporary_storage_provider(expression: exp.Expression) -> exp.Expression:
+def temporary_storage_provider(expression: exp.Expr) -> exp.Expr:
     # spark2, spark, Databricks require a storage provider for temporary tables
     provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))
     expression.args["properties"].append("expressions", provider)
@@ -213,7 +213,7 @@ class Spark2(Hive):
                 else None
             )
 
-        def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+        def _pivot_column_names(self, aggregations: t.List[exp.Expr]) -> t.List[str]:
             if len(aggregations) == 1:
                 return []
             return pivot_column_names(aggregations, dialect="spark")

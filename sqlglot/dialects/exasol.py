@@ -55,7 +55,7 @@ def _build_nullifzero(args: t.List) -> exp.If:
 
 
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
-def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
+def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         aliases: dict[str, bool] = {
             alias.name: bool(alias.args.get("quoted"))
@@ -73,7 +73,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
         ):
             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
-        def prefix_local(node, visible_aliases: dict[str, bool]) -> exp.Expression:
+        def prefix_local(node, visible_aliases: dict[str, bool]) -> exp.Expr:
             if isinstance(node, exp.Column) and not node.table:
                 if node.name in visible_aliases:
                     return exp.Column(
@@ -87,7 +87,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expression) -> exp.Expression:
                 expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
 
         seen_aliases: dict[str, bool] = {}
-        new_selects: list[exp.Expression] = []
+        new_selects: list[exp.Expr] = []
         for sel in expression.selects:
             if isinstance(sel, exp.Alias):
                 inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
@@ -125,7 +125,7 @@ def _timestamp_trunc_sql(self: Exasol.Generator, expression: exp.DateTrunc) -> s
     return _trunc_sql(self, "TIMESTAMP", expression)
 
 
-def is_case_insensitive(node: exp.Expression) -> bool:
+def is_case_insensitive(node: exp.Expr) -> bool:
     return isinstance(node, exp.Collate) and node.text("expression").upper() == "UTF8_LCASE"
 
 
@@ -166,7 +166,7 @@ def _substring_index_sql(self: Exasol.Generator, expression: exp.SubstringIndex)
 
 
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=The%20select_list%20defines%20the%20columns%20of%20the%20result%20table.%20If%20*%20is%20used%2C%20all%20columns%20are%20listed.%20You%20can%20use%20an%20expression%20like%20t.*%20to%20list%20all%20columns%20of%20the%20table%20t%2C%20the%20view%20t%2C%20or%20the%20object%20with%20the%20table%20alias%20t.
-def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
+def _qualify_unscoped_star(expression: exp.Expr) -> exp.Expr:
     """
     Exasol doesn't support a bare * alongside other select items, so we rewrite it
     Rewrite: SELECT *, <other> FROM <Table>
@@ -178,11 +178,11 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
 
     select_expressions = expression.expressions or []
 
-    def is_bare_star(expr: exp.Expression) -> bool:
+    def is_bare_star(expr: exp.Expr) -> bool:
         return isinstance(expr, exp.Star) and expr.this is None
 
     has_other_expression = False
-    bare_star_expr: exp.Expression | None = None
+    bare_star_expr: exp.Expr | None = None
     for expr in select_expressions:
         has_bare_star = is_bare_star(expr)
         if has_bare_star and bare_star_expr is None:
@@ -214,7 +214,7 @@ def _qualify_unscoped_star(expression: exp.Expression) -> exp.Expression:
         exp.Column(this=bare_star_expr.copy(), table=ident) for ident in table_identifiers
     ]
 
-    new_select_expressions: list[exp.Expression] = []
+    new_select_expressions: list[exp.Expr] = []
 
     for select_expr in select_expressions:
         new_select_expressions.extend(qualified_star_columns) if is_bare_star(
@@ -238,7 +238,7 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
         self.unsupported(f"'{unit}' is not supported in Exasol.")
         return self.function_fallback_sql(expression)
 
-    offset_expr: exp.Expression = expression.expression
+    offset_expr: exp.Expr = expression.expression
     if interval is not None:
         offset_expr = interval.this
 
@@ -251,7 +251,7 @@ def _add_date_sql(self: Exasol.Generator, expression: DATE_ADD_OR_SUB) -> str:
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
 
-def _group_by_all(expression: exp.Expression) -> exp.Expression:
+def _group_by_all(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.Select):
         return expression
 
@@ -446,7 +446,7 @@ class Exasol(Dialect):
             "JSON_EXTRACT": lambda self: self._parse_json_extract(),
         }
 
-        def _parse_column(self) -> t.Optional[exp.Expression]:
+        def _parse_column(self) -> t.Optional[exp.Expr]:
             column = super()._parse_column()
             if not isinstance(column, exp.Column):
                 return column

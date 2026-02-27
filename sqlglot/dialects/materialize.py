@@ -27,7 +27,7 @@ class Materialize(Postgres):
             ),
         }
 
-        def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
+        def _parse_lambda_arg(self) -> t.Optional[exp.Expr]:
             return self._parse_field()
 
         def _parse_map(self) -> exp.ToMap:

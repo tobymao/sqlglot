@@ -12,6 +12,6 @@ if t.TYPE_CHECKING:
 # But Python 3.7 doesn't support Protocols, so we'd also need typing_extensions, which we don't want as a dependency.
 A = t.TypeVar("A", bound=t.Any)
 B = t.TypeVar("B", bound="sqlglot.exp.Binary")
-E = t.TypeVar("E", bound="sqlglot.exp.Expression")
+E = t.TypeVar("E", bound="sqlglot.exp.Expr")
 F = t.TypeVar("F", bound="sqlglot.exp.Func")
 T = t.TypeVar("T")

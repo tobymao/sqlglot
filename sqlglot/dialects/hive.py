@@ -183,9 +183,9 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
 
 
 def _build_with_ignore_nulls(
-    exp_class: t.Type[exp.Expression],
-) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
-    def _parse(args: t.List[exp.Expression]) -> exp.Expression:
+    exp_class: t.Type[exp.Expr],
+) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
+    def _parse(args: t.List[exp.Expr]) -> exp.Expr:
         this = exp_class(this=seq_get(args, 0))
         if seq_get(args, 1) == exp.true():
             return exp.IgnoreNulls(this=this)
@@ -434,7 +434,7 @@ class Hive(Dialect):
 
         def _parse_quantile_function(self, func: t.Type[F]) -> F:
             if self._match(TokenType.DISTINCT):
-                first_arg: t.Optional[exp.Expression] = self.expression(
+                first_arg: t.Optional[exp.Expr] = self.expression(
                     exp.Distinct, expressions=[self._parse_lambda()]
                 )
             else:
@@ -449,7 +449,7 @@ class Hive(Dialect):
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             """
             Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
             STRING in all contexts except for schema definitions. For example, this is in Spark v3.4.0:
@@ -484,7 +484,7 @@ class Hive(Dialect):
 
             return this
 
-        def _parse_alter_table_change(self) -> t.Optional[exp.Expression]:
+        def _parse_alter_table_change(self) -> t.Optional[exp.Expr]:
             self._match(TokenType.COLUMN)
             this = self._parse_field(any_token=True)
 
@@ -515,7 +515,7 @@ class Hive(Dialect):
 
         def _parse_partition_and_order(
             self,
-        ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
+        ) -> t.Tuple[t.List[exp.Expr], t.Optional[exp.Expr]]:
             return (
                 (
                     self._parse_csv(self._parse_assignment)
@@ -534,7 +534,7 @@ class Hive(Dialect):
             self._match(TokenType.R_BRACE)
             return self.expression(exp.Parameter, this=this, expression=expression)
 
-        def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
+        def _to_prop_eq(self, expression: exp.Expr, index: int) -> exp.Expr:
             if expression.is_star:
                 return expression
 
@@ -720,7 +720,7 @@ class Hive(Dialect):
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = (
+        TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expr], ...] = (
             exp.DateDiff,
             exp.Day,
             exp.Month,

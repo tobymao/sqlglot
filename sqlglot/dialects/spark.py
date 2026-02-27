@@ -26,7 +26,7 @@ from sqlglot.transforms import (
 )
 
 
-def _build_datediff(args: t.List) -> exp.Expression:
+def _build_datediff(args: t.List) -> exp.Expr:
     """
     Although Spark docs don't mention the "unit" argument, Spark3 added support for
     it at some point. Databricks also supports this variant (see below).
@@ -44,7 +44,7 @@ def _build_datediff(args: t.List) -> exp.Expression:
     expression = seq_get(args, 1)
 
     if len(args) == 3:
-        unit = exp.var(t.cast(exp.Expression, this).name)
+        unit = exp.var(t.cast(exp.Expr, this).name)
         this = args[2]
 
     return exp.DateDiff(
@@ -52,7 +52,7 @@ def _build_datediff(args: t.List) -> exp.Expression:
     )
 
 
-def _build_dateadd(args: t.List) -> exp.Expression:
+def _build_dateadd(args: t.List) -> exp.Expr:
     expression = seq_get(args, 1)
 
     if len(args) == 2:
@@ -67,7 +67,7 @@ def _build_dateadd(args: t.List) -> exp.Expression:
     return exp.TimestampAdd(this=seq_get(args, 2), expression=expression, unit=seq_get(args, 0))
 
 
-def _normalize_partition(e: exp.Expression) -> exp.Expression:
+def _normalize_partition(e: exp.Expr) -> exp.Expr:
     """Normalize the expressions in PARTITION BY (<expression>, <expression>, ...)"""
     if isinstance(e, str):
         return exp.to_identifier(e)
@@ -182,7 +182,7 @@ class Spark(Spark2):
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
-        def _parse_query_parameter(self) -> t.Optional[exp.Expression]:
+        def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
             this = self._parse_id_var()
             self._match(TokenType.R_BRACE)
             return self.expression(exp.Placeholder, this=this, widget=True)
@@ -209,7 +209,7 @@ class Spark(Spark2):
                 return self.expression(exp.ComputedColumnConstraint, this=this.expression)
             return this
 
-        def _parse_pivot_aggregation(self) -> t.Optional[exp.Expression]:
+        def _parse_pivot_aggregation(self) -> t.Optional[exp.Expr]:
             # Spark 3+ and Databricks support non aggregate functions in PIVOT too, e.g
             # PIVOT (..., 'foo' AS bar FOR col_to_pivot IN (...))
             aggregate_expr = self._parse_function() or self._parse_disjunction()

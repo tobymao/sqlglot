@@ -6,7 +6,7 @@ import unittest
 from sqlglot import ParseError, alias, exp, parse_one
 
 
-class TestExpressions(unittest.TestCase):
+class TestExprs(unittest.TestCase):
     maxDiff = None
 
     def test_to_s(self):
@@ -665,8 +665,8 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
         self.assertEqual(len(list(expression.walk())), 9)
         self.assertEqual(len(list(expression.walk(bfs=False))), 9)
-        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk()))
-        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk(bfs=False)))
+        self.assertTrue(all(isinstance(e, exp.Expr) for e in expression.walk()))
+        self.assertTrue(all(isinstance(e, exp.Expr) for e in expression.walk(bfs=False)))
 
     def test_str_position_order(self):
         str_position_exp = parse_one("STR_POSITION('mytest', 'test')")

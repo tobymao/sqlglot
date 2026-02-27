@@ -2,168 +2,168 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import ExpressionBase, Func, AggFunc
+from sqlglot.expressions.core import Expression, Func, AggFunc
 
 
 # Trigonometric
 
 
-class Acos(ExpressionBase, Func):
+class Acos(Expression, Func):
     pass
 
 
-class Acosh(ExpressionBase, Func):
+class Acosh(Expression, Func):
     pass
 
 
-class Asin(ExpressionBase, Func):
+class Asin(Expression, Func):
     pass
 
 
-class Asinh(ExpressionBase, Func):
+class Asinh(Expression, Func):
     pass
 
 
-class Atan(ExpressionBase, Func):
+class Atan(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class Atanh(ExpressionBase, Func):
+class Atanh(Expression, Func):
     pass
 
 
-class Atan2(ExpressionBase, Func):
+class Atan2(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Cos(ExpressionBase, Func):
+class Cos(Expression, Func):
     pass
 
 
-class Cosh(ExpressionBase, Func):
+class Cosh(Expression, Func):
     pass
 
 
-class Cot(ExpressionBase, Func):
+class Cot(Expression, Func):
     pass
 
 
-class Coth(ExpressionBase, Func):
+class Coth(Expression, Func):
     pass
 
 
-class Csc(ExpressionBase, Func):
+class Csc(Expression, Func):
     pass
 
 
-class Csch(ExpressionBase, Func):
+class Csch(Expression, Func):
     pass
 
 
-class Degrees(ExpressionBase, Func):
+class Degrees(Expression, Func):
     pass
 
 
-class Radians(ExpressionBase, Func):
+class Radians(Expression, Func):
     pass
 
 
-class Sec(ExpressionBase, Func):
+class Sec(Expression, Func):
     pass
 
 
-class Sech(ExpressionBase, Func):
+class Sech(Expression, Func):
     pass
 
 
-class Sin(ExpressionBase, Func):
+class Sin(Expression, Func):
     pass
 
 
-class Sinh(ExpressionBase, Func):
+class Sinh(Expression, Func):
     pass
 
 
-class Tan(ExpressionBase, Func):
+class Tan(Expression, Func):
     pass
 
 
-class Tanh(ExpressionBase, Func):
+class Tanh(Expression, Func):
     pass
 
 
 # Geometric distance / similarity
 
 
-class CosineDistance(ExpressionBase, Func):
+class CosineDistance(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class DotProduct(ExpressionBase, Func):
+class DotProduct(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class EuclideanDistance(ExpressionBase, Func):
+class EuclideanDistance(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class JarowinklerSimilarity(ExpressionBase, Func):
+class JarowinklerSimilarity(Expression, Func):
     arg_types = {"this": True, "expression": True, "case_insensitive": False}
 
 
-class ManhattanDistance(ExpressionBase, Func):
+class ManhattanDistance(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
 # Basic arithmetic / math
 
 
-class Abs(ExpressionBase, Func):
+class Abs(Expression, Func):
     pass
 
 
-class Cbrt(ExpressionBase, Func):
+class Cbrt(Expression, Func):
     pass
 
 
-class Ceil(ExpressionBase, Func):
+class Ceil(Expression, Func):
     arg_types = {"this": True, "decimals": False, "to": False}
     _sql_names = ["CEIL", "CEILING"]
 
 
-class Exp(ExpressionBase, Func):
+class Exp(Expression, Func):
     pass
 
 
-class Factorial(ExpressionBase, Func):
+class Factorial(Expression, Func):
     pass
 
 
-class Floor(ExpressionBase, Func):
+class Floor(Expression, Func):
     arg_types = {"this": True, "decimals": False, "to": False}
 
 
-class IsInf(ExpressionBase, Func):
+class IsInf(Expression, Func):
     _sql_names = ["IS_INF", "ISINF"]
 
 
-class IsNan(ExpressionBase, Func):
+class IsNan(Expression, Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
-class Ln(ExpressionBase, Func):
+class Ln(Expression, Func):
     pass
 
 
-class Log(ExpressionBase, Func):
+class Log(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class Pi(ExpressionBase, Func):
+class Pi(Expression, Func):
     arg_types = {}
 
 
-class Round(ExpressionBase, Func):
+class Round(Expression, Func):
     arg_types = {
         "this": True,
         "decimals": False,
@@ -172,15 +172,15 @@ class Round(ExpressionBase, Func):
     }
 
 
-class Sign(ExpressionBase, Func):
+class Sign(Expression, Func):
     _sql_names = ["SIGN", "SIGNUM"]
 
 
-class Sqrt(ExpressionBase, Func):
+class Sqrt(Expression, Func):
     pass
 
 
-class Trunc(ExpressionBase, Func):
+class Trunc(Expression, Func):
     arg_types = {"this": True, "decimals": False}
     _sql_names = ["TRUNC", "TRUNCATE"]
 
@@ -188,82 +188,82 @@ class Trunc(ExpressionBase, Func):
 # Safe arithmetic
 
 
-class SafeAdd(ExpressionBase, Func):
+class SafeAdd(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeDivide(ExpressionBase, Func):
+class SafeDivide(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeMultiply(ExpressionBase, Func):
+class SafeMultiply(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class SafeNegate(ExpressionBase, Func):
+class SafeNegate(Expression, Func):
     pass
 
 
-class SafeSubtract(ExpressionBase, Func):
+class SafeSubtract(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
 # Bitwise
 
 
-class BitwiseAndAgg(ExpressionBase, AggFunc):
+class BitwiseAndAgg(Expression, AggFunc):
     pass
 
 
-class BitwiseCount(ExpressionBase, Func):
+class BitwiseCount(Expression, Func):
     pass
 
 
-class BitwiseOrAgg(ExpressionBase, AggFunc):
+class BitwiseOrAgg(Expression, AggFunc):
     pass
 
 
-class BitwiseXorAgg(ExpressionBase, AggFunc):
+class BitwiseXorAgg(Expression, AggFunc):
     pass
 
 
-class BitmapBitPosition(ExpressionBase, Func):
+class BitmapBitPosition(Expression, Func):
     pass
 
 
-class BitmapBucketNumber(ExpressionBase, Func):
+class BitmapBucketNumber(Expression, Func):
     pass
 
 
-class BitmapConstructAgg(ExpressionBase, AggFunc):
+class BitmapConstructAgg(Expression, AggFunc):
     pass
 
 
-class BitmapCount(ExpressionBase, Func):
+class BitmapCount(Expression, Func):
     pass
 
 
-class BitmapOrAgg(ExpressionBase, AggFunc):
+class BitmapOrAgg(Expression, AggFunc):
     pass
 
 
-class Booland(ExpressionBase, Func):
+class Booland(Expression, Func):
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
-class Boolnot(ExpressionBase, Func):
+class Boolnot(Expression, Func):
     arg_types = {"this": True, "round_input": False}
 
 
-class Boolor(ExpressionBase, Func):
+class Boolor(Expression, Func):
     arg_types = {"this": True, "expression": True, "round_input": False}
 
 
-class BoolxorAgg(ExpressionBase, AggFunc):
+class BoolxorAgg(Expression, AggFunc):
     pass
 
 
-class Getbit(ExpressionBase, Func):
+class Getbit(Expression, Func):
     _sql_names = ["GETBIT", "GET_BIT"]
     # zero_is_msb means the most significant bit is indexed 0
     arg_types = {"this": True, "expression": True, "zero_is_msb": False}

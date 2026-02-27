@@ -577,7 +577,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalize = self.normalize if normalize is None else normalize
 
         if isinstance(udf, str):
-            parsed: exp.Expression = exp.maybe_parse(udf, dialect=dialect)
+            parsed: exp.Expr = exp.maybe_parse(udf, dialect=dialect)
 
             if isinstance(parsed, exp.Anonymous):
                 udf = parsed

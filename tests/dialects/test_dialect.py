@@ -26,7 +26,7 @@ class Validator(unittest.TestCase):
 
     def assert_duckdb_sql(
         self,
-        expression: exp.Expression,
+        expression: exp.Expr,
         *,
         includes: t.Optional[t.Iterable[str]] = None,
         excludes: t.Optional[t.Iterable[str]] = None,
@@ -2029,7 +2029,7 @@ class TestDialect(Validator):
             },
         )
 
-        # Unnest multiple Expression into respective mapped alias
+        # Unnest multiple Expr into respective mapped alias
         self.validate_all(
             "SELECT numbers, animals, n, a FROM (SELECT ARRAY(2, 5) AS numbers, ARRAY('dog', 'cat', 'bird') AS animals UNION ALL SELECT ARRAY(7, 8, 9), ARRAY('cow', 'pig')) AS x CROSS JOIN UNNEST(numbers, animals) AS t(n, a)",
             write={

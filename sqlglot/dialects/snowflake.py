@@ -289,7 +289,7 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return trunc
 
 
-def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
+def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
     """
     Snowflake doesn't allow columns referenced in UNPIVOT to be qualified,
     so we need to unqualify them. Same goes for ANY ORDER BY <column>.
@@ -309,12 +309,12 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
 
                 if isinstance(field_expr, exp.PivotAny):
                     unqualified_field_expr = transforms.unqualify_columns(field_expr)
-                    t.cast(exp.Expression, field).set("expressions", unqualified_field_expr, 0)
+                    t.cast(exp.Expr, field).set("expressions", unqualified_field_expr, 0)
 
     return expression
 
 
-def _flatten_structured_types_unless_iceberg(expression: exp.Expression) -> exp.Expression:
+def _flatten_structured_types_unless_iceberg(expression: exp.Expr) -> exp.Expr:
     assert isinstance(expression, exp.Create)
 
     def _flatten_structured_type(expression: exp.DataType) -> exp.DataType:
@@ -393,7 +393,7 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
         )
 
 
-def _transform_generate_date_array(expression: exp.Expression) -> exp.Expression:
+def _transform_generate_date_array(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         for generate_date_array in expression.find_all(exp.GenerateDateArray):
             parent = generate_date_array.parent
@@ -468,7 +468,7 @@ def _json_extract_value_array_sql(
     ident = exp.to_identifier("x")
 
     if isinstance(expression, exp.JSONValueArray):
-        this: exp.Expression = exp.cast(ident, to=exp.DType.VARCHAR)
+        this: exp.Expr = exp.cast(ident, to=exp.DType.VARCHAR)
     else:
         this = exp.ParseJSON(this=f"TO_JSON({ident})")
 
@@ -477,7 +477,7 @@ def _json_extract_value_array_sql(
     return self.func("TRANSFORM", json_extract, transform_lambda)
 
 
-def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
+def _qualify_unnested_columns(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         scope = build_scope(expression)
         if not scope:
@@ -573,7 +573,7 @@ def _qualify_unnested_columns(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _eliminate_dot_variant_lookup(expression: exp.Expression) -> exp.Expression:
+def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         # This transformation is used to facilitate transpilation of BigQuery `UNNEST` operations
         # to Snowflake. It should not affect roundtrip because `Unnest` nodes cannot be produced
@@ -667,7 +667,7 @@ def _build_generator(args: t.List) -> exp.Generator:
     return exp.Generator(**gen_args)
 
 
-def _build_try_to_number(args: t.List[exp.Expression]) -> exp.Expression:
+def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
     return exp.ToNumber(
         this=seq_get(args, 0),
         format=seq_get(args, 1),
@@ -1203,9 +1203,7 @@ class Snowflake(Dialect):
 
             return super()._parse_use()
 
-        def _negate_range(
-            self, this: t.Optional[exp.Expression] = None
-        ) -> t.Optional[exp.Expression]:
+        def _negate_range(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
             if not this:
                 return this
 
@@ -1229,7 +1227,7 @@ class Snowflake(Dialect):
                 expressions=self._parse_wrapped_csv(self._parse_property),
             )
 
-        def _parse_with_constraint(self) -> t.Optional[exp.Expression]:
+        def _parse_with_constraint(self) -> t.Optional[exp.Expr]:
             if self._prev.token_type != TokenType.WITH:
                 self._retreat(self._index - 1)
 
@@ -1252,7 +1250,7 @@ class Snowflake(Dialect):
 
             return None
 
-        def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+        def _parse_with_property(self) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
             if self._match(TokenType.TAG):
                 return self._parse_tag()
 
@@ -1268,7 +1266,7 @@ class Snowflake(Dialect):
 
         # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
         # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
-        def _parse_date_part(self: Snowflake.Parser) -> t.Optional[exp.Expression]:
+        def _parse_date_part(self: Snowflake.Parser) -> t.Optional[exp.Expr]:
             this = self._parse_var() or self._parse_type()
 
             if not this:
@@ -1282,7 +1280,7 @@ class Snowflake(Dialect):
                 exp.Extract, this=map_date_part(this, self.dialect), expression=expression
             )
 
-        def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
+        def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expr]:
             if is_map:
                 # Keys are strings in Snowflake's objects, see also:
                 # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
@@ -1349,7 +1347,7 @@ class Snowflake(Dialect):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             table = super()._parse_table(
                 schema=schema,
                 joins=joins,
@@ -1372,7 +1370,7 @@ class Snowflake(Dialect):
             self,
             any_token: bool = True,
             tokens: t.Optional[t.Collection[TokenType]] = None,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             if self._match_text_seq("IDENTIFIER", "("):
                 identifier = (
                     super()._parse_id_var(any_token=any_token, tokens=tokens)
@@ -1440,7 +1438,7 @@ class Snowflake(Dialect):
                 properties=self._parse_properties(),
             )
 
-        def _parse_get(self) -> t.Optional[exp.Expression]:
+        def _parse_get(self) -> t.Optional[exp.Expr]:
             start = self._prev
 
             # If we detect GET( then we need to parse a function, not a statement
@@ -1465,7 +1463,7 @@ class Snowflake(Dialect):
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
 
-        def _parse_file_location(self) -> t.Optional[exp.Expression]:
+        def _parse_file_location(self) -> t.Optional[exp.Expr]:
             # Parse either a subquery or a staged file
             return (
                 self._parse_select(table=True, parse_subquery_alias=False)
@@ -1487,7 +1485,7 @@ class Snowflake(Dialect):
 
             return exp.var(self._find_sql(start, self._prev))
 
-        def _parse_lambda_arg(self) -> t.Optional[exp.Expression]:
+        def _parse_lambda_arg(self) -> t.Optional[exp.Expr]:
             this = super()._parse_lambda_arg()
 
             if not this:
@@ -1553,8 +1551,8 @@ class Snowflake(Dialect):
             return set
 
         def _parse_window(
-            self, this: t.Optional[exp.Expression], alias: bool = False
-        ) -> t.Optional[exp.Expression]:
+            self, this: t.Optional[exp.Expr], alias: bool = False
+        ) -> t.Optional[exp.Expr]:
             if isinstance(this, exp.NthValue):
                 if self._match_text_seq("FROM"):
                     if self._match_texts(("FIRST", "LAST")):
@@ -2026,7 +2024,7 @@ class Snowflake(Dialect):
                 exp.to_identifier("seq"),
                 exp.to_identifier("key"),
                 exp.to_identifier("path"),
-                offset.pop() if isinstance(offset, exp.Expression) else exp.to_identifier("index"),
+                offset.pop() if isinstance(offset, exp.Expr) else exp.to_identifier("index"),
                 value,
                 exp.to_identifier("this"),
             ]

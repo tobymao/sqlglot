@@ -35,10 +35,10 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
     Returns:
-        sqlglot.Expression: optimized expression
+        sqlglot.Expr: optimized expression
     """
     expression = merge_ctes(expression, leave_tables_isolated)
     expression = merge_derived_tables(expression, leave_tables_isolated)

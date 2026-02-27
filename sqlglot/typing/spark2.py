@@ -9,7 +9,7 @@ from sqlglot.typing.hive import EXPRESSION_METADATA as HIVE_EXPRESSION_METADATA
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.optimizer.annotate_types import TypeAnnotator
-    from sqlglot.typing import ExpressionMetadataType
+    from sqlglot.typing import ExprMetadataType
 
 
 def _annotate_by_similar_args(
@@ -20,7 +20,7 @@ def _annotate_by_similar_args(
     - If all args are of the same type OR any arg is of target_type, the expr is inferred as such
     - If any arg is of UNKNOWN type and none of target_type, the expr is inferred as UNKNOWN
     """
-    expressions: t.List[exp.Expression] = []
+    expressions: t.List[exp.Expr] = []
     for arg in args:
         arg_expr = expression.args.get(arg)
         expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
@@ -42,7 +42,7 @@ def _annotate_by_similar_args(
     return expression
 
 
-EXPRESSION_METADATA: ExpressionMetadataType = {
+EXPRESSION_METADATA: ExprMetadataType = {
     **HIVE_EXPRESSION_METADATA,
     **{
         expr_type: {"returns": exp.DType.DOUBLE}

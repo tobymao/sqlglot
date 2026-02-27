@@ -27,7 +27,7 @@ def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -
     )
 
 
-def _add_default_precision_to_varchar(expression: exp.Expression) -> exp.Expression:
+def _add_default_precision_to_varchar(expression: exp.Expr) -> exp.Expr:
     """Transform function to add VARCHAR(MAX) or CHAR(MAX) for cross-dialect conversion."""
     if (
         isinstance(expression, exp.Create)

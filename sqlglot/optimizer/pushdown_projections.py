@@ -41,14 +41,14 @@ def pushdown_projections(
         'SELECT y.a AS a FROM (SELECT x.a AS a FROM x) AS y'
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression (sqlglot.Expr): expression to optimize
         remove_unused_selections (bool): remove selects that are unused
     Returns:
-        sqlglot.Expression: optimized expression
+        sqlglot.Expr: optimized expression
     """
     # Map of Scope to all columns being selected by outer queries.
     schema = ensure_schema(schema, dialect=dialect)
-    source_column_alias_count: t.Dict[exp.Expression | Scope, int] = {}
+    source_column_alias_count: t.Dict[exp.Expr | Scope, int] = {}
     referenced_columns: t.DefaultDict[Scope, t.Set[str | object]] = defaultdict(set)
 
     # We build the scope tree (which is traversed in DFS postorder), then iterate

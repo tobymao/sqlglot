@@ -17,9 +17,9 @@ def unnest_subqueries(expression):
         'SELECT * FROM x AS x LEFT JOIN (SELECT y.a AS a FROM y AS y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE _u_0.a = 1'
 
     Args:
-        expression (sqlglot.Expression): expression to unnest
+        expression (sqlglot.Expr): expression to unnest
     Returns:
-        sqlglot.Expression: unnested expression
+        sqlglot.Expr: unnested expression
     """
     next_alias_name = name_sequence("_u_")
 

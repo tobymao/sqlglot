@@ -23,7 +23,7 @@ from sqlglot.helper import seq_get
 
 
 def cast_to_time6(
-    expression: t.Optional[exp.Expression], time_type: exp.DType = exp.DType.TIME
+    expression: t.Optional[exp.Expr], time_type: exp.DType = exp.DType.TIME
 ) -> exp.Cast:
     return exp.Cast(
         this=expression,
@@ -320,9 +320,7 @@ class SingleStore(MySQL):
             ),
         }
 
-        def _parse_vector_expressions(
-            self, expressions: t.List[exp.Expression]
-        ) -> t.List[exp.Expression]:
+        def _parse_vector_expressions(self, expressions: t.List[exp.Expr]) -> t.List[exp.Expr]:
             type_name = expressions[1].name.upper()
             if type_name in self.dialect.VECTOR_TYPE_ALIASES:
                 type_name = self.dialect.VECTOR_TYPE_ALIASES[type_name]
@@ -1733,7 +1731,7 @@ class SingleStore(MySQL):
 
         @unsupported_args("on_condition")
         def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
-            res: exp.Expression = exp.JSONExtractScalar(
+            res: exp.Expr = exp.JSONExtractScalar(
                 this=expression.this,
                 expression=expression.args.get("path"),
                 json_type="STRING",

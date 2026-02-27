@@ -27,7 +27,7 @@ T = t.TypeVar("T")
 E = t.TypeVar("E")
 
 if t.TYPE_CHECKING:
-    from sqlglot.expressions import Expression
+    from sqlglot.expressions import Expr
 
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
@@ -323,9 +323,9 @@ def is_iterable(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is an iterable.
     """
-    from sqlglot.expressions import Expression
+    from sqlglot.expressions import Expr
 
-    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expr))
 
 
 def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
@@ -444,7 +444,7 @@ def is_iso_datetime(text: str) -> bool:
 DATE_UNITS = {"day", "week", "month", "quarter", "year", "year_month"}
 
 
-def is_date_unit(expression: t.Optional[Expression]) -> bool:
+def is_date_unit(expression: t.Optional[Expr]) -> bool:
     return expression is not None and expression.name.lower() in DATE_UNITS
 
 

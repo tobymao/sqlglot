@@ -40,7 +40,7 @@ def _annotate_timestamp_from_parts(
     return expression
 
 
-def _annotate_date_or_time_add(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
+def _annotate_date_or_time_add(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     if (
         expression.this.is_type(exp.DType.DATE)
         and expression.text("unit").upper() not in DATE_PARTS
@@ -142,7 +142,7 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
     return expression
 
 
-def _annotate_variance(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
+def _annotate_variance(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """Annotate variance functions (VAR_POP, VAR_SAMP, VARIANCE, VARIANCE_POP) with correct return type.
 
     Based on Snowflake behavior:
@@ -203,9 +203,7 @@ def _annotate_kurtosis(self: TypeAnnotator, expression: exp.Kurtosis) -> exp.Kur
     return expression
 
 
-def _annotate_math_with_float_decfloat(
-    self: TypeAnnotator, expression: exp.Expression
-) -> exp.Expression:
+def _annotate_math_with_float_decfloat(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """Annotate math functions that preserve  DECFLOAT but return DOUBLE for others.
 
     In Snowflake, trigonometric and exponential math functions:

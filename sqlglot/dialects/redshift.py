@@ -105,7 +105,7 @@ class Redshift(Postgres):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
             unpivot = self._match(TokenType.UNPIVOT)
             table = super()._parse_table(
@@ -120,7 +120,7 @@ class Redshift(Postgres):
 
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_bitwise()
@@ -135,7 +135,7 @@ class Redshift(Postgres):
             self._retreat(index)
             return None
 
-        def _parse_projections(self) -> t.Tuple[t.List[exp.Expression], t.List[exp.Expression]]:
+        def _parse_projections(self) -> t.Tuple[t.List[exp.Expr], t.List[exp.Expr]]:
             projections, _ = super()._parse_projections()
             if self._prev and self._prev.text.upper() == "EXCLUDE" and self._curr:
                 self._retreat(self._index - 1)

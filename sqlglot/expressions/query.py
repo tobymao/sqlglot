@@ -12,8 +12,8 @@ from sqlglot.expressions.core import (
     Condition,
     Distinct,
     Dot,
+    Expr,
     Expression,
-    ExpressionBase,
     Func,
     Hint,
     Identifier,
@@ -75,9 +75,9 @@ def _apply_cte_builder(
 
 
 @trait
-class DerivedTable(Expression):
+class DerivedTable(Expr):
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         return self.this.selects if isinstance(self.this, Query) else []
 
     @property
@@ -88,7 +88,7 @@ class DerivedTable(Expression):
 @trait
 class UDTF(DerivedTable):
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         alias = self.args.get("alias")
         return alias.columns if alias else []
 
@@ -97,7 +97,7 @@ Q = t.TypeVar("Q", bound="Query")
 
 
 @trait
-class Query(Expression):
+class Query(Expr):
     """Trait for any SELECT/UNION/etc. query expression."""
 
     @property
@@ -106,7 +106,7 @@ class Query(Expression):
         return with_.expressions if with_ else []
 
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         raise NotImplementedError("Subclasses must implement selects")
 
     @property
@@ -137,7 +137,7 @@ class Query(Expression):
             copy: if `False`, modify this expression instance in-place.
         """
         instance = maybe_copy(self, copy)
-        if not isinstance(alias, Expression):
+        if not isinstance(alias, Expr):
             alias = TableAlias(this=to_identifier(alias)) if alias else None
 
         return Subquery(this=instance, alias=alias)
@@ -156,7 +156,7 @@ class Query(Expression):
             expression: the SQL code string to parse.
                 This can also be an integer.
                 If a `Limit` instance is passed, it will be used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
+                If another `Expr` instance is passed, it will be wrapped in a `Limit`.
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -190,7 +190,7 @@ class Query(Expression):
             expression: the SQL code string to parse.
                 This can also be an integer.
                 If a `Offset` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
+                If another `Expr` instance is passed, it will be wrapped in a `Offset`.
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -228,7 +228,7 @@ class Query(Expression):
         Args:
             *expressions: the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Order`.
+                If another `Expr` instance is passed, it will be wrapped in a `Order`.
             append: if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect: the dialect used to parse the input expression.
@@ -267,7 +267,7 @@ class Query(Expression):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
             append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
@@ -310,9 +310,9 @@ class Query(Expression):
 
         Args:
             alias: the SQL code string to parse as the table name.
-                If an `Expression` instance is passed, this is used as-is.
+                If an `Expr` instance is passed, this is used as-is.
             as_: the SQL code string to parse as the table expression.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             recursive: set the RECURSIVE part of the expression. Defaults to `False`.
             materialized: set the MATERIALIZED part of the expression.
             append: if `True`, add to any existing expressions.
@@ -351,7 +351,7 @@ class Query(Expression):
 
         Args:
             expressions: the SQL code strings.
-                If `Expression` instances are passed, they will be used as-is.
+                If `Expr` instances are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -374,7 +374,7 @@ class Query(Expression):
 
         Args:
             expressions: the SQL code strings.
-                If `Expression` instances are passed, they will be used as-is.
+                If `Expr` instances are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -397,7 +397,7 @@ class Query(Expression):
 
         Args:
             expressions: the SQL code strings.
-                If `Expression` instance are passed, they will be used as-is.
+                If `Expr` instance are passed, they will be used as-is.
             distinct: set the DISTINCT flag if and only if this is true.
             dialect: the dialect used to parse the input expression.
             opts: other options to use to parse the input expressions.
@@ -424,7 +424,7 @@ class With(Expression):
         return bool(self.args.get("recursive"))
 
 
-class CTE(ExpressionBase, DerivedTable):
+class CTE(Expression, DerivedTable):
     arg_types = {
         "this": True,
         "alias": True,
@@ -446,23 +446,23 @@ class TableAlias(Expression):
         return self.args.get("columns") or []
 
 
-class BitString(ExpressionBase, Condition):
+class BitString(Expression, Condition):
     pass
 
 
-class HexString(ExpressionBase, Condition):
+class HexString(Expression, Condition):
     arg_types = {"this": True, "is_integer": False}
 
 
-class ByteString(ExpressionBase, Condition):
+class ByteString(Expression, Condition):
     arg_types = {"this": True, "is_bytes": False}
 
 
-class RawString(ExpressionBase, Condition):
+class RawString(Expression, Condition):
     pass
 
 
-class UnicodeString(ExpressionBase, Condition):
+class UnicodeString(Expression, Condition):
     arg_types = {"this": True, "escape": False}
 
 
@@ -694,7 +694,7 @@ class Join(Expression):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
             append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
@@ -738,7 +738,7 @@ class Join(Expression):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             append: if `True`, concatenate the new expressions to the existing "using" list.
                 Otherwise, this resets the expression.
             dialect: the dialect used to parse the input expressions.
@@ -764,7 +764,7 @@ class Join(Expression):
         return join
 
 
-class Lateral(ExpressionBase, UDTF):
+class Lateral(Expression, UDTF):
     arg_types = {
         "this": True,
         "view": False,
@@ -775,7 +775,7 @@ class Lateral(ExpressionBase, UDTF):
     }
 
 
-class TableFromRows(ExpressionBase, UDTF):
+class TableFromRows(Expression, UDTF):
     arg_types = {
         "this": True,
         "alias": False,
@@ -949,7 +949,7 @@ class Table(Expression):
         return self.text("catalog")
 
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         return []
 
     @property
@@ -957,26 +957,26 @@ class Table(Expression):
         return []
 
     @property
-    def parts(self) -> t.List[Expression]:
+    def parts(self) -> t.List[Expr]:
         """Return the parts of a table in order catalog, db, table."""
-        parts: t.List[Expression] = []
+        parts: t.List[Expr] = []
 
         for arg in ("catalog", "db", "this"):
             part = self.args.get(arg)
 
             if isinstance(part, Dot):
                 parts.extend(part.flatten())
-            elif isinstance(part, Expression):
+            elif isinstance(part, Expr):
                 parts.append(part)
 
         return parts
 
-    def to_column(self, copy: bool = True) -> Expression:
+    def to_column(self, copy: bool = True) -> Expr:
         parts = self.parts
         last_part = parts[-1]
 
         if isinstance(last_part, Identifier):
-            col: Expression = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
+            col: Expr = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
         else:
             # This branch will be reached if a function or array is wrapped in a `Table`
             col = last_part
@@ -988,7 +988,7 @@ class Table(Expression):
         return col
 
 
-class SetOperation(ExpressionBase, Query):
+class SetOperation(Expression, Query):
     arg_types = {
         "with_": False,
         "this": True,
@@ -1028,7 +1028,7 @@ class SetOperation(ExpressionBase, Query):
         return self.this.is_star or self.expression.is_star
 
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         expression = self
         while isinstance(expression, SetOperation):
             expression = expression.this.unnest()
@@ -1063,7 +1063,7 @@ class Intersect(SetOperation):
     pass
 
 
-class Values(ExpressionBase, UDTF):
+class Values(Expression, UDTF):
     arg_types = {
         "expressions": True,
         "alias": False,
@@ -1095,7 +1095,7 @@ class Lock(Expression):
     arg_types = {"update": True, "expressions": False, "wait": False, "key": False}
 
 
-class Select(ExpressionBase, Query):
+class Select(Expression, Query):
     arg_types = {
         "with_": False,
         "kind": False,
@@ -1122,7 +1122,7 @@ class Select(ExpressionBase, Query):
         Args:
             expression : the SQL code strings to parse.
                 If a `From` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `From`.
+                If another `Expr` instance is passed, it will be wrapped in a `From`.
             dialect: the dialect used to parse the input expression.
             copy: if `False`, modify this expression instance in-place.
             opts: other options to use to parse the input expressions.
@@ -1159,7 +1159,7 @@ class Select(ExpressionBase, Query):
         Args:
             *expressions: the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Group`.
+                If another `Expr` instance is passed, it will be wrapped in a `Group`.
                 If nothing is passed in then a group by is not applied to the expression
             append: if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Group` expression into a single expression.
@@ -1203,7 +1203,7 @@ class Select(ExpressionBase, Query):
         Args:
             *expressions: the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `SORT`.
+                If another `Expr` instance is passed, it will be wrapped in a `SORT`.
             append: if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect: the dialect used to parse the input expression.
@@ -1243,7 +1243,7 @@ class Select(ExpressionBase, Query):
         Args:
             *expressions: the SQL code strings to parse.
                 If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Cluster`.
+                If another `Expr` instance is passed, it will be wrapped in a `Cluster`.
             append: if `True`, add to any existing expressions.
                 Otherwise, this flattens all the `Order` expression into a single expression.
             dialect: the dialect used to parse the input expression.
@@ -1279,7 +1279,7 @@ class Select(ExpressionBase, Query):
             arg="expressions",
             append=append,
             dialect=dialect,
-            into=Expression,
+            into=Expr,
             copy=copy,
             **opts,
         )
@@ -1301,7 +1301,7 @@ class Select(ExpressionBase, Query):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             dialect: the dialect used to parse the input expressions.
@@ -1352,11 +1352,11 @@ class Select(ExpressionBase, Query):
 
         Args:
             expression: the SQL code string to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             on: optionally specify the join "on" criteria as a SQL string.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             using: optionally specify the join "using" criteria as a SQL string.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
             join_type: if set, alter the parsed join type.
@@ -1373,7 +1373,7 @@ class Select(ExpressionBase, Query):
         try:
             expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
         except ParseError:
-            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)
+            expression = maybe_parse(expression, into=(Join, Expr), **parse_args)
 
         join = expression if isinstance(expression, Join) else Join(this=expression)
 
@@ -1438,7 +1438,7 @@ class Select(ExpressionBase, Query):
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
                 Multiple expressions are combined with an AND operator.
             append: if `True`, AND the new expressions to any existing expression.
                 Otherwise, this resets the expression.
@@ -1538,7 +1538,7 @@ class Select(ExpressionBase, Query):
 
         Args:
             table: the SQL code string to parse as the table name.
-                If another `Expression` instance is passed, it will be used as-is.
+                If another `Expr` instance is passed, it will be used as-is.
             properties: an optional mapping of table properties
             dialect: the dialect used to parse the input table.
             copy: if `False`, modify this expression instance in-place.
@@ -1598,7 +1598,7 @@ class Select(ExpressionBase, Query):
 
         Args:
             hints: The SQL code strings to parse as the hints.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             dialect: The dialect used to parse the hints.
             copy: If `False`, modify this expression instance in-place.
 
@@ -1628,11 +1628,11 @@ class Select(ExpressionBase, Query):
         return any(expression.is_star for expression in self.expressions)
 
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         return self.expressions
 
 
-class Subquery(ExpressionBase, DerivedTable, Query):
+class Subquery(Expression, DerivedTable, Query):
     is_subquery: t.ClassVar[bool] = True
     arg_types = {
         "this": True,
@@ -1731,7 +1731,7 @@ class Pivot(Expression):
         return bool(self.args.get("unpivot"))
 
     @property
-    def fields(self) -> t.List[Expression]:
+    def fields(self) -> t.List[Expr]:
         return self.args.get("fields", [])
 
 
@@ -1739,7 +1739,7 @@ class UnpivotColumns(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class Window(ExpressionBase, Condition):
+class Window(Expression, Condition):
     arg_types = {
         "this": True,
         "partition_by": False,
@@ -1944,7 +1944,7 @@ class JSONValue(Expression):
     }
 
 
-class JSONValueArray(ExpressionBase, Func):
+class JSONValueArray(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
@@ -2034,7 +2034,7 @@ def union(
 
     Args:
         expressions: the SQL code strings, corresponding to the `UNION`'s operands.
-            If `Expression` instances are passed, they will be used as-is.
+            If `Expr` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.
@@ -2065,7 +2065,7 @@ def intersect(
 
     Args:
         expressions: the SQL code strings, corresponding to the `INTERSECT`'s operands.
-            If `Expression` instances are passed, they will be used as-is.
+            If `Expr` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.
@@ -2096,7 +2096,7 @@ def except_(
 
     Args:
         expressions: the SQL code strings, corresponding to the `EXCEPT`'s operands.
-            If `Expression` instances are passed, they will be used as-is.
+            If `Expr` instances are passed, they will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression.

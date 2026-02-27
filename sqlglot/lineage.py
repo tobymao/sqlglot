@@ -19,8 +19,8 @@ logger = logging.getLogger("sqlglot")
 @dataclass(frozen=True)
 class Node:
     name: str
-    expression: exp.Expression
-    source: exp.Expression
+    expression: exp.Expr
+    source: exp.Expr
     downstream: t.List[Node] = field(default_factory=list)
     source_name: str = ""
     reference_node_name: str = ""
@@ -67,7 +67,7 @@ class Node:
 
 def lineage(
     column: str | exp.Column,
-    sql: str | exp.Expression,
+    sql: str | exp.Expr,
     schema: t.Optional[t.Dict | Schema] = None,
     sources: t.Optional[t.Mapping[str, str | exp.Query]] = None,
     dialect: DialectType = None,
@@ -86,7 +86,7 @@ def lineage(
         dialect: The dialect of input SQL.
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
-        copy: Whether to copy the Expression arguments.
+        copy: Whether to copy the Expr arguments.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
@@ -196,7 +196,7 @@ def to_node(
         # a version that has only the column we care about.
         #   "x", SELECT x, y FROM foo
         #     => "x", SELECT x FROM foo
-        source = t.cast(exp.Expression, scope.expression.select(select, append=False))
+        source = t.cast(exp.Expr, scope.expression.select(select, append=False))
     else:
         source = scope.expression
 

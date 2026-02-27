@@ -137,7 +137,7 @@ def join_condition(join):
     Args:
         join (exp.Join)
     Returns:
-        tuple[list[str], list[str], exp.Expression]:
+        tuple[list[str], list[str], exp.Expr]:
             Tuple of (source key, join key, remaining predicate)
     """
     name = join.alias_or_name

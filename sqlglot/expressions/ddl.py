@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot.helper import trait
-from sqlglot.expressions.core import ExpressionBase, Expression, Func
+from sqlglot.expressions.core import Expression, Expr, Func
 from sqlglot.expressions.query import Query
 
 if t.TYPE_CHECKING:
@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 
 
 @trait
-class DDL(Expression):
+class DDL(Expr):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this statement."""
@@ -21,7 +21,7 @@ class DDL(Expression):
         return with_.expressions if with_ else []
 
     @property
-    def selects(self) -> t.List[Expression]:
+    def selects(self) -> t.List[Expr]:
         """If this statement contains a query (e.g. a CTAS), this returns the query's projections."""
         return self.expression.selects if isinstance(self.expression, Query) else []
 
@@ -34,7 +34,7 @@ class DDL(Expression):
         return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
-class Create(ExpressionBase, DDL):
+class Create(Expression, DDL):
     arg_types = {
         "with_": False,
         "this": True,
@@ -372,7 +372,7 @@ class Alter(Expression):
         return kind and kind.upper()
 
     @property
-    def actions(self) -> t.List[Expression]:
+    def actions(self) -> t.List[Expr]:
         return self.args.get("actions") or []
 
 
@@ -384,7 +384,7 @@ class Use(Expression):
     arg_types = {"this": False, "expressions": False, "kind": False}
 
 
-class NextValueFor(ExpressionBase, Func):
+class NextValueFor(Expression, Func):
     arg_types = {"this": True, "order": False}
 
 

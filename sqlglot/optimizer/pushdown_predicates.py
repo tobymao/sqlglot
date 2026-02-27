@@ -25,9 +25,9 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
         'SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x WHERE x.a = 1) AS y WHERE TRUE'
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression (sqlglot.Expr): expression to optimize
     Returns:
-        sqlglot.Expression: optimized expression
+        sqlglot.Expr: optimized expression
     """
     from sqlglot.dialects.athena import Athena
     from sqlglot.dialects.presto import Presto

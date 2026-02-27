@@ -31,7 +31,7 @@ def unsupported_args(
     *args: t.Union[str, t.Tuple[str, str]],
 ) -> t.Callable[[GeneratorMethod], GeneratorMethod]:
     """
-    Decorator that can be used to mark certain args of an `Expression` subclass as unsupported.
+    Decorator that can be used to mark certain args of an `Expr` subclass as unsupported.
     It expects a sequence of argument names or pairs of the form (argument_name, diagnostic_msg).
     """
     diagnostic_by_arg: t.Dict[str, t.Optional[str]] = {}
@@ -111,7 +111,7 @@ class Generator(metaclass=_Generator):
             Default: True
     """
 
-    TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
+    TRANSFORMS: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
         exp.Adjacent: lambda self, e: self.binary(e, "-|-"),
         exp.AllowedValuesProperty: lambda self,
@@ -699,8 +699,8 @@ class Generator(metaclass=_Generator):
     # Keywords that can't be used as unquoted identifier names
     RESERVED_KEYWORDS: t.Set[str] = set()
 
-    # Expressions whose comments are separated from them for better formatting
-    WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+    # Exprs whose comments are separated from them for better formatting
+    WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expr], ...] = (
         exp.Command,
         exp.Create,
         exp.Describe,
@@ -720,14 +720,14 @@ class Generator(metaclass=_Generator):
         exp.With,
     )
 
-    # Expressions that should not have their comments generated in maybe_comment
-    EXCLUDE_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+    # Exprs that should not have their comments generated in maybe_comment
+    EXCLUDE_COMMENTS: t.Tuple[t.Type[exp.Expr], ...] = (
         exp.Binary,
         exp.SetOperation,
     )
 
-    # Expressions that can remain unwrapped when appearing in the context of an INTERVAL
-    UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expression], ...] = (
+    # Exprs that can remain unwrapped when appearing in the context of an INTERVAL
+    UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expr], ...] = (
         exp.Column,
         exp.Literal,
         exp.Neg,
@@ -741,10 +741,10 @@ class Generator(metaclass=_Generator):
         exp.DType.NCHAR,
     }
 
-    # Expressions that need to have all CTEs under them bubbled up to them
-    EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
+    # Exprs that need to have all CTEs under them bubbled up to them
+    EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expr]] = set()
 
-    RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = ()
+    RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.Tuple[t.Type[exp.Expr], ...] = ()
 
     SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
 
@@ -826,7 +826,7 @@ class Generator(metaclass=_Generator):
 
         self._quote_json_path_key_using_brackets = True
 
-    def generate(self, expression: exp.Expression, copy: bool = True) -> str:
+    def generate(self, expression: exp.Expr, copy: bool = True) -> str:
         """
         Generates the SQL string corresponding to the given syntax tree.
 
@@ -860,7 +860,7 @@ class Generator(metaclass=_Generator):
 
         return sql
 
-    def preprocess(self, expression: exp.Expression) -> exp.Expression:
+    def preprocess(self, expression: exp.Expr) -> exp.Expr:
         """Apply generic preprocessing transformations to a given expression."""
         expression = self._move_ctes_to_top_level(expression)
 
@@ -906,7 +906,7 @@ class Generator(metaclass=_Generator):
     def maybe_comment(
         self,
         sql: str,
-        expression: t.Optional[exp.Expression] = None,
+        expression: t.Optional[exp.Expr] = None,
         comments: t.Optional[t.List[str]] = None,
         separated: bool = False,
     ) -> str:
@@ -937,7 +937,7 @@ class Generator(metaclass=_Generator):
 
         return f"{sql} {comments_sql}"
 
-    def wrap(self, expression: exp.Expression | str) -> str:
+    def wrap(self, expression: exp.Expr | str) -> str:
         this_sql = (
             self.sql(expression)
             if isinstance(expression, exp.UNWRAPPED_QUERIES)
@@ -988,7 +988,7 @@ class Generator(metaclass=_Generator):
 
     def sql(
         self,
-        expression: t.Optional[str | exp.Expression],
+        expression: t.Optional[str | exp.Expr],
         key: t.Optional[str] = None,
         comment: bool = True,
     ) -> str:
@@ -1416,7 +1416,7 @@ class Generator(metaclass=_Generator):
         tag = self.sql(expression, "tag")
         return f"${tag}${self.sql(expression, 'this')}${tag}$"
 
-    def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
+    def prepend_ctes(self, expression: exp.Expr, sql: str) -> str:
         with_ = self.sql(expression, "with_")
         if with_:
             sql = f"{with_}{self.sep()}{sql}"
@@ -1701,7 +1701,7 @@ class Generator(metaclass=_Generator):
                 return self.sql(select)
 
         sqls: t.List[str] = []
-        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+        stack: t.List[t.Union[str, exp.Expr]] = [expression]
 
         while stack:
             node = stack.pop()
@@ -2891,7 +2891,7 @@ class Generator(metaclass=_Generator):
         alias = f" {alias}" if alias else ""
         return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}"
 
-    def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
+    def query_modifiers(self, expression: exp.Expr, *sqls: str) -> str:
         limit = expression.args.get("limit")
 
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
@@ -2918,11 +2918,11 @@ class Generator(metaclass=_Generator):
             sep="",
         )
 
-    def options_modifier(self, expression: exp.Expression) -> str:
+    def options_modifier(self, expression: exp.Expr) -> str:
         options = self.expressions(expression, key="options")
         return f" {options}" if options else ""
 
-    def for_modifiers(self, expression: exp.Expression) -> str:
+    def for_modifiers(self, expression: exp.Expr) -> str:
         for_modifiers = self.expressions(expression, key="for_")
         return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
 
@@ -2931,14 +2931,14 @@ class Generator(metaclass=_Generator):
         return ""
 
     def offset_limit_modifiers(
-        self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
+        self, expression: exp.Expr, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
     ) -> t.List[str]:
         return [
             self.sql(expression, "offset") if fetch else self.sql(limit),
             self.sql(limit) if fetch else self.sql(expression, "offset"),
         ]
 
-    def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
+    def after_limit_modifiers(self, expression: exp.Expr) -> t.List[str]:
         locks = self.expressions(expression, key="locks", sep=" ")
         locks = f" {locks}" if locks else ""
         return [locks, self.sql(expression, "sample")]
@@ -3085,7 +3085,7 @@ class Generator(metaclass=_Generator):
         offset = expression.args.get("offset")
 
         if self.UNNEST_WITH_ORDINALITY:
-            if alias and isinstance(offset, exp.Expression):
+            if alias and isinstance(offset, exp.Expr):
                 alias.append("columns", offset)
 
         if alias and self.dialect.UNNEST_COLUMN_ONLY:
@@ -3098,7 +3098,7 @@ class Generator(metaclass=_Generator):
         if self.UNNEST_WITH_ORDINALITY:
             suffix = f" WITH ORDINALITY{alias}" if offset else alias
         else:
-            if isinstance(offset, exp.Expression):
+            if isinstance(offset, exp.Expr):
                 suffix = f"{alias} WITH OFFSET AS {self.sql(offset)}"
             elif offset:
                 suffix = f"{alias} WITH OFFSET"
@@ -3187,7 +3187,7 @@ class Generator(metaclass=_Generator):
 
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None
-    ) -> t.List[exp.Expression]:
+    ) -> t.List[exp.Expr]:
         return apply_index_offset(
             expression.this,
             expression.expressions,
@@ -3272,7 +3272,7 @@ class Generator(metaclass=_Generator):
 
         return self.func(func_name, expression.this, expression.expression)
 
-    def convert_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expression]:
+    def convert_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expr]:
         args = expression.expressions
         if isinstance(expression, exp.ConcatWs):
             args = args[1:]  # Skip the delimiter
@@ -3282,7 +3282,7 @@ class Generator(metaclass=_Generator):
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
 
-            def _wrap_with_coalesce(e: exp.Expression) -> exp.Expression:
+            def _wrap_with_coalesce(e: exp.Expr) -> exp.Expr:
                 if not e.type:
                     from sqlglot.optimizer.annotate_types import annotate_types
 
@@ -3629,26 +3629,20 @@ class Generator(metaclass=_Generator):
     def add_sql(self, expression: exp.Add) -> str:
         return self.binary(expression, "+")
 
-    def and_sql(
-        self, expression: exp.And, stack: t.Optional[t.List[str | exp.Expression]] = None
-    ) -> str:
+    def and_sql(self, expression: exp.And, stack: t.Optional[t.List[str | exp.Expr]] = None) -> str:
         return self.connector_sql(expression, "AND", stack)
 
-    def or_sql(
-        self, expression: exp.Or, stack: t.Optional[t.List[str | exp.Expression]] = None
-    ) -> str:
+    def or_sql(self, expression: exp.Or, stack: t.Optional[t.List[str | exp.Expr]] = None) -> str:
         return self.connector_sql(expression, "OR", stack)
 
-    def xor_sql(
-        self, expression: exp.Xor, stack: t.Optional[t.List[str | exp.Expression]] = None
-    ) -> str:
+    def xor_sql(self, expression: exp.Xor, stack: t.Optional[t.List[str | exp.Expr]] = None) -> str:
         return self.connector_sql(expression, "XOR", stack)
 
     def connector_sql(
         self,
         expression: exp.Connector,
         op: str,
-        stack: t.Optional[t.List[str | exp.Expression]] = None,
+        stack: t.Optional[t.List[str | exp.Expr]] = None,
     ) -> str:
         if stack is not None:
             if expression.expressions:
@@ -3898,7 +3892,7 @@ class Generator(metaclass=_Generator):
         keyword = "UNSET" if expression.args.get("unset") else "SET"
         return f"{keyword} {items_sql}"
 
-    def add_column_sql(self, expression: exp.Expression) -> str:
+    def add_column_sql(self, expression: exp.Expr) -> str:
         sql = self.sql(expression)
         if isinstance(expression, exp.Schema):
             column_text = " COLUMNS"
@@ -4042,7 +4036,7 @@ class Generator(metaclass=_Generator):
 
             connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
 
-            like_expr: exp.Expression = exp_class(this=this, expression=exprs[0])
+            like_expr: exp.Expr = exp_class(this=this, expression=exprs[0])
             for expr in exprs[1:]:
                 like_expr = connective(like_expr, exp_class(this=this, expression=expr))
 
@@ -4126,7 +4120,7 @@ class Generator(metaclass=_Generator):
 
     def binary(self, expression: exp.Binary, op: str) -> str:
         sqls: t.List[str] = []
-        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+        stack: t.List[t.Union[str, exp.Expr]] = [expression]
         binary_type = type(expression)
 
         while stack:
@@ -4174,7 +4168,7 @@ class Generator(metaclass=_Generator):
     def func(
         self,
         name: str,
-        *args: t.Optional[exp.Expression | str],
+        *args: t.Optional[exp.Expr | str],
         prefix: str = "(",
         suffix: str = ")",
         normalize: bool = True,
@@ -4182,7 +4176,7 @@ class Generator(metaclass=_Generator):
         name = self.normalize_func(name) if normalize else name
         return f"{name}{prefix}{self.format_args(*args)}{suffix}"
 
-    def format_args(self, *args: t.Optional[str | exp.Expression], sep: str = ", ") -> str:
+    def format_args(self, *args: t.Optional[str | exp.Expr], sep: str = ", ") -> str:
         arg_sqls = tuple(
             self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
         )
@@ -4197,7 +4191,7 @@ class Generator(metaclass=_Generator):
 
     def format_time(
         self,
-        expression: exp.Expression,
+        expression: exp.Expr,
         inverse_time_mapping: t.Optional[t.Dict[str, str]] = None,
         inverse_time_trie: t.Optional[t.Dict] = None,
     ) -> t.Optional[str]:
@@ -4209,9 +4203,9 @@ class Generator(metaclass=_Generator):
 
     def expressions(
         self,
-        expression: t.Optional[exp.Expression] = None,
+        expression: t.Optional[exp.Expr] = None,
         key: t.Optional[str] = None,
-        sqls: t.Optional[t.Collection[str | exp.Expression]] = None,
+        sqls: t.Optional[t.Collection[str | exp.Expr]] = None,
         flat: bool = False,
         indent: bool = True,
         skip_first: bool = False,
@@ -4237,7 +4231,7 @@ class Generator(metaclass=_Generator):
             if not sql:
                 continue
 
-            comments = self.maybe_comment("", e) if isinstance(e, exp.Expression) else ""
+            comments = self.maybe_comment("", e) if isinstance(e, exp.Expr) else ""
 
             if self.pretty:
                 if self.leading_comma:
@@ -4263,7 +4257,7 @@ class Generator(metaclass=_Generator):
             else result_sql
         )
 
-    def op_expressions(self, op: str, expression: exp.Expression, flat: bool = False) -> str:
+    def op_expressions(self, op: str, expression: exp.Expr, flat: bool = False) -> str:
         flat = flat or isinstance(expression.parent, exp.Properties)
         expressions_sql = self.expressions(expression, flat=flat)
         if flat:
@@ -4751,7 +4745,7 @@ class Generator(metaclass=_Generator):
         if not seq_get(to.expressions, 0) and to.this in self.PARAMETERIZABLE_TEXT_TYPES:
             to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
 
-        transformed: t.Optional[exp.Expression] = None
+        transformed: t.Optional[exp.Expr] = None
         cast = exp.Cast if strict else exp.TryCast
 
         # Check whether a conversion with format (T-SQL calls this 'style') is applicable
@@ -5082,14 +5076,14 @@ class Generator(metaclass=_Generator):
         empty = expression.args.get("empty")
         empty = (
             f"DEFAULT {empty} ON EMPTY"
-            if isinstance(empty, exp.Expression)
+            if isinstance(empty, exp.Expr)
             else self.sql(expression, "empty")
         )
 
         error = expression.args.get("error")
         error = (
             f"DEFAULT {error} ON ERROR"
-            if isinstance(error, exp.Expression)
+            if isinstance(error, exp.Expr)
             else self.sql(expression, "error")
         )
 
@@ -5127,7 +5121,7 @@ class Generator(metaclass=_Generator):
         self,
         array_agg_sql: str,
         array_agg_expr: exp.ArrayAgg,
-        column_expr: exp.Expression,
+        column_expr: exp.Expr,
     ) -> str:
         """
         Add NULL filter to ARRAY_AGG if dialect requires it.

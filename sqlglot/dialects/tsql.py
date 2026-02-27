@@ -135,7 +135,7 @@ def _build_formatted_time(
 ) -> t.Callable[[t.List], E]:
     def _builder(args: t.List) -> E:
         fmt = seq_get(args, 0)
-        if isinstance(fmt, exp.Expression):
+        if isinstance(fmt, exp.Expr):
             fmt = exp.Literal.string(
                 format_time(
                     fmt.name.lower(),
@@ -148,7 +148,7 @@ def _build_formatted_time(
             )
 
         this = seq_get(args, 1)
-        if isinstance(this, exp.Expression):
+        if isinstance(this, exp.Expr):
             this = exp.cast(this, exp.DType.DATETIME2)
 
         return exp_class(this=this, format=fmt)
@@ -181,7 +181,7 @@ def _build_eomonth(args: t.List) -> exp.LastDay:
     month_lag = seq_get(args, 1)
 
     if month_lag is None:
-        this: exp.Expression = date
+        this: exp.Expr = date
     else:
         unit = DATE_DELTA_INTERVAL.get("month")
         this = exp.DateAdd(this=date, expression=month_lag, unit=unit and exp.var(unit))
@@ -189,7 +189,7 @@ def _build_eomonth(args: t.List) -> exp.LastDay:
     return exp.LastDay(this=this)
 
 
-def _build_hashbytes(args: t.List) -> exp.Expression:
+def _build_hashbytes(args: t.List) -> exp.Expr:
     kind, data = args
     kind = kind.name.upper() if kind.is_string else ""
 
@@ -272,7 +272,7 @@ def _build_date_delta(
     return _builder
 
 
-def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
+def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
     """Ensures all (unnamed) output columns are aliased for CTEs and Subqueries."""
     alias = expression.args.get("alias")
 
@@ -329,9 +329,9 @@ def _build_timefromparts(args: t.List) -> exp.TimeFromParts:
 
 
 def _build_with_arg_as_text(
-    klass: t.Type[exp.Expression],
-) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
-    def _parse(args: t.List[exp.Expression]) -> exp.Expression:
+    klass: t.Type[exp.Expr],
+) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
+    def _parse(args: t.List[exp.Expr]) -> exp.Expr:
         this = seq_get(args, 0)
 
         if this and not this.is_string:
@@ -726,7 +726,7 @@ class TSQL(Dialect):
         def _parse_alter_table_set(self) -> exp.AlterSet:
             return self._parse_wrapped(super()._parse_alter_table_set)
 
-        def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expression]:
+        def _parse_wrapped_select(self, table: bool = False) -> t.Optional[exp.Expr]:
             if self._match(TokenType.MERGE):
                 comments = self._prev_comments
                 merge = self._parse_merge()
@@ -735,7 +735,7 @@ class TSQL(Dialect):
 
             return super()._parse_wrapped_select(table=table)
 
-        def _parse_dcolon(self) -> t.Optional[exp.Expression]:
+        def _parse_dcolon(self) -> t.Optional[exp.Expr]:
             # We want to use _parse_types() if the first token after :: is a known type,
             # otherwise we could parse something like x::varchar(max) into a function
             if self._match_set(self.TYPE_TOKENS, advance=False):
@@ -743,11 +743,11 @@ class TSQL(Dialect):
 
             return self._parse_function() or self._parse_types()
 
-        def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
+        def _parse_options(self) -> t.Optional[t.List[exp.Expr]]:
             if not self._match(TokenType.OPTION):
                 return None
 
-            def _parse_option() -> t.Optional[exp.Expression]:
+            def _parse_option() -> t.Optional[exp.Expr]:
                 option = self._parse_var_from_options(OPTIONS)
                 if not option:
                     return None
@@ -768,11 +768,11 @@ class TSQL(Dialect):
 
             return exp.XMLKeyValueOption(this=this, expression=expression)
 
-        def _parse_for(self) -> t.Optional[t.List[exp.Expression]]:
+        def _parse_for(self) -> t.Optional[t.List[exp.Expr]]:
             if not self._match_pair(TokenType.FOR, TokenType.XML):
                 return None
 
-            def _parse_for_xml() -> t.Optional[exp.Expression]:
+            def _parse_for_xml() -> t.Optional[exp.Expr]:
                 return self.expression(
                     exp.QueryOption,
                     this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
@@ -783,7 +783,7 @@ class TSQL(Dialect):
 
         def _parse_projections(
             self,
-        ) -> t.Tuple[t.List[exp.Expression], t.Optional[t.List[exp.Expression]]]:
+        ) -> t.Tuple[t.List[exp.Expr], t.Optional[t.List[exp.Expr]]]:
             """
             T-SQL supports the syntax alias = expression in the SELECT's projection list,
             so we transform all parsed Selects to convert their EQ projections into Aliases.
@@ -857,7 +857,7 @@ class TSQL(Dialect):
 
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             this = self._parse_types()
             self._match(TokenType.COMMA)
             args = [this, *self._parse_csv(self._parse_assignment)]
@@ -866,8 +866,8 @@ class TSQL(Dialect):
             return convert
 
         def _parse_column_def(
-            self, this: t.Optional[exp.Expression], computed_column: bool = True
-        ) -> t.Optional[exp.Expression]:
+            self, this: t.Optional[exp.Expr], computed_column: bool = True
+        ) -> t.Optional[exp.Expr]:
             this = super()._parse_column_def(this=this, computed_column=computed_column)
             if not this:
                 return None
@@ -879,7 +879,7 @@ class TSQL(Dialect):
 
         def _parse_user_defined_function(
             self, kind: t.Optional[TokenType] = None
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             this = super()._parse_user_defined_function(kind=kind)
 
             if kind == TokenType.FUNCTION or isinstance(this, exp.UserDefinedFunction):
@@ -917,7 +917,7 @@ class TSQL(Dialect):
             self,
             any_token: bool = True,
             tokens: t.Optional[t.Collection[TokenType]] = None,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             is_temporary = self._match(TokenType.HASH)
             is_global = is_temporary and self._match(TokenType.HASH)
 
@@ -984,7 +984,7 @@ class TSQL(Dialect):
 
             return partition
 
-        def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
+        def _parse_alter_table_alter(self) -> t.Optional[exp.Expr]:
             expression = super()._parse_alter_table_alter()
 
             if expression is not None:
@@ -995,7 +995,7 @@ class TSQL(Dialect):
 
             return expression
 
-        def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+        def _parse_primary_key_part(self) -> t.Optional[exp.Expr]:
             return self._parse_ordered()
 
     class Generator(generator.Generator):
@@ -1428,7 +1428,7 @@ class TSQL(Dialect):
         def left_sql(self, expression: exp.Left) -> str:
             return self._uncast_text(expression, "LEFT")
 
-        def _uncast_text(self, expression: exp.Expression, name: str) -> str:
+        def _uncast_text(self, expression: exp.Expr, name: str) -> str:
             this = expression.this
             if isinstance(this, exp.Cast) and this.is_type(exp.DType.TEXT):
                 this_sql = self.sql(this, "this")
@@ -1451,7 +1451,7 @@ class TSQL(Dialect):
                 expression.this.set("catalog", None)
             return super().drop_sql(expression)
 
-        def options_modifier(self, expression: exp.Expression) -> str:
+        def options_modifier(self, expression: exp.Expr) -> str:
             options = self.expressions(expression, key="options")
             return f" OPTION{self.wrap(options)}" if options else ""
 

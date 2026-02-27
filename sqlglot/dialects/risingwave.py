@@ -42,14 +42,14 @@ class RisingWave(Postgres):
             "WATERMARK",
         }
 
-        def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
+        def _parse_table_hints(self) -> t.Optional[t.List[exp.Expr]]:
             # There is no hint in risingwave.
             # Do nothing here to avoid WITH keywords conflict in CREATE SINK statement.
             return None
 
-        def _parse_include_property(self) -> t.Optional[exp.Expression]:
-            header: t.Optional[exp.Expression] = None
-            coldef: t.Optional[exp.Expression] = None
+        def _parse_include_property(self) -> t.Optional[exp.Expr]:
+            header: t.Optional[exp.Expr] = None
+            coldef: t.Optional[exp.Expr] = None
 
             this = self._parse_var_or_string()
 

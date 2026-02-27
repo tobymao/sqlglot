@@ -12,7 +12,7 @@ class CustomExpression(exp.Expression): ...
 
 class TestSerde(unittest.TestCase):
     def dump_load(self, expression):
-        return exp.Expression.load(json.loads(json.dumps(expression.dump())))
+        return exp.Expr.load(json.loads(json.dumps(expression.dump())))
 
     def test_serde(self):
         for sql in load_sql_fixtures("identity.sql"):

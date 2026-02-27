@@ -107,7 +107,7 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
 # FROM x
 # GROUP BY x + 1
 # ORDER by z
-def _alias_ordered_group(expression: exp.Expression) -> exp.Expression:
+def _alias_ordered_group(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         group = expression.args.get("group")
         order = expression.args.get("order")
@@ -129,7 +129,7 @@ def _alias_ordered_group(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
+def _pushdown_cte_column_names(expression: exp.Expr) -> exp.Expr:
     """BigQuery doesn't allow column names when defining a CTE, so we try to push them down."""
     if isinstance(expression, exp.CTE) and expression.alias_column_names:
         cte_query = expression.this
@@ -245,7 +245,7 @@ def _build_datetime(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
-def build_date_diff(args: t.List) -> exp.Expression:
+def build_date_diff(args: t.List) -> exp.Expr:
     expr = exp.DateDiff(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
@@ -264,7 +264,7 @@ def build_date_diff(args: t.List) -> exp.Expression:
 
 
 def _build_regexp_extract(
-    expr_type: t.Type[E], default_group: t.Optional[exp.Expression] = None
+    expr_type: t.Type[E], default_group: t.Optional[exp.Expr] = None
 ) -> t.Callable[[t.List, BigQuery], E]:
     def _builder(args: t.List, dialect: BigQuery) -> E:
         try:
@@ -335,7 +335,7 @@ def _build_levenshtein(args: t.List) -> exp.Levenshtein:
     )
 
 
-def _build_format_time(expr_type: t.Type[exp.Expression]) -> t.Callable[[t.List], exp.TimeToStr]:
+def _build_format_time(expr_type: t.Type[exp.Expr]) -> t.Callable[[t.List], exp.TimeToStr]:
     def _builder(args: t.List) -> exp.TimeToStr:
         formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
             [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
@@ -753,7 +753,7 @@ class BigQuery(Dialect):
                 return self._parse_as_command(self._prev)
             return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
 
-        def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+        def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expr]:
             this = super()._parse_table_part(schema=schema) or self._parse_number()
 
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
@@ -869,7 +869,7 @@ class BigQuery(Dialect):
 
             return table
 
-        def _parse_column(self) -> t.Optional[exp.Expression]:
+        def _parse_column(self) -> t.Optional[exp.Expr]:
             column = super()._parse_column()
             if isinstance(column, exp.Column):
                 parts = column.parts
@@ -914,9 +914,7 @@ class BigQuery(Dialect):
 
             return json_object
 
-        def _parse_bracket(
-            self, this: t.Optional[exp.Expression] = None
-        ) -> t.Optional[exp.Expression]:
+        def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
             bracket = super()._parse_bracket(this)
 
             if isinstance(bracket, exp.Array):
@@ -1068,7 +1066,7 @@ class BigQuery(Dialect):
                 this=self._match_text_seq("AS") and self._parse_select(),
             )
 
-        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
             func_index = self._index + 1
             this = super()._parse_column_ops(this)
 

@@ -193,7 +193,7 @@ class Oracle(Dialect):
             ),
         }
 
-        def _parse_dbms_random(self) -> t.Optional[exp.Expression]:
+        def _parse_dbms_random(self) -> t.Optional[exp.Expr]:
             if self._match_text_seq(".", "VALUE"):
                 lower, upper = None, None
                 if self._match(TokenType.L_PAREN, advance=False):
@@ -215,7 +215,7 @@ class Oracle(Dialect):
                 **kwargs,
             )
 
-        def _parse_hint_function_call(self) -> t.Optional[exp.Expression]:
+        def _parse_hint_function_call(self) -> t.Optional[exp.Expr]:
             if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
                 return None
 
@@ -237,7 +237,7 @@ class Oracle(Dialect):
 
             return args
 
-        def _parse_query_restrictions(self) -> t.Optional[exp.Expression]:
+        def _parse_query_restrictions(self) -> t.Optional[exp.Expr]:
             kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
 
             if not kind:
@@ -282,7 +282,7 @@ class Oracle(Dialect):
         def _parse_connect_with_prior(self):
             return self._parse_assignment()
 
-        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
             this = super()._parse_column_ops(this)
 
             if not this:
@@ -290,7 +290,7 @@ class Oracle(Dialect):
 
             index = self._index
 
-            # https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Expressions.html
+            # https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Exprs.html
             interval_span = self._try_parse(lambda: self._parse_interval_span(this))
             if interval_span and isinstance(interval_span.args.get("unit"), exp.IntervalSpan):
                 return interval_span
@@ -298,7 +298,7 @@ class Oracle(Dialect):
             self._retreat(index)
             return this
 
-        def _parse_insert_table(self) -> t.Optional[exp.Expression]:
+        def _parse_insert_table(self) -> t.Optional[exp.Expr]:
             # Oracle does not use AS for INSERT INTO alias
             # https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/INSERT.html
             # Parse table parts without schema to avoid parsing the alias with its columns
@@ -409,7 +409,7 @@ class Oracle(Dialect):
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def add_column_sql(self, expression: exp.Expression) -> str:
+        def add_column_sql(self, expression: exp.Expr) -> str:
             return f"ADD {self.sql(expression)}"
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:

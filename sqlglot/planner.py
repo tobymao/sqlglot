@@ -9,7 +9,7 @@ from sqlglot.optimizer.eliminate_joins import join_condition
 
 
 class Plan:
-    def __init__(self, expression: exp.Expression) -> None:
+    def __init__(self, expression: exp.Expr) -> None:
         self.expression = expression.copy()
         self.root = Step.from_expression(self.expression)
         self._dag: t.Dict[Step, t.Set[Step]] = {}
@@ -43,7 +43,7 @@ class Plan:
 class Step:
     @classmethod
     def from_expression(
-        cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
+        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> Step:
         """
         Builds a DAG of Steps from a SQL expression so that it's easier to execute in an engine.
@@ -123,7 +123,7 @@ class Step:
             step = join
 
         projections: t.List[
-            exp.Expression
+            exp.Expr
         ] = []  # final selects in this chain of steps representing a select
         operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
         aggregations = {}
@@ -183,7 +183,7 @@ class Step:
                 f"_g{i}": e for i, e in enumerate(group.expressions if group else [])
             }
 
-            intermediate: t.Dict[str | exp.Expression, str] = {}
+            intermediate: t.Dict[str | exp.Expr, str] = {}
             for k, v in aggregate.group.items():
                 intermediate[v] = k
                 if isinstance(v, exp.Column):
@@ -246,9 +246,9 @@ class Step:
         self.name: t.Optional[str] = None
         self.dependencies: t.Set[Step] = set()
         self.dependents: t.Set[Step] = set()
-        self.projections: t.Sequence[exp.Expression] = []
+        self.projections: t.Sequence[exp.Expr] = []
         self.limit: float = math.inf
-        self.condition: t.Optional[exp.Expression] = None
+        self.condition: t.Optional[exp.Expr] = None
 
     def add_dependency(self, dependency: Step) -> None:
         self.dependencies.add(dependency)
@@ -305,7 +305,7 @@ class Step:
 class Scan(Step):
     @classmethod
     def from_expression(
-        cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
+        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> Step:
         table = expression
         alias_ = expression.alias_or_name
@@ -326,7 +326,7 @@ class Scan(Step):
 
     def __init__(self) -> None:
         super().__init__()
-        self.source: t.Optional[exp.Expression] = None
+        self.source: t.Optional[exp.Expr] = None
 
     def _to_s(self, indent: str) -> t.List[str]:
         return [f"{indent}Source: {self.source.sql() if self.source else '-static-'}"]  # type: ignore
@@ -355,7 +355,7 @@ class Join(Step):
     def __init__(self) -> None:
         super().__init__()
         self.source_name: t.Optional[str] = None
-        self.joins: t.Dict[str, t.Dict[str, t.List[str] | exp.Expression]] = {}
+        self.joins: t.Dict[str, t.Dict[str, t.List[str] | exp.Expr]] = {}
 
     def _to_s(self, indent: str) -> t.List[str]:
         lines = [f"{indent}Source: {self.source_name or self.name}"]
@@ -372,9 +372,9 @@ class Join(Step):
 class Aggregate(Step):
     def __init__(self) -> None:
         super().__init__()
-        self.aggregations: t.List[exp.Expression] = []
-        self.operands: t.Tuple[exp.Expression, ...] = ()
-        self.group: t.Dict[str, exp.Expression] = {}
+        self.aggregations: t.List[exp.Expr] = []
+        self.operands: t.Tuple[exp.Expr, ...] = ()
+        self.group: t.Dict[str, exp.Expr] = {}
         self.source: t.Optional[str] = None
 
     def _to_s(self, indent: str) -> t.List[str]:
@@ -415,7 +415,7 @@ class Sort(Step):
 class SetOperation(Step):
     def __init__(
         self,
-        op: t.Type[exp.Expression],
+        op: t.Type[exp.Expr],
         left: str | None,
         right: str | None,
         distinct: bool = False,
@@ -428,7 +428,7 @@ class SetOperation(Step):
 
     @classmethod
     def from_expression(
-        cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
+        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> SetOperation:
         assert isinstance(expression, exp.SetOperation)
 

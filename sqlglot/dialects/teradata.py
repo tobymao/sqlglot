@@ -75,8 +75,8 @@ class Teradata(Dialect):
         # Tested each of these and they work, although there is no
         # Teradata documentation explicitly mentioning them.
         HEX_STRINGS = [("X'", "'"), ("x'", "'"), ("0x", "")]
-        # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
-        # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions
+        # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Exprs-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
+        # https://docs.teradata.com/r/SQL-Functions-Operators-Exprs-and-Predicates/June-2017/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "**": TokenType.DSTAR,
@@ -180,7 +180,7 @@ class Teradata(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
+            # https://docs.teradata.com/r/SQL-Functions-Operators-Exprs-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
             "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(),
@@ -236,7 +236,7 @@ class Teradata(Dialect):
 
             # Handle both string literals and NONE keyword
             if self._match_text_seq("NONE"):
-                query_band_string: t.Optional[exp.Expression] = exp.Var(this="NONE")
+                query_band_string: t.Optional[exp.Expr] = exp.Var(this="NONE")
             else:
                 query_band_string = self._parse_string()
 
@@ -272,7 +272,7 @@ class Teradata(Dialect):
             anonymous: bool = False,
             optional_parens: bool = True,
             any_token: bool = False,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             # Teradata uses a `(FORMAT <format_string>)` clause after column references to
             # override the output format. When we see this pattern we do not
             # parse it as a function call.  The syntax is documented at
@@ -292,7 +292,7 @@ class Teradata(Dialect):
                 any_token=any_token,
             )
 
-        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
             this = super()._parse_column_ops(this)
 
             if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):

@@ -25,10 +25,10 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
 
 
 # Accept both DATE_TRUNC(datetime, unit) and DATE_TRUNC(unit, datetime)
-def _build_date_trunc(args: t.List[exp.Expression]) -> exp.Expression:
+def _build_date_trunc(args: t.List[exp.Expr]) -> exp.Expr:
     a0, a1 = seq_get(args, 0), seq_get(args, 1)
 
-    def _is_unit_like(e: exp.Expression | None) -> bool:
+    def _is_unit_like(e: exp.Expr | None) -> bool:
         if not (isinstance(e, exp.Literal) and e.is_string):
             return False
         text = e.this
@@ -74,7 +74,7 @@ class Doris(MySQL):
 
         def _parse_partition_property(
             self,
-        ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+        ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
             expr = super()._parse_partition_property()
 
             if not expr:

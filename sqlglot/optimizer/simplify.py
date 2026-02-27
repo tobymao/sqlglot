@@ -20,7 +20,7 @@ if t.TYPE_CHECKING:
 
     DateRange = t.Tuple[datetime.date, datetime.date]
     DateTruncBinaryTransform = t.Callable[
-        [exp.Expression, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expression]
+        [exp.Expr, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
     ]
 
 
@@ -40,7 +40,7 @@ SIMPLIFIABLE = (
 
 
 def simplify(
-    expression: exp.Expression,
+    expression: exp.Expr,
     constant_propagation: bool = False,
     coalesce_simplification: bool = False,
     dialect: DialectType = None,
@@ -61,7 +61,7 @@ def simplify(
             This rule tries to remove coalesce functions, which can be useful in certain analyses but
             can leave the query more verbose.
     Returns:
-        sqlglot.Expression: simplified expression
+        sqlglot.Expr: simplified expression
     """
     return Simplifier(dialect=dialect).simplify(
         expression,
@@ -91,7 +91,7 @@ def catch(*exceptions):
 
 def annotate_types_on_change(func):
     @wraps(func)
-    def _func(self, expression: exp.Expression, *args, **kwargs) -> t.Optional[exp.Expression]:
+    def _func(self, expression: exp.Expr, *args, **kwargs) -> t.Optional[exp.Expr]:
         new_expression = func(self, expression, *args, **kwargs)
 
         if new_expression is None:
@@ -128,7 +128,7 @@ def flatten(expression):
     return expression
 
 
-def simplify_parens(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
+def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     if not isinstance(expression, exp.Paren):
         return expression
 
@@ -208,19 +208,19 @@ def propagate_constants(expression, root=True):
     return expression
 
 
-def _is_number(expression: exp.Expression) -> bool:
+def _is_number(expression: exp.Expr) -> bool:
     return expression.is_number
 
 
-def _is_interval(expression: exp.Expression) -> bool:
+def _is_interval(expression: exp.Expr) -> bool:
     return isinstance(expression, exp.Interval) and extract_interval(expression) is not None
 
 
-def _is_nonnull_constant(expression: exp.Expression) -> bool:
+def _is_nonnull_constant(expression: exp.Expr) -> bool:
     return isinstance(expression, exp.NONNULL_CONSTANTS) or _is_date_literal(expression)
 
 
-def _is_constant(expression: exp.Expression) -> bool:
+def _is_constant(expression: exp.Expr) -> bool:
     return isinstance(expression, exp.CONSTANTS) or _is_date_literal(expression)
 
 
@@ -243,8 +243,8 @@ def _datetrunc_range(date: datetime.date, unit: str, dialect: Dialect) -> t.Opti
 
 
 def _datetrunc_eq_expression(
-    left: exp.Expression, drange: DateRange, target_type: t.Optional[exp.DataType]
-) -> exp.Expression:
+    left: exp.Expr, drange: DateRange, target_type: t.Optional[exp.DataType]
+) -> exp.Expr:
     """Get the logical expression for a date range"""
     return exp.and_(
         left >= date_literal(drange[0], target_type),
@@ -254,12 +254,12 @@ def _datetrunc_eq_expression(
 
 
 def _datetrunc_eq(
-    left: exp.Expression,
+    left: exp.Expr,
     date: datetime.date,
     unit: str,
     dialect: Dialect,
     target_type: t.Optional[exp.DataType],
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[exp.Expr]:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
@@ -268,12 +268,12 @@ def _datetrunc_eq(
 
 
 def _datetrunc_neq(
-    left: exp.Expression,
+    left: exp.Expr,
     date: datetime.date,
     unit: str,
     dialect: Dialect,
     target_type: t.Optional[exp.DataType],
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[exp.Expr]:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
@@ -303,11 +303,11 @@ def is_complement(a, b):
     return isinstance(b, exp.Not) and b.this == a
 
 
-def is_false(a: exp.Expression) -> bool:
+def is_false(a: exp.Expr) -> bool:
     return type(a) is exp.Boolean and not a.this
 
 
-def is_null(a: exp.Expression) -> bool:
+def is_null(a: exp.Expr) -> bool:
     return type(a) is exp.Null
 
 
@@ -359,7 +359,7 @@ def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.da
     return None
 
 
-def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+def extract_date(cast: exp.Expr) -> t.Optional[t.Union[datetime.date, datetime.date]]:
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
@@ -376,7 +376,7 @@ def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, date
     return cast_value(value, to)
 
 
-def _is_date_literal(expression: exp.Expression) -> bool:
+def _is_date_literal(expression: exp.Expr) -> bool:
     return extract_date(expression) is not None
 
 
@@ -505,7 +505,7 @@ class Simplifier:
         exp.Is,
     )
 
-    INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
+    INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]] = {
         exp.LT: exp.GT,
         exp.GT: exp.LT,
         exp.LTE: exp.GTE,
@@ -515,14 +515,14 @@ class Simplifier:
     NONDETERMINISTIC = (exp.Rand, exp.Randn)
     AND_OR = (exp.And, exp.Or)
 
-    INVERSE_DATE_OPS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
+    INVERSE_DATE_OPS: t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]] = {
         exp.DateAdd: exp.Sub,
         exp.DateSub: exp.Add,
         exp.DatetimeAdd: exp.Sub,
         exp.DatetimeSub: exp.Add,
     }
 
-    INVERSE_OPS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
+    INVERSE_OPS: t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]] = {
         **INVERSE_DATE_OPS,
         exp.Add: exp.Sub,
         exp.Sub: exp.Add,
@@ -532,7 +532,7 @@ class Simplifier:
 
     CONCATS = (exp.Concat, exp.DPipe)
 
-    DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
+    DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expr], DateTruncBinaryTransform] = {
         exp.LT: lambda l, dt, u, d, t: l
         < date_literal(dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u), t),
         exp.GT: lambda l, dt, u, d, t: l >= date_literal(date_floor(dt, u, d) + interval(u), t),
@@ -559,7 +559,7 @@ class Simplifier:
 
     def simplify(
         self,
-        expression: exp.Expression,
+        expression: exp.Expr,
         constant_propagation: bool = False,
         coalesce_simplification: bool = False,
     ):
@@ -628,7 +628,7 @@ class Simplifier:
         return expression
 
     def _simplify(
-        self, expression: exp.Expression, constant_propagation: bool, coalesce_simplification: bool
+        self, expression: exp.Expr, constant_propagation: bool, coalesce_simplification: bool
     ):
         pre_transformation_stack = [expression]
         post_transformation_stack = []
@@ -697,7 +697,7 @@ class Simplifier:
         return node
 
     @annotate_types_on_change
-    def rewrite_between(self, expression: exp.Expression) -> exp.Expression:
+    def rewrite_between(self, expression: exp.Expr) -> exp.Expr:
         """Rewrite x between y and z to x >= y AND x <= z.
 
         This is done because comparison simplification is only done on lt/lte/gt/gte.
@@ -717,7 +717,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def simplify_not(self, expression: exp.Expression) -> exp.Expression:
+    def simplify_not(self, expression: exp.Expr) -> exp.Expr:
         """
         Demorgan's Law
         NOT (x OR y) -> NOT x AND NOT y
@@ -1022,7 +1022,7 @@ class Simplifier:
 
     @annotate_types_on_change
     @catch(ModuleNotFoundError, UnsupportedUnit)
-    def simplify_equality(self, expression: exp.Expression) -> exp.Expression:
+    def simplify_equality(self, expression: exp.Expr) -> exp.Expr:
         """
         Use the subtraction and addition properties of equality to simplify expressions:
 
@@ -1052,8 +1052,8 @@ class Simplifier:
 
             if l.__class__ in self.INVERSE_DATE_OPS:
                 l = t.cast(exp.IntervalOp, l)
-                a: exp.Expression = l.this
-                b: exp.Expression = l.interval()
+                a: exp.Expr = l.this
+                b: exp.Expr = l.interval()
             else:
                 l = t.cast(exp.Binary, l)
                 a, b = l.left, l.right
@@ -1086,7 +1086,7 @@ class Simplifier:
 
         return expression
 
-    def _simplify_integer_cast(self, expr: exp.Expression) -> exp.Expression:
+    def _simplify_integer_cast(self, expr: exp.Expr) -> exp.Expr:
         if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
             this = self._simplify_integer_cast(expr.this)
         else:
@@ -1181,7 +1181,7 @@ class Simplifier:
         return None
 
     @annotate_types_on_change
-    def simplify_coalesce(self, expression: exp.Expression) -> exp.Expression:
+    def simplify_coalesce(self, expression: exp.Expr) -> exp.Expr:
         # COALESCE(x) -> x
         if (
             isinstance(expression, exp.Coalesce)
@@ -1311,7 +1311,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def simplify_startswith(self, expression: exp.Expression) -> exp.Expression:
+    def simplify_startswith(self, expression: exp.Expr) -> exp.Expr:
         """
         Reduces a prefix check to either TRUE or FALSE if both the string and the
         prefix are statically known.
@@ -1330,12 +1330,12 @@ class Simplifier:
 
         return expression
 
-    def _is_datetrunc_predicate(self, left: exp.Expression, right: exp.Expression) -> bool:
+    def _is_datetrunc_predicate(self, left: exp.Expr, right: exp.Expr) -> bool:
         return isinstance(left, self.DATETRUNCS) and _is_date_literal(right)
 
     @annotate_types_on_change
     @catch(ModuleNotFoundError, UnsupportedUnit)
-    def simplify_datetrunc(self, expression: exp.Expression) -> exp.Expression:
+    def simplify_datetrunc(self, expression: exp.Expr) -> exp.Expr:
         """Simplify expressions like `DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE)`"""
         comparison = expression.__class__
 
@@ -1402,7 +1402,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def sort_comparison(self, expression: exp.Expression) -> exp.Expression:
+    def sort_comparison(self, expression: exp.Expr) -> exp.Expr:
         if expression.__class__ in self.COMPLEMENT_COMPARISONS:
             l, r = expression.this, expression.expression
             l_column = isinstance(l, exp.Column)
@@ -1466,14 +1466,14 @@ class Gen:
         self.stack = []
         self.sqls = []
 
-    def gen(self, expression: exp.Expression, comments: bool = False) -> str:
+    def gen(self, expression: exp.Expr, comments: bool = False) -> str:
         self.stack = [expression]
         self.sqls.clear()
 
         while self.stack:
             node = self.stack.pop()
 
-            if isinstance(node, exp.Expression):
+            if isinstance(node, exp.Expr):
                 if comments and node.comments:
                     self.stack.append(f" /*{','.join(node.comments)}*/")
 
@@ -1696,7 +1696,7 @@ class Gen:
             )
         )
 
-    def _args(self, node: exp.Expression, arg_index: int = 0) -> bool:
+    def _args(self, node: exp.Expr, arg_index: int = 0) -> bool:
         kvs = []
         arg_types = list(node.arg_types)[arg_index:] if arg_index else node.arg_types
 

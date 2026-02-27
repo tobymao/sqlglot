@@ -2,31 +2,31 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import ExpressionBase, Func, Binary
+from sqlglot.expressions.core import Expression, Func, Binary
 
 
 # String basics
 
 
-class Ascii(ExpressionBase, Func):
+class Ascii(Expression, Func):
     pass
 
 
-class BitLength(ExpressionBase, Func):
+class BitLength(Expression, Func):
     pass
 
 
-class ByteLength(ExpressionBase, Func):
+class ByteLength(Expression, Func):
     pass
 
 
-class Chr(ExpressionBase, Func):
+class Chr(Expression, Func):
     arg_types = {"expressions": True, "charset": False}
     is_var_len_args = True
     _sql_names = ["CHR", "CHAR"]
 
 
-class Concat(ExpressionBase, Func):
+class Concat(Expression, Func):
     arg_types = {"expressions": True, "safe": False, "coalesce": False}
     is_var_len_args = True
 
@@ -35,43 +35,43 @@ class ConcatWs(Concat):
     _sql_names = ["CONCAT_WS"]
 
 
-class Contains(ExpressionBase, Func):
+class Contains(Expression, Func):
     arg_types = {"this": True, "expression": True, "json_scope": False}
 
 
-class Elt(ExpressionBase, Func):
+class Elt(Expression, Func):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True
 
 
-class EndsWith(ExpressionBase, Func):
+class EndsWith(Expression, Func):
     _sql_names = ["ENDS_WITH", "ENDSWITH"]
     arg_types = {"this": True, "expression": True}
 
 
-class Format(ExpressionBase, Func):
+class Format(Expression, Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class Initcap(ExpressionBase, Func):
+class Initcap(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
-class IsAscii(ExpressionBase, Func):
+class IsAscii(Expression, Func):
     pass
 
 
-class Left(ExpressionBase, Func):
+class Left(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Length(ExpressionBase, Func):
+class Length(Expression, Func):
     arg_types = {"this": True, "binary": False, "encoding": False}
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
-class Levenshtein(ExpressionBase, Func):
+class Levenshtein(Expression, Func):
     arg_types = {
         "this": True,
         "expression": False,
@@ -82,51 +82,51 @@ class Levenshtein(ExpressionBase, Func):
     }
 
 
-class Lower(ExpressionBase, Func):
+class Lower(Expression, Func):
     _sql_names = ["LOWER", "LCASE"]
 
 
-class MatchAgainst(ExpressionBase, Func):
+class MatchAgainst(Expression, Func):
     arg_types = {"this": True, "expressions": True, "modifier": False}
 
 
-class Normalize(ExpressionBase, Func):
+class Normalize(Expression, Func):
     arg_types = {"this": True, "form": False, "is_casefold": False}
 
 
-class NumberToStr(ExpressionBase, Func):
+class NumberToStr(Expression, Func):
     arg_types = {"this": True, "format": True, "culture": False}
 
 
-class Overlay(ExpressionBase, Func):
+class Overlay(Expression, Func):
     arg_types = {"this": True, "expression": True, "from_": True, "for_": False}
 
 
-class Pad(ExpressionBase, Func):
+class Pad(Expression, Func):
     arg_types = {"this": True, "expression": True, "fill_pattern": False, "is_left": True}
 
 
-class Repeat(ExpressionBase, Func):
+class Repeat(Expression, Func):
     arg_types = {"this": True, "times": True}
 
 
-class Replace(ExpressionBase, Func):
+class Replace(Expression, Func):
     arg_types = {"this": True, "expression": True, "replacement": False}
 
 
-class Reverse(ExpressionBase, Func):
+class Reverse(Expression, Func):
     pass
 
 
-class Right(ExpressionBase, Func):
+class Right(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class RtrimmedLength(ExpressionBase, Func):
+class RtrimmedLength(Expression, Func):
     pass
 
 
-class Search(ExpressionBase, Func):
+class Search(Expression, Func):
     arg_types = {
         "this": True,  # data_to_search / search_data
         "expression": True,  # search_query / search_string
@@ -137,19 +137,19 @@ class Search(ExpressionBase, Func):
     }
 
 
-class SearchIp(ExpressionBase, Func):
+class SearchIp(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class Soundex(ExpressionBase, Func):
+class Soundex(Expression, Func):
     pass
 
 
-class SoundexP123(ExpressionBase, Func):
+class SoundexP123(Expression, Func):
     pass
 
 
-class Space(ExpressionBase, Func):
+class Space(Expression, Func):
     """
     SPACE(n) → string consisting of n blank characters
     """
@@ -157,20 +157,20 @@ class Space(ExpressionBase, Func):
     pass
 
 
-class Split(ExpressionBase, Func):
+class Split(Expression, Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
-class SplitPart(ExpressionBase, Func):
+class SplitPart(Expression, Func):
     arg_types = {"this": True, "delimiter": False, "part_index": False}
 
 
-class StartsWith(ExpressionBase, Func):
+class StartsWith(Expression, Func):
     _sql_names = ["STARTS_WITH", "STARTSWITH"]
     arg_types = {"this": True, "expression": True}
 
 
-class StrPosition(ExpressionBase, Func):
+class StrPosition(Expression, Func):
     arg_types = {
         "this": True,
         "substr": True,
@@ -179,7 +179,7 @@ class StrPosition(ExpressionBase, Func):
     }
 
 
-class StrToMap(ExpressionBase, Func):
+class StrToMap(Expression, Func):
     arg_types = {
         "this": True,
         "pair_delim": False,
@@ -188,21 +188,21 @@ class StrToMap(ExpressionBase, Func):
     }
 
 
-class String(ExpressionBase, Func):
+class String(Expression, Func):
     arg_types = {"this": True, "zone": False}
 
 
-class Stuff(ExpressionBase, Func):
+class Stuff(Expression, Func):
     _sql_names = ["STUFF", "INSERT"]
     arg_types = {"this": True, "start": True, "length": True, "expression": True}
 
 
-class Substring(ExpressionBase, Func):
+class Substring(Expression, Func):
     _sql_names = ["SUBSTRING", "SUBSTR"]
     arg_types = {"this": True, "start": False, "length": False}
 
 
-class SubstringIndex(ExpressionBase, Func):
+class SubstringIndex(Expression, Func):
     """
     SUBSTRING_INDEX(str, delim, count)
 
@@ -213,11 +213,11 @@ class SubstringIndex(ExpressionBase, Func):
     arg_types = {"this": True, "delimiter": True, "count": True}
 
 
-class Translate(ExpressionBase, Func):
+class Translate(Expression, Func):
     arg_types = {"this": True, "from_": True, "to": True}
 
 
-class Trim(ExpressionBase, Func):
+class Trim(Expression, Func):
     arg_types = {
         "this": True,
         "expression": False,
@@ -226,70 +226,70 @@ class Trim(ExpressionBase, Func):
     }
 
 
-class Unicode(ExpressionBase, Func):
+class Unicode(Expression, Func):
     pass
 
 
-class Upper(ExpressionBase, Func):
+class Upper(Expression, Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
 # Encoding / base conversion
 
 
-class Base64DecodeBinary(ExpressionBase, Func):
+class Base64DecodeBinary(Expression, Func):
     arg_types = {"this": True, "alphabet": False}
 
 
-class Base64DecodeString(ExpressionBase, Func):
+class Base64DecodeString(Expression, Func):
     arg_types = {"this": True, "alphabet": False}
 
 
-class Base64Encode(ExpressionBase, Func):
+class Base64Encode(Expression, Func):
     arg_types = {"this": True, "max_line_length": False, "alphabet": False}
 
 
-class CodePointsToBytes(ExpressionBase, Func):
+class CodePointsToBytes(Expression, Func):
     pass
 
 
-class CodePointsToString(ExpressionBase, Func):
+class CodePointsToString(Expression, Func):
     pass
 
 
-class ConvertToCharset(ExpressionBase, Func):
+class ConvertToCharset(Expression, Func):
     arg_types = {"this": True, "dest": True, "source": False}
 
 
-class Decode(ExpressionBase, Func):
+class Decode(Expression, Func):
     arg_types = {"this": True, "charset": True, "replace": False}
 
 
-class Encode(ExpressionBase, Func):
+class Encode(Expression, Func):
     arg_types = {"this": True, "charset": True}
 
 
-class FromBase(ExpressionBase, Func):
+class FromBase(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
-class FromBase32(ExpressionBase, Func):
+class FromBase32(Expression, Func):
     pass
 
 
-class FromBase64(ExpressionBase, Func):
+class FromBase64(Expression, Func):
     pass
 
 
-class Hex(ExpressionBase, Func):
+class Hex(Expression, Func):
     pass
 
 
-class HexDecodeString(ExpressionBase, Func):
+class HexDecodeString(Expression, Func):
     pass
 
 
-class HexEncode(ExpressionBase, Func):
+class HexEncode(Expression, Func):
     arg_types = {"this": True, "case": False}
 
 
@@ -297,23 +297,23 @@ class LowerHex(Hex):
     pass
 
 
-class SafeConvertBytesToString(ExpressionBase, Func):
+class SafeConvertBytesToString(Expression, Func):
     pass
 
 
-class ToBase32(ExpressionBase, Func):
+class ToBase32(Expression, Func):
     pass
 
 
-class ToBase64(ExpressionBase, Func):
+class ToBase64(Expression, Func):
     pass
 
 
-class ToBinary(ExpressionBase, Func):
+class ToBinary(Expression, Func):
     arg_types = {"this": True, "format": False, "safe": False}
 
 
-class ToChar(ExpressionBase, Func):
+class ToChar(Expression, Func):
     arg_types = {
         "this": True,
         "format": False,
@@ -322,18 +322,18 @@ class ToChar(ExpressionBase, Func):
     }
 
 
-class ToCodePoints(ExpressionBase, Func):
+class ToCodePoints(Expression, Func):
     pass
 
 
-class ToDecfloat(ExpressionBase, Func):
+class ToDecfloat(Expression, Func):
     arg_types = {
         "this": True,
         "format": False,
     }
 
 
-class ToDouble(ExpressionBase, Func):
+class ToDouble(Expression, Func):
     arg_types = {
         "this": True,
         "format": False,
@@ -341,7 +341,7 @@ class ToDouble(ExpressionBase, Func):
     }
 
 
-class ToFile(ExpressionBase, Func):
+class ToFile(Expression, Func):
     arg_types = {
         "this": True,
         "path": False,
@@ -349,7 +349,7 @@ class ToFile(ExpressionBase, Func):
     }
 
 
-class ToNumber(ExpressionBase, Func):
+class ToNumber(Expression, Func):
     arg_types = {
         "this": True,
         "format": False,
@@ -361,37 +361,37 @@ class ToNumber(ExpressionBase, Func):
     }
 
 
-class TryBase64DecodeBinary(ExpressionBase, Func):
+class TryBase64DecodeBinary(Expression, Func):
     arg_types = {"this": True, "alphabet": False}
 
 
-class TryBase64DecodeString(ExpressionBase, Func):
+class TryBase64DecodeString(Expression, Func):
     arg_types = {"this": True, "alphabet": False}
 
 
-class TryHexDecodeBinary(ExpressionBase, Func):
+class TryHexDecodeBinary(Expression, Func):
     pass
 
 
-class TryHexDecodeString(ExpressionBase, Func):
+class TryHexDecodeString(Expression, Func):
     pass
 
 
-class TryToDecfloat(ExpressionBase, Func):
+class TryToDecfloat(Expression, Func):
     arg_types = {
         "this": True,
         "format": False,
     }
 
 
-class Unhex(ExpressionBase, Func):
+class Unhex(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
 # Regex
 
 
-class RegexpCount(ExpressionBase, Func):
+class RegexpCount(Expression, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -400,7 +400,7 @@ class RegexpCount(ExpressionBase, Func):
     }
 
 
-class RegexpExtract(ExpressionBase, Func):
+class RegexpExtract(Expression, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -412,7 +412,7 @@ class RegexpExtract(ExpressionBase, Func):
     }
 
 
-class RegexpExtractAll(ExpressionBase, Func):
+class RegexpExtractAll(Expression, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -423,15 +423,15 @@ class RegexpExtractAll(ExpressionBase, Func):
     }
 
 
-class RegexpFullMatch(ExpressionBase, Binary, Func):
+class RegexpFullMatch(Expression, Binary, Func):
     arg_types = {"this": True, "expression": True, "options": False}
 
 
-class RegexpILike(ExpressionBase, Binary, Func):
+class RegexpILike(Expression, Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
-class RegexpInstr(ExpressionBase, Func):
+class RegexpInstr(Expression, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -443,7 +443,7 @@ class RegexpInstr(ExpressionBase, Func):
     }
 
 
-class RegexpReplace(ExpressionBase, Func):
+class RegexpReplace(Expression, Func):
     arg_types = {
         "this": True,
         "expression": True,
@@ -455,18 +455,18 @@ class RegexpReplace(ExpressionBase, Func):
     }
 
 
-class RegexpSplit(ExpressionBase, Func):
+class RegexpSplit(Expression, Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
 # Hashing / cryptographic
 
 
-class Compress(ExpressionBase, Func):
+class Compress(Expression, Func):
     arg_types = {"this": True, "method": False}
 
 
-class Decrypt(ExpressionBase, Func):
+class Decrypt(Expression, Func):
     arg_types = {
         "this": True,
         "passphrase": True,
@@ -476,7 +476,7 @@ class Decrypt(ExpressionBase, Func):
     }
 
 
-class DecryptRaw(ExpressionBase, Func):
+class DecryptRaw(Expression, Func):
     arg_types = {
         "this": True,
         "key": True,
@@ -488,77 +488,77 @@ class DecryptRaw(ExpressionBase, Func):
     }
 
 
-class DecompressBinary(ExpressionBase, Func):
+class DecompressBinary(Expression, Func):
     arg_types = {"this": True, "method": True}
 
 
-class DecompressString(ExpressionBase, Func):
+class DecompressString(Expression, Func):
     arg_types = {"this": True, "method": True}
 
 
-class Encrypt(ExpressionBase, Func):
+class Encrypt(Expression, Func):
     arg_types = {"this": True, "passphrase": True, "aad": False, "encryption_method": False}
 
 
-class EncryptRaw(ExpressionBase, Func):
+class EncryptRaw(Expression, Func):
     arg_types = {"this": True, "key": True, "iv": True, "aad": False, "encryption_method": False}
 
 
-class FarmFingerprint(ExpressionBase, Func):
+class FarmFingerprint(Expression, Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
     _sql_names = ["FARM_FINGERPRINT", "FARMFINGERPRINT64"]
 
 
-class MD5(ExpressionBase, Func):
+class MD5(Expression, Func):
     _sql_names = ["MD5"]
 
 
-class MD5Digest(ExpressionBase, Func):
+class MD5Digest(Expression, Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
     _sql_names = ["MD5_DIGEST"]
 
 
-class MD5NumberLower64(ExpressionBase, Func):
+class MD5NumberLower64(Expression, Func):
     pass
 
 
-class MD5NumberUpper64(ExpressionBase, Func):
+class MD5NumberUpper64(Expression, Func):
     pass
 
 
-class SHA(ExpressionBase, Func):
+class SHA(Expression, Func):
     _sql_names = ["SHA", "SHA1"]
 
 
-class SHA1Digest(ExpressionBase, Func):
+class SHA1Digest(Expression, Func):
     pass
 
 
-class SHA2(ExpressionBase, Func):
+class SHA2(Expression, Func):
     _sql_names = ["SHA2"]
     arg_types = {"this": True, "length": False}
 
 
-class SHA2Digest(ExpressionBase, Func):
+class SHA2Digest(Expression, Func):
     arg_types = {"this": True, "length": False}
 
 
-class StandardHash(ExpressionBase, Func):
+class StandardHash(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
 # Parse
 
 
-class ParseBignumeric(ExpressionBase, Func):
+class ParseBignumeric(Expression, Func):
     pass
 
 
-class ParseNumeric(ExpressionBase, Func):
+class ParseNumeric(Expression, Func):
     pass
 
 
-class ParseUrl(ExpressionBase, Func):
+class ParseUrl(Expression, Func):
     arg_types = {"this": True, "part_to_extract": False, "key": False, "permissive": False}

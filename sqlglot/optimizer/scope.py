@@ -187,11 +187,11 @@ class Scope:
         """
         Replace `old` with `new`.
 
-        This can be used instead of `exp.Expression.replace` to ensure the `Scope` is kept up-to-date.
+        This can be used instead of `exp.Expr.replace` to ensure the `Scope` is kept up-to-date.
 
         Args:
-            old (exp.Expression): old node
-            new (exp.Expression): new node
+            old (exp.Expr): old node
+            new (exp.Expr): new node
         """
         old.replace(new)
         self.clear_cache()
@@ -365,7 +365,7 @@ class Scope:
         return self._selected_sources
 
     @property
-    def references(self) -> t.List[t.Tuple[str, exp.Expression]]:
+    def references(self) -> t.List[t.Tuple[str, exp.Expr]]:
         if self._references is None:
             self._references = []
 
@@ -561,7 +561,7 @@ class Scope:
         return scope_ref_count
 
 
-def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
+def traverse_scope(expression: exp.Expr) -> t.List[Scope]:
     """
     Traverse an expression by its "scopes".
 
@@ -582,7 +582,7 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
         ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
 
     Args:
-        expression: Expression to traverse
+        expression: Expr to traverse
 
     Returns:
         A list of the created scope instances
@@ -592,12 +592,12 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     return []
 
 
-def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
+def build_scope(expression: exp.Expr) -> t.Optional[Scope]:
     """
     Build a scope tree.
 
     Args:
-        expression: Expression to build the scope tree for.
+        expression: Expr to build the scope tree for.
 
     Returns:
         The root scope
@@ -730,7 +730,7 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     )
 
 
-def _is_from_or_join(expression: exp.Expression) -> bool:
+def _is_from_or_join(expression: exp.Expr) -> bool:
     """
     Determine if `expression` is the FROM or JOIN clause of a SELECT statement.
     """
@@ -873,14 +873,14 @@ def walk_in_scope(expression, bfs=True, prune=None):
     nodes that start child scopes.
 
     Args:
-        expression (exp.Expression):
+        expression (exp.Expr):
         bfs (bool): if set to True the BFS traversal order will be applied,
             otherwise the DFS traversal will be used instead.
         prune ((node, parent, arg_key) -> bool): callable that returns True if
             the generator should stop traversing this branch of the tree.
 
     Yields:
-        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key
+        tuple[exp.Expr, Optional[exp.Expr], str]: node, parent, arg key
     """
     # We'll use this variable to pass state into the dfs generator.
     # Whenever we set it to True, we exclude a subtree from traversal.
@@ -921,12 +921,12 @@ def find_all_in_scope(expression, expression_types, bfs=True):
     This does NOT traverse into subscopes.
 
     Args:
-        expression (exp.Expression):
+        expression (exp.Expr):
         expression_types (tuple[type]|type): the expression type(s) to match.
         bfs (bool): True to use breadth-first search, False to use depth-first.
 
     Yields:
-        exp.Expression: nodes
+        exp.Expr: nodes
     """
     for expression in walk_in_scope(expression, bfs=bfs):
         if isinstance(expression, tuple(ensure_collection(expression_types))):
@@ -940,12 +940,12 @@ def find_in_scope(expression, expression_types, bfs=True):
     This does NOT traverse into subscopes.
 
     Args:
-        expression (exp.Expression):
+        expression (exp.Expr):
         expression_types (tuple[type]|type): the expression type(s) to match.
         bfs (bool): True to use breadth-first search, False to use depth-first.
 
     Returns:
-        exp.Expression: the node which matches the criteria or None if no node matching
+        exp.Expr: the node which matches the criteria or None if no node matching
         the criteria was found.
     """
     return next(find_all_in_scope(expression, expression_types, bfs=bfs), None)

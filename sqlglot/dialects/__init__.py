@@ -35,7 +35,7 @@ class Custom(Dialect):
         }
 
     class Generator(Generator):
-        # Specifies how AST nodes, i.e. subclasses of exp.Expression, should be converted into SQL
+        # Specifies how AST nodes, i.e. subclasses of exp.Expr, should be converted into SQL
         TRANSFORMS = {
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
         }

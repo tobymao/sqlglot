@@ -23,38 +23,38 @@ if t.TYPE_CHECKING:
 class Insert:
     """Indicates that a new node has been inserted"""
 
-    expression: exp.Expression
+    expression: exp.Expr
 
 
 @dataclass(frozen=True)
 class Remove:
     """Indicates that an existing node has been removed"""
 
-    expression: exp.Expression
+    expression: exp.Expr
 
 
 @dataclass(frozen=True)
 class Move:
     """Indicates that an existing node's position within the tree has changed"""
 
-    source: exp.Expression
-    target: exp.Expression
+    source: exp.Expr
+    target: exp.Expr
 
 
 @dataclass(frozen=True)
 class Update:
     """Indicates that an existing node has been updated"""
 
-    source: exp.Expression
-    target: exp.Expression
+    source: exp.Expr
+    target: exp.Expr
 
 
 @dataclass(frozen=True)
 class Keep:
     """Indicates that an existing node hasn't been changed"""
 
-    source: exp.Expression
-    target: exp.Expression
+    source: exp.Expr
+    target: exp.Expr
 
 
 if t.TYPE_CHECKING:
@@ -64,9 +64,9 @@ if t.TYPE_CHECKING:
 
 
 def diff(
-    source: exp.Expression,
-    target: exp.Expression,
-    matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+    source: exp.Expr,
+    target: exp.Expr,
+    matchings: t.List[t.Tuple[exp.Expr, exp.Expr]] | None = None,
     delta_only: bool = False,
     **kwargs: t.Any,
 ) -> t.List[Edit]:
@@ -96,8 +96,8 @@ def diff(
     matchings = matchings or []
 
     def compute_node_mappings(
-        old_nodes: tuple[exp.Expression, ...], new_nodes: tuple[exp.Expression, ...]
-    ) -> t.Dict[int, exp.Expression]:
+        old_nodes: tuple[exp.Expr, ...], new_nodes: tuple[exp.Expr, ...]
+    ) -> t.Dict[int, exp.Expr]:
         node_mapping = {}
         for old_node, new_node in zip(reversed(old_nodes), reversed(new_nodes)):
             new_node._hash = hash(new_node)
@@ -175,9 +175,9 @@ class ChangeDistiller:
 
     def diff(
         self,
-        source: exp.Expression,
-        target: exp.Expression,
-        matchings: t.List[t.Tuple[exp.Expression, exp.Expression]] | None = None,
+        source: exp.Expr,
+        target: exp.Expr,
+        matchings: t.List[t.Tuple[exp.Expr, exp.Expr]] | None = None,
         delta_only: bool = False,
     ) -> t.List[Edit]:
         matchings = matchings or []
@@ -243,7 +243,7 @@ class ChangeDistiller:
         return edit_script
 
     def _generate_move_edits(
-        self, source: exp.Expression, target: exp.Expression, matchings: t.Dict[int, int]
+        self, source: exp.Expr, target: exp.Expr, matchings: t.Dict[int, int]
     ) -> t.List[Move]:
         source_args = [id(e) for e in _expression_only_args(source)]
         target_args = [id(e) for e in _expression_only_args(target)]
@@ -307,7 +307,7 @@ class ChangeDistiller:
         return matching_set
 
     def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
-        candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expression, exp.Expression]] = []
+        candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expr, exp.Expr]] = []
         source_expression_leaves = list(_get_expression_leaves(self._source))
         target_expression_leaves = list(_get_expression_leaves(self._target))
         for source_leaf in source_expression_leaves:
@@ -340,7 +340,7 @@ class ChangeDistiller:
 
         return matching_set
 
-    def _dice_coefficient(self, source: exp.Expression, target: exp.Expression) -> float:
+    def _dice_coefficient(self, source: exp.Expr, target: exp.Expr) -> float:
         source_histo = self._bigram_histo(source)
         target_histo = self._bigram_histo(target)
 
@@ -355,7 +355,7 @@ class ChangeDistiller:
 
         return 2 * overlap_len / total_grams
 
-    def _bigram_histo(self, expression: exp.Expression) -> t.DefaultDict[str, int]:
+    def _bigram_histo(self, expression: exp.Expr) -> t.DefaultDict[str, int]:
         if id(expression) in self._bigram_histo_cache:
             return self._bigram_histo_cache[id(expression)]
 
@@ -369,7 +369,7 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_expression_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+def _get_expression_leaves(expression: exp.Expr) -> t.Iterator[exp.Expr]:
     has_child_exprs = False
 
     for node in expression.iter_expressions():
@@ -381,19 +381,19 @@ def _get_expression_leaves(expression: exp.Expression) -> t.Iterator[exp.Express
         yield expression
 
 
-def _get_non_expression_leaves(expression: exp.Expression) -> t.Iterator[t.Tuple[str, t.Any]]:
+def _get_non_expression_leaves(expression: exp.Expr) -> t.Iterator[t.Tuple[str, t.Any]]:
     for arg, value in expression.args.items():
         if (
             value is None
-            or isinstance(value, exp.Expression)
-            or (isinstance(value, list) and isinstance(seq_get(value, 0), exp.Expression))
+            or isinstance(value, exp.Expr)
+            or (isinstance(value, list) and isinstance(seq_get(value, 0), exp.Expr))
         ):
             continue
 
         yield (arg, value)
 
 
-def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
+def _is_same_type(source: exp.Expr, target: exp.Expr) -> bool:
     if type(source) is type(target):
         if isinstance(source, exp.Join):
             return source.args.get("side") == target.args.get("side")
@@ -406,16 +406,14 @@ def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
     return False
 
 
-def _parent_similarity_score(
-    source: t.Optional[exp.Expression], target: t.Optional[exp.Expression]
-) -> int:
+def _parent_similarity_score(source: t.Optional[exp.Expr], target: t.Optional[exp.Expr]) -> int:
     if source is None or target is None or type(source) is not type(target):
         return 0
 
     return 1 + _parent_similarity_score(source.parent, target.parent)
 
 
-def _expression_only_args(expression: exp.Expression) -> t.Iterator[exp.Expression]:
+def _expression_only_args(expression: exp.Expr) -> t.Iterator[exp.Expr]:
     yield from (
         arg
         for arg in expression.iter_expressions()

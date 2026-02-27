@@ -15,6 +15,7 @@ from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
 
+from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
@@ -23,14 +24,13 @@ from sqlglot.helper import (
     to_bool,
     trait,
 )
-from sqlglot._typing import E
-from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval, IntervalSpan
     from sqlglot.expressions.query import Select
+    from sqlglot.tokens import Token
 
 logger = logging.getLogger("sqlglot")
 
@@ -42,14 +42,15 @@ POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
-class Expression:
+@trait
+class Expr:
     """
-    The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
+    The base class for all expressions in a syntax tree. Each Expr encapsulates any necessary
     context, such as its child expressions, their names (arg keys), and whether a given child expression
     is optional or not.
 
     Attributes:
-        key: a unique key for each class in the Expression hierarchy. This is useful for hashing
+        key: a unique key for each class in the Expr hierarchy. This is useful for hashing
             and representing expressions as strings.
         arg_types: determines the arguments (child nodes) supported by an expression. It maps
             arg keys to booleans that indicate whether the corresponding args are optional.
@@ -64,16 +65,422 @@ class Expression:
         meta: a dictionary that can be used to store useful metadata for a given expression.
 
     Example:
-        >>> class Foo(Expression):
+        >>> class Foo(Expr):
         ...     arg_types = {"this": True, "expression": False}
 
-        The above definition informs us that Foo is an Expression that requires an argument called
+        The above definition informs us that Foo is an Expr that requires an argument called
         "this" and may also optionally receive an argument called "expression".
 
     Args:
         args: a mapping used for retrieving the arguments of an expression, given their arg keys.
     """
 
+    key: t.ClassVar[str] = "expression"
+    arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True}
+    required_args: t.ClassVar[t.Set[str]] = {"this"}
+    is_var_len_args: t.ClassVar[bool] = False
+    _hash_raw_args: t.ClassVar[bool] = False
+    is_subquery: t.ClassVar[bool] = False
+    is_cast: t.ClassVar[bool] = False
+
+    args: t.Dict[str, t.Any]
+    parent: t.Optional[Expr]
+    arg_key: t.Optional[str]
+    index: t.Optional[int]
+    comments: t.Optional[t.List[str]]
+    _type: t.Optional[DataType]
+    _meta: t.Optional[t.Dict[str, t.Any]]
+    _hash: t.Optional[int]
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs: t.Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # When an Expr class is created, its key is automatically set
+        # to be the lowercase version of the class' name.
+        cls.key = cls.__name__.lower()
+        cls.required_args = {k for k, v in cls.arg_types.items() if v}
+        # This is so that docstrings are not inherited in pdoc
+        setattr(cls, "__doc__", getattr(cls, "__doc__", None) or "")
+
+    def __init__(self, **args: object) -> None:
+        self.args: t.Dict[str, t.Any] = args
+        self.parent: t.Optional[Expr] = None
+        self.arg_key: t.Optional[str] = None
+        self.index: t.Optional[int] = None
+        self.comments: t.Optional[t.List[str]] = None
+        self._type: t.Optional[DataType] = None
+        self._meta: t.Optional[t.Dict[str, t.Any]] = None
+        self._hash: t.Optional[int] = None
+
+        for arg_key, value in self.args.items():
+            self._set_parent(arg_key, value)
+        if hasattr(self, "_post_init"):
+            self._post_init()
+
+    @property
+    def this(self) -> t.Any:
+        raise NotImplementedError
+
+    @property
+    def expression(self) -> t.Any:
+        raise NotImplementedError
+
+    @property
+    def expressions(self) -> t.List[t.Any]:
+        raise NotImplementedError
+
+    def text(self, key: str) -> str:
+        raise NotImplementedError
+
+    @property
+    def is_string(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    def is_number(self) -> bool:
+        raise NotImplementedError
+
+    def to_py(self) -> t.Any:
+        raise NotImplementedError
+
+    @property
+    def is_int(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    def is_star(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    def alias(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def alias_column_names(self) -> t.List[str]:
+        raise NotImplementedError
+
+    @property
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def alias_or_name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def output_name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def type(self) -> t.Optional[DataType]:
+        raise NotImplementedError
+
+    @type.setter
+    def type(self, dtype: t.Optional[DataType | DType | str]) -> None:
+        raise NotImplementedError
+
+    def is_type(self, *dtypes: DATA_TYPE) -> bool:
+        raise NotImplementedError
+
+    def is_leaf(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    def meta(self) -> t.Dict[str, t.Any]:
+        raise NotImplementedError
+
+    def __deepcopy__(self, memo: t.Any) -> Expr:
+        raise NotImplementedError
+
+    def copy(self: E) -> E:
+        raise NotImplementedError
+
+    def add_comments(self, comments: t.Optional[t.List[str]] = None, prepend: bool = False) -> None:
+        raise NotImplementedError
+
+    def pop_comments(self) -> t.List[str]:
+        raise NotImplementedError
+
+    def append(self, arg_key: str, value: t.Any) -> None:
+        raise NotImplementedError
+
+    def set(
+        self,
+        arg_key: str,
+        value: object,
+        index: t.Optional[int] = None,
+        overwrite: bool = True,
+    ) -> None:
+        raise NotImplementedError
+
+    def _set_parent(self, arg_key: str, value: object, index: t.Optional[int] = None) -> None:
+        raise NotImplementedError
+
+    @property
+    def depth(self) -> int:
+        raise NotImplementedError
+
+    def iter_expressions(self: E, reverse: bool = False) -> t.Iterator[E]:
+        raise NotImplementedError
+
+    def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
+        raise NotImplementedError
+
+    def find_all(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Iterator[E]:
+        raise NotImplementedError
+
+    def find_ancestor(self, *expression_types: t.Type[E]) -> t.Optional[E]:
+        raise NotImplementedError
+
+    @property
+    def parent_select(self) -> t.Optional[Select]:
+        raise NotImplementedError
+
+    @property
+    def same_parent(self) -> bool:
+        raise NotImplementedError
+
+    def root(self) -> Expr:
+        raise NotImplementedError
+
+    def walk(
+        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expr], bool]] = None
+    ) -> t.Iterator[Expr]:
+        raise NotImplementedError
+
+    def dfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> t.Iterator[Expr]:
+        raise NotImplementedError
+
+    def bfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> t.Iterator[Expr]:
+        raise NotImplementedError
+
+    def unnest(self) -> Expr:
+        raise NotImplementedError
+
+    def unalias(self) -> Expr:
+        raise NotImplementedError
+
+    def unnest_operands(self) -> t.Tuple[Expr, ...]:
+        raise NotImplementedError
+
+    def flatten(self, unnest: bool = True) -> t.Iterator[Expr]:
+        raise NotImplementedError
+
+    def to_s(self) -> str:
+        raise NotImplementedError
+
+    def sql(self, dialect: DialectType = None, **opts: t.Any) -> str:
+        raise NotImplementedError
+
+    def transform(
+        self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
+    ) -> t.Any:
+        raise NotImplementedError
+
+    def replace(self, expression: t.Any) -> t.Any:
+        raise NotImplementedError
+
+    def pop(self: E) -> E:
+        raise NotImplementedError
+
+    def assert_is(self, type_: t.Type[E]) -> E:
+        raise NotImplementedError
+
+    def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:
+        raise NotImplementedError
+
+    def dump(self) -> t.Any:
+        """
+        Dump this Expr to a JSON-serializable dict.
+        """
+        from sqlglot.serde import dump
+
+        return dump(self)
+
+    @classmethod
+    def load(cls, obj: t.Any) -> Expr:
+        """
+        Load a dict (as returned by `Expr.dump`) into an Expr instance.
+        """
+        from sqlglot.serde import load
+
+        result = load(obj)
+        assert isinstance(result, Expr)
+        return result
+
+    def and_(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        dialect: DialectType = None,
+        copy: bool = True,
+        wrap: bool = True,
+        **opts: t.Any,
+    ) -> Condition:
+        raise NotImplementedError
+
+    def or_(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        dialect: DialectType = None,
+        copy: bool = True,
+        wrap: bool = True,
+        **opts: t.Any,
+    ) -> Condition:
+        raise NotImplementedError
+
+    def not_(self, copy: bool = True) -> Not:
+        raise NotImplementedError
+
+    def update_positions(
+        self: E,
+        other: t.Optional[Token | Expr] = None,
+        line: t.Optional[int] = None,
+        col: t.Optional[int] = None,
+        start: t.Optional[int] = None,
+        end: t.Optional[int] = None,
+    ) -> E:
+        raise NotImplementedError
+
+    def as_(
+        self,
+        alias: str | Identifier,
+        quoted: t.Optional[bool] = None,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts: t.Any,
+    ) -> Alias:
+        raise NotImplementedError
+
+    def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
+        raise NotImplementedError
+
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
+        raise NotImplementedError
+
+    def __iter__(self) -> t.Iterator:
+        raise NotImplementedError
+
+    def isin(
+        self,
+        *expressions: t.Any,
+        query: t.Optional[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | t.Collection[ExpOrStr] = None,
+        copy: bool = True,
+        **opts,
+    ) -> In:
+        raise NotImplementedError
+
+    def between(
+        self,
+        low: t.Any,
+        high: t.Any,
+        copy: bool = True,
+        symmetric: t.Optional[bool] = None,
+        **opts,
+    ) -> Between:
+        raise NotImplementedError
+
+    def is_(self, other: ExpOrStr) -> Is:
+        raise NotImplementedError
+
+    def like(self, other: ExpOrStr) -> Like:
+        raise NotImplementedError
+
+    def ilike(self, other: ExpOrStr) -> ILike:
+        raise NotImplementedError
+
+    def eq(self, other: t.Any) -> EQ:
+        raise NotImplementedError
+
+    def neq(self, other: t.Any) -> NEQ:
+        raise NotImplementedError
+
+    def rlike(self, other: ExpOrStr) -> RegexpLike:
+        raise NotImplementedError
+
+    def div(self, other: ExpOrStr, typed: bool = False, safe: bool = False) -> Div:
+        raise NotImplementedError
+
+    def asc(self, nulls_first: bool = True) -> Ordered:
+        raise NotImplementedError
+
+    def desc(self, nulls_first: bool = False) -> Ordered:
+        raise NotImplementedError
+
+    def __lt__(self, other: t.Any) -> LT:
+        raise NotImplementedError
+
+    def __le__(self, other: t.Any) -> LTE:
+        raise NotImplementedError
+
+    def __gt__(self, other: t.Any) -> GT:
+        raise NotImplementedError
+
+    def __ge__(self, other: t.Any) -> GTE:
+        raise NotImplementedError
+
+    def __add__(self, other: t.Any) -> Add:
+        raise NotImplementedError
+
+    def __radd__(self, other: t.Any) -> Add:
+        raise NotImplementedError
+
+    def __sub__(self, other: t.Any) -> Sub:
+        raise NotImplementedError
+
+    def __rsub__(self, other: t.Any) -> Sub:
+        raise NotImplementedError
+
+    def __mul__(self, other: t.Any) -> Mul:
+        raise NotImplementedError
+
+    def __rmul__(self, other: t.Any) -> Mul:
+        raise NotImplementedError
+
+    def __truediv__(self, other: t.Any) -> Div:
+        raise NotImplementedError
+
+    def __rtruediv__(self, other: t.Any) -> Div:
+        raise NotImplementedError
+
+    def __floordiv__(self, other: t.Any) -> IntDiv:
+        raise NotImplementedError
+
+    def __rfloordiv__(self, other: t.Any) -> IntDiv:
+        raise NotImplementedError
+
+    def __mod__(self, other: t.Any) -> Mod:
+        raise NotImplementedError
+
+    def __rmod__(self, other: t.Any) -> Mod:
+        raise NotImplementedError
+
+    def __pow__(self, other: t.Any) -> Pow:
+        raise NotImplementedError
+
+    def __rpow__(self, other: t.Any) -> Pow:
+        raise NotImplementedError
+
+    def __and__(self, other: t.Any) -> And:
+        raise NotImplementedError
+
+    def __rand__(self, other: t.Any) -> And:
+        raise NotImplementedError
+
+    def __or__(self, other: t.Any) -> Or:
+        raise NotImplementedError
+
+    def __ror__(self, other: t.Any) -> Or:
+        raise NotImplementedError
+
+    def __neg__(self) -> Neg:
+        raise NotImplementedError
+
+    def __invert__(self) -> Not:
+        raise NotImplementedError
+
+
+class Expression(Expr):
     __slots__ = (
         "args",
         "parent",
@@ -85,48 +492,13 @@ class Expression:
         "_hash",
     )
 
-    key: t.ClassVar[str] = "expression"
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True}
-    required_args: t.ClassVar[t.Set[str]] = {"this"}
-    is_var_len_args: t.ClassVar[bool] = False
-    _hash_raw_args: t.ClassVar[bool] = False
-    is_subquery: t.ClassVar[bool] = False
-    is_cast: t.ClassVar[bool] = False
-
-    def __init__(self, **args: object) -> None:
-        self.args: t.Dict[str, t.Any] = args
-        self.parent: t.Optional[Expression] = None
-        self.arg_key: t.Optional[str] = None
-        self.index: t.Optional[int] = None
-        self.comments: t.Optional[t.List[str]] = None
-        self._type: t.Optional[DataType] = None
-        self._meta: t.Optional[t.Dict[str, t.Any]] = None
-        self._hash: t.Optional[int] = None
-
-        for arg_key, value in self.args.items():
-            self._set_parent(arg_key, value)
-        self._post_init()
-
-    def _post_init(self) -> None:
-        pass
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs: t.Any) -> None:
-        super().__init_subclass__(**kwargs)
-        # When an Expression class is created, its key is automatically set
-        # to be the lowercase version of the class' name.
-        cls.key = cls.__name__.lower()
-        cls.required_args = {k for k, v in cls.arg_types.items() if v}
-        # This is so that docstrings are not inherited in pdoc
-        setattr(cls, "__doc__", getattr(cls, "__doc__", None) or "")
-
     def __eq__(self, other: object) -> bool:
         return self is other or (type(self) is type(other) and hash(self) == hash(other))
 
     def __hash__(self) -> int:
         if self._hash is None:
-            nodes: t.List[Expression] = []
-            queue: t.Deque[Expression] = deque()
+            nodes: t.List[Expr] = []
+            queue: t.Deque[Expr] = deque()
             queue.append(self)
 
             while queue:
@@ -190,7 +562,7 @@ class Expression:
     def text(self, key: str) -> str:
         """
         Returns a textual representation of the argument corresponding to "key". This can only be used
-        for args that are strings or leaf Expression instances, such as identifiers and literals.
+        for args that are strings or leaf Expr instances, such as identifiers and literals.
         """
         field = self.args.get(key)
         if isinstance(field, str):
@@ -265,7 +637,7 @@ class Expression:
         """
         Name of the output column if this expression is a selection.
 
-        If the Expression has no output name, an empty string is returned.
+        If the Expr has no output name, an empty string is returned.
 
         Example:
             >>> from sqlglot import parse_one
@@ -296,9 +668,7 @@ class Expression:
         return self.type is not None and self.type.is_type(*dtypes)
 
     def is_leaf(self) -> bool:
-        return not any(
-            (isinstance(v, Expression) or type(v) is list) and v for v in self.args.values()
-        )
+        return not any((isinstance(v, Expr) or type(v) is list) and v for v in self.args.values())
 
     @property
     def meta(self) -> t.Dict[str, t.Any]:
@@ -306,9 +676,9 @@ class Expression:
             self._meta = {}
         return self._meta
 
-    def __deepcopy__(self, memo: t.Any) -> Expression:
+    def __deepcopy__(self, memo: t.Any) -> Expr:
         root = self.__class__()
-        stack: t.List[t.Tuple[Expression, Expression]] = [(self, root)]
+        stack: t.List[t.Tuple[Expr, Expr]] = [(self, root)]
 
         while stack:
             node, copy = stack.pop()
@@ -323,14 +693,14 @@ class Expression:
                 copy._hash = node._hash
 
             for k, vs in node.args.items():
-                if isinstance(vs, Expression):
+                if isinstance(vs, Expr):
                     stack.append((vs, vs.__class__()))
                     copy.set(k, stack[-1][-1])
                 elif type(vs) is list:
                     copy.args[k] = []
 
                     for v in vs:
-                        if isinstance(v, Expression):
+                        if isinstance(v, Expr):
                             stack.append((v, v.__class__()))
                             copy.append(k, stack[-1][-1])
                         else:
@@ -402,7 +772,7 @@ class Expression:
             overwrite: assuming an index is given, this determines whether to overwrite the
                 list entry instead of only inserting a new value (i.e., like list.insert).
         """
-        node: t.Optional[Expression] = self
+        node: t.Optional[Expr] = self
 
         while node and node._hash is not None:
             node._hash = None
@@ -437,13 +807,13 @@ class Expression:
         self._set_parent(arg_key, value, index)
 
     def _set_parent(self, arg_key: str, value: object, index: t.Optional[int] = None) -> None:
-        if isinstance(value, Expression):
+        if isinstance(value, Expr):
             value.parent = self
             value.arg_key = arg_key
             value.index = index
         elif isinstance(value, list):
             for i, v in enumerate(value):
-                if isinstance(v, Expression):
+                if isinstance(v, Expr):
                     v.parent = self
                     v.arg_key = arg_key
                     v.index = i
@@ -462,9 +832,9 @@ class Expression:
         for vs in reversed(self.args.values()) if reverse else self.args.values():
             if isinstance(vs, list):
                 for v in reversed(vs) if reverse else vs:
-                    if isinstance(v, Expression):
+                    if isinstance(v, Expr):
                         yield t.cast(E, v)
-            elif isinstance(vs, Expression):
+            elif isinstance(vs, Expr):
                 yield t.cast(E, vs)
 
     def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
@@ -526,18 +896,18 @@ class Expression:
         """Returns if the parent is the same class as itself."""
         return type(self.parent) is self.__class__
 
-    def root(self) -> Expression:
+    def root(self) -> Expr:
         """
         Returns the root expression of this tree.
         """
-        expression = self
+        expression: Expr = self
         while expression.parent:
             expression = expression.parent
         return expression
 
     def walk(
-        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expression], bool]] = None
-    ) -> t.Iterator[Expression]:
+        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expr], bool]] = None
+    ) -> t.Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree.
 
@@ -555,9 +925,7 @@ class Expression:
         else:
             yield from self.dfs(prune=prune)
 
-    def dfs(
-        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
-    ) -> t.Iterator[Expression]:
+    def dfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> t.Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.
@@ -575,9 +943,7 @@ class Expression:
             for v in node.iter_expressions(reverse=True):
                 stack.append(v)
 
-    def bfs(
-        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
-    ) -> t.Iterator[Expression]:
+    def bfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> t.Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree in
         the BFS (Breadth-first) order.
@@ -585,7 +951,7 @@ class Expression:
         Returns:
             The generator object.
         """
-        queue: t.Deque[Expression] = deque()
+        queue: t.Deque[Expr] = deque()
         queue.append(self)
 
         while queue:
@@ -596,7 +962,7 @@ class Expression:
             for v in node.iter_expressions():
                 queue.append(v)
 
-    def unnest(self) -> Expression:
+    def unnest(self) -> Expr:
         """
         Returns the first non parenthesis child or self.
         """
@@ -605,7 +971,7 @@ class Expression:
             expression = expression.this
         return expression
 
-    def unalias(self) -> Expression:
+    def unalias(self) -> Expr:
         """
         Returns the inner expression if this is an Alias.
         """
@@ -613,13 +979,13 @@ class Expression:
             return self.this
         return self
 
-    def unnest_operands(self) -> t.Tuple[Expression, ...]:
+    def unnest_operands(self) -> t.Tuple[Expr, ...]:
         """
         Returns unnested operands as a tuple.
         """
         return tuple(arg.unnest() for arg in self.iter_expressions())
 
-    def flatten(self, unnest: bool = True) -> t.Iterator[Expression]:
+    def flatten(self, unnest: bool = True) -> t.Iterator[Expr]:
         """
         Returns a generator which yields child nodes whose parents are the same class.
 
@@ -719,8 +1085,8 @@ class Expression:
         if key:
             value = parent.args.get(key)
 
-            if type(expression) is list and isinstance(value, Expression):
-                # We are trying to replace an Expression with a list, so it's assumed that
+            if type(expression) is list and isinstance(value, Expr):
+                # We are trying to replace an Expr with a list, so it's assumed that
                 # the intention was to really replace the parent of this expression.
                 if value.parent:
                     value.parent.replace(expression)
@@ -746,7 +1112,7 @@ class Expression:
 
     def assert_is(self, type_: t.Type[E]) -> E:
         """
-        Assert that this `Expression` is an instance of `type_`.
+        Assert that this `Expr` is an instance of `type_`.
 
         If it is NOT an instance of `type_`, this raises an assertion error.
         Otherwise, this returns this expression.
@@ -798,25 +1164,6 @@ class Expression:
 
         return errors
 
-    def dump(self) -> t.Any:
-        """
-        Dump this Expression to a JSON-serializable dict.
-        """
-        from sqlglot.serde import dump
-
-        return dump(self)
-
-    @classmethod
-    def load(cls, obj: t.Any) -> Expression:
-        """
-        Load a dict (as returned by `Expression.dump`) into an Expression instance.
-        """
-        from sqlglot.serde import load
-
-        result = load(obj)
-        assert isinstance(result, Expression)
-        return result
-
     def and_(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -834,9 +1181,9 @@ class Expression:
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             dialect: the dialect used to parse the input expression.
-            copy: whether to copy the involved expressions (only applies to Expressions).
+            copy: whether to copy the involved expressions (only applies to Exprs).
             wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
                 precedence issues, but can be turned off when the produced AST is too deep and
                 causes recursion-related issues.
@@ -864,9 +1211,9 @@ class Expression:
 
         Args:
             *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
+                If an `Expr` instance is passed, it will be used as-is.
             dialect: the dialect used to parse the input expression.
-            copy: whether to copy the involved expressions (only applies to Expressions).
+            copy: whether to copy the involved expressions (only applies to Exprs).
             wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
                 precedence issues, but can be turned off when the produced AST is too deep and
                 causes recursion-related issues.
@@ -895,7 +1242,7 @@ class Expression:
 
     def update_positions(
         self: E,
-        other: t.Optional[Token | Expression] = None,
+        other: t.Optional[Token | Expr] = None,
         line: t.Optional[int] = None,
         col: t.Optional[int] = None,
         start: t.Optional[int] = None,
@@ -919,7 +1266,7 @@ class Expression:
             self.meta["col"] = col
             self.meta["start"] = start
             self.meta["end"] = end
-        elif isinstance(other, Expression):
+        elif isinstance(other, Expr):
             for k in POSITION_META_KEYS:
                 if k in other.meta:
                     self.meta[k] = other.meta[k]
@@ -958,7 +1305,7 @@ class Expression:
     def __iter__(self) -> t.Iterator:
         if "expressions" in self.arg_types:
             return iter(self.args.get("expressions") or [])
-        # We define this because __getitem__ converts Expression into an iterable, which is
+        # We define this because __getitem__ converts Expr into an iterable, which is
         # problematic because one can hit infinite loops if they do "for x in some_expr: ..."
         # See: https://peps.python.org/pep-0234/
         raise TypeError(f"'{self.__class__.__name__}' object is not iterable")
@@ -1112,20 +1459,16 @@ class Expression:
         return not_(self.copy())
 
 
-class ExpressionBase(Expression):
-    __slots__ = ()
-
-
 IntoType = t.Union[
     str,
-    t.Type[Expression],
-    t.Collection[t.Union[str, t.Type[Expression]]],
+    t.Type[Expr],
+    t.Collection[t.Union[str, t.Type[Expr]]],
 ]
-ExpOrStr = t.Union[str, Expression]
+ExpOrStr = t.Union[str, Expr]
 
 
 @trait
-class Condition(Expression):
+class Condition(Expr):
     """Logical conditions like x AND y, or simply x"""
 
 
@@ -1156,7 +1499,7 @@ class LockingStatement(Expression):
 
 
 @trait
-class ColumnConstraintKind(Expression):
+class ColumnConstraintKind(Expr):
     pass
 
 
@@ -1165,11 +1508,11 @@ class SubqueryPredicate(Predicate):
     pass
 
 
-class All(ExpressionBase, SubqueryPredicate):
+class All(Expression, SubqueryPredicate):
     pass
 
 
-class Any(ExpressionBase, SubqueryPredicate):
+class Any(Expression, SubqueryPredicate):
     pass
 
 
@@ -1178,11 +1521,11 @@ class Binary(Condition):
     arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True, "expression": True}
 
     @property
-    def left(self) -> Expression:
+    def left(self) -> Expr:
         return self.this
 
     @property
-    def right(self) -> Expression:
+    def right(self) -> Expr:
         return self.expression
 
 
@@ -1249,7 +1592,7 @@ class AggFunc(Func):
     pass
 
 
-class Column(ExpressionBase, Condition):
+class Column(Expression, Condition):
     arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 
     @property
@@ -1288,7 +1631,7 @@ class Column(ExpressionBase, Condition):
         return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
-class Literal(ExpressionBase, Condition):
+class Literal(Expression, Condition):
     arg_types = {"this": True, "is_string": True}
     _hash_raw_args = True
 
@@ -1370,15 +1713,15 @@ class Star(Expression):
         return self.name
 
 
-class Parameter(ExpressionBase, Condition):
+class Parameter(Expression, Condition):
     arg_types = {"this": True, "expression": False}
 
 
-class SessionParameter(ExpressionBase, Condition):
+class SessionParameter(Expression, Condition):
     arg_types = {"this": True, "kind": False}
 
 
-class Placeholder(ExpressionBase, Condition):
+class Placeholder(Expression, Condition):
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
 
     @property
@@ -1386,7 +1729,7 @@ class Placeholder(ExpressionBase, Condition):
         return self.this or "?"
 
 
-class Null(ExpressionBase, Condition):
+class Null(Expression, Condition):
     arg_types = {}
 
     @property
@@ -1397,12 +1740,12 @@ class Null(ExpressionBase, Condition):
         return None
 
 
-class Boolean(ExpressionBase, Condition):
+class Boolean(Expression, Condition):
     def to_py(self) -> bool:
         return self.this
 
 
-class Dot(ExpressionBase, Binary):
+class Dot(Expression, Binary):
     @property
     def is_star(self) -> bool:
         return self.expression.is_star
@@ -1416,7 +1759,7 @@ class Dot(ExpressionBase, Binary):
         return self.name
 
     @classmethod
-    def build(self, expressions: t.Sequence[Expression]) -> Dot:
+    def build(self, expressions: t.Sequence[Expr]) -> Dot:
         """Build a Dot object with a sequence of expressions."""
         if len(expressions) < 2:
             raise ValueError("Dot requires >= 2 expressions.")
@@ -1424,7 +1767,7 @@ class Dot(ExpressionBase, Binary):
         return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
     @property
-    def parts(self) -> t.List[Expression]:
+    def parts(self) -> t.List[Expr]:
         """Return the parts of a table / column in order catalog, db, table."""
         this, *parts = self.flatten()
 
@@ -1433,14 +1776,14 @@ class Dot(ExpressionBase, Binary):
         for arg in COLUMN_PARTS:
             part = this.args.get(arg)
 
-            if isinstance(part, Expression):
+            if isinstance(part, Expr):
                 parts.append(part)
 
         parts.reverse()
         return parts
 
 
-class Kwarg(ExpressionBase, Binary):
+class Kwarg(Expression, Binary):
     """Kwarg in special functions like func(kwarg => y)."""
 
 
@@ -1464,11 +1807,11 @@ class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
 
     @property
-    def aliases(self) -> t.List[Expression]:
+    def aliases(self) -> t.List[Expr]:
         return self.expressions
 
 
-class Bracket(ExpressionBase, Condition):
+class Bracket(Expression, Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
     arg_types = {
         "this": True,
@@ -1502,19 +1845,19 @@ class HavingMax(Expression):
     arg_types = {"this": True, "expression": True, "max": True}
 
 
-class SafeFunc(ExpressionBase, Func):
+class SafeFunc(Expression, Func):
     pass
 
 
-class Typeof(ExpressionBase, Func):
+class Typeof(Expression, Func):
     pass
 
 
-class ParameterizedAgg(ExpressionBase, AggFunc):
+class ParameterizedAgg(Expression, AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
-class Anonymous(ExpressionBase, Func):
+class Anonymous(Expression, Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -1523,7 +1866,7 @@ class Anonymous(ExpressionBase, Func):
         return self.this if isinstance(self.this, str) else self.this.name
 
 
-class AnonymousAggFunc(ExpressionBase, AggFunc):
+class AnonymousAggFunc(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
@@ -1536,17 +1879,17 @@ class CombinedParameterizedAgg(ParameterizedAgg):
     arg_types = {"this": True, "expressions": True, "params": True}
 
 
-class HashAgg(ExpressionBase, AggFunc):
+class HashAgg(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class Hll(ExpressionBase, AggFunc):
+class Hll(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
-class ApproxDistinct(ExpressionBase, AggFunc):
+class ApproxDistinct(Expression, AggFunc):
     arg_types = {"this": True, "accuracy": False}
     _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
 
@@ -1556,7 +1899,7 @@ class Slice(Expression):
 
 
 @trait
-class TimeUnit(Expression):
+class TimeUnit(Expr):
     """Automatically converts unit arg into a var."""
 
     UNABBREVIATED_UNIT_NAME: t.ClassVar[t.Dict[str, str]] = {
@@ -1572,7 +1915,7 @@ class TimeUnit(Expression):
         "Y": "YEAR",
     }
 
-    VAR_LIKE: t.ClassVar[t.Tuple[t.Type[Expression], ...]] = (Column, Literal, Var)
+    VAR_LIKE: t.ClassVar[t.Tuple[t.Type[Expr], ...]] = (Column, Literal, Var)
 
     def _post_init(self) -> None:
         unit = self.args.get("unit")
@@ -1592,7 +1935,7 @@ class TimeUnit(Expression):
         return self.args.get("unit")
 
 
-class _TimeUnit(ExpressionBase, TimeUnit):
+class _TimeUnit(Expression, TimeUnit):
     """Automatically converts unit arg into a var."""
 
     arg_types = {"unit": False}
@@ -1625,147 +1968,147 @@ class Ordered(Expression):
         return self.this.name
 
 
-class Add(ExpressionBase, Binary):
+class Add(Expression, Binary):
     pass
 
 
-class BitwiseAnd(ExpressionBase, Binary):
+class BitwiseAnd(Expression, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class BitwiseLeftShift(ExpressionBase, Binary):
+class BitwiseLeftShift(Expression, Binary):
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
-class BitwiseOr(ExpressionBase, Binary):
+class BitwiseOr(Expression, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class BitwiseRightShift(ExpressionBase, Binary):
+class BitwiseRightShift(Expression, Binary):
     arg_types = {"this": True, "expression": True, "requires_int128": False}
 
 
-class BitwiseXor(ExpressionBase, Binary):
+class BitwiseXor(Expression, Binary):
     arg_types = {"this": True, "expression": True, "padside": False}
 
 
-class Div(ExpressionBase, Binary):
+class Div(Expression, Binary):
     arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
-class Overlaps(ExpressionBase, Binary):
+class Overlaps(Expression, Binary):
     pass
 
 
-class ExtendsLeft(ExpressionBase, Binary):
+class ExtendsLeft(Expression, Binary):
     pass
 
 
-class ExtendsRight(ExpressionBase, Binary):
+class ExtendsRight(Expression, Binary):
     pass
 
 
-class DPipe(ExpressionBase, Binary):
+class DPipe(Expression, Binary):
     arg_types = {"this": True, "expression": True, "safe": False}
 
 
-class EQ(ExpressionBase, Binary, Predicate):
+class EQ(Expression, Binary, Predicate):
     pass
 
 
-class NullSafeEQ(ExpressionBase, Binary, Predicate):
+class NullSafeEQ(Expression, Binary, Predicate):
     pass
 
 
-class NullSafeNEQ(ExpressionBase, Binary, Predicate):
+class NullSafeNEQ(Expression, Binary, Predicate):
     pass
 
 
-class PropertyEQ(ExpressionBase, Binary):
+class PropertyEQ(Expression, Binary):
     pass
 
 
-class Distance(ExpressionBase, Binary):
+class Distance(Expression, Binary):
     pass
 
 
-class Escape(ExpressionBase, Binary):
+class Escape(Expression, Binary):
     pass
 
 
-class Glob(ExpressionBase, Binary, Predicate):
+class Glob(Expression, Binary, Predicate):
     pass
 
 
-class GT(ExpressionBase, Binary, Predicate):
+class GT(Expression, Binary, Predicate):
     pass
 
 
-class GTE(ExpressionBase, Binary, Predicate):
+class GTE(Expression, Binary, Predicate):
     pass
 
 
-class ILike(ExpressionBase, Binary, Predicate):
+class ILike(Expression, Binary, Predicate):
     pass
 
 
-class IntDiv(ExpressionBase, Binary):
+class IntDiv(Expression, Binary):
     pass
 
 
-class Is(ExpressionBase, Binary, Predicate):
+class Is(Expression, Binary, Predicate):
     pass
 
 
-class Like(ExpressionBase, Binary, Predicate):
+class Like(Expression, Binary, Predicate):
     pass
 
 
-class Match(ExpressionBase, Binary, Predicate):
+class Match(Expression, Binary, Predicate):
     pass
 
 
-class LT(ExpressionBase, Binary, Predicate):
+class LT(Expression, Binary, Predicate):
     pass
 
 
-class LTE(ExpressionBase, Binary, Predicate):
+class LTE(Expression, Binary, Predicate):
     pass
 
 
-class Mod(ExpressionBase, Binary):
+class Mod(Expression, Binary):
     pass
 
 
-class Mul(ExpressionBase, Binary):
+class Mul(Expression, Binary):
     pass
 
 
-class NEQ(ExpressionBase, Binary, Predicate):
+class NEQ(Expression, Binary, Predicate):
     pass
 
 
-class NestedJSONSelect(ExpressionBase, Binary):
+class NestedJSONSelect(Expression, Binary):
     pass
 
 
-class Operator(ExpressionBase, Binary):
+class Operator(Expression, Binary):
     arg_types = {"this": True, "operator": True, "expression": True}
 
 
-class SimilarTo(ExpressionBase, Binary, Predicate):
+class SimilarTo(Expression, Binary, Predicate):
     pass
 
 
-class Sub(ExpressionBase, Binary):
+class Sub(Expression, Binary):
     pass
 
 
-class Adjacent(ExpressionBase, Binary):
+class Adjacent(Expression, Binary):
     pass
 
 
-class Unary(ExpressionBase, Condition):
+class Unary(Expression, Condition):
     pass
 
 
@@ -1812,7 +2155,7 @@ class FormatPhrase(Expression):
     arg_types = {"this": True, "format": True}
 
 
-class Between(ExpressionBase, Predicate):
+class Between(Expression, Predicate):
     arg_types = {"this": True, "low": True, "high": True, "symmetric": False}
 
 
@@ -1820,7 +2163,7 @@ class Distinct(Expression):
     arg_types = {"expressions": False, "on": False}
 
 
-class In(ExpressionBase, Predicate):
+class In(Expression, Predicate):
     arg_types = {
         "this": True,
         "expressions": False,
@@ -1831,24 +2174,24 @@ class In(ExpressionBase, Predicate):
     }
 
 
-class And(ExpressionBase, Connector, Func):
+class And(Expression, Connector, Func):
     pass
 
 
-class Or(ExpressionBase, Connector, Func):
+class Or(Expression, Connector, Func):
     pass
 
 
-class Xor(ExpressionBase, Connector, Func):
+class Xor(Expression, Connector, Func):
     arg_types = {"this": False, "expression": False, "expressions": False, "round_input": False}
     is_var_len_args = True
 
 
-class Pow(ExpressionBase, Binary, Func):
+class Pow(Expression, Binary, Func):
     _sql_names = ["POWER", "POW"]
 
 
-class RegexpLike(ExpressionBase, Binary, Func):
+class RegexpLike(Expression, Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 
@@ -1862,7 +2205,7 @@ def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, *
 
     Args:
         expression: the SQL code string to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
         copy: whether to copy the expression or not.
         **opts: other options to use to parse the input expressions.
@@ -1879,25 +2222,25 @@ def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, *
     return Not(this=_wrap(this, Connector))
 
 
-def _lazy_unnest(**kwargs: object) -> "Expression":
+def _lazy_unnest(**kwargs: object) -> "Expr":
     from sqlglot.expressions.functions import Unnest
 
     return Unnest(**kwargs)
 
 
-def convert(value: t.Any, copy: bool = False) -> Expression:
+def convert(value: t.Any, copy: bool = False) -> Expr:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
 
     Args:
         value: A python object.
-        copy: Whether to copy `value` (only applies to Expressions and collections).
+        copy: Whether to copy `value` (only applies to Exprs and collections).
 
     Returns:
         The equivalent expression object.
     """
-    if isinstance(value, Expression):
+    if isinstance(value, Expr):
         return maybe_copy(value, copy)
     if isinstance(value, str):
         return Literal.string(value)
@@ -2040,7 +2383,7 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts: t.Any,
-) -> Expression:
+) -> Expr:
     """Gracefully handle a possible string or expression.
 
     Example:
@@ -2051,7 +2394,7 @@ def maybe_parse(
 
     Args:
         sql_or_expression: the SQL code string or an expression
-        into: the SQLGlot Expression to parse into
+        into: the SQLGlot Expr to parse into
         dialect: the dialect used to parse the input expressions (in the case that an
             input expression is a SQL string).
         prefix: a string to prefix the sql with before it gets parsed
@@ -2061,9 +2404,9 @@ def maybe_parse(
             that an input expression is a SQL string).
 
     Returns:
-        Expression: the parsed or given expression.
+        Expr: the parsed or given expression.
     """
-    if isinstance(sql_or_expression, Expression):
+    if isinstance(sql_or_expression, Expr):
         if copy:
             return sql_or_expression.copy()
         return sql_or_expression
@@ -2093,11 +2436,11 @@ def maybe_copy(instance, copy=True):
 
 
 def _to_s(node: t.Any, verbose: bool = False, level: int = 0, repr_str: bool = False) -> str:
-    """Generate a textual representation of an Expression tree"""
+    """Generate a textual representation of an Expr tree"""
     indent = "\n" + ("  " * (level + 1))
     delim = f",{indent}"
 
-    if isinstance(node, Expression):
+    if isinstance(node, Expr):
         args = {k: v for k, v in node.args.items() if (v is not None and v != []) or verbose}
 
         if (node.type or verbose) and type(node).__name__ != "DataType":
@@ -2133,7 +2476,7 @@ def _to_s(node: t.Any, verbose: bool = False, level: int = 0, repr_str: bool = F
 
 
 def _is_wrong_expression(expression, into):
-    return isinstance(expression, Expression) and not isinstance(expression, into)
+    return isinstance(expression, Expr) and not isinstance(expression, into)
 
 
 def _apply_builder(
@@ -2273,7 +2616,7 @@ def _combine(
     copy: bool = True,
     wrap: bool = True,
     **opts,
-) -> Expression:
+) -> Expr:
     conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts)
         for expression in expressions
@@ -2290,14 +2633,14 @@ def _combine(
 
 
 @t.overload
-def _wrap(expression: None, kind: t.Type[Expression]) -> None: ...
+def _wrap(expression: None, kind: t.Type[Expr]) -> None: ...
 
 
 @t.overload
-def _wrap(expression: E, kind: t.Type[Expression]) -> E | Paren: ...
+def _wrap(expression: E, kind: t.Type[Expr]) -> E | Paren: ...
 
 
-def _wrap(expression: t.Optional[E], kind: t.Type[Expression]) -> t.Optional[E] | Paren:
+def _wrap(expression: t.Optional[E], kind: t.Type[Expr]) -> t.Optional[E] | Paren:
     return Paren(this=expression) if isinstance(expression, kind) else expression
 
 
@@ -2355,9 +2698,7 @@ def to_identifier(name, quoted=None, copy=True):
     return identifier
 
 
-def condition(
-    expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
-) -> Condition:
+def condition(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Expr:
     """
     Initialize a logical condition expression.
 
@@ -2373,7 +2714,7 @@ def condition(
 
     Args:
         *expression: the SQL code string to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
         copy: Whether to copy `expression` (only applies to expressions).
@@ -2408,9 +2749,9 @@ def and_(
 
     Args:
         *expressions: the SQL code strings to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
-        copy: whether to copy `expressions` (only applies to Expressions).
+        copy: whether to copy `expressions` (only applies to Exprs).
         wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
             precedence issues, but can be turned off when the produced AST is too deep and
             causes recursion-related issues.
@@ -2438,9 +2779,9 @@ def or_(
 
     Args:
         *expressions: the SQL code strings to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
-        copy: whether to copy `expressions` (only applies to Expressions).
+        copy: whether to copy `expressions` (only applies to Exprs).
         wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
             precedence issues, but can be turned off when the produced AST is too deep and
             causes recursion-related issues.
@@ -2468,9 +2809,9 @@ def xor(
 
     Args:
         *expressions: the SQL code strings to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         dialect: the dialect used to parse the input expression.
-        copy: whether to copy `expressions` (only applies to Expressions).
+        copy: whether to copy `expressions` (only applies to Exprs).
         wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
             precedence issues, but can be turned off when the produced AST is too deep and
             causes recursion-related issues.
@@ -2492,7 +2833,7 @@ def paren(expression: ExpOrStr, copy: bool = True) -> Paren:
 
     Args:
         expression: the SQL code string to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         copy: whether to copy the expression or not.
 
     Returns:
@@ -2521,7 +2862,7 @@ def alias_(
 
     Args:
         expression: the SQL code strings to parse.
-            If an Expression instance is passed, this is used as-is.
+            If an Expr instance is passed, this is used as-is.
         alias: the alias name to use. If the name has
             special characters it is quoted.
         table: Whether to create a table alias, can also be a list of columns.

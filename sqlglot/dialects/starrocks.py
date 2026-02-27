@@ -17,7 +17,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _eliminate_between_in_delete(expression: exp.Expression) -> exp.Expression:
+def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
     """
     StarRocks doesn't support BETWEEN in DELETE statements, so we convert
     BETWEEN expressions to explicit comparisons.
@@ -149,7 +149,7 @@ class StarRocks(MySQL):
 
         def _parse_partition_property(
             self,
-        ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+        ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
             expr = super()._parse_partition_property()
 
             if not expr:

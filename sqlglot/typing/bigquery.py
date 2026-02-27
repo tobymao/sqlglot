@@ -9,7 +9,7 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
-def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) -> exp.Expression:
+def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """
     Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
     +---------+---------+---------+------------+---------+
@@ -18,7 +18,7 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
     |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
     +---------+---------+---------+------------+---------+
     """
-    this: exp.Expression = expression.this
+    this: exp.Expr = expression.this
 
     self._set_type(
         expression,
@@ -27,7 +27,7 @@ def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expression) ->
     return expression
 
 
-def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expression:
+def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
     """
     +------------+------------+------------+-------------+---------+
     | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
@@ -46,9 +46,7 @@ def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> ex
     return _annotate_by_args_with_coerce(self, expression)
 
 
-def _annotate_by_args_with_coerce(
-    self: TypeAnnotator, expression: exp.Expression
-) -> exp.Expression:
+def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """
     +------------+------------+------------+-------------+---------+
     | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |

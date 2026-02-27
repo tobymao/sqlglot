@@ -8,7 +8,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _select_all(table: exp.Expression) -> t.Optional[exp.Select]:
+def _select_all(table: exp.Expr) -> t.Optional[exp.Select]:
     return exp.select("*").from_(table, copy=False) if table else None
 
 
@@ -69,7 +69,7 @@ class PRQL(Dialect):
             "SUM": lambda args: exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0),
         }
 
-        def _parse_equality(self) -> t.Optional[exp.Expression]:
+        def _parse_equality(self) -> t.Optional[exp.Expr]:
             eq = self._parse_tokens(self._parse_comparison, self.EQUALITY)
             if not isinstance(eq, (exp.EQ, exp.NEQ)):
                 return eq
@@ -83,7 +83,7 @@ class PRQL(Dialect):
                 return is_exp if isinstance(eq, exp.EQ) else exp.Not(this=is_exp)
             return eq
 
-        def _parse_statement(self) -> t.Optional[exp.Expression]:
+        def _parse_statement(self) -> t.Optional[exp.Expr]:
             expression = self._parse_expression()
             expression = expression if expression else self._parse_query()
             return expression
@@ -156,7 +156,7 @@ class PRQL(Dialect):
                 self.raise_error("Expecting }")
             return query.order_by(self.expression(exp.Order, expressions=expressions), copy=False)
 
-        def _parse_aggregate(self) -> t.Optional[exp.Expression]:
+        def _parse_aggregate(self) -> t.Optional[exp.Expr]:
             alias = None
             if self._next and self._next.token_type == TokenType.ALIAS:
                 alias = self._parse_id_var(any_token=True)
@@ -174,7 +174,7 @@ class PRQL(Dialect):
                 return self.expression(exp.Alias, this=func, alias=alias)
             return func
 
-        def _parse_expression(self) -> t.Optional[exp.Expression]:
+        def _parse_expression(self) -> t.Optional[exp.Expr]:
             if self._next and self._next.token_type == TokenType.ALIAS:
                 alias = self._parse_id_var(True)
                 self._match(TokenType.ALIAS)
@@ -190,7 +190,7 @@ class PRQL(Dialect):
             is_db_reference: bool = False,
             parse_partition: bool = False,
             consume_pipe: bool = False,
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             return self._parse_table_parts()
 
         def _parse_from(

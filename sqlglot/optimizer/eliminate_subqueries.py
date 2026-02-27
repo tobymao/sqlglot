@@ -8,11 +8,11 @@ from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, build_scope
 
 if t.TYPE_CHECKING:
-    ExistingCTEsMapping = t.Dict[exp.Expression, str]
-    TakenNameMapping = t.Dict[str, t.Union[Scope, exp.Expression]]
+    ExistingCTEsMapping = t.Dict[exp.Expr, str]
+    TakenNameMapping = t.Dict[str, t.Union[Scope, exp.Expr]]
 
 
-def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
+def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
     """
     Rewrite derived tables as CTES, deduplicating if possible.
 
@@ -28,9 +28,9 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
         'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y CROSS JOIN y AS z'
 
     Args:
-        expression (sqlglot.Expression): expression
+        expression (sqlglot.Expr): expression
     Returns:
-        sqlglot.Expression: expression
+        sqlglot.Expr: expression
     """
     if isinstance(expression, exp.Subquery):
         # It's possible to have subqueries at the root, e.g. (SELECT * FROM x) LIMIT 1
@@ -61,7 +61,7 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
             }
         )
 
-    # Map of Expression->alias
+    # Map of Expr->alias
     # Existing CTES in the root expression. We'll use this for deduplication.
     existing_ctes: ExistingCTEsMapping = {}
 
@@ -104,7 +104,7 @@ def eliminate_subqueries(expression: exp.Expression) -> exp.Expression:
 
 def _eliminate(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[exp.Expr]:
     if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
@@ -116,7 +116,7 @@ def _eliminate(
 
 def _eliminate_derived_table(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[exp.Expr]:
     # This makes sure that we don't:
     # - drop the "pivot" arg from a pivoted subquery
     # - eliminate a lateral correlated subquery
@@ -136,7 +136,7 @@ def _eliminate_derived_table(
 
 def _eliminate_cte(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expression]:
+) -> t.Optional[exp.Expr]:
     parent = scope.expression.parent
     name, cte = _new_cte(scope, existing_ctes, taken)
 
@@ -157,7 +157,7 @@ def _eliminate_cte(
 
 def _new_cte(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Tuple[str, t.Optional[exp.Expression]]:
+) -> t.Tuple[str, t.Optional[exp.Expr]]:
     """
     Returns:
         tuple of (name, cte)

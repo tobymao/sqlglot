@@ -30,7 +30,7 @@ def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
-def _transform_create(expression: exp.Expression) -> exp.Expression:
+def _transform_create(expression: exp.Expr) -> exp.Expr:
     """Move primary key to a column and enforce auto_increment on primary keys."""
     schema = expression.this
 
@@ -64,7 +64,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
+def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.ColumnDef):
         return expression
 

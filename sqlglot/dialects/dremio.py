@@ -50,7 +50,7 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
 
 def build_date_delta_with_cast_interval(
     expression_class: t.Type[DATE_DELTA],
-) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
     fallback_builder = build_date_delta(expression_class)
 
     def _builder(args):
@@ -75,7 +75,7 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
-def datetype_handler(args: t.List[exp.Expression], dialect: DialectType) -> exp.Expression:
+def datetype_handler(args: t.List[exp.Expr], dialect: DialectType) -> exp.Expr:
     year, month, day = args
 
     if all(isinstance(arg, exp.Literal) and arg.is_int for arg in (year, month, day)):

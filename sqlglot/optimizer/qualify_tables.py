@@ -35,7 +35,7 @@ def qualify_tables(
         'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
-        expression: Expression to qualify
+        expression: Expr to qualify
         db: Database name
         catalog: Catalog name
         on_qualify: Callback after a table has been qualified.
@@ -74,7 +74,7 @@ def qualify_tables(
                 _qualify(node)
 
     def _set_alias(
-        expression: exp.Expression,
+        expression: exp.Expr,
         canonical_aliases: t.Dict[str, str],
         target_alias: t.Optional[str] = None,
         scope: t.Optional[Scope] = None,

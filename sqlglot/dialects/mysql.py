@@ -115,8 +115,8 @@ def _unix_to_time_sql(self: MySQL.Generator, expression: exp.UnixToTime) -> str:
 
 def date_add_sql(
     kind: str,
-) -> t.Callable[[generator.Generator, exp.Expression], str]:
-    def func(self: generator.Generator, expression: exp.Expression) -> str:
+) -> t.Callable[[generator.Generator, exp.Expr], str]:
+    def func(self: generator.Generator, expression: exp.Expr) -> str:
         return self.func(
             f"DATE_{kind}",
             expression.this,
@@ -132,7 +132,7 @@ def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -
 
 
 def _remove_ts_or_ds_to_date(
-    to_sql: t.Optional[t.Callable[[MySQL.Generator, exp.Expression], str]] = None,
+    to_sql: t.Optional[t.Callable[[MySQL.Generator, exp.Expr], str]] = None,
     args: t.Tuple[str, ...] = ("this",),
 ) -> t.Callable[[MySQL.Generator, exp.Func], str]:
     def func(self: MySQL.Generator, expression: exp.Func) -> str:
@@ -549,7 +549,7 @@ class MySQL(Dialect):
 
             return this
 
-        def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+        def _parse_primary_key_part(self) -> t.Optional[exp.Expr]:
             this = self._parse_id_var()
             if not self._match(TokenType.L_PAREN):
                 return this
@@ -687,7 +687,7 @@ class MySQL(Dialect):
 
         def _parse_oldstyle_limit(
             self,
-        ) -> t.Tuple[t.Optional[exp.Expression], t.Optional[exp.Expression]]:
+        ) -> t.Tuple[t.Optional[exp.Expr], t.Optional[exp.Expr]]:
             limit = None
             offset = None
             if self._match_text_seq("LIMIT"):
@@ -700,11 +700,11 @@ class MySQL(Dialect):
 
             return offset, limit
 
-        def _parse_set_item_charset(self, kind: str) -> exp.Expression:
+        def _parse_set_item_charset(self, kind: str) -> exp.Expr:
             this = self._parse_string() or self._parse_unquoted_field()
             return self.expression(exp.SetItem, this=this, kind=kind)
 
-        def _parse_set_item_names(self) -> exp.Expression:
+        def _parse_set_item_names(self) -> exp.Expr:
             charset = self._parse_string() or self._parse_unquoted_field()
             if self._match_text_seq("COLLATE"):
                 collate = self._parse_string() or self._parse_unquoted_field()
@@ -715,7 +715,7 @@ class MySQL(Dialect):
 
         def _parse_type(
             self, parse_interval: bool = True, fallback_to_identifier: bool = False
-        ) -> t.Optional[exp.Expression]:
+        ) -> t.Optional[exp.Expr]:
             # mysql binary is special and can work anywhere, even in order by operations
             # it operates like a no paren func
             if self._match(TokenType.BINARY, advance=False):
@@ -742,8 +742,8 @@ class MySQL(Dialect):
 
         def _parse_partition_property(
             self,
-        ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
-            partition_cls: t.Optional[t.Type[exp.Expression]] = None
+        ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
+            partition_cls: t.Optional[t.Type[exp.Expr]] = None
             value_parser = None
 
             if self._match_text_seq("RANGE"):
@@ -770,7 +770,7 @@ class MySQL(Dialect):
                 create_expressions=create_expressions,
             )
 
-        def _parse_partition_range_value(self) -> t.Optional[exp.Expression]:
+        def _parse_partition_range_value(self) -> t.Optional[exp.Expr]:
             self._match_text_seq("PARTITION")
             name = self._parse_id_var()
 
@@ -1377,7 +1377,7 @@ class MySQL(Dialect):
             this = self.sql(expression, "this")
             return f"MODIFY COLUMN {this} {dtype}"
 
-        def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
+        def _prefixed_sql(self, prefix: str, expression: exp.Expr, arg: str) -> str:
             sql = self.sql(expression, arg)
             return f" {prefix} {sql}" if sql else ""
 

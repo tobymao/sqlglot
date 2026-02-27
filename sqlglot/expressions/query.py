@@ -1,33 +1,35 @@
-# ruff: noqa: F405
 """sqlglot expressions query."""
 
 from __future__ import annotations
 
 import typing as t
 
+from sqlglot._typing import E
+from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
-from sqlglot.expressions.core import *  # noqa: F401, F403
-from sqlglot.expressions.core import (  # noqa: F401 (private names not in *)
+from sqlglot.expressions.core import (
+    Aliases,
+    Condition,
+    Distinct,
+    Dot,
+    Expression,
     ExpressionBase,
+    Func,
+    Hint,
+    Identifier,
+    In,
     _apply_builder,
     _apply_child_list_builder,
     _apply_list_builder,
     _apply_conjunction_builder,
     _apply_set_operation,
-    _combine,
-    _TimeUnit,
     ExpOrStr,
     QUERY_MODIFIERS,
     maybe_parse,
     maybe_copy,
     to_identifier,
-    condition,
     convert,
-    not_,
     and_,
-    or_,
-    xor,
-    paren,
     alias_,
     column,
 )
@@ -38,6 +40,7 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.constraints import ColumnConstraint
     from sqlglot.expressions.ddl import Create
     from sqlglot.expressions.functions import Unnest
+    from sqlglot.tokens import Token
 
     S = t.TypeVar("S", bound="SetOperation")
 

@@ -1,4 +1,3 @@
-# ruff: noqa: F405
 """sqlglot expressions builders."""
 
 from __future__ import annotations
@@ -6,45 +5,52 @@ from __future__ import annotations
 import re
 import typing as t
 
+from sqlglot._typing import E
 from sqlglot.helper import seq_get, ensure_collection, split_num_words
 from sqlglot.errors import ParseError, TokenError
-from sqlglot.expressions.core import *  # noqa: F401, F403
-from sqlglot.expressions.core import (  # noqa: F401 (private names)
-    _apply_builder,
-    _apply_child_list_builder,
-    _apply_list_builder,
-    _apply_conjunction_builder,
-    _apply_set_operation,
-    _combine,
-    _TimeUnit,
+from sqlglot.expressions.core import (
+    Alias,
+    Anonymous,
+    Boolean,
+    Column,
+    Condition,
+    EQ,
+    Expression,
+    Func,
+    Identifier,
+    Literal,
+    Null,
+    Placeholder,
+    TABLE_PARTS,
+    Var,
+    logger,
     ExpOrStr,
-    QUERY_MODIFIERS,
     SAFE_IDENTIFIER_RE,
     maybe_parse,
     maybe_copy,
     to_identifier,
-    condition,
     convert,
-    not_,
-    and_,
-    or_,
-    xor,
-    paren,
     alias_,
     column,
 )
-from sqlglot.expressions.datatypes import *  # noqa: F401, F403
 from sqlglot.expressions.datatypes import DataType, DType, Interval, DATA_TYPE
-from sqlglot.expressions.query import *  # noqa: F401, F403
-from sqlglot.expressions.query import (  # noqa: F401 (private names)
-    _apply_cte_builder,
-    union,
-    intersect,
-    except_,
+from sqlglot.expressions.query import (
+    CTE,
+    From,
+    Query,
+    Schema,
+    Select,
+    Table,
+    TableAlias,
+    Tuple,
+    Values,
+    Where,
+    With,
 )
-from sqlglot.expressions.ddl import *  # noqa: F401, F403
-from sqlglot.expressions.dml import *  # noqa: F401, F403
-from sqlglot.expressions.functions import *  # noqa: F401, F403
+from sqlglot.expressions.ddl import Alter, AlterRename, RenameColumn
+from sqlglot.expressions.dml import Delete, Insert, Merge, Update, When, Whens
+from sqlglot.expressions.functions import Case, Cast
+from sqlglot.expressions.array import Array
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType

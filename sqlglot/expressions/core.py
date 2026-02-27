@@ -27,7 +27,6 @@ from sqlglot.helper import (
 )
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import Lit
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval, IntervalSpan
     from sqlglot.expressions.query import Select
@@ -497,6 +496,9 @@ class Expression(Expr):
 
     def __eq__(self, other: object) -> bool:
         return self is other or (type(self) is type(other) and hash(self) == hash(other))
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
 
     def __hash__(self) -> int:
         if self._hash is None:
@@ -1743,7 +1745,7 @@ class Null(Expression, Condition):
     def name(self) -> str:
         return "NULL"
 
-    def to_py(self) -> Lit[None]:
+    def to_py(self) -> t.Literal[None]:
         return None
 
 
@@ -2948,7 +2950,7 @@ def column(
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
     *,
-    fields: Lit[None] = None,
+    fields: t.Literal[None] = None,
     quoted: t.Optional[bool] = None,
     copy: bool = True,
 ) -> Column:

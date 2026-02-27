@@ -854,10 +854,6 @@ class Return(Expression):
     pass
 
 
-class Reference(Expression):
-    arg_types = {"this": True, "expressions": False, "options": False}
-
-
 class Tuple(Expression):
     arg_types = {"expressions": False}
 

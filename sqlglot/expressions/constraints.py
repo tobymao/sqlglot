@@ -17,11 +17,15 @@ class IndexConstraintOption(Expression):
     }
 
 
+class Reference(Expression):
+    arg_types = {"this": True, "expressions": False, "options": False}
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
     @property
-    def kind(self) -> ColumnConstraintKind:
+    def kind(self) -> ColumnConstraintKind | Reference:
         return self.args["kind"]
 
 

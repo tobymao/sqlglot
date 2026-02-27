@@ -7152,9 +7152,8 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DType.CHAR:
-            if self._match(TokenType.CHARACTER_SET):
-                to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
+        elif to.this == exp.DType.CHAR and self._match(TokenType.CHARACTER_SET):
+            to = exp.DataType.build(exp.DType.CHARACTER_SET, kind=self._parse_var_or_string())
 
         return self.build_cast(
             strict=strict,
@@ -7222,8 +7221,9 @@ class Parser(metaclass=_Parser):
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to: t.Optional[exp.Expr] = self.expression(
-                exp.CharacterSet, this=self._parse_var(tokens={TokenType.BINARY})
+            to: t.Optional[exp.Expr] = exp.DataType.build(
+                exp.DType.CHARACTER_SET,
+                kind=self._parse_var(tokens={TokenType.BINARY}),
             )
         elif self._match(TokenType.COMMA):
             to = self._parse_types()
@@ -9205,7 +9205,7 @@ class Parser(metaclass=_Parser):
         if not first_setop:
             return None
 
-        def _parse_and_unwrap_query() -> t.Optional[exp.Query]:
+        def _parse_and_unwrap_query() -> t.Optional[exp.Expr]:
             expr = self._parse_paren()
             return expr.assert_is(exp.Subquery).unnest() if expr else None
 

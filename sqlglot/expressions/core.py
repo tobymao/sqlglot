@@ -28,7 +28,7 @@ from sqlglot.helper import (
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval, IntervalSpan
+    from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
     from sqlglot.tokens import Token
 
@@ -1907,7 +1907,6 @@ class Slice(Expression):
     arg_types = {"this": False, "expression": False, "step": False}
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 @trait
 class TimeUnit(Expr):
     """Automatically converts unit arg into a var."""
@@ -1945,11 +1944,10 @@ class TimeUnit(Expr):
             unit.set("this", Var(this=unit.this.name.upper()))  # type: ignore[union-attr]
 
     @property
-    def unit(self) -> t.Optional[Var | IntervalSpan]:
+    def unit(self) -> t.Optional[Expr]:
         return self.args.get("unit")
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class _TimeUnit(Expression, TimeUnit):
     """Automatically converts unit arg into a var."""
 
@@ -2243,7 +2241,7 @@ def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, *
 
 
 def _lazy_unnest(**kwargs: object) -> "Expr":
-    from sqlglot.expressions.functions import Unnest
+    from sqlglot.expressions.array import Unnest
 
     return Unnest(**kwargs)
 
@@ -2283,22 +2281,22 @@ def convert(value: t.Any, copy: bool = False) -> Expr:
             # instead of abbreviations like "PDT". This is for consistency with other timezone handling functions in SQLGlot
             tz = Literal.string(str(value.tzinfo))
 
-        from sqlglot.expressions.functions import TimeStrToTime as _TimeStrToTime
+        from sqlglot.expressions.temporal import TimeStrToTime as _TimeStrToTime
 
         return _TimeStrToTime(this=datetime_literal, zone=tz)
     if isinstance(value, datetime.date):
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
-        from sqlglot.expressions.functions import DateStrToDate as _DateStrToDate
+        from sqlglot.expressions.temporal import DateStrToDate as _DateStrToDate
 
         return _DateStrToDate(this=date_literal)
     if isinstance(value, datetime.time):
         time_literal = Literal.string(value.isoformat())
-        from sqlglot.expressions.functions import TsOrDsToTime as _TsOrDsToTime
+        from sqlglot.expressions.temporal import TsOrDsToTime as _TsOrDsToTime
 
         return _TsOrDsToTime(this=time_literal)
     if isinstance(value, tuple):
         if hasattr(value, "_fields"):
-            from sqlglot.expressions.functions import Struct as _Struct
+            from sqlglot.expressions.array import Struct as _Struct
 
             return _Struct(
                 expressions=[
@@ -2312,18 +2310,18 @@ def convert(value: t.Any, copy: bool = False) -> Expr:
 
         return _Tuple(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, list):
-        from sqlglot.expressions.functions import Array as _Array
+        from sqlglot.expressions.array import Array as _Array
 
         return _Array(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, dict):
-        from sqlglot.expressions.functions import Array as _Array, Map as _Map
+        from sqlglot.expressions.array import Array as _Array, Map as _Map
 
         return _Map(
             keys=_Array(expressions=[convert(k, copy=copy) for k in value]),
             values=_Array(expressions=[convert(v, copy=copy) for v in value.values()]),
         )
     if hasattr(value, "__dict__"):
-        from sqlglot.expressions.functions import Struct as _Struct
+        from sqlglot.expressions.array import Struct as _Struct
 
         return _Struct(
             expressions=[

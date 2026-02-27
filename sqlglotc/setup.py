@@ -13,14 +13,17 @@ sqlglot_src = os.path.join(here, "..", "sqlglot")
 SOURCE_FILES = [
     "errors.py",
     "helper.py",
-    "expressions/core.py",
-    "expressions/constraints.py",
     "parser_core.py",
     "schema.py",
     "serde.py",
     "time.py",
     "tokenizer_core.py",
     "trie.py",
+    *[
+        os.path.join("expressions", f)
+        for f in sorted(os.listdir(os.path.join(sqlglot_src, "expressions")))
+        if f.endswith(".py") and f != "__init__.py"
+    ],
 ]
 
 

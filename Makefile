@@ -26,7 +26,7 @@ install-dev:
 	git submodule update --init 2>/dev/null || true
 
 install-devc: clean
-	cd sqlglotc && $(PIP) install -e .
+	cd sqlglotc && $(PIP) install -e . --no-build-isolation
 
 install-pre-commit:
 	pre-commit install

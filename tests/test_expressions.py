@@ -239,7 +239,9 @@ class TestExprs(unittest.TestCase):
         self.assertEqual(exp.table_name(exp.to_table("@foo", dialect="snowflake")), "@foo")
         self.assertEqual(exp.table_name(bq_dashed_table, identify=True), '"a-1"."b"."c"')
         self.assertEqual(
-            exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
+            exp.table_name(
+                parse_one("foo.`{bar,er}`", read="databricks", into=exp.Table), dialect="databricks"
+            ),
             "foo.`{bar,er}`",
         )
         self.assertEqual(

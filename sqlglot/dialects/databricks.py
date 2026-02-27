@@ -79,11 +79,15 @@ class Databricks(Spark):
 
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
-            TokenType.QDCOLON: lambda self, this, to: self.expression(
-                exp.TryCast,
+            TokenType.QDCOLON: lambda self, this, to: self.build_cast(
+                False,
                 this=this,
                 to=to,
             ),
+        }
+        CAST_COLUMN_OPERATORS = {
+            *Spark.Parser.CAST_COLUMN_OPERATORS,
+            TokenType.QDCOLON,
         }
 
         def _parse_curdate(self) -> exp.CurrentDate:

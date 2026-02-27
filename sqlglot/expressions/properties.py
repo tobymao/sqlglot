@@ -555,9 +555,7 @@ class Properties(Expression):
         "INCLUDE": IncludeProperty,
     }
 
-    PROPERTY_TO_NAME: t.ClassVar[t.Dict[t.Type[Property], str]] = {
-        v: k for k, v in NAME_TO_PROPERTY.items()
-    }
+    PROPERTY_TO_NAME: t.ClassVar[t.Dict[t.Type[Property], str]] = {}
 
     # CREATE property locations
     # Form: schema specified
@@ -585,3 +583,7 @@ class Properties(Expression):
                 expressions.append(Property(this=Literal.string(key), value=convert(value)))
 
         return cls(expressions=expressions)
+
+
+# TODO (mypyc)
+Properties.PROPERTY_TO_NAME = {v: k for k, v in Properties.NAME_TO_PROPERTY.items()}

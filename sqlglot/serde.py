@@ -84,9 +84,13 @@ def load(
 
     payload, *tail = payloads
     root = _load(payload)
-    nodes = [root]
+    nodes: t.List[object] = [root]
     for payload in tail:
-        node = _load(payload)
+        if CLASS in payload:
+            node: object = _load(payload)
+        else:
+            node = payload[VALUE]
+
         nodes.append(node)
         parent = nodes[payload[INDEX]]
         arg_key = payload[ARG_KEY]
@@ -100,10 +104,8 @@ def load(
 
 
 def _load(payload: t.Dict[str, t.Any]) -> exp.Expr | exp.DType:
-    class_name = payload.get(CLASS)
+    class_name = payload[CLASS]
 
-    if not class_name:
-        return payload[VALUE]
     if class_name == DATA_TYPE:
         return exp.DType(payload[VALUE])
 

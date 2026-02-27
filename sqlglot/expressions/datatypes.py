@@ -41,6 +41,7 @@ class DType(AutoName):
     BOOLEAN = auto()
     BPCHAR = auto()
     CHAR = auto()
+    CHARACTER_SET = auto()
     DATE = auto()
     DATE32 = auto()
     DATEMULTIRANGE = auto()

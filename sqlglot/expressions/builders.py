@@ -16,7 +16,6 @@ from sqlglot.expressions.core import (
     Condition,
     EQ,
     Expr,
-    Func,
     Identifier,
     Literal,
     Null,
@@ -24,7 +23,6 @@ from sqlglot.expressions.core import (
     TABLE_PARTS,
     Var,
     logger,
-    ExpOrStr,
     SAFE_IDENTIFIER_RE,
     maybe_parse,
     maybe_copy,
@@ -33,11 +31,10 @@ from sqlglot.expressions.core import (
     alias_,
     column,
 )
-from sqlglot.expressions.datatypes import DataType, DType, Interval, DATA_TYPE
+from sqlglot.expressions.datatypes import DataType, DType, Interval
 from sqlglot.expressions.query import (
     CTE,
     From,
-    Query,
     Schema,
     Select,
     Table,
@@ -54,6 +51,9 @@ from sqlglot.expressions.array import Array
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+    from sqlglot.expressions.core import ExpOrStr, Func
+    from sqlglot.expressions.datatypes import DATA_TYPE
+    from sqlglot.expressions.query import Query
 
 
 def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Select:
@@ -512,7 +512,7 @@ def table_(
 
 
 def values(
-    values: t.Iterable[t.Tuple[t.Any, ...]],
+    values: t.Iterable[t.Tuple[object, ...] | Tuple],
     alias: t.Optional[str] = None,
     columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
 ) -> Values:
@@ -642,7 +642,10 @@ def replace_children(expression: Expr, fun: t.Callable, *args, **kwargs) -> None
             else:
                 new_child_nodes.append(cn)
 
-        expression.set(k, new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0))
+        if is_list_arg:
+            expression.set(k, new_child_nodes)
+        else:
+            expression.set(k, seq_get(new_child_nodes, 0))
 
 
 def replace_tree(

@@ -163,8 +163,7 @@ def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
         else:
             window.set("order", exp.Order(expressions=[c.copy() for c in distinct_cols]))
 
-        window = exp.alias_(window, row_number_window_alias)
-        expression.select(window, copy=False)
+        expression.select(exp.alias_(window, row_number_window_alias), copy=False)
 
         # We add aliases to the projections so that we can safely reference them in the outer query
         new_selects = []
@@ -921,7 +920,8 @@ def eliminate_join_marks(expression: exp.Expr) -> exp.Expr:
                 parent = p.parent
                 p.pop()
                 if isinstance(parent, exp.Binary):
-                    parent.replace(parent.right if parent.left is None else parent.left)
+                    left = parent.args.get("this")
+                    parent.replace(parent.right if left is None else left)
                 elif isinstance(parent, exp.Where):
                     parent.pop()
 
@@ -1044,7 +1044,7 @@ def inherit_struct_field_names(expression: exp.Expr) -> exp.Expr:
                 if not isinstance(expr, exp.PropertyEQ):
                     # Create PropertyEQ: field_name := value, preserving the type from the inner expression
                     property_eq = exp.PropertyEQ(
-                        this=exp.Identifier(this=field_names[i].copy()),
+                        this=field_names[i].copy(),
                         expression=expr,
                     )
                     property_eq.type = expr.type

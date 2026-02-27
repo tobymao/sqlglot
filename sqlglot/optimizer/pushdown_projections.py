@@ -21,7 +21,7 @@ SELECT_ALL = object()
 
 # Selection to use if selection list is empty
 def default_selection(is_agg: bool) -> exp.Alias:
-    return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_")
+    return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_").assert_is(exp.Alias)
 
 
 def pushdown_projections(

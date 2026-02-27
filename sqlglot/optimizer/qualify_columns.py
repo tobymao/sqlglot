@@ -684,7 +684,7 @@ def _expand_struct_stars_no_parens(
             table=dot_column.args.get("table"),
             fields=t.cast(t.List[exp.Identifier], parts),
         )
-        new_selections.append(alias(new_column, this, copy=False))
+        new_selections.append(alias(new_column, this, copy=False).assert_is(exp.Alias))
 
     return new_selections
 
@@ -745,7 +745,7 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
     for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
         new_identifier = struct_field_def.this.copy()
         new_dot = exp.Dot.build([outer_paren.copy(), new_identifier])
-        new_alias = alias(new_dot, new_identifier, copy=False)
+        new_alias = alias(new_dot, new_identifier, copy=False).assert_is(exp.Alias)
         new_selections.append(new_alias)
 
     return new_selections

@@ -962,7 +962,6 @@ class Parser(metaclass=_Parser):
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.With: lambda self: self._parse_with(),
-        "JOIN_TYPE": lambda self: self._parse_join_parts(),
     }
 
     STATEMENT_PARSERS = {
@@ -1848,7 +1847,7 @@ class Parser(metaclass=_Parser):
         """
         errors = []
         for expression_type in ensure_list(expression_types):
-            parser = self.EXPRESSION_PARSERS.get(expression_type)
+            parser = self.EXPRESSION_PARSERS.get(t.cast(t.Type[exp.Expr], expression_type))
             if not parser:
                 raise TypeError(f"No parser registered for {expression_type}")
 
@@ -6381,7 +6380,8 @@ class Parser(metaclass=_Parser):
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                if "dialect" in func_builder.__code__.co_varnames:
+                code = getattr(func_builder, "__code__", None)
+                if code and "dialect" in code.co_varnames:
                     func = func_builder(args, dialect=self.dialect)
                 else:
                     func = func_builder(args)

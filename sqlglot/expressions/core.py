@@ -20,6 +20,7 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
     ensure_list,
+    mypyc_attr,
     seq_get,
     to_bool,
     trait,
@@ -42,6 +43,7 @@ POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 @trait
 class Expr:
     """
@@ -348,13 +350,13 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         **opts: t.Any,
-    ) -> Alias:
+    ) -> Expr:
         raise NotImplementedError
 
     def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
         raise NotImplementedError
 
-    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr, ...]) -> Bracket:
         raise NotImplementedError
 
     def __iter__(self) -> t.Iterator:
@@ -480,6 +482,7 @@ class Expr:
         raise NotImplementedError
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Expression(Expr):
     __slots__ = (
         "args",
@@ -665,7 +668,12 @@ class Expression(Expr):
         self._type = dtype  # type: ignore[assignment]
 
     def is_type(self, *dtypes: DATA_TYPE) -> bool:
-        return self.type is not None and self.type.is_type(*dtypes)
+        # TODO (mypyc)
+        # Access _type directly (not via .type property) to avoid a mypyc shadow vtable bug
+        # where CPY_GET_ATTR(self, ..., 17, ...) incorrectly calls the setter on interpreted
+        # subclasses instead of the getter.
+        t = self._type
+        return t is not None and t.is_type(*dtypes)
 
     def is_leaf(self) -> bool:
         return not any((isinstance(v, Expr) or type(v) is list) and v for v in self.args.values())
@@ -1019,7 +1027,7 @@ class Expression(Expr):
         Returns:
             The SQL string.
         """
-        from sqlglot.dialects import Dialect
+        from sqlglot.dialects.dialect import Dialect
 
         return Dialect.get_or_raise(dialect).generate(self, **opts)
 
@@ -1284,7 +1292,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         **opts: t.Any,
-    ) -> Alias:
+    ) -> Expr:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
 
     def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
@@ -1297,7 +1305,7 @@ class Expression(Expr):
             return klass(this=other, expression=this)
         return klass(this=this, expression=other)
 
-    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr, ...]) -> Bracket:
         return Bracket(
             this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
         )
@@ -1460,11 +1468,10 @@ class Expression(Expr):
 
 
 IntoType = t.Union[
-    str,
     t.Type[Expr],
-    t.Collection[t.Union[str, t.Type[Expr]]],
+    t.Collection[t.Type[Expr]],
 ]
-ExpOrStr = t.Union[str, Expr]
+ExpOrStr = t.Union[int, str, Expr]
 
 
 @trait
@@ -1522,11 +1529,11 @@ class Binary(Condition):
 
     @property
     def left(self) -> Expr:
-        return self.this
+        return self.args["this"]
 
     @property
     def right(self) -> Expr:
-        return self.expression
+        return self.args["expression"]
 
 
 @trait
@@ -1726,7 +1733,7 @@ class Placeholder(Expression, Condition):
 
     @property
     def name(self) -> str:
-        return self.this or "?"
+        return self.text("this") or "?"
 
 
 class Null(Expression, Condition):
@@ -1898,6 +1905,7 @@ class Slice(Expression):
     arg_types = {"this": False, "expression": False, "step": False}
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 @trait
 class TimeUnit(Expr):
     """Automatically converts unit arg into a var."""
@@ -1917,16 +1925,20 @@ class TimeUnit(Expr):
 
     VAR_LIKE: t.ClassVar[t.Tuple[t.Type[Expr], ...]] = (Column, Literal, Var)
 
-    def _post_init(self) -> None:
+    def __init__(self, **args: object) -> None:
+        super().__init__(**args)
+
         unit = self.args.get("unit")
         if (
             unit
-            and type(unit) in self.VAR_LIKE
+            and type(unit) in TimeUnit.VAR_LIKE
             and not (isinstance(unit, Column) and len(unit.parts) != 1)
         ):
             unit = Var(this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper())
             self.args["unit"] = unit
-            self._set_parent("unit", unit)
+            # TODO (mypyc): change back to self._set_parent("unit", unit)
+            unit.parent = self
+            unit.arg_key = "unit"
         elif type(unit).__name__ == "Week":
             unit.set("this", Var(this=unit.this.name.upper()))  # type: ignore[union-attr]
 
@@ -1935,6 +1947,7 @@ class TimeUnit(Expr):
         return self.args.get("unit")
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class _TimeUnit(Expression, TimeUnit):
     """Automatically converts unit arg into a var."""
 
@@ -1946,8 +1959,13 @@ class IntervalOp(TimeUnit):
     def interval(self) -> "Interval":
         from sqlglot.expressions.datatypes import Interval
 
+        # TODO (mypyc):
+        # Access self.args directly instead of self.expression to avoid mypyc
+        # dispatching to ExpressionCore.expression (which raises NotImplementedError)
+        # rather than the concrete Expr.expression implementation.
+        expr = self.args.get("expression")
         return Interval(
-            this=self.expression.copy(),
+            this=expr.copy() if expr is not None else None,
             unit=self.unit.copy() if self.unit else None,
         )
 
@@ -2365,7 +2383,7 @@ def maybe_parse(
 
 @t.overload
 def maybe_parse(
-    sql_or_expression: str | E,
+    sql_or_expression: int | str | E,
     *,
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
@@ -2443,8 +2461,16 @@ def _to_s(node: t.Any, verbose: bool = False, level: int = 0, repr_str: bool = F
     if isinstance(node, Expr):
         args = {k: v for k, v in node.args.items() if (v is not None and v != []) or verbose}
 
-        if (node.type or verbose) and type(node).__name__ != "DataType":
-            args["_type"] = node.type
+        # TODO (mypyc):
+        # Access _type directly (not via .type property) to avoid a mypyc shadow vtable bug
+        # where CPY_GET_ATTR_TRAIT(node, CPyType_core___Expr, 16, ...) calls the setter
+        # instead of the getter on interpreted subclasses. Replicate the type property logic:
+        # for Cast nodes, fall back to the `to` argument when _type is not set.
+        _node_type = node._type
+        if _node_type is None and node.is_cast:
+            _node_type = node.args.get("to")
+        if (_node_type or verbose) and type(node).__name__ != "DataType":
+            args["_type"] = _node_type
         if node.comments or verbose:
             args["_comments"] = node.comments
 
@@ -2667,7 +2693,7 @@ def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True
 
 @t.overload
 def to_identifier(
-    name: str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
+    name: int | str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
 ) -> Identifier: ...
 
 
@@ -2850,7 +2876,7 @@ def alias_(
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
-):
+) -> Expr:
     """Create an Alias expression.
 
     Example:

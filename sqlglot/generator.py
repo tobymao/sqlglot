@@ -4122,7 +4122,7 @@ class Generator(metaclass=_Generator):
 
     def binary(self, expression: exp.Binary, op: str) -> str:
         sqls: t.List[str] = []
-        stack: t.List[t.Union[str, exp.Expr]] = [expression]
+        stack: t.List[None | str | exp.Expr] = [expression]
         binary_type = type(expression)
 
         while stack:
@@ -4133,9 +4133,9 @@ class Generator(metaclass=_Generator):
                 if op_func:
                     op = f"OPERATOR({self.sql(op_func)})"
 
-                stack.append(node.right)
+                stack.append(node.args.get("expression"))
                 stack.append(f" {self.maybe_comment(op, comments=node.comments)} ")
-                stack.append(node.left)
+                stack.append(node.args.get("this"))
             else:
                 sqls.append(self.sql(node))
 

@@ -1385,14 +1385,17 @@ class Select(Expression, Query):
             side: t.Optional[Token]
             kind: t.Optional[Token]
 
-            method, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
+            new_join = maybe_parse(f"FROM _ {join_type} JOIN _", **parse_args).find(Join)
+            method = new_join.method
+            side = new_join.side
+            kind = new_join.kind
 
             if method:
-                join.set("method", method.text)
+                join.set("method", method)
             if side:
-                join.set("side", side.text)
+                join.set("side", side)
             if kind:
-                join.set("kind", kind.text)
+                join.set("kind", kind)
 
         if on:
             on = and_(*ensure_list(on), dialect=dialect, copy=copy, **opts)

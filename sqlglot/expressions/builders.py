@@ -930,7 +930,8 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
     if constructor:
         if converted:
-            if "dialect" in constructor.__code__.co_varnames:
+            code = getattr(constructor, "__code__", None)
+            if code and "dialect" in code.co_varnames:
                 function = constructor(converted, dialect=dialect)
             else:
                 function = constructor(converted)

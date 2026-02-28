@@ -30,6 +30,11 @@ try:
 except ImportError:
     sqltree = None
 
+try:
+    import polyglot_sql
+except ImportError:
+    polyglot_sql = None
+
 import sqlglot  # noqa: E402
 
 long = """
@@ -200,6 +205,10 @@ def sqlfluff_parse(sql):
     sqlfluff.parse(sql)
 
 
+def polyglot_sql_parse(sql):
+    polyglot_sql.parse(sql)
+
+
 QUERIES = {"tpch": tpch, "short": short, "long": long, "crazy": crazy}
 
 
@@ -228,6 +237,8 @@ def run_benchmarks():
             runner.bench_func(f"parse_moz_sql_parser_{query_name}", moz_sql_parser_parse, sql)
         if sqloxide and _can_parse(sqloxide_parse, sql):
             runner.bench_func(f"parse_sqloxide_{query_name}", sqloxide_parse, sql)
+        if polyglot_sql and _can_parse(polyglot_sql_parse, sql):
+            runner.bench_func(f"parse_polyglot_sql_{query_name}", polyglot_sql_parse, sql)
         if sqlfluff and _can_parse(sqlfluff_parse, sql):
             runner.bench_func(f"parse_sqlfluff_{query_name}", sqlfluff_parse, sql)
 

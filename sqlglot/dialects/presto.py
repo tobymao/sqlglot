@@ -510,6 +510,7 @@ class Presto(Dialect):
                 ]
             ),
             exp.SortArray: _no_sort_array,
+            exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
             exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),

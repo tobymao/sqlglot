@@ -6,12 +6,15 @@ authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
 license = "MIT"
 requires-python = ">= 3.9"
 
+[project.optional-dependencies]
+dev = ["setuptools >= 61.0", "setuptools_scm", "mypy>=1.0"]
+
 [project.urls]
 Homepage = "https://sqlglot.com/"
 Repository = "https://github.com/tobymao/sqlglot"
 
 [build-system]
-requires = ["setuptools >= 61.0", "setuptools_scm", "mypy>=1.0", "types-python-dateutil"]
+requires = ["setuptools >= 61.0", "setuptools_scm", "mypy>=1.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -28,4 +31,3 @@ mypy_path = [".", ".."]
 
 [[tool.mypy.overrides]]
 module = "sqlglot._version"
-ignore_missing_imports = true

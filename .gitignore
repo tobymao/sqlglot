@@ -145,3 +145,9 @@ sqlglot/_version.py
 
 # Emacs files
 *~
+
+# Benchmark datasets
+data/
+
+# Validation output
+validation_output/

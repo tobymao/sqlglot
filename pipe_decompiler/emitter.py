@@ -14,6 +14,7 @@ from .rules import (
     setop_rule,
     terminal_rule,
     where_rule,
+    window_rule,
 )
 
 
@@ -23,6 +24,9 @@ def _is_distinct_without_agg(ast: exp.Select) -> bool:
     if ast.args.get("group"):
         return False
     if aggregate_rule.has_aggregates(ast):
+        return False
+    # Don't treat DISTINCT + window functions as simple DISTINCT
+    if window_rule.has_window_functions(ast):
         return False
     return True
 
@@ -71,6 +75,12 @@ def _order_refs_outside_select(ast: exp.Select) -> bool:
     if any(isinstance(e, exp.Star) for e in ast.expressions):
         return False
     select_cols = _collect_select_column_names(ast)
+    # Also include GROUP BY column names as available
+    group = ast.args.get("group")
+    if group:
+        for g in group.expressions:
+            if isinstance(g, exp.Column):
+                select_cols.add(g.name.upper())
     for order_expr in order.expressions:
         # Check for aggregate functions in ORDER BY
         has_agg = any(isinstance(n, exp.AggFunc) for n in order_expr.walk())
@@ -208,6 +218,7 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
     has_group = ast.args.get("group") is not None
     has_agg = aggregate_rule.has_aggregates(ast)
     order_has_agg = _order_has_agg_func(ast)
+    has_window = window_rule.has_window_functions(ast)
 
     if _is_distinct_without_agg(ast):
         if order_outside_select:
@@ -235,59 +246,77 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
         )
         query.operators.extend(agg_ops)
 
-        if order_has_agg:
-            # ORDER BY with aggregate refs → use aliases, ORDER BY before SELECT
-            agg_map = _build_order_alias_map(ast, extra_order_aggs, dialect=dialect)
-            order_ops = _emit_order_with_aliases(ast, agg_map, dialect=dialect)
-            query.operators.extend(order_ops)
-
-            # SELECT after ORDER BY to prune extra columns
+        if not has_group:
+            # No GROUP BY: aggregate produces single row.
+            # ORDER BY is meaningless → drop it, keep only LIMIT.
             select_op = projection_rule.emit(
                 ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
             )
             if select_op:
                 query.operators.append(select_op)
-
             limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
             query.operators.extend(limit_ops)
-        else:
-            if order_outside_select:
-                # ORDER BY references columns not in SELECT output;
-                # emit ORDER BY before SELECT so GROUP BY columns are still available
-                # Strip qualifiers since ORDER BY follows AGGREGATE (CTE context)
-                order_ops = terminal_rule.emit_order_only(
-                    ast, dialect=dialect, strip_qualifiers=True
-                )
-                query.operators.extend(order_ops)
-                select_op = projection_rule.emit(
-                    ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
-                )
-                if select_op:
-                    query.operators.append(select_op)
-                limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
-                query.operators.extend(limit_ops)
-            else:
-                # SELECT then ORDER BY then LIMIT
-                select_op = projection_rule.emit(
-                    ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
-                )
-                if select_op:
-                    query.operators.append(select_op)
-                terminal_ops = terminal_rule.emit(ast, dialect=dialect)
-                query.operators.extend(terminal_ops)
-
-    else:
-        # No aggregation
-        if order_outside_select:
-            order_ops = terminal_rule.emit_order_only(ast, dialect=dialect)
+        elif order_has_agg:
+            # ORDER BY with aggregate refs → AGGREGATE includes _ord aliases,
+            # then ORDER BY → LIMIT → final SELECT (strips _ord aliases).
+            # AGGREGATE output has all columns including _ord aliases; ORDER BY
+            # references them directly. The final SELECT removes synthetic columns.
+            agg_map = _build_order_alias_map(ast, extra_order_aggs, dialect=dialect)
+            order_ops = _emit_order_with_aliases(ast, agg_map, dialect=dialect)
             query.operators.extend(order_ops)
-            select_op = projection_rule.emit(ast, has_aggregate=False, dialect=dialect)
+            limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
+            query.operators.extend(limit_ops)
+            final_select = projection_rule.emit(
+                ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+            )
+            if final_select:
+                query.operators.append(final_select)
+        elif order_outside_select:
+            # ORDER BY references columns not in SELECT output;
+            # emit ORDER BY before SELECT so GROUP BY columns are still available
+            # Strip qualifiers since ORDER BY follows AGGREGATE (CTE context)
+            order_ops = terminal_rule.emit_order_only(
+                ast, dialect=dialect, strip_qualifiers=True
+            )
+            query.operators.extend(order_ops)
+            select_op = projection_rule.emit(
+                ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+            )
             if select_op:
                 query.operators.append(select_op)
             limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
             query.operators.extend(limit_ops)
         else:
-            select_op = projection_rule.emit(ast, has_aggregate=False, dialect=dialect)
+            # SELECT then ORDER BY then LIMIT
+            select_op = projection_rule.emit(
+                ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+            )
+            if select_op:
+                query.operators.append(select_op)
+            terminal_ops = terminal_rule.emit(ast, dialect=dialect)
+            query.operators.extend(terminal_ops)
+
+    else:
+        # No aggregation
+        # Emit window functions as EXTEND
+        if has_window:
+            window_ops = window_rule.emit(ast, dialect=dialect)
+            query.operators.extend(window_ops)
+
+        if order_outside_select:
+            order_ops = terminal_rule.emit_order_only(ast, dialect=dialect)
+            query.operators.extend(order_ops)
+            select_op = projection_rule.emit(
+                ast, has_aggregate=False, dialect=dialect, has_window=has_window
+            )
+            if select_op:
+                query.operators.append(select_op)
+            limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
+            query.operators.extend(limit_ops)
+        else:
+            select_op = projection_rule.emit(
+                ast, has_aggregate=False, dialect=dialect, has_window=has_window
+            )
             if select_op:
                 query.operators.append(select_op)
             terminal_ops = terminal_rule.emit(ast, dialect=dialect)

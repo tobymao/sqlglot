@@ -16,6 +16,13 @@ def _has_agg_func(expr: exp.Expression) -> bool:
     return False
 
 
+def _has_window_func(expr: exp.Expression) -> bool:
+    for node in expr.walk():
+        if isinstance(node, exp.Window):
+            return True
+    return False
+
+
 def _strip_table_qualifier_ast(expr: exp.Expression, dialect: str = "sqlite") -> str:
     """Remove table qualifiers from all column references in an expression using AST.
 
@@ -32,11 +39,13 @@ def emit(
     has_aggregate: bool,
     dialect: str = "sqlite",
     group_expr_aliases: dict[str, str] | None = None,
+    has_window: bool = False,
 ) -> PipeOperator | None:
     """Emit a SELECT pipe operator for the projection.
 
     SELECT * is omitted (pipe default).
     After AGGREGATE, uses aliases for aggregate columns and strips table qualifiers.
+    After EXTEND (window), uses aliases for window columns.
     group_expr_aliases: mapping from GROUP BY expression SQL to alias, for function-call
     GROUP BY expressions that need alias references after CTE wrapping.
     """
@@ -63,6 +72,12 @@ def emit(
                 else:
                     agg_counter += 1
                     parts.append(f"_agg{agg_counter}")
+            elif has_window and _has_window_func(expr):
+                # Window column: reference by alias after EXTEND
+                if isinstance(expr, exp.Alias):
+                    parts.append(expr.alias)
+                else:
+                    parts.append(expr.sql(dialect=dialect))
             else:
                 # Non-aggregate column - check for GROUP BY expression alias first
                 stripped = _strip_table_qualifier_ast(expr, dialect=dialect)
@@ -79,7 +94,17 @@ def emit(
             sql_fragment="SELECT " + ", ".join(parts),
         )
     else:
-        parts = [e.sql(dialect=dialect) for e in select_exprs]
+        parts = []
+        for expr in select_exprs:
+            if has_window and _has_window_func(expr):
+                # Window column: reference by alias after EXTEND
+                if isinstance(expr, exp.Alias):
+                    parts.append(expr.alias)
+                else:
+                    parts.append(expr.sql(dialect=dialect))
+            else:
+                parts.append(expr.sql(dialect=dialect))
+
         if not parts:
             return None
 

@@ -27,9 +27,7 @@ def _is_distinct_without_agg(ast: exp.Select) -> bool:
     return True
 
 
-def _emit_distinct_as_aggregate(
-    ast: exp.Select, dialect: str = "sqlite"
-) -> list[PipeOperator]:
+def _emit_distinct_as_aggregate(ast: exp.Select, dialect: str = "sqlite") -> list[PipeOperator]:
     select_exprs = ast.expressions
     group_cols = []
     for expr in select_exprs:
@@ -130,7 +128,9 @@ def _collect_order_agg_exprs(ast: exp.Select, dialect: str = "sqlite") -> list[t
     return result
 
 
-def _build_order_alias_map(ast: exp.Select, extra_aliases: list[tuple[str, str]], dialect: str = "sqlite") -> dict[str, str]:
+def _build_order_alias_map(
+    ast: exp.Select, extra_aliases: list[tuple[str, str]], dialect: str = "sqlite"
+) -> dict[str, str]:
     """Build a mapping of aggregate SQL -> alias for ORDER BY substitution."""
     agg_map = {}
 
@@ -183,9 +183,8 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
             operators=[
                 PipeOperator(
                     op_type=PipeOpType.SELECT,
-                    sql_fragment="SELECT " + ", ".join(
-                        e.sql(dialect=dialect) for e in ast.expressions
-                    ),
+                    sql_fragment="SELECT "
+                    + ", ".join(e.sql(dialect=dialect) for e in ast.expressions),
                 )
             ],
             ctes=ctes,
@@ -231,7 +230,9 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
         extra_order_aggs = _collect_order_agg_exprs(ast, dialect=dialect) if order_has_agg else []
 
         # AGGREGATE rule (with extra ORDER BY aggregates)
-        agg_ops, grp_aliases = aggregate_rule.emit(ast, dialect=dialect, extra_agg_exprs=extra_order_aggs)
+        agg_ops, grp_aliases = aggregate_rule.emit(
+            ast, dialect=dialect, extra_agg_exprs=extra_order_aggs
+        )
         query.operators.extend(agg_ops)
 
         if order_has_agg:
@@ -241,7 +242,9 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
             query.operators.extend(order_ops)
 
             # SELECT after ORDER BY to prune extra columns
-            select_op = projection_rule.emit(ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases)
+            select_op = projection_rule.emit(
+                ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+            )
             if select_op:
                 query.operators.append(select_op)
 
@@ -252,16 +255,22 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
                 # ORDER BY references columns not in SELECT output;
                 # emit ORDER BY before SELECT so GROUP BY columns are still available
                 # Strip qualifiers since ORDER BY follows AGGREGATE (CTE context)
-                order_ops = terminal_rule.emit_order_only(ast, dialect=dialect, strip_qualifiers=True)
+                order_ops = terminal_rule.emit_order_only(
+                    ast, dialect=dialect, strip_qualifiers=True
+                )
                 query.operators.extend(order_ops)
-                select_op = projection_rule.emit(ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases)
+                select_op = projection_rule.emit(
+                    ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+                )
                 if select_op:
                     query.operators.append(select_op)
                 limit_ops = terminal_rule.emit_limit_only(ast, dialect=dialect)
                 query.operators.extend(limit_ops)
             else:
                 # SELECT then ORDER BY then LIMIT
-                select_op = projection_rule.emit(ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases)
+                select_op = projection_rule.emit(
+                    ast, has_aggregate=True, dialect=dialect, group_expr_aliases=grp_aliases
+                )
                 if select_op:
                     query.operators.append(select_op)
                 terminal_ops = terminal_rule.emit(ast, dialect=dialect)

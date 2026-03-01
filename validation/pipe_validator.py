@@ -15,6 +15,7 @@ import sqlglot
 @dataclass
 class PrefixResult:
     """Result of validating a single pipe query prefix."""
+
     prefix_index: int
     prefix_sql: str
     valid: bool
@@ -24,6 +25,7 @@ class PrefixResult:
 @dataclass
 class PipeValidationResult:
     """Result of pipe SQL syntax validation."""
+
     valid: bool
     error: str = ""
     prefix_results: list[PrefixResult] = field(default_factory=list)

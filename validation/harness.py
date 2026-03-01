@@ -69,9 +69,7 @@ class _Timeout:
         raise TimeoutError("SQL execution timed out")
 
 
-def execute_with_error_handling(
-    sql: str, db_path: str, timeout: int = 30
-) -> ExecutionResult:
+def execute_with_error_handling(sql: str, db_path: str, timeout: int = 30) -> ExecutionResult:
     """Execute SQL against a SQLite database with error handling and categorization."""
     start = time.monotonic()
     try:
@@ -207,8 +205,11 @@ def _validate_entry(
     if rt_error:
         record.status = "parse_error"
         record.diagnostic = diagnose_mismatch(
-            entry.question_id, entry.gold_sql, "",
-            pipe_sql=record.pipe_sql, error=rt_error,
+            entry.question_id,
+            entry.gold_sql,
+            "",
+            pipe_sql=record.pipe_sql,
+            error=rt_error,
         )
         return record
 
@@ -217,15 +218,16 @@ def _validate_entry(
     if record.rt_result.error:
         record.status = "rt_error"
         record.diagnostic = diagnose_mismatch(
-            entry.question_id, entry.gold_sql, rt_sql,
-            pipe_sql=record.pipe_sql, error=record.rt_result.error,
+            entry.question_id,
+            entry.gold_sql,
+            rt_sql,
+            pipe_sql=record.pipe_sql,
+            error=record.rt_result.error,
         )
         return record
 
     # Compare results
-    record.comparison = compare_with_tolerance(
-        record.gold_result.rows, record.rt_result.rows
-    )
+    record.comparison = compare_with_tolerance(record.gold_result.rows, record.rt_result.rows)
 
     if record.comparison.match:
         record.status = "match"
@@ -236,16 +238,17 @@ def _validate_entry(
         else:
             record.status = "mismatch"
         record.diagnostic = diagnose_mismatch(
-            entry.question_id, entry.gold_sql, rt_sql,
-            pipe_sql=record.pipe_sql, comparison=record.comparison,
+            entry.question_id,
+            entry.gold_sql,
+            rt_sql,
+            pipe_sql=record.pipe_sql,
+            comparison=record.comparison,
         )
 
     return record
 
 
-def _write_outputs(
-    records: list[ValidationRecord], output_path: str, source: str
-) -> None:
+def _write_outputs(records: list[ValidationRecord], output_path: str, source: str) -> None:
     """Write all output artifacts (design doc Section 11)."""
     output_dir = os.path.dirname(output_path) or "."
     os.makedirs(output_dir, exist_ok=True)
@@ -344,17 +347,19 @@ def _record_to_dict(record: ValidationRecord) -> dict:
             "suspected_rules": record.diagnostic.suspected_rules,
             "detail": record.diagnostic.detail,
             "ast_diffs": [
-                {"category": ad.category, "description": ad.description,
-                 "node_a": ad.node_a, "node_b": ad.node_b}
+                {
+                    "category": ad.category,
+                    "description": ad.description,
+                    "node_a": ad.node_a,
+                    "node_b": ad.node_b,
+                }
                 for ad in record.diagnostic.ast_diffs
             ],
         }
     return d
 
 
-def format_stratified_report(
-    records: list[ValidationRecord], source: str = "spider"
-) -> str:
+def format_stratified_report(records: list[ValidationRecord], source: str = "spider") -> str:
     """Format a difficulty-stratified summary report."""
     lines = []
     lines.append(f"=== Validation Report ({source.upper()}) ===")
@@ -386,8 +391,17 @@ def format_stratified_report(
     for r in records:
         by_diff[r.difficulty].append(r)
 
-    difficulty_order = ["easy", "medium", "hard", "extra", "extra hard",
-                        "simple", "moderate", "challenging", "unknown"]
+    difficulty_order = [
+        "easy",
+        "medium",
+        "hard",
+        "extra",
+        "extra hard",
+        "simple",
+        "moderate",
+        "challenging",
+        "unknown",
+    ]
     lines.append("By difficulty:")
     for diff in difficulty_order:
         if diff not in by_diff:
@@ -448,17 +462,13 @@ def format_stratified_report(
     if ki_counts:
         lines.append("Known issue tag correlation:")
         for tag, counts in sorted(ki_counts.items()):
-            lines.append(
-                f"  {tag:30s}: {counts['mismatch']:3d}/{counts['total']:3d} mismatches"
-            )
+            lines.append(f"  {tag:30s}: {counts['mismatch']:3d}/{counts['total']:3d} mismatches")
         lines.append("")
 
     return "\n".join(lines)
 
 
-def print_stratified_report(
-    records: list[ValidationRecord], source: str = "spider"
-) -> None:
+def print_stratified_report(records: list[ValidationRecord], source: str = "spider") -> None:
     print(format_stratified_report(records, source))
 
 
@@ -481,12 +491,8 @@ def regression_test(
         if not prev:
             continue
         if prev["status"] == "match" and record.status != "match":
-            regressions.append(
-                f"{record.question_id}: was match, now {record.status}"
-            )
+            regressions.append(f"{record.question_id}: was match, now {record.status}")
         elif prev["status"] != "match" and record.status == "match":
-            improvements.append(
-                f"{record.question_id}: was {prev['status']}, now match"
-            )
+            improvements.append(f"{record.question_id}: was {prev['status']}, now match")
 
     return len(regressions) == 0, regressions, improvements

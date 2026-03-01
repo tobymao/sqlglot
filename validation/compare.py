@@ -96,8 +96,12 @@ def _classify_mismatch(
         if len(result_a[0]) != len(result_b[0]):
             # Check if same values just reordered columns
             if result_a and result_b:
-                sorted_cols_a = sorted(result_a[0], key=lambda v: (type(v).__name__, str(v) if v is not None else ""))
-                sorted_cols_b = sorted(result_b[0], key=lambda v: (type(v).__name__, str(v) if v is not None else ""))
+                sorted_cols_a = sorted(
+                    result_a[0], key=lambda v: (type(v).__name__, str(v) if v is not None else "")
+                )
+                sorted_cols_b = sorted(
+                    result_b[0], key=lambda v: (type(v).__name__, str(v) if v is not None else "")
+                )
                 if sorted_cols_a == sorted_cols_b:
                     return "REORDER"
             return "COL_COUNT"

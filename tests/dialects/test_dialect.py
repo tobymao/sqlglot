@@ -1,3 +1,4 @@
+import sys
 import typing as t
 import unittest
 
@@ -120,7 +121,7 @@ class TestDialect(Validator):
         import subprocess
 
         code = "import sqlglot; assert len(sqlglot.Dialect._classes) == 1; print('Success')"
-        result = subprocess.run(["python", "-c", code], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
         assert "Success" in result.stdout
 
     def test_get_or_raise(self):

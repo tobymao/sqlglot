@@ -60,14 +60,13 @@ def _collect_having_agg_exprs(
     return result
 
 
-def _substitute_having_aliases(
-    having_sql: str, having_aliases: list[tuple[str, str]]
-) -> str:
+def _substitute_having_aliases(having_sql: str, having_aliases: list[tuple[str, str]]) -> str:
     """Replace aggregate expressions in HAVING SQL with their aliases."""
     result = having_sql
     for agg_sql, alias in having_aliases:
         # Case-insensitive replacement
         import re
+
         pattern = re.escape(agg_sql)
         result = re.sub(pattern, alias, result, flags=re.IGNORECASE)
     return result
@@ -187,9 +186,7 @@ def emit(
                     all_aliases.append((agg_sql, f"_agg{agg_counter}"))
 
         having_sql = _substitute_having_aliases(having_sql, all_aliases)
-        operators.append(
-            PipeOperator(op_type=PipeOpType.WHERE, sql_fragment=f"WHERE {having_sql}")
-        )
+        operators.append(PipeOperator(op_type=PipeOpType.WHERE, sql_fragment=f"WHERE {having_sql}"))
 
     return operators, group_expr_aliases
 

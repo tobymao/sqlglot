@@ -68,17 +68,13 @@ EXECUTION_ERROR_ISSUES: list[KnownIssue] = [
 GENERAL_ISSUES: list[KnownIssue] = [
     KnownIssue(
         tag="NESTED_SUBQUERY",
-        pattern=re.compile(
-            r"SELECT\s.*\(\s*SELECT\s.*\(\s*SELECT", re.IGNORECASE | re.DOTALL
-        ),
+        pattern=re.compile(r"SELECT\s.*\(\s*SELECT\s.*\(\s*SELECT", re.IGNORECASE | re.DOTALL),
         description="Deeply nested subqueries (3+ levels) may lose semantics",
         severity="warning",
     ),
     KnownIssue(
         tag="CASE_IN_AGG",
-        pattern=re.compile(
-            r"\b(SUM|COUNT|AVG|MIN|MAX)\s*\(\s*CASE\b", re.IGNORECASE
-        ),
+        pattern=re.compile(r"\b(SUM|COUNT|AVG|MIN|MAX)\s*\(\s*CASE\b", re.IGNORECASE),
         description="CASE inside aggregate may have round-trip issues",
         severity="warning",
     ),

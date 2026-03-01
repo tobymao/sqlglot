@@ -1,0 +1,37 @@
+=== Validation Report (BIRD) ===
+Total queries: 9428
+
+Overall:
+  match          :  8892  ( 94.3%)
+  mismatch       :    93  (  1.0%)
+  known_issue    :     7  (  0.1%)
+  gold_error     :   357  (  3.8%)
+  rt_error       :    79  (  0.8%)
+  parse_error    :     0  (  0.0%)
+
+  Match rate:     94.3%
+  Effective rate: 94.4% (excl. known issues)
+
+By difficulty:
+  unknown        : 8892/9428 match ( 94.3%)
+
+Mismatch types:
+  WRONG_VALUES        :   94
+  EXTRA_ROWS          :    3
+  MISSING_ROWS        :    2
+  ROW_SWAP            :    1
+
+Error categories:
+  NO_SUCH_COLUMN      :   78
+  OTHER               :    1
+
+Primary suspected rules:
+  from_rule                :   93
+  projection_rule          :   71
+  aggregate_rule           :   12
+  where_rule               :    2
+  join_rule                :    1
+
+Known issue tag correlation:
+  CASE_IN_AGG                   :  21/687 mismatches
+  NESTED_SUBQUERY               :  10/ 80 mismatches

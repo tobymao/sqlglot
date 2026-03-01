@@ -89,118 +89,142 @@ def compute_ast_diff(sql_a: str, sql_b: str, dialect: str = "sqlite") -> list[AS
     from_b = tree_b.find(exp.From)
     if from_a and from_b:
         if from_a.sql(dialect=dialect) != from_b.sql(dialect=dialect):
-            diffs.append(ASTDiff(
-                category="from",
-                description=f"FROM changed",
-                node_a=from_a.sql(dialect=dialect)[:200],
-                node_b=from_b.sql(dialect=dialect)[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="from",
+                    description="FROM changed",
+                    node_a=from_a.sql(dialect=dialect)[:200],
+                    node_b=from_b.sql(dialect=dialect)[:200],
+                )
+            )
 
     # Compare SELECT expressions
     if isinstance(tree_a, exp.Select) and isinstance(tree_b, exp.Select):
         sels_a = [e.sql(dialect=dialect) for e in tree_a.expressions]
         sels_b = [e.sql(dialect=dialect) for e in tree_b.expressions]
         if sels_a != sels_b:
-            diffs.append(ASTDiff(
-                category="projection",
-                description=f"SELECT expressions differ: {len(sels_a)} vs {len(sels_b)} columns",
-                node_a=", ".join(sels_a)[:200],
-                node_b=", ".join(sels_b)[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="projection",
+                    description=f"SELECT expressions differ: {len(sels_a)} vs {len(sels_b)} columns",
+                    node_a=", ".join(sels_a)[:200],
+                    node_b=", ".join(sels_b)[:200],
+                )
+            )
 
     # Compare JOINs
     joins_a = list(tree_a.find_all(exp.Join))
     joins_b = list(tree_b.find_all(exp.Join))
     if len(joins_a) != len(joins_b):
-        diffs.append(ASTDiff(
-            category="join_type",
-            description=f"JOIN count changed: {len(joins_a)} → {len(joins_b)}",
-        ))
+        diffs.append(
+            ASTDiff(
+                category="join_type",
+                description=f"JOIN count changed: {len(joins_a)} → {len(joins_b)}",
+            )
+        )
     for i, (ja, jb) in enumerate(zip(joins_a, joins_b)):
         ja_sql = ja.sql(dialect=dialect)
         jb_sql = jb.sql(dialect=dialect)
         if ja_sql != jb_sql:
-            diffs.append(ASTDiff(
-                category="join_type",
-                description=f"JOIN[{i}] changed",
-                node_a=ja_sql[:200],
-                node_b=jb_sql[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="join_type",
+                    description=f"JOIN[{i}] changed",
+                    node_a=ja_sql[:200],
+                    node_b=jb_sql[:200],
+                )
+            )
 
     # Compare WHERE predicates
     where_a = tree_a.find(exp.Where)
     where_b = tree_b.find(exp.Where)
     if (where_a is None) != (where_b is None):
-        diffs.append(ASTDiff(
-            category="predicate",
-            description=f"WHERE {'added' if where_b else 'dropped'}",
-        ))
+        diffs.append(
+            ASTDiff(
+                category="predicate",
+                description=f"WHERE {'added' if where_b else 'dropped'}",
+            )
+        )
     elif where_a and where_b:
         if where_a.sql(dialect=dialect) != where_b.sql(dialect=dialect):
-            diffs.append(ASTDiff(
-                category="predicate",
-                description="WHERE condition changed",
-                node_a=where_a.sql(dialect=dialect)[:200],
-                node_b=where_b.sql(dialect=dialect)[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="predicate",
+                    description="WHERE condition changed",
+                    node_a=where_a.sql(dialect=dialect)[:200],
+                    node_b=where_b.sql(dialect=dialect)[:200],
+                )
+            )
 
     # Compare GROUP BY
     group_a = tree_a.find(exp.Group)
     group_b = tree_b.find(exp.Group)
     if (group_a is None) != (group_b is None):
-        diffs.append(ASTDiff(
-            category="grouping",
-            description=f"GROUP BY {'added' if group_b else 'dropped'}",
-        ))
+        diffs.append(
+            ASTDiff(
+                category="grouping",
+                description=f"GROUP BY {'added' if group_b else 'dropped'}",
+            )
+        )
     elif group_a and group_b:
         if group_a.sql(dialect=dialect) != group_b.sql(dialect=dialect):
-            diffs.append(ASTDiff(
-                category="grouping",
-                description="GROUP BY changed",
-                node_a=group_a.sql(dialect=dialect)[:200],
-                node_b=group_b.sql(dialect=dialect)[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="grouping",
+                    description="GROUP BY changed",
+                    node_a=group_a.sql(dialect=dialect)[:200],
+                    node_b=group_b.sql(dialect=dialect)[:200],
+                )
+            )
 
     # Compare aggregate functions
     aggs_a = sorted(n.sql(dialect=dialect) for n in tree_a.find_all(exp.AggFunc))
     aggs_b = sorted(n.sql(dialect=dialect) for n in tree_b.find_all(exp.AggFunc))
     if aggs_a != aggs_b:
-        diffs.append(ASTDiff(
-            category="aggregation",
-            description=f"Aggregates changed",
-            node_a=str(aggs_a)[:200],
-            node_b=str(aggs_b)[:200],
-        ))
+        diffs.append(
+            ASTDiff(
+                category="aggregation",
+                description="Aggregates changed",
+                node_a=str(aggs_a)[:200],
+                node_b=str(aggs_b)[:200],
+            )
+        )
 
     # Compare ORDER BY
     orders_a = list(tree_a.find_all(exp.Order))
     orders_b = list(tree_b.find_all(exp.Order))
     if len(orders_a) != len(orders_b):
-        diffs.append(ASTDiff(
-            category="ordering",
-            description=f"ORDER BY count changed: {len(orders_a)} → {len(orders_b)}",
-        ))
+        diffs.append(
+            ASTDiff(
+                category="ordering",
+                description=f"ORDER BY count changed: {len(orders_a)} → {len(orders_b)}",
+            )
+        )
 
     # Compare HAVING
     having_a = tree_a.find(exp.Having)
     having_b = tree_b.find(exp.Having)
     if (having_a is None) != (having_b is None):
-        diffs.append(ASTDiff(
-            category="having",
-            description=f"HAVING {'added' if having_b else 'dropped'}",
-        ))
+        diffs.append(
+            ASTDiff(
+                category="having",
+                description=f"HAVING {'added' if having_b else 'dropped'}",
+            )
+        )
 
     # If no structural diffs, do string comparison
     if not diffs:
         gen_a = tree_a.sql(dialect=dialect)
         gen_b = tree_b.sql(dialect=dialect)
         if gen_a != gen_b:
-            diffs.append(ASTDiff(
-                category="surface",
-                description="SQL strings differ but no structural AST diff detected",
-                node_a=gen_a[:200],
-                node_b=gen_b[:200],
-            ))
+            diffs.append(
+                ASTDiff(
+                    category="surface",
+                    description="SQL strings differ but no structural AST diff detected",
+                    node_a=gen_a[:200],
+                    node_b=gen_b[:200],
+                )
+            )
 
     return diffs
 

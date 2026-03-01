@@ -11,10 +11,12 @@ from ..result import PipeOperator, PipeOpType
 
 def _strip_table_qualifiers(sql: str) -> str:
     """Strip table qualifiers from column references (T2.col -> col)."""
-    return re.sub(r'\b(\w+)\.(\w+)\b', r'\2', sql)
+    return re.sub(r"\b(\w+)\.(\w+)\b", r"\2", sql)
 
 
-def emit(ast: exp.Select, dialect: str = "sqlite", strip_qualifiers: bool = True) -> list[PipeOperator]:
+def emit(
+    ast: exp.Select, dialect: str = "sqlite", strip_qualifiers: bool = True
+) -> list[PipeOperator]:
     """Emit terminal operators: ORDER BY, LIMIT, OFFSET.
 
     strip_qualifiers: when True, strip table qualifiers from ORDER BY
@@ -26,7 +28,9 @@ def emit(ast: exp.Select, dialect: str = "sqlite", strip_qualifiers: bool = True
     return operators
 
 
-def emit_order_only(ast: exp.Select, dialect: str = "sqlite", strip_qualifiers: bool = False) -> list[PipeOperator]:
+def emit_order_only(
+    ast: exp.Select, dialect: str = "sqlite", strip_qualifiers: bool = False
+) -> list[PipeOperator]:
     """Emit only ORDER BY operator."""
     order = ast.args.get("order")
     if not order:

@@ -35,8 +35,7 @@ def extract_ctes(
         # Check if pipe form would create nested CTEs
         # Both SELECT and AGGREGATE operators create implicit CTEs during transpilation
         has_cte_creating_op = any(
-            op.op_type in (PipeOpType.SELECT, PipeOpType.AGGREGATE)
-            for op in pipe_query.operators
+            op.op_type in (PipeOpType.SELECT, PipeOpType.AGGREGATE) for op in pipe_query.operators
         )
         has_inner_ctes = bool(pipe_query.ctes)
 
@@ -44,9 +43,7 @@ def extract_ctes(
             # Fall back to standard SQL to avoid nested WITH
             fallback_sql = body.sql(dialect=dialect)
             pipe_query = PipeQuery(
-                operators=[
-                    PipeOperator(op_type=PipeOpType.FROM, sql_fragment=fallback_sql)
-                ]
+                operators=[PipeOperator(op_type=PipeOpType.FROM, sql_fragment=fallback_sql)]
             )
 
         ctes.append((name, pipe_query))

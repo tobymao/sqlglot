@@ -87,11 +87,13 @@ def main():
         mode = "baseline" if args.baseline else "decompiler"
         output_path = os.path.join("validation_output", mode, "results.json")
 
-    print(f"=== SQL Validation Loop ===")
+    print("=== SQL Validation Loop ===")
     print(f"  Data:      {args.data}")
     print(f"  DB dir:    {args.db_dir}")
     print(f"  Source:    {args.source}")
-    print(f"  Mode:      {'baseline (SQLGlot round-trip)' if args.baseline else 'decompiler (pipe SQL)'}")
+    print(
+        f"  Mode:      {'baseline (SQLGlot round-trip)' if args.baseline else 'decompiler (pipe SQL)'}"
+    )
     print(f"  Output:    {output_path}")
     if args.iteration is not None:
         print(f"  Iteration: {args.iteration}")
@@ -116,7 +118,7 @@ def main():
     if args.regression:
         passed, regressions, improvements = regression_test(args.regression, records)
         print()
-        print(f"=== Regression Check ===")
+        print("=== Regression Check ===")
         print(f"  Improvements: {len(improvements)}")
         print(f"  Regressions:  {len(regressions)}")
         print()

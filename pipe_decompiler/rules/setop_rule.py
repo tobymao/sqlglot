@@ -55,11 +55,7 @@ def transform(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery | None:
 
     combined_sql = " ".join(parts)
 
-    query = PipeQuery(
-        operators=[
-            PipeOperator(op_type=PipeOpType.FROM, sql_fragment=combined_sql)
-        ]
-    )
+    query = PipeQuery(operators=[PipeOperator(op_type=PipeOpType.FROM, sql_fragment=combined_sql)])
 
     # Handle CTEs from the outer set operation
     with_ = ast.args.get("with_")

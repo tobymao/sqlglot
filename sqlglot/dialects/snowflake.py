@@ -798,6 +798,10 @@ class Snowflake(Dialect):
         COLON_IS_VARIANT_EXTRACT = True
         JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
 
+        TYPE_TOKENS = {*parser.Parser.TYPE_TOKENS, TokenType.FILE}
+        STRUCT_TYPE_TOKENS = {*parser.Parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
+        NESTED_TYPE_TOKENS = {*parser.Parser.NESTED_TYPE_TOKENS, TokenType.FILE}
+
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,
             TokenType.EXCEPT,

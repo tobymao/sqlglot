@@ -387,7 +387,6 @@ class Parser(metaclass=_Parser):
     }
 
     STRUCT_TYPE_TOKENS = {
-        TokenType.FILE,
         TokenType.NESTED,
         TokenType.OBJECT,
         TokenType.STRUCT,
@@ -635,6 +634,7 @@ class Parser(metaclass=_Parser):
         TokenType.ESCAPE,
         TokenType.FALSE,
         TokenType.FIRST,
+        TokenType.FILE,
         TokenType.FILTER,
         TokenType.FINAL,
         TokenType.FORMAT,

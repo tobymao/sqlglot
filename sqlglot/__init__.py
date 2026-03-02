@@ -119,7 +119,7 @@ def parse_one(
     **opts,
 ) -> Expr:
     """
-    Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
+    Parses the given SQL string and returns a syntax tree.
 
     Args:
         sql: the SQL code string to parse.
@@ -129,7 +129,7 @@ def parse_one(
         **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
-        The syntax tree for the first parsed statement.
+        A single syntax tree if one statement is parsed, otherwise a Block expression containing all parsed syntax trees.
     """
 
     dialect = Dialect.get_or_raise(read or dialect)

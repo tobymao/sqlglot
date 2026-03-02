@@ -8,7 +8,6 @@ from sqlglot.helper import trait
 from sqlglot.expressions.core import (
     Expr,
     Expression,
-    ExpOrStr,
     _apply_builder,
     _apply_list_builder,
     maybe_copy,
@@ -25,6 +24,7 @@ from sqlglot.expressions.query import (
 if t.TYPE_CHECKING:
     from typing_extensions import Self
     from sqlglot.dialects.dialect import DialectType
+    from sqlglot.expressions.core import ExpOrStr
 
 
 @trait

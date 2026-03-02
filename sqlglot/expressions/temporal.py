@@ -5,17 +5,18 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot.expressions.core import (
-    Expr,
     Expression,
     Func,
     TimeUnit,
     IntervalOp,
     Literal,
-    Neg,
     Column,
     TIMESTAMP_PARTS,
 )
 from sqlglot.expressions.datatypes import DataType, DType
+
+if t.TYPE_CHECKING:
+    from sqlglot.expressions.core import Expr, Neg
 
 
 # Current date/time

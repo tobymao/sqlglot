@@ -16,7 +16,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, Lit
+    from sqlglot._typing import E
     from sqlglot.dialects.dialect import Dialect, DialectType
 
     T = t.TypeVar("T")
@@ -962,7 +962,6 @@ class Parser(metaclass=_Parser):
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.With: lambda self: self._parse_with(),
-        "JOIN_TYPE": lambda self: self._parse_join_parts(),
     }
 
     STATEMENT_PARSERS = {
@@ -1849,7 +1848,7 @@ class Parser(metaclass=_Parser):
         """
         errors = []
         for expression_type in ensure_list(expression_types):
-            parser = self.EXPRESSION_PARSERS.get(expression_type)
+            parser = self.EXPRESSION_PARSERS.get(t.cast(t.Type[exp.Expr], expression_type))
             if not parser:
                 raise TypeError(f"No parser registered for {expression_type}")
 
@@ -6377,7 +6376,8 @@ class Parser(metaclass=_Parser):
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                if "dialect" in func_builder.__code__.co_varnames:
+                code = getattr(func_builder, "__code__", None)
+                if code and "dialect" in code.co_varnames:
                     func = func_builder(args, dialect=self.dialect)
                 else:
                     func = func_builder(args)
@@ -7150,9 +7150,8 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DType.CHAR:
-            if self._match(TokenType.CHARACTER_SET):
-                to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
+        elif to.this == exp.DType.CHAR and self._match(TokenType.CHARACTER_SET):
+            to = exp.DataType.build(exp.DType.CHARACTER_SET, kind=self._parse_var_or_string())
 
         return self.build_cast(
             strict=strict,
@@ -7220,8 +7219,9 @@ class Parser(metaclass=_Parser):
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to: t.Optional[exp.Expr] = self.expression(
-                exp.CharacterSet, this=self._parse_var(tokens={TokenType.BINARY})
+            to: t.Optional[exp.Expr] = exp.DataType.build(
+                exp.DType.CHARACTER_SET,
+                kind=self._parse_var(tokens={TokenType.BINARY}),
             )
         elif self._match(TokenType.COMMA):
             to = self._parse_types()
@@ -7353,10 +7353,10 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+    def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+    def _parse_json_object(self, agg: t.Literal[True]) -> exp.JSONObjectAgg: ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -9205,7 +9205,7 @@ class Parser(metaclass=_Parser):
         if not first_setop:
             return None
 
-        def _parse_and_unwrap_query() -> t.Optional[exp.Query]:
+        def _parse_and_unwrap_query() -> t.Optional[exp.Expr]:
             expr = self._parse_paren()
             return expr.assert_is(exp.Subquery).unnest() if expr else None
 

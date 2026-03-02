@@ -41,8 +41,6 @@ from sqlglot.tokens import TokenType
 from sqlglot.typing.bigquery import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import Lit
-
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 logger = logging.getLogger("sqlglot")
@@ -888,10 +886,10 @@ class BigQuery(Dialect):
             return column
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+        def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+        def _parse_json_object(self, agg: t.Literal[True]) -> exp.JSONObjectAgg: ...
 
         def _parse_json_object(self, agg=False):
             json_object = super()._parse_json_object()

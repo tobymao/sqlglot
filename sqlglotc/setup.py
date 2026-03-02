@@ -19,6 +19,11 @@ SOURCE_FILES = [
     "time.py",
     "tokenizer_core.py",
     "trie.py",
+    *[
+        os.path.join("expressions", f)
+        for f in sorted(os.listdir(os.path.join(sqlglot_src, "expressions")))
+        if f.endswith(".py") and f != "__init__.py"
+    ],
 ]
 
 
@@ -80,6 +85,6 @@ class sdist(_sdist):
 setup(
     name="sqlglotc",
     packages=[],
-    ext_modules=mypycify(_source_paths(), opt_level="3"),
+    ext_modules=mypycify(_source_paths(), opt_level=os.environ.get("MYPYC_OPT", "0")),
     cmdclass={"build_ext": build_ext, "sdist": sdist},
 )

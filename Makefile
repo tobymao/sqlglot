@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
 
 ifdef UV
     PIP := uv pip
@@ -9,14 +9,14 @@ endif
 SO_BACKUP := /tmp/sqlglot_so_backup
 
 hidec:
-	mkdir -p $(SO_BACKUP) && find sqlglot -name "*.so" | xargs -I{} mv -f {} $(SO_BACKUP)/ 2>/dev/null; true
+	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - --remove-files 2>/dev/null; true
 
 showc:
-	mv -f $(SO_BACKUP)/*.so sqlglot/ 2>/dev/null; true
+	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true
 
 clean:
-	rm -rf sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
-	find sqlglot -name "*.so" -delete
+	rm -rf build sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
+	find sqlglot sqlglotc build -name "*.so" -delete 2>/dev/null; true
 
 install:
 	$(PIP) install -e .
@@ -27,6 +27,9 @@ install-dev:
 
 install-devc: clean
 	cd sqlglotc && $(PIP) install -e .
+
+install-devc-release: clean
+	MYPYC_OPT=3 $(MAKE) install-devc
 
 install-pre-commit:
 	pre-commit install

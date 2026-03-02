@@ -13,7 +13,6 @@ from sqlglot.expressions.core import (
     maybe_parse,
     maybe_copy,
 )
-from sqlglot.expressions.datatypes import DataType, DATA_TYPE
 
 # Re-export from focused submodules (backward compatibility)
 from sqlglot.expressions.math import *  # noqa: F401,F403
@@ -22,6 +21,9 @@ from sqlglot.expressions.temporal import *  # noqa: F401,F403
 from sqlglot.expressions.aggregate import *  # noqa: F401,F403
 from sqlglot.expressions.array import *  # noqa: F401,F403
 from sqlglot.expressions.json import *  # noqa: F401,F403
+
+if t.TYPE_CHECKING:
+    from sqlglot.expressions.datatypes import DataType, DATA_TYPE
 
 
 # Cast / type conversion
@@ -451,6 +453,10 @@ class Uuid(Expression, Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 
     arg_types = {"this": False, "name": False, "is_string": False}
+
+
+class WeekStart(Expression, Func):
+    pass
 
 
 class WidthBucket(Expression, Func):

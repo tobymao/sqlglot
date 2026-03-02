@@ -1041,8 +1041,6 @@ class Generator(metaclass=_Generator):
         return self.prepend_ctes(expression, sql)
 
     def characterset_sql(self, expression: exp.CharacterSet) -> str:
-        if isinstance(expression.parent, exp.Cast):
-            return f"CHAR CHARACTER SET {self.sql(expression, 'this')}"
         default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
@@ -1584,6 +1582,8 @@ class Generator(metaclass=_Generator):
 
         if type_value == exp.DType.USERDEFINED and expression.args.get("kind"):
             type_sql = self.sql(expression, "kind")
+        elif type_value == exp.DType.CHARACTER_SET:
+            return f"CHAR CHARACTER SET {self.sql(expression, 'kind')}"
         else:
             type_sql = (
                 self.TYPE_MAPPING.get(type_value, type_value.value)
@@ -4124,7 +4124,7 @@ class Generator(metaclass=_Generator):
 
     def binary(self, expression: exp.Binary, op: str) -> str:
         sqls: t.List[str] = []
-        stack: t.List[t.Union[str, exp.Expr]] = [expression]
+        stack: t.List[None | str | exp.Expr] = [expression]
         binary_type = type(expression)
 
         while stack:
@@ -4135,9 +4135,9 @@ class Generator(metaclass=_Generator):
                 if op_func:
                     op = f"OPERATOR({self.sql(op_func)})"
 
-                stack.append(node.right)
+                stack.append(node.args.get("expression"))
                 stack.append(f" {self.maybe_comment(op, comments=node.comments)} ")
-                stack.append(node.left)
+                stack.append(node.args.get("this"))
             else:
                 sqls.append(self.sql(node))
 

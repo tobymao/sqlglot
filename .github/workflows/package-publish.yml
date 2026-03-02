@@ -35,6 +35,7 @@ jobs:
         env:
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*
           CIBW_ARCHS: ${{ matrix.archs }}
+          CIBW_ENVIRONMENT: MYPYC_OPT=3
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.archs }}

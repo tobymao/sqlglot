@@ -463,7 +463,7 @@ class TestDatabricks(Validator):
         assert "CAST(12345 AS STRING)" in result
 
     def test_qdcolon(self):
-        self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INTEGER)")
+        self.validate_identity("SELECT '20'?::INTEGER", "SELECT TRY_CAST('20' AS INT)")
 
     def test_overlay(self):
         self.validate_identity(

@@ -33,16 +33,16 @@ from sqlglot.expressions.core import (
     alias_,
     column,
 )
-from sqlglot.expressions.datatypes import DataType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+    from sqlglot.expressions.datatypes import DataType
     from sqlglot.expressions.constraints import ColumnConstraint
     from sqlglot.expressions.ddl import Create
-    from sqlglot.expressions.functions import Unnest
-    from sqlglot.tokens import Token
+    from sqlglot.expressions.array import Unnest
 
     S = t.TypeVar("S", bound="SetOperation")
+    Q = t.TypeVar("Q", bound="Query")
 
 
 def _apply_cte_builder(
@@ -82,7 +82,12 @@ class DerivedTable(Expr):
 
     @property
     def named_selects(self) -> t.List[str]:
-        return [select.output_name for select in self.selects]
+        return _named_selects(self)
+
+
+# TODO (mypyc): t.Any needed so compiled code uses Python attribute dispatch, not trait vtable
+def _named_selects(self: t.Any) -> t.List[str]:
+    return [select.output_name for select in self.selects]
 
 
 @trait
@@ -91,9 +96,6 @@ class UDTF(DerivedTable):
     def selects(self) -> t.List[Expr]:
         alias = self.args.get("alias")
         return alias.columns if alias else []
-
-
-Q = t.TypeVar("Q", bound="Query")
 
 
 @trait
@@ -854,10 +856,6 @@ class Return(Expression):
     pass
 
 
-class Reference(Expression):
-    arg_types = {"this": True, "expressions": False, "options": False}
-
-
 class Tuple(Expression):
     arg_types = {"expressions": False}
 
@@ -1018,10 +1016,10 @@ class SetOperation(Expression, Query):
 
     @property
     def named_selects(self) -> t.List[str]:
-        expression = self
-        while isinstance(expression, SetOperation):
-            expression = expression.this.unnest()
-        return expression.named_selects
+        expr: Expr = self
+        while isinstance(expr, SetOperation):
+            expr = expr.this.unnest()
+        return _named_selects(expr)
 
     @property
     def is_star(self) -> bool:
@@ -1029,10 +1027,10 @@ class SetOperation(Expression, Query):
 
     @property
     def selects(self) -> t.List[Expr]:
-        expression = self
-        while isinstance(expression, SetOperation):
-            expression = expression.this.unnest()
-        return expression.selects
+        expr: Expr = self
+        while isinstance(expr, SetOperation):
+            expr = expr.this.unnest()
+        return getattr(expr, "selects", [])
 
     @property
     def left(self) -> Query:
@@ -1326,7 +1324,7 @@ class Select(Expression, Query):
     def join(
         self,
         expression: ExpOrStr,
-        on: t.Optional[ExpOrStr] = None,
+        on: t.Optional[ExpOrStr | t.List[ExpOrStr]] = None,
         using: t.Optional[ExpOrStr | t.Collection[ExpOrStr]] = None,
         append: bool = True,
         join_type: t.Optional[str] = None,
@@ -1381,21 +1379,22 @@ class Select(Expression, Query):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            method: t.Optional[Token]
-            side: t.Optional[Token]
-            kind: t.Optional[Token]
-
-            method, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
+            new_join = maybe_parse(f"FROM _ {join_type} JOIN _", **parse_args).find(Join)
+            method = new_join.method
+            side = new_join.side
+            kind = new_join.kind
 
             if method:
-                join.set("method", method.text)
+                join.set("method", method)
             if side:
-                join.set("side", side.text)
+                join.set("side", side)
             if kind:
-                join.set("kind", kind.text)
+                join.set("kind", kind)
 
         if on:
-            on = and_(*ensure_list(on), dialect=dialect, copy=copy, **opts)
+            on = and_(
+                *t.cast(t.List[ExpOrStr], ensure_list(on)), dialect=dialect, copy=copy, **opts
+            )
             join.set("on", on)
 
         if using:
@@ -1641,9 +1640,9 @@ class Subquery(Expression, DerivedTable, Query):
         **QUERY_MODIFIERS,
     }
 
-    def unnest(self) -> Query:
+    def unnest(self) -> Expr:
         """Returns the first non subquery."""
-        expression = self
+        expression: Expr = self
         while isinstance(expression, Subquery):
             expression = expression.this
         return expression
@@ -1663,7 +1662,9 @@ class Subquery(Expression, DerivedTable, Query):
         **opts,
     ) -> Subquery:
         this = maybe_copy(self, copy)
-        this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
+        inner = this.unnest()
+        if hasattr(inner, "select"):
+            inner.select(*expressions, append=append, dialect=dialect, copy=False, **opts)
         return this
 
     @property
@@ -1969,10 +1970,6 @@ class Stream(Expression):
 
 class ModelAttribute(Expression):
     arg_types = {"this": True, "expression": True}
-
-
-class WeekStart(Expression):
-    pass
 
 
 class XMLNamespace(Expression):

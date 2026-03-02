@@ -3500,6 +3500,46 @@ class DuckDB(Dialect):
                 exp.replace_placeholders(self.ARRAY_EXCEPT_SET_TEMPLATE, arr1=arr1, arr2=arr2)
             )
 
+        def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
+            start, end = expression.args.get("start"), expression.args.get("end")
+
+            if expression.args.get("zero_based"):
+                # Snowflake: 0-indexed from, exclusive upper bound → DuckDB: 1-indexed, inclusive
+                # positive start: +1 (0-indexed → 1-indexed); negative start: no change
+                if start is not None:
+                    if start.is_int:
+                        start_val = start.to_py()
+                        if start_val >= 0:
+                            start = exp.Literal.number(start_val + 1)
+                    else:
+                        start = (
+                            exp.case()
+                            .when(
+                                exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
+                                exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
+                            )
+                            .else_(start)
+                        )
+                # negative end: -1 (exclusive → inclusive); non-negative end: no change
+                if end is not None:
+                    if end.is_int:
+                        end_val = end.to_py()
+                        if end_val < 0:
+                            end = exp.Literal.number(end_val - 1)
+                    else:
+                        end = (
+                            exp.case()
+                            .when(
+                                exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
+                                exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
+                            )
+                            .else_(end)
+                        )
+
+            return self.func(
+                "ARRAY_SLICE", expression.this, start, end, expression.args.get("step")
+            )
+
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
 

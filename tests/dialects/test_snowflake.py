@@ -6251,6 +6251,58 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_array_slice(self):
+        self.validate_all(
+            "ARRAY_SLICE([1, 2, 3, 4, 5], 1, 3)",
+            write={
+                "snowflake": "ARRAY_SLICE([1, 2, 3, 4, 5], 1, 3)",
+                "duckdb": "ARRAY_SLICE([1, 2, 3, 4, 5], 2, 3)",
+            },
+        )
+
+        self.validate_all(
+            "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -3)",
+            write={
+                "snowflake": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -3)",
+                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -4)",
+            },
+        )
+
+        self.validate_all(
+            "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 0, -2)",
+            write={
+                "snowflake": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 0, -2)",
+                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 1, -3)",
+            },
+        )
+
+        # Dynamic start column: CASE WHEN col >= 0 THEN col + 1 ELSE col END
+        self.validate_all(
+            "ARRAY_SLICE(arr, col, 3)",
+            write={
+                "snowflake": "ARRAY_SLICE(arr, col, 3)",
+                "duckdb": "ARRAY_SLICE(arr, CASE WHEN col >= 0 THEN col + 1 ELSE col END, 3)",
+            },
+        )
+
+        # Dynamic end column: CASE WHEN col < 0 THEN col - 1 ELSE col END
+        self.validate_all(
+            "ARRAY_SLICE(arr, 1, col)",
+            write={
+                "snowflake": "ARRAY_SLICE(arr, 1, col)",
+                "duckdb": "ARRAY_SLICE(arr, 2, CASE WHEN col < 0 THEN col - 1 ELSE col END)",
+            },
+        )
+
+        # Both dynamic
+        self.validate_all(
+            "ARRAY_SLICE(arr, s, e)",
+            write={
+                "snowflake": "ARRAY_SLICE(arr, s, e)",
+                "duckdb": "ARRAY_SLICE(arr, CASE WHEN s >= 0 THEN s + 1 ELSE s END, CASE WHEN e < 0 THEN e - 1 ELSE e END)",
+            },
+        )
+
     def test_space(self):
         # Integer literal
         self.validate_all(

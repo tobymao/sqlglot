@@ -257,6 +257,10 @@ class Generator(metaclass=_Generator):
     # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
     IGNORE_NULLS_IN_FUNC = False
 
+    # Whether IGNORE NULLS is placed before ORDER BY in the agg.
+    # FIRST(x IGNORE NULLS ORDER BY y) vs FIRST(x ORDER BY y IGNORE NULLS)
+    IGNORE_NULLS_BEFORE_ORDER = True
+
     # Whether locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
 
@@ -4810,20 +4814,21 @@ class Generator(metaclass=_Generator):
             return self.sql(this)
 
         if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
-            # The first modifier here will be the one closest to the AggFunc's arg
-            mods = sorted(
-                expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
-                key=lambda x: 0
-                if isinstance(x, exp.HavingMax)
-                else (1 if isinstance(x, exp.Order) else 2),
-            )
+            if self.IGNORE_NULLS_BEFORE_ORDER:
+                # The first modifier here will be the one closest to the AggFunc's arg
+                mods = sorted(
+                    expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
+                    key=lambda x: 0
+                    if isinstance(x, exp.HavingMax)
+                    else (1 if isinstance(x, exp.Order) else 2),
+                )
 
-            if mods:
-                mod = mods[0]
-                this = expression.__class__(this=mod.this.copy())
-                this.meta["inline"] = True
-                mod.this.replace(this)
-                return self.sql(expression.this)
+                if mods:
+                    mod = mods[0]
+                    this = expression.__class__(this=mod.this.copy())
+                    this.meta["inline"] = True
+                    mod.this.replace(this)
+                    return self.sql(expression.this)
 
             agg_func = expression.find(exp.AggFunc)
 

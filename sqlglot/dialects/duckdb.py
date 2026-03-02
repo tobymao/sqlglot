@@ -1881,6 +1881,7 @@ class DuckDB(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_KEY_VALUE_PAIR_SEP = ","
         IGNORE_NULLS_IN_FUNC = True
+        IGNORE_NULLS_BEFORE_ORDER = False
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
         MULTI_ARG_DISTINCT = False

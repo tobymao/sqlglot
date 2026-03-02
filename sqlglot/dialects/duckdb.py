@@ -3714,14 +3714,16 @@ class DuckDB(Dialect):
             x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
 
             if len(keys_to_pick) == 1 and isinstance(keys_to_pick[0], exp.Array):
-                condition = exp.ArrayContains(this=keys_to_pick[0], expression=x_dot_key)
+                lambda_expr = exp.Lambda(
+                    this=exp.ArrayContains(this=keys_to_pick[0], expression=x_dot_key),
+                    expressions=[exp.to_identifier("x")],
+                )
             else:
-                condition = exp.In(this=x_dot_key, expressions=keys_to_pick)
+                lambda_expr = exp.Lambda(
+                    this=exp.In(this=x_dot_key, expressions=keys_to_pick),
+                    expressions=[exp.to_identifier("x")],
+                )
 
-            lambda_expr = exp.Lambda(
-                this=condition,
-                expressions=[exp.to_identifier("x")],
-            )
             result = exp.func(
                 "MAP_FROM_ENTRIES",
                 exp.ArrayFilter(this=exp.func("MAP_ENTRIES", map_arg), expression=lambda_expr),

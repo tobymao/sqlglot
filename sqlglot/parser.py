@@ -6501,7 +6501,9 @@ class Parser(metaclass=_Parser):
             this = self._parse_select_or_expression(alias=alias)
 
         return self._parse_limit(
-            self._parse_order(self._parse_having_max(self._parse_respect_or_ignore_nulls(this)))
+            self._parse_respect_or_ignore_nulls(
+                self._parse_order(self._parse_having_max(self._parse_respect_or_ignore_nulls(this)))
+            )
         )
 
     def _parse_schema(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:

@@ -1463,6 +1463,10 @@ class TestDuckDB(Validator):
             exp.Column
         )
 
+        self.validate_identity(
+            "SELECT LAST_VALUE(x ORDER BY x IGNORE NULLS) OVER (ORDER BY x) FROM t"
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

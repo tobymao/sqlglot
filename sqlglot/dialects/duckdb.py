@@ -3760,13 +3760,18 @@ class DuckDB(Dialect):
 
             return super().unnest_sql(expression)
 
+        def _embed_ignore_nulls(
+            self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str
+        ) -> str:
+            return self._ignore_nulls_in_func(expression, text)
+
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
             this = expression.this
 
             if isinstance(this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
                 # DuckDB should render IGNORE NULLS only for the general-purpose
                 # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
-                return super().ignorenulls_sql(expression)
+                return self._ignore_nulls_in_func(expression, "IGNORE NULLS")
 
             if isinstance(this, exp.First):
                 this = exp.AnyValue(this=this.this)

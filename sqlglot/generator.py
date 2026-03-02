@@ -4825,11 +4825,17 @@ class Generator(metaclass=_Generator):
                 mod.this.replace(this)
                 return self.sql(expression.this)
 
-            agg_func = expression.find(exp.AggFunc)
+            return self._ignore_nulls_in_func(expression, text)
 
-            if agg_func:
-                agg_func_sql = self.sql(agg_func, comment=False)[:-1] + f" {text})"
-                return self.maybe_comment(agg_func_sql, comments=agg_func.comments)
+        return f"{self.sql(expression, 'this')} {text}"
+
+    def _ignore_nulls_in_func(
+        self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str
+    ) -> str:
+        agg_func = expression.find(exp.AggFunc)
+        if agg_func:
+            agg_func_sql = self.sql(agg_func, comment=False)[:-1] + f" {text})"
+            return self.maybe_comment(agg_func_sql, comments=agg_func.comments)
 
         return f"{self.sql(expression, 'this')} {text}"
 

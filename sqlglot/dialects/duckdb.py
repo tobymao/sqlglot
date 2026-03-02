@@ -3785,7 +3785,7 @@ class DuckDB(Dialect):
             if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
                 # DuckDB should render RESPECT NULLS only for the general-purpose
                 # window functions that accept it e.g. FIRST_VALUE(... RESPECT NULLS) OVER (...)
-                return super().respectnulls_sql(expression)
+                return self._ignore_nulls_in_func(expression, "RESPECT NULLS")
 
             self.unsupported("RESPECT NULLS is not supported for non-window functions.")
             return self.sql(expression, "this")

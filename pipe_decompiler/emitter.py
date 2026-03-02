@@ -18,6 +18,14 @@ from .rules import (
 )
 
 
+def _strip_qualifiers_expr(node: exp.Expression) -> exp.Expression:
+    """Remove table qualifiers from all column references in an expression."""
+    result = node.copy()
+    for col in result.find_all(exp.Column):
+        col.set("table", None)
+    return result
+
+
 def _is_distinct_without_agg(ast: exp.Select) -> bool:
     if not ast.args.get("distinct"):
         return False
@@ -68,19 +76,22 @@ def _collect_select_column_names(ast: exp.Select) -> set[str]:
     return names
 
 
-def _order_refs_outside_select(ast: exp.Select) -> bool:
+def _order_refs_outside_select(
+    ast: exp.Select, include_group_by: bool = True
+) -> bool:
     order = ast.args.get("order")
     if not order:
         return False
     if any(isinstance(e, exp.Star) for e in ast.expressions):
         return False
     select_cols = _collect_select_column_names(ast)
-    # Also include GROUP BY column names as available
-    group = ast.args.get("group")
-    if group:
-        for g in group.expressions:
-            if isinstance(g, exp.Column):
-                select_cols.add(g.name.upper())
+    # Also include GROUP BY column names as available (unless suppressed)
+    if include_group_by:
+        group = ast.args.get("group")
+        if group:
+            for g in group.expressions:
+                if isinstance(g, exp.Column):
+                    select_cols.add(g.name.upper())
     for order_expr in order.expressions:
         # Check for aggregate functions in ORDER BY
         has_agg = any(isinstance(n, exp.AggFunc) for n in order_expr.walk())
@@ -89,6 +100,113 @@ def _order_refs_outside_select(ast: exp.Select) -> bool:
         for col in order_expr.find_all(exp.Column):
             if col.name.upper() not in select_cols:
                 return True
+    return False
+
+
+def _order_refs_outside_agg_output(ast: exp.Select) -> bool:
+    """Check if ORDER BY references columns not available after AGGREGATE.
+
+    After AGGREGATE, only GROUP BY columns and aggregate results survive.
+    If ORDER BY references anything else (non-grouped, non-aggregated columns),
+    the query can't be correctly represented in pipe SQL.
+    """
+    order = ast.args.get("order")
+    if not order:
+        return False
+    group = ast.args.get("group")
+    if not group:
+        return False
+
+    # Collect GROUP BY column names
+    group_cols = set()
+    for g in group.expressions:
+        if isinstance(g, exp.Column):
+            group_cols.add(g.name.upper())
+
+    # Collect SELECT column names and aliases (aggregate outputs)
+    select_cols = _collect_select_column_names(ast)
+
+    available = group_cols | select_cols
+
+    for order_expr in order.expressions:
+        # Skip aggregate functions — they're handled as AGGREGATE output
+        has_agg = any(isinstance(n, exp.AggFunc) for n in order_expr.walk())
+        if has_agg:
+            continue
+        for col in order_expr.find_all(exp.Column):
+            if col.name.upper() not in available:
+                return True
+    return False
+
+
+def _having_refs_outside_agg_output(ast: exp.Select) -> bool:
+    """Check if HAVING references columns not available after AGGREGATE.
+
+    After AGGREGATE, only GROUP BY columns and aggregate results survive.
+    If HAVING references non-aggregate, non-GROUP BY columns (SQLite quirk),
+    the query can't be correctly represented in pipe SQL.
+    """
+    having = ast.args.get("having")
+    if not having:
+        return False
+    group = ast.args.get("group")
+    if not group:
+        return False
+
+    # Collect GROUP BY column names
+    group_cols = set()
+    for g in group.expressions:
+        if isinstance(g, exp.Column):
+            group_cols.add(g.name.upper())
+
+    # Collect SELECT column names and aliases (aggregate outputs)
+    select_cols = _collect_select_column_names(ast)
+
+    available = group_cols | select_cols
+
+    for node in having.walk():
+        if isinstance(node, exp.AggFunc):
+            continue
+        if isinstance(node, exp.Column):
+            # Skip columns inside aggregate functions
+            parent_agg = node.find_ancestor(exp.AggFunc)
+            if parent_agg:
+                continue
+            if node.name.upper() not in available:
+                return True
+    return False
+
+
+def _select_has_non_grouped_col_refs(ast: exp.Select) -> bool:
+    """Check if non-aggregate SELECT expressions reference columns not in GROUP BY.
+
+    After AGGREGATE CTE wrapping, only GROUP BY columns and aggregate results
+    survive as named columns. If a SELECT expression like `T1.prep_min + T1.cook_min`
+    references base table columns that aren't in GROUP BY, those individual columns
+    won't exist in the CTE output and the final SELECT will fail.
+    """
+    group = ast.args.get("group")
+    if not group:
+        return False
+
+    # Collect GROUP BY column names (unqualified)
+    group_col_names = set()
+    for g in group.expressions:
+        if isinstance(g, exp.Column):
+            group_col_names.add(g.name.upper())
+
+    for expr in ast.expressions:
+        # Skip aggregate expressions — they produce aliases
+        if aggregate_rule._has_agg_func(expr):
+            continue
+
+        inner = expr.this if isinstance(expr, exp.Alias) else expr
+
+        # Check all column references in the expression
+        for col in inner.find_all(exp.Column):
+            if col.name.upper() not in group_col_names:
+                return True
+
     return False
 
 
@@ -237,6 +355,27 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
             query.operators.extend(terminal_ops)
 
     elif has_group or has_agg:
+        # Check if ORDER BY references columns not available after AGGREGATE
+        # (non-grouped, non-aggregated columns — SQLite quirk). Fall back to
+        # original SQL since pipe SQL can't represent this.
+        if has_group and (
+            _order_refs_outside_agg_output(ast)
+            or _having_refs_outside_agg_output(ast)
+            or _select_has_non_grouped_col_refs(ast)
+        ):
+            fallback_sql = ast.sql(dialect=dialect)
+            return PipeQuery(
+                operators=[PipeOperator(op_type=PipeOpType.FROM, sql_fragment=fallback_sql)],
+                ctes=ctes,
+                cte_names=cte_names,
+            )
+
+        # For aggregate path, check ORDER BY against SELECT output only
+        # (exclude GROUP BY columns since they're lost after |> SELECT)
+        order_outside_agg_select = (
+            has_group and _order_refs_outside_select(ast, include_group_by=False)
+        )
+
         # Collect ORDER BY aggregate expressions not in SELECT
         extra_order_aggs = _collect_order_agg_exprs(ast, dialect=dialect) if order_has_agg else []
 
@@ -271,7 +410,7 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
             )
             if final_select:
                 query.operators.append(final_select)
-        elif order_outside_select:
+        elif order_outside_select or order_outside_agg_select:
             # ORDER BY references columns not in SELECT output;
             # emit ORDER BY before SELECT so GROUP BY columns are still available
             # Strip qualifiers since ORDER BY follows AGGREGATE (CTE context)
@@ -323,9 +462,10 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
             query.operators.extend(terminal_ops)
 
     # When the main query has both explicit CTEs and pipe operators that create
-    # implicit CTEs (SELECT), the transpiler can't merge them correctly.
+    # implicit CTEs (SELECT or AGGREGATE), the transpiler can't merge them correctly.
     # Fall back to standard SQL for the entire query in this case.
-    if query.ctes and any(op.op_type == PipeOpType.SELECT for op in query.operators):
+    cte_creating_ops = {PipeOpType.SELECT, PipeOpType.AGGREGATE}
+    if query.ctes and any(op.op_type in cte_creating_ops for op in query.operators):
         fallback_sql = ast.sql(dialect=dialect)
         return PipeQuery(
             operators=[PipeOperator(op_type=PipeOpType.FROM, sql_fragment=fallback_sql)]
@@ -337,7 +477,11 @@ def emit_pipe_query(ast: exp.Expression, dialect: str = "sqlite") -> PipeQuery:
 def _emit_order_with_aliases(
     ast: exp.Select, agg_map: dict[str, str], dialect: str = "sqlite"
 ) -> list[PipeOperator]:
-    """Emit ORDER BY with aggregate functions replaced by their aliases."""
+    """Emit ORDER BY with aggregate functions replaced by their aliases.
+
+    Also strips table qualifiers from non-aggregate ORDER BY expressions
+    since they follow AGGREGATE (CTE context where table aliases don't exist).
+    """
     order = ast.args.get("order")
     if not order:
         return []
@@ -353,7 +497,9 @@ def _emit_order_with_aliases(
             suffix = " DESC" if desc else ""
             order_parts.append(f"{alias}{suffix}")
         else:
-            order_parts.append(order_expr.sql(dialect=dialect))
+            # Strip table qualifiers — after AGGREGATE CTE, table aliases don't exist
+            stripped = _strip_qualifiers_expr(order_expr)
+            order_parts.append(stripped.sql(dialect=dialect))
 
     return [
         PipeOperator(

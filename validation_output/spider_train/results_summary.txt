@@ -1,0 +1,31 @@
+=== Validation Report (SPIDER) ===
+Total queries: 7000
+
+Overall:
+  match          :  6939  ( 99.1%)
+  mismatch       :    58  (  0.8%)
+  known_issue    :     0  (  0.0%)
+  gold_error     :     3  (  0.0%)
+  rt_error       :     0  (  0.0%)
+  parse_error    :     0  (  0.0%)
+
+  Match rate:     99.1%
+  Effective rate: 99.1% (excl. known issues)
+
+By difficulty:
+  easy           : 2130/2130 match (100.0%)
+  medium         : 1809/1809 match (100.0%)
+  hard           : 1123/1128 match ( 99.6%)
+  extra          : 1877/1933 match ( 97.1%)
+
+Mismatch types:
+  WRONG_VALUES        :   54
+  MISSING_ROWS        :    4
+
+Primary suspected rules:
+  from_rule                :   50
+  aggregate_rule           :    4
+  where_rule               :    4
+
+Known issue tag correlation:
+  NESTED_SUBQUERY               :   0/ 15 mismatches

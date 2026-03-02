@@ -10,8 +10,12 @@ from ..result import PipeOperator, PipeOpType
 
 
 def _strip_table_qualifiers(sql: str) -> str:
-    """Strip table qualifiers from column references (T2.col -> col)."""
-    return re.sub(r"\b(\w+)\.(\w+)\b", r"\2", sql)
+    """Strip table qualifiers from column references (T2.col -> col).
+
+    Handles both unquoted (T2.col) and quoted (T1."month") identifiers.
+    """
+    # Match: word.word, word."quoted_word"
+    return re.sub(r'\b(\w+)\.(("?\w+"?))', r"\2", sql)
 
 
 def emit(

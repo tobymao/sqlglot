@@ -167,6 +167,7 @@ def emit(
     operators = [PipeOperator(op_type=PipeOpType.AGGREGATE, sql_fragment=agg_fragment)]
 
     # HAVING → WHERE after AGGREGATE, with aggregate aliases substituted
+    # and table qualifiers stripped (CTE context after AGGREGATE)
     having = ast.args.get("having")
     if having:
         having_sql = having.this.sql(dialect=dialect)
@@ -185,7 +186,16 @@ def emit(
                     agg_sql = expr.sql(dialect=dialect)
                     all_aliases.append((agg_sql, f"_agg{agg_counter}"))
 
+        # Substitute aggregate aliases first (on qualified SQL)
         having_sql = _substitute_having_aliases(having_sql, all_aliases)
+
+        # Then strip table qualifiers from remaining column references
+        # (after AGGREGATE CTE, table aliases like T1/T2 don't exist)
+        having_ast = exp.maybe_parse(having_sql, dialect=dialect)
+        for col in having_ast.find_all(exp.Column):
+            col.set("table", None)
+        having_sql = having_ast.sql(dialect=dialect)
+
         operators.append(PipeOperator(op_type=PipeOpType.WHERE, sql_fragment=f"WHERE {having_sql}"))
 
     return operators, group_expr_aliases

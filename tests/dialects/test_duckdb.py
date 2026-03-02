@@ -105,6 +105,15 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT JSON('null')",
+            read={
+                "snowflake": "SELECT PARSE_JSON('NULL')",
+            },
+            write={
+                "duckdb": "SELECT JSON('null')",
+            },
+        )
+        self.validate_all(
             "SELECT straight_join",
             write={
                 "duckdb": "SELECT straight_join",
@@ -2624,5 +2633,34 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT ['a', 'b'] AS result",
+            }
+        )
+
+    def test_map_insert(self):
+        self.validate_all(
+            "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': 3})",
+            read={
+                "snowflake": "SELECT MAP_INSERT({'a':1,'b':2}::MAP(VARCHAR,NUMBER),'c',3)",
+            },
+            write={
+                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': 3})",
+            },
+        )
+        self.validate_all(
+            "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': 99})",
+            read={
+                "snowflake": "SELECT MAP_INSERT({'a':1}::MAP(VARCHAR,NUMBER),'a',99,TRUE)",
+            },
+            write={
+                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': 99})",
+            },
+        )
+        self.validate_all(
+            "SELECT id, MAP_CONCAT(attrs, MAP {'new_key': 'new_value'}) AS attrs_with_insert FROM demo_maps",
+            read={
+                "snowflake": "SELECT id, MAP_INSERT(attrs, 'new_key', 'new_value') AS attrs_with_insert FROM demo_maps",
+            },
+            write={
+                "duckdb": "SELECT id, MAP_CONCAT(attrs, MAP {'new_key': 'new_value'}) AS attrs_with_insert FROM demo_maps",
             },
         )

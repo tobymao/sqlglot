@@ -2900,6 +2900,11 @@ class DuckDB(Dialect):
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this
+
+            # Snowflake's PARSE_JSON('NULL') uses uppercase, but DuckDB's JSON requires lowercase 'null'
+            if isinstance(arg, exp.Literal) and arg.is_string and arg.this == "NULL":
+                arg = exp.Literal.string("null")
+
             if expression.args.get("safe"):
                 return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
             return self.func("JSON", arg)
@@ -3808,6 +3813,40 @@ class DuckDB(Dialect):
 
         def mapsize_sql(self, expression: exp.MapSize) -> str:
             return self.func("CARDINALITY", expression.this)
+
+        def mapinsert_sql(self, expression: exp.MapInsert) -> str:
+            map_arg = expression.this
+            key = expression.args.get("key")
+            value = expression.args.get("value")
+
+            # Get the type of the original map by traversing nested MAP_INSERT expressions
+            def get_map_type(expr: exp.Expression) -> t.Optional[exp.DataType]:
+                if expr.type:
+                    return expr.type
+                # Traverse through nested MAP_INSERT to find the original typed expression
+                if isinstance(expr, exp.MapInsert):
+                    return get_map_type(expr.this)
+                return None
+
+            map_type = get_map_type(map_arg)
+
+            if value and map_type and map_type.expressions and len(map_type.expressions) > 1:
+                # Extract the value type from MAP(key_type, value_type)
+                value_type = map_type.expressions[1]
+                # Cast NULL values and non-literals to avoid type conflicts
+                # Literal numbers/booleans/strings can be inferred correctly by DuckDB
+                if isinstance(value, exp.Null) or not isinstance(value, exp.Literal):
+                    value = exp.cast(value, value_type)
+
+            # Create a single-entry map for the new key-value pair
+            new_entry_struct = exp.Struct(expressions=[exp.PropertyEQ(this=key, expression=value)])
+            new_entry: exp.Expression = exp.ToMap(this=new_entry_struct)
+
+            # Use MAP_CONCAT to merge the original map with the new entry
+            # This automatically handles both insert and update cases
+            result = exp.func("MAP_CONCAT", map_arg, new_entry)
+
+            return self.sql(result)
 
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(

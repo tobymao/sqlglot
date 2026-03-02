@@ -1824,7 +1824,7 @@ class Bracket(Expression, Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
     arg_types = {
         "this": True,
-        "expressions": True,
+        "expressions": False,
         "offset": False,
         "safe": False,
         "returns_list_for_maps": False,

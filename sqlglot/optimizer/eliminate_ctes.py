@@ -36,6 +36,8 @@ def eliminate_ctes(expression: E) -> E:
                 count = ref_count[id(scope)]
                 if count <= 0:
                     cte_node = scope.expression.parent
+                    if not cte_node:
+                        continue
                     with_node = cte_node.parent
                     cte_node.pop()
 

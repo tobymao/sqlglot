@@ -49,7 +49,9 @@ def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
 
     # All CTE aliases in the root scope are taken
     for scope in root.cte_scopes:
-        taken[scope.expression.parent.alias] = scope
+        parent = scope.expression.parent
+        if parent:
+            taken[parent.alias] = scope
 
     # All table names are taken
     for scope in root.traverse():
@@ -86,7 +88,9 @@ def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
                 new_ctes.append(new_cte)
 
         # Append the existing CTE itself
-        new_ctes.append(cte_scope.expression.parent)
+        cte_parent = cte_scope.expression.parent
+        if cte_parent:
+            new_ctes.append(cte_parent)
 
     # Now append the rest
     for scope in itertools.chain(root.union_scopes, root.subquery_scopes, root.table_scopes):
@@ -120,11 +124,16 @@ def _eliminate_derived_table(
     # This makes sure that we don't:
     # - drop the "pivot" arg from a pivoted subquery
     # - eliminate a lateral correlated subquery
-    if scope.parent.pivots or isinstance(scope.parent.expression, exp.Lateral):
+    parent_scope = scope.parent
+    if not parent_scope or parent_scope.pivots or isinstance(parent_scope.expression, exp.Lateral):
+        return None
+
+    expr_parent = scope.expression.parent
+    if not isinstance(expr_parent, exp.Subquery):
         return None
 
     # Get rid of redundant exp.Subquery expressions, i.e. those that are just used as wrappers
-    to_replace = scope.expression.parent.unwrap()
+    to_replace = expr_parent.unwrap()
     name, cte = _new_cte(scope, existing_ctes, taken)
     table = exp.alias_(exp.table_(name), alias=to_replace.alias or name)
     table.set("joins", to_replace.args.get("joins"))
@@ -138,14 +147,18 @@ def _eliminate_cte(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
 ) -> t.Optional[exp.Expr]:
     parent = scope.expression.parent
+    if not parent:
+        return None
     name, cte = _new_cte(scope, existing_ctes, taken)
 
     with_ = parent.parent
     parent.pop()
-    if not with_.expressions:
+    if with_ and not with_.expressions:
         with_.pop()
 
     # Rename references to this CTE
+    if not scope.parent:
+        return cte
     for child_scope in scope.parent.traverse():
         for table, source in child_scope.selected_sources.values():
             if source is scope:
@@ -166,7 +179,7 @@ def _new_cte(
     """
     duplicate_cte_alias = existing_ctes.get(scope.expression)
     parent = scope.expression.parent
-    name = parent.alias
+    name = parent.alias if parent else ""
 
     if not name:
         name = find_new_name(taken=taken, base="cte")

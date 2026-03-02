@@ -909,7 +909,7 @@ class Get(Expression):
     arg_types = {"this": True, "target": True, "properties": False}
 
 
-class Table(Expression):
+class Table(Expression, Selectable):
     arg_types = {
         "this": False,
         "alias": False,

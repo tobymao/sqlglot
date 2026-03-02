@@ -70,10 +70,10 @@ class Resolver:
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
 
-        node, _ = self.scope.selected_sources.get(table_name)
+        node: exp.Expr = self.scope.selected_sources[table_name][0]
 
         if isinstance(node, exp.Query):
-            while node and node.alias != table_name:
+            while node and node.alias != table_name and node.parent:
                 node = node.parent
 
         node_alias = node.args.get("alias")
@@ -170,16 +170,16 @@ class Resolver:
                             columns.append(k.name)
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
-
             else:
-                select = seq_get(source.expression.selects, 0)
+                selectable = source.expression.assert_is(exp.Selectable)
+                select = seq_get(selectable.selects, 0)
 
                 if isinstance(select, exp.QueryTransform):
                     # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-qry-select-transform.html
                     schema = select.args.get("schema")
                     columns = [c.name for c in schema.expressions] if schema else ["key", "value"]
                 else:
-                    columns = source.expression.named_selects
+                    columns = selectable.named_selects
 
             node, _ = self.scope.selected_sources.get(name) or (None, None)
             if isinstance(node, Scope):
@@ -350,6 +350,7 @@ class Resolver:
             The DataType of the column, or None if not found.
         """
         scope = self.scope.parent
+        assert scope
 
         # if column is qualified, use that table, otherwise disambiguate using the resolver
         if column.table:

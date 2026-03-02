@@ -7658,7 +7658,9 @@ class Parser(metaclass=_Parser):
             first = False
 
         partition, order = self._parse_partition_and_order()
-        kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
+        kind = (
+            self._match_set((TokenType.ROWS, TokenType.RANGE)) or self._match_text_seq("GROUPS")
+        ) and self._prev.text
 
         if kind:
             self._match(TokenType.BETWEEN)

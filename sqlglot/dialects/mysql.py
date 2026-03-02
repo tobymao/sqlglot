@@ -946,7 +946,6 @@ class MySQL(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
-            exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.PartitionedByProperty: exp.Properties.Location.UNSUPPORTED,
@@ -1261,6 +1260,22 @@ class MySQL(Dialect):
             "year_month",
             "zerofill",
         }
+
+        SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_CREATE
+
+        def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
+            locations = super().locate_properties(properties)
+
+            # MySQL puts SQL SECURITY before VIEW but after the schema for functions/procedures
+            if isinstance(create := properties.parent, exp.Create) and create.kind == "VIEW":
+                post_schema = locations[exp.Properties.Location.POST_SCHEMA]
+                for i, p in enumerate(post_schema):
+                    if isinstance(p, exp.SqlSecurityProperty):
+                        post_schema.pop(i)
+                        locations[self.SQL_SECURITY_VIEW_LOCATION].append(p)
+                        break
+
+            return locations
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             persisted = "STORED" if expression.args.get("persisted") else "VIRTUAL"

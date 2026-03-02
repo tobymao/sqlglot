@@ -236,10 +236,11 @@ class StarRocks(MySQL):
             exp.DType.TIMESTAMPTZ: "DATETIME",
         }
 
+        SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_SCHEMA
+
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
             exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
-            exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
             exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
             exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,

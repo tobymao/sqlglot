@@ -48,6 +48,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT json.a.:Int64")
         self.validate_identity("SELECT json.a.:JSON.b.:Int64")
         self.validate_identity('SELECT json.a.b.:"Array(JSON)".c')
+        self.validate_identity('SELECT json.a.b.:"Array(Array(JSON))".c')
         self.validate_identity("SELECT json.a.b[].c")
         self.validate_identity("SELECT json.a.b[][].c")
         self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")

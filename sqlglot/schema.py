@@ -147,7 +147,7 @@ class Schema(abc.ABC):
         return True
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class AbstractMappingSchema:
     def __init__(
         self,

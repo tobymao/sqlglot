@@ -42,7 +42,7 @@ POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+@mypyc_attr(allow_interpreted_subclasses=True, native_class=True)
 @trait
 class Expr:
     """
@@ -481,7 +481,7 @@ class Expr:
         raise NotImplementedError
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+@mypyc_attr(allow_interpreted_subclasses=True, native_class=True)
 class Expression(Expr):
     __slots__ = (
         "args",

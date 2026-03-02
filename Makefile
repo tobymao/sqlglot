@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
 
 ifdef UV
     PIP := uv pip
@@ -27,6 +27,9 @@ install-dev:
 
 install-devc: clean
 	cd sqlglotc && $(PIP) install -e .
+
+install-devc-release: clean
+	MYPYC_OPT=3 $(MAKE) install-devc
 
 install-pre-commit:
 	pre-commit install

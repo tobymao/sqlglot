@@ -1019,7 +1019,7 @@ class SetOperation(Expression, Query):
         expr: Expr = self
         while isinstance(expr, SetOperation):
             expr = expr.this.unnest()
-        return getattr(expr, "named_selects", [])
+        return _named_selects(expr)
 
     @property
     def is_star(self) -> bool:

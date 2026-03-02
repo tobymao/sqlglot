@@ -1881,6 +1881,7 @@ class DuckDB(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_KEY_VALUE_PAIR_SEP = ","
         IGNORE_NULLS_IN_FUNC = True
+        IGNORE_NULLS_BEFORE_ORDER = False
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
         MULTI_ARG_DISTINCT = False
@@ -3766,7 +3767,7 @@ class DuckDB(Dialect):
             if isinstance(this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
                 # DuckDB should render IGNORE NULLS only for the general-purpose
                 # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
-                return self._ignore_nulls_in_func(expression, "IGNORE NULLS")
+                return super().ignorenulls_sql(expression)
 
             if isinstance(this, exp.First):
                 this = exp.AnyValue(this=this.this)
@@ -3780,7 +3781,7 @@ class DuckDB(Dialect):
             if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):
                 # DuckDB should render RESPECT NULLS only for the general-purpose
                 # window functions that accept it e.g. FIRST_VALUE(... RESPECT NULLS) OVER (...)
-                return self._ignore_nulls_in_func(expression, "RESPECT NULLS")
+                return super().respectnulls_sql(expression)
 
             self.unsupported("RESPECT NULLS is not supported for non-window functions.")
             return self.sql(expression, "this")

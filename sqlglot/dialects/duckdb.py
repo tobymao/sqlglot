@@ -1558,6 +1558,9 @@ class DuckDB(Dialect):
     class Parser(parser.Parser):
         MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 
+        STRUCT_TYPE_TOKENS = parser.Parser.STRUCT_TYPE_TOKENS - {TokenType.FILE}
+        TYPE_TOKENS = parser.Parser.TYPE_TOKENS - {TokenType.FILE}
+
         BITWISE = parser.Parser.BITWISE.copy()
         BITWISE.pop(TokenType.CARET)
 

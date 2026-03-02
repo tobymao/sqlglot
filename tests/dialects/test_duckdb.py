@@ -1456,6 +1456,13 @@ class TestDuckDB(Validator):
             "SELECT SUM(x) OVER (ORDER BY x GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t"
         )
 
+        self.validate_identity("SELECT file[:256] FROM GLOB('*')").selects[0].this.assert_is(
+            exp.Column
+        )
+        self.validate_identity("SELECT file[256] FROM GLOB('*')").selects[0].this.assert_is(
+            exp.Column
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

@@ -3760,11 +3760,6 @@ class DuckDB(Dialect):
 
             return super().unnest_sql(expression)
 
-        def _embed_ignore_nulls(
-            self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str
-        ) -> str:
-            return self._ignore_nulls_in_func(expression, text)
-
         def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
             this = expression.this
 

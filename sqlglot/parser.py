@@ -2620,7 +2620,7 @@ class Parser(metaclass=_Parser):
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
 
-    def _parse_sql_security(self) -> t.Optional[exp.SqlSecurityProperty]:
+    def _parse_sql_security(self) -> exp.SqlSecurityProperty:
         return self.expression(
             exp.SqlSecurityProperty,
             this=self._match_texts(self.SECURITY_PROPERTY_KEYWORDS) and self._prev.text.upper(),

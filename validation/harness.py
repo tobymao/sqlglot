@@ -133,21 +133,62 @@ def run_validation(
 
     In baseline mode (no decompiler): gold SQL → SQLGlot parse → generate → execute → compare.
     With decompiler: gold SQL → decompile to pipe SQL → transpile to SQLite → execute → compare.
+
+    Streams results to output files in real-time (appends each record as it completes).
     """
     entries = load_entries(dev_json_path, source)
     if limit > 0:
         entries = entries[:limit]
 
+    total = len(entries)
+    output_dir = os.path.dirname(output_path) or "."
+    os.makedirs(output_dir, exist_ok=True)
+    golden_path = os.path.join(output_dir, "golden_pairs.jsonl")
+
+    # Truncate output files for fresh run
+    open(output_path, "w").close()
+    open(golden_path, "w").close()
+
     records = []
+    status_counts = defaultdict(int)
+
     for i, entry in enumerate(entries):
         record = _validate_entry(entry, db_dir, decompiler, baseline, timeout)
         records.append(record)
+        status_counts[record.status] += 1
 
-        if (i + 1) % 100 == 0:
-            print(f"  Processed {i + 1}/{len(entries)} queries...")
+        # Stream: append to results.jsonl (one JSON object per line)
+        with open(output_path, "a") as f:
+            f.write(json.dumps(_record_to_dict(record), default=str) + "\n")
 
-    # Write output
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        # Stream: append golden pairs
+        if record.status == "match":
+            with open(golden_path, "a") as f:
+                pair = {
+                    "question_id": record.question_id,
+                    "db_id": record.db_id,
+                    "difficulty": record.difficulty,
+                    "gold_sql": record.gold_sql,
+                    "pipe_sql": record.pipe_sql,
+                    "round_tripped_sql": record.round_tripped_sql,
+                    "validation": "MATCH",
+                }
+                f.write(json.dumps(pair, default=str) + "\n")
+
+        # Real-time progress every 50 queries
+        if (i + 1) % 50 == 0 or (i + 1) == total:
+            match = status_counts.get("match", 0)
+            rate = match / (i + 1) * 100
+            print(
+                f"  [{i + 1:5d}/{total}] match={match} ({rate:.1f}%)  "
+                f"mismatch={status_counts.get('mismatch', 0)}  "
+                f"error={status_counts.get('rt_error', 0) + status_counts.get('parse_error', 0)}  "
+                f"gold_err={status_counts.get('gold_error', 0)}",
+                flush=True,
+            )
+
+    # Write final aggregated outputs (summary, mismatches, errors)
+    # Rewrite results.json as proper JSON array for backward compat
     _write_outputs(records, output_path, source)
 
     return records
@@ -249,11 +290,16 @@ def _validate_entry(
 
 
 def _write_outputs(records: list[ValidationRecord], output_path: str, source: str) -> None:
-    """Write all output artifacts (design doc Section 11)."""
+    """Write final output artifacts (design doc Section 11).
+
+    Note: results.json overwrites the streaming JSONL with a proper JSON array.
+    Golden pairs are already streamed during validation; this only writes
+    summary, mismatches, and errors.
+    """
     output_dir = os.path.dirname(output_path) or "."
     os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Full results.json
+    # 1. Full results.json (overwrite streamed JSONL with proper JSON array)
     with open(output_path, "w") as f:
         json.dump([_record_to_dict(r) for r in records], f, indent=2, default=str)
 
@@ -276,23 +322,6 @@ def _write_outputs(records: list[ValidationRecord], output_path: str, source: st
         errors_path = os.path.join(output_dir, "errors.json")
         with open(errors_path, "w") as f:
             json.dump([_record_to_dict(r) for r in errors], f, indent=2, default=str)
-
-    # 5. Golden pairs (MATCH records as training data)
-    matches = [r for r in records if r.status == "match"]
-    if matches:
-        golden_path = os.path.join(output_dir, "golden_pairs.jsonl")
-        with open(golden_path, "w") as f:
-            for r in matches:
-                pair = {
-                    "question_id": r.question_id,
-                    "db_id": r.db_id,
-                    "difficulty": r.difficulty,
-                    "gold_sql": r.gold_sql,
-                    "pipe_sql": r.pipe_sql,
-                    "round_tripped_sql": r.round_tripped_sql,
-                    "validation": "MATCH",
-                }
-                f.write(json.dumps(pair, default=str) + "\n")
 
 
 def _record_to_dict(record: ValidationRecord) -> dict:

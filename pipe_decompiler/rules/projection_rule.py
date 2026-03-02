@@ -98,10 +98,11 @@ def emit(
         for expr in select_exprs:
             if has_window and _has_window_func(expr):
                 # Window column: reference by alias after EXTEND
+                # Strip table qualifiers (CTE context after EXTEND)
                 if isinstance(expr, exp.Alias):
                     parts.append(expr.alias)
                 else:
-                    parts.append(expr.sql(dialect=dialect))
+                    parts.append(_strip_table_qualifier_ast(expr, dialect=dialect))
             else:
                 parts.append(expr.sql(dialect=dialect))
 

@@ -362,6 +362,7 @@ class Tokenizer(_TokenizerBase):
         "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
+        "SQL SECURITY": TokenType.SQL_SECURITY,
         "START WITH": TokenType.START_WITH,
         "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
         "TABLE": TokenType.TABLE,

@@ -1340,7 +1340,6 @@ class ClickHouse(Dialect):
             exp.DefinerProperty: exp.Properties.Location.POST_SCHEMA,
             exp.OnCluster: exp.Properties.Location.POST_NAME,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
             exp.ToTableProperty: exp.Properties.Location.POST_NAME,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

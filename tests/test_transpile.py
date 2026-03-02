@@ -964,6 +964,20 @@ ORDER BY
             "SELECT\n  '1\n2'",
         )
 
+    def test_sql_security(self):
+        sqlglot_sql = "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1"
+
+        for dialect, sql in [
+            ("clickhouse", "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1"),
+            ("trino", "CREATE VIEW v SECURITY INVOKER AS SELECT 1"),
+            ("presto", "CREATE VIEW v SECURITY INVOKER AS SELECT 1"),
+            ("starrocks", "CREATE VIEW v SECURITY INVOKER AS SELECT 1"),
+            ("mysql", "CREATE SQL SECURITY INVOKER VIEW v AS SELECT 1"),
+        ]:
+            with self.subTest(dialect):
+                self.validate(sql, read=dialect, identity=False, target=sqlglot_sql)
+                self.validate(sql, write=dialect, identity=False, target=sql)
+
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):
         invalid = "x + 1. ("

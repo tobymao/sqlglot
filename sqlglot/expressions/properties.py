@@ -383,10 +383,6 @@ class SampleProperty(Property):
     arg_types = {"this": True}
 
 
-class SecurityProperty(Property):
-    arg_types = {"this": True}
-
-
 class SchemaCommentProperty(Property):
     arg_types = {"this": True}
 

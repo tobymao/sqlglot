@@ -1452,7 +1452,9 @@ class TestDuckDB(Validator):
             exp.Localtimestamp
         )
 
-        self.validate_identity("SELECT SUM(x) OVER (ORDER BY x GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t")
+        self.validate_identity(
+            "SELECT SUM(x) OVER (ORDER BY x GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t"
+        )
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

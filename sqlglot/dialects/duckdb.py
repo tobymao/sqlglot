@@ -3707,6 +3707,27 @@ class DuckDB(Dialect):
             )
             return self.sql(result)
 
+        def mappick_sql(self, expression: exp.MapPick) -> str:
+            map_arg = expression.this
+            keys_to_pick = expression.expressions
+
+            x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
+
+            if len(keys_to_pick) == 1 and isinstance(keys_to_pick[0], exp.Array):
+                condition = exp.ArrayContains(this=keys_to_pick[0], expression=x_dot_key)
+            else:
+                condition = exp.In(this=x_dot_key, expressions=keys_to_pick)
+
+            lambda_expr = exp.Lambda(
+                this=condition,
+                expressions=[exp.to_identifier("x")],
+            )
+            result = exp.func(
+                "MAP_FROM_ENTRIES",
+                exp.ArrayFilter(this=exp.func("MAP_ENTRIES", map_arg), expression=lambda_expr),
+            )
+            return self.sql(result)
+
         def mapsize_sql(self, expression: exp.MapSize) -> str:
             return self.func("CARDINALITY", expression.this)
 

@@ -2562,3 +2562,32 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT id, CARDINALITY(attrs) AS attr_count FROM demo_maps",
             },
         )
+
+    def test_map_pick(self):
+        self.validate_all(
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> x.key IN ('a', 'b'))) AS new_map",
+            read={
+                "snowflake": "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b') AS new_map",
+            },
+            write={
+                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> x.key IN ('a', 'b'))) AS new_map",
+            },
+        )
+        self.validate_all(
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> ARRAY_CONTAINS(['a', 'b'], x.key))) AS new_map",
+            read={
+                "snowflake": "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),['a','b']) AS new_map",
+            },
+            write={
+                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> ARRAY_CONTAINS(['a', 'b'], x.key))) AS new_map",
+            },
+        )
+        self.validate_all(
+            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> x.key IN ('key1', 'key2'))) AS attrs_subset FROM demo_maps",
+            read={
+                "snowflake": "SELECT id, MAP_PICK(attrs, 'key1', 'key2') AS attrs_subset FROM demo_maps",
+            },
+            write={
+                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> x.key IN ('key1', 'key2'))) AS attrs_subset FROM demo_maps",
+            },
+        )

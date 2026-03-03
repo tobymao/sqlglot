@@ -54,6 +54,20 @@ DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY
 
 MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
+WINDOW_FUNCTIONS_WITH_NULL_ORDERING = [
+    exp.FirstValue,
+    exp.LastValue,
+    exp.NthValue,
+    exp.Lag,
+    exp.Lead,
+    exp.CumeDist,
+    exp.DenseRank,
+    exp.Ntile,
+    exp.PercentRank,
+    exp.Rank,
+    exp.RowNumber,
+]
+
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
@@ -1546,3 +1560,11 @@ class BigQuery(Dialect):
                     return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def exp_supports_null_ordering(self, expression: exp.Expression) -> bool:
+            if self.NULL_ORDERING_SUPPORTED:
+                return True
+
+            if isinstance(expression, tuple(WINDOW_FUNCTIONS_WITH_NULL_ORDERING)):
+                return True
+            return False

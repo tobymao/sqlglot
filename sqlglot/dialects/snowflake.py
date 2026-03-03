@@ -52,6 +52,14 @@ TIMESTAMP_TYPES = {
     exp.DType.TIMESTAMPTZ: "TO_TIMESTAMP_TZ",
 }
 
+RANKING_WINDOW_FUNCTIONS_WITH_FRAME = [
+    exp.FirstValue,
+    exp.LastValue,
+    exp.NthValue,
+    # Technically DenseRank and Rank also support window frame, but when it comes to transpilation, they behave differently in BigQuery and DuckDB.
+    # We should handle them on a more granular level when we need to support their transpilation
+]
+
 
 def _build_strtok(args: t.List) -> exp.SplitPart:
     # Add default delimiter (space) if missing - per Snowflake docs
@@ -1563,6 +1571,20 @@ class Snowflake(Dialect):
 
             result = super()._parse_window(this, alias)
 
+            # Set default window frame for ranking functions if not present
+            if (
+                isinstance(result, exp.Window)
+                and isinstance(this, tuple(RANKING_WINDOW_FUNCTIONS_WITH_FRAME))
+                and not result.args.get("spec")
+            ):
+                frame = exp.WindowSpec(
+                    kind="ROWS",
+                    start="UNBOUNDED",
+                    start_side="PRECEDING",
+                    end="UNBOUNDED",
+                    end_side="FOLLOWING",
+                )
+                result.set("spec", frame)
             return result
 
     class Tokenizer(tokens.Tokenizer):
@@ -2340,3 +2362,32 @@ class Snowflake(Dialect):
                 gen = exp.Rand()
 
             return self.func("UNIFORM", expression.this, expression.expression, gen)
+
+        def window_sql(self, expression: exp.Window) -> str:
+            spec = expression.args.get("spec")
+            if spec:
+                # omit the default window from window ranknig functions
+                kind = spec.args.get("kind")
+                start_side = spec.args.get("start_side")
+                start = spec.args.get("start")
+                end_side = spec.args.get("end_side")
+                end = spec.args.get("end")
+                if (
+                    kind
+                    and isinstance(kind, str)
+                    and kind.upper() == "ROWS"
+                    and start
+                    and isinstance(start, str)
+                    and start.upper() == "UNBOUNDED"
+                    and start_side
+                    and isinstance(start_side, str)
+                    and start_side.upper() == "PRECEDING"
+                    and end
+                    and isinstance(end, str)
+                    and end.upper() == "UNBOUNDED"
+                    and end_side
+                    and isinstance(end_side, str)
+                    and end_side.upper() == "FOLLOWING"
+                ):
+                    expression.set("spec", None)
+            return super().window_sql(expression)

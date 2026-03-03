@@ -2816,7 +2816,11 @@ class Generator(metaclass=_Generator):
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
             window = expression.find_ancestor(exp.Window, exp.Select)
-            if isinstance(window, exp.Window) and window.args.get("spec"):
+            if (
+                isinstance(window, exp.Window)
+                and window.args.get("spec")
+                and not self.exp_supports_null_ordering(window.this)
+            ):
                 self.unsupported(
                     f"'{nulls_sort_change.strip()}' translation not supported in window functions"
                 )
@@ -5714,3 +5718,8 @@ class Generator(metaclass=_Generator):
     def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
         props = self.expressions(expression, sep=" ")
         return f"MODIFY {props}"
+
+    def exp_supports_null_ordering(self, expression: exp.Expression) -> bool:
+        if self.NULL_ORDERING_SUPPORTED:
+            return True
+        return False

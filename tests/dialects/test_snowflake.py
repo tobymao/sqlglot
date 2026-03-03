@@ -6256,7 +6256,7 @@ FROM SEMANTIC_VIEW(
             "ARRAY_SLICE([1, 2, 3, 4, 5], 1, 3)",
             write={
                 "snowflake": "ARRAY_SLICE([1, 2, 3, 4, 5], 1, 3)",
-                "duckdb": "ARRAY_SLICE([1, 2, 3, 4, 5], 2, 3)",
+                "duckdb": "ARRAY_SLICE([1, 2, 3, 4, 5], CASE WHEN 1 >= 0 THEN 1 + 1 ELSE 1 END, CASE WHEN 3 < 0 THEN 3 - 1 ELSE 3 END)",
             },
         )
 
@@ -6264,7 +6264,7 @@ FROM SEMANTIC_VIEW(
             "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -3)",
             write={
                 "snowflake": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -3)",
-                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], -5, -4)",
+                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], CASE WHEN -5 >= 0 THEN -5 + 1 ELSE -5 END, CASE WHEN -3 < 0 THEN -3 - 1 ELSE -3 END)",
             },
         )
 
@@ -6272,29 +6272,26 @@ FROM SEMANTIC_VIEW(
             "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 0, -2)",
             write={
                 "snowflake": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 0, -2)",
-                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], 1, -3)",
+                "duckdb": "ARRAY_SLICE([0, 1, 2, 3, 4, 5, 6], CASE WHEN 0 >= 0 THEN 0 + 1 ELSE 0 END, CASE WHEN -2 < 0 THEN -2 - 1 ELSE -2 END)",
             },
         )
 
-        # Dynamic start column: CASE WHEN col >= 0 THEN col + 1 ELSE col END
         self.validate_all(
             "ARRAY_SLICE(arr, col, 3)",
             write={
                 "snowflake": "ARRAY_SLICE(arr, col, 3)",
-                "duckdb": "ARRAY_SLICE(arr, CASE WHEN col >= 0 THEN col + 1 ELSE col END, 3)",
+                "duckdb": "ARRAY_SLICE(arr, CASE WHEN col >= 0 THEN col + 1 ELSE col END, CASE WHEN 3 < 0 THEN 3 - 1 ELSE 3 END)",
             },
         )
 
-        # Dynamic end column: CASE WHEN col < 0 THEN col - 1 ELSE col END
         self.validate_all(
             "ARRAY_SLICE(arr, 1, col)",
             write={
                 "snowflake": "ARRAY_SLICE(arr, 1, col)",
-                "duckdb": "ARRAY_SLICE(arr, 2, CASE WHEN col < 0 THEN col - 1 ELSE col END)",
+                "duckdb": "ARRAY_SLICE(arr, CASE WHEN 1 >= 0 THEN 1 + 1 ELSE 1 END, CASE WHEN col < 0 THEN col - 1 ELSE col END)",
             },
         )
 
-        # Both dynamic
         self.validate_all(
             "ARRAY_SLICE(arr, s, e)",
             write={

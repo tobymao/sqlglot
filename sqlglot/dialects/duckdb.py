@@ -3501,40 +3501,34 @@ class DuckDB(Dialect):
             )
 
         def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
+            """
+            Transpiles Snowflake's ARRAY_SLICE (0-indexed, exclusive end) to DuckDB's
+            ARRAY_SLICE (1-indexed, inclusive end) by wrapping start and end in CASE
+            expressions that adjust the index at query time:
+              - start: CASE WHEN start >= 0 THEN start + 1 ELSE start END
+              - end:   CASE WHEN end < 0 THEN end - 1 ELSE end END
+            """
             start, end = expression.args.get("start"), expression.args.get("end")
 
             if expression.args.get("zero_based"):
-                # Snowflake: 0-indexed from, exclusive upper bound → DuckDB: 1-indexed, inclusive
-                # positive start: +1 (0-indexed → 1-indexed); negative start: no change
                 if start is not None:
-                    if start.is_int:
-                        start_val = start.to_py()
-                        if start_val >= 0:
-                            start = exp.Literal.number(start_val + 1)
-                    else:
-                        start = (
-                            exp.case()
-                            .when(
-                                exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
-                                exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
-                            )
-                            .else_(start)
+                    start = (
+                        exp.case()
+                        .when(
+                            exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
+                            exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
                         )
-                # negative end: -1 (exclusive → inclusive); non-negative end: no change
+                        .else_(start)
+                    )
                 if end is not None:
-                    if end.is_int:
-                        end_val = end.to_py()
-                        if end_val < 0:
-                            end = exp.Literal.number(end_val - 1)
-                    else:
-                        end = (
-                            exp.case()
-                            .when(
-                                exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
-                                exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
-                            )
-                            .else_(end)
+                    end = (
+                        exp.case()
+                        .when(
+                            exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
+                            exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
                         )
+                        .else_(end)
+                    )
 
             return self.func(
                 "ARRAY_SLICE", expression.this, start, end, expression.args.get("step")

@@ -820,7 +820,7 @@ class ClickHouse(Dialect):
 
         def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
             brakcet_json_type = None
-            
+
             while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
                 brakcet_json_type = exp.DataType(
                     this=exp.DType.ARRAY,

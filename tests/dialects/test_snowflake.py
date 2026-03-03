@@ -6251,6 +6251,15 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_array_slice(self):
+        self.validate_all(
+            "ARRAY_SLICE(arr, s, e)",
+            write={
+                "snowflake": "ARRAY_SLICE(arr, s, e)",
+                "duckdb": "ARRAY_SLICE(arr, CASE WHEN s >= 0 THEN s + 1 ELSE s END, CASE WHEN e < 0 THEN e - 1 ELSE e END)",
+            },
+        )
+
     def test_space(self):
         # Integer literal
         self.validate_all(

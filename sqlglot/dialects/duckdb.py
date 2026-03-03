@@ -3500,6 +3500,40 @@ class DuckDB(Dialect):
                 exp.replace_placeholders(self.ARRAY_EXCEPT_SET_TEMPLATE, arr1=arr1, arr2=arr2)
             )
 
+        def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
+            """
+            Transpiles Snowflake's ARRAY_SLICE (0-indexed, exclusive end) to DuckDB's
+            ARRAY_SLICE (1-indexed, inclusive end) by wrapping start and end in CASE
+            expressions that adjust the index at query time:
+              - start: CASE WHEN start >= 0 THEN start + 1 ELSE start END
+              - end:   CASE WHEN end < 0 THEN end - 1 ELSE end END
+            """
+            start, end = expression.args.get("start"), expression.args.get("end")
+
+            if expression.args.get("zero_based"):
+                if start is not None:
+                    start = (
+                        exp.case()
+                        .when(
+                            exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
+                            exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
+                        )
+                        .else_(start)
+                    )
+                if end is not None:
+                    end = (
+                        exp.case()
+                        .when(
+                            exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
+                            exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
+                        )
+                        .else_(end)
+                    )
+
+            return self.func(
+                "ARRAY_SLICE", expression.this, start, end, expression.args.get("step")
+            )
+
         def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
             args = expression.expressions
 

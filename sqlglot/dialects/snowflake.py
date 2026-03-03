@@ -860,6 +860,12 @@ class Snowflake(Dialect):
                 expression=seq_get(args, 0),
                 zero_based=True,
             ),
+            "ARRAY_SLICE": lambda args: exp.ArraySlice(
+                this=seq_get(args, 0),
+                start=seq_get(args, 1),
+                end=seq_get(args, 2),
+                zero_based=True,
+            ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
             "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),

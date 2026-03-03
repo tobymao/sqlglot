@@ -819,8 +819,17 @@ class ClickHouse(Dialect):
             return self.expression(exp.Placeholder, this=this, kind=kind)
 
         def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
-            if this and self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-                return self._parse_bracket(self.expression(exp.Bracket, this=this))
+            brakcet_json_type = None
+            while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+                brakcet_json_type = exp.DataType(
+                    this=exp.DType.ARRAY,
+                    expressions=[
+                        brakcet_json_type or exp.DataType(this=exp.DType.JSON, nullable=False)
+                    ],
+                    nested=True,
+                )
+            if brakcet_json_type:
+                return self.expression(exp.JSONCast, this=this, to=brakcet_json_type)
 
             l_brace = self._match(TokenType.L_BRACE, advance=False)
             bracket = super()._parse_bracket(this)

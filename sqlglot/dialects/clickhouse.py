@@ -826,7 +826,9 @@ class ClickHouse(Dialect):
                     this=exp.DType.ARRAY,
                     expressions=[
                         brakcet_json_type
-                        or exp.DataType.build(dtype=exp.DType.JSON, dialect=self.dialect)
+                        or exp.DataType.build(
+                            dtype=exp.DType.JSON, dialect=self.dialect, nullable=False
+                        )
                     ],
                     nested=True,
                 )

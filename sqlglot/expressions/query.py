@@ -75,10 +75,10 @@ def _apply_cte_builder(
 
 
 @trait
-class DerivedTable(Expr):
+class Selectable(Expr):
     @property
     def selects(self) -> t.List[Expr]:
-        return self.this.selects if isinstance(self.this, Query) else []
+        raise NotImplementedError("Subclasses must implement selects")
 
     @property
     def named_selects(self) -> t.List[str]:
@@ -91,6 +91,15 @@ def _named_selects(self: t.Any) -> t.List[str]:
 
 
 @trait
+class DerivedTable(Selectable):
+    @property
+    def selects(self) -> t.List[Expr]:
+        # TODO (mypyc): make this self.this
+        this = self.args.get("this")
+        return this.selects if isinstance(this, Query) else []
+
+
+@trait
 class UDTF(DerivedTable):
     @property
     def selects(self) -> t.List[Expr]:
@@ -99,21 +108,13 @@ class UDTF(DerivedTable):
 
 
 @trait
-class Query(Expr):
+class Query(Selectable):
     """Trait for any SELECT/UNION/etc. query expression."""
 
     @property
     def ctes(self) -> t.List[CTE]:
         with_ = self.args.get("with_")
         return with_.expressions if with_ else []
-
-    @property
-    def selects(self) -> t.List[Expr]:
-        raise NotImplementedError("Subclasses must implement selects")
-
-    @property
-    def named_selects(self) -> t.List[str]:
-        raise NotImplementedError("Subclasses must implement named_selects")
 
     def select(
         self: Q,

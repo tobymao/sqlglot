@@ -198,7 +198,7 @@ def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
     return itertools.chain(name_columns, value_columns)
 
 
-def _pop_table_column_aliases(derived_tables: t.Iterable[exp.Selectable]) -> None:
+def _pop_table_column_aliases(derived_tables: t.Iterable[exp.Expr]) -> None:
     """
     Remove table column aliases.
 
@@ -446,8 +446,11 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     if not isinstance(expression, exp.Selectable):
         return
 
+    # TODO (mypyc): rebind to exp.Expr to avoid Selectable trait vtable dispatch for .args
+    expr: exp.Expr = expression
+
     for modifier_key in ("order", "distinct"):
-        modifier = expression.args.get(modifier_key)
+        modifier = expr.args.get(modifier_key)
         if isinstance(modifier, exp.Distinct):
             modifier = modifier.args.get("on")
 
@@ -471,7 +474,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
             original.replace(expanded)
 
-        if expression.args.get("group"):
+        if expr.args.get("group"):
             selects = {s.this: exp.column(s.alias_or_name) for s in expression.selects}
 
             for node in modifier_expressions:
@@ -500,7 +503,8 @@ def _expand_positional_references(
             if alias:
                 new_nodes.append(exp.column(select.args["alias"].copy()))
             else:
-                select = select.this
+                # TODO (mypyc): use a separate variable to avoid reusing `select` (Alias) with a different type
+                select_expr: exp.Expr = select.this
 
                 if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
@@ -514,20 +518,20 @@ def _expand_positional_references(
 
                     ambiguous = any(
                         column.parts[0].name in ambiguous_projections
-                        for column in select.find_all(exp.Column)
+                        for column in select_expr.find_all(exp.Column)
                     )
                 else:
                     ambiguous = False
 
                 if (
-                    isinstance(select, exp.CONSTANTS)
-                    or select.is_number
-                    or select.find(exp.Explode, exp.Unnest)
+                    isinstance(select_expr, exp.CONSTANTS)
+                    or select_expr.is_number
+                    or select_expr.find(exp.Explode, exp.Unnest)
                     or ambiguous
                 ):
                     new_nodes.append(node)
                 else:
-                    new_nodes.append(select.copy())
+                    new_nodes.append(select_expr.copy())
         else:
             new_nodes.append(node)
 
@@ -881,8 +885,9 @@ def _expand_stars(
                     continue
                 if name in using_column_tables and table in using_column_tables[name]:
                     coalesced_columns.add(name)
-                    tables = using_column_tables[name]
-                    coalesce_args = [exp.column(name, table=table) for table in tables]
+                    # TODO (mypyc): use a separate variable to avoid reusing `tables` (list) with dict type
+                    using_tables = using_column_tables[name]
+                    coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
                     new_selections.append(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)

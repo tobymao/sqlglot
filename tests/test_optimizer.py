@@ -180,8 +180,10 @@ class TestOptimizer(unittest.TestCase):
                     )
                 if dialect:
                     func_kwargs["dialect"] = dialect
-                if canonicalize_table_aliases:
-                    func_kwargs["canonicalize_table_aliases"] = canonicalize_table_aliases
+                if canonicalize_table_aliases is not None:
+                    func_kwargs["canonicalize_table_aliases"] = string_to_bool(
+                        canonicalize_table_aliases
+                    )
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -218,7 +220,7 @@ class TestOptimizer(unittest.TestCase):
 
     @patch("sqlglot.generator.logger")
     def test_optimize(self, logger):
-        self.assertEqual(optimizer.optimize("x = 1 + 1", identify=None).sql(), "x = 2")
+        self.assertEqual(optimizer.optimize("x = 1 + 1", identify=False).sql(), "x = 2")
 
         schema = {
             "x": {"a": "INT", "b": "INT"},

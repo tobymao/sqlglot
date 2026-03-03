@@ -10,6 +10,16 @@ here = os.path.dirname(os.path.abspath(__file__))
 sqlglot_src = os.path.join(here, "..", "sqlglot")
 
 
+def _subpkg_files(subpkg, files=None):
+    """List source files from a sqlglot subpackage. Compiles all .py files if `files` is None."""
+    subpkg_dir = os.path.join(sqlglot_src, subpkg)
+    if files is None:
+        files = sorted(
+            f for f in os.listdir(subpkg_dir) if f.endswith(".py") and f != "__init__.py"
+        )
+    return [os.path.join(subpkg, f) for f in files]
+
+
 SOURCE_FILES = [
     "errors.py",
     "helper.py",
@@ -19,12 +29,19 @@ SOURCE_FILES = [
     "time.py",
     "tokenizer_core.py",
     "trie.py",
-    *[
-        os.path.join("expressions", f)
-        for f in sorted(os.listdir(os.path.join(sqlglot_src, "expressions")))
-        if f.endswith(".py") and f != "__init__.py"
-    ],
-    os.path.join("optimizer", "scope.py"),
+    *_subpkg_files("expressions"),
+    *_subpkg_files(
+        "optimizer",
+        [
+            "scope.py",
+            "resolver.py",
+            "isolate_table_selects.py",
+            "normalize_identifiers.py",
+            "qualify.py",
+            "qualify_tables.py",
+            "qualify_columns.py",
+        ],
+    ),
 ]
 
 

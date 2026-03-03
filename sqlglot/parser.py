@@ -5750,8 +5750,9 @@ class Parser(metaclass=_Parser):
                 except TokenError:
                     tokens = None
 
-                if tokens and len(tokens) == 1 and tokens[0].token_type in self.TYPE_TOKENS:
-                    type_token = tokens[0].token_type
+                if tokens and (type_token := tokens[0].token_type) in self.TYPE_TOKENS:
+                    if len(tokens) > 1:
+                        return exp.DataType.build(identifier.name, dialect=self.dialect)
                 elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
                     this = self._parse_user_defined_type(identifier)
                 else:

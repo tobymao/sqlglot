@@ -213,6 +213,17 @@ def _build_split(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
     )
 
 
+def _json_cast_sql(self: ClickHouse.Generator, expression: exp.JSONCast) -> str:
+    this = self.sql(expression, "this")
+    to = expression.to
+    to_sql = self.sql(to)
+
+    if to.expressions:
+        to_sql = self.sql(exp.to_identifier(to_sql))
+
+    return f"{this}.:{to_sql}"
+
+
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
 # uses an extra mode argument to specify the first day of the week
 TIMESTAMP_TRUNC_UNITS = {
@@ -808,6 +819,23 @@ class ClickHouse(Dialect):
             return self.expression(exp.Placeholder, this=this, kind=kind)
 
         def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
+            brakcet_json_type = None
+
+            while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+                brakcet_json_type = exp.DataType(
+                    this=exp.DType.ARRAY,
+                    expressions=[
+                        brakcet_json_type
+                        or exp.DataType.build(
+                            dtype=exp.DType.JSON, dialect=self.dialect, nullable=False
+                        )
+                    ],
+                    nested=True,
+                )
+
+            if brakcet_json_type:
+                return self.expression(exp.JSONCast, this=this, to=brakcet_json_type)
+
             l_brace = self._match(TokenType.L_BRACE, advance=False)
             bracket = super()._parse_bracket(this)
 
@@ -1266,7 +1294,7 @@ class ClickHouse(Dialect):
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
             exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
-            exp.JSONCast: lambda self, e: f"{self.sql(e, 'this')}.:{self.sql(e, 'to')}",
+            exp.JSONCast: _json_cast_sql,
             exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
             exp.JSONPathKey: json_path_key_only_name,

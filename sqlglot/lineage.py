@@ -120,7 +120,10 @@ def lineage(
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")
 
-    if not any(select.alias_or_name == column for select in scope.expression.selects):
+    selectable = scope.expression
+    if not isinstance(selectable, exp.Selectable) or not any(
+        select.alias_or_name == column for select in selectable.selects
+    ):
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
     return to_node(column, scope, dialect, trim_selects=trim_selects)
@@ -138,20 +141,21 @@ def to_node(
 ) -> Node:
     # Find the specific select clause that is the source of the column we want.
     # This can either be a specific, named select or a generic `*` clause.
+    selectable = t.cast(exp.Selectable, scope.expression)
     select = (
-        scope.expression.selects[column]
+        selectable.selects[column]
         if isinstance(column, int)
         else next(
-            (select for select in scope.expression.selects if select.alias_or_name == column),
-            exp.Star() if scope.expression.is_star else scope.expression,
+            (select for select in selectable.selects if select.alias_or_name == column),
+            exp.Star() if selectable.is_star else scope.expression,
         )
     )
 
     if isinstance(scope.expression, exp.Subquery):
-        for source in scope.subquery_scopes:
+        for inner_scope in scope.subquery_scopes:
             return to_node(
                 column,
-                scope=source,
+                scope=inner_scope,
                 dialect=dialect,
                 upstream=upstream,
                 source_name=source_name,
@@ -168,7 +172,7 @@ def to_node(
             else next(
                 (
                     i
-                    for i, select in enumerate(scope.expression.selects)
+                    for i, select in enumerate(selectable.selects)
                     if select.alias_or_name == column or select.is_star
                 ),
                 -1,  # mypy will not allow a None here, but a negative index should never be returned
@@ -196,7 +200,7 @@ def to_node(
         # a version that has only the column we care about.
         #   "x", SELECT x, y FROM foo
         #     => "x", SELECT x FROM foo
-        source = t.cast(exp.Expr, scope.expression.select(select, append=False))
+        source: exp.Expr = scope.expression.select(select, append=False)
     else:
         source = scope.expression
 
@@ -216,8 +220,8 @@ def to_node(
         id(subquery_scope.expression): subquery_scope for subquery_scope in scope.subquery_scopes
     }
 
-    for subquery in find_all_in_scope(select, exp.UNWRAPPED_QUERIES):
-        subquery_scope = subquery_scopes.get(id(subquery))
+    for subquery in find_all_in_scope(select, *exp.UNWRAPPED_QUERIES):
+        subquery_scope: t.Optional[Scope] = subquery_scopes.get(id(subquery))
         if not subquery_scope:
             logger.warning(f"Unknown subquery scope: {subquery.sql(dialect=dialect)}")
             continue
@@ -233,11 +237,10 @@ def to_node(
 
     # if the select is a star add all scope sources as downstreams
     if isinstance(select, exp.Star):
-        for source in scope.sources.values():
-            if isinstance(source, Scope):
-                source = source.expression
+        for src in scope.sources.values():
+            src_expr = src.expression if isinstance(src, Scope) else src
             node.downstream.append(
-                Node(name=select.sql(comments=False), source=source, expression=source)
+                Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
             )
 
     # Find all columns that went into creating this one to list their lineage nodes.
@@ -246,10 +249,10 @@ def to_node(
     # If the source is a UDTF find columns used in the UDTF to generate the table
     if isinstance(source, exp.UDTF):
         source_columns |= set(source.find_all(exp.Column))
-        derived_tables = [
-            source.expression.parent
-            for source in scope.sources.values()
-            if isinstance(source, Scope) and source.is_derived_table
+        derived_tables: t.Sequence[exp.Expr] = [
+            src.expression.parent
+            for src in scope.sources.values()
+            if isinstance(src, Scope) and src.is_derived_table and src.expression.parent
         ]
     else:
         derived_tables = scope.derived_tables
@@ -283,20 +286,20 @@ def to_node(
 
     for c in source_columns:
         table = c.table
-        source = scope.sources.get(table)
+        col_source: t.Optional[exp.Table | Scope] = scope.sources.get(table)
 
-        if isinstance(source, Scope):
+        if isinstance(col_source, Scope):
             reference_node_name = None
-            if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
+            if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
                 reference_node_name = table
-            elif source.scope_type == ScopeType.CTE:
+            elif col_source.scope_type == ScopeType.CTE:
                 selected_node, _ = scope.selected_sources.get(table, (None, None))
                 reference_node_name = selected_node.name if selected_node else None
 
             # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
             to_node(
                 c.name,
-                scope=source,
+                scope=col_source,
                 dialect=dialect,
                 scope_name=table,
                 upstream=node,
@@ -313,15 +316,18 @@ def to_node(
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
                 # pivoted source -- adapt column to be from the implicit pivoted source.
-                downstream_columns.append(exp.column(c.this, table=pivot.parent.alias_or_name))
+                pivot_parent = pivot.parent
+                downstream_columns.append(
+                    exp.column(c.this, table=pivot_parent.alias_or_name if pivot_parent else "")
+                )
 
             for downstream_column in downstream_columns:
                 table = downstream_column.table
-                source = scope.sources.get(table)
-                if isinstance(source, Scope):
+                col_source = scope.sources.get(table)
+                if isinstance(col_source, Scope):
                     to_node(
                         downstream_column.name,
-                        scope=source,
+                        scope=col_source,
                         scope_name=table,
                         dialect=dialect,
                         upstream=node,
@@ -330,12 +336,12 @@ def to_node(
                         trim_selects=trim_selects,
                     )
                 else:
-                    source = source or exp.Placeholder()
+                    col_expr = col_source or exp.Placeholder()
                     node.downstream.append(
                         Node(
                             name=downstream_column.sql(comments=False),
-                            source=source,
-                            expression=source,
+                            source=col_expr,
+                            expression=col_expr,
                         )
                     )
         else:
@@ -343,9 +349,9 @@ def to_node(
             # of the line. At this point, if a source is not found it means this column's lineage
             # is unknown. This can happen if the definition of a source used in a query is not
             # passed into the `sources` map.
-            source = source or exp.Placeholder()
+            col_expr = col_source or exp.Placeholder()
             node.downstream.append(
-                Node(name=c.sql(comments=False), source=source, expression=source)
+                Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
             )
 
     return node

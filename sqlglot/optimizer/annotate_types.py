@@ -305,8 +305,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     expression.left.selects
                 ) == len(expression.right.selects):
                     selects[name] = self._get_setop_column_types(expression)
-                else:
-                    selects[name] = {s.alias_or_name: s.type for s in expression.selects}
+                elif isinstance(expression, exp.Selectable):
+                    selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
             self._scope_selects[scope] = selects
 
@@ -389,7 +389,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
             if scope and isinstance(expr, exp.Column) and expr.table:
                 source = None
-                source_scope = scope
+                source_scope: t.Optional[Scope] = scope
                 while source_scope and not source:
                     source = source_scope.sources.get(expr.table)
                     if not source:
@@ -397,7 +397,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
                 if isinstance(source, exp.Table):
                     self._set_type(expr, self.schema.get_column_type(source, expr))
-                elif source:
+                elif source and source_scope:
                     col_type = (
                         self._get_scope_selects(source_scope).get(expr.table, {}).get(expr.name)
                     )

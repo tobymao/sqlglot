@@ -690,7 +690,7 @@ def find_tables(expression: Expr) -> t.Set[Table]:
         table
         for scope in traverse_scope(expression)
         for table in scope.tables
-        if table.name and table.name not in scope.cte_sources
+        if isinstance(table, Table) and table.name and table.name not in scope.cte_sources
     }
 
 

@@ -6,14 +6,14 @@ import typing as t
 
 from sqlglot.helper import trait
 from sqlglot.expressions.core import Expression, Expr, Func
-from sqlglot.expressions.query import Query
+from sqlglot.expressions.query import Query, Selectable
 
 if t.TYPE_CHECKING:
     from sqlglot.expressions.query import CTE
 
 
 @trait
-class DDL(Expr):
+class DDL(Selectable):
     @property
     def ctes(self) -> t.List[CTE]:
         """Returns a list of all the CTEs attached to this statement."""
@@ -23,7 +23,9 @@ class DDL(Expr):
     @property
     def selects(self) -> t.List[Expr]:
         """If this statement contains a query (e.g. a CTAS), this returns the query's projections."""
-        return self.expression.selects if isinstance(self.expression, Query) else []
+        # TODO (mypyc): make this self.expression
+        expression = self.args.get("expression")
+        return expression.selects if isinstance(expression, Query) else []
 
     @property
     def named_selects(self) -> t.List[str]:
@@ -31,7 +33,9 @@ class DDL(Expr):
         If this statement contains a query (e.g. a CTAS), this returns the output
         names of the query's projections.
         """
-        return self.expression.named_selects if isinstance(self.expression, Query) else []
+        # TODO (mypyc): make this self.expression
+        expression = self.args.get("expression")
+        return expression.named_selects if isinstance(expression, Query) else []
 
 
 class Create(Expression, DDL):

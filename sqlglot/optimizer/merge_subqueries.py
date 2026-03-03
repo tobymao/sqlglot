@@ -87,10 +87,14 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
         from_or_join = table.find_ancestor(exp.From, exp.Join)
+        if not isinstance(from_or_join, (exp.From, exp.Join)):
+            continue
         if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
             alias = table.alias_or_name
             _rename_inner_sources(outer_scope, inner_scope, alias)
-            _merge_from(outer_scope, inner_scope, table, alias)
+            _merge_from(
+                outer_scope, inner_scope, t.cast(t.Union[exp.Subquery, exp.Table], table), alias
+            )
             _merge_expressions(outer_scope, inner_scope, alias)
             _merge_order(outer_scope, inner_scope)
             _merge_joins(outer_scope, inner_scope, from_or_join)
@@ -105,8 +109,12 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
+            if not isinstance(from_or_join, (exp.From, exp.Join)):
+                continue
             alias = subquery.alias_or_name
             inner_scope = outer_scope.sources[alias]
+            if not isinstance(inner_scope, Scope):
+                continue
             if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
@@ -387,7 +395,7 @@ def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
             from_or_join.set("on", from_or_join.args.get("on"))
             return
 
-    expression.where(where.this, copy=False)
+    t.cast(exp.Select, expression).where(where.this, copy=False)
 
 
 def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
@@ -434,7 +442,11 @@ def _pop_cte(inner_scope: Scope) -> None:
         inner_scope (sqlglot.optimizer.scope.Scope)
     """
     cte = inner_scope.expression.parent
+    if not cte:
+        return
     with_ = cte.parent
+    if not with_:
+        return
     if len(with_.expressions) == 1:
         with_.pop()
     else:

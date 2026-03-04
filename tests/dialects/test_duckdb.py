@@ -2565,7 +2565,10 @@ class TestDuckDB(Validator):
 
     def test_map_pick(self):
         # Test with multiple keys
-        ast = parse_one("SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b') AS new_map", read="snowflake")
+        ast = parse_one(
+            "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b') AS new_map",
+            read="snowflake",
+        )
         annotated = annotate_types(ast, dialect="snowflake")
         self.assertEqual(
             annotated.sql("duckdb"),
@@ -2573,7 +2576,10 @@ class TestDuckDB(Validator):
         )
 
         # Test with array literal
-        ast = parse_one("SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),['a','b']) AS new_map", read="snowflake")
+        ast = parse_one(
+            "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),['a','b']) AS new_map",
+            read="snowflake",
+        )
         annotated = annotate_types(ast, dialect="snowflake")
         self.assertEqual(
             annotated.sql("duckdb"),
@@ -2581,7 +2587,10 @@ class TestDuckDB(Validator):
         )
 
         # Test with column reference
-        ast = parse_one("SELECT id, MAP_PICK(attrs, 'key1', 'key2') AS attrs_subset FROM demo_maps", read="snowflake")
+        ast = parse_one(
+            "SELECT id, MAP_PICK(attrs, 'key1', 'key2') AS attrs_subset FROM demo_maps",
+            read="snowflake",
+        )
         annotated = annotate_types(ast, dialect="snowflake")
         self.assertEqual(
             annotated.sql("duckdb"),
@@ -2599,5 +2608,5 @@ class TestDuckDB(Validator):
         annotated = annotate_types(qualify.qualify(ast, schema=schema), schema=schema)
         self.assertEqual(
             annotated.sql("duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(\"my_table\".\"my_map\"), x -> ARRAY_CONTAINS(\"my_table\".\"keys_array\", x.key))) AS \"_col_0\" FROM \"my_table\" AS \"my_table\"",
+            'SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES("my_table"."my_map"), x -> ARRAY_CONTAINS("my_table"."keys_array", x.key))) AS "_col_0" FROM "my_table" AS "my_table"',
         )

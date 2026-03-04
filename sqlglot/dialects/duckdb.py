@@ -3713,18 +3713,20 @@ class DuckDB(Dialect):
 
             x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
 
-            # Use ARRAY_CONTAINS if single argument is an array (literal or typed)
-            if (
-                len(keys_to_pick) == 1
-                and (isinstance(keys_to_pick[0], exp.Array) or keys_to_pick[0].is_type(exp.DType.ARRAY))
-            ):
-                condition = exp.func("ARRAY_CONTAINS", keys_to_pick[0], x_dot_key)
+            if len(keys_to_pick) == 1 and keys_to_pick[0].is_type(exp.DType.ARRAY):
+                lambda_expr = exp.Lambda(
+                    this=exp.func("ARRAY_CONTAINS", keys_to_pick[0], x_dot_key),
+                    expressions=[exp.to_identifier("x")],
+                )
             else:
-                condition = exp.In(this=x_dot_key, expressions=keys_to_pick)
+                lambda_expr = exp.Lambda(
+                    this=exp.In(this=x_dot_key, expressions=keys_to_pick),
+                    expressions=[exp.to_identifier("x")],
+                )
 
             result = exp.func(
                 "MAP_FROM_ENTRIES",
-                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), exp.Lambda(this=condition, expressions=[exp.to_identifier("x")])),
+                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), lambda_expr),
             )
             return self.sql(result)
 

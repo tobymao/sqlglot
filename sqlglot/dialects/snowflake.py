@@ -2365,33 +2365,20 @@ class Snowflake(Dialect):
 
         def window_sql(self, expression: exp.Window) -> str:
             spec = expression.args.get("spec")
-            if isinstance(expression.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME) or (
-                isinstance(expression.this, (exp.RespectNulls, exp.IgnoreNulls))
-                and isinstance(expression.this.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+            this = expression.this
+
+            if isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME) or (
+                isinstance(this, (exp.RespectNulls, exp.IgnoreNulls))
+                and isinstance(this.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
             ):
                 if spec:
                     # omit the default window from window ranknig functions
-                    kind = spec.args.get("kind")
-                    start_side = spec.args.get("start_side")
-                    start = spec.args.get("start")
-                    end_side = spec.args.get("end_side")
-                    end = spec.args.get("end")
                     if (
-                        kind
-                        and isinstance(kind, str)
-                        and kind.upper() == "ROWS"
-                        and start
-                        and isinstance(start, str)
-                        and start.upper() == "UNBOUNDED"
-                        and start_side
-                        and isinstance(start_side, str)
-                        and start_side.upper() == "PRECEDING"
-                        and end
-                        and isinstance(end, str)
-                        and end.upper() == "UNBOUNDED"
-                        and end_side
-                        and isinstance(end_side, str)
-                        and end_side.upper() == "FOLLOWING"
+                        spec.text("kind").upper() == "ROWS"
+                        and spec.text("start").upper() == "UNBOUNDED"
+                        and spec.text("start_side").upper() == "PRECEDING"
+                        and spec.text("end").upper() == "UNBOUNDED"
+                        and spec.text("end_side").upper() == "FOLLOWING"
                     ):
                         expression.set("spec", None)
             return super().window_sql(expression)

@@ -3724,7 +3724,6 @@ class DuckDB(Dialect):
                 )
 
             else:
-                print('else ')
                 lambda_expr = exp.Lambda(
                     this=exp.In(this=x_dot_key, expressions=keys_to_pick),
                     expressions=[exp.to_identifier("x")],

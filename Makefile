@@ -24,6 +24,18 @@ install:
 install-dev:
 	$(PIP) install -e ".[dev]"
 	git submodule update --init 2>/dev/null || true
+	git config --local submodule.recurse true 2>/dev/null || true
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo ""; \
+		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
+		printf "Install it via brew? [y/N] "; \
+		read answer; \
+		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+			brew install gh; \
+		else \
+			echo "Skipping. You can install it later: https://cli.github.com/"; \
+		fi; \
+	fi
 
 install-devc: clean
 	cd sqlglotc && $(PIP) install -e .

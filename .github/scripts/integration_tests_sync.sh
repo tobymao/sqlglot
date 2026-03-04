@@ -87,6 +87,10 @@ case "${1:-}" in
     ;;
 
   merge)
+    # Sync submodule to the parent's pointer
+    git submodule update --init 2>/dev/null || true
+    ensure_branch
+
     cd "$SUBMODULE_DIR"
     BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD")
     [ "$BRANCH" = "HEAD" ] && exit 0

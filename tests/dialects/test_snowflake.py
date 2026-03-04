@@ -6056,6 +6056,20 @@ FROM SEMANTIC_VIEW(
         )
 
     def test_generator(self):
+        self.validate_identity("SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 10))")
+        self.validate_identity("SELECT 1 FROM TABLE(GENERATOR(TIMELIMIT => 5))")
+        self.validate_identity("SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 10, TIMELIMIT => 5))")
+
+        # Positional args are mapped to ROWCOUNT, TIMELIMIT in order
+        self.validate_identity(
+            "SELECT 1 FROM TABLE(GENERATOR(10))",
+            "SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 10))",
+        )
+        self.validate_identity(
+            "SELECT 1 FROM TABLE(GENERATOR(10, 5))",
+            "SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 10, TIMELIMIT => 5))",
+        )
+
         # Basic ROWCOUNT transpilation
         self.validate_all(
             "SELECT 1 FROM TABLE(GENERATOR(ROWCOUNT => 5))",

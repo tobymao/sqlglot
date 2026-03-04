@@ -652,17 +652,21 @@ def _build_generator(args: t.List) -> exp.Generator:
     """
     Build Generator expression, unwrapping Snowflake's named parameters.
 
-    Maps ROWCOUNT => rowcount, TIMELIMIT => time_limit.
+    Maps ROWCOUNT => rowcount, TIMELIMIT => timelimit.
     """
-    kwarg_map = {"ROWCOUNT": "rowcount", "TIMELIMIT": "time_limit"}
+    kwarg_map = {"ROWCOUNT": "rowcount", "TIMELIMIT": "timelimit"}
     gen_args = {}
 
-    for arg in args:
+    positional_keys = ("rowcount", "timelimit")
+
+    for i, arg in enumerate(args):
         if isinstance(arg, exp.Kwarg):
             key = arg.this.name.upper()
             gen_key = kwarg_map.get(key)
             if gen_key:
                 gen_args[gen_key] = arg.expression
+        elif i < len(positional_keys):
+            gen_args[positional_keys[i]] = arg
 
     return exp.Generator(**gen_args)
 
@@ -2014,12 +2018,12 @@ class Snowflake(Dialect):
         def generator_sql(self, expression: exp.Generator) -> str:
             args = []
             rowcount = expression.args.get("rowcount")
-            time_limit = expression.args.get("time_limit")
+            timelimit = expression.args.get("timelimit")
 
             if rowcount:
                 args.append(exp.Kwarg(this=exp.var("ROWCOUNT"), expression=rowcount))
-            if time_limit:
-                args.append(exp.Kwarg(this=exp.var("TIMELIMIT"), expression=time_limit))
+            if timelimit:
+                args.append(exp.Kwarg(this=exp.var("TIMELIMIT"), expression=timelimit))
 
             return self.func("GENERATOR", *args)
 

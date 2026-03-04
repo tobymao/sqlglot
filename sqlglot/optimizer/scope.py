@@ -163,7 +163,7 @@ class Scope:
         self._semi_anti_join_tables = set()
         self._column_index = set()
 
-        for node in self.walk(bfs=False):
+        for node in self.walk():
             if node is self.expression:
                 continue
 
@@ -201,16 +201,14 @@ class Scope:
         if not self._collected:
             self._collect()
 
-    def walk(
-        self, bfs: bool = True, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None
-    ) -> t.Iterator[exp.Expr]:
-        return walk_in_scope(self.expression, bfs=bfs, prune=None)
+    def walk(self, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None) -> t.Iterator[exp.Expr]:
+        return walk_in_scope(self.expression, prune=prune)
 
-    def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
-        return find_in_scope(self.expression, *expression_types, bfs=bfs)
+    def find(self, *expression_types: t.Type[E]) -> t.Optional[E]:
+        return find_in_scope(self.expression, *expression_types)
 
-    def find_all(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Iterator[E]:
-        return find_all_in_scope(self.expression, *expression_types, bfs=bfs)
+    def find_all(self, *expression_types: t.Type[E]) -> t.Iterator[E]:
+        return find_all_in_scope(self.expression, *expression_types)
 
     def replace(self, old: exp.Expr, new: exp.Expr) -> None:
         """
@@ -912,58 +910,55 @@ def _traverse_udtfs(scope: Scope) -> t.Iterator[Scope]:
 
 def walk_in_scope(
     expression: exp.Expr,
-    bfs: bool = True,
     prune: t.Optional[t.Callable[[exp.Expr], bool]] = None,
 ) -> t.Iterator[exp.Expr]:
     """
     Returns a generator object which visits all nodes in the syntrax tree, stopping at
-    nodes that start child scopes.
+    nodes that start child scopes. This does a custom DFS traversal rather than using
+    expression.walk() because the nested generators aren't optimized in mypyc.
 
     Args:
-        expression (exp.Expr):
-        bfs (bool): if set to True the BFS traversal order will be applied,
-            otherwise the DFS traversal will be used instead.
-        prune ((node, parent, arg_key) -> bool): callable that returns True if
+        expression:
+        prune: callable that returns True if
             the generator should stop traversing this branch of the tree.
 
     Yields:
-        tuple[exp.Expr, Optional[exp.Expr], str]: node, parent, arg key
+        exp.Expr: each node in scope
     """
-    # We'll use this variable to pass state into the dfs generator.
-    # Whenever we set it to True, we exclude a subtree from traversal.
-    crossed_scope_boundary = False
+    stack: t.List[exp.Expr] = [expression]
 
-    for node in expression.walk(
-        bfs=bfs, prune=lambda n: bool(crossed_scope_boundary or (prune and prune(n)))
-    ):
-        crossed_scope_boundary = False
+    while stack:
+        node = stack.pop()
 
         yield node
 
-        if node is expression:
-            continue
-
-        node_type = type(node)
-        parent_type = type(node.parent)
-        if (
-            node_type is exp.CTE
-            or (parent_type in (exp.From, exp.Join) and _is_derived_table(node))
+        if node is not expression and (
+            isinstance(node, exp.CTE)
+            or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
             or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
-            crossed_scope_boundary = True
-
-            if node_type is exp.Subquery or isinstance(node, exp.UDTF):
-                # The following args are not actually in the inner scope, so we should visit them
+            if isinstance(node, (exp.Subquery, exp.UDTF)):
                 for key in ("joins", "laterals", "pivots"):
                     for arg in node.args.get(key) or []:
-                        yield from walk_in_scope(arg, bfs=bfs)
+                        yield from walk_in_scope(arg)
+            continue
+
+        if prune and prune(node):
+            continue
+
+        for vs in reversed(node.args.values()):
+            if isinstance(vs, list):
+                for v in reversed(vs):
+                    if isinstance(v, exp.Expr):
+                        stack.append(v)
+            elif isinstance(vs, exp.Expr):
+                stack.append(vs)
 
 
 def find_all_in_scope(
     expression: exp.Expr,
     *expression_types: t.Type[E],
-    bfs: bool = True,
 ) -> t.Iterator[E]:
     """
     Returns a generator object which visits all nodes in this scope and only yields those that
@@ -974,12 +969,11 @@ def find_all_in_scope(
     Args:
         expression: the expression to search.
         expression_types: the expression type(s) to match.
-        bfs: True to use breadth-first search, False to use depth-first.
 
     Yields:
         The matching nodes.
     """
-    for node in walk_in_scope(expression, bfs=bfs):
+    for node in walk_in_scope(expression):
         if isinstance(node, expression_types):
             yield node
 
@@ -987,7 +981,6 @@ def find_all_in_scope(
 def find_in_scope(
     expression: exp.Expr,
     *expression_types: t.Type[E],
-    bfs: bool = True,
 ) -> t.Optional[E]:
     """
     Returns the first node in this scope which matches at least one of the specified types.
@@ -997,13 +990,12 @@ def find_in_scope(
     Args:
         expression: the expression to search.
         expression_types: the expression type(s) to match.
-        bfs: True to use breadth-first search, False to use depth-first.
 
     Returns:
         The node which matches the criteria or None if no node matching
         the criteria was found.
     """
-    return next(find_all_in_scope(expression, *expression_types, bfs=bfs), None)
+    return next(find_all_in_scope(expression, *expression_types), None)
 
 
 def _get_source_alias(expression: exp.Expr) -> str:

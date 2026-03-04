@@ -278,7 +278,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
         return expression
 
     group.set("expressions", group_positions)
-    group.args.pop("all", None)
+    group.set("all", None)
 
     return expression
 

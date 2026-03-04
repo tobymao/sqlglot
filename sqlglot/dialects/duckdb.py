@@ -3708,17 +3708,23 @@ class DuckDB(Dialect):
             return self.sql(result)
 
         def mappick_sql(self, expression: exp.MapPick) -> str:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
             map_arg = expression.this
             keys_to_pick = expression.expressions
 
             x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
 
-            if len(keys_to_pick) == 1 and isinstance(keys_to_pick[0], exp.Array):
+            # Check if we have a single array-typed argument
+            if len(keys_to_pick) == 1 and keys_to_pick[0].is_type(exp.DType.ARRAY):
+                key_arg = keys_to_pick[0]
                 lambda_expr = exp.Lambda(
-                    this=exp.ArrayContains(this=keys_to_pick[0], expression=x_dot_key),
+                    this=exp.func("ARRAY_CONTAINS", key_arg, x_dot_key),
                     expressions=[exp.to_identifier("x")],
                 )
+
             else:
+                print('else ')
                 lambda_expr = exp.Lambda(
                     this=exp.In(this=x_dot_key, expressions=keys_to_pick),
                     expressions=[exp.to_identifier("x")],
@@ -3726,7 +3732,7 @@ class DuckDB(Dialect):
 
             result = exp.func(
                 "MAP_FROM_ENTRIES",
-                exp.ArrayFilter(this=exp.func("MAP_ENTRIES", map_arg), expression=lambda_expr),
+                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), lambda_expr),
             )
             return self.sql(result)
 

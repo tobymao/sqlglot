@@ -2591,3 +2591,17 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> x.key IN ('key1', 'key2'))) AS attrs_subset FROM demo_maps",
             },
         )
+
+        # Test type inference with array-typed column
+        from sqlglot.optimizer import qualify
+        from sqlglot.schema import MappingSchema
+
+        expr = parse_one("SELECT MAP_PICK(my_map, keys_array) FROM my_table", read="snowflake")
+        schema = MappingSchema(
+            schema={"my_table": {"my_map": "MAP(VARCHAR, INT)", "keys_array": "ARRAY(VARCHAR)"}}
+        )
+        annotated = annotate_types(qualify.qualify(expr, schema=schema), schema=schema)
+
+        result = annotated.sql(dialect="duckdb")
+        self.assertIn("ARRAY_CONTAINS", result)
+        self.assertIn("LIST_FILTER", result)

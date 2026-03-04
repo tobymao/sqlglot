@@ -279,7 +279,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
         return expression
 
     group.set("expressions", group_positions)
-    group.set("all", False)
+    group.set("all", None)
 
     return expression
 

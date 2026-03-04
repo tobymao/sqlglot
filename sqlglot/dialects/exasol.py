@@ -264,6 +264,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
             raise UnsupportedError(
                 "GROUP BY ALL with star projection and aggregates is not supported by Exasol"
             )
+        expression.set("distinct", exp.Distinct())
         expression.set("group", None)
         return expression
 

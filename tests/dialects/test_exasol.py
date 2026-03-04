@@ -940,7 +940,7 @@ class TestExasol(Validator):
         self.validate_all(
             "SELECT * FROM t GROUP BY ALL",
             write={
-                "exasol": "SELECT * FROM t",
+                "exasol": "SELECT DISTINCT * FROM t",
                 "databricks": "SELECT * FROM t GROUP BY ALL",
             },
         )

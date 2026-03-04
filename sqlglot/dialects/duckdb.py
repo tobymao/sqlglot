@@ -3708,38 +3708,23 @@ class DuckDB(Dialect):
             return self.sql(result)
 
         def mappick_sql(self, expression: exp.MapPick) -> str:
-            from sqlglot.optimizer.annotate_types import annotate_types
-
             map_arg = expression.this
             keys_to_pick = expression.expressions
 
             x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
 
-            # Check if we have a single array-typed argument
-            if len(keys_to_pick) == 1:
-                key_arg = keys_to_pick[0]
-                if not key_arg.type:
-                    key_arg = annotate_types(key_arg, dialect=self.dialect)
-
-                if key_arg.is_type(exp.DType.ARRAY):
-                    lambda_expr = exp.Lambda(
-                        this=exp.func("ARRAY_CONTAINS", key_arg, x_dot_key),
-                        expressions=[exp.to_identifier("x")],
-                    )
-                else:
-                    lambda_expr = exp.Lambda(
-                        this=exp.In(this=x_dot_key, expressions=keys_to_pick),
-                        expressions=[exp.to_identifier("x")],
-                    )
+            # Use ARRAY_CONTAINS if single argument is an array (literal or typed)
+            if (
+                len(keys_to_pick) == 1
+                and (isinstance(keys_to_pick[0], exp.Array) or keys_to_pick[0].is_type(exp.DType.ARRAY))
+            ):
+                condition = exp.func("ARRAY_CONTAINS", keys_to_pick[0], x_dot_key)
             else:
-                lambda_expr = exp.Lambda(
-                    this=exp.In(this=x_dot_key, expressions=keys_to_pick),
-                    expressions=[exp.to_identifier("x")],
-                )
+                condition = exp.In(this=x_dot_key, expressions=keys_to_pick)
 
             result = exp.func(
                 "MAP_FROM_ENTRIES",
-                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), lambda_expr),
+                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), exp.Lambda(this=condition, expressions=[exp.to_identifier("x")])),
             )
             return self.sql(result)
 

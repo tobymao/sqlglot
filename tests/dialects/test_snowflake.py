@@ -1354,19 +1354,21 @@ class TestSnowflake(Validator):
             },
         )
 
+        # NTH_VALUE FROM FIRST not supported in DuckDB
         self.validate_all(
             "SELECT NTH_VALUE(is_deleted, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
             write={
                 "snowflake": "SELECT NTH_VALUE(is_deleted, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
-                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 IGNORE NULLS) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 IGNORE NULLS) OVER (PARTITION BY id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS nth_is_deleted FROM my_table",
             },
         )
 
+        # NTH_VALUE FROM LAST not supported in DuckDB
         self.validate_all(
             "SELECT NTH_VALUE(is_deleted, 2) FROM LAST RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
             write={
                 "snowflake": "SELECT NTH_VALUE(is_deleted, 2) FROM LAST RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
-                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 RESPECT NULLS) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2 RESPECT NULLS) OVER (PARTITION BY id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS nth_is_deleted FROM my_table",
             },
         )
 
@@ -1374,41 +1376,41 @@ class TestSnowflake(Validator):
             "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
             write={
                 "snowflake": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
-                "duckdb": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS nth_is_deleted FROM my_table",
             },
         )
 
         self.validate_all(
-            "SELECT FIRST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+            "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
             write={
-                "snowflake": "SELECT FIRST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
-                "duckdb": "SELECT FIRST_VALUE(is_deleted RESPECT NULLS) OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
+                "snowflake": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
+                "duckdb": "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
             },
         )
 
-        self.validate_all(
-            "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-            write={
-                "snowflake": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-                "duckdb": "SELECT FIRST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-            },
-        )
-
-        self.validate_all(
-            "SELECT LAST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
-            write={
-                "snowflake": "SELECT LAST_VALUE(is_deleted) RESPECT NULLS OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
-                "duckdb": "SELECT LAST_VALUE(is_deleted RESPECT NULLS) OVER (PARTITION BY id ORDER BY c ASC) AS f FROM my_table",
-            },
-        )
-
-        self.validate_all(
-            "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-            write={
-                "snowflake": "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-                "duckdb": "SELECT LAST_VALUE(is_deleted) OVER (PARTITION BY id) AS f FROM my_table",
-            },
-        )
+        for func in (
+            "FIRST_VALUE",
+            "LAST_VALUE",
+        ):
+            for options in (
+                " IGNORE NULLS",
+                " RESPECT NULLS",
+                "",
+            ):
+                self.validate_all(
+                    f"SELECT {func}(is_deleted){options} OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                    write={
+                        "snowflake": f"SELECT {func}(is_deleted){options} OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
+                        "duckdb": f"SELECT {func}(is_deleted{options}) OVER (PARTITION BY id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS nth_is_deleted FROM my_table",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT {func}(is_deleted){options} OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
+                    write={
+                        "snowflake": f"SELECT {func}(is_deleted){options} OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
+                        "duckdb": f"SELECT {func}(is_deleted{options}) OVER (PARTITION BY id ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS nth_is_deleted FROM my_table",
+                    },
+                )
 
         self.validate_all(
             "SELECT LEAD(is_deleted, 2, -10) RESPECT NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",
@@ -3128,31 +3130,31 @@ class TestSnowflake(Validator):
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
             write={
-                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
+                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2) AS MY_ALIAS FROM TABLE1"
             },
         )
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1 RESPECT NULLS) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
             write={
-                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) RESPECT NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
+                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) RESPECT NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2) AS MY_ALIAS FROM TABLE1"
             },
         )
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) RESPECT NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
             write={
-                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) RESPECT NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
+                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) RESPECT NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2) AS MY_ALIAS FROM TABLE1"
             },
         )
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1 IGNORE NULLS) OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
             write={
-                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
+                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2) AS MY_ALIAS FROM TABLE1"
             },
         )
         self.validate_all(
             r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1",
             write={
-                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
+                "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2) AS MY_ALIAS FROM TABLE1"
             },
         )
         self.validate_all(

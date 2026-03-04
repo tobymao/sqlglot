@@ -52,6 +52,14 @@ TIMESTAMP_TYPES = {
     exp.DType.TIMESTAMPTZ: "TO_TIMESTAMP_TZ",
 }
 
+RANKING_WINDOW_FUNCTIONS_WITH_FRAME = (
+    exp.FirstValue,
+    exp.LastValue,
+    exp.NthValue,
+    # Technically DenseRank and Rank also support window frame, but when it comes to transpilation, they behave differently in BigQuery and DuckDB.
+    # We should handle them on a more granular level when we need to support their transpilation
+)
+
 
 def _build_strtok(args: t.List) -> exp.SplitPart:
     # Add default delimiter (space) if missing - per Snowflake docs
@@ -1575,6 +1583,20 @@ class Snowflake(Dialect):
 
             result = super()._parse_window(this, alias)
 
+            # Set default window frame for ranking functions if not present
+            if (
+                isinstance(result, exp.Window)
+                and isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+                and not result.args.get("spec")
+            ):
+                frame = exp.WindowSpec(
+                    kind="ROWS",
+                    start="UNBOUNDED",
+                    start_side="PRECEDING",
+                    end="UNBOUNDED",
+                    end_side="FOLLOWING",
+                )
+                result.set("spec", frame)
             return result
 
     class Tokenizer(tokens.Tokenizer):
@@ -2352,3 +2374,23 @@ class Snowflake(Dialect):
                 gen = exp.Rand()
 
             return self.func("UNIFORM", expression.this, expression.expression, gen)
+
+        def window_sql(self, expression: exp.Window) -> str:
+            spec = expression.args.get("spec")
+            this = expression.this
+
+            if isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME) or (
+                isinstance(this, (exp.RespectNulls, exp.IgnoreNulls))
+                and isinstance(this.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+            ):
+                if spec:
+                    # omit the default window from window ranknig functions
+                    if (
+                        spec.text("kind").upper() == "ROWS"
+                        and spec.text("start").upper() == "UNBOUNDED"
+                        and spec.text("start_side").upper() == "PRECEDING"
+                        and spec.text("end").upper() == "UNBOUNDED"
+                        and spec.text("end_side").upper() == "FOLLOWING"
+                    ):
+                        expression.set("spec", None)
+            return super().window_sql(expression)

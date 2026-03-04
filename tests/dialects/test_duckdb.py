@@ -2562,3 +2562,32 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT id, CARDINALITY(attrs) AS attr_count FROM demo_maps",
             },
         )
+
+    def test_to_array(self):
+        self.validate_all(
+            "SELECT CASE WHEN 'hello' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY('hello, snowman') AS result",
+            },
+            write={
+                "duckdb": "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
+            },
+        )
+        self.validate_all(
+            "SELECT CASE WHEN 42 IS NULL THEN NULL ELSE [4.2] END AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY(4.2) AS result",
+            },
+            write={
+                "duckdb": "SELECT CASE WHEN 4.2 IS NULL THEN NULL ELSE [4.2] END AS result",
+            },
+        )
+        self.validate_all(
+            "SELECT ['a', 'b'] AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY(ARRAY_CONSTRUCT('a', 'b')) AS result",
+            },
+            write={
+                "duckdb": "SELECT ['a', 'b'] AS result",
+            },
+        )

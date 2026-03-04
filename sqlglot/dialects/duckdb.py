@@ -3716,13 +3716,21 @@ class DuckDB(Dialect):
             x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
 
             # Check if we have a single array-typed argument
-            if len(keys_to_pick) == 1 and keys_to_pick[0].is_type(exp.DType.ARRAY):
+            if len(keys_to_pick) == 1:
                 key_arg = keys_to_pick[0]
-                lambda_expr = exp.Lambda(
-                    this=exp.func("ARRAY_CONTAINS", key_arg, x_dot_key),
-                    expressions=[exp.to_identifier("x")],
-                )
+                if not key_arg.type:
+                    key_arg = annotate_types(key_arg, dialect=self.dialect)
 
+                if key_arg.is_type(exp.DType.ARRAY):
+                    lambda_expr = exp.Lambda(
+                        this=exp.func("ARRAY_CONTAINS", key_arg, x_dot_key),
+                        expressions=[exp.to_identifier("x")],
+                    )
+                else:
+                    lambda_expr = exp.Lambda(
+                        this=exp.In(this=x_dot_key, expressions=keys_to_pick),
+                        expressions=[exp.to_identifier("x")],
+                    )
             else:
                 lambda_expr = exp.Lambda(
                     this=exp.In(this=x_dot_key, expressions=keys_to_pick),

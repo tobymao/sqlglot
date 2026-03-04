@@ -891,21 +891,21 @@ class TestExasol(Validator):
         self.validate_all(
             "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT id, city, COUNT(*) FROM dealer GROUP BY DISTINCT 1, 2",
+                "exasol": "SELECT id, city, COUNT(*) FROM dealer GROUP BY 1, 2",
                 "databricks": "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",
             },
         )
         self.validate_all(
             "SELECT car_model, COUNT(DISTINCT city) FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT car_model, COUNT(DISTINCT city) FROM dealer GROUP BY DISTINCT 1",
+                "exasol": "SELECT car_model, COUNT(DISTINCT city) FROM dealer GROUP BY 1",
                 "databricks": "SELECT car_model, COUNT(DISTINCT city) FROM dealer GROUP BY ALL",
             },
         )
         self.validate_all(
             "SELECT car_model, city FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT car_model, city FROM dealer GROUP BY DISTINCT 1, 2",
+                "exasol": "SELECT car_model, city FROM dealer GROUP BY 1, 2",
                 "databricks": "SELECT car_model, city FROM dealer GROUP BY ALL",
             },
         )
@@ -919,28 +919,28 @@ class TestExasol(Validator):
         self.validate_all(
             "SELECT UPPER(city), COUNT(*) FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT UPPER(city), COUNT(*) FROM dealer GROUP BY DISTINCT 1",
+                "exasol": "SELECT UPPER(city), COUNT(*) FROM dealer GROUP BY 1",
                 "databricks": "SELECT UPPER(city), COUNT(*) FROM dealer GROUP BY ALL",
             },
         )
         self.validate_all(
             "SELECT city AS c, COUNT(*) + 1 FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT city AS c, COUNT(*) + 1 FROM dealer GROUP BY DISTINCT 1",
+                "exasol": "SELECT city AS c, COUNT(*) + 1 FROM dealer GROUP BY 1",
                 "databricks": "SELECT city AS c, COUNT(*) + 1 FROM dealer GROUP BY ALL",
             },
         )
         self.validate_all(
             "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY ALL",
             write={
-                "exasol": "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY DISTINCT 1",
+                "exasol": "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY 1",
                 "databricks": "SELECT city, COUNT(*) OVER () FROM dealer GROUP BY ALL",
             },
         )
         self.validate_all(
             "SELECT * FROM t GROUP BY ALL",
             write={
-                "exasol": "SELECT DISTINCT * FROM t",
+                "exasol": "SELECT * FROM t",
                 "databricks": "SELECT * FROM t GROUP BY ALL",
             },
         )

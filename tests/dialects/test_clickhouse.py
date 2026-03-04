@@ -597,8 +597,8 @@ class TestClickhouse(Validator):
         )
 
         self.validate_identity(
-            "INSERT INTO t (id, n.a) VALUES (1, [1, 2])",
-            "INSERT INTO t (id, n.a) VALUES ((1), ([1, 2]))",
+            "INSERT INTO t (n.a, n.b) VALUES (1, [1, 2])",
+            "INSERT INTO t (n.a, n.b) VALUES ((1), ([1, 2]))",
         )
 
         self.validate_identity("SELECT 1 FORMAT TabSeparated")

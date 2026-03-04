@@ -596,6 +596,11 @@ class TestClickhouse(Validator):
             """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES (('test'), (1), (2))""",
         )
 
+        self.validate_identity(
+            "INSERT INTO t (id, n.a) VALUES (1, [1, 2])",
+            "INSERT INTO t (id, n.a) VALUES ((1), ([1, 2]))",
+        )
+
         self.validate_identity("SELECT 1 FORMAT TabSeparated")
         self.validate_identity("SELECT * FROM t FORMAT TabSeparated")
         self.validate_identity("SELECT FORMAT")

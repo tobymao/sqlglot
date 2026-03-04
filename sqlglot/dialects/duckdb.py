@@ -558,6 +558,28 @@ def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -
     return func
 
 
+def _array_overlaps_sql(self: DuckDB.Generator, expression: exp.ArrayOverlaps) -> str:
+    """
+    Translates Snowflake's NULL-safe ARRAYS_OVERLAP to DuckDB.
+
+    DuckDB's native && operator is not NULL-safe: [1,NULL,3] && [NULL,4,5] returns FALSE.
+    Snowflake returns TRUE when both arrays contain NULL (NULLs are treated as known values).
+
+    Generated SQL: (arr1 && arr2) OR (ARRAY_LENGTH(arr1) <> LIST_COUNT(arr1) AND ARRAY_LENGTH(arr2) <> LIST_COUNT(arr2))
+
+    ARRAY_LENGTH counts all elements (including NULLs); LIST_COUNT counts only non-NULLs.
+    When they differ, the array contains at least one NULL, matching Snowflake's NULL-safe semantics.
+    """
+    arr1 = expression.this
+    arr2 = expression.expression
+
+    def has_null(arr: exp.Expression) -> exp.Expression:
+        return exp.NEQ(this=exp.ArraySize(this=arr), expression=exp.func("LIST_COUNT", arr))
+
+    null_safe = self.sql(exp.and_(has_null(arr1.copy()), has_null(arr2.copy())))
+    return f"({self.binary(expression, '&&')}) OR ({null_safe})"
+
+
 def _build_sort_array_desc(args: t.List) -> exp.Expr:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
@@ -1914,6 +1936,7 @@ class DuckDB(Dialect):
             ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayContains: _array_contains_sql,
+            exp.ArrayOverlaps: _array_overlaps_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
             exp.ArrayPosition: lambda self, e: (

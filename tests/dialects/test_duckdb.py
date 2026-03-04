@@ -1213,7 +1213,10 @@ class TestDuckDB(Validator):
         self.validate_identity("a ~~ b", "a LIKE b")
         self.validate_identity("a @> b")
         self.validate_identity("a <@ b", "b @> a")
-        self.validate_identity("a && b").assert_is(exp.ArrayOverlaps)
+        self.validate_identity(
+            "a && b",
+            "(a && b) OR (ARRAY_LENGTH(a) <> LIST_COUNT(a) AND ARRAY_LENGTH(b) <> LIST_COUNT(b))",
+        ).assert_is(exp.ArrayOverlaps)
         self.validate_identity("a ^@ b", "STARTS_WITH(a, b)")
         self.validate_identity(
             "a !~~ b",
@@ -1264,7 +1267,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "LIST_HAS_ANY([1, 2, 3], [1,2])",
             write={
-                "duckdb": "[1, 2, 3] && [1, 2]",
+                "duckdb": "([1, 2, 3] && [1, 2]) OR (ARRAY_LENGTH([1, 2, 3]) <> LIST_COUNT([1, 2, 3]) AND ARRAY_LENGTH([1, 2]) <> LIST_COUNT([1, 2]))",
                 "postgres": "ARRAY[1, 2, 3] && ARRAY[1, 2]",
             },
         )

@@ -2379,18 +2379,23 @@ class Snowflake(Dialect):
             spec = expression.args.get("spec")
             this = expression.this
 
-            if isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME) or (
-                isinstance(this, (exp.RespectNulls, exp.IgnoreNulls))
-                and isinstance(this.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+            if (
+                (
+                    isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+                    or (
+                        isinstance(this, (exp.RespectNulls, exp.IgnoreNulls))
+                        and isinstance(this.this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+                    )
+                )
+                and spec
+                and (
+                    spec.text("kind").upper() == "ROWS"
+                    and spec.text("start").upper() == "UNBOUNDED"
+                    and spec.text("start_side").upper() == "PRECEDING"
+                    and spec.text("end").upper() == "UNBOUNDED"
+                    and spec.text("end_side").upper() == "FOLLOWING"
+                )
             ):
-                if spec:
-                    # omit the default window from window ranknig functions
-                    if (
-                        spec.text("kind").upper() == "ROWS"
-                        and spec.text("start").upper() == "UNBOUNDED"
-                        and spec.text("start_side").upper() == "PRECEDING"
-                        and spec.text("end").upper() == "UNBOUNDED"
-                        and spec.text("end_side").upper() == "FOLLOWING"
-                    ):
-                        expression.set("spec", None)
+                # omit the default window from window ranking functions
+                expression.set("spec", None)
             return super().window_sql(expression)

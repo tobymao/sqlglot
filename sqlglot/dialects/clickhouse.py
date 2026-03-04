@@ -1017,6 +1017,14 @@ class ClickHouse(Dialect):
         def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expr]:
             return super()._parse_wrapped_id_vars(optional=True)
 
+        def _parse_column_def(
+            self, this: t.Optional[exp.Expr], computed_column: bool = True
+        ) -> t.Optional[exp.Expr]:
+            if self._match(TokenType.DOT):
+                return exp.Dot(this=this, expression=self._parse_id_var())
+
+            return super()._parse_column_def(this, computed_column=computed_column)
+
         def _parse_primary_key(
             self,
             wrapped_optional: bool = False,

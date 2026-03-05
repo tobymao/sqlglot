@@ -570,21 +570,34 @@ def _array_overlaps_sql(self: DuckDB.Generator, expression: exp.ArrayOverlaps) -
     ARRAY_LENGTH counts all elements (including NULLs); LIST_COUNT counts only non-NULLs.
     When they differ, the array contains at least one NULL, matching Snowflake's NULL-safe semantics.
     """
-    if not expression.args.get("nullsafe"):
+    if not expression.args.get("null_safe"):
         return self.binary(expression, "&&")
+
     arr1 = expression.this
     arr2 = expression.expression
-    null_safe = self.sql(
-        exp.and_(
-            exp.NEQ(
-                this=exp.ArraySize(this=arr1.copy()), expression=exp.func("LIST_COUNT", arr1.copy())
-            ),
-            exp.NEQ(
-                this=exp.ArraySize(this=arr2.copy()), expression=exp.func("LIST_COUNT", arr2.copy())
-            ),
+
+    check_nulls = exp.and_(
+        exp.NEQ(
+            this=exp.ArraySize(this=arr1.copy()),
+            expression=exp.func("LIST_COUNT", arr1.copy()),
+        ),
+        exp.NEQ(
+            this=exp.ArraySize(this=arr2.copy()),
+            expression=exp.func("LIST_COUNT", arr2.copy()),
+        ),
+        copy=False,
+    )
+
+    overlap = exp.ArrayOverlaps(this=arr1.copy(), expression=arr2.copy())
+
+    return self.sql(
+        exp.or_(
+            exp.paren(overlap, copy=False),
+            exp.paren(check_nulls, copy=False),
+            copy=False,
+            wrap=False,
         )
     )
-    return f"({self.binary(expression, '&&')}) OR ({null_safe})"
 
 
 def _build_sort_array_desc(args: t.List) -> exp.Expr:

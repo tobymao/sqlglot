@@ -9,7 +9,7 @@ from collections import defaultdict
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, TokenError, concat_messages, merge_errors
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import ensure_list, mypyc_attr, seq_get
 from sqlglot.parser_core import ParserCore
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -70,7 +70,14 @@ def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
             this, expression = expression, this
         return exp.Log(this=this, expression=expression)
 
-    return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
+    # mypyc compiled classes store attributes as getset descriptors in __dict__,
+    # so we read the value from a temporary instance instead.
+    try:
+        inst = dialect.parser_class.__new__(dialect.parser_class)
+        log_defaults_to_ln = inst.LOG_DEFAULTS_TO_LN
+    except Exception:
+        log_defaults_to_ln = False
+    return (exp.Ln if log_defaults_to_ln else exp.Log)(this=this)
 
 
 def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.LowerHex:
@@ -255,17 +262,1034 @@ def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
     )
 
 
-class _Parser(type):
-    def __new__(cls, clsname, bases, attrs):
-        klass = super().__new__(cls, clsname, bases, attrs)
+def _resolve_dialect(dialect: t.Any) -> t.Any:
+    # TODO(mypyc): Late import moved to module-level function because mypyc compiled
+    # methods with allow_interpreted_subclasses don't handle `from X import Y` correctly.
+    from sqlglot.dialects.dialect import Dialect
 
-        klass.SHOW_TRIE = new_trie(key.split(" ") for key in klass.SHOW_PARSERS)
-        klass.SET_TRIE = new_trie(key.split(" ") for key in klass.SET_PARSERS)
-
-        return klass
+    return Dialect.get_or_raise(dialect)
 
 
-class Parser(metaclass=_Parser):
+def _init_parser_tries(cls: t.Any) -> None:
+    # TODO(mypyc): mypyc compiled classes store class attributes as getset descriptors
+    # (slot-based). Accessing Class.ATTR returns the descriptor object instead of the value.
+    # We walk the MRO and check __dict__ directly, falling back to module-level defaults.
+    show: t.Dict = _SHOW_PARSERS
+    set_: t.Dict = _SET_PARSERS
+    for klass in type.mro(cls):
+        val = klass.__dict__.get("SHOW_PARSERS")
+        if isinstance(val, dict):
+            show = val
+            break
+    for klass in type.mro(cls):
+        val = klass.__dict__.get("SET_PARSERS")
+        if isinstance(val, dict):
+            set_ = val
+            break
+    cls.SHOW_TRIE = new_trie(key.split(" ") for key in show)
+    cls.SET_TRIE = new_trie(key.split(" ") for key in set_)
+
+
+_NO_PAREN_FUNCTIONS = {
+    TokenType.CURRENT_DATE: exp.CurrentDate,
+    TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
+    TokenType.CURRENT_TIME: exp.CurrentTime,
+    TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
+    TokenType.CURRENT_USER: exp.CurrentUser,
+    TokenType.LOCALTIME: exp.Localtime,
+    TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+    TokenType.CURRENT_ROLE: exp.CurrentRole,
+}
+
+_STRUCT_TYPE_TOKENS = {
+    TokenType.NESTED,
+    TokenType.OBJECT,
+    TokenType.STRUCT,
+    TokenType.UNION,
+}
+
+_NESTED_TYPE_TOKENS = {
+    TokenType.ARRAY,
+    TokenType.LIST,
+    TokenType.LOWCARDINALITY,
+    TokenType.MAP,
+    TokenType.NULLABLE,
+    TokenType.RANGE,
+    *_STRUCT_TYPE_TOKENS,
+}
+
+_ENUM_TYPE_TOKENS = {
+    TokenType.DYNAMIC,
+    TokenType.ENUM,
+    TokenType.ENUM8,
+    TokenType.ENUM16,
+}
+
+_AGGREGATE_TYPE_TOKENS = {
+    TokenType.AGGREGATEFUNCTION,
+    TokenType.SIMPLEAGGREGATEFUNCTION,
+}
+
+_TYPE_TOKENS = {
+    TokenType.BIT,
+    TokenType.BOOLEAN,
+    TokenType.TINYINT,
+    TokenType.UTINYINT,
+    TokenType.SMALLINT,
+    TokenType.USMALLINT,
+    TokenType.INT,
+    TokenType.UINT,
+    TokenType.BIGINT,
+    TokenType.UBIGINT,
+    TokenType.BIGNUM,
+    TokenType.INT128,
+    TokenType.UINT128,
+    TokenType.INT256,
+    TokenType.UINT256,
+    TokenType.MEDIUMINT,
+    TokenType.UMEDIUMINT,
+    TokenType.FIXEDSTRING,
+    TokenType.FLOAT,
+    TokenType.DOUBLE,
+    TokenType.UDOUBLE,
+    TokenType.CHAR,
+    TokenType.NCHAR,
+    TokenType.VARCHAR,
+    TokenType.NVARCHAR,
+    TokenType.BPCHAR,
+    TokenType.TEXT,
+    TokenType.MEDIUMTEXT,
+    TokenType.LONGTEXT,
+    TokenType.BLOB,
+    TokenType.MEDIUMBLOB,
+    TokenType.LONGBLOB,
+    TokenType.BINARY,
+    TokenType.VARBINARY,
+    TokenType.JSON,
+    TokenType.JSONB,
+    TokenType.INTERVAL,
+    TokenType.TINYBLOB,
+    TokenType.TINYTEXT,
+    TokenType.TIME,
+    TokenType.TIMETZ,
+    TokenType.TIME_NS,
+    TokenType.TIMESTAMP,
+    TokenType.TIMESTAMP_S,
+    TokenType.TIMESTAMP_MS,
+    TokenType.TIMESTAMP_NS,
+    TokenType.TIMESTAMPTZ,
+    TokenType.TIMESTAMPLTZ,
+    TokenType.TIMESTAMPNTZ,
+    TokenType.DATETIME,
+    TokenType.DATETIME2,
+    TokenType.DATETIME64,
+    TokenType.SMALLDATETIME,
+    TokenType.DATE,
+    TokenType.DATE32,
+    TokenType.INT4RANGE,
+    TokenType.INT4MULTIRANGE,
+    TokenType.INT8RANGE,
+    TokenType.INT8MULTIRANGE,
+    TokenType.NUMRANGE,
+    TokenType.NUMMULTIRANGE,
+    TokenType.TSRANGE,
+    TokenType.TSMULTIRANGE,
+    TokenType.TSTZRANGE,
+    TokenType.TSTZMULTIRANGE,
+    TokenType.DATERANGE,
+    TokenType.DATEMULTIRANGE,
+    TokenType.DECIMAL,
+    TokenType.DECIMAL32,
+    TokenType.DECIMAL64,
+    TokenType.DECIMAL128,
+    TokenType.DECIMAL256,
+    TokenType.DECFLOAT,
+    TokenType.UDECIMAL,
+    TokenType.BIGDECIMAL,
+    TokenType.UUID,
+    TokenType.GEOGRAPHY,
+    TokenType.GEOGRAPHYPOINT,
+    TokenType.GEOMETRY,
+    TokenType.POINT,
+    TokenType.RING,
+    TokenType.LINESTRING,
+    TokenType.MULTILINESTRING,
+    TokenType.POLYGON,
+    TokenType.MULTIPOLYGON,
+    TokenType.HLLSKETCH,
+    TokenType.HSTORE,
+    TokenType.PSEUDO_TYPE,
+    TokenType.SUPER,
+    TokenType.SERIAL,
+    TokenType.SMALLSERIAL,
+    TokenType.BIGSERIAL,
+    TokenType.XML,
+    TokenType.YEAR,
+    TokenType.USERDEFINED,
+    TokenType.MONEY,
+    TokenType.SMALLMONEY,
+    TokenType.ROWVERSION,
+    TokenType.IMAGE,
+    TokenType.VARIANT,
+    TokenType.VECTOR,
+    TokenType.VOID,
+    TokenType.OBJECT,
+    TokenType.OBJECT_IDENTIFIER,
+    TokenType.INET,
+    TokenType.IPADDRESS,
+    TokenType.IPPREFIX,
+    TokenType.IPV4,
+    TokenType.IPV6,
+    TokenType.UNKNOWN,
+    TokenType.NOTHING,
+    TokenType.NULL,
+    TokenType.NAME,
+    TokenType.TDIGEST,
+    TokenType.DYNAMIC,
+    *_ENUM_TYPE_TOKENS,
+    *_NESTED_TYPE_TOKENS,
+    *_AGGREGATE_TYPE_TOKENS,
+}
+
+_SUBQUERY_PREDICATES = {
+    TokenType.ANY: exp.Any,
+    TokenType.ALL: exp.All,
+    TokenType.EXISTS: exp.Exists,
+    TokenType.SOME: exp.Any,
+}
+
+_DB_CREATABLES = {
+    TokenType.DATABASE,
+    TokenType.DICTIONARY,
+    TokenType.FILE_FORMAT,
+    TokenType.MODEL,
+    TokenType.NAMESPACE,
+    TokenType.SCHEMA,
+    TokenType.SEMANTIC_VIEW,
+    TokenType.SEQUENCE,
+    TokenType.SINK,
+    TokenType.SOURCE,
+    TokenType.STAGE,
+    TokenType.STORAGE_INTEGRATION,
+    TokenType.STREAMLIT,
+    TokenType.TABLE,
+    TokenType.TAG,
+    TokenType.VIEW,
+    TokenType.WAREHOUSE,
+}
+
+_CREATABLES = {
+    TokenType.COLUMN,
+    TokenType.CONSTRAINT,
+    TokenType.FOREIGN_KEY,
+    TokenType.FUNCTION,
+    TokenType.INDEX,
+    TokenType.PROCEDURE,
+    TokenType.TRIGGER,
+    *_DB_CREATABLES,
+}
+
+_ALTERABLES = {
+    TokenType.INDEX,
+    TokenType.TABLE,
+    TokenType.VIEW,
+    TokenType.SESSION,
+}
+
+# Tokens that can represent identifiers
+_ID_VAR_TOKENS = {
+    TokenType.ALL,
+    TokenType.ANALYZE,
+    TokenType.ATTACH,
+    TokenType.VAR,
+    TokenType.ANTI,
+    TokenType.APPLY,
+    TokenType.ASC,
+    TokenType.ASOF,
+    TokenType.AUTO_INCREMENT,
+    TokenType.BEGIN,
+    TokenType.BPCHAR,
+    TokenType.CACHE,
+    TokenType.CASE,
+    TokenType.COLLATE,
+    TokenType.COMMAND,
+    TokenType.COMMENT,
+    TokenType.COMMIT,
+    TokenType.CONSTRAINT,
+    TokenType.COPY,
+    TokenType.CUBE,
+    TokenType.CURRENT_SCHEMA,
+    TokenType.DEFAULT,
+    TokenType.DELETE,
+    TokenType.DESC,
+    TokenType.DESCRIBE,
+    TokenType.DETACH,
+    TokenType.DICTIONARY,
+    TokenType.DIV,
+    TokenType.END,
+    TokenType.EXECUTE,
+    TokenType.EXPORT,
+    TokenType.ESCAPE,
+    TokenType.FALSE,
+    TokenType.FIRST,
+    TokenType.FILE,
+    TokenType.FILTER,
+    TokenType.FINAL,
+    TokenType.FORMAT,
+    TokenType.FULL,
+    TokenType.GET,
+    TokenType.IDENTIFIER,
+    TokenType.INOUT,
+    TokenType.IS,
+    TokenType.ISNULL,
+    TokenType.INTERVAL,
+    TokenType.KEEP,
+    TokenType.KILL,
+    TokenType.LEFT,
+    TokenType.LIMIT,
+    TokenType.LOAD,
+    TokenType.LOCK,
+    TokenType.MATCH,
+    TokenType.MERGE,
+    TokenType.NATURAL,
+    TokenType.NEXT,
+    TokenType.OFFSET,
+    TokenType.OPERATOR,
+    TokenType.ORDINALITY,
+    TokenType.OVER,
+    TokenType.OVERLAPS,
+    TokenType.OVERWRITE,
+    TokenType.PARTITION,
+    TokenType.PERCENT,
+    TokenType.PIVOT,
+    TokenType.PRAGMA,
+    TokenType.PUT,
+    TokenType.RANGE,
+    TokenType.RECURSIVE,
+    TokenType.REFERENCES,
+    TokenType.REFRESH,
+    TokenType.RENAME,
+    TokenType.REPLACE,
+    TokenType.RIGHT,
+    TokenType.ROLLUP,
+    TokenType.ROW,
+    TokenType.ROWS,
+    TokenType.SEMI,
+    TokenType.SET,
+    TokenType.SETTINGS,
+    TokenType.SHOW,
+    TokenType.TEMPORARY,
+    TokenType.TOP,
+    TokenType.TRUE,
+    TokenType.TRUNCATE,
+    TokenType.UNIQUE,
+    TokenType.UNNEST,
+    TokenType.UNPIVOT,
+    TokenType.UPDATE,
+    TokenType.USE,
+    TokenType.VOLATILE,
+    TokenType.WINDOW,
+    *_ALTERABLES,
+    *_CREATABLES,
+    *_SUBQUERY_PREDICATES,
+    *_TYPE_TOKENS,
+    *_NO_PAREN_FUNCTIONS,
+} - {TokenType.UNION}
+
+_TABLE_ALIAS_TOKENS = _ID_VAR_TOKENS - {
+    TokenType.ANTI,
+    TokenType.ASOF,
+    TokenType.FULL,
+    TokenType.LEFT,
+    TokenType.LOCK,
+    TokenType.NATURAL,
+    TokenType.RIGHT,
+    TokenType.SEMI,
+    TokenType.WINDOW,
+}
+
+_ALIAS_TOKENS = _ID_VAR_TOKENS
+
+_COMMENT_TABLE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - {TokenType.IS}
+
+_UPDATE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - {TokenType.SET}
+
+_FUNC_TOKENS = {
+    TokenType.COLLATE,
+    TokenType.COMMAND,
+    TokenType.CURRENT_DATE,
+    TokenType.CURRENT_DATETIME,
+    TokenType.CURRENT_SCHEMA,
+    TokenType.CURRENT_TIMESTAMP,
+    TokenType.CURRENT_TIME,
+    TokenType.CURRENT_USER,
+    TokenType.CURRENT_CATALOG,
+    TokenType.FILTER,
+    TokenType.FIRST,
+    TokenType.FORMAT,
+    TokenType.GET,
+    TokenType.GLOB,
+    TokenType.IDENTIFIER,
+    TokenType.INDEX,
+    TokenType.ISNULL,
+    TokenType.ILIKE,
+    TokenType.INSERT,
+    TokenType.LIKE,
+    TokenType.LOCALTIME,
+    TokenType.LOCALTIMESTAMP,
+    TokenType.MERGE,
+    TokenType.NEXT,
+    TokenType.OFFSET,
+    TokenType.PRIMARY_KEY,
+    TokenType.RANGE,
+    TokenType.REPLACE,
+    TokenType.RLIKE,
+    TokenType.ROW,
+    TokenType.SESSION_USER,
+    TokenType.UNNEST,
+    TokenType.VAR,
+    TokenType.LEFT,
+    TokenType.RIGHT,
+    TokenType.SEQUENCE,
+    TokenType.DATE,
+    TokenType.DATETIME,
+    TokenType.TABLE,
+    TokenType.TIMESTAMP,
+    TokenType.TIMESTAMPTZ,
+    TokenType.TRUNCATE,
+    TokenType.UTC_DATE,
+    TokenType.UTC_TIME,
+    TokenType.UTC_TIMESTAMP,
+    TokenType.WINDOW,
+    TokenType.XOR,
+    *_TYPE_TOKENS,
+    *_SUBQUERY_PREDICATES,
+}
+
+_TIMES = {
+    TokenType.TIME,
+    TokenType.TIMETZ,
+}
+
+_TIMESTAMPS = {
+    TokenType.TIMESTAMP,
+    TokenType.TIMESTAMPNTZ,
+    TokenType.TIMESTAMPTZ,
+    TokenType.TIMESTAMPLTZ,
+    *_TIMES,
+}
+
+_SET_OPERATIONS = {
+    TokenType.UNION,
+    TokenType.INTERSECT,
+    TokenType.EXCEPT,
+}
+
+_STRING_PARSERS = {
+    TokenType.HEREDOC_STRING: lambda self, token: self.expression(exp.RawString, token=token),
+    TokenType.NATIONAL_STRING: lambda self, token: self.expression(exp.National, token=token),
+    TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, token=token),
+    TokenType.STRING: lambda self, token: self.expression(exp.Literal, token=token, is_string=True),
+    TokenType.UNICODE_STRING: lambda self, token: self.expression(
+        exp.UnicodeString,
+        token=token,
+        escape=self._match_text_seq("UESCAPE") and self._parse_string(),
+    ),
+}
+
+_NUMERIC_PARSERS = {
+    TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, token=token),
+    TokenType.BYTE_STRING: lambda self, token: self.expression(
+        exp.ByteString,
+        token=token,
+        is_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE or None,
+    ),
+    TokenType.HEX_STRING: lambda self, token: self.expression(
+        exp.HexString,
+        token=token,
+        is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE or None,
+    ),
+    TokenType.NUMBER: lambda self, token: self.expression(
+        exp.Literal, token=token, is_string=False
+    ),
+}
+
+_PRIMARY_PARSERS = {
+    **_STRING_PARSERS,
+    **_NUMERIC_PARSERS,
+    TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
+    TokenType.NULL: lambda self, _: self.expression(exp.Null),
+    TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
+    TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
+    TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
+    TokenType.STAR: lambda self, _: self._parse_star_ops(),
+}
+
+_QUERY_MODIFIER_PARSERS = {
+    TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
+    TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
+    TokenType.WHERE: lambda self: ("where", self._parse_where()),
+    TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
+    TokenType.HAVING: lambda self: ("having", self._parse_having()),
+    TokenType.QUALIFY: lambda self: ("qualify", self._parse_qualify()),
+    TokenType.WINDOW: lambda self: ("windows", self._parse_window_clause()),
+    TokenType.ORDER_BY: lambda self: ("order", self._parse_order()),
+    TokenType.LIMIT: lambda self: ("limit", self._parse_limit()),
+    TokenType.FETCH: lambda self: ("limit", self._parse_limit()),
+    TokenType.OFFSET: lambda self: ("offset", self._parse_offset()),
+    TokenType.FOR: lambda self: ("locks", self._parse_locks()),
+    TokenType.LOCK: lambda self: ("locks", self._parse_locks()),
+    TokenType.TABLE_SAMPLE: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
+    TokenType.USING: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
+    TokenType.CLUSTER_BY: lambda self: (
+        "cluster",
+        self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
+    ),
+    TokenType.DISTRIBUTE_BY: lambda self: (
+        "distribute",
+        self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
+    ),
+    TokenType.SORT_BY: lambda self: ("sort", self._parse_sort(exp.Sort, TokenType.SORT_BY)),
+    TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
+    TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
+}
+_QUERY_MODIFIER_TOKENS = set(_QUERY_MODIFIER_PARSERS)
+
+_WINDOW_ALIAS_TOKENS = _ID_VAR_TOKENS - {TokenType.RANGE, TokenType.ROWS}
+
+_FETCH_TOKENS = _ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
+
+_UNNEST_OFFSET_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - _SET_OPERATIONS
+
+_SET_PARSERS: t.Dict[str, t.Callable] = {
+    "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
+    "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
+    "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
+    "TRANSACTION": lambda self: self._parse_set_transaction(),
+}
+
+_SHOW_PARSERS: t.Dict[str, t.Callable] = {}
+
+_FUNCTIONS: t.Dict[str, t.Callable] = {
+    **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
+    **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
+    "ARRAY": lambda args, dialect: exp.Array(expressions=args),
+    "ARRAYAGG": lambda args, dialect: exp.ArrayAgg(
+        this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
+    ),
+    "ARRAY_AGG": lambda args, dialect: exp.ArrayAgg(
+        this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
+    ),
+    "ARRAY_APPEND": build_array_append,
+    "ARRAY_CAT": build_array_concat,
+    "ARRAY_CONCAT": build_array_concat,
+    "ARRAY_PREPEND": build_array_prepend,
+    "ARRAY_REMOVE": build_array_remove,
+    "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
+    "CONCAT": lambda args, dialect: exp.Concat(
+        expressions=args,
+        safe=not dialect.STRICT_STRING_CONCAT,
+        coalesce=dialect.CONCAT_COALESCE,
+    ),
+    "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
+        expressions=args,
+        safe=not dialect.STRICT_STRING_CONCAT,
+        coalesce=dialect.CONCAT_COALESCE,
+    ),
+    "CONVERT_TIMEZONE": build_convert_timezone,
+    "DATE_TO_DATE_STR": lambda args: exp.Cast(
+        this=seq_get(args, 0),
+        to=exp.DataType(this=exp.DType.TEXT),
+    ),
+    "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
+        start=seq_get(args, 0),
+        end=seq_get(args, 1),
+        step=seq_get(args, 2) or exp.Interval(this=exp.Literal.string(1), unit=exp.var("DAY")),
+    ),
+    "GENERATE_UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
+    "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
+    "GREATEST": lambda args, dialect: exp.Greatest(
+        this=seq_get(args, 0),
+        expressions=args[1:],
+        ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
+    ),
+    "LEAST": lambda args, dialect: exp.Least(
+        this=seq_get(args, 0),
+        expressions=args[1:],
+        ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
+    ),
+    "HEX": build_hex,
+    "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
+    "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
+    "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
+    "JSON_KEYS": lambda args, dialect: exp.JSONKeys(
+        this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+    ),
+    "LIKE": build_like,
+    "LOG": build_logarithm,
+    "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
+    "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
+    "LOWER": build_lower,
+    "LPAD": lambda args: build_pad(args),
+    "LEFTPAD": lambda args: build_pad(args),
+    "LTRIM": lambda args: build_trim(args),
+    "MOD": build_mod,
+    "RIGHTPAD": lambda args: build_pad(args, is_left=False),
+    "RPAD": lambda args: build_pad(args, is_left=False),
+    "RTRIM": lambda args: build_trim(args, is_left=False),
+    "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
+    if len(args) != 2
+    else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
+    "STRPOS": exp.StrPosition.from_arg_list,
+    "CHARINDEX": lambda args: build_locate_strposition(args),
+    "INSTR": exp.StrPosition.from_arg_list,
+    "LOCATE": lambda args: build_locate_strposition(args),
+    "TIME_TO_TIME_STR": lambda args: exp.Cast(
+        this=seq_get(args, 0),
+        to=exp.DataType(this=exp.DType.TEXT),
+    ),
+    "TO_HEX": build_hex,
+    "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
+        this=exp.Cast(
+            this=seq_get(args, 0),
+            to=exp.DataType(this=exp.DType.TEXT),
+        ),
+        start=exp.Literal.number(1),
+        length=exp.Literal.number(10),
+    ),
+    "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
+    "UPPER": build_upper,
+    "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
+    "VAR_MAP": build_var_map,
+}
+
+_RESERVED_TOKENS = {
+    *Tokenizer.SINGLE_TOKENS.values(),
+    TokenType.SELECT,
+} - {TokenType.IDENTIFIER}
+
+_CONJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
+    TokenType.AND: exp.And,
+}
+
+_DISJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
+    TokenType.OR: exp.Or,
+}
+
+_BITWISE = {
+    TokenType.AMP: exp.BitwiseAnd,
+    TokenType.CARET: exp.BitwiseXor,
+    TokenType.PIPE: exp.BitwiseOr,
+}
+
+_EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = {}
+
+_JOIN_KINDS = {
+    TokenType.ANTI,
+    TokenType.CROSS,
+    TokenType.INNER,
+    TokenType.OUTER,
+    TokenType.SEMI,
+    TokenType.STRAIGHT_JOIN,
+}
+
+_LAMBDAS = {
+    TokenType.ARROW: lambda self, expressions: self.expression(
+        exp.Lambda,
+        this=self._replace_lambda(
+            self._parse_disjunction(),
+            expressions,
+        ),
+        expressions=expressions,
+    ),
+    TokenType.FARROW: lambda self, expressions: self.expression(
+        exp.Kwarg,
+        this=exp.var(expressions[0].name),
+        expression=self._parse_disjunction(),
+    ),
+}
+
+_COLUMN_OPERATORS = {
+    TokenType.DOT: None,
+    TokenType.DOTCOLON: lambda self, this, to: self.expression(
+        exp.JSONCast,
+        this=this,
+        to=to,
+    ),
+    TokenType.DCOLON: lambda self, this, to: self.build_cast(
+        strict=self.STRICT_CAST, this=this, to=to
+    ),
+    TokenType.ARROW: lambda self, this, path: self.expression(
+        exp.JSONExtract,
+        this=this,
+        expression=self.dialect.to_json_path(path),
+        only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+    ),
+    TokenType.DARROW: lambda self, this, path: self.expression(
+        exp.JSONExtractScalar,
+        this=this,
+        expression=self.dialect.to_json_path(path),
+        only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+        scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
+    ),
+    TokenType.HASH_ARROW: lambda self, this, path: self.expression(
+        exp.JSONBExtract,
+        this=this,
+        expression=path,
+    ),
+    TokenType.DHASH_ARROW: lambda self, this, path: self.expression(
+        exp.JSONBExtractScalar,
+        this=this,
+        expression=path,
+    ),
+    TokenType.PLACEHOLDER: lambda self, this, key: self.expression(
+        exp.JSONBContains,
+        this=this,
+        expression=key,
+    ),
+}
+
+_FACTOR = {
+    TokenType.DIV: exp.IntDiv,
+    TokenType.LR_ARROW: exp.Distance,
+    TokenType.SLASH: exp.Div,
+    TokenType.STAR: exp.Mul,
+}
+
+_CAST_COLUMN_OPERATORS = {
+    TokenType.DOTCOLON,
+    TokenType.DCOLON,
+}
+
+_STATEMENT_PARSERS = {
+    TokenType.ALTER: lambda self: self._parse_alter(),
+    TokenType.ANALYZE: lambda self: self._parse_analyze(),
+    TokenType.BEGIN: lambda self: self._parse_transaction(),
+    TokenType.CACHE: lambda self: self._parse_cache(),
+    TokenType.COMMENT: lambda self: self._parse_comment(),
+    TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+    TokenType.COPY: lambda self: self._parse_copy(),
+    TokenType.CREATE: lambda self: self._parse_create(),
+    TokenType.DELETE: lambda self: self._parse_delete(),
+    TokenType.DESC: lambda self: self._parse_describe(),
+    TokenType.DESCRIBE: lambda self: self._parse_describe(),
+    TokenType.DROP: lambda self: self._parse_drop(),
+    TokenType.GRANT: lambda self: self._parse_grant(),
+    TokenType.REVOKE: lambda self: self._parse_revoke(),
+    TokenType.INSERT: lambda self: self._parse_insert(),
+    TokenType.KILL: lambda self: self._parse_kill(),
+    TokenType.LOAD: lambda self: self._parse_load(),
+    TokenType.MERGE: lambda self: self._parse_merge(),
+    TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
+    TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
+    TokenType.REFRESH: lambda self: self._parse_refresh(),
+    TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
+    TokenType.SET: lambda self: self._parse_set(),
+    TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
+    TokenType.UNCACHE: lambda self: self._parse_uncache(),
+    TokenType.UNPIVOT: lambda self: self._parse_simplified_pivot(is_unpivot=True),
+    TokenType.UPDATE: lambda self: self._parse_update(),
+    TokenType.USE: lambda self: self._parse_use(),
+    TokenType.SEMICOLON: lambda self: exp.Semicolon(),
+}
+
+_UNARY_PARSERS = {
+    TokenType.PLUS: lambda self: self._parse_unary(),  # Unary + is handled as a no-op
+    TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
+    TokenType.TILDE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
+    TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
+    TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt, this=self._parse_unary()),
+    TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
+}
+
+_PLACEHOLDER_PARSERS = {
+    TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
+    TokenType.PARAMETER: lambda self: self._parse_parameter(),
+    TokenType.COLON: lambda self: (
+        self.expression(exp.Placeholder, this=self._prev.text)
+        if self._match_set(self.COLON_PLACEHOLDER_TOKENS)
+        else None
+    ),
+}
+
+_RANGE_PARSERS = {
+    TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
+    TokenType.BETWEEN: lambda self, this: self._parse_between(this),
+    TokenType.GLOB: binary_range_parser(exp.Glob),
+    TokenType.ILIKE: binary_range_parser(exp.ILike),
+    TokenType.IN: lambda self, this: self._parse_in(this),
+    TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
+    TokenType.IS: lambda self, this: self._parse_is(this),
+    TokenType.LIKE: binary_range_parser(exp.Like),
+    TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
+    TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
+    TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
+    TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
+    TokenType.FOR: lambda self, this: self._parse_comprehension(this),
+    TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
+    TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
+    TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
+    TokenType.ADJACENT: binary_range_parser(exp.Adjacent),
+    TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
+    TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
+    TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
+}
+
+_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+    "ALLOWED_VALUES": lambda self: self.expression(
+        exp.AllowedValuesProperty, expressions=self._parse_csv(self._parse_primary)
+    ),
+    "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
+    "AUTO": lambda self: self._parse_auto_property(),
+    "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+    "BACKUP": lambda self: self.expression(
+        exp.BackupProperty, this=self._parse_var(any_token=True)
+    ),
+    "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
+    "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
+    "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
+    "CHECKSUM": lambda self: self._parse_checksum(),
+    "CLUSTER BY": lambda self: self._parse_cluster(),
+    "CLUSTERED": lambda self: self._parse_clustered_by(),
+    "COLLATE": lambda self, **kwargs: self._parse_property_assignment(
+        exp.CollateProperty, **kwargs
+    ),
+    "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+    "CONTAINS": lambda self: self._parse_contains_property(),
+    "COPY": lambda self: self._parse_copy_property(),
+    "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
+    "DATA_DELETION": lambda self: self._parse_data_deletion_property(),
+    "DEFINER": lambda self: self._parse_definer(),
+    "DETERMINISTIC": lambda self: self.expression(
+        exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
+    ),
+    "DISTRIBUTED": lambda self: self._parse_distributed_property(),
+    "DUPLICATE": lambda self: self._parse_composite_key_property(exp.DuplicateKeyProperty),
+    "DYNAMIC": lambda self: self.expression(exp.DynamicProperty),
+    "DISTKEY": lambda self: self._parse_distkey(),
+    "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
+    "EMPTY": lambda self: self.expression(exp.EmptyProperty),
+    "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
+    "ENVIRONMENT": lambda self: self.expression(
+        exp.EnviromentProperty, expressions=self._parse_wrapped_csv(self._parse_assignment)
+    ),
+    "HANDLER": lambda self: self._parse_property_assignment(exp.HandlerProperty),
+    "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
+    "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
+    "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),
+    "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+    "FREESPACE": lambda self: self._parse_freespace(),
+    "GLOBAL": lambda self: self.expression(exp.GlobalProperty),
+    "HEAP": lambda self: self.expression(exp.HeapProperty),
+    "ICEBERG": lambda self: self.expression(exp.IcebergProperty),
+    "IMMUTABLE": lambda self: self.expression(
+        exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
+    ),
+    "INHERITS": lambda self: self.expression(
+        exp.InheritsProperty, expressions=self._parse_wrapped_csv(self._parse_table)
+    ),
+    "INPUT": lambda self: self.expression(exp.InputModelProperty, this=self._parse_schema()),
+    "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
+    "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
+    "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT"),
+    "LIFETIME": lambda self: self._parse_dict_range(this="LIFETIME"),
+    "LIKE": lambda self: self._parse_create_like(),
+    "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
+    "LOCK": lambda self: self._parse_locking(),
+    "LOCKING": lambda self: self._parse_locking(),
+    "LOG": lambda self, **kwargs: self._parse_log(**kwargs),
+    "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty),
+    "MERGEBLOCKRATIO": lambda self, **kwargs: self._parse_mergeblockratio(**kwargs),
+    "MODIFIES": lambda self: self._parse_modifies_property(),
+    "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
+    "NO": lambda self: self._parse_no_property(),
+    "ON": lambda self: self._parse_on_property(),
+    "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
+    "OUTPUT": lambda self: self.expression(exp.OutputModelProperty, this=self._parse_schema()),
+    "PARTITION": lambda self: self._parse_partitioned_of(),
+    "PARTITION BY": lambda self: self._parse_partitioned_by(),
+    "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
+    "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
+    "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
+    "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
+    "READS": lambda self: self._parse_reads_property(),
+    "REMOTE": lambda self: self._parse_remote_with_connection(),
+    "RETURNS": lambda self: self._parse_returns(),
+    "STRICT": lambda self: self.expression(exp.StrictProperty),
+    "STREAMING": lambda self: self.expression(exp.StreamingTableProperty),
+    "ROW": lambda self: self._parse_row(),
+    "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
+    "SAMPLE": lambda self: self.expression(
+        exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
+    ),
+    "SECURE": lambda self: self.expression(exp.SecureProperty),
+    "SECURITY": lambda self: self._parse_sql_security(),
+    "SQL SECURITY": lambda self: self._parse_sql_security(),
+    "SET": lambda self: self.expression(exp.SetProperty, multi=False),
+    "SETTINGS": lambda self: self._parse_settings_property(),
+    "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
+    "SORTKEY": lambda self: self._parse_sortkey(),
+    "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
+    "STABLE": lambda self: self.expression(
+        exp.StabilityProperty, this=exp.Literal.string("STABLE")
+    ),
+    "STORED": lambda self: self._parse_stored(),
+    "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
+    "TBLPROPERTIES": lambda self: self._parse_wrapped_properties(),
+    "TEMP": lambda self: self.expression(exp.TemporaryProperty),
+    "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
+    "TO": lambda self: self._parse_to_table(),
+    "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
+    "TRANSFORM": lambda self: self.expression(
+        exp.TransformModelProperty, expressions=self._parse_wrapped_csv(self._parse_expression)
+    ),
+    "TTL": lambda self: self._parse_ttl(),
+    "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+    "UNLOGGED": lambda self: self.expression(exp.UnloggedProperty),
+    "VOLATILE": lambda self: self._parse_volatile_property(),
+    "WITH": lambda self: self._parse_with_property(),
+}
+
+_CONSTRAINT_PARSERS = {
+    "AUTOINCREMENT": lambda self: self._parse_auto_increment(),
+    "AUTO_INCREMENT": lambda self: self._parse_auto_increment(),
+    "CASESPECIFIC": lambda self: self.expression(exp.CaseSpecificColumnConstraint, not_=False),
+    "CHARACTER SET": lambda self: self.expression(
+        exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
+    ),
+    "CHECK": lambda self: self._parse_check_constraint(),
+    "COLLATE": lambda self: self.expression(
+        exp.CollateColumnConstraint,
+        this=self._parse_identifier() or self._parse_column(),
+    ),
+    "COMMENT": lambda self: self.expression(exp.CommentColumnConstraint, this=self._parse_string()),
+    "COMPRESS": lambda self: self._parse_compress(),
+    "CLUSTERED": lambda self: self.expression(
+        exp.ClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
+    ),
+    "NONCLUSTERED": lambda self: self.expression(
+        exp.NonClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
+    ),
+    "DEFAULT": lambda self: self.expression(
+        exp.DefaultColumnConstraint, this=self._parse_bitwise()
+    ),
+    "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+    "EPHEMERAL": lambda self: self.expression(
+        exp.EphemeralColumnConstraint, this=self._parse_bitwise()
+    ),
+    "EXCLUDE": lambda self: self.expression(
+        exp.ExcludeColumnConstraint, this=self._parse_index_params()
+    ),
+    "FOREIGN KEY": lambda self: self._parse_foreign_key(),
+    "FORMAT": lambda self: self.expression(
+        exp.DateFormatColumnConstraint, this=self._parse_var_or_string()
+    ),
+    "GENERATED": lambda self: self._parse_generated_as_identity(),
+    "IDENTITY": lambda self: self._parse_auto_increment(),
+    "INLINE": lambda self: self._parse_inline(),
+    "LIKE": lambda self: self._parse_create_like(),
+    "NOT": lambda self: self._parse_not_constraint(),
+    "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
+    "ON": lambda self: (
+        self._match(TokenType.UPDATE)
+        and self.expression(exp.OnUpdateColumnConstraint, this=self._parse_function())
+    )
+    or self.expression(exp.OnProperty, this=self._parse_id_var()),
+    "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
+    "PERIOD": lambda self: self._parse_period_for_system_time(),
+    "PRIMARY KEY": lambda self: self._parse_primary_key(),
+    "REFERENCES": lambda self: self._parse_references(match=False),
+    "TITLE": lambda self: self.expression(
+        exp.TitleColumnConstraint, this=self._parse_var_or_string()
+    ),
+    "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
+    "UNIQUE": lambda self: self._parse_unique(),
+    "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
+    "WITH": lambda self: self.expression(
+        exp.Properties, expressions=self._parse_wrapped_properties()
+    ),
+    "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
+    "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
+}
+
+_ALTER_PARSERS = {
+    "ADD": lambda self: self._parse_alter_table_add(),
+    "AS": lambda self: self._parse_select(),
+    "ALTER": lambda self: self._parse_alter_table_alter(),
+    "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
+    "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
+    "DROP": lambda self: self._parse_alter_table_drop(),
+    "RENAME": lambda self: self._parse_alter_table_rename(),
+    "SET": lambda self: self._parse_alter_table_set(),
+    "SWAP": lambda self: self.expression(
+        exp.SwapTable, this=self._match(TokenType.WITH) and self._parse_table(schema=True)
+    ),
+}
+
+_ALTER_ALTER_PARSERS = {
+    "DISTKEY": lambda self: self._parse_alter_diststyle(),
+    "DISTSTYLE": lambda self: self._parse_alter_diststyle(),
+    "SORTKEY": lambda self: self._parse_alter_sortkey(),
+    "COMPOUND": lambda self: self._parse_alter_sortkey(compound=True),
+}
+
+_SCHEMA_UNNAMED_CONSTRAINTS = {
+    "CHECK",
+    "EXCLUDE",
+    "FOREIGN KEY",
+    "LIKE",
+    "PERIOD",
+    "PRIMARY KEY",
+    "UNIQUE",
+    "BUCKET",
+    "TRUNCATE",
+}
+
+_NO_PAREN_FUNCTION_PARSERS = {
+    "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
+    "CASE": lambda self: self._parse_case(),
+    "CONNECT_BY_ROOT": lambda self: self.expression(exp.ConnectByRoot, this=self._parse_column()),
+    "IF": lambda self: self._parse_if(),
+}
+
+_FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
+
+_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    **{name: lambda self: self._parse_max_min_by(exp.ArgMax) for name in exp.ArgMax.sql_names()},
+    **{name: lambda self: self._parse_max_min_by(exp.ArgMin) for name in exp.ArgMin.sql_names()},
+    "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+    "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
+    "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
+    "CHAR": lambda self: self._parse_char(),
+    "CHR": lambda self: self._parse_char(),
+    "DECODE": lambda self: self._parse_decode(),
+    "EXTRACT": lambda self: self._parse_extract(),
+    "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),
+    "GAP_FILL": lambda self: self._parse_gap_fill(),
+    "INITCAP": lambda self: self._parse_initcap(),
+    "JSON_OBJECT": lambda self: self._parse_json_object(),
+    "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
+    "JSON_TABLE": lambda self: self._parse_json_table(),
+    "MATCH": lambda self: self._parse_match_against(),
+    "NORMALIZE": lambda self: self._parse_normalize(),
+    "OPENJSON": lambda self: self._parse_open_json(),
+    "OVERLAY": lambda self: self._parse_overlay(),
+    "POSITION": lambda self: self._parse_position(),
+    "SAFE_CAST": lambda self: self._parse_cast(False, safe=True),
+    "STRING_AGG": lambda self: self._parse_string_agg(),
+    "SUBSTRING": lambda self: self._parse_substring(),
+    "TRIM": lambda self: self._parse_trim(),
+    "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
+    "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
+    "XMLELEMENT": lambda self: self._parse_xml_element(),
+    "XMLTABLE": lambda self: self._parse_xml_table(),
+}
+
+_TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
+
+
+@mypyc_attr(allow_interpreted_subclasses=True)
+class Parser:
     """
     Parser consumes a list of tokens produced by the Tokenizer and produces a parsed syntax tree.
 
@@ -280,261 +1304,19 @@ class Parser(metaclass=_Parser):
             Default: 3
     """
 
-    FUNCTIONS: t.Dict[str, t.Callable] = {
-        **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
-        **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
-        "ARRAY": lambda args, dialect: exp.Array(expressions=args),
-        "ARRAYAGG": lambda args, dialect: exp.ArrayAgg(
-            this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
-        ),
-        "ARRAY_AGG": lambda args, dialect: exp.ArrayAgg(
-            this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
-        ),
-        "ARRAY_APPEND": build_array_append,
-        "ARRAY_CAT": build_array_concat,
-        "ARRAY_CONCAT": build_array_concat,
-        "ARRAY_PREPEND": build_array_prepend,
-        "ARRAY_REMOVE": build_array_remove,
-        "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),
-        "CONCAT": lambda args, dialect: exp.Concat(
-            expressions=args,
-            safe=not dialect.STRICT_STRING_CONCAT,
-            coalesce=dialect.CONCAT_COALESCE,
-        ),
-        "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
-            expressions=args,
-            safe=not dialect.STRICT_STRING_CONCAT,
-            coalesce=dialect.CONCAT_COALESCE,
-        ),
-        "CONVERT_TIMEZONE": build_convert_timezone,
-        "DATE_TO_DATE_STR": lambda args: exp.Cast(
-            this=seq_get(args, 0),
-            to=exp.DataType(this=exp.DType.TEXT),
-        ),
-        "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
-            start=seq_get(args, 0),
-            end=seq_get(args, 1),
-            step=seq_get(args, 2) or exp.Interval(this=exp.Literal.string(1), unit=exp.var("DAY")),
-        ),
-        "GENERATE_UUID": lambda args, dialect: exp.Uuid(
-            is_string=dialect.UUID_IS_STRING_TYPE or None
-        ),
-        "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
-        "GREATEST": lambda args, dialect: exp.Greatest(
-            this=seq_get(args, 0),
-            expressions=args[1:],
-            ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
-        ),
-        "LEAST": lambda args, dialect: exp.Least(
-            this=seq_get(args, 0),
-            expressions=args[1:],
-            ignore_nulls=dialect.LEAST_GREATEST_IGNORES_NULLS,
-        ),
-        "HEX": build_hex,
-        "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
-        "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
-        "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
-        "JSON_KEYS": lambda args, dialect: exp.JSONKeys(
-            this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
-        ),
-        "LIKE": build_like,
-        "LOG": build_logarithm,
-        "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
-        "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
-        "LOWER": build_lower,
-        "LPAD": lambda args: build_pad(args),
-        "LEFTPAD": lambda args: build_pad(args),
-        "LTRIM": lambda args: build_trim(args),
-        "MOD": build_mod,
-        "RIGHTPAD": lambda args: build_pad(args, is_left=False),
-        "RPAD": lambda args: build_pad(args, is_left=False),
-        "RTRIM": lambda args: build_trim(args, is_left=False),
-        "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
-        if len(args) != 2
-        else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
-        "STRPOS": exp.StrPosition.from_arg_list,
-        "CHARINDEX": lambda args: build_locate_strposition(args),
-        "INSTR": exp.StrPosition.from_arg_list,
-        "LOCATE": lambda args: build_locate_strposition(args),
-        "TIME_TO_TIME_STR": lambda args: exp.Cast(
-            this=seq_get(args, 0),
-            to=exp.DataType(this=exp.DType.TEXT),
-        ),
-        "TO_HEX": build_hex,
-        "TS_OR_DS_TO_DATE_STR": lambda args: exp.Substring(
-            this=exp.Cast(
-                this=seq_get(args, 0),
-                to=exp.DataType(this=exp.DType.TEXT),
-            ),
-            start=exp.Literal.number(1),
-            length=exp.Literal.number(10),
-        ),
-        "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
-        "UPPER": build_upper,
-        "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
-        "VAR_MAP": build_var_map,
-    }
+    FUNCTIONS: t.Dict[str, t.Callable] = _FUNCTIONS
 
-    NO_PAREN_FUNCTIONS = {
-        TokenType.CURRENT_DATE: exp.CurrentDate,
-        TokenType.CURRENT_DATETIME: exp.CurrentDate,
-        TokenType.CURRENT_TIME: exp.CurrentTime,
-        TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
-        TokenType.CURRENT_USER: exp.CurrentUser,
-        TokenType.LOCALTIME: exp.Localtime,
-        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
-        TokenType.CURRENT_ROLE: exp.CurrentRole,
-    }
+    NO_PAREN_FUNCTIONS = _NO_PAREN_FUNCTIONS
 
-    STRUCT_TYPE_TOKENS = {
-        TokenType.NESTED,
-        TokenType.OBJECT,
-        TokenType.STRUCT,
-        TokenType.UNION,
-    }
+    STRUCT_TYPE_TOKENS = _STRUCT_TYPE_TOKENS
 
-    NESTED_TYPE_TOKENS = {
-        TokenType.ARRAY,
-        TokenType.LIST,
-        TokenType.LOWCARDINALITY,
-        TokenType.MAP,
-        TokenType.NULLABLE,
-        TokenType.RANGE,
-        *STRUCT_TYPE_TOKENS,
-    }
+    NESTED_TYPE_TOKENS = _NESTED_TYPE_TOKENS
 
-    ENUM_TYPE_TOKENS = {
-        TokenType.DYNAMIC,
-        TokenType.ENUM,
-        TokenType.ENUM8,
-        TokenType.ENUM16,
-    }
+    ENUM_TYPE_TOKENS = _ENUM_TYPE_TOKENS
 
-    AGGREGATE_TYPE_TOKENS = {
-        TokenType.AGGREGATEFUNCTION,
-        TokenType.SIMPLEAGGREGATEFUNCTION,
-    }
+    AGGREGATE_TYPE_TOKENS = _AGGREGATE_TYPE_TOKENS
 
-    TYPE_TOKENS = {
-        TokenType.BIT,
-        TokenType.BOOLEAN,
-        TokenType.TINYINT,
-        TokenType.UTINYINT,
-        TokenType.SMALLINT,
-        TokenType.USMALLINT,
-        TokenType.INT,
-        TokenType.UINT,
-        TokenType.BIGINT,
-        TokenType.UBIGINT,
-        TokenType.BIGNUM,
-        TokenType.INT128,
-        TokenType.UINT128,
-        TokenType.INT256,
-        TokenType.UINT256,
-        TokenType.MEDIUMINT,
-        TokenType.UMEDIUMINT,
-        TokenType.FIXEDSTRING,
-        TokenType.FLOAT,
-        TokenType.DOUBLE,
-        TokenType.UDOUBLE,
-        TokenType.CHAR,
-        TokenType.NCHAR,
-        TokenType.VARCHAR,
-        TokenType.NVARCHAR,
-        TokenType.BPCHAR,
-        TokenType.TEXT,
-        TokenType.MEDIUMTEXT,
-        TokenType.LONGTEXT,
-        TokenType.BLOB,
-        TokenType.MEDIUMBLOB,
-        TokenType.LONGBLOB,
-        TokenType.BINARY,
-        TokenType.VARBINARY,
-        TokenType.JSON,
-        TokenType.JSONB,
-        TokenType.INTERVAL,
-        TokenType.TINYBLOB,
-        TokenType.TINYTEXT,
-        TokenType.TIME,
-        TokenType.TIMETZ,
-        TokenType.TIME_NS,
-        TokenType.TIMESTAMP,
-        TokenType.TIMESTAMP_S,
-        TokenType.TIMESTAMP_MS,
-        TokenType.TIMESTAMP_NS,
-        TokenType.TIMESTAMPTZ,
-        TokenType.TIMESTAMPLTZ,
-        TokenType.TIMESTAMPNTZ,
-        TokenType.DATETIME,
-        TokenType.DATETIME2,
-        TokenType.DATETIME64,
-        TokenType.SMALLDATETIME,
-        TokenType.DATE,
-        TokenType.DATE32,
-        TokenType.INT4RANGE,
-        TokenType.INT4MULTIRANGE,
-        TokenType.INT8RANGE,
-        TokenType.INT8MULTIRANGE,
-        TokenType.NUMRANGE,
-        TokenType.NUMMULTIRANGE,
-        TokenType.TSRANGE,
-        TokenType.TSMULTIRANGE,
-        TokenType.TSTZRANGE,
-        TokenType.TSTZMULTIRANGE,
-        TokenType.DATERANGE,
-        TokenType.DATEMULTIRANGE,
-        TokenType.DECIMAL,
-        TokenType.DECIMAL32,
-        TokenType.DECIMAL64,
-        TokenType.DECIMAL128,
-        TokenType.DECIMAL256,
-        TokenType.DECFLOAT,
-        TokenType.UDECIMAL,
-        TokenType.BIGDECIMAL,
-        TokenType.UUID,
-        TokenType.GEOGRAPHY,
-        TokenType.GEOGRAPHYPOINT,
-        TokenType.GEOMETRY,
-        TokenType.POINT,
-        TokenType.RING,
-        TokenType.LINESTRING,
-        TokenType.MULTILINESTRING,
-        TokenType.POLYGON,
-        TokenType.MULTIPOLYGON,
-        TokenType.HLLSKETCH,
-        TokenType.HSTORE,
-        TokenType.PSEUDO_TYPE,
-        TokenType.SUPER,
-        TokenType.SERIAL,
-        TokenType.SMALLSERIAL,
-        TokenType.BIGSERIAL,
-        TokenType.XML,
-        TokenType.YEAR,
-        TokenType.USERDEFINED,
-        TokenType.MONEY,
-        TokenType.SMALLMONEY,
-        TokenType.ROWVERSION,
-        TokenType.IMAGE,
-        TokenType.VARIANT,
-        TokenType.VECTOR,
-        TokenType.VOID,
-        TokenType.OBJECT,
-        TokenType.OBJECT_IDENTIFIER,
-        TokenType.INET,
-        TokenType.IPADDRESS,
-        TokenType.IPPREFIX,
-        TokenType.IPV4,
-        TokenType.IPV6,
-        TokenType.UNKNOWN,
-        TokenType.NOTHING,
-        TokenType.NULL,
-        TokenType.NAME,
-        TokenType.TDIGEST,
-        TokenType.DYNAMIC,
-        *ENUM_TYPE_TOKENS,
-        *NESTED_TYPE_TOKENS,
-        *AGGREGATE_TYPE_TOKENS,
-    }
+    TYPE_TOKENS = _TYPE_TOKENS
 
     SIGNED_TO_UNSIGNED_TYPE_TOKEN = {
         TokenType.BIGINT: TokenType.UBIGINT,
@@ -546,249 +1328,47 @@ class Parser(metaclass=_Parser):
         TokenType.DOUBLE: TokenType.UDOUBLE,
     }
 
-    SUBQUERY_PREDICATES = {
-        TokenType.ANY: exp.Any,
-        TokenType.ALL: exp.All,
-        TokenType.EXISTS: exp.Exists,
-        TokenType.SOME: exp.Any,
-    }
+    SUBQUERY_PREDICATES = _SUBQUERY_PREDICATES
 
-    RESERVED_TOKENS = {
-        *Tokenizer.SINGLE_TOKENS.values(),
-        TokenType.SELECT,
-    } - {TokenType.IDENTIFIER}
+    RESERVED_TOKENS = _RESERVED_TOKENS
 
-    DB_CREATABLES = {
-        TokenType.DATABASE,
-        TokenType.DICTIONARY,
-        TokenType.FILE_FORMAT,
-        TokenType.MODEL,
-        TokenType.NAMESPACE,
-        TokenType.SCHEMA,
-        TokenType.SEMANTIC_VIEW,
-        TokenType.SEQUENCE,
-        TokenType.SINK,
-        TokenType.SOURCE,
-        TokenType.STAGE,
-        TokenType.STORAGE_INTEGRATION,
-        TokenType.STREAMLIT,
-        TokenType.TABLE,
-        TokenType.TAG,
-        TokenType.VIEW,
-        TokenType.WAREHOUSE,
-    }
+    DB_CREATABLES = _DB_CREATABLES
 
-    CREATABLES = {
-        TokenType.COLUMN,
-        TokenType.CONSTRAINT,
-        TokenType.FOREIGN_KEY,
-        TokenType.FUNCTION,
-        TokenType.INDEX,
-        TokenType.PROCEDURE,
-        TokenType.TRIGGER,
-        *DB_CREATABLES,
-    }
+    CREATABLES = _CREATABLES
 
     TRIGGER_EVENTS = {TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE, TokenType.TRUNCATE}
 
-    ALTERABLES = {
-        TokenType.INDEX,
-        TokenType.TABLE,
-        TokenType.VIEW,
-        TokenType.SESSION,
-    }
+    ALTERABLES = _ALTERABLES
 
     # Tokens that can represent identifiers
-    ID_VAR_TOKENS = {
-        TokenType.ALL,
-        TokenType.ANALYZE,
-        TokenType.ATTACH,
-        TokenType.VAR,
-        TokenType.ANTI,
-        TokenType.APPLY,
-        TokenType.ASC,
-        TokenType.ASOF,
-        TokenType.AUTO_INCREMENT,
-        TokenType.BEGIN,
-        TokenType.BPCHAR,
-        TokenType.CACHE,
-        TokenType.CASE,
-        TokenType.COLLATE,
-        TokenType.COMMAND,
-        TokenType.COMMENT,
-        TokenType.COMMIT,
-        TokenType.CONSTRAINT,
-        TokenType.COPY,
-        TokenType.CUBE,
-        TokenType.CURRENT_SCHEMA,
-        TokenType.DEFAULT,
-        TokenType.DELETE,
-        TokenType.DESC,
-        TokenType.DESCRIBE,
-        TokenType.DETACH,
-        TokenType.DICTIONARY,
-        TokenType.DIV,
-        TokenType.END,
-        TokenType.EXECUTE,
-        TokenType.EXPORT,
-        TokenType.ESCAPE,
-        TokenType.FALSE,
-        TokenType.FIRST,
-        TokenType.FILE,
-        TokenType.FILTER,
-        TokenType.FINAL,
-        TokenType.FORMAT,
-        TokenType.FULL,
-        TokenType.GET,
-        TokenType.IDENTIFIER,
-        TokenType.INOUT,
-        TokenType.IS,
-        TokenType.ISNULL,
-        TokenType.INTERVAL,
-        TokenType.KEEP,
-        TokenType.KILL,
-        TokenType.LEFT,
-        TokenType.LIMIT,
-        TokenType.LOAD,
-        TokenType.LOCK,
-        TokenType.MATCH,
-        TokenType.MERGE,
-        TokenType.NATURAL,
-        TokenType.NEXT,
-        TokenType.OFFSET,
-        TokenType.OPERATOR,
-        TokenType.ORDINALITY,
-        TokenType.OVER,
-        TokenType.OVERLAPS,
-        TokenType.OVERWRITE,
-        TokenType.PARTITION,
-        TokenType.PERCENT,
-        TokenType.PIVOT,
-        TokenType.PRAGMA,
-        TokenType.PUT,
-        TokenType.RANGE,
-        TokenType.RECURSIVE,
-        TokenType.REFERENCES,
-        TokenType.REFRESH,
-        TokenType.RENAME,
-        TokenType.REPLACE,
-        TokenType.RIGHT,
-        TokenType.ROLLUP,
-        TokenType.ROW,
-        TokenType.ROWS,
-        TokenType.SEMI,
-        TokenType.SET,
-        TokenType.SETTINGS,
-        TokenType.SHOW,
-        TokenType.TEMPORARY,
-        TokenType.TOP,
-        TokenType.TRUE,
-        TokenType.TRUNCATE,
-        TokenType.UNIQUE,
-        TokenType.UNNEST,
-        TokenType.UNPIVOT,
-        TokenType.UPDATE,
-        TokenType.USE,
-        TokenType.VOLATILE,
-        TokenType.WINDOW,
-        *ALTERABLES,
-        *CREATABLES,
-        *SUBQUERY_PREDICATES,
-        *TYPE_TOKENS,
-        *NO_PAREN_FUNCTIONS,
-    }
-    ID_VAR_TOKENS.remove(TokenType.UNION)
+    ID_VAR_TOKENS = _ID_VAR_TOKENS
 
-    TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
-        TokenType.ANTI,
-        TokenType.ASOF,
-        TokenType.FULL,
-        TokenType.LEFT,
-        TokenType.LOCK,
-        TokenType.NATURAL,
-        TokenType.RIGHT,
-        TokenType.SEMI,
-        TokenType.WINDOW,
-    }
+    TABLE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS
 
-    ALIAS_TOKENS = ID_VAR_TOKENS
+    ALIAS_TOKENS = _ALIAS_TOKENS
 
-    COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS
+    COLON_PLACEHOLDER_TOKENS = _ID_VAR_TOKENS
 
     ARRAY_CONSTRUCTORS = {
         "ARRAY": exp.Array,
         "LIST": exp.List,
     }
 
-    COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
+    COMMENT_TABLE_ALIAS_TOKENS = _COMMENT_TABLE_ALIAS_TOKENS
 
-    UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
+    UPDATE_ALIAS_TOKENS = _UPDATE_ALIAS_TOKENS
 
     TRIM_TYPES = {"LEADING", "TRAILING", "BOTH"}
 
-    FUNC_TOKENS = {
-        TokenType.COLLATE,
-        TokenType.COMMAND,
-        TokenType.CURRENT_DATE,
-        TokenType.CURRENT_DATETIME,
-        TokenType.CURRENT_SCHEMA,
-        TokenType.CURRENT_TIMESTAMP,
-        TokenType.CURRENT_TIME,
-        TokenType.CURRENT_USER,
-        TokenType.CURRENT_CATALOG,
-        TokenType.FILTER,
-        TokenType.FIRST,
-        TokenType.FORMAT,
-        TokenType.GET,
-        TokenType.GLOB,
-        TokenType.IDENTIFIER,
-        TokenType.INDEX,
-        TokenType.ISNULL,
-        TokenType.ILIKE,
-        TokenType.INSERT,
-        TokenType.LIKE,
-        TokenType.LOCALTIME,
-        TokenType.LOCALTIMESTAMP,
-        TokenType.MERGE,
-        TokenType.NEXT,
-        TokenType.OFFSET,
-        TokenType.PRIMARY_KEY,
-        TokenType.RANGE,
-        TokenType.REPLACE,
-        TokenType.RLIKE,
-        TokenType.ROW,
-        TokenType.SESSION_USER,
-        TokenType.UNNEST,
-        TokenType.VAR,
-        TokenType.LEFT,
-        TokenType.RIGHT,
-        TokenType.SEQUENCE,
-        TokenType.DATE,
-        TokenType.DATETIME,
-        TokenType.TABLE,
-        TokenType.TIMESTAMP,
-        TokenType.TIMESTAMPTZ,
-        TokenType.TRUNCATE,
-        TokenType.UTC_DATE,
-        TokenType.UTC_TIME,
-        TokenType.UTC_TIMESTAMP,
-        TokenType.WINDOW,
-        TokenType.XOR,
-        *TYPE_TOKENS,
-        *SUBQUERY_PREDICATES,
-    }
+    FUNC_TOKENS = _FUNC_TOKENS
 
-    CONJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = {
-        TokenType.AND: exp.And,
-    }
+    CONJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = _CONJUNCTION
 
     ASSIGNMENT: t.Dict[TokenType, t.Type[exp.Expr]] = {
         TokenType.COLON_EQ: exp.PropertyEQ,
     }
 
-    DISJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = {
-        TokenType.OR: exp.Or,
-    }
+    DISJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = _DISJUNCTION
 
     EQUALITY = {
         TokenType.EQ: exp.EQ,
@@ -803,11 +1383,7 @@ class Parser(metaclass=_Parser):
         TokenType.LTE: exp.LTE,
     }
 
-    BITWISE = {
-        TokenType.AMP: exp.BitwiseAnd,
-        TokenType.CARET: exp.BitwiseXor,
-        TokenType.PIPE: exp.BitwiseOr,
-    }
+    BITWISE = _BITWISE
 
     TERM = {
         TokenType.DASH: exp.Sub,
@@ -816,33 +1392,15 @@ class Parser(metaclass=_Parser):
         TokenType.COLLATE: exp.Collate,
     }
 
-    FACTOR = {
-        TokenType.DIV: exp.IntDiv,
-        TokenType.LR_ARROW: exp.Distance,
-        TokenType.SLASH: exp.Div,
-        TokenType.STAR: exp.Mul,
-    }
+    FACTOR = _FACTOR
 
-    EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = {}
+    EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = _EXPONENT
 
-    TIMES = {
-        TokenType.TIME,
-        TokenType.TIMETZ,
-    }
+    TIMES = _TIMES
 
-    TIMESTAMPS = {
-        TokenType.TIMESTAMP,
-        TokenType.TIMESTAMPNTZ,
-        TokenType.TIMESTAMPTZ,
-        TokenType.TIMESTAMPLTZ,
-        *TIMES,
-    }
+    TIMESTAMPS = _TIMESTAMPS
 
-    SET_OPERATIONS = {
-        TokenType.UNION,
-        TokenType.INTERSECT,
-        TokenType.EXCEPT,
-    }
+    SET_OPERATIONS = _SET_OPERATIONS
 
     JOIN_METHODS = {
         TokenType.ASOF,
@@ -856,77 +1414,15 @@ class Parser(metaclass=_Parser):
         TokenType.FULL,
     }
 
-    JOIN_KINDS = {
-        TokenType.ANTI,
-        TokenType.CROSS,
-        TokenType.INNER,
-        TokenType.OUTER,
-        TokenType.SEMI,
-        TokenType.STRAIGHT_JOIN,
-    }
+    JOIN_KINDS = _JOIN_KINDS
 
     JOIN_HINTS: t.Set[str] = set()
 
-    LAMBDAS = {
-        TokenType.ARROW: lambda self, expressions: self.expression(
-            exp.Lambda,
-            this=self._replace_lambda(
-                self._parse_disjunction(),
-                expressions,
-            ),
-            expressions=expressions,
-        ),
-        TokenType.FARROW: lambda self, expressions: self.expression(
-            exp.Kwarg,
-            this=exp.var(expressions[0].name),
-            expression=self._parse_disjunction(),
-        ),
-    }
+    LAMBDAS = _LAMBDAS
 
-    COLUMN_OPERATORS = {
-        TokenType.DOT: None,
-        TokenType.DOTCOLON: lambda self, this, to: self.expression(
-            exp.JSONCast,
-            this=this,
-            to=to,
-        ),
-        TokenType.DCOLON: lambda self, this, to: self.build_cast(
-            strict=self.STRICT_CAST, this=this, to=to
-        ),
-        TokenType.ARROW: lambda self, this, path: self.expression(
-            exp.JSONExtract,
-            this=this,
-            expression=self.dialect.to_json_path(path),
-            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
-        ),
-        TokenType.DARROW: lambda self, this, path: self.expression(
-            exp.JSONExtractScalar,
-            this=this,
-            expression=self.dialect.to_json_path(path),
-            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
-            scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
-        ),
-        TokenType.HASH_ARROW: lambda self, this, path: self.expression(
-            exp.JSONBExtract,
-            this=this,
-            expression=path,
-        ),
-        TokenType.DHASH_ARROW: lambda self, this, path: self.expression(
-            exp.JSONBExtractScalar,
-            this=this,
-            expression=path,
-        ),
-        TokenType.PLACEHOLDER: lambda self, this, key: self.expression(
-            exp.JSONBContains,
-            this=this,
-            expression=key,
-        ),
-    }
+    COLUMN_OPERATORS = _COLUMN_OPERATORS
 
-    CAST_COLUMN_OPERATORS = {
-        TokenType.DOTCOLON,
-        TokenType.DCOLON,
-    }
+    CAST_COLUMN_OPERATORS = _CAST_COLUMN_OPERATORS
 
     EXPRESSION_PARSERS = {
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
@@ -964,121 +1460,19 @@ class Parser(metaclass=_Parser):
         exp.With: lambda self: self._parse_with(),
     }
 
-    STATEMENT_PARSERS = {
-        TokenType.ALTER: lambda self: self._parse_alter(),
-        TokenType.ANALYZE: lambda self: self._parse_analyze(),
-        TokenType.BEGIN: lambda self: self._parse_transaction(),
-        TokenType.CACHE: lambda self: self._parse_cache(),
-        TokenType.COMMENT: lambda self: self._parse_comment(),
-        TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
-        TokenType.COPY: lambda self: self._parse_copy(),
-        TokenType.CREATE: lambda self: self._parse_create(),
-        TokenType.DELETE: lambda self: self._parse_delete(),
-        TokenType.DESC: lambda self: self._parse_describe(),
-        TokenType.DESCRIBE: lambda self: self._parse_describe(),
-        TokenType.DROP: lambda self: self._parse_drop(),
-        TokenType.GRANT: lambda self: self._parse_grant(),
-        TokenType.REVOKE: lambda self: self._parse_revoke(),
-        TokenType.INSERT: lambda self: self._parse_insert(),
-        TokenType.KILL: lambda self: self._parse_kill(),
-        TokenType.LOAD: lambda self: self._parse_load(),
-        TokenType.MERGE: lambda self: self._parse_merge(),
-        TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
-        TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
-        TokenType.REFRESH: lambda self: self._parse_refresh(),
-        TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
-        TokenType.SET: lambda self: self._parse_set(),
-        TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
-        TokenType.UNCACHE: lambda self: self._parse_uncache(),
-        TokenType.UNPIVOT: lambda self: self._parse_simplified_pivot(is_unpivot=True),
-        TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.USE: lambda self: self._parse_use(),
-        TokenType.SEMICOLON: lambda self: exp.Semicolon(),
-    }
+    STATEMENT_PARSERS = _STATEMENT_PARSERS
 
-    UNARY_PARSERS = {
-        TokenType.PLUS: lambda self: self._parse_unary(),  # Unary + is handled as a no-op
-        TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
-        TokenType.TILDE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
-        TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
-        TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt, this=self._parse_unary()),
-        TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
-    }
+    UNARY_PARSERS = _UNARY_PARSERS
 
-    STRING_PARSERS = {
-        TokenType.HEREDOC_STRING: lambda self, token: self.expression(exp.RawString, token=token),
-        TokenType.NATIONAL_STRING: lambda self, token: self.expression(exp.National, token=token),
-        TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, token=token),
-        TokenType.STRING: lambda self, token: self.expression(
-            exp.Literal, token=token, is_string=True
-        ),
-        TokenType.UNICODE_STRING: lambda self, token: self.expression(
-            exp.UnicodeString,
-            token=token,
-            escape=self._match_text_seq("UESCAPE") and self._parse_string(),
-        ),
-    }
+    STRING_PARSERS = _STRING_PARSERS
 
-    NUMERIC_PARSERS = {
-        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, token=token),
-        TokenType.BYTE_STRING: lambda self, token: self.expression(
-            exp.ByteString,
-            token=token,
-            is_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE or None,
-        ),
-        TokenType.HEX_STRING: lambda self, token: self.expression(
-            exp.HexString,
-            token=token,
-            is_integer=self.dialect.HEX_STRING_IS_INTEGER_TYPE or None,
-        ),
-        TokenType.NUMBER: lambda self, token: self.expression(
-            exp.Literal, token=token, is_string=False
-        ),
-    }
+    NUMERIC_PARSERS = _NUMERIC_PARSERS
 
-    PRIMARY_PARSERS = {
-        **STRING_PARSERS,
-        **NUMERIC_PARSERS,
-        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
-        TokenType.NULL: lambda self, _: self.expression(exp.Null),
-        TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
-        TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
-        TokenType.STAR: lambda self, _: self._parse_star_ops(),
-    }
+    PRIMARY_PARSERS = _PRIMARY_PARSERS
 
-    PLACEHOLDER_PARSERS = {
-        TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
-        TokenType.PARAMETER: lambda self: self._parse_parameter(),
-        TokenType.COLON: lambda self: (
-            self.expression(exp.Placeholder, this=self._prev.text)
-            if self._match_set(self.COLON_PLACEHOLDER_TOKENS)
-            else None
-        ),
-    }
+    PLACEHOLDER_PARSERS = _PLACEHOLDER_PARSERS
 
-    RANGE_PARSERS = {
-        TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
-        TokenType.BETWEEN: lambda self, this: self._parse_between(this),
-        TokenType.GLOB: binary_range_parser(exp.Glob),
-        TokenType.ILIKE: binary_range_parser(exp.ILike),
-        TokenType.IN: lambda self, this: self._parse_in(this),
-        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
-        TokenType.IS: lambda self, this: self._parse_is(this),
-        TokenType.LIKE: binary_range_parser(exp.Like),
-        TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
-        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
-        TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
-        TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
-        TokenType.FOR: lambda self, this: self._parse_comprehension(this),
-        TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
-        TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
-        TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
-        TokenType.ADJACENT: binary_range_parser(exp.Adjacent),
-        TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
-        TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
-        TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
-    }
+    RANGE_PARSERS = _RANGE_PARSERS
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
@@ -1097,184 +1491,9 @@ class Parser(metaclass=_Parser):
         "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
     }
 
-    PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-        "ALLOWED_VALUES": lambda self: self.expression(
-            exp.AllowedValuesProperty, expressions=self._parse_csv(self._parse_primary)
-        ),
-        "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
-        "AUTO": lambda self: self._parse_auto_property(),
-        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
-        "BACKUP": lambda self: self.expression(
-            exp.BackupProperty, this=self._parse_var(any_token=True)
-        ),
-        "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
-        "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
-        "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
-        "CHECKSUM": lambda self: self._parse_checksum(),
-        "CLUSTER BY": lambda self: self._parse_cluster(),
-        "CLUSTERED": lambda self: self._parse_clustered_by(),
-        "COLLATE": lambda self, **kwargs: self._parse_property_assignment(
-            exp.CollateProperty, **kwargs
-        ),
-        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
-        "CONTAINS": lambda self: self._parse_contains_property(),
-        "COPY": lambda self: self._parse_copy_property(),
-        "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
-        "DATA_DELETION": lambda self: self._parse_data_deletion_property(),
-        "DEFINER": lambda self: self._parse_definer(),
-        "DETERMINISTIC": lambda self: self.expression(
-            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
-        ),
-        "DISTRIBUTED": lambda self: self._parse_distributed_property(),
-        "DUPLICATE": lambda self: self._parse_composite_key_property(exp.DuplicateKeyProperty),
-        "DYNAMIC": lambda self: self.expression(exp.DynamicProperty),
-        "DISTKEY": lambda self: self._parse_distkey(),
-        "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
-        "EMPTY": lambda self: self.expression(exp.EmptyProperty),
-        "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
-        "ENVIRONMENT": lambda self: self.expression(
-            exp.EnviromentProperty, expressions=self._parse_wrapped_csv(self._parse_assignment)
-        ),
-        "HANDLER": lambda self: self._parse_property_assignment(exp.HandlerProperty),
-        "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
-        "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
-        "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),
-        "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        "FREESPACE": lambda self: self._parse_freespace(),
-        "GLOBAL": lambda self: self.expression(exp.GlobalProperty),
-        "HEAP": lambda self: self.expression(exp.HeapProperty),
-        "ICEBERG": lambda self: self.expression(exp.IcebergProperty),
-        "IMMUTABLE": lambda self: self.expression(
-            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
-        ),
-        "INHERITS": lambda self: self.expression(
-            exp.InheritsProperty, expressions=self._parse_wrapped_csv(self._parse_table)
-        ),
-        "INPUT": lambda self: self.expression(exp.InputModelProperty, this=self._parse_schema()),
-        "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
-        "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
-        "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT"),
-        "LIFETIME": lambda self: self._parse_dict_range(this="LIFETIME"),
-        "LIKE": lambda self: self._parse_create_like(),
-        "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
-        "LOCK": lambda self: self._parse_locking(),
-        "LOCKING": lambda self: self._parse_locking(),
-        "LOG": lambda self, **kwargs: self._parse_log(**kwargs),
-        "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty),
-        "MERGEBLOCKRATIO": lambda self, **kwargs: self._parse_mergeblockratio(**kwargs),
-        "MODIFIES": lambda self: self._parse_modifies_property(),
-        "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
-        "NO": lambda self: self._parse_no_property(),
-        "ON": lambda self: self._parse_on_property(),
-        "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
-        "OUTPUT": lambda self: self.expression(exp.OutputModelProperty, this=self._parse_schema()),
-        "PARTITION": lambda self: self._parse_partitioned_of(),
-        "PARTITION BY": lambda self: self._parse_partitioned_by(),
-        "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
-        "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
-        "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
-        "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
-        "READS": lambda self: self._parse_reads_property(),
-        "REMOTE": lambda self: self._parse_remote_with_connection(),
-        "RETURNS": lambda self: self._parse_returns(),
-        "STRICT": lambda self: self.expression(exp.StrictProperty),
-        "STREAMING": lambda self: self.expression(exp.StreamingTableProperty),
-        "ROW": lambda self: self._parse_row(),
-        "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
-        "SAMPLE": lambda self: self.expression(
-            exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
-        ),
-        "SECURE": lambda self: self.expression(exp.SecureProperty),
-        "SECURITY": lambda self: self._parse_sql_security(),
-        "SQL SECURITY": lambda self: self._parse_sql_security(),
-        "SET": lambda self: self.expression(exp.SetProperty, multi=False),
-        "SETTINGS": lambda self: self._parse_settings_property(),
-        "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
-        "SORTKEY": lambda self: self._parse_sortkey(),
-        "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
-        "STABLE": lambda self: self.expression(
-            exp.StabilityProperty, this=exp.Literal.string("STABLE")
-        ),
-        "STORED": lambda self: self._parse_stored(),
-        "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
-        "TBLPROPERTIES": lambda self: self._parse_wrapped_properties(),
-        "TEMP": lambda self: self.expression(exp.TemporaryProperty),
-        "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
-        "TO": lambda self: self._parse_to_table(),
-        "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
-        "TRANSFORM": lambda self: self.expression(
-            exp.TransformModelProperty, expressions=self._parse_wrapped_csv(self._parse_expression)
-        ),
-        "TTL": lambda self: self._parse_ttl(),
-        "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
-        "UNLOGGED": lambda self: self.expression(exp.UnloggedProperty),
-        "VOLATILE": lambda self: self._parse_volatile_property(),
-        "WITH": lambda self: self._parse_with_property(),
-    }
+    PROPERTY_PARSERS: t.Dict[str, t.Callable] = _PROPERTY_PARSERS
 
-    CONSTRAINT_PARSERS = {
-        "AUTOINCREMENT": lambda self: self._parse_auto_increment(),
-        "AUTO_INCREMENT": lambda self: self._parse_auto_increment(),
-        "CASESPECIFIC": lambda self: self.expression(exp.CaseSpecificColumnConstraint, not_=False),
-        "CHARACTER SET": lambda self: self.expression(
-            exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
-        ),
-        "CHECK": lambda self: self._parse_check_constraint(),
-        "COLLATE": lambda self: self.expression(
-            exp.CollateColumnConstraint,
-            this=self._parse_identifier() or self._parse_column(),
-        ),
-        "COMMENT": lambda self: self.expression(
-            exp.CommentColumnConstraint, this=self._parse_string()
-        ),
-        "COMPRESS": lambda self: self._parse_compress(),
-        "CLUSTERED": lambda self: self.expression(
-            exp.ClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
-        ),
-        "NONCLUSTERED": lambda self: self.expression(
-            exp.NonClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
-        ),
-        "DEFAULT": lambda self: self.expression(
-            exp.DefaultColumnConstraint, this=self._parse_bitwise()
-        ),
-        "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
-        "EPHEMERAL": lambda self: self.expression(
-            exp.EphemeralColumnConstraint, this=self._parse_bitwise()
-        ),
-        "EXCLUDE": lambda self: self.expression(
-            exp.ExcludeColumnConstraint, this=self._parse_index_params()
-        ),
-        "FOREIGN KEY": lambda self: self._parse_foreign_key(),
-        "FORMAT": lambda self: self.expression(
-            exp.DateFormatColumnConstraint, this=self._parse_var_or_string()
-        ),
-        "GENERATED": lambda self: self._parse_generated_as_identity(),
-        "IDENTITY": lambda self: self._parse_auto_increment(),
-        "INLINE": lambda self: self._parse_inline(),
-        "LIKE": lambda self: self._parse_create_like(),
-        "NOT": lambda self: self._parse_not_constraint(),
-        "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
-        "ON": lambda self: (
-            self._match(TokenType.UPDATE)
-            and self.expression(exp.OnUpdateColumnConstraint, this=self._parse_function())
-        )
-        or self.expression(exp.OnProperty, this=self._parse_id_var()),
-        "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
-        "PERIOD": lambda self: self._parse_period_for_system_time(),
-        "PRIMARY KEY": lambda self: self._parse_primary_key(),
-        "REFERENCES": lambda self: self._parse_references(match=False),
-        "TITLE": lambda self: self.expression(
-            exp.TitleColumnConstraint, this=self._parse_var_or_string()
-        ),
-        "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
-        "UNIQUE": lambda self: self._parse_unique(),
-        "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
-        "WITH": lambda self: self.expression(
-            exp.Properties, expressions=self._parse_wrapped_properties()
-        ),
-        "BUCKET": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
-        "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
-    }
+    CONSTRAINT_PARSERS = _CONSTRAINT_PARSERS
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> t.Optional[exp.Expr]:
         if not self._match(TokenType.L_PAREN, advance=False):
@@ -1305,130 +1524,31 @@ class Parser(metaclass=_Parser):
 
         return self.expression(klass, this=this, expression=expression)
 
-    ALTER_PARSERS = {
-        "ADD": lambda self: self._parse_alter_table_add(),
-        "AS": lambda self: self._parse_select(),
-        "ALTER": lambda self: self._parse_alter_table_alter(),
-        "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
-        "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
-        "DROP": lambda self: self._parse_alter_table_drop(),
-        "RENAME": lambda self: self._parse_alter_table_rename(),
-        "SET": lambda self: self._parse_alter_table_set(),
-        "SWAP": lambda self: self.expression(
-            exp.SwapTable, this=self._match(TokenType.WITH) and self._parse_table(schema=True)
-        ),
-    }
+    ALTER_PARSERS = _ALTER_PARSERS
 
-    ALTER_ALTER_PARSERS = {
-        "DISTKEY": lambda self: self._parse_alter_diststyle(),
-        "DISTSTYLE": lambda self: self._parse_alter_diststyle(),
-        "SORTKEY": lambda self: self._parse_alter_sortkey(),
-        "COMPOUND": lambda self: self._parse_alter_sortkey(compound=True),
-    }
+    ALTER_ALTER_PARSERS = _ALTER_ALTER_PARSERS
 
-    SCHEMA_UNNAMED_CONSTRAINTS = {
-        "CHECK",
-        "EXCLUDE",
-        "FOREIGN KEY",
-        "LIKE",
-        "PERIOD",
-        "PRIMARY KEY",
-        "UNIQUE",
-        "BUCKET",
-        "TRUNCATE",
-    }
+    SCHEMA_UNNAMED_CONSTRAINTS = _SCHEMA_UNNAMED_CONSTRAINTS
 
-    NO_PAREN_FUNCTION_PARSERS = {
-        "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
-        "CASE": lambda self: self._parse_case(),
-        "CONNECT_BY_ROOT": lambda self: self.expression(
-            exp.ConnectByRoot, this=self._parse_column()
-        ),
-        "IF": lambda self: self._parse_if(),
-    }
+    NO_PAREN_FUNCTION_PARSERS = _NO_PAREN_FUNCTION_PARSERS
 
     INVALID_FUNC_NAME_TOKENS = {
         TokenType.IDENTIFIER,
         TokenType.STRING,
     }
 
-    FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
+    FUNCTIONS_WITH_ALIASED_ARGS = _FUNCTIONS_WITH_ALIASED_ARGS
 
     KEY_VALUE_DEFINITIONS = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
 
-    FUNCTION_PARSERS = {
-        **{
-            name: lambda self: self._parse_max_min_by(exp.ArgMax) for name in exp.ArgMax.sql_names()
-        },
-        **{
-            name: lambda self: self._parse_max_min_by(exp.ArgMin) for name in exp.ArgMin.sql_names()
-        },
-        "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
-        "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
-        "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
-        "CHAR": lambda self: self._parse_char(),
-        "CHR": lambda self: self._parse_char(),
-        "DECODE": lambda self: self._parse_decode(),
-        "EXTRACT": lambda self: self._parse_extract(),
-        "FLOOR": lambda self: self._parse_ceil_floor(exp.Floor),
-        "GAP_FILL": lambda self: self._parse_gap_fill(),
-        "INITCAP": lambda self: self._parse_initcap(),
-        "JSON_OBJECT": lambda self: self._parse_json_object(),
-        "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
-        "JSON_TABLE": lambda self: self._parse_json_table(),
-        "MATCH": lambda self: self._parse_match_against(),
-        "NORMALIZE": lambda self: self._parse_normalize(),
-        "OPENJSON": lambda self: self._parse_open_json(),
-        "OVERLAY": lambda self: self._parse_overlay(),
-        "POSITION": lambda self: self._parse_position(),
-        "SAFE_CAST": lambda self: self._parse_cast(False, safe=True),
-        "STRING_AGG": lambda self: self._parse_string_agg(),
-        "SUBSTRING": lambda self: self._parse_substring(),
-        "TRIM": lambda self: self._parse_trim(),
-        "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
-        "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
-        "XMLELEMENT": lambda self: self._parse_xml_element(),
-        "XMLTABLE": lambda self: self._parse_xml_table(),
-    }
+    FUNCTION_PARSERS: t.Dict[str, t.Callable] = _FUNCTION_PARSERS
 
-    QUERY_MODIFIER_PARSERS = {
-        TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
-        TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
-        TokenType.WHERE: lambda self: ("where", self._parse_where()),
-        TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
-        TokenType.HAVING: lambda self: ("having", self._parse_having()),
-        TokenType.QUALIFY: lambda self: ("qualify", self._parse_qualify()),
-        TokenType.WINDOW: lambda self: ("windows", self._parse_window_clause()),
-        TokenType.ORDER_BY: lambda self: ("order", self._parse_order()),
-        TokenType.LIMIT: lambda self: ("limit", self._parse_limit()),
-        TokenType.FETCH: lambda self: ("limit", self._parse_limit()),
-        TokenType.OFFSET: lambda self: ("offset", self._parse_offset()),
-        TokenType.FOR: lambda self: ("locks", self._parse_locks()),
-        TokenType.LOCK: lambda self: ("locks", self._parse_locks()),
-        TokenType.TABLE_SAMPLE: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
-        TokenType.USING: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
-        TokenType.CLUSTER_BY: lambda self: (
-            "cluster",
-            self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
-        ),
-        TokenType.DISTRIBUTE_BY: lambda self: (
-            "distribute",
-            self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
-        ),
-        TokenType.SORT_BY: lambda self: ("sort", self._parse_sort(exp.Sort, TokenType.SORT_BY)),
-        TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
-        TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
-    }
-    QUERY_MODIFIER_TOKENS = set(QUERY_MODIFIER_PARSERS)
+    QUERY_MODIFIER_PARSERS = _QUERY_MODIFIER_PARSERS
+    QUERY_MODIFIER_TOKENS = _QUERY_MODIFIER_TOKENS
 
-    SET_PARSERS = {
-        "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
-        "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
-        "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
-        "TRANSACTION": lambda self: self._parse_set_transaction(),
-    }
+    SET_PARSERS = _SET_PARSERS
 
-    SHOW_PARSERS: t.Dict[str, t.Callable] = {}
+    SHOW_PARSERS: t.Dict[str, t.Callable] = _SHOW_PARSERS
 
     TYPE_LITERAL_PARSERS = {
         exp.DType.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
@@ -1451,10 +1571,10 @@ class Parser(metaclass=_Parser):
         "READ": ("WRITE", "ONLY"),
     }
 
-    CONFLICT_ACTIONS: OPTIONS_TYPE = dict.fromkeys(
-        ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK", "UPDATE"), tuple()
-    )
-    CONFLICT_ACTIONS["DO"] = ("NOTHING", "UPDATE")
+    CONFLICT_ACTIONS: OPTIONS_TYPE = {
+        **dict.fromkeys(("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK", "UPDATE"), tuple()),
+        "DO": ("NOTHING", "UPDATE"),
+    }
 
     TRIGGER_TIMING: OPTIONS_TYPE = {
         "INSTEAD": (("OF",),),
@@ -1539,17 +1659,17 @@ class Parser(metaclass=_Parser):
 
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
-    TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
+    TABLE_INDEX_HINT_TOKENS = _TABLE_INDEX_HINT_TOKENS
 
     VIEW_ATTRIBUTES = {"ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"}
 
-    WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.RANGE, TokenType.ROWS}
+    WINDOW_ALIAS_TOKENS = _WINDOW_ALIAS_TOKENS
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
 
     JSON_KEY_VALUE_SEPARATOR_TOKENS = {TokenType.COLON, TokenType.COMMA, TokenType.IS}
 
-    FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
+    FETCH_TOKENS = _FETCH_TOKENS
 
     ADD_CONSTRAINT_TOKENS = {
         TokenType.CONSTRAINT,
@@ -1562,7 +1682,7 @@ class Parser(metaclass=_Parser):
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
-    UNNEST_OFFSET_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - SET_OPERATIONS
+    UNNEST_OFFSET_ALIAS_TOKENS = _UNNEST_OFFSET_ALIAS_TOKENS
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
 
@@ -1706,6 +1826,10 @@ class Parser(metaclass=_Parser):
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}
 
+    def __init_subclass__(cls, **kwargs: t.Any) -> None:
+        super().__init_subclass__(**kwargs)
+        _init_parser_tries(cls)
+
     def __init__(
         self,
         error_level: t.Optional[ErrorLevel] = None,
@@ -1713,13 +1837,11 @@ class Parser(metaclass=_Parser):
         max_errors: int = 3,
         dialect: DialectType = None,
     ):
-        from sqlglot.dialects import Dialect
-
         self._core = ParserCore(
             error_level=error_level or ErrorLevel.IMMEDIATE,
             error_message_context=error_message_context,
             max_errors=max_errors,
-            dialect=Dialect.get_or_raise(dialect),
+            dialect=_resolve_dialect(dialect),
         )
         self._match = self._core._match
         self._match_set = self._core._match_set
@@ -2496,7 +2618,7 @@ class Parser(metaclass=_Parser):
         func_call = self._parse_function(anonymous=True, optional_parens=False)
         return self.expression(exp.TriggerExecute, this=func_call)
 
-    def _parse_property_before(self) -> t.Optional[exp.Expr]:
+    def _parse_property_before(self) -> t.Optional[t.Union[exp.Expr, t.List[exp.Expr]]]:
         # only used for teradata currently
         self._match(TokenType.COMMA)
 
@@ -2524,7 +2646,7 @@ class Parser(metaclass=_Parser):
     def _parse_wrapped_properties(self) -> t.List[exp.Expr]:
         return self._parse_wrapped_csv(self._parse_property)
 
-    def _parse_property(self) -> t.Optional[exp.Expr]:
+    def _parse_property(self) -> t.Optional[t.Union[exp.Expr, t.List[exp.Expr]]]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -6377,10 +6499,12 @@ class Parser(metaclass=_Parser):
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                code = getattr(func_builder, "__code__", None)
-                if code and "dialect" in code.co_varnames:
+                # TODO(mypyc): Previously used __code__ introspection to check if
+                # func_builder accepts 'dialect'. mypyc compiled functions may not
+                # have __code__, so we use try/except instead.
+                try:
                     func = func_builder(args, dialect=self.dialect)
-                else:
+                except TypeError:
                     func = func_builder(args)
 
                 func = self.validate_expression(func, args)
@@ -6824,7 +6948,7 @@ class Parser(metaclass=_Parser):
         if match and not self._match(TokenType.REFERENCES):
             return None
 
-        expressions = None
+        expressions: t.Optional[t.List[exp.Expression]] = None
         this = self._parse_table(schema=True)
         options = self._parse_key_constraint_options()
         return self.expression(exp.Reference, this=this, expressions=expressions, options=options)
@@ -7781,11 +7905,10 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_string_as_identifier(self) -> t.Optional[exp.Identifier]:
-        output = exp.to_identifier(
-            self._prev.text if self._match(TokenType.STRING) else None, quoted=True
-        )
-        if output:
-            output.update_positions(self._prev)
+        if not self._match(TokenType.STRING):
+            return None
+        output = exp.to_identifier(self._prev.text, quoted=True)
+        output.update_positions(self._prev)
         return output
 
     def _parse_number(self) -> t.Optional[exp.Expr]:
@@ -8812,7 +8935,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.L_PAREN)
 
         opts: t.List[t.Optional[exp.Expr]] = []
-        option: exp.Expr | None
+        option: t.Optional[t.Union[exp.Expr, t.List[exp.Expr]]]
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL
@@ -8824,7 +8947,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Unable to parse option")
                 break
 
-            opts.append(option)
+            opts.extend(ensure_list(option))
 
         return opts
 
@@ -9413,3 +9536,7 @@ class Parser(metaclass=_Parser):
                 break
 
         return this
+
+
+# Initialize tries for the base Parser class (__init_subclass__ only runs for subclasses).
+_init_parser_tries(Parser)

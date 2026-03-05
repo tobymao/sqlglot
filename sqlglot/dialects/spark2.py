@@ -12,8 +12,9 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_str,
 )
-from sqlglot.dialects.hive import Hive
+from sqlglot.dialects.hive import Hive, _HIVE_FUNCTIONS, _HIVE_FUNCTION_PARSERS
 from sqlglot.helper import ensure_list, seq_get
+from sqlglot import parser
 from sqlglot.parser import build_trim
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -115,6 +116,78 @@ def temporary_storage_provider(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+_SPARK2_FUNCTIONS: t.Dict[str, t.Callable] = {
+    **_HIVE_FUNCTIONS,
+    "AGGREGATE": exp.Reduce.from_arg_list,
+    "BOOLEAN": _build_as_cast("boolean"),
+    "DATE": _build_as_cast("date"),
+    "DATE_TRUNC": lambda args: exp.TimestampTrunc(
+        this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
+    ),
+    "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+    "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+    "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+    "DOUBLE": _build_as_cast("double"),
+    "ELEMENT_AT": lambda args: exp.Bracket(
+        this=seq_get(args, 0),
+        expressions=ensure_list(seq_get(args, 1)),
+        offset=1,
+        safe=False,
+    ),
+    "FLOAT": _build_as_cast("float"),
+    "FORMAT_STRING": exp.Format.from_arg_list,
+    "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
+        this=exp.cast(
+            seq_get(args, 0) or exp.Var(this=""),
+            exp.DType.TIMESTAMP,
+            dialect=dialect,
+        ),
+        zone=seq_get(args, 1),
+    ),
+    "LTRIM": lambda args: build_trim(args, reverse_args=True),
+    "INT": _build_as_cast("int"),
+    "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
+    "RLIKE": exp.RegexpLike.from_arg_list,
+    "RTRIM": lambda args: build_trim(args, is_left=False, reverse_args=True),
+    "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
+    "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
+    "STRING": _build_as_cast("string"),
+    "SLICE": exp.ArraySlice.from_arg_list,
+    "TIMESTAMP": _build_as_cast("timestamp"),
+    "TO_TIMESTAMP": lambda args: (
+        _build_as_cast("timestamp")(args)
+        if len(args) == 1
+        else build_formatted_time(exp.StrToTime, "spark")(args)
+    ),
+    "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+    "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(
+        this=exp.cast(
+            seq_get(args, 0) or exp.Var(this=""),
+            exp.DType.TIMESTAMP,
+            dialect=dialect,
+        ),
+        zone=seq_get(args, 1),
+    ),
+    "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+    "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+}
+
+_SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    **_HIVE_FUNCTION_PARSERS,
+    "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
+    "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
+    "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
+    "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
+    "MERGE": lambda self: self._parse_join_hint("MERGE"),
+    "SHUFFLEMERGE": lambda self: self._parse_join_hint("SHUFFLEMERGE"),
+    "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
+    "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
+    "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
+}
+
+_SPARK2_SET_PARSERS = parser._SET_PARSERS.copy()
+
+
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
 
@@ -137,74 +210,9 @@ class Spark2(Hive):
         TRIM_PATTERN_FIRST = True
         CHANGE_COLUMN_ALTER_SYNTAX = True
 
-        FUNCTIONS = {
-            **Hive.Parser.FUNCTIONS,
-            "AGGREGATE": exp.Reduce.from_arg_list,
-            "BOOLEAN": _build_as_cast("boolean"),
-            "DATE": _build_as_cast("date"),
-            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
-            ),
-            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DOUBLE": _build_as_cast("double"),
-            "ELEMENT_AT": lambda args: exp.Bracket(
-                this=seq_get(args, 0),
-                expressions=ensure_list(seq_get(args, 1)),
-                offset=1,
-                safe=False,
-            ),
-            "FLOAT": _build_as_cast("float"),
-            "FORMAT_STRING": exp.Format.from_arg_list,
-            "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
-                this=exp.cast(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DType.TIMESTAMP,
-                    dialect=dialect,
-                ),
-                zone=seq_get(args, 1),
-            ),
-            "LTRIM": lambda args: build_trim(args, reverse_args=True),
-            "INT": _build_as_cast("int"),
-            "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
-            "RLIKE": exp.RegexpLike.from_arg_list,
-            "RTRIM": lambda args: build_trim(args, is_left=False, reverse_args=True),
-            "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
-            "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
-            "STRING": _build_as_cast("string"),
-            "SLICE": exp.ArraySlice.from_arg_list,
-            "TIMESTAMP": _build_as_cast("timestamp"),
-            "TO_TIMESTAMP": lambda args: (
-                _build_as_cast("timestamp")(args)
-                if len(args) == 1
-                else build_formatted_time(exp.StrToTime, "spark")(args)
-            ),
-            "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
-            "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(
-                this=exp.cast(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DType.TIMESTAMP,
-                    dialect=dialect,
-                ),
-                zone=seq_get(args, 1),
-            ),
-            "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
-            "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-        }
+        FUNCTIONS = _SPARK2_FUNCTIONS
 
-        FUNCTION_PARSERS = {
-            **Hive.Parser.FUNCTION_PARSERS,
-            "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
-            "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
-            "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
-            "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
-            "MERGE": lambda self: self._parse_join_hint("MERGE"),
-            "SHUFFLEMERGE": lambda self: self._parse_join_hint("SHUFFLEMERGE"),
-            "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
-            "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
-            "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
-        }
+        FUNCTION_PARSERS = _SPARK2_FUNCTION_PARSERS
 
         def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
             return (

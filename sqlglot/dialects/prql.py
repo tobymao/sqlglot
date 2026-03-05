@@ -34,12 +34,12 @@ class PRQL(Dialect):
 
     class Parser(parser.Parser):
         CONJUNCTION = {
-            **parser.Parser.CONJUNCTION,
+            **parser._CONJUNCTION,
             TokenType.DAMP: exp.And,
         }
 
         DISJUNCTION = {
-            **parser.Parser.DISJUNCTION,
+            **parser._DISJUNCTION,
             TokenType.DPIPE: exp.Or,
         }
 
@@ -64,7 +64,7 @@ class PRQL(Dialect):
         }
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser._FUNCTIONS,
             "AVERAGE": exp.Avg.from_arg_list,
             "SUM": lambda args: exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0),
         }

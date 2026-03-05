@@ -24,6 +24,7 @@ from sqlglot.helper import (
 )
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
+from sqlglot import parser as _parser_module
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
@@ -315,19 +316,37 @@ class _Dialect(type):
 
             klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
 
-        if enum not in ("", "doris", "mysql"):
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.STRAIGHT_JOIN,
-            }
-            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
-                TokenType.STRAIGHT_JOIN,
-            }
-
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
+        # TODO(mypyc): mypyc compiled classes store class attributes as getset descriptors.
+        # Class-level access (Class.ATTR) returns the descriptor instead of the value.
+        # The _pa helper walks the MRO and checks __dict__ directly to find actual values,
+        # falling back to module-level defaults from parser.py.
+        _pc = klass.parser_class
+
+        def _pa(name: str) -> t.Any:
+            for klass_in_mro in type.mro(_pc):
+                val = klass_in_mro.__dict__.get(name)
+                if isinstance(val, (dict, set, frozenset)):
+                    return val
+            # mypyc compiled classes store attributes as getset descriptors in __dict__,
+            # so we need to read the default value from a temporary instance.
+            try:
+                inst = _pc.__new__(_pc)
+                val = getattr(inst, name, None)
+                if isinstance(val, (dict, set, frozenset)):
+                    return val
+            except Exception:
+                pass
+            return getattr(_parser_module, f"_{name}", None)
+
+        if enum not in ("", "doris", "mysql"):
+            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.STRAIGHT_JOIN}
+            _pc.TABLE_ALIAS_TOKENS = _pa("TABLE_ALIAS_TOKENS") | {TokenType.STRAIGHT_JOIN}
+
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+            _pc.TABLE_ALIAS_TOKENS = _pa("TABLE_ALIAS_TOKENS") | {
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
@@ -343,42 +362,25 @@ class _Dialect(type):
             "mysql",
             "singlestore",
         ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
             no_paren_functions.pop(TokenType.LOCALTIME, None)
             if enum != "oracle":
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
 
-        if enum in (
-            "",
-            "postgres",
-            "duckdb",
-            "trino",
-        ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+        if enum in ("", "postgres", "duckdb", "trino"):
+            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
             no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            # For dialects that don't support this keyword, treat it as a regular identifier
-            # This fixes the "Unexpected token" error in BQ, Spark, etc.
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.CURRENT_CATALOG,
-            }
+            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.CURRENT_CATALOG}
 
-        if enum in (
-            "",
-            "duckdb",
-            "spark",
-            "postgres",
-            "tsql",
-        ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+        if enum in ("", "databricks", "duckdb", "spark", "spark2", "postgres", "tsql"):
+            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.SESSION_USER,
-            }
+            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.SESSION_USER}
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

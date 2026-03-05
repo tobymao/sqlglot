@@ -269,7 +269,7 @@ class _TrinoTokenizer(Trino.Tokenizer):
 # Athena extensions to Trino's parser
 class _TrinoParser(Trino.Parser):
     STATEMENT_PARSERS = {
-        **Trino.Parser.STATEMENT_PARSERS,
+        **parser._STATEMENT_PARSERS,
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 

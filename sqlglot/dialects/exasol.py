@@ -340,7 +340,7 @@ class Exasol(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser._FUNCTIONS,
             **{
                 f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit)
                 for unit in DATE_UNITS
@@ -407,7 +407,7 @@ class Exasol(Dialect):
             "ZEROIFNULL": _build_zeroifnull,
         }
         CONSTRAINT_PARSERS = {
-            **parser.Parser.CONSTRAINT_PARSERS,
+            **parser._CONSTRAINT_PARSERS,
             "COMMENT": lambda self: self.expression(
                 exp.CommentColumnConstraint,
                 this=self._match(TokenType.IS) and self._parse_string(),
@@ -415,7 +415,7 @@ class Exasol(Dialect):
         }
 
         RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,
+            **parser._RANGE_PARSERS,
             TokenType.RLIKE: lambda self, this: self.expression(
                 exp.RegexpLike,
                 this=this,
@@ -425,18 +425,18 @@ class Exasol(Dialect):
         }
 
         FUNC_TOKENS = {
-            *parser.Parser.FUNC_TOKENS,
+            *parser._FUNC_TOKENS,
             TokenType.SYSTIMESTAMP,
         }
 
         NO_PAREN_FUNCTIONS = {
-            **parser.Parser.NO_PAREN_FUNCTIONS,
+            **parser._NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
             TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser._FUNCTION_PARSERS,
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
             **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),

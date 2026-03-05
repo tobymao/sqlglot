@@ -1,6 +1,6 @@
 import re
 
-from sqlglot import TokenType
+from sqlglot import TokenType, parser
 import typing as t
 
 from sqlglot import exp
@@ -16,7 +16,17 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     timestampdiff_sql,
 )
-from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql, _show_parser
+from sqlglot.dialects.mysql import (
+    MySQL,
+    _remove_ts_or_ds_to_date,
+    date_add_sql,
+    _show_parser,
+    _MYSQL_FUNCTIONS,
+    _MYSQL_FUNCTION_PARSERS,
+    _MYSQL_NO_PAREN_FUNCTIONS,
+    _MYSQL_SHOW_PARSERS,
+    _MYSQL_ALTER_PARSERS,
+)
 from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
@@ -87,7 +97,7 @@ class SingleStore(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
+            **_MYSQL_FUNCTIONS,
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
             "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
@@ -222,7 +232,7 @@ class SingleStore(MySQL):
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-            **MySQL.Parser.FUNCTION_PARSERS,
+            **_MYSQL_FUNCTION_PARSERS,
             "JSON_AGG": lambda self: exp.JSONArrayAgg(
                 this=self._parse_term(),
                 order=self._parse_order(),
@@ -230,7 +240,7 @@ class SingleStore(MySQL):
         }
 
         NO_PAREN_FUNCTIONS = {
-            **MySQL.Parser.NO_PAREN_FUNCTIONS,
+            **_MYSQL_NO_PAREN_FUNCTIONS,
             TokenType.UTC_DATE: exp.UtcDate,
             TokenType.UTC_TIME: exp.UtcTime,
             TokenType.UTC_TIMESTAMP: exp.UtcTimestamp,
@@ -239,7 +249,7 @@ class SingleStore(MySQL):
         CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
 
         COLUMN_OPERATORS = {
-            **MySQL.Parser.COLUMN_OPERATORS,
+            **parser._COLUMN_OPERATORS,
             TokenType.COLON_GT: lambda self, this, to: self.expression(
                 exp.Cast,
                 this=this,
@@ -273,7 +283,7 @@ class SingleStore(MySQL):
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
         SHOW_PARSERS = {
-            **MySQL.Parser.SHOW_PARSERS,
+            **_MYSQL_SHOW_PARSERS,
             "AGGREGATES": _show_parser("AGGREGATES"),
             "CDC EXTRACTOR POOL": _show_parser("CDC EXTRACTOR POOL"),
             "CREATE AGGREGATE": _show_parser("CREATE AGGREGATE", target=True),
@@ -314,7 +324,7 @@ class SingleStore(MySQL):
         }
 
         ALTER_PARSERS = {
-            **MySQL.Parser.ALTER_PARSERS,
+            **_MYSQL_ALTER_PARSERS,
             "CHANGE": lambda self: self.expression(
                 exp.RenameColumn, this=self._parse_column(), to=self._parse_column()
             ),

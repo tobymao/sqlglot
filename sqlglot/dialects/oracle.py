@@ -117,7 +117,7 @@ class Oracle(Dialect):
         VALUES_FOLLOWED_BY_PAREN = False
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser._FUNCTIONS,
             "CONVERT": exp.ConvertToCharset.from_arg_list,
             "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
             "NVL": lambda args: build_coalesce(args, is_nvl=True),
@@ -132,7 +132,7 @@ class Oracle(Dialect):
         FUNCTIONS.pop("TO_BOOLEAN")
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **parser._NO_PAREN_FUNCTION_PARSERS,
             "NEXT": lambda self: self._parse_next_value_for(),
             "PRIOR": lambda self: self.expression(exp.Prior, this=self._parse_bitwise()),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
@@ -140,12 +140,12 @@ class Oracle(Dialect):
         }
 
         NO_PAREN_FUNCTIONS = {
-            **parser.Parser.NO_PAREN_FUNCTIONS,
+            **parser._NO_PAREN_FUNCTIONS,
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser._FUNCTION_PARSERS,
             "JSON_ARRAY": lambda self: self._parse_json_array(
                 exp.JSONArray,
                 expressions=self._parse_csv(lambda: self._parse_format_json(self._parse_bitwise())),
@@ -160,7 +160,7 @@ class Oracle(Dialect):
         FUNCTION_PARSERS.pop("CONVERT")
 
         PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
+            **parser._PROPERTY_PARSERS,
             "GLOBAL": lambda self: self._match_text_seq("TEMPORARY")
             and self.expression(exp.TemporaryProperty, this="GLOBAL"),
             "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
@@ -169,7 +169,7 @@ class Oracle(Dialect):
         }
 
         QUERY_MODIFIER_PARSERS = {
-            **parser.Parser.QUERY_MODIFIER_PARSERS,
+            **parser._QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
             TokenType.WITH: lambda self: ("options", [self._parse_query_restrictions()]),
         }

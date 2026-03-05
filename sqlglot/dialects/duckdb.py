@@ -1558,23 +1558,23 @@ class DuckDB(Dialect):
     class Parser(parser.Parser):
         MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 
-        BITWISE = parser.Parser.BITWISE.copy()
+        BITWISE = parser._BITWISE.copy()
         BITWISE.pop(TokenType.CARET)
 
         RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,
+            **parser._RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
             TokenType.TILDE: binary_range_parser(exp.RegexpFullMatch),
         }
 
         EXPONENT = {
-            **parser.Parser.EXPONENT,
+            **parser._EXPONENT,
             TokenType.CARET: exp.Pow,
             TokenType.DSTAR: exp.Pow,
         }
 
-        FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "STRUCT_PACK"}
+        FUNCTIONS_WITH_ALIASED_ARGS = {*parser._FUNCTIONS_WITH_ALIASED_ARGS, "STRUCT_PACK"}
 
         SHOW_PARSERS = {
             "TABLES": _show_parser("TABLES"),
@@ -1582,7 +1582,7 @@ class DuckDB(Dialect):
         }
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser._FUNCTIONS,
             "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
             "ARRAY_PREPEND": _build_array_prepend,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
@@ -1668,7 +1668,7 @@ class DuckDB(Dialect):
         FUNCTIONS.pop("GLOB")
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **parser._FUNCTION_PARSERS,
             **dict.fromkeys(
                 ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
             ),
@@ -1676,18 +1676,18 @@ class DuckDB(Dialect):
         FUNCTION_PARSERS.pop("DECODE")
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **parser._NO_PAREN_FUNCTION_PARSERS,
             "MAP": lambda self: self._parse_map(),
             "@": lambda self: exp.Abs(this=self._parse_bitwise()),
         }
 
-        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+        TABLE_ALIAS_TOKENS = parser._TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
             TokenType.ANTI,
         }
 
         PLACEHOLDER_PARSERS = {
-            **parser.Parser.PLACEHOLDER_PARSERS,
+            **parser._PLACEHOLDER_PARSERS,
             TokenType.PARAMETER: lambda self: (
                 self.expression(exp.Placeholder, this=self._prev.text)
                 if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
@@ -1703,7 +1703,7 @@ class DuckDB(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
+            **parser._STATEMENT_PARSERS,
             TokenType.ATTACH: lambda self: self._parse_attach_detach(),
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
             TokenType.FORCE: lambda self: self._parse_force(),
@@ -1712,7 +1712,7 @@ class DuckDB(Dialect):
         }
 
         SET_PARSERS = {
-            **parser.Parser.SET_PARSERS,
+            **parser._SET_PARSERS,
             "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
         }
 

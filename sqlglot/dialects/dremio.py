@@ -164,12 +164,12 @@ class Dremio(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **parser._NO_PAREN_FUNCTION_PARSERS,
             "CURRENT_DATE_UTC": lambda self: self._parse_current_date_utc(),
         }
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
+            **parser._FUNCTIONS,
             "ARRAY_GENERATE_RANGE": exp.GenerateSeries.from_arg_list,
             "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
             "BIT_OR": exp.BitwiseOrAgg.from_arg_list,

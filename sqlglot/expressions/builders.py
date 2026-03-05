@@ -930,13 +930,19 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     converted: t.List[Expr] = [maybe_parse(arg, dialect=dialect, copy=copy) for arg in args]
     kwargs = {key: maybe_parse(value, dialect=dialect, copy=copy) for key, value in kwargs.items()}
 
-    constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
+    # TODO(mypyc): dialect.parser_class.FUNCTIONS may return a getset descriptor
+    # when the parser is compiled. Check __dict__ directly and fall back to module-level.
+    functions = dialect.parser_class.__dict__.get("FUNCTIONS")
+    if not isinstance(functions, dict):
+        from sqlglot.parser import _FUNCTIONS
+
+        functions = _FUNCTIONS
+    constructor = functions.get(name.upper())
     if constructor:
         if converted:
-            code = getattr(constructor, "__code__", None)
-            if code and "dialect" in code.co_varnames:
+            try:
                 function = constructor(converted, dialect=dialect)
-            else:
+            except TypeError:
                 function = constructor(converted)
         elif constructor.__name__ == "from_arg_list":
             function = constructor.__self__(**kwargs)  # type: ignore

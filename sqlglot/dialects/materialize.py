@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, parser
 from sqlglot.helper import seq_get
-from sqlglot.dialects.postgres import Postgres
+from sqlglot.dialects.postgres import Postgres, _POSTGRES_NO_PAREN_FUNCTION_PARSERS
 
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -16,12 +16,12 @@ import typing as t
 class Materialize(Postgres):
     class Parser(Postgres.Parser):
         NO_PAREN_FUNCTION_PARSERS = {
-            **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **_POSTGRES_NO_PAREN_FUNCTION_PARSERS,
             "MAP": lambda self: self._parse_map(),
         }
 
         LAMBDAS = {
-            **Postgres.Parser.LAMBDAS,
+            **parser._LAMBDAS,
             TokenType.FARROW: lambda self, expressions: self.expression(
                 exp.Kwarg, this=seq_get(expressions, 0), expression=self._parse_assignment()
             ),

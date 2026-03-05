@@ -10,7 +10,13 @@ from sqlglot.dialects.dialect import (
     time_format,
     unit_to_str,
 )
-from sqlglot.dialects.mysql import MySQL
+from sqlglot.dialects.mysql import (
+    MySQL,
+    _MYSQL_FUNCTIONS,
+    _MYSQL_FUNCTION_PARSERS,
+    _MYSQL_NO_PAREN_FUNCTIONS,
+    _MYSQL_PROPERTY_PARSERS,
+)
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -47,7 +53,7 @@ class Doris(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
+            **_MYSQL_FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": _build_date_trunc,
             "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
@@ -56,14 +62,14 @@ class Doris(MySQL):
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
 
-        FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS = _MYSQL_FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
 
-        NO_PAREN_FUNCTIONS = MySQL.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS = _MYSQL_NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_DATE)
 
         PROPERTY_PARSERS = {
-            **MySQL.Parser.PROPERTY_PARSERS,
+            **_MYSQL_PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             # Plain KEY without UNIQUE/DUPLICATE/AGGREGATE prefixes should be treated as UniqueKeyProperty with unique=False

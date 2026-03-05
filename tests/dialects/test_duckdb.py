@@ -2574,7 +2574,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CASE WHEN 42 IS NULL THEN NULL ELSE [4.2] END AS result",
+            "SELECT CASE WHEN 4.2 IS NULL THEN NULL ELSE [4.2] END AS result",
             read={
                 "snowflake": "SELECT TO_ARRAY(4.2) AS result",
             },

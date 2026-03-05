@@ -33,4 +33,5 @@ EXPRESSION_METADATA = {
         }
     },
     exp.CurrentTimezone: {"returns": exp.DType.NVARCHAR},
+    exp.CurrentTimestamp: {"returns": exp.DType.DATETIME},
 }

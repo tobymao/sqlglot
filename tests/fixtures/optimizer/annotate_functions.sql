@@ -5843,6 +5843,10 @@ FLOAT;
 DEGREES(tbl.bigint_col);
 BIGINT;
 
+# dialect: tsql 
+CURRENT_TIMESTAMP;
+DATETIME;
+
 --------------------------------------
 -- MySQL
 --------------------------------------

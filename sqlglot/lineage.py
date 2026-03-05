@@ -26,10 +26,16 @@ class Node:
     reference_node_name: str = ""
 
     def walk(self) -> t.Iterator[Node]:
-        yield self
-
-        for d in self.downstream:
-            yield from d.walk()
+        visited: t.Set[int] = set()
+        queue = [self]
+        while queue:
+            node = queue.pop()
+            node_id = id(node)
+            if node_id in visited:
+                continue
+            visited.add(node_id)
+            yield node
+            queue.extend(reversed(node.downstream))
 
     def to_html(self, dialect: DialectType = None, **opts) -> GraphHTML:
         nodes = {}
@@ -126,7 +132,7 @@ def lineage(
     ):
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
-    return to_node(column, scope, dialect, trim_selects=trim_selects)
+    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
 
 
 def to_node(
@@ -138,7 +144,16 @@ def to_node(
     source_name: t.Optional[str] = None,
     reference_node_name: t.Optional[str] = None,
     trim_selects: bool = True,
+    _cache: t.Optional[t.Dict[t.Tuple, Node]] = None,
 ) -> Node:
+    cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
+
+    if _cache is not None and cache_key in _cache:
+        cached_node = _cache[cache_key]
+        if upstream:
+            upstream.downstream.append(cached_node)
+        return cached_node
+
     # Find the specific select clause that is the source of the column we want.
     # This can either be a specific, named select or a generic `*` clause.
     selectable = t.cast(exp.Selectable, scope.expression)
@@ -153,7 +168,7 @@ def to_node(
 
     if isinstance(scope.expression, exp.Subquery):
         for inner_scope in scope.subquery_scopes:
-            return to_node(
+            result = to_node(
                 column,
                 scope=inner_scope,
                 dialect=dialect,
@@ -161,7 +176,11 @@ def to_node(
                 source_name=source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                _cache=_cache,
             )
+            if _cache is not None:
+                _cache[cache_key] = result
+            return result
     if isinstance(scope.expression, exp.SetOperation):
         name = type(scope.expression).__name__.upper()
         upstream = upstream or Node(name=name, source=scope.expression, expression=select)
@@ -191,8 +210,11 @@ def to_node(
                 source_name=source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                _cache=_cache,
             )
 
+        if _cache is not None:
+            _cache[cache_key] = upstream
         return upstream
 
     if trim_selects and isinstance(scope.expression, exp.Select):
@@ -233,6 +255,7 @@ def to_node(
                 dialect=dialect,
                 upstream=node,
                 trim_selects=trim_selects,
+                _cache=_cache,
             )
 
     # if the select is a star add all scope sources as downstreams
@@ -306,6 +329,7 @@ def to_node(
                 source_name=source_names.get(table) or source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                _cache=_cache,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
@@ -334,6 +358,7 @@ def to_node(
                         source_name=source_names.get(table) or source_name,
                         reference_node_name=reference_node_name,
                         trim_selects=trim_selects,
+                        _cache=_cache,
                     )
                 else:
                     col_expr = col_source or exp.Placeholder()
@@ -353,6 +378,9 @@ def to_node(
             node.downstream.append(
                 Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
             )
+
+    if _cache is not None:
+        _cache[cache_key] = node
 
     return node
 

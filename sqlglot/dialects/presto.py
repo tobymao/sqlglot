@@ -256,7 +256,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-_PRESTO_FUNCTIONS: t.Dict[str, t.Callable] = {
+PRESTO_FUNCTIONS: t.Dict[str, t.Callable] = {
     **parser.FUNCTIONS,
     "ARBITRARY": exp.AnyValue.from_arg_list,
     "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
@@ -317,8 +317,8 @@ _PRESTO_FUNCTIONS: t.Dict[str, t.Callable] = {
     "WEEK": exp.WeekOfYear.from_arg_list,
 }
 
-_PRESTO_FUNCTION_PARSERS = parser.FUNCTION_PARSERS.copy()
-_PRESTO_FUNCTION_PARSERS.pop("TRIM")
+PRESTO_FUNCTION_PARSERS = parser.FUNCTION_PARSERS.copy()
+PRESTO_FUNCTION_PARSERS.pop("TRIM")
 
 
 class Presto(Dialect):
@@ -378,9 +378,9 @@ class Presto(Dialect):
         VALUES_FOLLOWED_BY_PAREN = False
         ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
 
-        FUNCTIONS = _PRESTO_FUNCTIONS
+        FUNCTIONS = PRESTO_FUNCTIONS
 
-        FUNCTION_PARSERS = _PRESTO_FUNCTION_PARSERS
+        FUNCTION_PARSERS = PRESTO_FUNCTION_PARSERS
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

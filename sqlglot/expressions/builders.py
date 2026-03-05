@@ -930,7 +930,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     converted: t.List[Expr] = [maybe_parse(arg, dialect=dialect, copy=copy) for arg in args]
     kwargs = {key: maybe_parse(value, dialect=dialect, copy=copy) for key, value in kwargs.items()}
 
-    # TODO(mypyc): dialect.parser_class.FUNCTIONS may return a getset descriptor
+    # TODO (mypyc): dialect.parser_class.FUNCTIONS may return a getset descriptor
     # when the parser is compiled. Check __dict__ directly and fall back to module-level.
     functions = dialect.parser_class.__dict__.get("FUNCTIONS")
     if not isinstance(functions, dict):
@@ -941,9 +941,9 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     if constructor:
         if converted:
             try:
-                function = constructor(converted, dialect=dialect)
-            except TypeError:
                 function = constructor(converted)
+            except TypeError:
+                function = constructor(converted, dialect=dialect)
         elif constructor.__name__ == "from_arg_list":
             function = constructor.__self__(**kwargs)  # type: ignore
         else:

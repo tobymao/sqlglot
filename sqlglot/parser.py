@@ -263,7 +263,7 @@ def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
 
 
 def _resolve_dialect(dialect: t.Any) -> t.Any:
-    # TODO(mypyc): Late import moved to module-level function because mypyc compiled
+    # TODO (mypyc): Late import moved to module-level function because mypyc compiled
     # methods with allow_interpreted_subclasses don't handle `from X import Y` correctly.
     from sqlglot.dialects.dialect import Dialect
 
@@ -271,7 +271,7 @@ def _resolve_dialect(dialect: t.Any) -> t.Any:
 
 
 def _init_parser_tries(cls: t.Any) -> None:
-    # TODO(mypyc): mypyc compiled classes store class attributes as getset descriptors
+    # TODO (mypyc): mypyc compiled classes store class attributes as getset descriptors
     # (slot-based). Accessing Class.ATTR returns the descriptor object instead of the value.
     # We walk the MRO and check __dict__ directly, falling back to module-level defaults.
     show: t.Dict = SHOW_PARSERS
@@ -6499,7 +6499,7 @@ class Parser:
             if known_function:
                 func_builder = t.cast(t.Callable, function)
 
-                # TODO(mypyc): Previously used __code__ introspection to check if
+                # TODO (mypyc): Previously used __code__ introspection to check if
                 # func_builder accepts 'dialect'. mypyc compiled functions may not
                 # have __code__, so we use try/except instead.
                 try:

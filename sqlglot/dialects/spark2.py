@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_str,
 )
-from sqlglot.dialects.hive import Hive, _HIVE_FUNCTIONS, _HIVE_FUNCTION_PARSERS
+from sqlglot.dialects.hive import Hive, HIVE_FUNCTIONS, HIVE_FUNCTION_PARSERS
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot import parser
 from sqlglot.parser import build_trim
@@ -116,8 +116,8 @@ def temporary_storage_provider(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-_SPARK2_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **_HIVE_FUNCTIONS,
+SPARK2_FUNCTIONS: t.Dict[str, t.Callable] = {
+    **HIVE_FUNCTIONS,
     "AGGREGATE": exp.Reduce.from_arg_list,
     "BOOLEAN": _build_as_cast("boolean"),
     "DATE": _build_as_cast("date"),
@@ -172,8 +172,8 @@ _SPARK2_FUNCTIONS: t.Dict[str, t.Callable] = {
     "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
 }
 
-_SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **_HIVE_FUNCTION_PARSERS,
+SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    **HIVE_FUNCTION_PARSERS,
     "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
     "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
     "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
@@ -185,7 +185,10 @@ _SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
 }
 
-_SPARK2_SET_PARSERS = parser.SET_PARSERS.copy()
+SPARK2_SET_PARSERS = parser.SET_PARSERS.copy()
+
+SPARK2_PLACEHOLDER_PARSERS = parser.PLACEHOLDER_PARSERS
+SPARK2_STATEMENT_PARSERS = parser.STATEMENT_PARSERS
 
 
 class Spark2(Hive):
@@ -210,9 +213,9 @@ class Spark2(Hive):
         TRIM_PATTERN_FIRST = True
         CHANGE_COLUMN_ALTER_SYNTAX = True
 
-        FUNCTIONS = _SPARK2_FUNCTIONS
+        FUNCTIONS = SPARK2_FUNCTIONS
 
-        FUNCTION_PARSERS = _SPARK2_FUNCTION_PARSERS
+        FUNCTION_PARSERS = SPARK2_FUNCTION_PARSERS
 
         def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
             return (

@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects import Dialect, Hive, Trino
+from sqlglot.dialects.trino import TRINO_STATEMENT_PARSERS
 from sqlglot.tokens import TokenType, Token
 
 
@@ -269,7 +270,7 @@ class _TrinoTokenizer(Trino.Tokenizer):
 # Athena extensions to Trino's parser
 class _TrinoParser(Trino.Parser):
     STATEMENT_PARSERS = {
-        **parser.STATEMENT_PARSERS,
+        **TRINO_STATEMENT_PARSERS,
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 

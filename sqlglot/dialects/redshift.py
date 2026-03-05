@@ -18,8 +18,8 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.postgres import (
     Postgres,
-    _POSTGRES_FUNCTIONS,
-    _POSTGRES_NO_PAREN_FUNCTION_PARSERS,
+    POSTGRES_FUNCTIONS,
+    POSTGRES_NO_PAREN_FUNCTION_PARSERS,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -64,7 +64,7 @@ class Redshift(Postgres):
 
     class Parser(Postgres.Parser):
         FUNCTIONS = {
-            **_POSTGRES_FUNCTIONS,
+            **POSTGRES_FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -93,7 +93,7 @@ class Redshift(Postgres):
         FUNCTIONS.pop("GET_BIT")
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **_POSTGRES_NO_PAREN_FUNCTION_PARSERS,
+            **POSTGRES_NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }

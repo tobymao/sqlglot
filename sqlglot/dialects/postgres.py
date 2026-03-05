@@ -293,7 +293,7 @@ def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
     return self.func("ROUND", this, decimals)
 
 
-_POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
+POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
     **parser.FUNCTIONS,
     "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
         this=seq_get(args, 1), expression=seq_get(args, 0)
@@ -330,16 +330,20 @@ _POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
     else exp.WidthBucket.from_arg_list(args),
 }
 
-_POSTGRES_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+POSTGRES_LAMBDAS = parser.LAMBDAS
+POSTGRES_CONSTRAINT_PARSERS = parser.CONSTRAINT_PARSERS
+POSTGRES_SCHEMA_UNNAMED_CONSTRAINTS = parser.SCHEMA_UNNAMED_CONSTRAINTS
+
+POSTGRES_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     **parser.NO_PAREN_FUNCTION_PARSERS,
     "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
 }
 
-_POSTGRES_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+POSTGRES_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
     **parser.PROPERTY_PARSERS,
     "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
 }
-_POSTGRES_PROPERTY_PARSERS.pop("INPUT")
+POSTGRES_PROPERTY_PARSERS.pop("INPUT")
 
 
 class Postgres(Dialect):
@@ -461,7 +465,7 @@ class Postgres(Dialect):
     class Parser(parser.Parser):
         SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 
-        PROPERTY_PARSERS = _POSTGRES_PROPERTY_PARSERS
+        PROPERTY_PARSERS = POSTGRES_PROPERTY_PARSERS
 
         PLACEHOLDER_PARSERS = {
             **parser.PLACEHOLDER_PARSERS,
@@ -469,9 +473,9 @@ class Postgres(Dialect):
             TokenType.MOD: lambda self: self._parse_query_parameter(),
         }
 
-        FUNCTIONS = _POSTGRES_FUNCTIONS
+        FUNCTIONS = POSTGRES_FUNCTIONS
 
-        NO_PAREN_FUNCTION_PARSERS = _POSTGRES_NO_PAREN_FUNCTION_PARSERS
+        NO_PAREN_FUNCTION_PARSERS = POSTGRES_NO_PAREN_FUNCTION_PARSERS
 
         NO_PAREN_FUNCTIONS = {
             **parser.NO_PAREN_FUNCTIONS,

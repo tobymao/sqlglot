@@ -319,21 +319,19 @@ class _Dialect(type):
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
-        # TODO (mypyc): mypyc compiled classes store class attributes as getset descriptors.
-        # Class-level access (Class.ATTR) returns the descriptor instead of the value.
-        # The _pa helper walks the MRO and checks __dict__ directly to find actual values,
-        # falling back to module-level defaults from parser.py.
-        _pc = klass.parser_class
+        parser_class = klass.parser_class
 
-        def _pa(name: str) -> t.Any:
-            for klass_in_mro in type.mro(_pc):
+        def _parser_attr(name: str) -> t.Any:
+            # Walk MRO to find the actual value, since mypyc compiled classes
+            # store class attributes as getset descriptors in __dict__.
+            for klass_in_mro in type.mro(parser_class):
                 val = klass_in_mro.__dict__.get(name)
                 if isinstance(val, (dict, set, frozenset)):
                     return val
-            # mypyc compiled classes store attributes as getset descriptors in __dict__,
-            # so we need to read the default value from a temporary instance.
+            # mypyc compiled classes may store attributes as getset descriptors,
+            # so we read the default value from a temporary instance.
             try:
-                inst = _pc.__new__(_pc)
+                inst = parser_class.__new__(parser_class)
                 val = getattr(inst, name, None)
                 if isinstance(val, (dict, set, frozenset)):
                     return val
@@ -342,11 +340,13 @@ class _Dialect(type):
             return getattr(_parser_module, name, None)
 
         if enum not in ("", "doris", "mysql"):
-            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.STRAIGHT_JOIN}
-            _pc.TABLE_ALIAS_TOKENS = _pa("TABLE_ALIAS_TOKENS") | {TokenType.STRAIGHT_JOIN}
+            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.STRAIGHT_JOIN}
+            parser_class.TABLE_ALIAS_TOKENS = _parser_attr("TABLE_ALIAS_TOKENS") | {
+                TokenType.STRAIGHT_JOIN
+            }
 
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-            _pc.TABLE_ALIAS_TOKENS = _pa("TABLE_ALIAS_TOKENS") | {
+            parser_class.TABLE_ALIAS_TOKENS = _parser_attr("TABLE_ALIAS_TOKENS") | {
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
@@ -362,25 +362,25 @@ class _Dialect(type):
             "mysql",
             "singlestore",
         ):
-            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
             no_paren_functions.pop(TokenType.LOCALTIME, None)
             if enum != "oracle":
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
-            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
+            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
         if enum in ("", "postgres", "duckdb", "trino"):
-            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
             no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
-            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
+            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.CURRENT_CATALOG}
+            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.CURRENT_CATALOG}
 
         if enum in ("", "databricks", "duckdb", "spark", "spark2", "postgres", "tsql"):
-            no_paren_functions = dict(_pa("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
-            _pc.NO_PAREN_FUNCTIONS = no_paren_functions
+            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.SESSION_USER}
+            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.SESSION_USER}
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

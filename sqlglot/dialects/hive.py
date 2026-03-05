@@ -210,7 +210,7 @@ def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
     )
 
 
-_HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
+HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
     **parser.FUNCTIONS,
     "BASE64": exp.ToBase64.from_arg_list,
     "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
@@ -260,7 +260,7 @@ _HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
     "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
 }
 
-_HIVE_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+HIVE_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     **parser.FUNCTION_PARSERS,
     "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
     "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
@@ -377,9 +377,9 @@ class Hive(Dialect):
         CHANGE_COLUMN_ALTER_SYNTAX = False
         # Whether the dialect supports using ALTER COLUMN syntax with CHANGE COLUMN.
 
-        FUNCTION_PARSERS = _HIVE_FUNCTION_PARSERS
+        FUNCTION_PARSERS = HIVE_FUNCTION_PARSERS
 
-        FUNCTIONS = _HIVE_FUNCTIONS
+        FUNCTIONS = HIVE_FUNCTIONS
 
         NO_PAREN_FUNCTION_PARSERS = {
             **parser.NO_PAREN_FUNCTION_PARSERS,

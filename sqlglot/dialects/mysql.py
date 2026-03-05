@@ -148,7 +148,7 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
-_MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
+MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
     **parser.FUNCTIONS,
     "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
     "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -200,7 +200,7 @@ _MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
     "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
 }
 
-_MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     **parser.FUNCTION_PARSERS,
     "GROUP_CONCAT": lambda self: self._parse_group_concat(),
     # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
@@ -211,9 +211,9 @@ _MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "SUBSTR": lambda self: self._parse_substring(),
 }
 
-_MYSQL_NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
+MYSQL_NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
 
-_MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
+MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
     "BINARY LOGS": _show_parser("BINARY LOGS"),
     "MASTER LOGS": _show_parser("BINARY LOGS"),
     "BINLOG EVENTS": _show_parser("BINLOG EVENTS"),
@@ -268,16 +268,18 @@ _MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
     "WARNINGS": _show_parser("WARNINGS"),
 }
 
-_MYSQL_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+MYSQL_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
     **parser.PROPERTY_PARSERS,
     "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
     "PARTITION BY": lambda self: self._parse_partition_property(),
 }
 
-_MYSQL_ALTER_PARSERS = {
+MYSQL_ALTER_PARSERS = {
     **parser.ALTER_PARSERS,
     "MODIFY": lambda self: self._parse_alter_table_alter(),
 }
+
+MYSQL_COLUMN_OPERATORS = parser.COLUMN_OPERATORS
 
 
 class MySQL(Dialect):
@@ -460,18 +462,18 @@ class MySQL(Dialect):
             ),
         }
 
-        FUNCTIONS = _MYSQL_FUNCTIONS
+        FUNCTIONS = MYSQL_FUNCTIONS
 
-        FUNCTION_PARSERS = _MYSQL_FUNCTION_PARSERS
+        FUNCTION_PARSERS = MYSQL_FUNCTION_PARSERS
 
         STATEMENT_PARSERS = {
             **parser.STATEMENT_PARSERS,
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
-        SHOW_PARSERS = _MYSQL_SHOW_PARSERS
+        SHOW_PARSERS = MYSQL_SHOW_PARSERS
 
-        PROPERTY_PARSERS = _MYSQL_PROPERTY_PARSERS
+        PROPERTY_PARSERS = MYSQL_PROPERTY_PARSERS
 
         SET_PARSERS = {
             **parser.SET_PARSERS,
@@ -491,7 +493,7 @@ class MySQL(Dialect):
             "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint),
         }
 
-        ALTER_PARSERS = _MYSQL_ALTER_PARSERS
+        ALTER_PARSERS = MYSQL_ALTER_PARSERS
 
         ALTER_ALTER_PARSERS = {
             **parser.ALTER_ALTER_PARSERS,

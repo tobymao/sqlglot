@@ -17,11 +17,13 @@ from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot import parser
 from sqlglot.dialects.spark2 import (
     Spark2,
+    SPARK2_PLACEHOLDER_PARSERS,
+    SPARK2_STATEMENT_PARSERS,
     temporary_storage_provider,
     _build_as_cast,
-    _SPARK2_FUNCTIONS,
-    _SPARK2_FUNCTION_PARSERS,
-    _SPARK2_SET_PARSERS,
+    SPARK2_FUNCTIONS,
+    SPARK2_FUNCTION_PARSERS,
+    SPARK2_SET_PARSERS,
 )
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import ensure_list, seq_get
@@ -119,8 +121,8 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
     return groupconcat_sql(self, expression)
 
 
-_SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **_SPARK2_FUNCTIONS,
+SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
+    **SPARK2_FUNCTIONS,
     "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
     "ARRAY_INSERT": lambda args: exp.ArrayInsert(
         this=seq_get(args, 0),
@@ -158,10 +160,10 @@ _SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
     "ILIKE": build_like(exp.ILike),
 }
 
-_SPARK_NO_PAREN_FUNCTION_PARSERS = {
-    **parser.NO_PAREN_FUNCTION_PARSERS,
-    "TRANSFORM": lambda self: self._parse_transform(),
-}
+SPARK_NO_PAREN_FUNCTION_PARSERS = parser.NO_PAREN_FUNCTION_PARSERS
+
+SPARK_FACTOR = parser.FACTOR
+SPARK_CAST_COLUMN_OPERATORS = parser.CAST_COLUMN_OPERATORS
 
 
 class Spark(Spark2):
@@ -186,15 +188,15 @@ class Spark(Spark2):
 
     class Parser(Spark2.Parser):
         SET_PARSERS = {
-            **_SPARK2_SET_PARSERS,
+            **SPARK2_SET_PARSERS,
             "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),
             "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
         }
 
-        FUNCTIONS = _SPARK_FUNCTIONS
+        FUNCTIONS = SPARK_FUNCTIONS
 
         PLACEHOLDER_PARSERS = {
-            **parser.PLACEHOLDER_PARSERS,
+            **SPARK2_PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
@@ -204,12 +206,12 @@ class Spark(Spark2):
             return self.expression(exp.Placeholder, this=this, widget=True)
 
         FUNCTION_PARSERS = {
-            **_SPARK2_FUNCTION_PARSERS,
+            **SPARK2_FUNCTION_PARSERS,
             "SUBSTR": lambda self: self._parse_substring(),
         }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **SPARK2_STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 

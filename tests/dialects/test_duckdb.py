@@ -2565,7 +2565,7 @@ class TestDuckDB(Validator):
 
     def test_to_array(self):
         self.validate_all(
-            "SELECT CASE WHEN 'hello' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
+            "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
             read={
                 "snowflake": "SELECT TO_ARRAY('hello, snowman') AS result",
             },

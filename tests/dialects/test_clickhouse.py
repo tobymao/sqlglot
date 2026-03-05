@@ -689,6 +689,10 @@ class TestClickhouse(Validator):
 
         self.validate_identity("farmFingerprint64(x1, x2, x3)")
 
+        self.validate_identity("cityHash64()")
+        self.validate_identity("cityHash64(x)")
+        self.validate_identity("cityHash64(x, y, z)")
+
         self.validate_identity("cosineDistance(x, y)")
         self.validate_identity("L2Distance(x, y)")
         self.validate_identity("tuple(1 = 1, 'foo' = 'foo')")
@@ -724,6 +728,8 @@ class TestClickhouse(Validator):
                     sql = f"SELECT * FROM foo1 {global_}{side}{strictness}JOIN foo2 ON foo1.id = foo2.id"
                     with self.subTest(sql=sql):
                         self.validate_identity(sql)
+
+        self.validate_identity("SELECT []")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

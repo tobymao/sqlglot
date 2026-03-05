@@ -219,6 +219,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT UNICODE(column_name)")
         self.validate_identity("SELECT WIDTH_BUCKET(col, 0, 100, 10)")
         self.validate_identity("SELECT SPLIT_PART('11.22.33', '.', 1)")
+        self.validate_all(
+            "SELECT SPLIT('127.0.0.1', '.')",
+            write={
+                "snowflake": "SELECT SPLIT('127.0.0.1', '.')",
+                "duckdb": "SELECT STR_SPLIT('127.0.0.1', '.')",
+            },
+        )
         self.validate_identity("SELECT PI()")
         self.validate_identity("SELECT DEGREES(PI() / 3)")
         self.validate_identity("SELECT DEGREES(1)")
@@ -1059,6 +1066,26 @@ class TestSnowflake(Validator):
             "SELECT _u['foo'][0].bar FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('foo', [OBJECT_CONSTRUCT('bar', 1)])])) AS _t0(seq, key, path, index, _u, this)",
             read={
                 "bigquery": "select _u.foo[0].bar from unnest([struct([struct(1 as bar)] as foo)]) as _u",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAYS_OVERLAP(col1, col2)",
+            read={
+                "snowflake": "SELECT ARRAYS_OVERLAP(col1, col2)",
+            },
+            write={
+                "snowflake": "SELECT ARRAYS_OVERLAP(col1, col2)",
+                "duckdb": "SELECT (col1 && col2) OR (ARRAY_LENGTH(col1) <> LIST_COUNT(col1) AND ARRAY_LENGTH(col2) <> LIST_COUNT(col2))",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAYS_OVERLAP([1, NULL, 3], [NULL, 4, 5])",
+            read={
+                "snowflake": "SELECT ARRAYS_OVERLAP([1, NULL, 3], [NULL, 4, 5])",
+            },
+            write={
+                "snowflake": "SELECT ARRAYS_OVERLAP([1, NULL, 3], [NULL, 4, 5])",
+                "duckdb": "SELECT ([1, NULL, 3] && [NULL, 4, 5]) OR (ARRAY_LENGTH([1, NULL, 3]) <> LIST_COUNT([1, NULL, 3]) AND ARRAY_LENGTH([NULL, 4, 5]) <> LIST_COUNT([NULL, 4, 5]))",
             },
         )
         self.validate_all(

@@ -558,6 +558,35 @@ def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -
     return func
 
 
+def _array_overlaps_sql(self: DuckDB.Generator, expression: exp.ArrayOverlaps) -> str:
+    """
+    Translates Snowflake's NULL-safe ARRAYS_OVERLAP to DuckDB.
+
+    DuckDB's native && operator is not NULL-safe: [1,NULL,3] && [NULL,4,5] returns FALSE.
+    Snowflake returns TRUE when both arrays contain NULL (NULLs are treated as known values).
+
+    Generated SQL: (arr1 && arr2) OR (ARRAY_LENGTH(arr1) <> LIST_COUNT(arr1) AND ARRAY_LENGTH(arr2) <> LIST_COUNT(arr2))
+
+    ARRAY_LENGTH counts all elements (including NULLs); LIST_COUNT counts only non-NULLs.
+    When they differ, the array contains at least one NULL, matching Snowflake's NULL-safe semantics.
+    """
+    if not expression.args.get("nullsafe"):
+        return self.binary(expression, "&&")
+    arr1 = expression.this
+    arr2 = expression.expression
+    null_safe = self.sql(
+        exp.and_(
+            exp.NEQ(
+                this=exp.ArraySize(this=arr1.copy()), expression=exp.func("LIST_COUNT", arr1.copy())
+            ),
+            exp.NEQ(
+                this=exp.ArraySize(this=arr2.copy()), expression=exp.func("LIST_COUNT", arr2.copy())
+            ),
+        )
+    )
+    return f"({self.binary(expression, '&&')}) OR ({null_safe})"
+
+
 def _build_sort_array_desc(args: t.List) -> exp.Expr:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
@@ -1914,6 +1943,7 @@ class DuckDB(Dialect):
             ),
             exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
             exp.ArrayContains: _array_contains_sql,
+            exp.ArrayOverlaps: _array_overlaps_sql,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArrayInsert: _array_insert_sql,
             exp.ArrayPosition: lambda self, e: (
@@ -3738,6 +3768,29 @@ class DuckDB(Dialect):
             result = exp.func(
                 "MAP_FROM_ENTRIES",
                 exp.ArrayFilter(this=exp.func("MAP_ENTRIES", map_arg), expression=lambda_expr),
+            )
+            return self.sql(result)
+
+        def mappick_sql(self, expression: exp.MapPick) -> str:
+            map_arg = expression.this
+            keys_to_pick = expression.expressions
+
+            x_dot_key = exp.Dot(this=exp.to_identifier("x"), expression=exp.to_identifier("key"))
+
+            if len(keys_to_pick) == 1 and keys_to_pick[0].is_type(exp.DType.ARRAY):
+                lambda_expr = exp.Lambda(
+                    this=exp.func("ARRAY_CONTAINS", keys_to_pick[0], x_dot_key),
+                    expressions=[exp.to_identifier("x")],
+                )
+            else:
+                lambda_expr = exp.Lambda(
+                    this=exp.In(this=x_dot_key, expressions=keys_to_pick),
+                    expressions=[exp.to_identifier("x")],
+                )
+
+            result = exp.func(
+                "MAP_FROM_ENTRIES",
+                exp.func("LIST_FILTER", exp.func("MAP_ENTRIES", map_arg), lambda_expr),
             )
             return self.sql(result)
 

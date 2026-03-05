@@ -298,6 +298,12 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "SELECT ARRAY_DISTINCT(x)",
+            write={
+                "clickhouse": "SELECT arrayDistinct(x)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS DATETIME)",
             write={
                 "postgres": "CAST(a AS TIMESTAMP)",

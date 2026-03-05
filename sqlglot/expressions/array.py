@@ -126,7 +126,7 @@ class ArrayIntersect(Expression, Func):
 
 
 class ArrayOverlaps(Expression, Binary, Func):
-    pass
+    arg_types = {"this": True, "expression": True, "nullsafe": False}
 
 
 class ArrayPosition(Expression, Binary, Func):

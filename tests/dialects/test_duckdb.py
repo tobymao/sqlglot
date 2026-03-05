@@ -2563,6 +2563,41 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_map_pick(self):
+        sql = "SELECT MAP_PICK(t.t_map, t.t_key) FROM t"
+
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key": "VARCHAR"}},
+            dialect="snowflake",
+        )
+        self.assertEqual(
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key))) FROM t",
+        )
+
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key": "ARRAY(VARCHAR)"}},
+            dialect="snowflake",
+        )
+        self.assertEqual(
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
+        )
+
+        sql = "SELECT MAP_PICK(t.t_map, t.t_key1, t.t_key2) FROM t"
+
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key1": "VARCHAR", "t_key2": "VARCHAR"}},
+            dialect="snowflake",
+        )
+        self.assertEqual(
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key1, t.t_key2))) FROM t",
+        )
+        
     def test_to_array(self):
         self.validate_all(
             "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",

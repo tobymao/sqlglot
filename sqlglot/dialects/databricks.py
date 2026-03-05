@@ -159,12 +159,6 @@ class Databricks(Spark):
 
             return super().columndef_sql(expression, sep)
 
-        def generatedasidentitycolumnconstraint_sql(
-            self, expression: exp.GeneratedAsIdentityColumnConstraint
-        ) -> str:
-            expression.set("this", True)  # trigger ALWAYS in super class
-            return super().generatedasidentitycolumnconstraint_sql(expression)
-
         def jsonpath_sql(self, expression: exp.JSONPath) -> str:
             expression.set("escape", None)
             return super().jsonpath_sql(expression)

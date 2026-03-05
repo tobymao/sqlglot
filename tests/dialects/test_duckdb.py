@@ -2564,49 +2564,36 @@ class TestDuckDB(Validator):
         )
 
     def test_map_pick(self):
-        # Test with multiple keys
-        ast = parse_one(
-            "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b') AS new_map",
-            read="snowflake",
+        sql = "SELECT MAP_PICK(t.t_map, t.t_key) FROM t"
+
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key": "VARCHAR"}},
+            dialect="snowflake",
         )
-        annotated = annotate_types(ast, dialect="snowflake")
         self.assertEqual(
-            annotated.sql("duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> x.key IN ('a', 'b'))) AS new_map",
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key))) FROM t",
         )
 
-        # Test with array literal
-        ast = parse_one(
-            "SELECT MAP_PICK({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),['a','b']) AS new_map",
-            read="snowflake",
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key": "ARRAY(VARCHAR)"}},
+            dialect="snowflake",
         )
-        annotated = annotate_types(ast, dialect="snowflake")
         self.assertEqual(
-            annotated.sql("duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> ARRAY_CONTAINS(['a', 'b'], x.key))) AS new_map",
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
         )
 
-        # Test with column reference
-        ast = parse_one(
-            "SELECT id, MAP_PICK(attrs, 'key1', 'key2') AS attrs_subset FROM demo_maps",
-            read="snowflake",
-        )
-        annotated = annotate_types(ast, dialect="snowflake")
-        self.assertEqual(
-            annotated.sql("duckdb"),
-            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> x.key IN ('key1', 'key2'))) AS attrs_subset FROM demo_maps",
-        )
+        sql = "SELECT MAP_PICK(t.t_map, t.t_key1, t.t_key2) FROM t"
 
-        # Test type inference with array-typed column
-        from sqlglot.optimizer import qualify
-        from sqlglot.schema import MappingSchema
-
-        ast = parse_one("SELECT MAP_PICK(my_map, keys_array) FROM my_table", read="snowflake")
-        schema = MappingSchema(
-            schema={"my_table": {"my_map": "MAP(VARCHAR, INT)", "keys_array": "ARRAY(VARCHAR)"}}
+        annotated = annotate_types(
+            parse_one(sql, dialect="snowflake"),
+            schema={"t": {"t_map": "MAP(VARCHAR, INT)", "t_key1": "VARCHAR", "t_key2": "VARCHAR"}},
+            dialect="snowflake",
         )
-        annotated = annotate_types(qualify.qualify(ast, schema=schema), schema=schema)
         self.assertEqual(
-            annotated.sql("duckdb"),
-            'SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES("my_table"."my_map"), x -> ARRAY_CONTAINS("my_table"."keys_array", x.key))) AS "_col_0" FROM "my_table" AS "my_table"',
+            annotated.sql(dialect="duckdb"),
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key1, t.t_key2))) FROM t",
         )

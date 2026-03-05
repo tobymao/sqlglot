@@ -80,6 +80,7 @@ def lineage(
     scope: t.Optional[Scope] = None,
     trim_selects: bool = True,
     copy: bool = True,
+    memoize: bool = False,
     **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -93,6 +94,8 @@ def lineage(
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
         copy: Whether to copy the Expr arguments.
+        memoize: Whether to memoize CTE node traversal. When True, shared CTE references
+            produce a DAG instead of a tree, improving performance for self-joining CTEs.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
@@ -133,7 +136,7 @@ def lineage(
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
     return to_node(
-        column, scope, dialect, trim_selects=trim_selects, _cache={} if not copy else None
+        column, scope, dialect, trim_selects=trim_selects, _cache={} if memoize else None
     )
 
 

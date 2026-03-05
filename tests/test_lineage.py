@@ -788,19 +788,19 @@ class TestLineage(unittest.TestCase):
             )
         sql = "WITH " + ",\n     ".join(ctes) + f"\nSELECT a FROM cte_{n_levels - 1}"
 
-        for copy in (True, False):
-            with self.subTest(copy=copy):
-                node = lineage("a", sql, schema={"base_table": {"a": "int"}}, copy=copy)
+        for memoize in (False, True):
+            with self.subTest(memoize=memoize):
+                node = lineage("a", sql, schema={"base_table": {"a": "int"}}, memoize=memoize)
 
                 # Walk the DAG and verify structure.
                 all_nodes = list(node.walk())
 
-                if copy:
-                    # With copy=True, memoization is disabled so nodes are fully independent.
+                if not memoize:
+                    # Without memoization, nodes are fully independent.
                     # Node count should be O(2^N) — verify it's large to confirm no caching.
                     self.assertGreater(len(all_nodes), 200)
                 else:
-                    # With copy=False, shared references keep node count small (O(N), not O(2^N)).
+                    # With memoization, shared references keep node count small (O(N), not O(2^N)).
                     self.assertLess(
                         len(all_nodes),
                         200,
@@ -817,13 +817,13 @@ class TestLineage(unittest.TestCase):
                 self.assertTrue(all("base_table" in n.source.sql() for n in leaves))
 
     def test_lineage_cte_self_join_distinct_aliases(self) -> None:
-        for copy in (True, False):
-            with self.subTest(copy=copy):
+        for memoize in (False, True):
+            with self.subTest(memoize=memoize):
                 node = lineage(
                     "combined",
                     "WITH shared AS (SELECT a FROM x) SELECT s1.a + s2.a AS combined FROM shared s1, shared s2",
                     schema={"x": {"a": "int"}},
-                    copy=copy,
+                    memoize=memoize,
                 )
                 downstream_names = sorted(d.name for d in node.downstream)
                 self.assertEqual(downstream_names, ["s1.a", "s2.a"])

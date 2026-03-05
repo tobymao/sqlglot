@@ -880,7 +880,9 @@ class Snowflake(Dialect):
             ),
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
-            "ARRAYS_OVERLAP": exp.ArrayOverlaps.from_arg_list,
+            "ARRAYS_OVERLAP": lambda args: exp.ArrayOverlaps(
+                this=seq_get(args, 0), expression=seq_get(args, 1), nullsafe=True
+            ),
             "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BIT_AND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
             "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),

@@ -572,7 +572,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
 
             if root.name in scope.sources:
                 # The struct is already qualified, but we still need to change the AST
-                column_table = root
+                column_table = root  # type: ignore
                 root, *parts = parts
                 was_qualified = True
             else:

@@ -1621,13 +1621,13 @@ class Column(Expression, Condition):
         return self.name
 
     @property
-    def parts(self) -> t.List[Identifier]:
+    def parts(self) -> t.List[t.Union[Identifier, Star]]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)
         ]
 
-    def to_dot(self, include_dots: bool = True) -> Dot | Identifier:
+    def to_dot(self, include_dots: bool = True) -> Dot | Identifier | Star:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent

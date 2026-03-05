@@ -1270,6 +1270,7 @@ class ClickHouse(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
+            exp.ArrayDistinct: rename_func("arrayDistinct"),
             exp.ArrayConcat: rename_func("arrayConcat"),
             exp.ArrayContains: rename_func("has"),
             exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),

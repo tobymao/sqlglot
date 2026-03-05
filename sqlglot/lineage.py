@@ -132,7 +132,9 @@ def lineage(
     ):
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
-    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
+    return to_node(
+        column, scope, dialect, trim_selects=trim_selects, _cache={} if not copy else None
+    )
 
 
 def to_node(

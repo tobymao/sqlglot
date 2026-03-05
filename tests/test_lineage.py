@@ -788,31 +788,42 @@ class TestLineage(unittest.TestCase):
             )
         sql = "WITH " + ",\n     ".join(ctes) + f"\nSELECT a FROM cte_{n_levels - 1}"
 
-        node = lineage("a", sql, schema={"base_table": {"a": "int"}})
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                node = lineage("a", sql, schema={"base_table": {"a": "int"}}, copy=copy)
 
-        # Walk the DAG and verify structure.
-        all_nodes = list(node.walk())
+                # Walk the DAG and verify structure.
+                all_nodes = list(node.walk())
 
-        # With memoization + DAG-aware walk, we should have a small number of unique nodes
-        # (roughly O(N), not O(2^N)).
-        self.assertLess(
-            len(all_nodes), 200, f"got {len(all_nodes)} nodes -- DAG walk may be broken"
-        )
+                if copy:
+                    # With copy=True, memoization is disabled so nodes are fully independent.
+                    # Node count should be O(2^N) — verify it's large to confirm no caching.
+                    self.assertGreater(len(all_nodes), 200)
+                else:
+                    # With copy=False, shared references keep node count small (O(N), not O(2^N)).
+                    self.assertLess(
+                        len(all_nodes),
+                        200,
+                        f"got {len(all_nodes)} nodes -- DAG walk may be broken",
+                    )
 
-        # walk() should yield each node exactly once.
-        all_ids = [id(n) for n in all_nodes]
-        self.assertEqual(len(all_ids), len(set(all_ids)))
+                    # walk() should yield each node exactly once.
+                    all_ids = [id(n) for n in all_nodes]
+                    self.assertEqual(len(all_ids), len(set(all_ids)))
 
-        # Leaf nodes should reference base_table.
-        leaves = [n for n in all_nodes if not n.downstream]
-        self.assertGreater(len(leaves), 0)
-        self.assertTrue(all("base_table" in n.source.sql() for n in leaves))
+                # Leaf nodes should reference base_table.
+                leaves = [n for n in all_nodes if not n.downstream]
+                self.assertGreater(len(leaves), 0)
+                self.assertTrue(all("base_table" in n.source.sql() for n in leaves))
 
     def test_lineage_cte_self_join_distinct_aliases(self) -> None:
-        node = lineage(
-            "combined",
-            "WITH shared AS (SELECT a FROM x) SELECT s1.a + s2.a AS combined FROM shared s1, shared s2",
-            schema={"x": {"a": "int"}},
-        )
-        downstream_names = sorted(d.name for d in node.downstream)
-        self.assertEqual(downstream_names, ["s1.a", "s2.a"])
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                node = lineage(
+                    "combined",
+                    "WITH shared AS (SELECT a FROM x) SELECT s1.a + s2.a AS combined FROM shared s1, shared s2",
+                    schema={"x": {"a": "int"}},
+                    copy=copy,
+                )
+                downstream_names = sorted(d.name for d in node.downstream)
+                self.assertEqual(downstream_names, ["s1.a", "s2.a"])

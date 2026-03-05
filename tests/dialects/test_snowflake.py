@@ -219,6 +219,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT UNICODE(column_name)")
         self.validate_identity("SELECT WIDTH_BUCKET(col, 0, 100, 10)")
         self.validate_identity("SELECT SPLIT_PART('11.22.33', '.', 1)")
+        self.validate_all(
+            "SELECT SPLIT('127.0.0.1', '.')",
+            write={
+                "snowflake": "SELECT SPLIT('127.0.0.1', '.')",
+                "duckdb": "SELECT STR_SPLIT('127.0.0.1', '.')",
+            },
+        )
         self.validate_identity("SELECT PI()")
         self.validate_identity("SELECT DEGREES(PI() / 3)")
         self.validate_identity("SELECT DEGREES(1)")

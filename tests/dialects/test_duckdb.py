@@ -2597,3 +2597,32 @@ class TestDuckDB(Validator):
             annotated.sql(dialect="duckdb"),
             "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key1, t.t_key2))) FROM t",
         )
+        
+    def test_to_array(self):
+        self.validate_all(
+            "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY('hello, snowman') AS result",
+            },
+            write={
+                "duckdb": "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
+            },
+        )
+        self.validate_all(
+            "SELECT CASE WHEN 4.2 IS NULL THEN NULL ELSE [4.2] END AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY(4.2) AS result",
+            },
+            write={
+                "duckdb": "SELECT CASE WHEN 4.2 IS NULL THEN NULL ELSE [4.2] END AS result",
+            },
+        )
+        self.validate_all(
+            "SELECT ['a', 'b'] AS result",
+            read={
+                "snowflake": "SELECT TO_ARRAY(ARRAY_CONSTRUCT('a', 'b')) AS result",
+            },
+            write={
+                "duckdb": "SELECT ['a', 'b'] AS result",
+            },
+        )

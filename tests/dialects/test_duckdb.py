@@ -2638,21 +2638,21 @@ class TestDuckDB(Validator):
 
     def test_map_insert(self):
         self.validate_all(
-            "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': 3})",
+            "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': CAST(3 AS DECIMAL(38, 0))})",
             read={
                 "snowflake": "SELECT MAP_INSERT({'a':1,'b':2}::MAP(VARCHAR,NUMBER),'c',3)",
             },
             write={
-                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': 3})",
+                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': CAST(3 AS DECIMAL(38, 0))})",
             },
         )
         self.validate_all(
-            "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': 99})",
+            "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': CAST(99 AS DECIMAL(38, 0))})",
             read={
                 "snowflake": "SELECT MAP_INSERT({'a':1}::MAP(VARCHAR,NUMBER),'a',99,TRUE)",
             },
             write={
-                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': 99})",
+                "duckdb": "SELECT MAP_CONCAT(CAST({'a': 1} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'a': CAST(99 AS DECIMAL(38, 0))})",
             },
         )
         self.validate_all(
@@ -2663,4 +2663,16 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT id, MAP_CONCAT(attrs, MAP {'new_key': 'new_value'}) AS attrs_with_insert FROM demo_maps",
             },
+        )
+
+        # Test type inference with typed map column
+        from sqlglot.optimizer import qualify
+        from sqlglot.schema import MappingSchema
+
+        ast = parse_one("SELECT MAP_INSERT(my_map, 'key', 42) FROM my_table", read="snowflake")
+        schema = MappingSchema(schema={"my_table": {"my_map": "MAP(VARCHAR, INT)"}})
+        annotated = annotate_types(qualify.qualify(ast, schema=schema), schema=schema)
+        self.assertEqual(
+            annotated.sql("duckdb"),
+            'SELECT MAP_CONCAT("my_table"."my_map", MAP {\'key\': CAST(42 AS INT)}) AS "_col_0" FROM "my_table" AS "my_table"',
         )

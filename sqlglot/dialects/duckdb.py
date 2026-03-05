@@ -3819,24 +3819,15 @@ class DuckDB(Dialect):
             key = expression.args.get("key")
             value = expression.args.get("value")
 
-            # Get the type of the original map by traversing nested MAP_INSERT expressions
-            def get_map_type(expr: exp.Expression) -> t.Optional[exp.DataType]:
-                if expr.type:
-                    return expr.type
-                # Traverse through nested MAP_INSERT to find the original typed expression
-                if isinstance(expr, exp.MapInsert):
-                    return get_map_type(expr.this)
-                return None
+            map_type = map_arg.type
 
-            map_type = get_map_type(map_arg)
-
-            if value and map_type and map_type.expressions and len(map_type.expressions) > 1:
-                # Extract the value type from MAP(key_type, value_type)
-                value_type = map_type.expressions[1]
-                # Cast NULL values and non-literals to avoid type conflicts
-                # Literal numbers/booleans/strings can be inferred correctly by DuckDB
-                if isinstance(value, exp.Null) or not isinstance(value, exp.Literal):
+            if value:
+                if map_type and map_type.expressions and len(map_type.expressions) > 1:
+                    # Extract the value type from MAP(key_type, value_type)
+                    value_type = map_type.expressions[1]
+                    # Cast value to match the map's value type to avoid type conflicts
                     value = exp.cast(value, value_type)
+                # else: polymorphic MAP case - no type parameters available, use value as-is
 
             # Create a single-entry map for the new key-value pair
             new_entry_struct = exp.Struct(expressions=[exp.PropertyEQ(this=key, expression=value)])

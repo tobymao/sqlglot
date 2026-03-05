@@ -504,6 +504,11 @@ class EncryptRaw(Expression, Func):
     arg_types = {"this": True, "key": True, "iv": True, "aad": False, "encryption_method": False}
 
 
+class CityHash64(Expression, Func):
+    arg_types = {"expressions": False}
+    is_var_len_args = True
+
+
 class FarmFingerprint(Expression, Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

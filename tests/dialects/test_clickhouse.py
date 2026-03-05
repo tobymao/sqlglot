@@ -689,6 +689,10 @@ class TestClickhouse(Validator):
 
         self.validate_identity("farmFingerprint64(x1, x2, x3)")
 
+        self.validate_identity("cityHash64()")
+        self.validate_identity("cityHash64(x)")
+        self.validate_identity("cityHash64(x, y, z)")
+
         self.validate_identity("cosineDistance(x, y)")
         self.validate_identity("L2Distance(x, y)")
         self.validate_identity("tuple(1 = 1, 'foo' = 'foo')")

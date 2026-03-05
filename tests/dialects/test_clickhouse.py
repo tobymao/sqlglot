@@ -729,6 +729,8 @@ class TestClickhouse(Validator):
                     with self.subTest(sql=sql):
                         self.validate_identity(sql)
 
+        self.validate_identity("SELECT []")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

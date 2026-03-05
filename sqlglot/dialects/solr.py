@@ -13,7 +13,7 @@ class Solr(Dialect):
 
     class Parser(parser.Parser):
         DISJUNCTION = {
-            **parser._DISJUNCTION,
+            **parser.DISJUNCTION,
             TokenType.DPIPE: exp.Or,
         }
 

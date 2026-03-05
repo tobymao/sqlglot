@@ -159,7 +159,7 @@ _SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
 }
 
 _SPARK_NO_PAREN_FUNCTION_PARSERS = {
-    **parser._NO_PAREN_FUNCTION_PARSERS,
+    **parser.NO_PAREN_FUNCTION_PARSERS,
     "TRANSFORM": lambda self: self._parse_transform(),
 }
 
@@ -194,7 +194,7 @@ class Spark(Spark2):
         FUNCTIONS = _SPARK_FUNCTIONS
 
         PLACEHOLDER_PARSERS = {
-            **parser._PLACEHOLDER_PARSERS,
+            **parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
@@ -209,7 +209,7 @@ class Spark(Spark2):
         }
 
         STATEMENT_PARSERS = {
-            **parser._STATEMENT_PARSERS,
+            **parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 

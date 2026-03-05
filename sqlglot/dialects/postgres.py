@@ -294,7 +294,7 @@ def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
 
 
 _POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTIONS,
+    **parser.FUNCTIONS,
     "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
         this=seq_get(args, 1), expression=seq_get(args, 0)
     ),
@@ -331,12 +331,12 @@ _POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
 }
 
 _POSTGRES_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser._NO_PAREN_FUNCTION_PARSERS,
+    **parser.NO_PAREN_FUNCTION_PARSERS,
     "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
 }
 
 _POSTGRES_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-    **parser._PROPERTY_PARSERS,
+    **parser.PROPERTY_PARSERS,
     "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
 }
 _POSTGRES_PROPERTY_PARSERS.pop("INPUT")
@@ -464,7 +464,7 @@ class Postgres(Dialect):
         PROPERTY_PARSERS = _POSTGRES_PROPERTY_PARSERS
 
         PLACEHOLDER_PARSERS = {
-            **parser._PLACEHOLDER_PARSERS,
+            **parser.PLACEHOLDER_PARSERS,
             TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder, jdbc=True),
             TokenType.MOD: lambda self: self._parse_query_parameter(),
         }
@@ -474,12 +474,12 @@ class Postgres(Dialect):
         NO_PAREN_FUNCTION_PARSERS = _POSTGRES_NO_PAREN_FUNCTION_PARSERS
 
         NO_PAREN_FUNCTIONS = {
-            **parser._NO_PAREN_FUNCTIONS,
+            **parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         }
 
         FUNCTION_PARSERS = {
-            **parser._FUNCTION_PARSERS,
+            **parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSON_AGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
@@ -490,7 +490,7 @@ class Postgres(Dialect):
         }
 
         BITWISE = {
-            **parser._BITWISE,
+            **parser.BITWISE,
             TokenType.HASH: exp.BitwiseXor,
         }
 
@@ -499,7 +499,7 @@ class Postgres(Dialect):
         }
 
         RANGE_PARSERS = {
-            **parser._RANGE_PARSERS,
+            **parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
@@ -507,12 +507,12 @@ class Postgres(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser._STATEMENT_PARSERS,
+            **parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
         UNARY_PARSERS = {
-            **parser._UNARY_PARSERS,
+            **parser.UNARY_PARSERS,
             # The `~` token is remapped from TILDE to RLIKE in Postgres due to the binary REGEXP LIKE operator
             TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
         }
@@ -520,7 +520,7 @@ class Postgres(Dialect):
         JSON_ARROWS_REQUIRE_JSON_TYPE = True
 
         COLUMN_OPERATORS = {
-            **parser._COLUMN_OPERATORS,
+            **parser.COLUMN_OPERATORS,
             TokenType.ARROW: lambda self, this, path: self.validate_expression(
                 build_json_extract_path(
                     exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE

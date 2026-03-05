@@ -7,16 +7,15 @@ import typing as t
 
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
-from sqlglot import exp, generator, jsonpath, parser, tokens, transforms
+from sqlglot import exp, generator, jsonpath, tokens, transforms
 from sqlglot._typing import E
-from sqlglot.parsers.bigquery import Parser as _BigQueryParser
+from sqlglot.parsers.bigquery import Parser as BigQueryParser
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     arg_max_or_min_no_count,
     date_add_interval_sql,
     datestrtodate_sql,
-    build_formatted_time,
     filter_array_using_unnest,
     generate_series_sql,
     if_sql,
@@ -48,8 +47,6 @@ logger = logging.getLogger("sqlglot")
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
-
-MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
@@ -153,41 +150,6 @@ def _pushdown_cte_column_names(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _build_parse_timestamp(args: t.List) -> exp.StrToTime:
-    this = build_formatted_time(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
-    this.set("zone", seq_get(args, 2))
-    return this
-
-
-def _build_timestamp(args: t.List) -> exp.Timestamp:
-    timestamp = exp.Timestamp.from_arg_list(args)
-    timestamp.set("with_tz", True)
-    return timestamp
-
-
-def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
-    expr_type = exp.DateFromParts if len(args) == 3 else exp.Date
-    return expr_type.from_arg_list(args)
-
-
-def _build_to_hex(args: t.List) -> exp.Hex | exp.MD5:
-    # TO_HEX(MD5(..)) is common in BigQuery, so it's parsed into MD5 to simplify its transpilation
-    arg = seq_get(args, 0)
-    return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
-
-
-def _build_json_strip_nulls(args: t.List) -> exp.JSONStripNulls:
-    expression = exp.JSONStripNulls(this=seq_get(args, 0))
-
-    for arg in args[1:]:
-        if isinstance(arg, exp.Kwarg):
-            expression.set(arg.this.name.lower(), arg)
-        else:
-            expression.set("expression", arg)
-
-    return expression
-
-
 def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains) -> str:
     return self.sql(
         exp.Exists(
@@ -226,76 +188,6 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 
-def _build_time(args: t.List) -> exp.Func:
-    if len(args) == 1:
-        return exp.TsOrDsToTime(this=args[0])
-    if len(args) == 2:
-        return exp.Time.from_arg_list(args)
-    return exp.TimeFromParts.from_arg_list(args)
-
-
-def _build_datetime(args: t.List) -> exp.Func:
-    if len(args) == 1:
-        return exp.TsOrDsToDatetime.from_arg_list(args)
-    if len(args) == 2:
-        return exp.Datetime.from_arg_list(args)
-    return exp.TimestampFromParts.from_arg_list(args)
-
-
-def build_date_diff(args: t.List) -> exp.Expr:
-    expr = exp.DateDiff(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        unit=seq_get(args, 2),
-        date_part_boundary=True,
-    )
-
-    # Normalize plain WEEK to WEEK(SUNDAY) to preserve the semantic in the AST to facilitate transpilation
-    # This is done post exp.DateDiff construction since the TimeUnit mixin performs canonicalizations in its constructor too
-    unit = expr.args.get("unit")
-
-    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
-        expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
-
-    return expr
-
-
-def _build_regexp_extract(
-    expr_type: t.Type[E], default_group: t.Optional[exp.Expr] = None
-) -> t.Callable[[t.List, BigQuery], E]:
-    def _builder(args: t.List, dialect: BigQuery) -> E:
-        try:
-            group = re.compile(args[1].name).groups == 1
-        except re.error:
-            group = False
-
-        # Default group is used for the transpilation of REGEXP_EXTRACT_ALL
-        return expr_type(
-            this=seq_get(args, 0),
-            expression=seq_get(args, 1),
-            position=seq_get(args, 2),
-            occurrence=seq_get(args, 3),
-            group=exp.Literal.number(1) if group else default_group,
-            **(
-                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
-                if expr_type is exp.RegexpExtract
-                else {}
-            ),
-        )
-
-    return _builder
-
-
-def _build_extract_json_with_default_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
-    def _builder(args: t.List, dialect: Dialect) -> E:
-        if len(args) == 1:
-            # The default value for the JSONPath is '$' i.e all of the data
-            args.append(exp.Literal.string("$"))
-        return parser.build_extract_json_with_path(expr_type)(args, dialect)
-
-    return _builder
-
-
 def _str_to_datetime_sql(
     self: BigQuery.Generator, expression: exp.StrToDate | exp.StrToTime
 ) -> str:
@@ -321,35 +213,6 @@ def _levenshtein_sql(self: BigQuery.Generator, expression: exp.Levenshtein) -> s
         max_dist = exp.Kwarg(this=exp.var("max_distance"), expression=max_dist)
 
     return self.func("EDIT_DISTANCE", expression.this, expression.expression, max_dist)
-
-
-def _build_levenshtein(args: t.List) -> exp.Levenshtein:
-    max_dist = seq_get(args, 2)
-    return exp.Levenshtein(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        max_dist=max_dist.expression if max_dist else None,
-    )
-
-
-def _build_format_time(expr_type: t.Type[exp.Expr]) -> t.Callable[[t.List], exp.TimeToStr]:
-    def _builder(args: t.List) -> exp.TimeToStr:
-        formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
-            [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
-        )
-        formatted_time.set("zone", seq_get(args, 2))
-        return formatted_time
-
-    return _builder
-
-
-def _build_contains_substring(args: t.List) -> exp.Contains:
-    # Lowercase the operands in case of transpilation, as exp.Contains
-    # is case-sensitive on other dialects
-    this = exp.Lower(this=seq_get(args, 0))
-    expr = exp.Lower(this=seq_get(args, 1))
-
-    return exp.Contains(this=this, expression=expr, json_scope=seq_get(args, 2))
 
 
 def _json_extract_sql(self: BigQuery.Generator, expression: JSON_EXTRACT_TYPE) -> str:
@@ -548,7 +411,7 @@ class BigQuery(Dialect):
         KEYWORDS.pop("VALUES")
         KEYWORDS.pop("/*+")
 
-    Parser = _BigQueryParser
+    Parser = BigQueryParser
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

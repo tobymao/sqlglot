@@ -257,7 +257,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
 
 _PRESTO_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTIONS,
+    **parser.FUNCTIONS,
     "ARBITRARY": exp.AnyValue.from_arg_list,
     "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
     "APPROX_PERCENTILE": _build_approx_percentile,
@@ -317,7 +317,7 @@ _PRESTO_FUNCTIONS: t.Dict[str, t.Callable] = {
     "WEEK": exp.WeekOfYear.from_arg_list,
 }
 
-_PRESTO_FUNCTION_PARSERS = parser._FUNCTION_PARSERS.copy()
+_PRESTO_FUNCTION_PARSERS = parser.FUNCTION_PARSERS.copy()
 _PRESTO_FUNCTION_PARSERS.pop("TRIM")
 
 

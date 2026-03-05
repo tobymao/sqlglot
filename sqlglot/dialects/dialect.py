@@ -319,7 +319,7 @@ class _Dialect(type):
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
-        # TODO(mypyc): mypyc compiled classes store class attributes as getset descriptors.
+        # TODO (mypyc): mypyc compiled classes store class attributes as getset descriptors.
         # Class-level access (Class.ATTR) returns the descriptor instead of the value.
         # The _pa helper walks the MRO and checks __dict__ directly to find actual values,
         # falling back to module-level defaults from parser.py.
@@ -339,7 +339,7 @@ class _Dialect(type):
                     return val
             except Exception:
                 pass
-            return getattr(_parser_module, f"_{name}", None)
+            return getattr(_parser_module, name, None)
 
         if enum not in ("", "doris", "mysql"):
             _pc.ID_VAR_TOKENS = _pa("ID_VAR_TOKENS") | {TokenType.STRAIGHT_JOIN}

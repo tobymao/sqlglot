@@ -211,7 +211,7 @@ def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
 
 
 _HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTIONS,
+    **parser.FUNCTIONS,
     "BASE64": exp.ToBase64.from_arg_list,
     "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
     "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
@@ -261,7 +261,7 @@ _HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
 }
 
 _HIVE_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTION_PARSERS,
+    **parser.FUNCTION_PARSERS,
     "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
     "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
 }
@@ -382,22 +382,22 @@ class Hive(Dialect):
         FUNCTIONS = _HIVE_FUNCTIONS
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **parser._NO_PAREN_FUNCTION_PARSERS,
+            **parser.NO_PAREN_FUNCTION_PARSERS,
             "TRANSFORM": lambda self: self._parse_transform(),
         }
 
-        NO_PAREN_FUNCTIONS = parser._NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)
 
         PROPERTY_PARSERS = {
-            **parser._PROPERTY_PARSERS,
+            **parser.PROPERTY_PARSERS,
             "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
 
         ALTER_PARSERS = {
-            **parser._ALTER_PARSERS,
+            **parser.ALTER_PARSERS,
             "CHANGE": lambda self: self._parse_alter_table_change(),
         }
 

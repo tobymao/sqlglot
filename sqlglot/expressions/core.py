@@ -1621,7 +1621,7 @@ class Column(Expression, Condition):
         return self.name
 
     @property
-    def parts(self) -> t.List[t.Union[Identifier, Star]]:
+    def parts(self) -> t.List[Identifier | Star]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)

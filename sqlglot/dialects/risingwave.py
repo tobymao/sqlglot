@@ -29,7 +29,7 @@ class RisingWave(Postgres):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser._CONSTRAINT_PARSERS,
+            **parser.CONSTRAINT_PARSERS,
             "WATERMARK": lambda self: self.expression(
                 exp.WatermarkColumnConstraint,
                 this=self._match(TokenType.FOR) and self._parse_column(),
@@ -38,7 +38,7 @@ class RisingWave(Postgres):
         }
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
-            *parser._SCHEMA_UNNAMED_CONSTRAINTS,
+            *parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "WATERMARK",
         }
 

@@ -43,7 +43,12 @@ SOURCE_FILES = [
             "qualify_columns.py",
         ],
     ),
-    os.path.join("parsers", "bigquery.py"),
+    *_subpkg_files(
+        "parsers",
+        [
+            "bigquery.py",
+        ],
+    ),
 ]
 
 

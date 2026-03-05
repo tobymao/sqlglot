@@ -274,8 +274,8 @@ def _init_parser_tries(cls: t.Any) -> None:
     # TODO(mypyc): mypyc compiled classes store class attributes as getset descriptors
     # (slot-based). Accessing Class.ATTR returns the descriptor object instead of the value.
     # We walk the MRO and check __dict__ directly, falling back to module-level defaults.
-    show: t.Dict = _SHOW_PARSERS
-    set_: t.Dict = _SET_PARSERS
+    show: t.Dict = SHOW_PARSERS
+    set_: t.Dict = SET_PARSERS
     for klass in type.mro(cls):
         val = klass.__dict__.get("SHOW_PARSERS")
         if isinstance(val, dict):
@@ -290,7 +290,7 @@ def _init_parser_tries(cls: t.Any) -> None:
     cls.SET_TRIE = new_trie(key.split(" ") for key in set_)
 
 
-_NO_PAREN_FUNCTIONS = {
+NO_PAREN_FUNCTIONS = {
     TokenType.CURRENT_DATE: exp.CurrentDate,
     TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
     TokenType.CURRENT_TIME: exp.CurrentTime,
@@ -301,36 +301,36 @@ _NO_PAREN_FUNCTIONS = {
     TokenType.CURRENT_ROLE: exp.CurrentRole,
 }
 
-_STRUCT_TYPE_TOKENS = {
+STRUCT_TYPE_TOKENS = {
     TokenType.NESTED,
     TokenType.OBJECT,
     TokenType.STRUCT,
     TokenType.UNION,
 }
 
-_NESTED_TYPE_TOKENS = {
+NESTED_TYPE_TOKENS = {
     TokenType.ARRAY,
     TokenType.LIST,
     TokenType.LOWCARDINALITY,
     TokenType.MAP,
     TokenType.NULLABLE,
     TokenType.RANGE,
-    *_STRUCT_TYPE_TOKENS,
+    *STRUCT_TYPE_TOKENS,
 }
 
-_ENUM_TYPE_TOKENS = {
+ENUM_TYPE_TOKENS = {
     TokenType.DYNAMIC,
     TokenType.ENUM,
     TokenType.ENUM8,
     TokenType.ENUM16,
 }
 
-_AGGREGATE_TYPE_TOKENS = {
+AGGREGATE_TYPE_TOKENS = {
     TokenType.AGGREGATEFUNCTION,
     TokenType.SIMPLEAGGREGATEFUNCTION,
 }
 
-_TYPE_TOKENS = {
+TYPE_TOKENS = {
     TokenType.BIT,
     TokenType.BOOLEAN,
     TokenType.TINYINT,
@@ -446,19 +446,19 @@ _TYPE_TOKENS = {
     TokenType.NAME,
     TokenType.TDIGEST,
     TokenType.DYNAMIC,
-    *_ENUM_TYPE_TOKENS,
-    *_NESTED_TYPE_TOKENS,
-    *_AGGREGATE_TYPE_TOKENS,
+    *ENUM_TYPE_TOKENS,
+    *NESTED_TYPE_TOKENS,
+    *AGGREGATE_TYPE_TOKENS,
 }
 
-_SUBQUERY_PREDICATES = {
+SUBQUERY_PREDICATES = {
     TokenType.ANY: exp.Any,
     TokenType.ALL: exp.All,
     TokenType.EXISTS: exp.Exists,
     TokenType.SOME: exp.Any,
 }
 
-_DB_CREATABLES = {
+DB_CREATABLES = {
     TokenType.DATABASE,
     TokenType.DICTIONARY,
     TokenType.FILE_FORMAT,
@@ -478,7 +478,7 @@ _DB_CREATABLES = {
     TokenType.WAREHOUSE,
 }
 
-_CREATABLES = {
+CREATABLES = {
     TokenType.COLUMN,
     TokenType.CONSTRAINT,
     TokenType.FOREIGN_KEY,
@@ -486,10 +486,10 @@ _CREATABLES = {
     TokenType.INDEX,
     TokenType.PROCEDURE,
     TokenType.TRIGGER,
-    *_DB_CREATABLES,
+    *DB_CREATABLES,
 }
 
-_ALTERABLES = {
+ALTERABLES = {
     TokenType.INDEX,
     TokenType.TABLE,
     TokenType.VIEW,
@@ -497,7 +497,7 @@ _ALTERABLES = {
 }
 
 # Tokens that can represent identifiers
-_ID_VAR_TOKENS = {
+ID_VAR_TOKENS = {
     TokenType.ALL,
     TokenType.ANALYZE,
     TokenType.ATTACH,
@@ -589,14 +589,14 @@ _ID_VAR_TOKENS = {
     TokenType.USE,
     TokenType.VOLATILE,
     TokenType.WINDOW,
-    *_ALTERABLES,
-    *_CREATABLES,
-    *_SUBQUERY_PREDICATES,
-    *_TYPE_TOKENS,
-    *_NO_PAREN_FUNCTIONS,
+    *ALTERABLES,
+    *CREATABLES,
+    *SUBQUERY_PREDICATES,
+    *TYPE_TOKENS,
+    *NO_PAREN_FUNCTIONS,
 } - {TokenType.UNION}
 
-_TABLE_ALIAS_TOKENS = _ID_VAR_TOKENS - {
+TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
     TokenType.ANTI,
     TokenType.ASOF,
     TokenType.FULL,
@@ -608,13 +608,13 @@ _TABLE_ALIAS_TOKENS = _ID_VAR_TOKENS - {
     TokenType.WINDOW,
 }
 
-_ALIAS_TOKENS = _ID_VAR_TOKENS
+ALIAS_TOKENS = ID_VAR_TOKENS
 
-_COMMENT_TABLE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - {TokenType.IS}
+COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
-_UPDATE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - {TokenType.SET}
+UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
 
-_FUNC_TOKENS = {
+FUNC_TOKENS = {
     TokenType.COLLATE,
     TokenType.COMMAND,
     TokenType.CURRENT_DATE,
@@ -662,30 +662,30 @@ _FUNC_TOKENS = {
     TokenType.UTC_TIMESTAMP,
     TokenType.WINDOW,
     TokenType.XOR,
-    *_TYPE_TOKENS,
-    *_SUBQUERY_PREDICATES,
+    *TYPE_TOKENS,
+    *SUBQUERY_PREDICATES,
 }
 
-_TIMES = {
+TIMES = {
     TokenType.TIME,
     TokenType.TIMETZ,
 }
 
-_TIMESTAMPS = {
+TIMESTAMPS = {
     TokenType.TIMESTAMP,
     TokenType.TIMESTAMPNTZ,
     TokenType.TIMESTAMPTZ,
     TokenType.TIMESTAMPLTZ,
-    *_TIMES,
+    *TIMES,
 }
 
-_SET_OPERATIONS = {
+SET_OPERATIONS = {
     TokenType.UNION,
     TokenType.INTERSECT,
     TokenType.EXCEPT,
 }
 
-_STRING_PARSERS = {
+STRING_PARSERS = {
     TokenType.HEREDOC_STRING: lambda self, token: self.expression(exp.RawString, token=token),
     TokenType.NATIONAL_STRING: lambda self, token: self.expression(exp.National, token=token),
     TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, token=token),
@@ -697,7 +697,7 @@ _STRING_PARSERS = {
     ),
 }
 
-_NUMERIC_PARSERS = {
+NUMERIC_PARSERS = {
     TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, token=token),
     TokenType.BYTE_STRING: lambda self, token: self.expression(
         exp.ByteString,
@@ -714,9 +714,9 @@ _NUMERIC_PARSERS = {
     ),
 }
 
-_PRIMARY_PARSERS = {
-    **_STRING_PARSERS,
-    **_NUMERIC_PARSERS,
+PRIMARY_PARSERS = {
+    **STRING_PARSERS,
+    **NUMERIC_PARSERS,
     TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
     TokenType.NULL: lambda self, _: self.expression(exp.Null),
     TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
@@ -725,7 +725,7 @@ _PRIMARY_PARSERS = {
     TokenType.STAR: lambda self, _: self._parse_star_ops(),
 }
 
-_QUERY_MODIFIER_PARSERS = {
+QUERY_MODIFIER_PARSERS = {
     TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
     TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
     TokenType.WHERE: lambda self: ("where", self._parse_where()),
@@ -753,24 +753,24 @@ _QUERY_MODIFIER_PARSERS = {
     TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
     TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
 }
-_QUERY_MODIFIER_TOKENS = set(_QUERY_MODIFIER_PARSERS)
+QUERY_MODIFIER_TOKENS = set(QUERY_MODIFIER_PARSERS)
 
-_WINDOW_ALIAS_TOKENS = _ID_VAR_TOKENS - {TokenType.RANGE, TokenType.ROWS}
+WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.RANGE, TokenType.ROWS}
 
-_FETCH_TOKENS = _ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
+FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
 
-_UNNEST_OFFSET_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS - _SET_OPERATIONS
+UNNEST_OFFSET_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - SET_OPERATIONS
 
-_SET_PARSERS: t.Dict[str, t.Callable] = {
+SET_PARSERS: t.Dict[str, t.Callable] = {
     "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
     "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
     "SESSION": lambda self: self._parse_set_item_assignment("SESSION"),
     "TRANSACTION": lambda self: self._parse_set_transaction(),
 }
 
-_SHOW_PARSERS: t.Dict[str, t.Callable] = {}
+SHOW_PARSERS: t.Dict[str, t.Callable] = {}
 
-_FUNCTIONS: t.Dict[str, t.Callable] = {
+FUNCTIONS: t.Dict[str, t.Callable] = {
     **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
     **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
     "ARRAY": lambda args, dialect: exp.Array(expressions=args),
@@ -863,28 +863,28 @@ _FUNCTIONS: t.Dict[str, t.Callable] = {
     "VAR_MAP": build_var_map,
 }
 
-_RESERVED_TOKENS = {
+RESERVED_TOKENS = {
     *Tokenizer.SINGLE_TOKENS.values(),
     TokenType.SELECT,
 } - {TokenType.IDENTIFIER}
 
-_CONJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
+CONJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
     TokenType.AND: exp.And,
 }
 
-_DISJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
+DISJUNCTION: t.Dict[TokenType, t.Type[exp.Expr]] = {
     TokenType.OR: exp.Or,
 }
 
-_BITWISE = {
+BITWISE = {
     TokenType.AMP: exp.BitwiseAnd,
     TokenType.CARET: exp.BitwiseXor,
     TokenType.PIPE: exp.BitwiseOr,
 }
 
-_EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = {}
+EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = {}
 
-_JOIN_KINDS = {
+JOIN_KINDS = {
     TokenType.ANTI,
     TokenType.CROSS,
     TokenType.INNER,
@@ -893,7 +893,7 @@ _JOIN_KINDS = {
     TokenType.STRAIGHT_JOIN,
 }
 
-_LAMBDAS = {
+LAMBDAS = {
     TokenType.ARROW: lambda self, expressions: self.expression(
         exp.Lambda,
         this=self._replace_lambda(
@@ -909,7 +909,7 @@ _LAMBDAS = {
     ),
 }
 
-_COLUMN_OPERATORS = {
+COLUMN_OPERATORS = {
     TokenType.DOT: None,
     TokenType.DOTCOLON: lambda self, this, to: self.expression(
         exp.JSONCast,
@@ -949,19 +949,19 @@ _COLUMN_OPERATORS = {
     ),
 }
 
-_FACTOR = {
+FACTOR = {
     TokenType.DIV: exp.IntDiv,
     TokenType.LR_ARROW: exp.Distance,
     TokenType.SLASH: exp.Div,
     TokenType.STAR: exp.Mul,
 }
 
-_CAST_COLUMN_OPERATORS = {
+CAST_COLUMN_OPERATORS = {
     TokenType.DOTCOLON,
     TokenType.DCOLON,
 }
 
-_STATEMENT_PARSERS = {
+STATEMENT_PARSERS = {
     TokenType.ALTER: lambda self: self._parse_alter(),
     TokenType.ANALYZE: lambda self: self._parse_analyze(),
     TokenType.BEGIN: lambda self: self._parse_transaction(),
@@ -993,7 +993,7 @@ _STATEMENT_PARSERS = {
     TokenType.SEMICOLON: lambda self: exp.Semicolon(),
 }
 
-_UNARY_PARSERS = {
+UNARY_PARSERS = {
     TokenType.PLUS: lambda self: self._parse_unary(),  # Unary + is handled as a no-op
     TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
     TokenType.TILDE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
@@ -1002,7 +1002,7 @@ _UNARY_PARSERS = {
     TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
 }
 
-_PLACEHOLDER_PARSERS = {
+PLACEHOLDER_PARSERS = {
     TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
     TokenType.PARAMETER: lambda self: self._parse_parameter(),
     TokenType.COLON: lambda self: (
@@ -1012,7 +1012,7 @@ _PLACEHOLDER_PARSERS = {
     ),
 }
 
-_RANGE_PARSERS = {
+RANGE_PARSERS = {
     TokenType.AT_GT: binary_range_parser(exp.ArrayContainsAll),
     TokenType.BETWEEN: lambda self, this: self._parse_between(this),
     TokenType.GLOB: binary_range_parser(exp.Glob),
@@ -1035,7 +1035,7 @@ _RANGE_PARSERS = {
     TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
 }
 
-_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
+PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
     "ALLOWED_VALUES": lambda self: self.expression(
         exp.AllowedValuesProperty, expressions=self._parse_csv(self._parse_primary)
     ),
@@ -1150,7 +1150,7 @@ _PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
     "WITH": lambda self: self._parse_with_property(),
 }
 
-_CONSTRAINT_PARSERS = {
+CONSTRAINT_PARSERS = {
     "AUTOINCREMENT": lambda self: self._parse_auto_increment(),
     "AUTO_INCREMENT": lambda self: self._parse_auto_increment(),
     "CASESPECIFIC": lambda self: self.expression(exp.CaseSpecificColumnConstraint, not_=False),
@@ -1212,7 +1212,7 @@ _CONSTRAINT_PARSERS = {
     "TRUNCATE": lambda self: self._parse_partitioned_by_bucket_or_truncate(),
 }
 
-_ALTER_PARSERS = {
+ALTER_PARSERS = {
     "ADD": lambda self: self._parse_alter_table_add(),
     "AS": lambda self: self._parse_select(),
     "ALTER": lambda self: self._parse_alter_table_alter(),
@@ -1226,14 +1226,14 @@ _ALTER_PARSERS = {
     ),
 }
 
-_ALTER_ALTER_PARSERS = {
+ALTER_ALTER_PARSERS = {
     "DISTKEY": lambda self: self._parse_alter_diststyle(),
     "DISTSTYLE": lambda self: self._parse_alter_diststyle(),
     "SORTKEY": lambda self: self._parse_alter_sortkey(),
     "COMPOUND": lambda self: self._parse_alter_sortkey(compound=True),
 }
 
-_SCHEMA_UNNAMED_CONSTRAINTS = {
+SCHEMA_UNNAMED_CONSTRAINTS = {
     "CHECK",
     "EXCLUDE",
     "FOREIGN KEY",
@@ -1245,16 +1245,16 @@ _SCHEMA_UNNAMED_CONSTRAINTS = {
     "TRUNCATE",
 }
 
-_NO_PAREN_FUNCTION_PARSERS = {
+NO_PAREN_FUNCTION_PARSERS = {
     "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
     "CASE": lambda self: self._parse_case(),
     "CONNECT_BY_ROOT": lambda self: self.expression(exp.ConnectByRoot, this=self._parse_column()),
     "IF": lambda self: self._parse_if(),
 }
 
-_FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
+FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
-_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     **{name: lambda self: self._parse_max_min_by(exp.ArgMax) for name in exp.ArgMax.sql_names()},
     **{name: lambda self: self._parse_max_min_by(exp.ArgMin) for name in exp.ArgMin.sql_names()},
     "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
@@ -1285,7 +1285,7 @@ _FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "XMLTABLE": lambda self: self._parse_xml_table(),
 }
 
-_TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
+TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
@@ -1304,19 +1304,19 @@ class Parser:
             Default: 3
     """
 
-    FUNCTIONS: t.Dict[str, t.Callable] = _FUNCTIONS
+    FUNCTIONS: t.Dict[str, t.Callable] = FUNCTIONS
 
-    NO_PAREN_FUNCTIONS = _NO_PAREN_FUNCTIONS
+    NO_PAREN_FUNCTIONS = NO_PAREN_FUNCTIONS
 
-    STRUCT_TYPE_TOKENS = _STRUCT_TYPE_TOKENS
+    STRUCT_TYPE_TOKENS = STRUCT_TYPE_TOKENS
 
-    NESTED_TYPE_TOKENS = _NESTED_TYPE_TOKENS
+    NESTED_TYPE_TOKENS = NESTED_TYPE_TOKENS
 
-    ENUM_TYPE_TOKENS = _ENUM_TYPE_TOKENS
+    ENUM_TYPE_TOKENS = ENUM_TYPE_TOKENS
 
-    AGGREGATE_TYPE_TOKENS = _AGGREGATE_TYPE_TOKENS
+    AGGREGATE_TYPE_TOKENS = AGGREGATE_TYPE_TOKENS
 
-    TYPE_TOKENS = _TYPE_TOKENS
+    TYPE_TOKENS = TYPE_TOKENS
 
     SIGNED_TO_UNSIGNED_TYPE_TOKEN = {
         TokenType.BIGINT: TokenType.UBIGINT,
@@ -1328,47 +1328,47 @@ class Parser:
         TokenType.DOUBLE: TokenType.UDOUBLE,
     }
 
-    SUBQUERY_PREDICATES = _SUBQUERY_PREDICATES
+    SUBQUERY_PREDICATES = SUBQUERY_PREDICATES
 
-    RESERVED_TOKENS = _RESERVED_TOKENS
+    RESERVED_TOKENS = RESERVED_TOKENS
 
-    DB_CREATABLES = _DB_CREATABLES
+    DB_CREATABLES = DB_CREATABLES
 
-    CREATABLES = _CREATABLES
+    CREATABLES = CREATABLES
 
     TRIGGER_EVENTS = {TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE, TokenType.TRUNCATE}
 
-    ALTERABLES = _ALTERABLES
+    ALTERABLES = ALTERABLES
 
     # Tokens that can represent identifiers
-    ID_VAR_TOKENS = _ID_VAR_TOKENS
+    ID_VAR_TOKENS = ID_VAR_TOKENS
 
-    TABLE_ALIAS_TOKENS = _TABLE_ALIAS_TOKENS
+    TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS
 
-    ALIAS_TOKENS = _ALIAS_TOKENS
+    ALIAS_TOKENS = ALIAS_TOKENS
 
-    COLON_PLACEHOLDER_TOKENS = _ID_VAR_TOKENS
+    COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS
 
     ARRAY_CONSTRUCTORS = {
         "ARRAY": exp.Array,
         "LIST": exp.List,
     }
 
-    COMMENT_TABLE_ALIAS_TOKENS = _COMMENT_TABLE_ALIAS_TOKENS
+    COMMENT_TABLE_ALIAS_TOKENS = COMMENT_TABLE_ALIAS_TOKENS
 
-    UPDATE_ALIAS_TOKENS = _UPDATE_ALIAS_TOKENS
+    UPDATE_ALIAS_TOKENS = UPDATE_ALIAS_TOKENS
 
     TRIM_TYPES = {"LEADING", "TRAILING", "BOTH"}
 
-    FUNC_TOKENS = _FUNC_TOKENS
+    FUNC_TOKENS = FUNC_TOKENS
 
-    CONJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = _CONJUNCTION
+    CONJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = CONJUNCTION
 
     ASSIGNMENT: t.Dict[TokenType, t.Type[exp.Expr]] = {
         TokenType.COLON_EQ: exp.PropertyEQ,
     }
 
-    DISJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = _DISJUNCTION
+    DISJUNCTION: t.ClassVar[t.Dict[TokenType, t.Type[exp.Expr]]] = DISJUNCTION
 
     EQUALITY = {
         TokenType.EQ: exp.EQ,
@@ -1383,7 +1383,7 @@ class Parser:
         TokenType.LTE: exp.LTE,
     }
 
-    BITWISE = _BITWISE
+    BITWISE = BITWISE
 
     TERM = {
         TokenType.DASH: exp.Sub,
@@ -1392,15 +1392,15 @@ class Parser:
         TokenType.COLLATE: exp.Collate,
     }
 
-    FACTOR = _FACTOR
+    FACTOR = FACTOR
 
-    EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = _EXPONENT
+    EXPONENT: t.Dict[TokenType, t.Type[exp.Expr]] = EXPONENT
 
-    TIMES = _TIMES
+    TIMES = TIMES
 
-    TIMESTAMPS = _TIMESTAMPS
+    TIMESTAMPS = TIMESTAMPS
 
-    SET_OPERATIONS = _SET_OPERATIONS
+    SET_OPERATIONS = SET_OPERATIONS
 
     JOIN_METHODS = {
         TokenType.ASOF,
@@ -1414,15 +1414,15 @@ class Parser:
         TokenType.FULL,
     }
 
-    JOIN_KINDS = _JOIN_KINDS
+    JOIN_KINDS = JOIN_KINDS
 
     JOIN_HINTS: t.Set[str] = set()
 
-    LAMBDAS = _LAMBDAS
+    LAMBDAS = LAMBDAS
 
-    COLUMN_OPERATORS = _COLUMN_OPERATORS
+    COLUMN_OPERATORS = COLUMN_OPERATORS
 
-    CAST_COLUMN_OPERATORS = _CAST_COLUMN_OPERATORS
+    CAST_COLUMN_OPERATORS = CAST_COLUMN_OPERATORS
 
     EXPRESSION_PARSERS = {
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
@@ -1460,19 +1460,19 @@ class Parser:
         exp.With: lambda self: self._parse_with(),
     }
 
-    STATEMENT_PARSERS = _STATEMENT_PARSERS
+    STATEMENT_PARSERS = STATEMENT_PARSERS
 
-    UNARY_PARSERS = _UNARY_PARSERS
+    UNARY_PARSERS = UNARY_PARSERS
 
-    STRING_PARSERS = _STRING_PARSERS
+    STRING_PARSERS = STRING_PARSERS
 
-    NUMERIC_PARSERS = _NUMERIC_PARSERS
+    NUMERIC_PARSERS = NUMERIC_PARSERS
 
-    PRIMARY_PARSERS = _PRIMARY_PARSERS
+    PRIMARY_PARSERS = PRIMARY_PARSERS
 
-    PLACEHOLDER_PARSERS = _PLACEHOLDER_PARSERS
+    PLACEHOLDER_PARSERS = PLACEHOLDER_PARSERS
 
-    RANGE_PARSERS = _RANGE_PARSERS
+    RANGE_PARSERS = RANGE_PARSERS
 
     PIPE_SYNTAX_TRANSFORM_PARSERS = {
         "AGGREGATE": lambda self, query: self._parse_pipe_syntax_aggregate(query),
@@ -1491,9 +1491,9 @@ class Parser:
         "WHERE": lambda self, query: query.where(self._parse_where(), copy=False),
     }
 
-    PROPERTY_PARSERS: t.Dict[str, t.Callable] = _PROPERTY_PARSERS
+    PROPERTY_PARSERS: t.Dict[str, t.Callable] = PROPERTY_PARSERS
 
-    CONSTRAINT_PARSERS = _CONSTRAINT_PARSERS
+    CONSTRAINT_PARSERS = CONSTRAINT_PARSERS
 
     def _parse_partitioned_by_bucket_or_truncate(self) -> t.Optional[exp.Expr]:
         if not self._match(TokenType.L_PAREN, advance=False):
@@ -1524,31 +1524,31 @@ class Parser:
 
         return self.expression(klass, this=this, expression=expression)
 
-    ALTER_PARSERS = _ALTER_PARSERS
+    ALTER_PARSERS = ALTER_PARSERS
 
-    ALTER_ALTER_PARSERS = _ALTER_ALTER_PARSERS
+    ALTER_ALTER_PARSERS = ALTER_ALTER_PARSERS
 
-    SCHEMA_UNNAMED_CONSTRAINTS = _SCHEMA_UNNAMED_CONSTRAINTS
+    SCHEMA_UNNAMED_CONSTRAINTS = SCHEMA_UNNAMED_CONSTRAINTS
 
-    NO_PAREN_FUNCTION_PARSERS = _NO_PAREN_FUNCTION_PARSERS
+    NO_PAREN_FUNCTION_PARSERS = NO_PAREN_FUNCTION_PARSERS
 
     INVALID_FUNC_NAME_TOKENS = {
         TokenType.IDENTIFIER,
         TokenType.STRING,
     }
 
-    FUNCTIONS_WITH_ALIASED_ARGS = _FUNCTIONS_WITH_ALIASED_ARGS
+    FUNCTIONS_WITH_ALIASED_ARGS = FUNCTIONS_WITH_ALIASED_ARGS
 
     KEY_VALUE_DEFINITIONS = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
 
-    FUNCTION_PARSERS: t.Dict[str, t.Callable] = _FUNCTION_PARSERS
+    FUNCTION_PARSERS: t.Dict[str, t.Callable] = FUNCTION_PARSERS
 
-    QUERY_MODIFIER_PARSERS = _QUERY_MODIFIER_PARSERS
-    QUERY_MODIFIER_TOKENS = _QUERY_MODIFIER_TOKENS
+    QUERY_MODIFIER_PARSERS = QUERY_MODIFIER_PARSERS
+    QUERY_MODIFIER_TOKENS = QUERY_MODIFIER_TOKENS
 
-    SET_PARSERS = _SET_PARSERS
+    SET_PARSERS = SET_PARSERS
 
-    SHOW_PARSERS: t.Dict[str, t.Callable] = _SHOW_PARSERS
+    SHOW_PARSERS: t.Dict[str, t.Callable] = SHOW_PARSERS
 
     TYPE_LITERAL_PARSERS = {
         exp.DType.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
@@ -1659,17 +1659,17 @@ class Parser:
 
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
-    TABLE_INDEX_HINT_TOKENS = _TABLE_INDEX_HINT_TOKENS
+    TABLE_INDEX_HINT_TOKENS = TABLE_INDEX_HINT_TOKENS
 
     VIEW_ATTRIBUTES = {"ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"}
 
-    WINDOW_ALIAS_TOKENS = _WINDOW_ALIAS_TOKENS
+    WINDOW_ALIAS_TOKENS = WINDOW_ALIAS_TOKENS
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
 
     JSON_KEY_VALUE_SEPARATOR_TOKENS = {TokenType.COLON, TokenType.COMMA, TokenType.IS}
 
-    FETCH_TOKENS = _FETCH_TOKENS
+    FETCH_TOKENS = FETCH_TOKENS
 
     ADD_CONSTRAINT_TOKENS = {
         TokenType.CONSTRAINT,
@@ -1682,7 +1682,7 @@ class Parser:
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
-    UNNEST_OFFSET_ALIAS_TOKENS = _UNNEST_OFFSET_ALIAS_TOKENS
+    UNNEST_OFFSET_ALIAS_TOKENS = UNNEST_OFFSET_ALIAS_TOKENS
 
     SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
 

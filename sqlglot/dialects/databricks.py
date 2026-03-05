@@ -73,12 +73,12 @@ class Databricks(Spark):
         }
 
         FACTOR = {
-            **parser._FACTOR,
+            **parser.FACTOR,
             TokenType.COLON: exp.JSONExtract,
         }
 
         COLUMN_OPERATORS = {
-            **parser._COLUMN_OPERATORS,
+            **parser.COLUMN_OPERATORS,
             TokenType.QDCOLON: lambda self, this, to: self.build_cast(
                 False,
                 this=this,
@@ -86,7 +86,7 @@ class Databricks(Spark):
             ),
         }
         CAST_COLUMN_OPERATORS = {
-            *parser._CAST_COLUMN_OPERATORS,
+            *parser.CAST_COLUMN_OPERATORS,
             TokenType.QDCOLON,
         }
 

@@ -185,7 +185,7 @@ _SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
 }
 
-_SPARK2_SET_PARSERS = parser._SET_PARSERS.copy()
+_SPARK2_SET_PARSERS = parser.SET_PARSERS.copy()
 
 
 class Spark2(Hive):

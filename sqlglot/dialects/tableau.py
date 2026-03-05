@@ -51,7 +51,7 @@ class Tableau(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser._FUNCTIONS,
+            **parser.FUNCTIONS,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
             "FIND": exp.StrPosition.from_arg_list,
             "FINDNTH": lambda args: exp.StrPosition(

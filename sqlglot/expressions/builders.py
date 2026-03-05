@@ -934,9 +934,9 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     # when the parser is compiled. Check __dict__ directly and fall back to module-level.
     functions = dialect.parser_class.__dict__.get("FUNCTIONS")
     if not isinstance(functions, dict):
-        from sqlglot.parser import _FUNCTIONS
+        from sqlglot.parser import FUNCTIONS
 
-        functions = _FUNCTIONS
+        functions = FUNCTIONS
     constructor = functions.get(name.upper())
     if constructor:
         if converted:

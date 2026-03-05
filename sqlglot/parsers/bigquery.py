@@ -152,32 +152,32 @@ class Parser(parser.Parser):
 
     # BigQuery does not allow ASC/DESC to be used as an identifier, allows GRANT as an identifier
     ID_VAR_TOKENS = {
-        *parser._ID_VAR_TOKENS,
+        *parser.ID_VAR_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
     ALIAS_TOKENS = {
-        *parser._ALIAS_TOKENS,
+        *parser.ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
     TABLE_ALIAS_TOKENS = {
-        *parser._TABLE_ALIAS_TOKENS,
+        *parser.TABLE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
     COMMENT_TABLE_ALIAS_TOKENS = {
-        *parser._COMMENT_TABLE_ALIAS_TOKENS,
+        *parser.COMMENT_TABLE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
     UPDATE_ALIAS_TOKENS = {
-        *parser._UPDATE_ALIAS_TOKENS,
+        *parser.UPDATE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
-        **{k: v for k, v in parser._FUNCTIONS.items() if k != "SEARCH"},
+        **{k: v for k, v in parser.FUNCTIONS.items() if k != "SEARCH"},
         "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -269,7 +269,7 @@ class Parser(parser.Parser):
     }
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-        **{k: v for k, v in parser._FUNCTION_PARSERS.items() if k != "TRIM"},
+        **{k: v for k, v in parser.FUNCTION_PARSERS.items() if k != "TRIM"},
         "ARRAY": lambda self: self.expression(
             exp.Array,
             expressions=[self._parse_statement()],
@@ -289,17 +289,17 @@ class Parser(parser.Parser):
     }
 
     NO_PAREN_FUNCTIONS = {
-        **parser._NO_PAREN_FUNCTIONS,
+        **parser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
     }
 
     NESTED_TYPE_TOKENS = {
-        *parser._NESTED_TYPE_TOKENS,
+        *parser.NESTED_TYPE_TOKENS,
         TokenType.TABLE,
     }
 
     PROPERTY_PARSERS = {
-        **parser._PROPERTY_PARSERS,
+        **parser.PROPERTY_PARSERS,
         "NOT DETERMINISTIC": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
         ),
@@ -307,16 +307,16 @@ class Parser(parser.Parser):
     }
 
     CONSTRAINT_PARSERS = {
-        **parser._CONSTRAINT_PARSERS,
+        **parser.CONSTRAINT_PARSERS,
         "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
     }
 
-    RANGE_PARSERS = {k: v for k, v in parser._RANGE_PARSERS.items() if k != TokenType.OVERLAPS}
+    RANGE_PARSERS = {k: v for k, v in parser.RANGE_PARSERS.items() if k != TokenType.OVERLAPS}
 
     DASHED_TABLE_PART_FOLLOW_TOKENS = {TokenType.DOT, TokenType.L_PAREN, TokenType.R_PAREN}
 
     STATEMENT_PARSERS = {
-        **parser._STATEMENT_PARSERS,
+        **parser.STATEMENT_PARSERS,
         TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
         TokenType.END: lambda self: self._parse_as_command(self._prev),
         TokenType.FOR: lambda self: self._parse_for_in(),

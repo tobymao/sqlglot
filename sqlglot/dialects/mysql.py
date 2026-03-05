@@ -149,7 +149,7 @@ def _remove_ts_or_ds_to_date(
 
 
 _MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTIONS,
+    **parser.FUNCTIONS,
     "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
     "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
     "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
@@ -201,7 +201,7 @@ _MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
 }
 
 _MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser._FUNCTION_PARSERS,
+    **parser.FUNCTION_PARSERS,
     "GROUP_CONCAT": lambda self: self._parse_group_concat(),
     # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
     "VALUES": lambda self: self.expression(
@@ -211,7 +211,7 @@ _MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "SUBSTR": lambda self: self._parse_substring(),
 }
 
-_MYSQL_NO_PAREN_FUNCTIONS = parser._NO_PAREN_FUNCTIONS.copy()
+_MYSQL_NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
 
 _MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
     "BINARY LOGS": _show_parser("BINARY LOGS"),
@@ -269,13 +269,13 @@ _MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
 }
 
 _MYSQL_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-    **parser._PROPERTY_PARSERS,
+    **parser.PROPERTY_PARSERS,
     "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
     "PARTITION BY": lambda self: self._parse_partition_property(),
 }
 
 _MYSQL_ALTER_PARSERS = {
-    **parser._ALTER_PARSERS,
+    **parser.ALTER_PARSERS,
     "MODIFY": lambda self: self._parse_alter_table_alter(),
 }
 
@@ -425,7 +425,7 @@ class MySQL(Dialect):
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {
-            *parser._FUNC_TOKENS,
+            *parser.FUNC_TOKENS,
             TokenType.DATABASE,
             TokenType.MOD,
             TokenType.SCHEMA,
@@ -434,20 +434,20 @@ class MySQL(Dialect):
         }
 
         CONJUNCTION = {
-            **parser._CONJUNCTION,
+            **parser.CONJUNCTION,
             TokenType.DAMP: exp.And,
             TokenType.XOR: exp.Xor,
         }
 
         DISJUNCTION = {
-            **parser._DISJUNCTION,
+            **parser.DISJUNCTION,
             TokenType.DPIPE: exp.Or,
         }
 
-        TABLE_ALIAS_TOKENS = parser._TABLE_ALIAS_TOKENS - parser._TABLE_INDEX_HINT_TOKENS
+        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS - parser.TABLE_INDEX_HINT_TOKENS
 
         RANGE_PARSERS = {
-            **parser._RANGE_PARSERS,
+            **parser.RANGE_PARSERS,
             TokenType.SOUNDS_LIKE: lambda self, this: self.expression(
                 exp.EQ,
                 this=self.expression(exp.Soundex, this=this),
@@ -465,7 +465,7 @@ class MySQL(Dialect):
         FUNCTION_PARSERS = _MYSQL_FUNCTION_PARSERS
 
         STATEMENT_PARSERS = {
-            **parser._STATEMENT_PARSERS,
+            **parser.STATEMENT_PARSERS,
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
@@ -474,7 +474,7 @@ class MySQL(Dialect):
         PROPERTY_PARSERS = _MYSQL_PROPERTY_PARSERS
 
         SET_PARSERS = {
-            **parser._SET_PARSERS,
+            **parser.SET_PARSERS,
             "PERSIST": lambda self: self._parse_set_item_assignment("PERSIST"),
             "PERSIST_ONLY": lambda self: self._parse_set_item_assignment("PERSIST_ONLY"),
             "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
@@ -483,7 +483,7 @@ class MySQL(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser._CONSTRAINT_PARSERS,
+            **parser.CONSTRAINT_PARSERS,
             "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
             "INDEX": lambda self: self._parse_index_constraint(),
             "KEY": lambda self: self._parse_index_constraint(),
@@ -494,12 +494,12 @@ class MySQL(Dialect):
         ALTER_PARSERS = _MYSQL_ALTER_PARSERS
 
         ALTER_ALTER_PARSERS = {
-            **parser._ALTER_ALTER_PARSERS,
+            **parser.ALTER_ALTER_PARSERS,
             "INDEX": lambda self: self._parse_alter_table_alter_index(),
         }
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
-            *parser._SCHEMA_UNNAMED_CONSTRAINTS,
+            *parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",
             "INDEX",
             "KEY",
@@ -514,12 +514,12 @@ class MySQL(Dialect):
         }
 
         TYPE_TOKENS = {
-            *parser._TYPE_TOKENS,
+            *parser.TYPE_TOKENS,
             TokenType.SET,
         }
 
         ENUM_TYPE_TOKENS = {
-            *parser._ENUM_TYPE_TOKENS,
+            *parser.ENUM_TYPE_TOKENS,
             TokenType.SET,
         }
 

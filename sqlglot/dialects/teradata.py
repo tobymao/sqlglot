@@ -147,11 +147,11 @@ class Teradata(Dialect):
             "UNICODE_TO_UNICODE_NFKD",
         }
 
-        FUNC_TOKENS = {*parser._FUNC_TOKENS}
+        FUNC_TOKENS = {*parser.FUNC_TOKENS}
         FUNC_TOKENS.remove(TokenType.REPLACE)
 
         STATEMENT_PARSERS = {
-            **parser._STATEMENT_PARSERS,
+            **parser.STATEMENT_PARSERS,
             TokenType.DATABASE: lambda self: self.expression(
                 exp.Use, this=self._parse_table(schema=False)
             ),
@@ -174,20 +174,20 @@ class Teradata(Dialect):
             )
 
         SET_PARSERS = {
-            **parser._SET_PARSERS,
+            **parser.SET_PARSERS,
             "QUERY_BAND": lambda self: self._parse_query_band(),
         }
 
         FUNCTION_PARSERS = {
-            **parser._FUNCTION_PARSERS,
+            **parser.FUNCTION_PARSERS,
             # https://docs.teradata.com/r/SQL-Functions-Operators-Exprs-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
-            "TRYCAST": parser._FUNCTION_PARSERS["TRY_CAST"],
+            "TRYCAST": parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(),
         }
 
         FUNCTIONS = {
-            **parser._FUNCTIONS,
+            **parser.FUNCTIONS,
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
         }

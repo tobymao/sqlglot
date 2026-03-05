@@ -819,28 +819,28 @@ class Snowflake(Dialect):
         COLON_IS_VARIANT_EXTRACT = True
         JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
 
-        TYPE_TOKENS = {*parser._TYPE_TOKENS, TokenType.FILE}
-        STRUCT_TYPE_TOKENS = {*parser._STRUCT_TYPE_TOKENS, TokenType.FILE}
-        NESTED_TYPE_TOKENS = {*parser._NESTED_TYPE_TOKENS, TokenType.FILE}
+        TYPE_TOKENS = {*parser.TYPE_TOKENS, TokenType.FILE}
+        STRUCT_TYPE_TOKENS = {*parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
+        NESTED_TYPE_TOKENS = {*parser.NESTED_TYPE_TOKENS, TokenType.FILE}
 
         ID_VAR_TOKENS = {
-            *parser._ID_VAR_TOKENS,
+            *parser.ID_VAR_TOKENS,
             TokenType.EXCEPT,
             TokenType.MATCH_CONDITION,
         }
 
-        TABLE_ALIAS_TOKENS = parser._TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
         TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
         COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
         NO_PAREN_FUNCTIONS = {
-            **parser._NO_PAREN_FUNCTIONS,
+            **parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_TIME: exp.Localtime,
         }
 
         FUNCTIONS = {
-            **parser._FUNCTIONS,
+            **parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.AddMonths(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -1097,7 +1097,7 @@ class Snowflake(Dialect):
         FUNCTIONS.pop("PREDICT")
 
         FUNCTION_PARSERS = {
-            **parser._FUNCTION_PARSERS,
+            **parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "DIRECTORY": lambda self: self._parse_directory(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
@@ -1106,10 +1106,10 @@ class Snowflake(Dialect):
         }
         FUNCTION_PARSERS.pop("TRIM")
 
-        TIMESTAMPS = parser._TIMESTAMPS - {TokenType.TIME}
+        TIMESTAMPS = parser.TIMESTAMPS - {TokenType.TIME}
 
         ALTER_PARSERS = {
-            **parser._ALTER_PARSERS,
+            **parser.ALTER_PARSERS,
             "MODIFY": lambda self: self._parse_alter_table_alter(),
             "SESSION": lambda self: self._parse_alter_session(),
             "UNSET": lambda self: self.expression(
@@ -1121,14 +1121,14 @@ class Snowflake(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser._STATEMENT_PARSERS,
+            **parser.STATEMENT_PARSERS,
             TokenType.GET: lambda self: self._parse_get(),
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
         PROPERTY_PARSERS = {
-            **parser._PROPERTY_PARSERS,
+            **parser.PROPERTY_PARSERS,
             "CREDENTIALS": lambda self: self._parse_credentials_property(),
             "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
@@ -1172,7 +1172,7 @@ class Snowflake(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser._CONSTRAINT_PARSERS,
+            **parser.CONSTRAINT_PARSERS,
             "WITH": lambda self: self._parse_with_constraint(),
             "MASKING": lambda self: self._parse_with_constraint(),
             "PROJECTION": lambda self: self._parse_with_constraint(),
@@ -1192,7 +1192,7 @@ class Snowflake(Dialect):
         NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
         LAMBDAS = {
-            **parser._LAMBDAS,
+            **parser.LAMBDAS,
             TokenType.ARROW: lambda self, expressions: self.expression(
                 exp.Lambda,
                 this=self._replace_lambda(
@@ -1204,7 +1204,7 @@ class Snowflake(Dialect):
         }
 
         COLUMN_OPERATORS = {
-            **parser._COLUMN_OPERATORS,
+            **parser.COLUMN_OPERATORS,
             TokenType.EXCLAMATION: lambda self, this, attr: self.expression(
                 exp.ModelAttribute, this=this, expression=attr
             ),

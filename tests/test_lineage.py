@@ -795,7 +795,9 @@ class TestLineage(unittest.TestCase):
 
         # With memoization + DAG-aware walk, we should have a small number of unique nodes
         # (roughly O(N), not O(2^N)).
-        self.assertLess(len(all_nodes), 200, f"got {len(all_nodes)} nodes -- DAG walk may be broken")
+        self.assertLess(
+            len(all_nodes), 200, f"got {len(all_nodes)} nodes -- DAG walk may be broken"
+        )
 
         # walk() should yield each node exactly once.
         all_ids = [id(n) for n in all_nodes]

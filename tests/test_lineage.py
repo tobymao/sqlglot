@@ -775,19 +775,20 @@ class TestLineage(unittest.TestCase):
     def test_lineage_shared_cte_performance(self) -> None:
         """Shared CTEs referenced from multiple places should not cause exponential expansion.
 
-        Each cte_k joins cte_{k-1} with itself, so without memoization
-        cte_N would be expanded 2^N times. With N=12 that's 4096 expansions.
+        Each cte_k joins cte_{k-1} with itself and references both sides
+        (t1.a + t2.a), so without memoization to_node() is called 2^N times.
+        With N=12 that's 4096 expansions.
         """
         n_levels = 12
         ctes = ["cte_0 AS (SELECT a FROM base_table)"]
         for k in range(1, n_levels):
             prev = f"cte_{k - 1}"
             ctes.append(
-                f"cte_{k} AS (SELECT * FROM {prev} t1 JOIN {prev} t2 ON t1.a = t2.a)"
+                f"cte_{k} AS (SELECT t1.a + t2.a AS a FROM {prev} t1 JOIN {prev} t2 ON t1.a = t2.a)"
             )
         sql = "WITH " + ",\n     ".join(ctes) + f"\nSELECT a FROM cte_{n_levels - 1}"
 
-        node = lineage("a", sql)
+        node = lineage("a", sql, schema={"base_table": {"a": "int"}})
 
         # Walk the DAG and verify structure.
         all_nodes = list(node.walk())

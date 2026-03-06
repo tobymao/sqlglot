@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.parsers.mysql import Parser as MySQLParser
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     property_sql,
@@ -45,9 +46,9 @@ class Doris(MySQL):
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    class Parser(MySQL.Parser):
+    class Parser(MySQLParser):
         FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
+            **MySQLParser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": _build_date_trunc,
             "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
@@ -56,14 +57,14 @@ class Doris(MySQL):
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
 
-        FUNCTION_PARSERS = MySQL.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS = MySQLParser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("GROUP_CONCAT")
 
-        NO_PAREN_FUNCTIONS = MySQL.Parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS = MySQLParser.NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_DATE)
 
         PROPERTY_PARSERS = {
-            **MySQL.Parser.PROPERTY_PARSERS,
+            **MySQLParser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             # Plain KEY without UNIQUE/DUPLICATE/AGGREGATE prefixes should be treated as UniqueKeyProperty with unique=False

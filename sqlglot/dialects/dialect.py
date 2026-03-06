@@ -315,19 +315,19 @@ class _Dialect(type):
 
             klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
 
+        if enum not in ("", "doris", "mysql"):
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.STRAIGHT_JOIN,
+            }
+            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                TokenType.STRAIGHT_JOIN,
+            }
+
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
-        parser_class = klass.parser_class
-
-        if enum not in ("", "doris", "mysql"):
-            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.STRAIGHT_JOIN}
-            parser_class.TABLE_ALIAS_TOKENS = parser_class.TABLE_ALIAS_TOKENS | {
-                TokenType.STRAIGHT_JOIN
-            }
-
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-            parser_class.TABLE_ALIAS_TOKENS = parser_class.TABLE_ALIAS_TOKENS | {
+            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
@@ -343,29 +343,46 @@ class _Dialect(type):
             "mysql",
             "singlestore",
         ):
-            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions.pop(TokenType.LOCALTIME, None)
             if enum != "oracle":
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
-            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
-        if enum in ("", "postgres", "duckdb", "trino"):
-            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
+        if enum in (
+            "",
+            "postgres",
+            "duckdb",
+            "trino",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
-            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.CURRENT_CATALOG}
+            # For dialects that don't support this keyword, treat it as a regular identifier
+            # This fixes the "Unexpected token" error in BQ, Spark, etc.
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.CURRENT_CATALOG,
+            }
 
-        if enum in ("", "databricks", "duckdb", "spark", "spark2", "postgres", "tsql"):
-            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
+        if enum in (
+            "",
+            "duckdb",
+            "spark",
+            "postgres",
+            "tsql",
+        ):
+            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
-            parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.SESSION_USER}
+            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                TokenType.SESSION_USER,
+            }
 
         from sqlglot.parser import _init_parser_tries
 
-        _init_parser_tries(parser_class)
+        _init_parser_tries(klass.parser_class)
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

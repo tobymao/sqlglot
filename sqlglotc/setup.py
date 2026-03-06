@@ -23,6 +23,7 @@ def _subpkg_files(subpkg, files=None):
 SOURCE_FILES = [
     "errors.py",
     "helper.py",
+    "parser.py",
     "parser_core.py",
     "schema.py",
     "serde.py",
@@ -40,6 +41,12 @@ SOURCE_FILES = [
             "qualify.py",
             "qualify_tables.py",
             "qualify_columns.py",
+        ],
+    ),
+    *_subpkg_files(
+        "parsers",
+        [
+            "bigquery.py",
         ],
     ),
 ]

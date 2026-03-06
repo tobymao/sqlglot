@@ -677,7 +677,7 @@ class TSQL(Dialect):
             "NEXT": lambda self: self._parse_next_value_for(),
         }
 
-        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+        FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "JSON_ARRAYAGG": lambda self: self.expression(
                 exp.JSONArrayAgg,

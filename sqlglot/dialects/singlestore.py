@@ -221,7 +221,7 @@ class SingleStore(MySQL):
             ),
         }
 
-        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+        FUNCTION_PARSERS = {
             **MySQL.Parser.FUNCTION_PARSERS,
             "JSON_AGG": lambda self: exp.JSONArrayAgg(
                 this=self._parse_term(),

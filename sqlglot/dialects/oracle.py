@@ -144,7 +144,7 @@ class Oracle(Dialect):
             TokenType.SYSTIMESTAMP: exp.Systimestamp,
         }
 
-        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+        FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "JSON_ARRAY": lambda self: self._parse_json_array(
                 exp.JSONArray,

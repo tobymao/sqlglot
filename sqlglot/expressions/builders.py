@@ -933,11 +933,10 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
     constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
     if constructor:
         if converted:
-            code = getattr(constructor, "__code__", None)
-            if code and "dialect" in code.co_varnames:
-                function = constructor(converted, dialect=dialect)
-            else:
+            try:
                 function = constructor(converted)
+            except TypeError:
+                function = constructor(converted, dialect=dialect)
         elif constructor.__name__ == "from_arg_list":
             function = constructor.__self__(**kwargs)  # type: ignore
         else:

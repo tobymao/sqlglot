@@ -557,7 +557,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if isinstance(column, exp.Dot):
             continue
 
-        column_table: t.Optional[str | exp.Identifier] = column.table
+        column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
@@ -570,7 +570,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         ):
             root, *parts = column.parts
 
-            if root.name in scope.sources:
+            if isinstance(root, exp.Identifier) and root.name in scope.sources:
                 # The struct is already qualified, but we still need to change the AST
                 column_table = root
                 root, *parts = parts

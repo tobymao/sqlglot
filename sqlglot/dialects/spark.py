@@ -13,7 +13,7 @@ from sqlglot.dialects.dialect import (
     date_delta_to_binary_interval_op,
     groupconcat_sql,
 )
-from sqlglot.dialects.hive import _build_with_ignore_nulls
+from sqlglot.parsers.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import ensure_list, seq_get

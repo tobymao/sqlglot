@@ -344,6 +344,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)
+        self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -432,6 +433,48 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 self._set_type(expr, t.cast(exp.DType, returns))
             else:
                 self._set_type(expr, exp.DType.UNKNOWN)
+
+    def _fixup_order_by_aliases(self, scope: Scope) -> None:
+        query = scope.expression
+        if not isinstance(query, exp.Query):
+            return
+
+        order = query.args.get("order")
+        if not order:
+            return
+
+        alias_types: t.Dict[str, exp.DataType | exp.DType] = {}
+        for sel in query.selects:
+            if (
+                isinstance(sel, exp.Alias)
+                and sel.this.type
+                and not sel.this.is_type(exp.DType.UNKNOWN)
+            ):
+                alias_types[sel.alias] = sel.this.type
+
+        if not alias_types:
+            return
+
+        fixed = False
+        for ordered in order.expressions:
+            for col in ordered.find_all(exp.Column):
+                if not col.table and col.name in alias_types:
+                    self._set_type(col, alias_types[col.name])
+                    fixed = True
+
+        if fixed:
+            self._reannotate_subtree(order, scope)
+
+    def _reannotate_subtree(self, expression: exp.Expr, scope: Scope) -> None:
+        # Clear derived (non-leaf) types so they can be re-inferred from updated leaves.
+        # Column and Literal types are preserved as ground truth. Subquery subtrees are
+        # skipped because they belong to inner scopes already annotated independently.
+        for node in expression.walk(prune=lambda n: isinstance(n, exp.Subquery)):
+            if isinstance(node, exp.Expression) and not isinstance(node, (exp.Column, exp.Literal)):
+                node.type = None
+                self._visited.discard(id(node))
+
+        self._annotate_expression(expression, scope)
 
     def _maybe_coerce(
         self,

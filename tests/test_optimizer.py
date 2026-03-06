@@ -2324,3 +2324,175 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT (SELECT "t"."col" AS "col" FROM "t" AS "t") AS "u" FROM (SELECT 1 AS "col") AS "t"',
         )
         assert annotated.selects[0].type == exp.DataType.build("TEXT")
+
+    def test_order_by_alias_annotation(self):
+        schema = {
+            "t": {"x": "INT", "z": "TEXT", "category": "TEXT", "col": "INT"},
+            "u": {"a": "INT", "x": "INT"},
+        }
+
+        def _order_types(sql):
+            query = optimizer.qualify.qualify(parse_one(sql), schema=schema)
+            annotated = optimizer.annotate_types.annotate_types(query, schema=schema)
+            order = annotated.find(exp.Order)
+            assert order, f"No ORDER BY found in: {sql}"
+            return [o.this.type for o in order.expressions]
+
+        INT = exp.DataType.build("INT")
+        TEXT = exp.DataType.build("TEXT")
+        BIGINT = exp.DataType.build("BIGINT")
+        VARCHAR = exp.DataType.build("VARCHAR")
+
+        # Basic alias resolution
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y"), [INT])
+        self.assertEqual(_order_types("SELECT x, z FROM t ORDER BY x"), [INT])
+        self.assertEqual(
+            _order_types("SELECT category, COUNT(*) AS cnt FROM t GROUP BY category ORDER BY cnt"),
+            [BIGINT],
+        )
+        self.assertEqual(
+            _order_types(
+                "SELECT CASE WHEN x > 0 THEN 'a' ELSE 'b' END AS label FROM t ORDER BY label"
+            ),
+            [VARCHAR],
+        )
+        self.assertEqual(_order_types("SELECT CAST(x AS TEXT) AS s FROM t ORDER BY s"), [TEXT])
+
+        # Alias shadows column name
+        self.assertEqual(_order_types("SELECT z AS x FROM t ORDER BY x"), [TEXT])
+
+        # Alias shadows column from joined table (ambiguous column, alias wins)
+        self.assertEqual(_order_types("SELECT t.x + u.a AS a FROM t, u ORDER BY a"), [INT])
+
+        # Alias shadows column across cross-join (u also has x)
+        self.assertEqual(_order_types("SELECT t.z AS x FROM t, u ORDER BY x"), [TEXT])
+
+        # CTE name collides with alias
+        self.assertEqual(
+            _order_types("WITH y AS (SELECT 999 AS v) SELECT x + 1 AS y FROM t ORDER BY y"),
+            [INT],
+        )
+
+        # Column name equals alias name (self-referential guard)
+        self.assertEqual(_order_types("SELECT x FROM t ORDER BY x"), [INT])
+
+        # Multiple ORDER BY columns
+        self.assertEqual(
+            _order_types("SELECT x + 1 AS y, z AS w FROM t ORDER BY y, w"), [INT, TEXT]
+        )
+
+        # Sort modifiers
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y DESC"), [INT])
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y NULLS FIRST"), [INT])
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y DESC NULLS LAST"), [INT])
+
+        # Three-column sort with mixed ASC/DESC
+        self.assertEqual(
+            _order_types(
+                "SELECT x + 1 AS y, z AS w, category AS c FROM t ORDER BY y ASC, w DESC, c ASC"
+            ),
+            [INT, TEXT, TEXT],
+        )
+
+        # Compound expressions using aliases
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y + 1"), [INT])
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY (y + 1) * 2"), [INT])
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY ((y + 1) * 2) + 3"), [INT])
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY ABS(y + 1)"), [INT])
+        self.assertEqual(
+            _order_types("SELECT x + 1 AS y FROM t ORDER BY COALESCE(y, 0) + 1"), [INT]
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS a, z AS b FROM t ORDER BY CONCAT(b, CAST(a AS TEXT))"),
+            [VARCHAR],
+        )
+
+        # Non-projected column in ORDER BY
+        self.assertEqual(_order_types("SELECT x FROM t ORDER BY z"), [TEXT])
+
+        # Mixed alias + expression
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t ORDER BY y, x + 2"), [INT, INT])
+
+        # GROUP BY + ORDER BY alias
+        self.assertEqual(_order_types("SELECT x + 1 AS y FROM t GROUP BY y ORDER BY y"), [INT])
+
+        # Set operations
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t UNION ALL SELECT a FROM u ORDER BY y"),
+            [INT],
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t UNION SELECT a FROM u ORDER BY y"),
+            [INT],
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t INTERSECT SELECT a FROM u ORDER BY y"),
+            [INT],
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t EXCEPT SELECT a FROM u ORDER BY y"),
+            [INT],
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t UNION ALL SELECT a FROM u ORDER BY y + 1"),
+            [INT],
+        )
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t UNION ALL SELECT a FROM u ORDER BY 1"),
+            [INT],
+        )
+
+        # Subquery with ORDER BY
+        self.assertEqual(
+            _order_types("SELECT * FROM (SELECT x AS y FROM t ORDER BY y) AS sub"),
+            [INT],
+        )
+
+        # Window function alias (SUM is typed, unlike ROW_NUMBER)
+        self.assertEqual(_order_types("SELECT SUM(x) OVER () AS s FROM t ORDER BY s"), [BIGINT])
+
+        # Subquery-as-projection alias
+        self.assertEqual(
+            _order_types("SELECT (SELECT MAX(a) FROM u) AS m FROM t ORDER BY m"), [INT]
+        )
+
+        # Alias name collides with table name
+        self.assertEqual(
+            _order_types("SELECT (SELECT MAX(a) FROM u) AS u FROM t ORDER BY u"), [INT]
+        )
+
+        # Type coercion through lazy annotation
+        self.assertEqual(
+            _order_types(
+                "SELECT CASE WHEN x > 0 THEN x ELSE CAST(x AS BIGINT) END AS y FROM t ORDER BY y"
+            ),
+            [BIGINT],
+        )
+
+        # Subquery in ORDER BY with alias name clash (inner col is table-qualified)
+        self.assertEqual(
+            _order_types("SELECT x AS a FROM t ORDER BY (SELECT MAX(a) FROM u)"), [INT]
+        )
+
+        # CAST in ORDER BY using alias
+        self.assertEqual(_order_types("SELECT x AS y FROM t ORDER BY CAST(y AS TEXT)"), [TEXT])
+
+        # Duplicate alias (last wins, matches DuckDB behavior)
+        self.assertEqual(_order_types("SELECT x AS y, z AS y FROM t ORDER BY y"), [TEXT])
+
+        # Compound ORDER BY with subquery (reannotation skips inner scope)
+        self.assertEqual(
+            _order_types("SELECT x AS y FROM t ORDER BY y + (SELECT MAX(a) FROM u)"),
+            [INT],
+        )
+
+        # Regression: correlated subquery — no recursion error
+        sql = "SELECT (SELECT col) FROM t"
+        query = optimizer.qualify.qualify(parse_one(sql), schema=schema)
+        optimizer.annotate_types.annotate_types(query, schema=schema)
+
+        # Regression: self-referential alias (BigQuery pseudocolumn pattern)
+        sql = "SELECT _col AS _col FROM t"
+        schema_ext = {"t": {"_col": "INT"}}
+        query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
+        optimizer.annotate_types.annotate_types(query, schema=schema_ext)

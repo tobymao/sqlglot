@@ -995,6 +995,11 @@ class Snowflake(Dialect):
             "SHA1_HEX": exp.SHA.from_arg_list,
             "SHA2_BINARY": exp.SHA2Digest.from_arg_list,
             "SHA2_HEX": exp.SHA2.from_arg_list,
+            "SPLIT": lambda args: exp.Split(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                null_returns_null=True,
+            ),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "STDDEV_SAMP": exp.Stddev.from_arg_list,
             "STRTOK": _build_strtok,

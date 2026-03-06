@@ -2094,7 +2094,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
@@ -3876,6 +3875,21 @@ class DuckDB(Dialect):
                 self.unsupported("IGNORE NULLS is not supported for non-window functions.")
 
             return self.sql(this)
+        
+        def split_sql(self, expression: exp.Split) -> str:
+            if expression.args.get("null_returns_null"):
+                template = exp.maybe_parse("""
+                    CASE WHEN :delimiter IS NULL THEN NULL 
+                    ELSE STR_SPLIT(:string, :delimiter) END
+                """)
+                result = exp.replace_placeholders(
+                    template.copy(),
+                    string=expression.this,
+                    delimiter=expression.expression
+                )
+                return self.sql(result)
+            else:
+                return self.func("STR_SPLIT", expression.this, expression.expression)
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):

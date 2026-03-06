@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
+from sqlglot.parsers.mysql import Parser as MySQLParser
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
@@ -65,9 +66,9 @@ class StarRocks(MySQL):
             "LARGEINT": TokenType.INT128,
         }
 
-    class Parser(MySQL.Parser):
+    class Parser(MySQLParser):
         FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
+            **MySQLParser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
@@ -80,7 +81,7 @@ class StarRocks(MySQL):
         }
 
         PROPERTY_PARSERS = {
-            **MySQL.Parser.PROPERTY_PARSERS,
+            **MySQLParser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "ROLLUP": lambda self: self._parse_rollup_property(),

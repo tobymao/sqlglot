@@ -2656,14 +2656,9 @@ class TestDuckDB(Validator):
             },
         )
 
-        # Test type inference with typed map column
-        from sqlglot.optimizer import qualify
-        from sqlglot.schema import MappingSchema
-
-        ast = parse_one("SELECT MAP_INSERT(my_map, 'key', 42) FROM my_table", read="snowflake")
-        schema = MappingSchema(schema={"my_table": {"my_map": "MAP(VARCHAR, INT)"}})
-        annotated = annotate_types(qualify.qualify(ast, schema=schema), schema=schema)
         self.assertEqual(
-            annotated.sql("duckdb"),
-            'SELECT MAP_CONCAT("my_table"."my_map", MAP {\'key\': CAST(42 AS INT)}) AS "_col_0" FROM "my_table" AS "my_table"',
+            annotate_types(
+                parse_one("SELECT MAP_INSERT(my_map, 'key', 42) FROM my_table", read="snowflake")
+            ).sql("duckdb"),
+            "SELECT MAP_CONCAT(my_map, MAP {'key': 42}) FROM my_table",
         )

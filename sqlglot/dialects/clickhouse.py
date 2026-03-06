@@ -310,6 +310,7 @@ class ClickHouse(Dialect):
             ".^": TokenType.DOTCARET,
             "ATTACH": TokenType.COMMAND,
             "DATE32": TokenType.DATE32,
+            "DETACH": TokenType.DETACH,
             "DATETIME64": TokenType.DATETIME64,
             "DICTIONARY": TokenType.DICTIONARY,
             "DYNAMIC": TokenType.DYNAMIC,
@@ -1174,6 +1175,26 @@ class ClickHouse(Dialect):
             return self.expression(
                 exp.PartitionedByProperty,
                 this=self._parse_assignment(),
+            )
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.DETACH: lambda self: self._parse_detach(),
+        }
+
+        def _parse_detach(self) -> exp.Detach:
+            kind = self._match_set(self.DB_CREATABLES) and self._prev.text.upper()
+            exists = self._parse_exists()
+            this = self._parse_table_parts()
+
+            return self.expression(
+                exp.Detach,
+                this=this,
+                kind=kind,
+                exists=exists,
+                cluster=self._parse_on_property() if self._match(TokenType.ON) else None,
+                permanent=self._match_text_seq("PERMANENTLY"),
+                sync=self._match_text_seq("SYNC"),
             )
 
     class Generator(generator.Generator):

@@ -5327,14 +5327,14 @@ class Generator(metaclass=_Generator):
         # ref: https://duckdb.org/docs/stable/sql/statements/attach.html#detach-syntax
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         if exists:
-            kind = f"{kind or " DATABASE"}{exists}"
+            kind = kind or " DATABASE"
 
         this = self.sql(expression, "this")
         cluster = self.sql(expression, "cluster")
         cluster = f" {cluster}" if cluster else ""
         permament = " PERMANENTLY" if expression.args.get("permanent") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DETACH{kind} {this}{cluster}{permament}{sync}"
+        return f"DETACH{kind}{exists} {this}{cluster}{permament}{sync}"
 
     def attachoption_sql(self, expression: exp.AttachOption) -> str:
         this = self.sql(expression, "this")

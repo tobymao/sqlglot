@@ -1190,8 +1190,8 @@ class ClickHouse(Dialect):
             return self.expression(
                 exp.Detach,
                 this=this,
-                exists=exists,
                 kind=kind,
+                exists=exists,
                 cluster=self._parse_on_property() if self._match(TokenType.ON) else None,
                 permanent=self._match_text_seq("PERMANENTLY"),
                 sync=self._match_text_seq("SYNC"),

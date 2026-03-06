@@ -5330,11 +5330,12 @@ class Generator(metaclass=_Generator):
             kind = kind or " DATABASE"
 
         this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         cluster = self.sql(expression, "cluster")
         cluster = f" {cluster}" if cluster else ""
         permanent = " PERMANENTLY" if expression.args.get("permanent") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DETACH{kind}{exists} {this}{cluster}{permanent}{sync}"
+        return f"DETACH{kind}{exists}{this}{cluster}{permanent}{sync}"
 
     def attachoption_sql(self, expression: exp.AttachOption) -> str:
         this = self.sql(expression, "this")

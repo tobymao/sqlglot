@@ -663,7 +663,7 @@ class Parser(parser.Parser):
 
         return create
 
-    def _parse_if(self) -> exp.IfBlock:
+    def _parse_if(self) -> t.Optional[exp.Expr]:
         this = self._parse_condition()
         true = self._parse_block()
 

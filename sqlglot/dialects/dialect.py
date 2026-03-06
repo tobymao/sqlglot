@@ -380,9 +380,12 @@ class _Dialect(type):
                 TokenType.SESSION_USER,
             }
 
-        from sqlglot.parser import _init_parser_tries
-
-        _init_parser_tries(klass.parser_class)
+        klass.parser_class.SHOW_TRIE = new_trie(
+            key.split(" ") for key in klass.parser_class.SHOW_PARSERS
+        )
+        klass.parser_class.SET_TRIE = new_trie(
+            key.split(" ") for key in klass.parser_class.SET_PARSERS
+        )
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

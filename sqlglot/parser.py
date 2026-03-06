@@ -13,7 +13,7 @@ from sqlglot.helper import ensure_list, mypyc_attr, seq_get
 from sqlglot.parser_core import ParserCore
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
-from sqlglot.trie import TrieResult, in_trie, new_trie
+from sqlglot.trie import TrieResult, in_trie
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -259,11 +259,6 @@ def _resolve_dialect(dialect: t.Any) -> t.Any:
     from sqlglot.dialects.dialect import Dialect
 
     return Dialect.get_or_raise(dialect)
-
-
-def _init_parser_tries(cls: t.Any) -> None:
-    cls.SHOW_TRIE = new_trie(key.split(" ") for key in cls.SHOW_PARSERS)
-    cls.SET_TRIE = new_trie(key.split(" ") for key in cls.SET_PARSERS)
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
@@ -6391,9 +6386,9 @@ class Parser:
                 # mypyc compiled functions don't have __code__, so we use
                 # try/except to check if func_builder accepts 'dialect'.
                 try:
-                    func = func_builder(args, dialect=self.dialect)
-                except TypeError:
                     func = func_builder(args)
+                except TypeError:
+                    func = func_builder(args, dialect=self.dialect)
 
                 func = self.validate_expression(func, args)
                 if self.dialect.PRESERVE_ORIGINAL_NAMES:

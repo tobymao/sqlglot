@@ -79,7 +79,7 @@ class Drill(Dialect):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "REPEATED_COUNT": exp.ArraySize.from_arg_list,
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),

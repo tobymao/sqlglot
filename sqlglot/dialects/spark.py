@@ -14,18 +14,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.dialects.hive import _build_with_ignore_nulls
-from sqlglot import parser
-from sqlglot.dialects.spark2 import (
-    Spark2,
-    SPARK2_NO_PAREN_FUNCTION_PARSERS,
-    SPARK2_PLACEHOLDER_PARSERS,
-    SPARK2_STATEMENT_PARSERS,
-    temporary_storage_provider,
-    _build_as_cast,
-    SPARK2_FUNCTIONS,
-    SPARK2_FUNCTION_PARSERS,
-    SPARK2_SET_PARSERS,
-)
+from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.tokens import TokenType
@@ -122,51 +111,6 @@ def _groupconcat_sql(self: Spark.Generator, expression: exp.GroupConcat) -> str:
     return groupconcat_sql(self, expression)
 
 
-SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **SPARK2_FUNCTIONS,
-    "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
-    "ARRAY_INSERT": lambda args: exp.ArrayInsert(
-        this=seq_get(args, 0),
-        position=seq_get(args, 1),
-        expression=seq_get(args, 2),
-        offset=1,
-    ),
-    "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
-    "BIT_GET": exp.Getbit.from_arg_list,
-    "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
-    "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-    "BIT_COUNT": exp.BitwiseCount.from_arg_list,
-    "CURDATE": exp.CurrentDate.from_arg_list,
-    "DATE_ADD": _build_dateadd,
-    "DATEADD": _build_dateadd,
-    "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
-    "TIMESTAMPADD": _build_dateadd,
-    "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
-    "TRY_ADD": exp.SafeAdd.from_arg_list,
-    "TRY_MULTIPLY": exp.SafeMultiply.from_arg_list,
-    "TRY_SUBTRACT": exp.SafeSubtract.from_arg_list,
-    "DATEDIFF": _build_datediff,
-    "DATE_DIFF": _build_datediff,
-    "JSON_OBJECT_KEYS": exp.JSONKeys.from_arg_list,
-    "LISTAGG": exp.GroupConcat.from_arg_list,
-    "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
-    "TIMESTAMP_NTZ": _build_as_cast("TIMESTAMP_NTZ"),
-    "TRY_ELEMENT_AT": lambda args: exp.Bracket(
-        this=seq_get(args, 0),
-        expressions=ensure_list(seq_get(args, 1)),
-        offset=1,
-        safe=True,
-    ),
-    "LIKE": build_like(exp.Like),
-    "ILIKE": build_like(exp.ILike),
-}
-
-SPARK_NO_PAREN_FUNCTION_PARSERS = SPARK2_NO_PAREN_FUNCTION_PARSERS
-
-SPARK_FACTOR = parser.FACTOR
-SPARK_CAST_COLUMN_OPERATORS = parser.CAST_COLUMN_OPERATORS
-
-
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_NULL_TYPE = True
@@ -189,15 +133,52 @@ class Spark(Spark2):
 
     class Parser(Spark2.Parser):
         SET_PARSERS = {
-            **SPARK2_SET_PARSERS,
+            **Spark2.Parser.SET_PARSERS,
             "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),
             "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
         }
 
-        FUNCTIONS = SPARK_FUNCTIONS
+        FUNCTIONS = {
+            **Spark2.Parser.FUNCTIONS,
+            "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
+            "ARRAY_INSERT": lambda args: exp.ArrayInsert(
+                this=seq_get(args, 0),
+                position=seq_get(args, 1),
+                expression=seq_get(args, 2),
+                offset=1,
+            ),
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_GET": exp.Getbit.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
+            "CURDATE": exp.CurrentDate.from_arg_list,
+            "DATE_ADD": _build_dateadd,
+            "DATEADD": _build_dateadd,
+            "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
+            "TIMESTAMPADD": _build_dateadd,
+            "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
+            "TRY_ADD": exp.SafeAdd.from_arg_list,
+            "TRY_MULTIPLY": exp.SafeMultiply.from_arg_list,
+            "TRY_SUBTRACT": exp.SafeSubtract.from_arg_list,
+            "DATEDIFF": _build_datediff,
+            "DATE_DIFF": _build_datediff,
+            "JSON_OBJECT_KEYS": exp.JSONKeys.from_arg_list,
+            "LISTAGG": exp.GroupConcat.from_arg_list,
+            "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
+            "TIMESTAMP_NTZ": _build_as_cast("TIMESTAMP_NTZ"),
+            "TRY_ELEMENT_AT": lambda args: exp.Bracket(
+                this=seq_get(args, 0),
+                expressions=ensure_list(seq_get(args, 1)),
+                offset=1,
+                safe=True,
+            ),
+            "LIKE": build_like(exp.Like),
+            "ILIKE": build_like(exp.ILike),
+        }
 
         PLACEHOLDER_PARSERS = {
-            **SPARK2_PLACEHOLDER_PARSERS,
+            **Spark2.Parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
@@ -207,12 +188,12 @@ class Spark(Spark2):
             return self.expression(exp.Placeholder, this=this, widget=True)
 
         FUNCTION_PARSERS = {
-            **SPARK2_FUNCTION_PARSERS,
+            **Spark2.Parser.FUNCTION_PARSERS,
             "SUBSTR": lambda self: self._parse_substring(),
         }
 
         STATEMENT_PARSERS = {
-            **SPARK2_STATEMENT_PARSERS,
+            **Spark2.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 

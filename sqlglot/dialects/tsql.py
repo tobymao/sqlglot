@@ -587,20 +587,20 @@ class TSQL(Dialect):
         NO_PAREN_IF_COMMANDS = False
 
         QUERY_MODIFIER_PARSERS = {
-            **parser.QUERY_MODIFIER_PARSERS,
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.OPTION: lambda self: ("options", self._parse_options()),
             TokenType.FOR: lambda self: ("for_", self._parse_for()),
         }
 
         # T-SQL does not allow BEGIN to be used as an identifier
-        ID_VAR_TOKENS = parser.ID_VAR_TOKENS - {TokenType.BEGIN}
-        ALIAS_TOKENS = parser.ALIAS_TOKENS - {TokenType.BEGIN}
-        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
-        COMMENT_TABLE_ALIAS_TOKENS = parser.COMMENT_TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
-        UPDATE_ALIAS_TOKENS = parser.UPDATE_ALIAS_TOKENS - {TokenType.BEGIN}
+        ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
+        COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
+        UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.BEGIN}
 
         FUNCTIONS = {
-            **parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "ATN2": exp.Atan2.from_arg_list,
             "CHARINDEX": lambda args: exp.StrPosition(
                 this=seq_get(args, 1),
@@ -652,19 +652,19 @@ class TSQL(Dialect):
 
         COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READONLY"}
 
-        RETURNS_TABLE_TOKENS = parser.ID_VAR_TOKENS - {
+        RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
-            *parser.TYPE_TOKENS,
+            *parser.Parser.TYPE_TOKENS,
         }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
             TokenType.EXECUTE: lambda self: self._parse_execute(),
         }
 
         RANGE_PARSERS = {
-            **parser.RANGE_PARSERS,
+            **parser.Parser.RANGE_PARSERS,
             TokenType.DCOLON: lambda self, this: self.expression(
                 exp.ScopeResolution,
                 this=this,
@@ -673,12 +673,12 @@ class TSQL(Dialect):
         }
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **parser.NO_PAREN_FUNCTION_PARSERS,
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "NEXT": lambda self: self._parse_next_value_for(),
         }
 
-        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-            **parser.FUNCTION_PARSERS,
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
             "JSON_ARRAYAGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
                 this=self._parse_bitwise(),
@@ -690,7 +690,7 @@ class TSQL(Dialect):
 
         # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
         COLUMN_OPERATORS = {
-            **parser.COLUMN_OPERATORS,
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.DCOLON: lambda self, this, to: self.expression(exp.Cast, this=this, to=to)
             if isinstance(to, exp.DataType) and to.this != exp.DType.USERDEFINED
             else self.expression(exp.ScopeResolution, this=this, expression=to),

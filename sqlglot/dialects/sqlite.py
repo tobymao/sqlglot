@@ -117,7 +117,7 @@ class SQLite(Dialect):
         ADD_JOIN_ON_TRUE = True
 
         FUNCTIONS = {
-            **parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
             "EDITDIST3": exp.Levenshtein.from_arg_list,
             "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
@@ -128,13 +128,13 @@ class SQLite(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.ATTACH: lambda self: self._parse_attach_detach(),
             TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
         }
 
         RANGE_PARSERS = {
-            **parser.RANGE_PARSERS,
+            **parser.Parser.RANGE_PARSERS,
             # https://www.sqlite.org/lang_expr.html
             TokenType.MATCH: binary_range_parser(exp.Match),
         }

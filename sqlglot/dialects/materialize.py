@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp
 from sqlglot.helper import seq_get
-from sqlglot.dialects.postgres import (
-    Postgres,
-    POSTGRES_LAMBDAS,
-    POSTGRES_NO_PAREN_FUNCTION_PARSERS,
-)
+from sqlglot.dialects.postgres import Postgres
 
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -20,12 +16,12 @@ import typing as t
 class Materialize(Postgres):
     class Parser(Postgres.Parser):
         NO_PAREN_FUNCTION_PARSERS = {
-            **POSTGRES_NO_PAREN_FUNCTION_PARSERS,
+            **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
             "MAP": lambda self: self._parse_map(),
         }
 
         LAMBDAS = {
-            **POSTGRES_LAMBDAS,
+            **Postgres.Parser.LAMBDAS,
             TokenType.FARROW: lambda self, expressions: self.expression(
                 exp.Kwarg, this=seq_get(expressions, 0), expression=self._parse_assignment()
             ),

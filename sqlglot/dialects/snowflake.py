@@ -341,15 +341,6 @@ def _flatten_structured_types_unless_iceberg(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _build_array_generate_range(args: t.List) -> exp.GenerateSeries:
-    return exp.GenerateSeries(
-        start=seq_get(args, 0),
-        end=seq_get(args, 1),
-        step=seq_get(args, 2),
-        is_end_exclusive=True,
-    )
-
-
 def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     generate_date_array = unnest.expressions[0]
     start = generate_date_array.args.get("start")
@@ -374,7 +365,7 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     )
 
     # We use DATEDIFF to compute the number of sequence values needed
-    number_sequence = _build_array_generate_range(
+    number_sequence = Snowflake.Parser.FUNCTIONS["ARRAY_GENERATE_RANGE"](
         [exp.Literal.number(0), _build_datediff([unit, start, end]) + 1]
     )
 
@@ -819,28 +810,28 @@ class Snowflake(Dialect):
         COLON_IS_VARIANT_EXTRACT = True
         JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
 
-        TYPE_TOKENS = {*parser.TYPE_TOKENS, TokenType.FILE}
-        STRUCT_TYPE_TOKENS = {*parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
-        NESTED_TYPE_TOKENS = {*parser.NESTED_TYPE_TOKENS, TokenType.FILE}
+        TYPE_TOKENS = {*parser.Parser.TYPE_TOKENS, TokenType.FILE}
+        STRUCT_TYPE_TOKENS = {*parser.Parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
+        NESTED_TYPE_TOKENS = {*parser.Parser.NESTED_TYPE_TOKENS, TokenType.FILE}
 
         ID_VAR_TOKENS = {
-            *parser.ID_VAR_TOKENS,
+            *parser.Parser.ID_VAR_TOKENS,
             TokenType.EXCEPT,
             TokenType.MATCH_CONDITION,
         }
 
-        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
         TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
         COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
         NO_PAREN_FUNCTIONS = {
-            **parser.NO_PAREN_FUNCTIONS,
+            **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_TIME: exp.Localtime,
         }
 
         FUNCTIONS = {
-            **parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.AddMonths(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -860,7 +851,13 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0),
                 check_null=True,
             ),
-            "ARRAY_GENERATE_RANGE": _build_array_generate_range,
+            "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
+                # Snowflake has exclusive end semantics
+                start=seq_get(args, 0),
+                end=seq_get(args, 1),
+                step=seq_get(args, 2),
+                is_end_exclusive=True,
+            ),
             "ARRAY_EXCEPT": lambda args: exp.ArrayExcept(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -1097,7 +1094,7 @@ class Snowflake(Dialect):
         FUNCTIONS.pop("PREDICT")
 
         FUNCTION_PARSERS = {
-            **parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "DIRECTORY": lambda self: self._parse_directory(),
             "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
@@ -1106,10 +1103,10 @@ class Snowflake(Dialect):
         }
         FUNCTION_PARSERS.pop("TRIM")
 
-        TIMESTAMPS = parser.TIMESTAMPS - {TokenType.TIME}
+        TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
         ALTER_PARSERS = {
-            **parser.ALTER_PARSERS,
+            **parser.Parser.ALTER_PARSERS,
             "MODIFY": lambda self: self._parse_alter_table_alter(),
             "SESSION": lambda self: self._parse_alter_session(),
             "UNSET": lambda self: self.expression(
@@ -1121,14 +1118,14 @@ class Snowflake(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.GET: lambda self: self._parse_get(),
             TokenType.PUT: lambda self: self._parse_put(),
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
         PROPERTY_PARSERS = {
-            **parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,
             "CREDENTIALS": lambda self: self._parse_credentials_property(),
             "FILE_FORMAT": lambda self: self._parse_file_format_property(),
             "LOCATION": lambda self: self._parse_location_property(),
@@ -1172,7 +1169,7 @@ class Snowflake(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser.CONSTRAINT_PARSERS,
+            **parser.Parser.CONSTRAINT_PARSERS,
             "WITH": lambda self: self._parse_with_constraint(),
             "MASKING": lambda self: self._parse_with_constraint(),
             "PROJECTION": lambda self: self._parse_with_constraint(),
@@ -1192,7 +1189,7 @@ class Snowflake(Dialect):
         NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
         LAMBDAS = {
-            **parser.LAMBDAS,
+            **parser.Parser.LAMBDAS,
             TokenType.ARROW: lambda self, expressions: self.expression(
                 exp.Lambda,
                 this=self._replace_lambda(
@@ -1204,7 +1201,7 @@ class Snowflake(Dialect):
         }
 
         COLUMN_OPERATORS = {
-            **parser.COLUMN_OPERATORS,
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.EXCLAMATION: lambda self, this, attr: self.expression(
                 exp.ModelAttribute, this=this, expression=attr
             ),

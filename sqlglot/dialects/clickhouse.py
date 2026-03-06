@@ -361,7 +361,7 @@ class ClickHouse(Dialect):
         JOINS_HAVE_EQUAL_PRECEDENCE = True
 
         FUNCTIONS = {
-            **parser.FUNCTIONS,
+            **parser.Parser.FUNCTIONS,
             **{
                 f"TOSTARTOF{unit}": _build_timestamp_trunc(unit=unit)
                 for unit in TIMESTAMP_TRUNC_UNITS
@@ -569,16 +569,16 @@ class ClickHouse(Dialect):
         )
 
         FUNC_TOKENS = {
-            *parser.FUNC_TOKENS,
+            *parser.Parser.FUNC_TOKENS,
             TokenType.AND,
             TokenType.OR,
             TokenType.SET,
         }
 
-        RESERVED_TOKENS = parser.RESERVED_TOKENS - {TokenType.SELECT}
+        RESERVED_TOKENS = parser.Parser.RESERVED_TOKENS - {TokenType.SELECT}
 
         ID_VAR_TOKENS = {
-            *parser.ID_VAR_TOKENS,
+            *parser.Parser.ID_VAR_TOKENS,
             TokenType.LIKE,
         }
 
@@ -627,7 +627,7 @@ class ClickHouse(Dialect):
             return (agg_func_name, accumulated_suffixes)
 
         FUNCTION_PARSERS = {
-            **parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
             "MEDIAN": lambda self: self._parse_quantile(),
@@ -640,24 +640,24 @@ class ClickHouse(Dialect):
         FUNCTION_PARSERS.pop("MATCH")
 
         PROPERTY_PARSERS = {
-            **parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,
             "ENGINE": lambda self: self._parse_engine_property(),
         }
         PROPERTY_PARSERS.pop("DYNAMIC")
 
-        NO_PAREN_FUNCTION_PARSERS = parser.NO_PAREN_FUNCTION_PARSERS.copy()
+        NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
         NO_PAREN_FUNCTION_PARSERS.pop("ANY")
 
-        NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIMESTAMP)
 
         RANGE_PARSERS = {
-            **parser.RANGE_PARSERS,
+            **parser.Parser.RANGE_PARSERS,
             TokenType.GLOBAL: lambda self, this: self._parse_global_in(this),
         }
 
         COLUMN_OPERATORS = {
-            **parser.COLUMN_OPERATORS,
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.DOTCARET: lambda self, this, field: self.expression(
                 exp.NestedJSONSelect, this=this, expression=field
             ),
@@ -667,14 +667,14 @@ class ClickHouse(Dialect):
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
         JOIN_KINDS = {
-            *parser.JOIN_KINDS,
+            *parser.Parser.JOIN_KINDS,
             TokenType.ALL,
             TokenType.ANY,
             TokenType.ASOF,
             TokenType.ARRAY,
         }
 
-        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS - {
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.ALL,
             TokenType.ANY,
             TokenType.ARRAY,
@@ -684,14 +684,14 @@ class ClickHouse(Dialect):
             TokenType.SETTINGS,
         }
 
-        ALIAS_TOKENS = parser.ALIAS_TOKENS - {
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
             TokenType.FORMAT,
         }
 
         LOG_DEFAULTS_TO_LN = True
 
         QUERY_MODIFIER_PARSERS = {
-            **parser.QUERY_MODIFIER_PARSERS,
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.SETTINGS: lambda self: (
                 "settings",
                 self._advance() or self._parse_csv(self._parse_assignment),
@@ -700,25 +700,25 @@ class ClickHouse(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser.CONSTRAINT_PARSERS,
+            **parser.Parser.CONSTRAINT_PARSERS,
             "INDEX": lambda self: self._parse_index_constraint(),
             "CODEC": lambda self: self._parse_compress(),
             "ASSUME": lambda self: self._parse_assume_constraint(),
         }
 
         ALTER_PARSERS = {
-            **parser.ALTER_PARSERS,
+            **parser.Parser.ALTER_PARSERS,
             "MODIFY": lambda self: self._parse_alter_table_modify(),
             "REPLACE": lambda self: self._parse_alter_table_replace(),
         }
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
-            *parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "INDEX",
         } - {"CHECK"}
 
         PLACEHOLDER_PARSERS = {
-            **parser.PLACEHOLDER_PARSERS,
+            **parser.Parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 

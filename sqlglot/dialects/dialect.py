@@ -24,7 +24,6 @@ from sqlglot.helper import (
 )
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
-from sqlglot import parser as _parser_module
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
@@ -321,32 +320,14 @@ class _Dialect(type):
 
         parser_class = klass.parser_class
 
-        def _parser_attr(name: str) -> t.Any:
-            # Walk MRO to find the actual value, since mypyc compiled classes
-            # store class attributes as getset descriptors in __dict__.
-            for klass_in_mro in type.mro(parser_class):
-                val = klass_in_mro.__dict__.get(name)
-                if isinstance(val, (dict, set, frozenset)):
-                    return val
-            # mypyc compiled classes may store attributes as getset descriptors,
-            # so we read the default value from a temporary instance.
-            try:
-                inst = parser_class.__new__(parser_class)
-                val = getattr(inst, name, None)
-                if isinstance(val, (dict, set, frozenset)):
-                    return val
-            except Exception:
-                pass
-            return getattr(_parser_module, name, None)
-
         if enum not in ("", "doris", "mysql"):
-            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.STRAIGHT_JOIN}
-            parser_class.TABLE_ALIAS_TOKENS = _parser_attr("TABLE_ALIAS_TOKENS") | {
+            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.STRAIGHT_JOIN}
+            parser_class.TABLE_ALIAS_TOKENS = parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.STRAIGHT_JOIN
             }
 
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-            parser_class.TABLE_ALIAS_TOKENS = _parser_attr("TABLE_ALIAS_TOKENS") | {
+            parser_class.TABLE_ALIAS_TOKENS = parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
@@ -362,25 +343,29 @@ class _Dialect(type):
             "mysql",
             "singlestore",
         ):
-            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
             no_paren_functions.pop(TokenType.LOCALTIME, None)
             if enum != "oracle":
                 no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
             parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
         if enum in ("", "postgres", "duckdb", "trino"):
-            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
             no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
             parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.CURRENT_CATALOG}
+            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.CURRENT_CATALOG}
 
         if enum in ("", "databricks", "duckdb", "spark", "spark2", "postgres", "tsql"):
-            no_paren_functions = dict(_parser_attr("NO_PAREN_FUNCTIONS"))
+            no_paren_functions = dict(parser_class.NO_PAREN_FUNCTIONS)
             no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
             parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
         else:
-            parser_class.ID_VAR_TOKENS = _parser_attr("ID_VAR_TOKENS") | {TokenType.SESSION_USER}
+            parser_class.ID_VAR_TOKENS = parser_class.ID_VAR_TOKENS | {TokenType.SESSION_USER}
+
+        from sqlglot.parser import _init_parser_tries
+
+        _init_parser_tries(parser_class)
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

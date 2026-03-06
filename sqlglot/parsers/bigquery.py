@@ -145,39 +145,39 @@ MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
 class Parser(parser.Parser):
-    PREFIXED_PIVOT_COLUMNS = True
-    LOG_DEFAULTS_TO_LN = True
-    SUPPORTS_IMPLICIT_UNNEST = True
-    JOINS_HAVE_EQUAL_PRECEDENCE = True
+    PREFIXED_PIVOT_COLUMNS: t.ClassVar = True
+    LOG_DEFAULTS_TO_LN: t.ClassVar = True
+    SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = True
+    JOINS_HAVE_EQUAL_PRECEDENCE: t.ClassVar = True
 
     # BigQuery does not allow ASC/DESC to be used as an identifier, allows GRANT as an identifier
-    ID_VAR_TOKENS = {
-        *parser.ID_VAR_TOKENS,
+    ID_VAR_TOKENS: t.ClassVar = {
+        *parser.Parser.ID_VAR_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    ALIAS_TOKENS = {
-        *parser.ALIAS_TOKENS,
+    ALIAS_TOKENS: t.ClassVar = {
+        *parser.Parser.ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    TABLE_ALIAS_TOKENS = {
-        *parser.TABLE_ALIAS_TOKENS,
+    TABLE_ALIAS_TOKENS: t.ClassVar = {
+        *parser.Parser.TABLE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    COMMENT_TABLE_ALIAS_TOKENS = {
-        *parser.COMMENT_TABLE_ALIAS_TOKENS,
+    COMMENT_TABLE_ALIAS_TOKENS: t.ClassVar = {
+        *parser.Parser.COMMENT_TABLE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    UPDATE_ALIAS_TOKENS = {
-        *parser.UPDATE_ALIAS_TOKENS,
+    UPDATE_ALIAS_TOKENS: t.ClassVar = {
+        *parser.Parser.UPDATE_ALIAS_TOKENS,
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    FUNCTIONS: t.Dict[str, t.Callable] = {
-        **{k: v for k, v in parser.FUNCTIONS.items() if k != "SEARCH"},
+    FUNCTIONS: t.ClassVar[t.Dict[str, t.Callable]] = {
+        **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "SEARCH"},
         "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
@@ -268,8 +268,8 @@ class Parser(parser.Parser):
         "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
     }
 
-    FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-        **{k: v for k, v in parser.FUNCTION_PARSERS.items() if k != "TRIM"},
+    FUNCTION_PARSERS = {
+        **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "TRIM"},
         "ARRAY": lambda self: self.expression(
             exp.Array,
             expressions=[self._parse_statement()],
@@ -288,35 +288,41 @@ class Parser(parser.Parser):
         "FORECAST": lambda self: self._parse_ml(exp.MLForecast),
     }
 
-    NO_PAREN_FUNCTIONS = {
-        **parser.NO_PAREN_FUNCTIONS,
+    NO_PAREN_FUNCTIONS: t.ClassVar = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
     }
 
-    NESTED_TYPE_TOKENS = {
-        *parser.NESTED_TYPE_TOKENS,
+    NESTED_TYPE_TOKENS: t.ClassVar = {
+        *parser.Parser.NESTED_TYPE_TOKENS,
         TokenType.TABLE,
     }
 
-    PROPERTY_PARSERS = {
-        **parser.PROPERTY_PARSERS,
+    PROPERTY_PARSERS: t.ClassVar = {
+        **parser.Parser.PROPERTY_PARSERS,
         "NOT DETERMINISTIC": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
         ),
         "OPTIONS": lambda self: self._parse_with_property(),
     }
 
-    CONSTRAINT_PARSERS = {
-        **parser.CONSTRAINT_PARSERS,
+    CONSTRAINT_PARSERS: t.ClassVar = {
+        **parser.Parser.CONSTRAINT_PARSERS,
         "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
     }
 
-    RANGE_PARSERS = {k: v for k, v in parser.RANGE_PARSERS.items() if k != TokenType.OVERLAPS}
+    RANGE_PARSERS: t.ClassVar = {
+        k: v for k, v in parser.Parser.RANGE_PARSERS.items() if k != TokenType.OVERLAPS
+    }
 
-    DASHED_TABLE_PART_FOLLOW_TOKENS = {TokenType.DOT, TokenType.L_PAREN, TokenType.R_PAREN}
+    DASHED_TABLE_PART_FOLLOW_TOKENS: t.ClassVar = {
+        TokenType.DOT,
+        TokenType.L_PAREN,
+        TokenType.R_PAREN,
+    }
 
-    STATEMENT_PARSERS = {
-        **parser.STATEMENT_PARSERS,
+    STATEMENT_PARSERS: t.ClassVar = {
+        **parser.Parser.STATEMENT_PARSERS,
         TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
         TokenType.END: lambda self: self._parse_as_command(self._prev),
         TokenType.FOR: lambda self: self._parse_for_in(),
@@ -324,7 +330,7 @@ class Parser(parser.Parser):
         TokenType.DECLARE: lambda self: self._parse_declare(),
     }
 
-    BRACKET_OFFSETS = {
+    BRACKET_OFFSETS: t.ClassVar = {
         "OFFSET": (0, False),
         "ORDINAL": (1, False),
         "SAFE_OFFSET": (0, True),

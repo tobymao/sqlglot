@@ -293,59 +293,6 @@ def _round_sql(self: Postgres.Generator, expression: exp.Round) -> str:
     return self.func("ROUND", this, decimals)
 
 
-POSTGRES_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser.FUNCTIONS,
-    "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
-        this=seq_get(args, 1), expression=seq_get(args, 0)
-    ),
-    "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
-    "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
-    "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-    "VERSION": exp.CurrentVersion.from_arg_list,
-    "DATE_TRUNC": build_timestamp_trunc,
-    "DIV": lambda args: exp.cast(binary_from_function(exp.IntDiv)(args), exp.DType.DECIMAL),
-    "GENERATE_SERIES": _build_generate_series,
-    "GET_BIT": lambda args: exp.Getbit(
-        this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
-    ),
-    "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
-    "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
-    "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
-    "MAKE_TIME": exp.TimeFromParts.from_arg_list,
-    "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
-    "NOW": exp.CurrentTimestamp.from_arg_list,
-    "REGEXP_REPLACE": _build_regexp_replace,
-    "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
-    "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
-    "TO_TIMESTAMP": _build_to_timestamp,
-    "UNNEST": exp.Explode.from_arg_list,
-    "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-    "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
-    "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
-    "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
-    "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
-    "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
-    "WIDTH_BUCKET": lambda args: exp.WidthBucket(this=seq_get(args, 0), threshold=seq_get(args, 1))
-    if len(args) == 2
-    else exp.WidthBucket.from_arg_list(args),
-}
-
-POSTGRES_LAMBDAS = parser.LAMBDAS
-POSTGRES_CONSTRAINT_PARSERS = parser.CONSTRAINT_PARSERS
-POSTGRES_SCHEMA_UNNAMED_CONSTRAINTS = parser.SCHEMA_UNNAMED_CONSTRAINTS
-
-POSTGRES_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.NO_PAREN_FUNCTION_PARSERS,
-    "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
-}
-
-POSTGRES_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.PROPERTY_PARSERS,
-    "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
-}
-POSTGRES_PROPERTY_PARSERS.pop("INPUT")
-
-
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -465,25 +412,69 @@ class Postgres(Dialect):
     class Parser(parser.Parser):
         SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 
-        PROPERTY_PARSERS = POSTGRES_PROPERTY_PARSERS
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
+        }
+        PROPERTY_PARSERS.pop("INPUT")
 
         PLACEHOLDER_PARSERS = {
-            **parser.PLACEHOLDER_PARSERS,
+            **parser.Parser.PLACEHOLDER_PARSERS,
             TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder, jdbc=True),
             TokenType.MOD: lambda self: self._parse_query_parameter(),
         }
 
-        FUNCTIONS = POSTGRES_FUNCTIONS
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
+                this=seq_get(args, 1), expression=seq_get(args, 0)
+            ),
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+            "VERSION": exp.CurrentVersion.from_arg_list,
+            "DATE_TRUNC": build_timestamp_trunc,
+            "DIV": lambda args: exp.cast(binary_from_function(exp.IntDiv)(args), exp.DType.DECIMAL),
+            "GENERATE_SERIES": _build_generate_series,
+            "GET_BIT": lambda args: exp.Getbit(
+                this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True
+            ),
+            "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
+            "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
+            "MAKE_TIME": exp.TimeFromParts.from_arg_list,
+            "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
+            "NOW": exp.CurrentTimestamp.from_arg_list,
+            "REGEXP_REPLACE": _build_regexp_replace,
+            "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
+            "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
+            "TO_TIMESTAMP": _build_to_timestamp,
+            "UNNEST": exp.Explode.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+            "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
+            "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
+            "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
+            "WIDTH_BUCKET": lambda args: exp.WidthBucket(
+                this=seq_get(args, 0), threshold=seq_get(args, 1)
+            )
+            if len(args) == 2
+            else exp.WidthBucket.from_arg_list(args),
+        }
 
-        NO_PAREN_FUNCTION_PARSERS = POSTGRES_NO_PAREN_FUNCTION_PARSERS
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
+        }
 
         NO_PAREN_FUNCTIONS = {
-            **parser.NO_PAREN_FUNCTIONS,
+            **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
         }
 
         FUNCTION_PARSERS = {
-            **parser.FUNCTION_PARSERS,
+            **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": lambda self: self._parse_date_part(),
             "JSON_AGG": lambda self: self.expression(
                 exp.JSONArrayAgg,
@@ -494,7 +485,7 @@ class Postgres(Dialect):
         }
 
         BITWISE = {
-            **parser.BITWISE,
+            **parser.Parser.BITWISE,
             TokenType.HASH: exp.BitwiseXor,
         }
 
@@ -503,7 +494,7 @@ class Postgres(Dialect):
         }
 
         RANGE_PARSERS = {
-            **parser.RANGE_PARSERS,
+            **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
@@ -511,12 +502,12 @@ class Postgres(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
         UNARY_PARSERS = {
-            **parser.UNARY_PARSERS,
+            **parser.Parser.UNARY_PARSERS,
             # The `~` token is remapped from TILDE to RLIKE in Postgres due to the binary REGEXP LIKE operator
             TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
         }
@@ -524,7 +515,7 @@ class Postgres(Dialect):
         JSON_ARROWS_REQUIRE_JSON_TYPE = True
 
         COLUMN_OPERATORS = {
-            **parser.COLUMN_OPERATORS,
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.ARROW: lambda self, this, path: self.validate_expression(
                 build_json_extract_path(
                     exp.JSONExtract, arrow_req_json_type=self.JSON_ARROWS_REQUIRE_JSON_TYPE

@@ -210,68 +210,6 @@ def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
     )
 
 
-HIVE_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser.FUNCTIONS,
-    "BASE64": exp.ToBase64.from_arg_list,
-    "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
-    "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-    "DATE_ADD": lambda args: exp.TsOrDsAdd(
-        this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
-    ),
-    "DATE_FORMAT": lambda args: build_formatted_time(exp.TimeToStr, "hive")(
-        [
-            exp.TimeStrToTime(this=seq_get(args, 0)),
-            seq_get(args, 1),
-        ]
-    ),
-    "DATE_SUB": _build_date_add,
-    "DATEDIFF": lambda args: exp.DateDiff(
-        this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-        expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
-    ),
-    "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "FIRST": _build_with_ignore_nulls(exp.First),
-    "FIRST_VALUE": _build_with_ignore_nulls(exp.FirstValue),
-    "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
-    "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
-        this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
-    ),
-    "LAST": _build_with_ignore_nulls(exp.Last),
-    "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
-    "MAP": parser.build_var_map,
-    "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-    "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
-    "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
-    "SEQUENCE": exp.GenerateSeries.from_arg_list,
-    "SIZE": exp.ArraySize.from_arg_list,
-    "SPLIT": exp.RegexpSplit.from_arg_list,
-    "STR_TO_MAP": lambda args: exp.StrToMap(
-        this=seq_get(args, 0),
-        pair_delim=seq_get(args, 1) or exp.Literal.string(","),
-        key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
-    ),
-    "TO_DATE": _build_to_date,
-    "TO_JSON": exp.JSONFormat.from_arg_list,
-    "TRUNC": exp.TimestampTrunc.from_arg_list,
-    "UNBASE64": exp.FromBase64.from_arg_list,
-    "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
-        args or [exp.CurrentTimestamp()]
-    ),
-    "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
-}
-
-HIVE_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.FUNCTION_PARSERS,
-    "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
-    "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
-}
-
-HIVE_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.NO_PAREN_FUNCTION_PARSERS,
-    "TRANSFORM": lambda self: self._parse_transform(),
-}
-
-
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -382,24 +320,79 @@ class Hive(Dialect):
         CHANGE_COLUMN_ALTER_SYNTAX = False
         # Whether the dialect supports using ALTER COLUMN syntax with CHANGE COLUMN.
 
-        FUNCTION_PARSERS = HIVE_FUNCTION_PARSERS
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
+            "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
+        }
 
-        FUNCTIONS = HIVE_FUNCTIONS
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "BASE64": exp.ToBase64.from_arg_list,
+            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
+            "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
+            "DATE_ADD": lambda args: exp.TsOrDsAdd(
+                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+            ),
+            "DATE_FORMAT": lambda args: build_formatted_time(exp.TimeToStr, "hive")(
+                [
+                    exp.TimeStrToTime(this=seq_get(args, 0)),
+                    seq_get(args, 1),
+                ]
+            ),
+            "DATE_SUB": _build_date_add,
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
+            ),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "FIRST": _build_with_ignore_nulls(exp.First),
+            "FIRST_VALUE": _build_with_ignore_nulls(exp.FirstValue),
+            "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
+            "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
+                this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+            ),
+            "LAST": _build_with_ignore_nulls(exp.Last),
+            "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
+            "MAP": parser.build_var_map,
+            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
+            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
+            "SEQUENCE": exp.GenerateSeries.from_arg_list,
+            "SIZE": exp.ArraySize.from_arg_list,
+            "SPLIT": exp.RegexpSplit.from_arg_list,
+            "STR_TO_MAP": lambda args: exp.StrToMap(
+                this=seq_get(args, 0),
+                pair_delim=seq_get(args, 1) or exp.Literal.string(","),
+                key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
+            ),
+            "TO_DATE": _build_to_date,
+            "TO_JSON": exp.JSONFormat.from_arg_list,
+            "TRUNC": exp.TimestampTrunc.from_arg_list,
+            "UNBASE64": exp.FromBase64.from_arg_list,
+            "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
+                args or [exp.CurrentTimestamp()]
+            ),
+            "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
+        }
 
-        NO_PAREN_FUNCTION_PARSERS = HIVE_NO_PAREN_FUNCTION_PARSERS
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "TRANSFORM": lambda self: self._parse_transform(),
+        }
 
-        NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
+        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)
 
         PROPERTY_PARSERS = {
-            **parser.PROPERTY_PARSERS,
+            **parser.Parser.PROPERTY_PARSERS,
             "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
 
         ALTER_PARSERS = {
-            **parser.ALTER_PARSERS,
+            **parser.Parser.ALTER_PARSERS,
             "CHANGE": lambda self: self._parse_alter_table_change(),
         }
 

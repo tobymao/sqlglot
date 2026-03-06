@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     inline_array_sql,
     property_sql,
 )
-from sqlglot.dialects.mysql import MySQL, MYSQL_FUNCTIONS, MYSQL_PROPERTY_PARSERS
+from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -67,7 +67,7 @@ class StarRocks(MySQL):
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
-            **MYSQL_FUNCTIONS,
+            **MySQL.Parser.FUNCTIONS,
             "DATE_TRUNC": build_timestamp_trunc,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
@@ -80,7 +80,7 @@ class StarRocks(MySQL):
         }
 
         PROPERTY_PARSERS = {
-            **MYSQL_PROPERTY_PARSERS,
+            **MySQL.Parser.PROPERTY_PARSERS,
             "PROPERTIES": lambda self: self._parse_wrapped_properties(),
             "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
             "ROLLUP": lambda self: self._parse_rollup_property(),

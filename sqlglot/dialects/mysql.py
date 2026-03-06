@@ -148,140 +148,6 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
-MYSQL_FUNCTIONS: t.Dict[str, t.Callable] = {
-    **parser.FUNCTIONS,
-    "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
-    "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
-    "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
-    "BIT_COUNT": exp.BitwiseCount.from_arg_list,
-    "CONVERT_TZ": lambda args: exp.ConvertTimezone(
-        source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
-    ),
-    "CURDATE": exp.CurrentDate.from_arg_list,
-    "CURTIME": exp.CurrentTime.from_arg_list,
-    "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
-    "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
-    "DATE_FORMAT": lambda args: exp.TimeToStr(
-        this=exp.TsOrDsToTimestamp(this=seq_get(args, 0)),
-        format=Dialect["mysql"].format_time(seq_get(args, 1)),
-    ),
-    "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
-    "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "FORMAT": exp.NumberToStr.from_arg_list,
-    "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
-    "ISNULL": isnull_to_is_null,
-    "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
-    "MAKETIME": exp.TimeFromParts.from_arg_list,
-    "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "MONTHNAME": lambda args: exp.TimeToStr(
-        this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-        format=exp.Literal.string("%B"),
-    ),
-    "SCHEMA": exp.CurrentSchema.from_arg_list,
-    "DATABASE": exp.CurrentSchema.from_arg_list,
-    "STR_TO_DATE": _str_to_date,
-    "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
-    "TO_DAYS": lambda args: exp.paren(
-        exp.DateDiff(
-            this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            expression=exp.TsOrDsToDate(this=exp.Literal.string("0000-01-01")),
-            unit=exp.var("DAY"),
-        )
-        + 1
-    ),
-    "VERSION": exp.CurrentVersion.from_arg_list,
-    "WEEK": lambda args: exp.Week(
-        this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
-    ),
-    "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-    "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-}
-
-MYSQL_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.FUNCTION_PARSERS,
-    "GROUP_CONCAT": lambda self: self._parse_group_concat(),
-    # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
-    "VALUES": lambda self: self.expression(
-        exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
-    ),
-    "JSON_VALUE": lambda self: self._parse_json_value(),
-    "SUBSTR": lambda self: self._parse_substring(),
-}
-
-MYSQL_NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
-
-MYSQL_SHOW_PARSERS: t.Dict[str, t.Callable] = {
-    "BINARY LOGS": _show_parser("BINARY LOGS"),
-    "MASTER LOGS": _show_parser("BINARY LOGS"),
-    "BINLOG EVENTS": _show_parser("BINLOG EVENTS"),
-    "CHARACTER SET": _show_parser("CHARACTER SET"),
-    "CHARSET": _show_parser("CHARACTER SET"),
-    "COLLATION": _show_parser("COLLATION"),
-    "FULL COLUMNS": _show_parser("COLUMNS", target="FROM", full=True),
-    "COLUMNS": _show_parser("COLUMNS", target="FROM"),
-    "CREATE DATABASE": _show_parser("CREATE DATABASE", target=True),
-    "CREATE EVENT": _show_parser("CREATE EVENT", target=True),
-    "CREATE FUNCTION": _show_parser("CREATE FUNCTION", target=True),
-    "CREATE PROCEDURE": _show_parser("CREATE PROCEDURE", target=True),
-    "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
-    "CREATE TRIGGER": _show_parser("CREATE TRIGGER", target=True),
-    "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
-    "DATABASES": _show_parser("DATABASES"),
-    "SCHEMAS": _show_parser("DATABASES"),
-    "ENGINE": _show_parser("ENGINE", target=True),
-    "STORAGE ENGINES": _show_parser("ENGINES"),
-    "ENGINES": _show_parser("ENGINES"),
-    "ERRORS": _show_parser("ERRORS"),
-    "EVENTS": _show_parser("EVENTS"),
-    "FUNCTION CODE": _show_parser("FUNCTION CODE", target=True),
-    "FUNCTION STATUS": _show_parser("FUNCTION STATUS"),
-    "GRANTS": _show_parser("GRANTS", target="FOR"),
-    "INDEX": _show_parser("INDEX", target="FROM"),
-    "MASTER STATUS": _show_parser("MASTER STATUS"),
-    "OPEN TABLES": _show_parser("OPEN TABLES"),
-    "PLUGINS": _show_parser("PLUGINS"),
-    "PROCEDURE CODE": _show_parser("PROCEDURE CODE", target=True),
-    "PROCEDURE STATUS": _show_parser("PROCEDURE STATUS"),
-    "PRIVILEGES": _show_parser("PRIVILEGES"),
-    "FULL PROCESSLIST": _show_parser("PROCESSLIST", full=True),
-    "PROCESSLIST": _show_parser("PROCESSLIST"),
-    "PROFILE": _show_parser("PROFILE"),
-    "PROFILES": _show_parser("PROFILES"),
-    "RELAYLOG EVENTS": _show_parser("RELAYLOG EVENTS"),
-    "REPLICAS": _show_parser("REPLICAS"),
-    "SLAVE HOSTS": _show_parser("REPLICAS"),
-    "REPLICA STATUS": _show_parser("REPLICA STATUS"),
-    "SLAVE STATUS": _show_parser("REPLICA STATUS"),
-    "GLOBAL STATUS": _show_parser("STATUS", global_=True),
-    "SESSION STATUS": _show_parser("STATUS"),
-    "STATUS": _show_parser("STATUS"),
-    "TABLE STATUS": _show_parser("TABLE STATUS"),
-    "FULL TABLES": _show_parser("TABLES", full=True),
-    "TABLES": _show_parser("TABLES"),
-    "TRIGGERS": _show_parser("TRIGGERS"),
-    "GLOBAL VARIABLES": _show_parser("VARIABLES", global_=True),
-    "SESSION VARIABLES": _show_parser("VARIABLES"),
-    "VARIABLES": _show_parser("VARIABLES"),
-    "WARNINGS": _show_parser("WARNINGS"),
-}
-
-MYSQL_PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
-    **parser.PROPERTY_PARSERS,
-    "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
-    "PARTITION BY": lambda self: self._parse_partition_property(),
-}
-
-MYSQL_ALTER_PARSERS = {
-    **parser.ALTER_PARSERS,
-    "MODIFY": lambda self: self._parse_alter_table_alter(),
-}
-
-MYSQL_COLUMN_OPERATORS = parser.COLUMN_OPERATORS
-
-
 class MySQL(Dialect):
     PROMOTE_TO_INFERRED_DATETIME_TYPE = True
 
@@ -427,7 +293,7 @@ class MySQL(Dialect):
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {
-            *parser.FUNC_TOKENS,
+            *parser.Parser.FUNC_TOKENS,
             TokenType.DATABASE,
             TokenType.MOD,
             TokenType.SCHEMA,
@@ -436,20 +302,22 @@ class MySQL(Dialect):
         }
 
         CONJUNCTION = {
-            **parser.CONJUNCTION,
+            **parser.Parser.CONJUNCTION,
             TokenType.DAMP: exp.And,
             TokenType.XOR: exp.Xor,
         }
 
         DISJUNCTION = {
-            **parser.DISJUNCTION,
+            **parser.Parser.DISJUNCTION,
             TokenType.DPIPE: exp.Or,
         }
 
-        TABLE_ALIAS_TOKENS = parser.TABLE_ALIAS_TOKENS - parser.TABLE_INDEX_HINT_TOKENS
+        TABLE_ALIAS_TOKENS = (
+            parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
+        )
 
         RANGE_PARSERS = {
-            **parser.RANGE_PARSERS,
+            **parser.Parser.RANGE_PARSERS,
             TokenType.SOUNDS_LIKE: lambda self, this: self.expression(
                 exp.EQ,
                 this=self.expression(exp.Soundex, this=this),
@@ -462,21 +330,137 @@ class MySQL(Dialect):
             ),
         }
 
-        FUNCTIONS = MYSQL_FUNCTIONS
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+            "BIT_COUNT": exp.BitwiseCount.from_arg_list,
+            "CONVERT_TZ": lambda args: exp.ConvertTimezone(
+                source_tz=seq_get(args, 1), target_tz=seq_get(args, 2), timestamp=seq_get(args, 0)
+            ),
+            "CURDATE": exp.CurrentDate.from_arg_list,
+            "CURTIME": exp.CurrentTime.from_arg_list,
+            "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
+            "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
+            "DATE_FORMAT": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToTimestamp(this=seq_get(args, 0)),
+                format=Dialect["mysql"].format_time(seq_get(args, 1)),
+            ),
+            "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "FORMAT": exp.NumberToStr.from_arg_list,
+            "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
+            "ISNULL": isnull_to_is_null,
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "MAKETIME": exp.TimeFromParts.from_arg_list,
+            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                format=exp.Literal.string("%B"),
+            ),
+            "SCHEMA": exp.CurrentSchema.from_arg_list,
+            "DATABASE": exp.CurrentSchema.from_arg_list,
+            "STR_TO_DATE": _str_to_date,
+            "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
+            "TO_DAYS": lambda args: exp.paren(
+                exp.DateDiff(
+                    this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                    expression=exp.TsOrDsToDate(this=exp.Literal.string("0000-01-01")),
+                    unit=exp.var("DAY"),
+                )
+                + 1
+            ),
+            "VERSION": exp.CurrentVersion.from_arg_list,
+            "WEEK": lambda args: exp.Week(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
+            ),
+            "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        }
 
-        FUNCTION_PARSERS = MYSQL_FUNCTION_PARSERS
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+            # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
+            "VALUES": lambda self: self.expression(
+                exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
+            ),
+            "JSON_VALUE": lambda self: self._parse_json_value(),
+            "SUBSTR": lambda self: self._parse_substring(),
+        }
 
         STATEMENT_PARSERS = {
-            **parser.STATEMENT_PARSERS,
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
-        SHOW_PARSERS = MYSQL_SHOW_PARSERS
+        SHOW_PARSERS = {
+            "BINARY LOGS": _show_parser("BINARY LOGS"),
+            "MASTER LOGS": _show_parser("BINARY LOGS"),
+            "BINLOG EVENTS": _show_parser("BINLOG EVENTS"),
+            "CHARACTER SET": _show_parser("CHARACTER SET"),
+            "CHARSET": _show_parser("CHARACTER SET"),
+            "COLLATION": _show_parser("COLLATION"),
+            "FULL COLUMNS": _show_parser("COLUMNS", target="FROM", full=True),
+            "COLUMNS": _show_parser("COLUMNS", target="FROM"),
+            "CREATE DATABASE": _show_parser("CREATE DATABASE", target=True),
+            "CREATE EVENT": _show_parser("CREATE EVENT", target=True),
+            "CREATE FUNCTION": _show_parser("CREATE FUNCTION", target=True),
+            "CREATE PROCEDURE": _show_parser("CREATE PROCEDURE", target=True),
+            "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+            "CREATE TRIGGER": _show_parser("CREATE TRIGGER", target=True),
+            "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
+            "DATABASES": _show_parser("DATABASES"),
+            "SCHEMAS": _show_parser("DATABASES"),
+            "ENGINE": _show_parser("ENGINE", target=True),
+            "STORAGE ENGINES": _show_parser("ENGINES"),
+            "ENGINES": _show_parser("ENGINES"),
+            "ERRORS": _show_parser("ERRORS"),
+            "EVENTS": _show_parser("EVENTS"),
+            "FUNCTION CODE": _show_parser("FUNCTION CODE", target=True),
+            "FUNCTION STATUS": _show_parser("FUNCTION STATUS"),
+            "GRANTS": _show_parser("GRANTS", target="FOR"),
+            "INDEX": _show_parser("INDEX", target="FROM"),
+            "MASTER STATUS": _show_parser("MASTER STATUS"),
+            "OPEN TABLES": _show_parser("OPEN TABLES"),
+            "PLUGINS": _show_parser("PLUGINS"),
+            "PROCEDURE CODE": _show_parser("PROCEDURE CODE", target=True),
+            "PROCEDURE STATUS": _show_parser("PROCEDURE STATUS"),
+            "PRIVILEGES": _show_parser("PRIVILEGES"),
+            "FULL PROCESSLIST": _show_parser("PROCESSLIST", full=True),
+            "PROCESSLIST": _show_parser("PROCESSLIST"),
+            "PROFILE": _show_parser("PROFILE"),
+            "PROFILES": _show_parser("PROFILES"),
+            "RELAYLOG EVENTS": _show_parser("RELAYLOG EVENTS"),
+            "REPLICAS": _show_parser("REPLICAS"),
+            "SLAVE HOSTS": _show_parser("REPLICAS"),
+            "REPLICA STATUS": _show_parser("REPLICA STATUS"),
+            "SLAVE STATUS": _show_parser("REPLICA STATUS"),
+            "GLOBAL STATUS": _show_parser("STATUS", global_=True),
+            "SESSION STATUS": _show_parser("STATUS"),
+            "STATUS": _show_parser("STATUS"),
+            "TABLE STATUS": _show_parser("TABLE STATUS"),
+            "FULL TABLES": _show_parser("TABLES", full=True),
+            "TABLES": _show_parser("TABLES"),
+            "TRIGGERS": _show_parser("TRIGGERS"),
+            "GLOBAL VARIABLES": _show_parser("VARIABLES", global_=True),
+            "SESSION VARIABLES": _show_parser("VARIABLES"),
+            "VARIABLES": _show_parser("VARIABLES"),
+            "WARNINGS": _show_parser("WARNINGS"),
+        }
 
-        PROPERTY_PARSERS = MYSQL_PROPERTY_PARSERS
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
+            "PARTITION BY": lambda self: self._parse_partition_property(),
+        }
 
         SET_PARSERS = {
-            **parser.SET_PARSERS,
+            **parser.Parser.SET_PARSERS,
             "PERSIST": lambda self: self._parse_set_item_assignment("PERSIST"),
             "PERSIST_ONLY": lambda self: self._parse_set_item_assignment("PERSIST_ONLY"),
             "CHARACTER SET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
@@ -485,7 +469,7 @@ class MySQL(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser.CONSTRAINT_PARSERS,
+            **parser.Parser.CONSTRAINT_PARSERS,
             "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
             "INDEX": lambda self: self._parse_index_constraint(),
             "KEY": lambda self: self._parse_index_constraint(),
@@ -493,15 +477,18 @@ class MySQL(Dialect):
             "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint),
         }
 
-        ALTER_PARSERS = MYSQL_ALTER_PARSERS
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_alter(),
+        }
 
         ALTER_ALTER_PARSERS = {
-            **parser.ALTER_ALTER_PARSERS,
+            **parser.Parser.ALTER_ALTER_PARSERS,
             "INDEX": lambda self: self._parse_alter_table_alter_index(),
         }
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
-            *parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",
             "INDEX",
             "KEY",
@@ -516,12 +503,12 @@ class MySQL(Dialect):
         }
 
         TYPE_TOKENS = {
-            *parser.TYPE_TOKENS,
+            *parser.Parser.TYPE_TOKENS,
             TokenType.SET,
         }
 
         ENUM_TYPE_TOKENS = {
-            *parser.ENUM_TYPE_TOKENS,
+            *parser.Parser.ENUM_TYPE_TOKENS,
             TokenType.SET,
         }
 

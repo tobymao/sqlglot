@@ -17,6 +17,7 @@ from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot import parser
 from sqlglot.dialects.spark2 import (
     Spark2,
+    SPARK2_NO_PAREN_FUNCTION_PARSERS,
     SPARK2_PLACEHOLDER_PARSERS,
     SPARK2_STATEMENT_PARSERS,
     temporary_storage_provider,
@@ -160,7 +161,7 @@ SPARK_FUNCTIONS: t.Dict[str, t.Callable] = {
     "ILIKE": build_like(exp.ILike),
 }
 
-SPARK_NO_PAREN_FUNCTION_PARSERS = parser.NO_PAREN_FUNCTION_PARSERS
+SPARK_NO_PAREN_FUNCTION_PARSERS = SPARK2_NO_PAREN_FUNCTION_PARSERS
 
 SPARK_FACTOR = parser.FACTOR
 SPARK_CAST_COLUMN_OPERATORS = parser.CAST_COLUMN_OPERATORS

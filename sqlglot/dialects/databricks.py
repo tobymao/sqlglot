@@ -75,7 +75,6 @@ class Databricks(Spark):
 
         NO_PAREN_FUNCTION_PARSERS = {
             **SPARK_NO_PAREN_FUNCTION_PARSERS,
-            "TRANSFORM": lambda self: self._parse_transform(),
             "CURDATE": lambda self: self._parse_curdate(),
         }
 

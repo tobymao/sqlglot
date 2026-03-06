@@ -266,6 +266,11 @@ HIVE_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
     "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
 }
 
+HIVE_NO_PAREN_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    **parser.NO_PAREN_FUNCTION_PARSERS,
+    "TRANSFORM": lambda self: self._parse_transform(),
+}
+
 
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
@@ -381,10 +386,7 @@ class Hive(Dialect):
 
         FUNCTIONS = HIVE_FUNCTIONS
 
-        NO_PAREN_FUNCTION_PARSERS = {
-            **parser.NO_PAREN_FUNCTION_PARSERS,
-            "TRANSFORM": lambda self: self._parse_transform(),
-        }
+        NO_PAREN_FUNCTION_PARSERS = HIVE_NO_PAREN_FUNCTION_PARSERS
 
         NO_PAREN_FUNCTIONS = parser.NO_PAREN_FUNCTIONS.copy()
         NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)

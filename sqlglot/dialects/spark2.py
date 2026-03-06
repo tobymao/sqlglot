@@ -12,7 +12,12 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_str,
 )
-from sqlglot.dialects.hive import Hive, HIVE_FUNCTIONS, HIVE_FUNCTION_PARSERS
+from sqlglot.dialects.hive import (
+    Hive,
+    HIVE_FUNCTIONS,
+    HIVE_FUNCTION_PARSERS,
+    HIVE_NO_PAREN_FUNCTION_PARSERS,
+)
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot import parser
 from sqlglot.parser import build_trim
@@ -187,6 +192,7 @@ SPARK2_FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
 
 SPARK2_SET_PARSERS = parser.SET_PARSERS.copy()
 
+SPARK2_NO_PAREN_FUNCTION_PARSERS = HIVE_NO_PAREN_FUNCTION_PARSERS
 SPARK2_PLACEHOLDER_PARSERS = parser.PLACEHOLDER_PARSERS
 SPARK2_STATEMENT_PARSERS = parser.STATEMENT_PARSERS
 

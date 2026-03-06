@@ -771,6 +771,17 @@ FROM (
         )
         self.assertEqual(expr.expressions[0].type.this, exp.DataType.Type.TIMESTAMPTZ)
 
+        self.validate_identity("SELECT LAG(x) IGNORE NULLS OVER (PARTITION BY y ORDER BY z)")
+        self.validate_identity("SELECT LAG(x) RESPECT NULLS OVER (PARTITION BY y ORDER BY z)")
+        self.validate_identity(
+            "SELECT LAG(x IGNORE NULLS) OVER (PARTITION BY y ORDER BY z)",
+            "SELECT LAG(x) IGNORE NULLS OVER (PARTITION BY y ORDER BY z)",
+        )
+        self.validate_identity(
+            "SELECT LAG(x RESPECT NULLS) OVER (PARTITION BY y ORDER BY z)",
+            "SELECT LAG(x) RESPECT NULLS OVER (PARTITION BY y ORDER BY z)",
+        )
+
     def test_regexp_extract(self):
         self.validate_all(
             "SELECT REGEXP_SUBSTR(abc, 'pattern(group)', 2) FROM table",

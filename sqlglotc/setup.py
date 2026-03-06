@@ -48,6 +48,7 @@ SOURCE_FILES = [
         [
             "bigquery.py",
             "tsql.py",
+            "mysql.py",
         ],
     ),
 ]

@@ -1525,6 +1525,19 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         assert sum_merge_if_merge.name == "sumMergeIfMerge"
 
+    def test_detach(self):
+        for kind in ("TABLE", "VIEW", "DICTIONARY", "DATABASE"):
+            with self.subTest(f"Test DETACH with {kind}"):
+                self.validate_identity(f"DETACH {kind} t")
+                self.validate_identity(f"DETACH {kind} IF EXISTS t")
+                self.validate_identity(f"DETACH {kind} IF EXISTS db.t")
+                self.validate_identity(f"DETACH {kind} t ON CLUSTER c")
+                self.validate_identity(f"DETACH {kind} t PERMANENTLY")
+                self.validate_identity(f"DETACH {kind} t SYNC")
+                self.validate_identity(
+                    f"DETACH {kind} IF EXISTS db.t ON CLUSTER c PERMANENTLY SYNC"
+                )
+
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

@@ -137,7 +137,14 @@ class Attach(Expression):
 
 
 class Detach(Expression):
-    arg_types = {"this": True, "exists": False}
+    arg_types = {
+        "this": True,
+        "kind": False,
+        "exists": False,
+        "cluster": False,
+        "permanent": False,
+        "sync": False,
+    }
 
 
 class Install(Expression):

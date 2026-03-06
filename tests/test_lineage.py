@@ -771,3 +771,58 @@ class TestLineage(unittest.TestCase):
         lineage("a", query, schema=schema, copy=True)
 
         self.assertEqual(query.sql(), "SELECT a FROM x")
+
+    def test_lineage_shared_cte_performance(self) -> None:
+        """Shared CTEs referenced from multiple places should not cause exponential expansion.
+
+        Each cte_k joins cte_{k-1} with itself and references both sides
+        (t1.a + t2.a), so without memoization to_node() is called 2^N times.
+        With N=12 that's 4096 expansions.
+        """
+        n_levels = 12
+        ctes = ["cte_0 AS (SELECT a FROM base_table)"]
+        for k in range(1, n_levels):
+            prev = f"cte_{k - 1}"
+            ctes.append(
+                f"cte_{k} AS (SELECT t1.a + t2.a AS a FROM {prev} t1 JOIN {prev} t2 ON t1.a = t2.a)"
+            )
+        sql = "WITH " + ",\n     ".join(ctes) + f"\nSELECT a FROM cte_{n_levels - 1}"
+
+        for read_only in (False, True):
+            with self.subTest(read_only=read_only):
+                node = lineage("a", sql, schema={"base_table": {"a": "int"}}, read_only=read_only)
+
+                # Walk the DAG and verify structure.
+                all_nodes = list(node.walk())
+
+                if read_only:
+                    # With read_only=True, shared references keep node count small (O(N), not O(2^N)).
+                    self.assertLess(
+                        len(all_nodes),
+                        200,
+                        f"got {len(all_nodes)} nodes -- DAG walk may be broken",
+                    )
+
+                    # walk() should yield each node exactly once.
+                    all_ids = [id(n) for n in all_nodes]
+                    self.assertEqual(len(all_ids), len(set(all_ids)))
+                else:
+                    # With read_only=False, cached nodes are copied so each reference is independent.
+                    self.assertGreater(len(all_nodes), 200)
+
+                # Leaf nodes should reference base_table.
+                leaves = [n for n in all_nodes if not n.downstream]
+                self.assertGreater(len(leaves), 0)
+                self.assertTrue(all("base_table" in n.source.sql() for n in leaves))
+
+    def test_lineage_cte_self_join_distinct_aliases(self) -> None:
+        for read_only in (False, True):
+            with self.subTest(read_only=read_only):
+                node = lineage(
+                    "combined",
+                    "WITH shared AS (SELECT a FROM x) SELECT s1.a + s2.a AS combined FROM shared s1, shared s2",
+                    schema={"x": {"a": "int"}},
+                    read_only=read_only,
+                )
+                downstream_names = sorted(d.name for d in node.downstream)
+                self.assertEqual(downstream_names, ["s1.a", "s2.a"])

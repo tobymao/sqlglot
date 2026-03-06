@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import ensure_list, seq_get
+from sqlglot.parsers.hive import Parser as HiveParser
 from sqlglot.parser import build_trim
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -133,12 +134,12 @@ class Spark2(Hive):
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
         }
 
-    class Parser(Hive.Parser):
+    class Parser(HiveParser):
         TRIM_PATTERN_FIRST = True
         CHANGE_COLUMN_ALTER_SYNTAX = True
 
         FUNCTIONS = {
-            **Hive.Parser.FUNCTIONS,
+            **HiveParser.FUNCTIONS,
             "AGGREGATE": exp.Reduce.from_arg_list,
             "BOOLEAN": _build_as_cast("boolean"),
             "DATE": _build_as_cast("date"),
@@ -194,7 +195,7 @@ class Spark2(Hive):
         }
 
         FUNCTION_PARSERS = {
-            **Hive.Parser.FUNCTION_PARSERS,
+            **HiveParser.FUNCTION_PARSERS,
             "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),

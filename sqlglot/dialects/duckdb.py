@@ -2900,11 +2900,6 @@ class DuckDB(Dialect):
 
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this
-
-            # Snowflake's PARSE_JSON('NULL') uses uppercase, but DuckDB's JSON requires lowercase 'null'
-            if isinstance(arg, exp.Literal) and arg.is_string and arg.this == "NULL":
-                arg = exp.Literal.string("null")
-
             if expression.args.get("safe"):
                 return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
             return self.func("JSON", arg)

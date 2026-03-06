@@ -105,15 +105,6 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT JSON('null')",
-            read={
-                "snowflake": "SELECT PARSE_JSON('NULL')",
-            },
-            write={
-                "duckdb": "SELECT JSON('null')",
-            },
-        )
-        self.validate_all(
             "SELECT straight_join",
             write={
                 "duckdb": "SELECT straight_join",

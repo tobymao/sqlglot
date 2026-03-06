@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generator import Generator
+from sqlglot.parsers.postgres import Parser as PostgresParser
 from sqlglot.tokens import TokenType
 import typing as t
 
@@ -18,18 +19,18 @@ class RisingWave(Postgres):
             "SOURCE": TokenType.SOURCE,
         }
 
-    class Parser(Postgres.Parser):
+    class Parser(PostgresParser):
         WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = False
 
         PROPERTY_PARSERS = {
-            **Postgres.Parser.PROPERTY_PARSERS,
+            **PostgresParser.PROPERTY_PARSERS,
             "ENCODE": lambda self: self._parse_encode_property(),
             "INCLUDE": lambda self: self._parse_include_property(),
             "KEY": lambda self: self._parse_encode_property(key=True),
         }
 
         CONSTRAINT_PARSERS = {
-            **Postgres.Parser.CONSTRAINT_PARSERS,
+            **PostgresParser.CONSTRAINT_PARSERS,
             "WATERMARK": lambda self: self.expression(
                 exp.WatermarkColumnConstraint,
                 this=self._match(TokenType.FOR) and self._parse_column(),
@@ -38,7 +39,7 @@ class RisingWave(Postgres):
         }
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
-            *Postgres.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            *PostgresParser.SCHEMA_UNNAMED_CONSTRAINTS,
             "WATERMARK",
         }
 

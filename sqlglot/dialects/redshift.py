@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
+from sqlglot.parsers.postgres import Parser as PostgresParser
 from sqlglot.tokens import TokenType
 from sqlglot.parser import build_convert_timezone
 
@@ -58,9 +59,9 @@ class Redshift(Postgres):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TIME_MAPPING = {**Postgres.TIME_MAPPING, "MON": "%b", "HH24": "%H", "HH": "%I"}
 
-    class Parser(Postgres.Parser):
+    class Parser(PostgresParser):
         FUNCTIONS = {
-            **Postgres.Parser.FUNCTIONS,
+            **PostgresParser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -89,7 +90,7 @@ class Redshift(Postgres):
         FUNCTIONS.pop("GET_BIT")
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **PostgresParser.NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
         }

@@ -3875,21 +3875,18 @@ class DuckDB(Dialect):
                 self.unsupported("IGNORE NULLS is not supported for non-window functions.")
 
             return self.sql(this)
-        
+
         def split_sql(self, expression: exp.Split) -> str:
+            base_func = exp.func("STR_SPLIT", expression.this, expression.expression)
+
             if expression.args.get("null_returns_null"):
-                template = exp.maybe_parse("""
-                    CASE WHEN :delimiter IS NULL THEN NULL 
-                    ELSE STR_SPLIT(:string, :delimiter) END
-                """)
-                result = exp.replace_placeholders(
-                    template.copy(),
-                    string=expression.this,
-                    delimiter=expression.expression
+                return self.sql(
+                    exp.case()
+                    .when(expression.expression.is_(exp.null()), exp.null())
+                    .else_(base_func)
                 )
-                return self.sql(result)
-            else:
-                return self.func("STR_SPLIT", expression.this, expression.expression)
+
+            return self.sql(base_func)
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):

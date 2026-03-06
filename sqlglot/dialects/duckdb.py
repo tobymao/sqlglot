@@ -532,8 +532,15 @@ def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
 
 
 def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
-    name = "ARRAY_REVERSE_SORT" if expression.args.get("asc") == exp.false() else "ARRAY_SORT"
-    return self.func(name, expression.this)
+    descending = expression.args.get("asc") == exp.false()
+    if expression.args.get("nulls_first") == exp.true():
+        return self.func(
+            "LIST_SORT",
+            expression.this,
+            exp.Literal.string("DESC" if descending else "ASC"),
+            exp.Literal.string("NULLS FIRST"),
+        )
+    return self.func("ARRAY_REVERSE_SORT" if descending else "ARRAY_SORT", expression.this)
 
 
 def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -> str:

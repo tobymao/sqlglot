@@ -62,6 +62,84 @@ def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _builder
 
 
+def _build_bitwise(expr_type: t.Type[B], name: str) -> t.Callable[[t.List], B | exp.Anonymous]:
+    def _builder(args: t.List) -> B | exp.Anonymous:
+        if len(args) == 3:
+            # Special handling for bitwise operations with padside argument
+            if expr_type in (exp.BitwiseAnd, exp.BitwiseOr, exp.BitwiseXor):
+                return expr_type(
+                    this=seq_get(args, 0), expression=seq_get(args, 1), padside=seq_get(args, 2)
+                )
+            return exp.Anonymous(this=name, expressions=args)
+
+        result = binary_from_function(expr_type)(args)
+
+        # Snowflake specifies INT128 for bitwise shifts
+        if expr_type in (exp.BitwiseLeftShift, exp.BitwiseRightShift):
+            result.set("requires_int128", True)
+
+        return result
+
+    return _builder
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/div0
+def _build_if_from_div0(args: t.List) -> exp.If:
+    lhs = exp._wrap(seq_get(args, 0), exp.Binary)
+    rhs = exp._wrap(seq_get(args, 1), exp.Binary)
+
+    cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).and_(
+        exp.Is(this=lhs, expression=exp.null()).not_()
+    )
+    true = exp.Literal.number(0)
+    false = exp.Div(this=lhs, expression=rhs)
+    return exp.If(this=cond, true=true, false=false)
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/div0null
+def _build_if_from_div0null(args: t.List) -> exp.If:
+    lhs = exp._wrap(seq_get(args, 0), exp.Binary)
+    rhs = exp._wrap(seq_get(args, 1), exp.Binary)
+
+    # Returns 0 when divisor is 0 OR NULL
+    cond = exp.EQ(this=rhs, expression=exp.Literal.number(0)).or_(
+        exp.Is(this=rhs, expression=exp.null())
+    )
+    true = exp.Literal.number(0)
+    false = exp.Div(this=lhs, expression=rhs)
+    return exp.If(this=cond, true=true, false=false)
+
+
+def _build_array_sort(args: t.List) -> exp.SortArray:
+    asc = seq_get(args, 1)
+    return exp.SortArray(
+        this=seq_get(args, 0),
+        asc=asc,
+        nulls_first=seq_get(args, 2) or (exp.true() if asc == exp.false() else None),
+    )
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
+def _build_if_from_zeroifnull(args: t.List) -> exp.If:
+    cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
+    return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
+
+
+def _build_search(args: t.List) -> exp.Search:
+    kwargs = {
+        "this": seq_get(args, 0),
+        "expression": seq_get(args, 1),
+        **{arg.name.lower(): arg for arg in args[2:] if isinstance(arg, exp.Kwarg)},
+    }
+    return exp.Search(**kwargs)
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
+def _build_if_from_nullifzero(args: t.List) -> exp.If:
+    cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
+    return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+
+
 def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> str:
     flag = expression.text("flag")
 
@@ -486,7 +564,808 @@ class Snowflake(Dialect):
         SINGLE_TOKENS = jsonpath.JSONPathTokenizer.SINGLE_TOKENS.copy()
         SINGLE_TOKENS.pop("$")
 
-    Parser = SnowflakeParser
+    class Parser(parser.Parser):
+        IDENTIFY_PIVOT_STRINGS = True
+        DEFAULT_SAMPLING_METHOD = "BERNOULLI"
+        COLON_IS_VARIANT_EXTRACT = True
+        JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
+
+        TYPE_TOKENS = {*parser.Parser.TYPE_TOKENS, TokenType.FILE}
+        STRUCT_TYPE_TOKENS = {*parser.Parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
+        NESTED_TYPE_TOKENS = {*parser.Parser.NESTED_TYPE_TOKENS, TokenType.FILE}
+
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.EXCEPT,
+            TokenType.MATCH_CONDITION,
+        }
+
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+        TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
+
+        COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
+
+        NO_PAREN_FUNCTIONS = {
+            **parser.Parser.NO_PAREN_FUNCTIONS,
+            TokenType.CURRENT_TIME: exp.Localtime,
+        }
+
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "ADD_MONTHS": lambda args: exp.AddMonths(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                preserve_end_of_month=True,
+            ),
+            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "CURRENT_TIME": lambda args: exp.Localtime(this=seq_get(args, 0)),
+            "APPROX_TOP_K": _build_approx_top_k,
+            "ARRAY_CONSTRUCT": lambda args: exp.Array(expressions=args),
+            "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                ensure_variant=False,
+                check_null=True,
+            ),
+            "ARRAY_DISTINCT": lambda args: exp.ArrayDistinct(
+                this=seq_get(args, 0),
+                check_null=True,
+            ),
+            "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
+                # Snowflake has exclusive end semantics
+                start=seq_get(args, 0),
+                end=seq_get(args, 1),
+                step=seq_get(args, 2),
+                is_end_exclusive=True,
+            ),
+            "ARRAY_EXCEPT": lambda args: exp.ArrayExcept(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                is_multiset=True,
+            ),
+            "ARRAY_INTERSECTION": lambda args: exp.ArrayIntersect(
+                expressions=args,
+                is_multiset=True,
+            ),
+            "ARRAY_POSITION": lambda args: exp.ArrayPosition(
+                this=seq_get(args, 1),
+                expression=seq_get(args, 0),
+                zero_based=True,
+            ),
+            "ARRAY_SLICE": lambda args: exp.ArraySlice(
+                this=seq_get(args, 0),
+                start=seq_get(args, 1),
+                end=seq_get(args, 2),
+                zero_based=True,
+            ),
+            "ARRAY_SORT": _build_array_sort,
+            "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
+            "ARRAYS_OVERLAP": lambda args: exp.ArrayOverlaps(
+                this=seq_get(args, 0), expression=seq_get(args, 1), null_safe=True
+            ),
+            "BITAND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
+            "BIT_AND": _build_bitwise(exp.BitwiseAnd, "BITAND"),
+            "BITNOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
+            "BIT_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
+            "BITXOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
+            "BIT_XOR": _build_bitwise(exp.BitwiseXor, "BITXOR"),
+            "BITOR": _build_bitwise(exp.BitwiseOr, "BITOR"),
+            "BIT_OR": _build_bitwise(exp.BitwiseOr, "BITOR"),
+            "BITSHIFTLEFT": _build_bitwise(exp.BitwiseLeftShift, "BITSHIFTLEFT"),
+            "BIT_SHIFTLEFT": _build_bitwise(exp.BitwiseLeftShift, "BIT_SHIFTLEFT"),
+            "BITSHIFTRIGHT": _build_bitwise(exp.BitwiseRightShift, "BITSHIFTRIGHT"),
+            "BIT_SHIFTRIGHT": _build_bitwise(exp.BitwiseRightShift, "BIT_SHIFTRIGHT"),
+            "BITANDAGG": exp.BitwiseAndAgg.from_arg_list,
+            "BITAND_AGG": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_AND_AGG": exp.BitwiseAndAgg.from_arg_list,
+            "BIT_ANDAGG": exp.BitwiseAndAgg.from_arg_list,
+            "BITORAGG": exp.BitwiseOrAgg.from_arg_list,
+            "BITOR_AGG": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_OR_AGG": exp.BitwiseOrAgg.from_arg_list,
+            "BIT_ORAGG": exp.BitwiseOrAgg.from_arg_list,
+            "BITXORAGG": exp.BitwiseXorAgg.from_arg_list,
+            "BITXOR_AGG": exp.BitwiseXorAgg.from_arg_list,
+            "BIT_XOR_AGG": exp.BitwiseXorAgg.from_arg_list,
+            "BIT_XORAGG": exp.BitwiseXorAgg.from_arg_list,
+            "BITMAP_OR_AGG": exp.BitmapOrAgg.from_arg_list,
+            "BOOLAND": lambda args: exp.Booland(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
+            "BOOLOR": lambda args: exp.Boolor(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
+            "BOOLNOT": lambda args: exp.Boolnot(this=seq_get(args, 0), round_input=True),
+            "BOOLXOR": lambda args: exp.Xor(
+                this=seq_get(args, 0), expression=seq_get(args, 1), round_input=True
+            ),
+            "CORR": lambda args: exp.Corr(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                null_on_zero_variance=True,
+            ),
+            "DATE": _build_datetime("DATE", exp.DType.DATE),
+            "DATEFROMPARTS": _build_date_from_parts,
+            "DATE_FROM_PARTS": _build_date_from_parts,
+            "DATE_TRUNC": _date_trunc_to_time,
+            "DATEADD": _build_date_time_add(exp.DateAdd),
+            "DATEDIFF": _build_datediff,
+            "DAYNAME": lambda args: exp.Dayname(this=seq_get(args, 0), abbreviated=True),
+            "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,
+            "DIV0": _build_if_from_div0,
+            "DIV0NULL": _build_if_from_div0null,
+            "EDITDISTANCE": lambda args: exp.Levenshtein(
+                this=seq_get(args, 0), expression=seq_get(args, 1), max_dist=seq_get(args, 2)
+            ),
+            "FLATTEN": exp.Explode.from_arg_list,
+            "GENERATOR": _build_generator,
+            "GET": exp.GetExtract.from_arg_list,
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
+            "GET_PATH": lambda args, dialect: exp.JSONExtract(
+                this=seq_get(args, 0),
+                expression=dialect.to_json_path(seq_get(args, 1)),
+                requires_json=True,
+            ),
+            "GREATEST_IGNORE_NULLS": lambda args: exp.Greatest(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
+            ),
+            "LEAST_IGNORE_NULLS": lambda args: exp.Least(
+                this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
+            ),
+            "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
+            "IFF": exp.If.from_arg_list,
+            "JAROWINKLER_SIMILARITY": lambda args: exp.JarowinklerSimilarity(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                case_insensitive=True,
+            ),
+            "MD5_HEX": exp.MD5.from_arg_list,
+            "MD5_BINARY": exp.MD5Digest.from_arg_list,
+            "MD5_NUMBER_LOWER64": exp.MD5NumberLower64.from_arg_list,
+            "MD5_NUMBER_UPPER64": exp.MD5NumberUpper64.from_arg_list,
+            "MONTHNAME": lambda args: exp.Monthname(this=seq_get(args, 0), abbreviated=True),
+            "LAST_DAY": lambda args: exp.LastDay(
+                this=seq_get(args, 0), unit=map_date_part(seq_get(args, 1))
+            ),
+            "LEN": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
+            "LOCALTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
+            "NULLIFZERO": _build_if_from_nullifzero,
+            "OBJECT_CONSTRUCT": _build_object_construct,
+            "OBJECT_KEYS": exp.JSONKeys.from_arg_list,
+            "OCTET_LENGTH": exp.ByteLength.from_arg_list,
+            "PARSE_URL": lambda args: exp.ParseUrl(
+                this=seq_get(args, 0), permissive=seq_get(args, 1)
+            ),
+            "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "REGEXP_LIKE": _build_regexp_like,
+            "REGEXP_REPLACE": _build_regexp_replace,
+            "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
+            "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
+            "RANDOM": lambda args: exp.Rand(
+                this=seq_get(args, 0),
+                lower=exp.Literal.number(
+                    -9223372036854775808.0
+                ),  # -2^63 as float to avoid overflow
+                upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            ),
+            "REPLACE": build_replace_with_optional_replacement,
+            "RLIKE": _build_regexp_like,
+            "ROUND": _build_round,
+            "SHA1_BINARY": exp.SHA1Digest.from_arg_list,
+            "SHA1_HEX": exp.SHA.from_arg_list,
+            "SHA2_BINARY": exp.SHA2Digest.from_arg_list,
+            "SHA2_HEX": exp.SHA2.from_arg_list,
+            "SPLIT": lambda args: exp.Split(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                null_returns_null=True,
+            ),
+            "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "STDDEV_SAMP": exp.Stddev.from_arg_list,
+            "STRTOK": _build_strtok,
+            "SYSDATE": lambda args: exp.CurrentTimestamp(this=seq_get(args, 0), sysdate=True),
+            "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+            "TIMEADD": _build_date_time_add(exp.TimeAdd),
+            "TIMEDIFF": _build_datediff,
+            "TIME_FROM_PARTS": lambda args: exp.TimeFromParts(
+                hour=seq_get(args, 0),
+                min=seq_get(args, 1),
+                sec=seq_get(args, 2),
+                nano=seq_get(args, 3),
+                overflow=True,
+            ),
+            "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
+            "TIMESTAMPDIFF": _build_datediff,
+            "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
+            "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
+            "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
+            "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
+            "TRUNC": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
+            "TRUNCATE": lambda args, dialect: build_trunc(
+                args, dialect, date_trunc_requires_part=False
+            ),
+            "TRY_DECRYPT": lambda args: exp.Decrypt(
+                this=seq_get(args, 0),
+                passphrase=seq_get(args, 1),
+                aad=seq_get(args, 2),
+                encryption_method=seq_get(args, 3),
+                safe=True,
+            ),
+            "TRY_DECRYPT_RAW": lambda args: exp.DecryptRaw(
+                this=seq_get(args, 0),
+                key=seq_get(args, 1),
+                iv=seq_get(args, 2),
+                aad=seq_get(args, 3),
+                encryption_method=seq_get(args, 4),
+                aead=seq_get(args, 5),
+                safe=True,
+            ),
+            "TRY_PARSE_JSON": lambda args: exp.ParseJSON(this=seq_get(args, 0), safe=True),
+            "TRY_TO_BINARY": lambda args: exp.ToBinary(
+                this=seq_get(args, 0), format=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_BOOLEAN": lambda args: exp.ToBoolean(this=seq_get(args, 0), safe=True),
+            "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DType.DATE, safe=True),
+            **dict.fromkeys(
+                ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"), _build_try_to_number
+            ),
+            "TRY_TO_DOUBLE": lambda args: exp.ToDouble(
+                this=seq_get(args, 0), format=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_FILE": lambda args: exp.ToFile(
+                this=seq_get(args, 0), path=seq_get(args, 1), safe=True
+            ),
+            "TRY_TO_TIME": _build_datetime("TRY_TO_TIME", exp.DType.TIME, safe=True),
+            "TRY_TO_TIMESTAMP": _build_datetime("TRY_TO_TIMESTAMP", exp.DType.TIMESTAMP, safe=True),
+            "TRY_TO_TIMESTAMP_LTZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ, safe=True
+            ),
+            "TRY_TO_TIMESTAMP_NTZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ, safe=True
+            ),
+            "TRY_TO_TIMESTAMP_TZ": _build_datetime(
+                "TRY_TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ, safe=True
+            ),
+            "TO_CHAR": build_timetostr_or_tochar,
+            "TO_DATE": _build_datetime("TO_DATE", exp.DType.DATE),
+            **dict.fromkeys(
+                ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
+                lambda args: exp.ToNumber(
+                    this=seq_get(args, 0),
+                    format=seq_get(args, 1),
+                    precision=seq_get(args, 2),
+                    scale=seq_get(args, 3),
+                ),
+            ),
+            "TO_TIME": _build_datetime("TO_TIME", exp.DType.TIME),
+            "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DType.TIMESTAMP),
+            "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),
+            "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ),
+            "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ),
+            "TO_VARCHAR": build_timetostr_or_tochar,
+            "TO_JSON": exp.JSONFormat.from_arg_list,
+            "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
+            "VECTOR_INNER_PRODUCT": exp.DotProduct.from_arg_list,
+            "VECTOR_L1_DISTANCE": exp.ManhattanDistance.from_arg_list,
+            "VECTOR_L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
+            "ZEROIFNULL": _build_if_from_zeroifnull,
+            "LIKE": build_like(exp.Like),
+            "ILIKE": build_like(exp.ILike),
+            "SEARCH": _build_search,
+            "SKEW": exp.Skewness.from_arg_list,
+            "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
+            "WEEKISO": exp.WeekOfYear.from_arg_list,
+            "WEEKOFYEAR": exp.Week.from_arg_list,
+        }
+        FUNCTIONS.pop("PREDICT")
+
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "DATE_PART": lambda self: self._parse_date_part(),
+            "DIRECTORY": lambda self: self._parse_directory(),
+            "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
+            "LISTAGG": lambda self: self._parse_string_agg(),
+            "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
+        }
+        FUNCTION_PARSERS.pop("TRIM")
+
+        TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
+
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_alter(),
+            "SESSION": lambda self: self._parse_alter_session(),
+            "UNSET": lambda self: self.expression(
+                exp.Set,
+                tag=self._match_text_seq("TAG"),
+                expressions=self._parse_csv(self._parse_id_var),
+                unset=True,
+            ),
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.GET: lambda self: self._parse_get(),
+            TokenType.PUT: lambda self: self._parse_put(),
+            TokenType.SHOW: lambda self: self._parse_show(),
+        }
+
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "CREDENTIALS": lambda self: self._parse_credentials_property(),
+            "FILE_FORMAT": lambda self: self._parse_file_format_property(),
+            "LOCATION": lambda self: self._parse_location_property(),
+            "TAG": lambda self: self._parse_tag(),
+            "USING": lambda self: self._match_text_seq("TEMPLATE")
+            and self.expression(exp.UsingTemplateProperty, this=self._parse_statement()),
+        }
+
+        TYPE_CONVERTERS = {
+            # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
+            exp.DType.DECIMAL: build_default_decimal_type(precision=38, scale=0),
+        }
+
+        SHOW_PARSERS = {
+            "DATABASES": _show_parser("DATABASES"),
+            "TERSE DATABASES": _show_parser("DATABASES"),
+            "SCHEMAS": _show_parser("SCHEMAS"),
+            "TERSE SCHEMAS": _show_parser("SCHEMAS"),
+            "OBJECTS": _show_parser("OBJECTS"),
+            "TERSE OBJECTS": _show_parser("OBJECTS"),
+            "TABLES": _show_parser("TABLES"),
+            "TERSE TABLES": _show_parser("TABLES"),
+            "VIEWS": _show_parser("VIEWS"),
+            "TERSE VIEWS": _show_parser("VIEWS"),
+            "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
+            "TERSE IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
+            "UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
+            "TERSE UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
+            "SEQUENCES": _show_parser("SEQUENCES"),
+            "TERSE SEQUENCES": _show_parser("SEQUENCES"),
+            "STAGES": _show_parser("STAGES"),
+            "COLUMNS": _show_parser("COLUMNS"),
+            "USERS": _show_parser("USERS"),
+            "TERSE USERS": _show_parser("USERS"),
+            "FILE FORMATS": _show_parser("FILE FORMATS"),
+            "FUNCTIONS": _show_parser("FUNCTIONS"),
+            "PROCEDURES": _show_parser("PROCEDURES"),
+            "WAREHOUSES": _show_parser("WAREHOUSES"),
+        }
+
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "WITH": lambda self: self._parse_with_constraint(),
+            "MASKING": lambda self: self._parse_with_constraint(),
+            "PROJECTION": lambda self: self._parse_with_constraint(),
+            "TAG": lambda self: self._parse_with_constraint(),
+        }
+
+        STAGED_FILE_SINGLE_TOKENS = {
+            TokenType.DOT,
+            TokenType.MOD,
+            TokenType.SLASH,
+        }
+
+        FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
+
+        SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
+
+        NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
+
+        LAMBDAS = {
+            **parser.Parser.LAMBDAS,
+            TokenType.ARROW: lambda self, expressions: self.expression(
+                exp.Lambda,
+                this=self._replace_lambda(
+                    self._parse_assignment(),
+                    expressions,
+                ),
+                expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            ),
+        }
+
+        COLUMN_OPERATORS = {
+            **parser.Parser.COLUMN_OPERATORS,
+            TokenType.EXCLAMATION: lambda self, this, attr: self.expression(
+                exp.ModelAttribute, this=this, expression=attr
+            ),
+        }
+
+        def _parse_directory(self) -> exp.DirectoryStage:
+            table = self._parse_table_parts()
+
+            if isinstance(table, exp.Table):
+                table = table.this
+
+            return self.expression(exp.DirectoryStage, this=table)
+
+        def _parse_use(self) -> exp.Use:
+            if self._match_text_seq("SECONDARY", "ROLES"):
+                this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text.upper())
+                roles = None if this else self._parse_csv(lambda: self._parse_table(schema=False))
+                return self.expression(
+                    exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles
+                )
+
+            return super()._parse_use()
+
+        def _negate_range(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
+            if not this:
+                return this
+
+            query = this.args.get("query")
+            if isinstance(this, exp.In) and isinstance(query, exp.Query):
+                # Snowflake treats `value NOT IN (subquery)` as `VALUE <> ALL (subquery)`, so
+                # we do this conversion here to avoid parsing it into `NOT value IN (subquery)`
+                # which can produce different results (most likely a SnowFlake bug).
+                #
+                # https://docs.snowflake.com/en/sql-reference/functions/in
+                # Context: https://github.com/tobymao/sqlglot/issues/3890
+                return self.expression(
+                    exp.NEQ, this=this.this, expression=exp.All(this=query.unnest())
+                )
+
+            return self.expression(exp.Not, this=this)
+
+        def _parse_tag(self) -> exp.Tags:
+            return self.expression(
+                exp.Tags,
+                expressions=self._parse_wrapped_csv(self._parse_property),
+            )
+
+        def _parse_with_constraint(self) -> t.Optional[exp.Expr]:
+            if self._prev.token_type != TokenType.WITH:
+                self._retreat(self._index - 1)
+
+            if self._match_text_seq("MASKING", "POLICY"):
+                policy = self._parse_column()
+                return self.expression(
+                    exp.MaskingPolicyColumnConstraint,
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                    expressions=self._match(TokenType.USING)
+                    and self._parse_wrapped_csv(self._parse_id_var),
+                )
+            if self._match_text_seq("PROJECTION", "POLICY"):
+                policy = self._parse_column()
+                return self.expression(
+                    exp.ProjectionPolicyColumnConstraint,
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                )
+            if self._match(TokenType.TAG):
+                return self._parse_tag()
+
+            return None
+
+        def _parse_with_property(self) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
+            if self._match(TokenType.TAG):
+                return self._parse_tag()
+
+            return super()._parse_with_property()
+
+        def _parse_create(self) -> exp.Create | exp.Command:
+            expression = super()._parse_create()
+            if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
+                # Replace the Table node with the enclosed Identifier
+                expression.this.replace(expression.this.this)
+
+            return expression
+
+        # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
+        # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
+        def _parse_date_part(self: Snowflake.Parser) -> t.Optional[exp.Expr]:
+            this = self._parse_var() or self._parse_type()
+
+            if not this:
+                return None
+
+            # Handle both syntaxes: DATE_PART(part, expr) and DATE_PART(part FROM expr)
+            expression = (
+                self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
+            )
+            return self.expression(
+                exp.Extract, this=map_date_part(this, self.dialect), expression=expression
+            )
+
+        def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expr]:
+            if is_map:
+                # Keys are strings in Snowflake's objects, see also:
+                # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+                # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
+                return self._parse_slice(self._parse_string()) or self._parse_assignment()
+
+            return self._parse_slice(self._parse_alias(self._parse_assignment(), explicit=True))
+
+        def _parse_lateral(self) -> t.Optional[exp.Lateral]:
+            lateral = super()._parse_lateral()
+            if not lateral:
+                return lateral
+
+            if isinstance(lateral.this, exp.Explode):
+                table_alias = lateral.args.get("alias")
+                columns = [exp.to_identifier(col) for col in self.FLATTEN_COLUMNS]
+                if table_alias and not table_alias.args.get("columns"):
+                    table_alias.set("columns", columns)
+                elif not table_alias:
+                    exp.alias_(lateral, "_flattened", table=columns, copy=False)
+
+            return lateral
+
+        def _parse_table_parts(
+            self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
+        ) -> exp.Table:
+            # https://docs.snowflake.com/en/user-guide/querying-stage
+            if self._match(TokenType.STRING, advance=False):
+                table = self._parse_string()
+            elif self._match_text_seq("@", advance=False):
+                table = self._parse_location_path()
+            else:
+                table = None
+
+            if table:
+                file_format = None
+                pattern = None
+
+                wrapped = self._match(TokenType.L_PAREN)
+                while self._curr and wrapped and not self._match(TokenType.R_PAREN):
+                    if self._match_text_seq("FILE_FORMAT", "=>"):
+                        file_format = self._parse_string() or super()._parse_table_parts(
+                            is_db_reference=is_db_reference
+                        )
+                    elif self._match_text_seq("PATTERN", "=>"):
+                        pattern = self._parse_string()
+                    else:
+                        break
+
+                    self._match(TokenType.COMMA)
+
+                table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
+            else:
+                table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+
+            return table
+
+        def _parse_table(
+            self,
+            schema: bool = False,
+            joins: bool = False,
+            alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+            parse_bracket: bool = False,
+            is_db_reference: bool = False,
+            parse_partition: bool = False,
+            consume_pipe: bool = False,
+        ) -> t.Optional[exp.Expr]:
+            table = super()._parse_table(
+                schema=schema,
+                joins=joins,
+                alias_tokens=alias_tokens,
+                parse_bracket=parse_bracket,
+                is_db_reference=is_db_reference,
+                parse_partition=parse_partition,
+            )
+            if isinstance(table, exp.Table) and isinstance(table.this, exp.TableFromRows):
+                table_from_rows = table.this
+                for arg in exp.TableFromRows.arg_types:
+                    if arg != "this":
+                        table_from_rows.set(arg, table.args.get(arg))
+
+                table = table_from_rows
+
+            return table
+
+        def _parse_id_var(
+            self,
+            any_token: bool = True,
+            tokens: t.Optional[t.Collection[TokenType]] = None,
+        ) -> t.Optional[exp.Expr]:
+            if self._match_text_seq("IDENTIFIER", "("):
+                identifier = (
+                    super()._parse_id_var(any_token=any_token, tokens=tokens)
+                    or self._parse_string()
+                )
+                self._match_r_paren()
+                return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
+
+            return super()._parse_id_var(any_token=any_token, tokens=tokens)
+
+        def _parse_show_snowflake(self, this: str) -> exp.Show:
+            scope = None
+            scope_kind = None
+
+            # will identity SHOW TERSE SCHEMAS but not SHOW TERSE PRIMARY KEYS
+            # which is syntactically valid but has no effect on the output
+            terse = self._tokens[self._index - 2].text.upper() == "TERSE"
+
+            history = self._match_text_seq("HISTORY")
+
+            like = self._parse_string() if self._match(TokenType.LIKE) else None
+
+            if self._match(TokenType.IN):
+                if self._match_text_seq("ACCOUNT"):
+                    scope_kind = "ACCOUNT"
+                elif self._match_text_seq("CLASS"):
+                    scope_kind = "CLASS"
+                    scope = self._parse_table_parts()
+                elif self._match_text_seq("APPLICATION"):
+                    scope_kind = "APPLICATION"
+                    if self._match_text_seq("PACKAGE"):
+                        scope_kind += " PACKAGE"
+                    scope = self._parse_table_parts()
+                elif self._match_set(self.DB_CREATABLES):
+                    scope_kind = self._prev.text.upper()
+                    if self._curr:
+                        scope = self._parse_table_parts()
+                elif self._curr:
+                    scope_kind = "SCHEMA" if this in self.SCHEMA_KINDS else "TABLE"
+                    scope = self._parse_table_parts()
+
+            return self.expression(
+                exp.Show,
+                terse=terse,
+                this=this,
+                history=history,
+                like=like,
+                scope=scope,
+                scope_kind=scope_kind,
+                starts_with=self._match_text_seq("STARTS", "WITH") and self._parse_string(),
+                limit=self._parse_limit(),
+                from_=self._parse_string() if self._match(TokenType.FROM) else None,
+                privileges=self._match_text_seq("WITH", "PRIVILEGES")
+                and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
+            )
+
+        def _parse_put(self) -> exp.Put | exp.Command:
+            if self._curr.token_type != TokenType.STRING:
+                return self._parse_as_command(self._prev)
+
+            return self.expression(
+                exp.Put,
+                this=self._parse_string(),
+                target=self._parse_location_path(),
+                properties=self._parse_properties(),
+            )
+
+        def _parse_get(self) -> t.Optional[exp.Expr]:
+            start = self._prev
+
+            # If we detect GET( then we need to parse a function, not a statement
+            if self._match(TokenType.L_PAREN):
+                self._retreat(self._index - 2)
+                return self._parse_expression()
+
+            target = self._parse_location_path()
+
+            # Parse as command if unquoted file path
+            if self._curr.token_type == TokenType.URI_START:
+                return self._parse_as_command(start)
+
+            return self.expression(
+                exp.Get,
+                this=self._parse_string(),
+                target=target,
+                properties=self._parse_properties(),
+            )
+
+        def _parse_location_property(self) -> exp.LocationProperty:
+            self._match(TokenType.EQ)
+            return self.expression(exp.LocationProperty, this=self._parse_location_path())
+
+        def _parse_file_location(self) -> t.Optional[exp.Expr]:
+            # Parse either a subquery or a staged file
+            return (
+                self._parse_select(table=True, parse_subquery_alias=False)
+                if self._match(TokenType.L_PAREN, advance=False)
+                else self._parse_table_parts()
+            )
+
+        def _parse_location_path(self) -> exp.Var:
+            start = self._curr
+            self._advance_any(ignore_reserved=True)
+
+            # We avoid consuming a comma token because external tables like @foo and @bar
+            # can be joined in a query with a comma separator, as well as closing paren
+            # in case of subqueries
+            while self._is_connected() and not self._match_set(
+                (TokenType.COMMA, TokenType.L_PAREN, TokenType.R_PAREN), advance=False
+            ):
+                self._advance_any(ignore_reserved=True)
+
+            return exp.var(self._find_sql(start, self._prev))
+
+        def _parse_lambda_arg(self) -> t.Optional[exp.Expr]:
+            this = super()._parse_lambda_arg()
+
+            if not this:
+                return this
+
+            typ = self._parse_types()
+
+            if typ:
+                return self.expression(exp.Cast, this=this, to=typ)
+
+            return this
+
+        def _parse_foreign_key(self) -> exp.ForeignKey:
+            # inlineFK, the REFERENCES columns are implied
+            if self._match(TokenType.REFERENCES, advance=False):
+                return self.expression(exp.ForeignKey)
+
+            # outoflineFK, explicitly names the columns
+            return super()._parse_foreign_key()
+
+        def _parse_file_format_property(self) -> exp.FileFormatProperty:
+            self._match(TokenType.EQ)
+            if self._match(TokenType.L_PAREN, advance=False):
+                expressions = self._parse_wrapped_options()
+            else:
+                expressions = [self._parse_format_name()]
+
+            return self.expression(
+                exp.FileFormatProperty,
+                expressions=expressions,
+            )
+
+        def _parse_credentials_property(self) -> exp.CredentialsProperty:
+            return self.expression(
+                exp.CredentialsProperty,
+                expressions=self._parse_wrapped_options(),
+            )
+
+        def _parse_semantic_view(self) -> exp.SemanticView:
+            kwargs: t.Dict[str, t.Any] = {"this": self._parse_table_parts()}
+
+            while self._curr and not self._match(TokenType.R_PAREN, advance=False):
+                if self._match_texts(("DIMENSIONS", "METRICS", "FACTS")):
+                    keyword = self._prev.text.lower()
+                    kwargs[keyword] = self._parse_csv(
+                        lambda: self._parse_alias(self._parse_disjunction(), explicit=True)
+                    )
+                elif self._match_text_seq("WHERE"):
+                    kwargs["where"] = self._parse_expression()
+                else:
+                    self.raise_error("Expecting ) or encountered unexpected keyword")
+                    break
+
+            return self.expression(exp.SemanticView, **kwargs)
+
+        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+            set = super()._parse_set(unset=unset, tag=tag)
+
+            if isinstance(set, exp.Set):
+                for expr in set.expressions:
+                    if isinstance(expr, exp.SetItem):
+                        expr.set("kind", "VARIABLE")
+            return set
+
+        def _parse_window(
+            self, this: t.Optional[exp.Expr], alias: bool = False
+        ) -> t.Optional[exp.Expr]:
+            if isinstance(this, exp.NthValue):
+                if self._match_text_seq("FROM"):
+                    if self._match_texts(("FIRST", "LAST")):
+                        from_first = self._prev.text.upper() == "FIRST"
+                        this.set("from_first", from_first)
+
+            result = super()._parse_window(this, alias)
+
+            # Set default window frame for ranking functions if not present
+            if (
+                isinstance(result, exp.Window)
+                and isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+                and not result.args.get("spec")
+            ):
+                frame = exp.WindowSpec(
+                    kind="ROWS",
+                    start="UNBOUNDED",
+                    start_side="PRECEDING",
+                    end="UNBOUNDED",
+                    end_side="FOLLOWING",
+                )
+                result.set("spec", frame)
+            return result
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -731,7 +1610,6 @@ class Snowflake(Dialect):
             exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),
-            exp.SortArray: rename_func("ARRAY_SORT"),
             exp.Skewness: rename_func("SKEW"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
@@ -789,6 +1667,13 @@ class Snowflake(Dialect):
                 "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
             ),
         }
+
+        def sortarray_sql(self, expression: exp.SortArray) -> str:
+            asc = expression.args.get("asc")
+            nulls_first = expression.args.get("nulls_first")
+            if asc == exp.false() and nulls_first == exp.true():
+                nulls_first = None
+            return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
 
         def nthvalue_sql(self, expression: exp.NthValue) -> str:
             result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))

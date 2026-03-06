@@ -80,7 +80,7 @@ def lineage(
     scope: t.Optional[Scope] = None,
     trim_selects: bool = True,
     copy: bool = True,
-    memoize: bool = False,
+    read_only: bool = False,
     **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -94,8 +94,10 @@ def lineage(
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
         copy: Whether to copy the Expr arguments.
-        memoize: Whether to memoize CTE node traversal. When True, shared CTE references
-            produce a DAG instead of a tree, improving performance for self-joining CTEs.
+        read_only: Whether the returned node graph is read-only. Enables optimizations
+            such as sharing cached nodes across CTE references, producing a DAG instead
+            of a tree. When False (default), cached nodes are copied to ensure each
+            reference is independent and safely mutable.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
@@ -136,8 +138,32 @@ def lineage(
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
     return to_node(
-        column, scope, dialect, trim_selects=trim_selects, _cache={} if memoize else None
+        column, scope, dialect, trim_selects=trim_selects, _cache={}, _read_only=read_only
     )
+
+
+def _copy_node(node: Node) -> Node:
+    """Deep copy a Node graph while sharing AST expression objects."""
+    copied: t.Dict[int, Node] = {}
+
+    def _copy(n: Node) -> Node:
+        node_id = id(n)
+        if node_id in copied:
+            return copied[node_id]
+
+        new_node = Node(
+            name=n.name,
+            expression=n.expression,
+            source=n.source,
+            source_name=n.source_name,
+            reference_node_name=n.reference_node_name,
+        )
+        copied[node_id] = new_node
+        for d in n.downstream:
+            new_node.downstream.append(_copy(d))
+        return new_node
+
+    return _copy(node)
 
 
 def to_node(
@@ -150,11 +176,14 @@ def to_node(
     reference_node_name: t.Optional[str] = None,
     trim_selects: bool = True,
     _cache: t.Optional[t.Dict[t.Tuple, Node]] = None,
+    _read_only: bool = False,
 ) -> Node:
     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
 
     if _cache is not None and cache_key in _cache:
         cached_node = _cache[cache_key]
+        if not _read_only:
+            cached_node = _copy_node(cached_node)
         if upstream:
             upstream.downstream.append(cached_node)
         return cached_node
@@ -182,6 +211,7 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _read_only=_read_only,
             )
             if _cache is not None:
                 _cache[cache_key] = result
@@ -216,6 +246,7 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _read_only=_read_only,
             )
 
         if _cache is not None:
@@ -261,6 +292,7 @@ def to_node(
                 upstream=node,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _read_only=_read_only,
             )
 
     # if the select is a star add all scope sources as downstreams
@@ -335,6 +367,7 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _read_only=_read_only,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []

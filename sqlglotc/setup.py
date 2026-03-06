@@ -48,6 +48,10 @@ SOURCE_FILES = [
         [
             "bigquery.py",
             "postgres.py",
+            "hive.py",
+            "presto.py",
+            "tsql.py",
+            "mysql.py",
         ],
     ),
 ]

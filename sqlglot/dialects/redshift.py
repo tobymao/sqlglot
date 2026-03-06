@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     map_date_part,
 )
 from sqlglot.dialects.postgres import Postgres
+from sqlglot.generator import Generator
 from sqlglot.helper import seq_get
 from sqlglot.parsers.postgres import Parser as PostgresParser
 from sqlglot.tokens import TokenType
@@ -494,6 +495,12 @@ class Redshift(Postgres):
                 return super().array_sql(expression)
 
             return rename_func("ARRAY")(self, expression)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            return Generator.ignorenulls_sql(self, expression)
+
+        def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+            return Generator.respectnulls_sql(self, expression)
 
         def explode_sql(self, expression: exp.Explode) -> str:
             self.unsupported("Unsupported EXPLODE() function")

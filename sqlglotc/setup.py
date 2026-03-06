@@ -47,6 +47,7 @@ SOURCE_FILES = [
         "parsers",
         [
             "bigquery.py",
+            "presto.py",
         ],
     ),
 ]

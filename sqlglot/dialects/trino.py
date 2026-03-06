@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.dialects.presto import amend_exploded_column_table, Presto
+from sqlglot.parsers.presto import Parser as PrestoParser
 from sqlglot.tokens import TokenType
 import typing as t
 
@@ -23,14 +24,14 @@ class Trino(Presto):
             "REFRESH": TokenType.REFRESH,
         }
 
-    class Parser(Presto.Parser):
+    class Parser(PrestoParser):
         FUNCTIONS = {
-            **Presto.Parser.FUNCTIONS,
+            **PrestoParser.FUNCTIONS,
             "VERSION": exp.CurrentVersion.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
-            **Presto.Parser.FUNCTION_PARSERS,
+            **PrestoParser.FUNCTION_PARSERS,
             "TRIM": lambda self: self._parse_trim(),
             "JSON_QUERY": lambda self: self._parse_json_query(),
             "JSON_VALUE": lambda self: self._parse_json_value(),

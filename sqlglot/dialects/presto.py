@@ -2,18 +2,14 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    binary_from_function,
     bool_xor_sql,
     bracket_to_element_at_sql,
-    build_replace_with_optional_replacement,
-    date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
-    build_formatted_time,
     if_sql,
     left_to_substring_sql,
     no_ilike_sql,
@@ -30,14 +26,13 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
     unit_to_str,
     sequence_sql,
-    build_regexp_extract,
     explode_to_unnest_sql,
     sha2_digest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
+from sqlglot.parsers.presto import Parser as PrestoParser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
@@ -119,34 +114,6 @@ def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> st
     return self.func("DATE_DIFF", unit, expr, this)
 
 
-def _build_approx_percentile(args: t.List) -> exp.Expr:
-    if len(args) == 4:
-        return exp.ApproxQuantile(
-            this=seq_get(args, 0),
-            weight=seq_get(args, 1),
-            quantile=seq_get(args, 2),
-            accuracy=seq_get(args, 3),
-        )
-    if len(args) == 3:
-        return exp.ApproxQuantile(
-            this=seq_get(args, 0), quantile=seq_get(args, 1), accuracy=seq_get(args, 2)
-        )
-    return exp.ApproxQuantile.from_arg_list(args)
-
-
-def _build_from_unixtime(args: t.List) -> exp.Expr:
-    if len(args) == 3:
-        return exp.UnixToTime(
-            this=seq_get(args, 0),
-            hours=seq_get(args, 1),
-            minutes=seq_get(args, 2),
-        )
-    if len(args) == 2:
-        return exp.UnixToTime(this=seq_get(args, 0), zone=seq_get(args, 1))
-
-    return exp.UnixToTime.from_arg_list(args)
-
-
 def _first_last_sql(self: Presto.Generator, expression: exp.Func) -> str:
     """
     Trino doesn't support FIRST / LAST as functions, but they're valid in the context
@@ -178,17 +145,6 @@ def _to_int(self: Presto.Generator, expression: exp.Expr) -> exp.Expr:
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
         return exp.cast(expression, to=exp.DType.BIGINT)
     return expression
-
-
-def _build_to_char(args: t.List) -> exp.TimeToStr:
-    fmt = seq_get(args, 1)
-    if isinstance(fmt, exp.Literal):
-        # We uppercase this to match Teradata's format mapping keys
-        fmt.set("this", fmt.this.upper())
-
-    # We use "teradata" on purpose here, because the time formats are different in Presto.
-    # See https://prestodb.io/docs/current/functions/teradata.html?highlight=to_char#to_char
-    return build_formatted_time(exp.TimeToStr, "teradata")(args)
 
 
 def _date_delta_sql(
@@ -309,75 +265,7 @@ class Presto(Dialect):
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("QUALIFY")
 
-    class Parser(parser.Parser):
-        VALUES_FOLLOWED_BY_PAREN = False
-        ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "ARBITRARY": exp.AnyValue.from_arg_list,
-            "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
-            "APPROX_PERCENTILE": _build_approx_percentile,
-            "BITWISE_AND": binary_from_function(exp.BitwiseAnd),
-            "BITWISE_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
-            "BITWISE_OR": binary_from_function(exp.BitwiseOr),
-            "BITWISE_XOR": binary_from_function(exp.BitwiseXor),
-            "CARDINALITY": exp.ArraySize.from_arg_list,
-            "CONTAINS": exp.ArrayContains.from_arg_list,
-            "DATE_ADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
-            "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
-            "DATE_TRUNC": date_trunc_to_time,
-            "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
-            "DOW": exp.DayOfWeekIso.from_arg_list,
-            "DOY": exp.DayOfYear.from_arg_list,
-            "ELEMENT_AT": lambda args: exp.Bracket(
-                this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
-            ),
-            "FROM_HEX": exp.Unhex.from_arg_list,
-            "FROM_UNIXTIME": _build_from_unixtime,
-            "FROM_UTF8": lambda args: exp.Decode(
-                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
-            ),
-            "JSON_FORMAT": lambda args: exp.JSONFormat(
-                this=seq_get(args, 0), options=seq_get(args, 1), is_json=True
-            ),
-            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
-            "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
-            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
-            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                replacement=seq_get(args, 2) or exp.Literal.string(""),
-            ),
-            "REPLACE": build_replace_with_optional_replacement,
-            "ROW": exp.Struct.from_arg_list,
-            "SEQUENCE": exp.GenerateSeries.from_arg_list,
-            "SET_AGG": exp.ArrayUniqueAgg.from_arg_list,
-            "SPLIT_TO_MAP": exp.StrToMap.from_arg_list,
-            "STRPOS": lambda args: exp.StrPosition(
-                this=seq_get(args, 0), substr=seq_get(args, 1), occurrence=seq_get(args, 2)
-            ),
-            "SLICE": exp.ArraySlice.from_arg_list,
-            "TO_CHAR": _build_to_char,
-            "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
-            "TO_UTF8": lambda args: exp.Encode(
-                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
-            ),
-            "MD5": exp.MD5Digest.from_arg_list,
-            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
-            "WEEK": exp.WeekOfYear.from_arg_list,
-        }
-
-        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
-        FUNCTION_PARSERS.pop("TRIM")
+    Parser = PrestoParser
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False

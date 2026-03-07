@@ -137,33 +137,7 @@ def lineage(
     ):
         raise SqlglotError(f"Cannot find column '{column}' in query.")
 
-    return to_node(
-        column, scope, dialect, trim_selects=trim_selects, _cache={}, _read_only=read_only
-    )
-
-
-def _copy_node(node: Node) -> Node:
-    """Deep copy a Node graph while sharing AST expression objects."""
-    copied: t.Dict[int, Node] = {}
-
-    def _copy(n: Node) -> Node:
-        node_id = id(n)
-        if node_id in copied:
-            return copied[node_id]
-
-        new_node = Node(
-            name=n.name,
-            expression=n.expression,
-            source=n.source,
-            source_name=n.source_name,
-            reference_node_name=n.reference_node_name,
-        )
-        copied[node_id] = new_node
-        for d in n.downstream:
-            new_node.downstream.append(_copy(d))
-        return new_node
-
-    return _copy(node)
+    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
 
 
 def to_node(
@@ -176,14 +150,11 @@ def to_node(
     reference_node_name: t.Optional[str] = None,
     trim_selects: bool = True,
     _cache: t.Optional[t.Dict[t.Tuple, Node]] = None,
-    _read_only: bool = False,
 ) -> Node:
     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
 
     if _cache is not None and cache_key in _cache:
         cached_node = _cache[cache_key]
-        if not _read_only:
-            cached_node = _copy_node(cached_node)
         if upstream:
             upstream.downstream.append(cached_node)
         return cached_node
@@ -211,7 +182,6 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
-                _read_only=_read_only,
             )
             if _cache is not None:
                 _cache[cache_key] = result
@@ -246,7 +216,6 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
-                _read_only=_read_only,
             )
 
         if _cache is not None:
@@ -292,7 +261,6 @@ def to_node(
                 upstream=node,
                 trim_selects=trim_selects,
                 _cache=_cache,
-                _read_only=_read_only,
             )
 
     # if the select is a star add all scope sources as downstreams
@@ -367,7 +335,6 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
-                _read_only=_read_only,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []

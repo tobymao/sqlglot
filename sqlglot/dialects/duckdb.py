@@ -3879,14 +3879,22 @@ class DuckDB(Dialect):
         def split_sql(self, expression: exp.Split) -> str:
             base_func = exp.func("STR_SPLIT", expression.this, expression.expression)
 
-            if expression.args.get("null_returns_null"):
-                return self.sql(
-                    exp.case()
-                    .when(expression.expression.is_(exp.null()), exp.null())
-                    .else_(base_func)
-                )
+            case_expr = exp.case().else_(base_func)
+            needs_case = False
 
-            return self.sql(base_func)
+            if expression.args.get("null_returns_null"):
+                case_expr = case_expr.when(expression.expression.is_(exp.null()), exp.null())
+                needs_case = True
+
+            if expression.args.get("empty_delimiter_returns_whole"):
+                # When delimiter is empty string, return input string as single array element
+                array_with_input = exp.array(expression.this)
+                case_expr = case_expr.when(
+                    expression.expression.eq(exp.Literal.string("")), array_with_input
+                )
+                needs_case = True
+
+            return self.sql(case_expr if needs_case else base_func)
 
         def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
             if isinstance(expression.this, self.IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS):

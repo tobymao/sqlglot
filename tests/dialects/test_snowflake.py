@@ -223,7 +223,7 @@ class TestSnowflake(Validator):
             "SELECT SPLIT('127.0.0.1', '.')",
             write={
                 "snowflake": "SELECT SPLIT('127.0.0.1', '.')",
-                "duckdb": "SELECT CASE WHEN '.' IS NULL THEN NULL ELSE STR_SPLIT('127.0.0.1', '.') END",
+                "duckdb": "SELECT CASE WHEN '.' IS NULL THEN NULL WHEN '.' = '' THEN ['127.0.0.1'] ELSE STR_SPLIT('127.0.0.1', '.') END",
             },
         )
         self.validate_identity("SELECT PI()")

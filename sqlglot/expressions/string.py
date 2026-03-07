@@ -158,7 +158,13 @@ class Space(Expression, Func):
 
 
 class Split(Expression, Func):
-    arg_types = {"this": True, "expression": True, "limit": False, "null_returns_null": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "limit": False,
+        "null_returns_null": False,
+        "empty_delimiter_returns_whole": False,
+    }
 
 
 class SplitPart(Expression, Func):

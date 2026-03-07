@@ -999,6 +999,7 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
                 null_returns_null=True,
+                empty_delimiter_returns_whole=True,
             ),
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "STDDEV_SAMP": exp.Stddev.from_arg_list,

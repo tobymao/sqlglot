@@ -37,53 +37,53 @@ except ImportError:
 
 import sqlglot  # noqa: E402
 
-long = """
-SELECT
-  "e"."employee_id" AS "Employee #",
-  "e"."first_name" || ' ' || "e"."last_name" AS "Name",
-  "e"."email" AS "Email",
-  "e"."phone_number" AS "Phone",
-  TO_CHAR("e"."hire_date", 'MM/DD/YYYY') AS "Hire Date",
-  TO_CHAR("e"."salary", 'L99G999D99', 'NLS_NUMERIC_CHARACTERS = ''.,'' NLS_CURRENCY = ''$''') AS "Salary",
-  "e"."commission_pct" AS "Commission %",
-  'works as ' || "j"."job_title" || ' in ' || "d"."department_name" || ' department (manager: ' || "dm"."first_name" || ' ' || "dm"."last_name" || ') and immediate supervisor: ' || "m"."first_name" || ' ' || "m"."last_name" AS "Current Job",
-  TO_CHAR("j"."min_salary", 'L99G999D99', 'NLS_NUMERIC_CHARACTERS = ''.,'' NLS_CURRENCY = ''$''') || ' - ' || TO_CHAR("j"."max_salary", 'L99G999D99', 'NLS_NUMERIC_CHARACTERS = ''.,'' NLS_CURRENCY = ''$''') AS "Current Salary",
-  "l"."street_address" || ', ' || "l"."postal_code" || ', ' || "l"."city" || ', ' || "l"."state_province" || ', ' || "c"."country_name" || ' (' || "r"."region_name" || ')' AS "Location",
-  "jh"."job_id" AS "History Job ID",
-  'worked from ' || TO_CHAR("jh"."start_date", 'MM/DD/YYYY') || ' to ' || TO_CHAR("jh"."end_date", 'MM/DD/YYYY') || ' as ' || "jj"."job_title" || ' in ' || "dd"."department_name" || ' department' AS "History Job Title",
-  case when 1 then 1 when 2 then 2 when 3 then 3 when 4 then 4 when 5 then 5 else a(b(c + 1 * 3 % 4)) end
-FROM "employees" AS e
-JOIN "jobs" AS j
-  ON "e"."job_id" = "j"."job_id"
-LEFT JOIN "employees" AS m
-  ON "e"."manager_id" = "m"."employee_id"
-LEFT JOIN "departments" AS d
-  ON "d"."department_id" = "e"."department_id"
-LEFT JOIN "employees" AS dm
-  ON "d"."manager_id" = "dm"."employee_id"
-LEFT JOIN "locations" AS l
-  ON "d"."location_id" = "l"."location_id"
-LEFT JOIN "countries" AS c
-  ON "l"."country_id" = "c"."country_id"
-LEFT JOIN "regions" AS r
-  ON "c"."region_id" = "r"."region_id"
-LEFT JOIN "job_history" AS jh
-  ON "e"."employee_id" = "jh"."employee_id"
-LEFT JOIN "jobs" AS jj
-  ON "jj"."job_id" = "jh"."job_id"
-LEFT JOIN "departments" AS dd
-  ON "dd"."department_id" = "jh"."department_id"
-ORDER BY
-  "e"."employee_id"
-"""
+large_in = (
+    "SELECT * FROM t WHERE x IN (" + ", ".join(f"'s{i}'" for i in range(20000)) + ")"
+    " OR y IN (" + ", ".join(str(i) for i in range(20000)) + ")"
+)
+
+values = "INSERT INTO t VALUES " + ", ".join(
+    "(" + ", ".join(
+        f"'s{i}_{j}'" if j % 2 else str(i * 20 + j) for j in range(20)
+    ) + ")"
+    for i in range(2000)
+)
+
+many_joins = "SELECT * FROM t0" + "".join(
+    f"\nJOIN t{i} ON t{i}.id = t{i - 1}.id" for i in range(1, 200)
+)
+
+many_unions = "\nUNION ALL\n".join(f"SELECT {i} AS a, 's{i}' AS b FROM t{i}" for i in range(500))
 
 short = "SELECT 1 AS a, CASE WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END AS b, c FROM x"
 
-crazy = "SELECT 1+"
-crazy += "+".join(str(i) for i in range(500))
-crazy += " AS a, 2*"
-crazy += "*".join(str(i) for i in range(500))
-crazy += " AS b FROM x"
+deep_arithmetic = "SELECT 1+"
+deep_arithmetic += "+".join(str(i) for i in range(500))
+deep_arithmetic += " AS a, 2*"
+deep_arithmetic += "*".join(str(i) for i in range(500))
+deep_arithmetic += " AS b FROM x"
+
+nested_subqueries = "SELECT * FROM " + "".join("(SELECT * FROM " for _ in range(50)) + "t" + ")" * 50
+
+many_columns = "SELECT " + ", ".join(f"c{i}" for i in range(1000)) + " FROM t"
+
+large_case = "SELECT CASE " + " ".join(f"WHEN x = {i} THEN {i}" for i in range(1000)) + " ELSE -1 END FROM t"
+
+complex_where = "SELECT * FROM t WHERE " + " AND ".join(
+    f"(c{i} > {i} OR c{i} LIKE '%s{i}%' OR c{i} BETWEEN {i} AND {i+10} OR c{i} IS NULL)"
+    for i in range(200)
+)
+
+many_ctes = (
+    "WITH " + ", ".join(f"t{i} AS (SELECT {i} AS a FROM t{i-1 if i else 'base'})" for i in range(200))
+    + " SELECT * FROM t199"
+)
+
+many_windows = "SELECT " + ", ".join(
+    f"SUM(c{i}) OVER (PARTITION BY p{i % 10} ORDER BY o{i % 5}) AS w{i}" for i in range(200)
+) + " FROM t"
+
+nested_functions = "SELECT " + "COALESCE(" * 50 + "x" + ", NULL)" * 50 + " FROM t"
 
 tpch = """
 WITH "_e_0" AS (
@@ -209,7 +209,22 @@ def polyglot_sql_parse(sql):
     polyglot_sql.parse(sql)
 
 
-QUERIES = {"tpch": tpch, "short": short, "long": long, "crazy": crazy}
+QUERIES = {
+    "tpch": tpch,
+    "short": short,
+    "deep_arithmetic": deep_arithmetic,
+    "large_in": large_in,
+    "values": values,
+    "many_joins": many_joins,
+    "many_unions": many_unions,
+    "nested_subqueries": nested_subqueries,
+    "many_columns": many_columns,
+    "large_case": large_case,
+    "complex_where": complex_where,
+    "many_ctes": many_ctes,
+    "many_windows": many_windows,
+    "nested_functions": nested_functions,
+}
 
 
 def _can_parse(fn, sql):
@@ -220,18 +235,24 @@ def _can_parse(fn, sql):
         return False
 
 
-def run_benchmarks():
-    runner = pyperf.Runner(values=3, warmups=1, loops=10, processes=4)
+LARGE_QUERIES = {"large_in", "values", "many_unions"}
 
+
+def run_benchmarks():
     import sqlglot.expressions.core as _ec
 
     prefix = "sqlglotc" if _ec.__file__.endswith(".so") else "sqlglot"
 
     for query_name, sql in QUERIES.items():
+        if query_name in LARGE_QUERIES:
+            runner = pyperf.Runner(values=3, warmups=1, loops=1, processes=4)
+        else:
+            runner = pyperf.Runner(values=3, warmups=1, loops=10, processes=4)
+
         runner.bench_func(f"parse_{prefix}_{query_name}", sqlglot_parse, sql)
         if sqltree and _can_parse(sqltree_parse, sql):
             runner.bench_func(f"parse_sqltree_{query_name}", sqltree_parse, sql)
-        if sqlparse and query_name != "crazy" and _can_parse(sqlparse_parse, sql):
+        if sqlparse and query_name != "deep_arithmetic" and _can_parse(sqlparse_parse, sql):
             runner.bench_func(f"parse_sqlparse_{query_name}", sqlparse_parse, sql)
         if moz_sql_parser and _can_parse(moz_sql_parser_parse, sql):
             runner.bench_func(f"parse_moz_sql_parser_{query_name}", moz_sql_parser_parse, sql)

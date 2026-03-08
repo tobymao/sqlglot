@@ -43,9 +43,7 @@ large_in = (
 )
 
 values = "INSERT INTO t VALUES " + ", ".join(
-    "(" + ", ".join(
-        f"'s{i}_{j}'" if j % 2 else str(i * 20 + j) for j in range(20)
-    ) + ")"
+    "(" + ", ".join(f"'s{i}_{j}'" if j % 2 else str(i * 20 + j) for j in range(20)) + ")"
     for i in range(2000)
 )
 
@@ -63,11 +61,15 @@ deep_arithmetic += " AS a, 2*"
 deep_arithmetic += "*".join(str(i) for i in range(500))
 deep_arithmetic += " AS b FROM x"
 
-nested_subqueries = "SELECT * FROM " + "".join("(SELECT * FROM " for _ in range(50)) + "t" + ")" * 50
+nested_subqueries = (
+    "SELECT * FROM " + "".join("(SELECT * FROM " for _ in range(50)) + "t" + ")" * 50
+)
 
 many_columns = "SELECT " + ", ".join(f"c{i}" for i in range(1000)) + " FROM t"
 
-large_case = "SELECT CASE " + " ".join(f"WHEN x = {i} THEN {i}" for i in range(1000)) + " ELSE -1 END FROM t"
+large_case = (
+    "SELECT CASE " + " ".join(f"WHEN x = {i} THEN {i}" for i in range(1000)) + " ELSE -1 END FROM t"
+)
 
 complex_where = "SELECT * FROM t WHERE " + " AND ".join(
     f"(c{i} > {i} OR c{i} LIKE '%s{i}%' OR c{i} BETWEEN {i} AND {i+10} OR c{i} IS NULL)"
@@ -75,13 +77,18 @@ complex_where = "SELECT * FROM t WHERE " + " AND ".join(
 )
 
 many_ctes = (
-    "WITH " + ", ".join(f"t{i} AS (SELECT {i} AS a FROM t{i-1 if i else 'base'})" for i in range(200))
+    "WITH "
+    + ", ".join(f"t{i} AS (SELECT {i} AS a FROM t{i-1 if i else 'base'})" for i in range(200))
     + " SELECT * FROM t199"
 )
 
-many_windows = "SELECT " + ", ".join(
-    f"SUM(c{i}) OVER (PARTITION BY p{i % 10} ORDER BY o{i % 5}) AS w{i}" for i in range(200)
-) + " FROM t"
+many_windows = (
+    "SELECT "
+    + ", ".join(
+        f"SUM(c{i}) OVER (PARTITION BY p{i % 10} ORDER BY o{i % 5}) AS w{i}" for i in range(200)
+    )
+    + " FROM t"
+)
 
 nested_functions = "SELECT " + "COALESCE(" * 50 + "x" + ", NULL)" * 50 + " FROM t"
 

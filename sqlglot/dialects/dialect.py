@@ -2060,7 +2060,7 @@ def unit_to_var(expression: exp.Expr, default: str = "DAY") -> t.Optional[exp.Ex
 
 
 @t.overload
-def map_date_part(part: exp.Expr, dialect: DialectType = Dialect) -> exp.Var:
+def map_date_part(part: exp.Expr, dialect: DialectType = Dialect) -> exp.Expr:
     pass
 
 

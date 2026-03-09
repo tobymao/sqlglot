@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects import Dialect, Hive, Trino
+from sqlglot.parsers.trino import Parser as TrinoParser
 from sqlglot.tokens import TokenType, Token
 
 
@@ -119,9 +120,7 @@ class Athena(Dialect):
             self._hive_parser = hive.parser(*args, **{**kwargs, "dialect": hive})
             self._trino_parser = _TrinoParser(*args, **{**kwargs, "dialect": trino})
 
-        def parse(
-            self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-        ) -> t.List[t.Optional[exp.Expr]]:
+        def parse(self, raw_tokens: t.List[Token], sql: str) -> t.List[t.Optional[exp.Expr]]:
             if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
                 return self._hive_parser.parse(raw_tokens[1:], sql)
 
@@ -267,9 +266,9 @@ class _TrinoTokenizer(Trino.Tokenizer):
 
 
 # Athena extensions to Trino's parser
-class _TrinoParser(Trino.Parser):
+class _TrinoParser(TrinoParser):
     STATEMENT_PARSERS = {
-        **Trino.Parser.STATEMENT_PARSERS,
+        **TrinoParser.STATEMENT_PARSERS,
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 

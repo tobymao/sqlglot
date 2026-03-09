@@ -255,6 +255,26 @@ def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
     )
 
 
+def build_json_extract(
+    self,
+    this: t.Optional[exp.Expr],
+    json_path: t.List[str],
+    escape: t.Optional[bool],
+) -> exp.JSONExtract:
+    json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
+
+    if json_path_expr:
+        json_path_expr.set("escape", escape)
+
+    return self.expression(
+        exp.JSONExtract,
+        this=this,
+        expression=json_path_expr,
+        variant_extract=True,
+        requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+    )
+
+
 def _resolve_dialect(dialect: t.Any) -> t.Any:
     from sqlglot.dialects.dialect import Dialect
 
@@ -6095,6 +6115,27 @@ class Parser:
                 # it'll roundtrip to a string literal in GET_PATH
                 if isinstance(path, exp.Identifier) and path.quoted:
                     escape = True
+
+                # Bracket non literal or asterik (e.g. value:a[s.x] or value:a[s.x].b)
+                # can't be in the JSON path string since the index is a column reference.
+                bracket = path if isinstance(path, exp.Bracket) else None
+                tail = None
+                if isinstance(path, exp.Dot) and isinstance(path.this, exp.Bracket):
+                    bracket = path.this
+                    tail = path.expression
+
+                if bracket and bracket.find(exp.Column):
+                    json_path.append(bracket.this.sql(dialect=self.dialect))
+                    this = build_json_extract(self, this, json_path, escape)
+                    this = exp.Bracket(this=this, expressions=bracket.expressions)
+
+                    if tail:
+                        this = build_json_extract(
+                            self, this, [tail.sql(dialect=self.dialect)], None
+                        )
+
+                    json_path = []
+                    continue
 
                 json_path.append(self._find_sql(self._tokens[start_index], end_token))
 

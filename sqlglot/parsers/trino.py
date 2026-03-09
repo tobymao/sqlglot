@@ -4,12 +4,12 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.helper import mypyc_attr
-from sqlglot.parsers.presto import Parser as PrestoParser
+from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(PrestoParser):
+class TrinoParser(PrestoParser):
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,

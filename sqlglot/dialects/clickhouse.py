@@ -26,7 +26,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import Generator, unsupported_args
 from sqlglot.helper import is_int
-from sqlglot.parsers.clickhouse import Parser as ClickHouseParser
+from sqlglot.parsers.clickhouse import ClickHouseParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.clickhouse import EXPRESSION_METADATA
 

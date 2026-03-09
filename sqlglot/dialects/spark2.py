@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
-from sqlglot.parsers.spark2 import Parser as Spark2Parser
+from sqlglot.parsers.spark2 import Spark2Parser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
     preprocess,

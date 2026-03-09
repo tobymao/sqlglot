@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.dialects.spark import Spark
-from sqlglot.parsers.spark import Parser as SparkParser
+from sqlglot.parsers.spark import SparkParser
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator

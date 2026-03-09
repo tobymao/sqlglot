@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.parsers.doris import Parser as DorisParser
+from sqlglot.parsers.doris import DorisParser
 
 
 def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:

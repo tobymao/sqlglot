@@ -309,15 +309,15 @@ def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
     )
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Parser], exp.Show]:
-    def _parse(self: Parser) -> exp.Show:
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser], exp.Show]:
+    def _parse(self: SnowflakeParser) -> exp.Show:
         return self._parse_show_snowflake(*args, **kwargs)
 
     return _parse
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
     COLON_IS_VARIANT_EXTRACT = True

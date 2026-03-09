@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.mysql import Parser as MySQLParser
+from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
 
@@ -25,7 +25,7 @@ def _build_date_trunc(args: t.List[exp.Expr]) -> exp.Expr:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(MySQLParser):
+class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,

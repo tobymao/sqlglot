@@ -6,7 +6,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import build_date_delta, build_like
 from sqlglot.helper import ensure_list, mypyc_attr, seq_get
 from sqlglot.parsers.hive import build_with_ignore_nulls
-from sqlglot.parsers.spark2 import Parser as Spark2Parser, build_as_cast
+from sqlglot.parsers.spark2 import Spark2Parser, build_as_cast
 from sqlglot.tokens import TokenType
 
 
@@ -52,7 +52,7 @@ def _build_dateadd(args: t.List) -> exp.Expr:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(Spark2Parser):
+class SparkParser(Spark2Parser):
     SET_PARSERS = {
         **Spark2Parser.SET_PARSERS,
         "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),

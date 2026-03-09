@@ -56,6 +56,7 @@ SOURCE_FILES = [
             "trino.py",
             "spark2.py",
             "spark.py",
+            "sqlite.py",
             "tableau.py",
             "redshift.py",
             "solr.py",

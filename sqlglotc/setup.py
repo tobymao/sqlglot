@@ -52,6 +52,8 @@ SOURCE_FILES = [
             "presto.py",
             "tsql.py",
             "mysql.py",
+            "trino.py",
+            "spark2.py",
             "dremio.py",
         ],
     ),

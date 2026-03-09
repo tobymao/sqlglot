@@ -4,7 +4,11 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot import parser
-from sqlglot.dialects.dialect import build_date_delta, build_formatted_time, build_timetostr_or_tochar
+from sqlglot.dialects.dialect import (
+    build_date_delta,
+    build_formatted_time,
+    build_timetostr_or_tochar,
+)
 from sqlglot.helper import mypyc_attr, seq_get
 from sqlglot.tokens import TokenType
 

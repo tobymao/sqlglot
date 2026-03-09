@@ -92,6 +92,10 @@ many_windows = (
 
 nested_functions = "SELECT " + "COALESCE(" * 50 + "x" + ", NULL)" * 50 + " FROM t"
 
+large_strings = "SELECT " + ", ".join(f"'{'x' * 100}'" for i in range(500)) + " FROM t"
+
+many_numbers = "SELECT " + ", ".join(str(i) for i in range(10000)) + " FROM t"
+
 tpch = """
 WITH "_e_0" AS (
   SELECT
@@ -231,6 +235,8 @@ QUERIES = {
     "many_ctes": many_ctes,
     "many_windows": many_windows,
     "nested_functions": nested_functions,
+    "large_strings": large_strings,
+    "many_numbers": many_numbers,
 }
 
 
@@ -242,7 +248,7 @@ def _can_parse(fn, sql):
         return False
 
 
-LARGE_QUERIES = {"large_in", "values", "many_unions"}
+LARGE_QUERIES = {"large_in", "values", "many_unions", "many_numbers"}
 
 
 def run_benchmarks():

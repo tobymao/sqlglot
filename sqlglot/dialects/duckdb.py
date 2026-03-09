@@ -531,18 +531,6 @@ def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
 
 
-def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
-    descending = expression.args.get("asc") == exp.false()
-    if expression.args.get("nulls_first") == exp.true():
-        return self.func(
-            "LIST_SORT",
-            expression.this,
-            exp.Literal.string("DESC" if descending else "ASC"),
-            exp.Literal.string("NULLS FIRST"),
-        )
-    return self.func("ARRAY_REVERSE_SORT" if descending else "ARRAY_SORT", expression.this)
-
-
 def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -> str:
     this = expression.this
     expr = expression.expression
@@ -1745,7 +1733,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
@@ -2473,6 +2460,65 @@ class DuckDB(Dialect):
 
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
+
+        def sortarray_sql(self, expression: exp.SortArray) -> str:
+            """
+            Translates Snowflake's ARRAY_SORT(arr[, asc[, nulls_first]]) to DuckDB's LIST_SORT.
+
+            Always emits explicit 'ASC'/'DESC' and 'NULLS FIRST'/'NULLS LAST' because DuckDB's
+            default (ASC NULLS FIRST) differs from Snowflake's (ASC NULLS LAST), and DuckDB's
+            null ordering default is PRAGMA-configurable.
+
+            - Literal/absent boolean args: uses LIST_SORT with explicit ordering strings.
+            - Runtime boolean expressions: emits LIST_FILTER + LIST_SORT + LIST_CONCAT to
+              evaluate sort direction and NULL placement at query time.
+
+            Snowflake default: nulls_first = NOT asc (NULLS FIRST when descending).
+            """
+            asc = expression.args.get("asc")
+            nulls_first = expression.args.get("nulls_first")
+            arr = expression.this
+
+            if (asc is None or isinstance(asc, exp.Boolean)) and (
+                nulls_first is None or isinstance(nulls_first, exp.Boolean)
+            ):
+                return self.func(
+                    "LIST_SORT",
+                    arr,
+                    exp.Literal.string("DESC" if asc == exp.false() else "ASC"),
+                    exp.Literal.string(
+                        "NULLS FIRST" if nulls_first == exp.true() else "NULLS LAST"
+                    ),
+                )
+
+            asc_expr = asc or exp.true()
+            nf_expr = nulls_first if nulls_first is not None else exp.not_(asc_expr.copy())
+            nl_expr = exp.not_(nulls_first.copy()) if nulls_first is not None else asc_expr.copy()
+
+            x = exp.to_identifier("x")
+            is_null = x.is_(exp.null())
+            null_arr = exp.ArrayFilter(
+                this=arr.copy(),
+                expression=exp.Lambda(this=is_null, expressions=[x.copy()]),
+            )
+            non_null_arr = exp.ArrayFilter(
+                this=arr.copy(),
+                expression=exp.Lambda(this=exp.not_(is_null.copy()), expressions=[x.copy()]),
+            )
+            order = (
+                exp.case()
+                .when(asc_expr, exp.Literal.string("ASC"))
+                .else_(exp.Literal.string("DESC"))
+            )
+            return self.sql(
+                exp.ArrayConcat(
+                    this=exp.case().when(nf_expr, null_arr.copy()).else_(exp.array()),
+                    expressions=[
+                        exp.func("LIST_SORT", non_null_arr, order),
+                        exp.case().when(nl_expr, null_arr.copy()).else_(exp.array()),
+                    ],
+                )
+            )
 
         def install_sql(self, expression: exp.Install) -> str:
             force = "FORCE " if expression.args.get("force") else ""

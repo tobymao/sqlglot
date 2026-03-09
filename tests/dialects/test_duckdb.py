@@ -961,7 +961,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "ARRAY_REVERSE_SORT(x)",
             write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
+                "duckdb": "LIST_SORT(x, 'DESC', 'NULLS LAST')",
                 "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
                 "hive": "SORT_ARRAY(x, FALSE)",
                 "spark": "SORT_ARRAY(x, FALSE)",
@@ -970,7 +970,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "LIST_REVERSE_SORT(x)",
             write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
+                "duckdb": "LIST_SORT(x, 'DESC', 'NULLS LAST')",
                 "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
                 "hive": "SORT_ARRAY(x, FALSE)",
                 "spark": "SORT_ARRAY(x, FALSE)",
@@ -979,12 +979,17 @@ class TestDuckDB(Validator):
         self.validate_all(
             "LIST_SORT(x)",
             write={
-                "duckdb": "ARRAY_SORT(x)",
+                "duckdb": "LIST_SORT(x, 'ASC', 'NULLS LAST')",
                 "presto": "ARRAY_SORT(x)",
                 "hive": "SORT_ARRAY(x)",
                 "spark": "SORT_ARRAY(x)",
             },
         )
+        # DuckDB round-trips with explicit string args
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS FIRST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')")
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={

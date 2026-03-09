@@ -2624,7 +2624,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT ['a', 'b'] AS result",
-            }
+            },
         )
 
     def test_map_insert(self):
@@ -2658,7 +2658,8 @@ class TestDuckDB(Validator):
 
         self.assertEqual(
             annotate_types(
-                parse_one("SELECT MAP_INSERT(my_map, 'key', 42) FROM my_table", read="snowflake")
+                parse_one("SELECT MAP_INSERT(my_map, 'key', 42) FROM my_table", read="snowflake"),
+                dialect="snowflake",
             ).sql("duckdb"),
             "SELECT MAP_CONCAT(my_map, MAP {'key': 42}) FROM my_table",
         )

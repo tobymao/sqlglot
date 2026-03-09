@@ -57,6 +57,13 @@ SOURCE_FILES = [
             "spark2.py",
             "spark.py",
             "tableau.py",
+            "redshift.py",
+            "solr.py",
+            "risingwave.py",
+            "materialize.py",
+            "starrocks.py",
+            "doris.py",
+            "singlestore.py",
         ],
     ),
 ]

@@ -6131,7 +6131,7 @@ class Parser:
                     this = build_json_extract(self, this, json_path, escape)
                     this = exp.Bracket(this=this, expressions=bracket.expressions)
 
-                    if isinstance(path, exp.Dot):
+                    if bracket is not path:
                         this = build_json_extract(
                             self, this, [path.expression.sql(dialect=self.dialect)], None
                         )

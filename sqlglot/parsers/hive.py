@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import F
 
 
-def _build_with_ignore_nulls(
+def build_with_ignore_nulls(
     exp_class: t.Type[exp.Expr],
 ) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
     def _parse(args: t.List[exp.Expr]) -> exp.Expr:
@@ -77,14 +77,14 @@ class Parser(parser.Parser):
             expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
         ),
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-        "FIRST": _build_with_ignore_nulls(exp.First),
-        "FIRST_VALUE": _build_with_ignore_nulls(exp.FirstValue),
+        "FIRST": build_with_ignore_nulls(exp.First),
+        "FIRST_VALUE": build_with_ignore_nulls(exp.FirstValue),
         "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
         "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
             this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         ),
-        "LAST": _build_with_ignore_nulls(exp.Last),
-        "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
+        "LAST": build_with_ignore_nulls(exp.Last),
+        "LAST_VALUE": build_with_ignore_nulls(exp.LastValue),
         "MAP": parser.build_var_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),

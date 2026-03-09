@@ -57,6 +57,7 @@ SOURCE_FILES = [
             "spark2.py",
             "spark.py",
             "drill.py",
+            "sqlite.py",
             "tableau.py",
             "redshift.py",
             "solr.py",

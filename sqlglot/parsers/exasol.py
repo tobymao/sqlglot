@@ -32,10 +32,7 @@ def _build_nullifzero(args: t.List) -> exp.If:
 class ExasolParser(parser.Parser):
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
-        **{
-            f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit)
-            for unit in DATE_UNITS
-        },
+        **{f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit) for unit in DATE_UNITS},
         **{
             f"{unit}S_BETWEEN": build_date_delta(exp.DateDiff, default_unit=unit)
             for unit in DATE_UNITS
@@ -56,9 +53,7 @@ class ExasolParser(parser.Parser):
         ),
         "CURDATE": exp.CurrentDate.from_arg_list,
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/date_trunc.htm#DATE_TRUNC
-        "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-            this=seq_get(args, 1), unit=seq_get(args, 0)
-        ),
+        "DATE_TRUNC": lambda args: exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0)),
         "DIV": binary_from_function(exp.IntDiv),
         "EVERY": lambda args: exp.All(this=seq_get(args, 0)),
         "EDIT_DISTANCE": exp.Levenshtein.from_arg_list,
@@ -67,12 +62,8 @@ class ExasolParser(parser.Parser):
         "HASH_SHA1": exp.SHA.from_arg_list,
         "HASH_MD5": exp.MD5.from_arg_list,
         "HASHTYPE_MD5": exp.MD5Digest.from_arg_list,
-        "HASH_SHA256": lambda args: exp.SHA2(
-            this=seq_get(args, 0), length=exp.Literal.number(256)
-        ),
-        "HASH_SHA512": lambda args: exp.SHA2(
-            this=seq_get(args, 0), length=exp.Literal.number(512)
-        ),
+        "HASH_SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+        "HASH_SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         "NOW": exp.CurrentTimestamp.from_arg_list,
         "NULLIFZERO": _build_nullifzero,
         "REGEXP_LIKE": lambda args: exp.RegexpLike(

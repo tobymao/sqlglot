@@ -3809,6 +3809,7 @@ class DuckDB(Dialect):
         def mapsize_sql(self, expression: exp.MapSize) -> str:
             return self.func("CARDINALITY", expression.this)
 
+        @unsupported_args("update_flag")
         def mapinsert_sql(self, expression: exp.MapInsert) -> str:
             map_arg = expression.this
             key = expression.args.get("key")
@@ -3816,7 +3817,7 @@ class DuckDB(Dialect):
 
             map_type = map_arg.type
 
-            if value:
+            if value is not None:
                 if map_type and map_type.expressions and len(map_type.expressions) > 1:
                     # Extract the value type from MAP(key_type, value_type)
                     value_type = map_type.expressions[1]

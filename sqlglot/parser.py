@@ -6116,22 +6116,24 @@ class Parser:
                 if isinstance(path, exp.Identifier) and path.quoted:
                     escape = True
 
-                # Bracket non literal or asterik (e.g. value:a[s.x] or value:a[s.x].b)
-                # can't be in the JSON path string since the index is a column reference.
-                bracket = path if isinstance(path, exp.Bracket) else None
-                tail = None
-                if isinstance(path, exp.Dot) and isinstance(path.this, exp.Bracket):
+                # Dynamic bracket (e.g. value:a[s.x] or value:a[s.x].b) can't be in the
+                # JSON path string since the index is a column reference.
+                if isinstance(path, exp.Bracket):
+                    bracket = path
+                elif isinstance(path, exp.Dot) and isinstance(path.this, exp.Bracket):
                     bracket = path.this
-                    tail = path.expression
+                else:
+                    bracket = None
 
                 if bracket and bracket.find(exp.Column):
                     json_path.append(bracket.this.sql(dialect=self.dialect))
+
                     this = build_json_extract(self, this, json_path, escape)
                     this = exp.Bracket(this=this, expressions=bracket.expressions)
 
-                    if tail:
+                    if isinstance(path, exp.Dot):
                         this = build_json_extract(
-                            self, this, [tail.sql(dialect=self.dialect)], None
+                            self, this, [path.expression.sql(dialect=self.dialect)], None
                         )
 
                     json_path = []

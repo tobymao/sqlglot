@@ -53,6 +53,7 @@ SOURCE_FILES = [
             "tsql.py",
             "mysql.py",
             "trino.py",
+            "spark2.py",
         ],
     ),
 ]

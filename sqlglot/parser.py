@@ -6120,8 +6120,8 @@ class Parser:
                 # JSON path string since the index is a column reference.
                 if isinstance(path, exp.Bracket):
                     bracket = path
-                elif isinstance(path, exp.Dot) and isinstance(path.this, exp.Bracket):
-                    bracket = path.this
+                elif isinstance(path, exp.Dot) and isinstance(path_this := path.this, exp.Bracket):
+                    bracket = path_this
                 else:
                     bracket = None
 

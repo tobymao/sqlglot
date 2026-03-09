@@ -14,7 +14,8 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.parsers.hive import _build_with_ignore_nulls
-from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
+from sqlglot.parsers.spark2 import Parser as Spark2Parser, _build_as_cast
+from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.tokens import TokenType
@@ -131,15 +132,15 @@ class Spark(Spark2):
             "DECLARE": TokenType.DECLARE,
         }
 
-    class Parser(Spark2.Parser):
+    class Parser(Spark2Parser):
         SET_PARSERS = {
-            **Spark2.Parser.SET_PARSERS,
+            **Spark2Parser.SET_PARSERS,
             "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),
             "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
         }
 
         FUNCTIONS = {
-            **Spark2.Parser.FUNCTIONS,
+            **Spark2Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "ARRAY_INSERT": lambda args: exp.ArrayInsert(
                 this=seq_get(args, 0),
@@ -178,7 +179,7 @@ class Spark(Spark2):
         }
 
         PLACEHOLDER_PARSERS = {
-            **Spark2.Parser.PLACEHOLDER_PARSERS,
+            **Spark2Parser.PLACEHOLDER_PARSERS,
             TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
         }
 
@@ -188,12 +189,12 @@ class Spark(Spark2):
             return self.expression(exp.Placeholder, this=this, widget=True)
 
         FUNCTION_PARSERS = {
-            **Spark2.Parser.FUNCTION_PARSERS,
+            **Spark2Parser.FUNCTION_PARSERS,
             "SUBSTR": lambda self: self._parse_substring(),
         }
 
         STATEMENT_PARSERS = {
-            **Spark2.Parser.STATEMENT_PARSERS,
+            **Spark2Parser.STATEMENT_PARSERS,
             TokenType.DECLARE: lambda self: self._parse_declare(),
         }
 

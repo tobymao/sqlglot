@@ -73,6 +73,7 @@ SOURCE_FILES = [
             "starrocks.py",
             "doris.py",
             "singlestore.py",
+            "databricks.py",
         ],
     ),
 ]

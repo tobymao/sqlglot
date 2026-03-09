@@ -30,10 +30,10 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
+    RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
     TIMESTAMP_TYPES,
     Parser as SnowflakeParser,
-    _RANKING_WINDOW_FUNCTIONS_WITH_FRAME as RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
-    _build_object_construct,
+    build_object_construct,
 )
 from sqlglot.tokens import TokenType
 from sqlglot.typing.snowflake import EXPRESSION_METADATA
@@ -1198,7 +1198,7 @@ class Snowflake(Dialect):
                         object_construct_args.extend([exp.Literal.string(expr.alias_or_name), name])
 
                     array_agg = exp.ArrayAgg(
-                        this=_build_object_construct(args=object_construct_args)
+                        this=build_object_construct(args=object_construct_args)
                     )
 
                     first_expr.set("kind", None)

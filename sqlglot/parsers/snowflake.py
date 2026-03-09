@@ -333,7 +333,9 @@ class Parser(parser.Parser):
         TokenType.MATCH_CONDITION,
     }
 
-    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {TokenType.MATCH_CONDITION}
+    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {
+        TokenType.MATCH_CONDITION
+    }
 
     COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
@@ -491,12 +493,10 @@ class Parser(parser.Parser):
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "LOCALTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "NULLIFZERO": _build_if_from_nullifzero,
-        "OBJECT_CONSTRUCT": lambda args: _build_object_construct(args),
+        "OBJECT_CONSTRUCT": lambda args: build_object_construct(args),
         "OBJECT_KEYS": exp.JSONKeys.from_arg_list,
         "OCTET_LENGTH": exp.ByteLength.from_arg_list,
-        "PARSE_URL": lambda args: exp.ParseUrl(
-            this=seq_get(args, 0), permissive=seq_get(args, 1)
-        ),
+        "PARSE_URL": lambda args: exp.ParseUrl(this=seq_get(args, 0), permissive=seq_get(args, 1)),
         "REGEXP_EXTRACT_ALL": _build_regexp_extract(exp.RegexpExtractAll),
         "REGEXP_LIKE": _build_regexp_like,
         "REGEXP_REPLACE": _build_regexp_replace,
@@ -504,9 +504,7 @@ class Parser(parser.Parser):
         "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
         "RANDOM": lambda args: exp.Rand(
             this=seq_get(args, 0),
-            lower=exp.Literal.number(
-                -9223372036854775808.0
-            ),  # -2^63 as float to avoid overflow
+            lower=exp.Literal.number(-9223372036854775808.0),  # -2^63 as float to avoid overflow
             upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
         ),
         "REPLACE": build_replace_with_optional_replacement,
@@ -560,9 +558,7 @@ class Parser(parser.Parser):
         "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
         "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
         "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-        "TRUNC": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_requires_part=False
-        ),
+        "TRUNC": lambda args, dialect: build_trunc(args, dialect, date_trunc_requires_part=False),
         "TRUNCATE": lambda args, dialect: build_trunc(
             args, dialect, date_trunc_requires_part=False
         ),
@@ -757,19 +753,14 @@ class Parser(parser.Parser):
 
     def _parse_directory(self) -> exp.DirectoryStage:
         table = self._parse_table_parts()
-
-        if isinstance(table, exp.Table):
-            table = table.this
-
-        return self.expression(exp.DirectoryStage, this=table)
+        this: exp.Expr = table.this if isinstance(table, exp.Table) else table
+        return self.expression(exp.DirectoryStage, this=this)
 
     def _parse_use(self) -> exp.Use:
         if self._match_text_seq("SECONDARY", "ROLES"):
             this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text.upper())
             roles = None if this else self._parse_csv(lambda: self._parse_table(schema=False))
-            return self.expression(
-                exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles
-            )
+            return self.expression(exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles)
 
         return super()._parse_use()
 
@@ -785,9 +776,7 @@ class Parser(parser.Parser):
             #
             # https://docs.snowflake.com/en/sql-reference/functions/in
             # Context: https://github.com/tobymao/sqlglot/issues/3890
-            return self.expression(
-                exp.NEQ, this=this.this, expression=exp.All(this=query.unnest())
-            )
+            return self.expression(exp.NEQ, this=this.this, expression=exp.All(this=query.unnest()))
 
         return self.expression(exp.Not, this=this)
 
@@ -843,9 +832,7 @@ class Parser(parser.Parser):
             return None
 
         # Handle both syntaxes: DATE_PART(part, expr) and DATE_PART(part FROM expr)
-        expression = (
-            self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
-        )
+        expression = self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
         return self.expression(
             exp.Extract, this=map_date_part(this, self.dialect), expression=expression
         )
@@ -943,8 +930,7 @@ class Parser(parser.Parser):
     ) -> t.Optional[exp.Expr]:
         if self._match_text_seq("IDENTIFIER", "("):
             identifier = (
-                super()._parse_id_var(any_token=any_token, tokens=tokens)
-                or self._parse_string()
+                super()._parse_id_var(any_token=any_token, tokens=tokens) or self._parse_string()
             )
             self._match_r_paren()
             return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
@@ -1134,7 +1120,7 @@ class Parser(parser.Parser):
         # Set default window frame for ranking functions if not present
         if (
             isinstance(result, exp.Window)
-            and isinstance(this, _RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
+            and isinstance(this, RANKING_WINDOW_FUNCTIONS_WITH_FRAME)
             and not result.args.get("spec")
         ):
             frame = exp.WindowSpec(
@@ -1149,14 +1135,14 @@ class Parser(parser.Parser):
 
 
 # This is imported and used by both the parser (above) and the generator in the dialect file
-_RANKING_WINDOW_FUNCTIONS_WITH_FRAME = (
+RANKING_WINDOW_FUNCTIONS_WITH_FRAME = (
     exp.FirstValue,
     exp.LastValue,
     exp.NthValue,
 )
 
 
-def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
+def build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
     expression = parser.build_var_map(args)
 
     if isinstance(expression, exp.StarMap):

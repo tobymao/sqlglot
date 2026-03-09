@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
-    build_formatted_time,
     no_trycast_sql,
     rename_func,
     strposition_sql,
@@ -14,6 +13,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
 from sqlglot.generator import unsupported_args
+from sqlglot.parsers.drill import DrillParser
 
 
 def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
@@ -75,18 +75,7 @@ class Drill(Dialect):
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
 
-    class Parser(parser.Parser):
-        STRICT_CAST = False
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "REPEATED_COUNT": exp.ArraySize.from_arg_list,
-            "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
-            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
-        }
-
-        LOG_DEFAULTS_TO_LN = True
+    Parser = DrillParser
 
     class Generator(generator.Generator):
         JOIN_HINTS = False

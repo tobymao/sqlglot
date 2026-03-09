@@ -56,6 +56,7 @@ SOURCE_FILES = [
             "trino.py",
             "spark2.py",
             "spark.py",
+            "solr.py",
             "risingwave.py",
             "materialize.py",
             "starrocks.py",

@@ -48,6 +48,7 @@ SOURCE_FILES = [
         [
             "bigquery.py",
             "clickhouse.py",
+            "duckdb.py",
             "postgres.py",
             "hive.py",
             "presto.py",

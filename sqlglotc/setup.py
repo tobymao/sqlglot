@@ -47,9 +47,12 @@ SOURCE_FILES = [
         "parsers",
         [
             "bigquery.py",
+            "doris.py",
             "postgres.py",
             "hive.py",
             "presto.py",
+            "singlestore.py",
+            "starrocks.py",
             "tsql.py",
             "mysql.py",
         ],

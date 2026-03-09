@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.postgres import Parser as PostgresParser
+from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.parser import build_convert_timezone
 from sqlglot.tokens import TokenType
 from sqlglot.dialects.dialect import map_date_part
@@ -29,7 +29,7 @@ def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(PostgresParser):
+class RedshiftParser(PostgresParser):
     FUNCTIONS = {
         **{k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "GET_BIT"},
         "ADD_MONTHS": lambda args: exp.TsOrDsAdd(

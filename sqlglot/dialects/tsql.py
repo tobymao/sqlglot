@@ -19,7 +19,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
-from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL, Parser as TSQLParser
+from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL, TSQLParser
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 from sqlglot.typing.tsql import EXPRESSION_METADATA

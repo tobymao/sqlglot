@@ -81,7 +81,7 @@ def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class PostgresParser(parser.Parser):
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 
     PROPERTY_PARSERS = {

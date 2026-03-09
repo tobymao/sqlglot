@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generator import Generator
-from sqlglot.parsers.risingwave import Parser as RisingWaveParser
+from sqlglot.parsers.risingwave import RisingWaveParser
 from sqlglot.tokens import TokenType
 
 

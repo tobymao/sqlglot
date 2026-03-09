@@ -234,7 +234,7 @@ AGG_FUNC_MAPPING: t.Mapping[str, t.Tuple[str, str | None]] = {
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class ClickHouseParser(parser.Parser):
     # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
     # * select x from t1 union all select x from t2 limit 1;
     # * select x from t1 union all (select x from t2 limit 1);

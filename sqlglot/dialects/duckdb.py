@@ -42,7 +42,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_date_unit, seq_get
-from sqlglot.parsers.duckdb import Parser as DuckDBParser
+from sqlglot.parsers.duckdb import DuckDBParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.duckdb import EXPRESSION_METADATA
 

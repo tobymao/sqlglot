@@ -18,7 +18,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generator import Generator
 from sqlglot.helper import seq_get
-from sqlglot.parsers.redshift import Parser as RedshiftParser
+from sqlglot.parsers.redshift import RedshiftParser
 from sqlglot.tokens import TokenType
 
 

@@ -57,15 +57,15 @@ def _build_make_timestamp(args: t.List) -> exp.Expr:
     )
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Parser], exp.Show]:
-    def _parse(self: Parser) -> exp.Show:
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDBParser], exp.Show]:
+    def _parse(self: DuckDBParser) -> exp.Show:
         return self._parse_show_duckdb(*args, **kwargs)
 
     return _parse
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 
     BITWISE = {k: v for k, v in parser.Parser.BITWISE.items() if k != TokenType.CARET}

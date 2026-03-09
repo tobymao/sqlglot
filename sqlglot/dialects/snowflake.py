@@ -32,7 +32,7 @@ from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
     TIMESTAMP_TYPES,
-    Parser as SnowflakeParser,
+    SnowflakeParser,
     build_object_construct,
 )
 from sqlglot.tokens import TokenType

@@ -5,11 +5,11 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import build_timestamp_trunc
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.mysql import Parser as MySQLParser
+from sqlglot.parsers.mysql import MySQLParser
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(MySQLParser):
+class StarRocksParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "DATE_TRUNC": build_timestamp_trunc,

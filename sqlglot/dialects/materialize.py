@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import seq_get
 from sqlglot.dialects.postgres import Postgres
-from sqlglot.parsers.materialize import Parser as MaterializeParser
+from sqlglot.parsers.materialize import MaterializeParser
 
 from sqlglot.transforms import (
     remove_unique_constraints,

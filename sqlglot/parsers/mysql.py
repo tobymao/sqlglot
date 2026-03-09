@@ -43,15 +43,15 @@ def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
     return exp.StrToDate(this=this, format=date_format)
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Parser], exp.Show]:
-    def _parse(self: Parser) -> exp.Show:
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp.Show]:
+    def _parse(self: MySQLParser) -> exp.Show:
         return self._parse_show_mysql(*args, **kwargs)
 
     return _parse
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class MySQLParser(parser.Parser):
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
         TokenType.DATABASE,

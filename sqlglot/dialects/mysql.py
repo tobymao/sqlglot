@@ -26,7 +26,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.parsers.mysql import Parser as MySQLParser
+from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.mysql import EXPRESSION_METADATA
 

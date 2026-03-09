@@ -56,6 +56,7 @@ SOURCE_FILES = [
             "trino.py",
             "spark2.py",
             "spark.py",
+            "prql.py",
             "exasol.py",
             "dremio.py",
             "drill.py",

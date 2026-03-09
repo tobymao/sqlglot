@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.dialects.presto import amend_exploded_column_table, Presto
-from sqlglot.parsers.trino import Parser as TrinoParser
+from sqlglot.parsers.trino import TrinoParser
 from sqlglot.tokens import TokenType
 
 

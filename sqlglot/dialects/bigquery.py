@@ -9,7 +9,7 @@ from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 from sqlglot import exp, generator, jsonpath, tokens, transforms
 from sqlglot._typing import E
-from sqlglot.parsers.bigquery import Parser as BigQueryParser
+from sqlglot.parsers.bigquery import BigQueryParser
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,

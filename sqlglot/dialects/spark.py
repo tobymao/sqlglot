@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     date_delta_to_binary_interval_op,
     groupconcat_sql,
 )
-from sqlglot.parsers.spark import Parser as SparkParser
+from sqlglot.parsers.spark import SparkParser
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import seq_get

@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.mysql import Parser as MySQLParser, _show_parser
+from sqlglot.parsers.mysql import MySQLParser, _show_parser
 from sqlglot.tokens import TokenType
 
 
@@ -26,7 +26,7 @@ def cast_to_time6(
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(MySQLParser):
+class SingleStoreParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),

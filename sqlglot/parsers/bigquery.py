@@ -144,7 +144,7 @@ def _build_to_hex(args: t.List) -> exp.Hex | exp.MD5:
 MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
-class Parser(parser.Parser):
+class BigQueryParser(parser.Parser):
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = True
     LOG_DEFAULTS_TO_LN: t.ClassVar = True
     SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = True

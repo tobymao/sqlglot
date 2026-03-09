@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.spark import Parser as SparkParser
+from sqlglot.parsers.spark import SparkParser
 from sqlglot.tokens import TokenType
 
 

@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects import Dialect, Hive, Trino
-from sqlglot.parsers.trino import Parser as TrinoParser
+from sqlglot.parsers.trino import TrinoParser
 from sqlglot.tokens import TokenType, Token
 
 

@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     property_sql,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.parsers.starrocks import Parser as StarRocksParser
+from sqlglot.parsers.starrocks import StarRocksParser
 from sqlglot.tokens import TokenType
 
 

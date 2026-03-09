@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.dialects.spark import Spark
+from sqlglot.parsers.spark import Parser as SparkParser
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -48,13 +49,13 @@ class Databricks(Spark):
             "VOID": TokenType.VOID,
         }
 
-    class Parser(Spark.Parser):
+    class Parser(SparkParser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True
         COLON_IS_VARIANT_EXTRACT = True
 
         FUNCTIONS = {
-            **Spark.Parser.FUNCTIONS,
+            **SparkParser.FUNCTIONS,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "DATEADD": build_date_delta(exp.DateAdd),
             "DATE_ADD": build_date_delta(exp.DateAdd),
@@ -68,12 +69,12 @@ class Databricks(Spark):
         }
 
         NO_PAREN_FUNCTION_PARSERS = {
-            **Spark.Parser.NO_PAREN_FUNCTION_PARSERS,
+            **SparkParser.NO_PAREN_FUNCTION_PARSERS,
             "CURDATE": lambda self: self._parse_curdate(),
         }
 
         FACTOR = {
-            **Spark.Parser.FACTOR,
+            **SparkParser.FACTOR,
             TokenType.COLON: exp.JSONExtract,
         }
 
@@ -86,7 +87,7 @@ class Databricks(Spark):
             ),
         }
         CAST_COLUMN_OPERATORS = {
-            *Spark.Parser.CAST_COLUMN_OPERATORS,
+            *SparkParser.CAST_COLUMN_OPERATORS,
             TokenType.QDCOLON,
         }
 

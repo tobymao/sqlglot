@@ -3809,6 +3809,32 @@ class DuckDB(Dialect):
         def mapsize_sql(self, expression: exp.MapSize) -> str:
             return self.func("CARDINALITY", expression.this)
 
+        @unsupported_args("update_flag")
+        def mapinsert_sql(self, expression: exp.MapInsert) -> str:
+            map_arg = expression.this
+            key = expression.args.get("key")
+            value = expression.args.get("value")
+
+            map_type = map_arg.type
+
+            if value is not None:
+                if map_type and map_type.expressions and len(map_type.expressions) > 1:
+                    # Extract the value type from MAP(key_type, value_type)
+                    value_type = map_type.expressions[1]
+                    # Cast value to match the map's value type to avoid type conflicts
+                    value = exp.cast(value, value_type)
+                # else: polymorphic MAP case - no type parameters available, use value as-is
+
+            # Create a single-entry map for the new key-value pair
+            new_entry_struct = exp.Struct(expressions=[exp.PropertyEQ(this=key, expression=value)])
+            new_entry: exp.Expression = exp.ToMap(this=new_entry_struct)
+
+            # Use MAP_CONCAT to merge the original map with the new entry
+            # This automatically handles both insert and update cases
+            result = exp.func("MAP_CONCAT", map_arg, new_entry)
+
+            return self.sql(result)
+
         def startswith_sql(self, expression: exp.StartsWith) -> str:
             return self.func(
                 "STARTS_WITH",

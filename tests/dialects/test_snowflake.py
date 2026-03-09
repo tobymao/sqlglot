@@ -5356,6 +5356,22 @@ SINGLE = TRUE""",
             """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": 1}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r FROM t, s""",
             """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": 1}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r') FROM t, s""",
         )
+        self.validate_identity(
+            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": 1}}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r.d FROM t, s""",
+            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": 1}}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r.d') FROM t, s""",
+        )
+        self.validate_identity(
+            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": {"e": 1}}}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r.d.e FROM t, s""",
+            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": {"e": 1}}}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r.d.e') FROM t, s""",
+        )
+        self.validate_identity(
+            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": 1}}]}}') AS v), s AS (SELECT 0 AS x) SELECT t.v:a.b[s.x].r.d FROM t, s""",
+            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": 1}}]}}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'a.b')[s.x], 'r.d') FROM t, s""",
+        )
+        self.validate_identity(
+            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": [10, 20, 30]}}]}}') AS v), s AS (SELECT 0 AS x, 2 AS y) SELECT t.v:a.b[s.x].r.d[s.y] FROM t, s""",
+            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": [10, 20, 30]}}]}}') AS v), s AS (SELECT 0 AS x, 2 AS y) SELECT GET_PATH(GET_PATH(t.v, 'a.b')[s.x], 'r.d')[s.y] FROM t, s""",
+        )
 
         self.validate_all(
             """

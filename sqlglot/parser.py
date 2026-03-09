@@ -255,26 +255,6 @@ def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
     )
 
 
-def build_json_extract(
-    self,
-    this: t.Optional[exp.Expr],
-    json_path: t.List[str],
-    escape: t.Optional[bool],
-) -> exp.JSONExtract:
-    json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
-
-    if json_path_expr:
-        json_path_expr.set("escape", escape)
-
-    return self.expression(
-        exp.JSONExtract,
-        this=this,
-        expression=json_path_expr,
-        variant_extract=True,
-        requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
-    )
-
-
 def _resolve_dialect(dialect: t.Any) -> t.Any:
     from sqlglot.dialects.dialect import Dialect
 
@@ -6081,6 +6061,25 @@ class Parser:
 
         return this
 
+    def _build_json_extract(
+        self,
+        this: t.Optional[exp.Expr],
+        json_path: t.List[str],
+        escape: t.Optional[bool],
+    ) -> exp.JSONExtract:
+        json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
+
+        if json_path_expr:
+            json_path_expr.set("escape", escape)
+
+        return self.expression(
+            exp.JSONExtract,
+            this=this,
+            expression=json_path_expr,
+            variant_extract=True,
+            requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+        )
+
     def _parse_colon_as_variant_extract(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
         casts = []
         json_path = []
@@ -6116,25 +6115,36 @@ class Parser:
                 if isinstance(path, exp.Identifier) and path.quoted:
                     escape = True
 
-                # Dynamic bracket (e.g. value:a[s.x] or value:a[s.x].b) can't be in the
-                # JSON path string since the index is a column reference.
-                if isinstance(path, exp.Bracket):
-                    bracket = path
-                elif isinstance(path, exp.Dot) and isinstance(path_this := path.this, exp.Bracket):
-                    bracket = path_this
-                else:
-                    bracket = None
+                # Dynamic brackets (e.g. value:a[s.x].b.c or value:a[s.x].r.d[s.y])
+                # can't be in the JSON path string since the index is a column reference.
+                # We traverse Dot/Bracket layers from outside in, collecting segments, then
+                # process them inside out.
+                segments = []
+                node = path
+                while True:
+                    suffixes = []
+                    while isinstance(node, exp.Dot):
+                        suffixes.append(node.expression.sql(dialect=self.dialect))
+                        node = node.this
 
-                if bracket and bracket.find(exp.Column):
-                    json_path.append(bracket.this.sql(dialect=self.dialect))
+                    if isinstance(node, exp.Bracket) and any(
+                        e.find(exp.Column) for e in node.expressions
+                    ):
+                        suffixes.reverse()
+                        segments.append((node, suffixes))
+                        node = node.this
+                    else:
+                        break
 
-                    this = build_json_extract(self, this, json_path, escape)
-                    this = exp.Bracket(this=this, expressions=bracket.expressions)
+                if segments:
+                    json_path.append(segments[-1][0].this.sql(dialect=self.dialect))
+                    for bracket, suffixes in reversed(segments):
+                        this = self._build_json_extract(this, json_path, escape)
+                        this = exp.Bracket(this=this, expressions=bracket.expressions)
+                        json_path = suffixes
 
-                    if bracket is not path:
-                        this = build_json_extract(
-                            self, this, [path.expression.sql(dialect=self.dialect)], None
-                        )
+                    if json_path:
+                        this = self._build_json_extract(this, json_path, None)
 
                     json_path = []
                     continue

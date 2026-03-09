@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, rename_func, strposition_sql as _strposition_sql
-from sqlglot.helper import seq_get
+from sqlglot.parsers.tableau import TableauParser
 
 
 class Tableau(Dialect):
@@ -49,13 +49,4 @@ class Tableau(Dialect):
                 supports_occurrence=has_occurrence,
             )
 
-    class Parser(parser.Parser):
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
-            "FIND": exp.StrPosition.from_arg_list,
-            "FINDNTH": lambda args: exp.StrPosition(
-                this=seq_get(args, 0), substr=seq_get(args, 1), occurrence=seq_get(args, 2)
-            ),
-        }
-        NO_PAREN_IF_COMMANDS = False
+    Parser = TableauParser

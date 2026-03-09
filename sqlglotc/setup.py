@@ -47,6 +47,7 @@ SOURCE_FILES = [
         "parsers",
         [
             "bigquery.py",
+            "clickhouse.py",
             "postgres.py",
             "hive.py",
             "presto.py",

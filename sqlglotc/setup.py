@@ -57,6 +57,8 @@ SOURCE_FILES = [
             "spark2.py",
             "spark.py",
             "starrocks.py",
+            "doris.py",
+            "singlestore.py",
         ],
     ),
 ]

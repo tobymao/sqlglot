@@ -52,6 +52,7 @@ SOURCE_FILES = [
             "presto.py",
             "tsql.py",
             "mysql.py",
+            "drill.py",
         ],
     ),
 ]

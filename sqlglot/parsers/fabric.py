@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp
 from sqlglot.helper import mypyc_attr
-from sqlglot.parsers.tsql import Parser as TSQLParser
+from sqlglot.parsers.tsql import TSQLParser
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)

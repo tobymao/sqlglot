@@ -41,7 +41,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
-from sqlglot.parsers.postgres import Parser as PostgresParser
+from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
 
 

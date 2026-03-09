@@ -304,7 +304,7 @@ def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class TSQLParser(parser.Parser):
     SET_REQUIRES_ASSIGNMENT_DELIMITER = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True

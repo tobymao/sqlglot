@@ -4,12 +4,12 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import mypyc_attr, seq_get
-from sqlglot.parsers.postgres import Parser as PostgresParser
+from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(PostgresParser):
+class MaterializeParser(PostgresParser):
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,
         "MAP": lambda self: self._parse_map(),

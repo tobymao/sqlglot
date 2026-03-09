@@ -41,7 +41,7 @@ from sqlglot.transforms import (
     preprocess,
     move_schema_columns_to_partitioned_by,
 )
-from sqlglot.parsers.hive import Parser as HiveParser
+from sqlglot.parsers.hive import HiveParser
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 from sqlglot.optimizer.annotate_types import TypeAnnotator

@@ -40,7 +40,7 @@ def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class HiveParser(parser.Parser):
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = False
     VALUES_FOLLOWED_BY_PAREN = False

@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
 from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
-from sqlglot.parsers.singlestore import Parser as SingleStoreParser, cast_to_time6
+from sqlglot.parsers.singlestore import SingleStoreParser, cast_to_time6
 
 
 class SingleStore(MySQL):

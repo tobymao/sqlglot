@@ -32,7 +32,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.optimizer.scope import find_all_in_scope
-from sqlglot.parsers.presto import Parser as PrestoParser
+from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args

@@ -53,7 +53,7 @@ def _build_to_char(args: t.List) -> exp.TimeToStr:
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
-class Parser(parser.Parser):
+class PrestoParser(parser.Parser):
     VALUES_FOLLOWED_BY_PAREN = False
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
 

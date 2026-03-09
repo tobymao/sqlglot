@@ -13,7 +13,7 @@ from sqlglot.parsers.hive import Parser as HiveParser
 from sqlglot.parser import build_trim
 
 
-def _build_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expr]:
+def build_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expr]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 
@@ -25,22 +25,22 @@ class Parser(HiveParser):
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,
-        "BOOLEAN": _build_as_cast("boolean"),
-        "DATE": _build_as_cast("date"),
+        "BOOLEAN": build_as_cast("boolean"),
+        "DATE": build_as_cast("date"),
         "DATE_TRUNC": lambda args: exp.TimestampTrunc(
             this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
         ),
         "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-        "DOUBLE": _build_as_cast("double"),
+        "DOUBLE": build_as_cast("double"),
         "ELEMENT_AT": lambda args: exp.Bracket(
             this=seq_get(args, 0),
             expressions=ensure_list(seq_get(args, 1)),
             offset=1,
             safe=False,
         ),
-        "FLOAT": _build_as_cast("float"),
+        "FLOAT": build_as_cast("float"),
         "FORMAT_STRING": exp.Format.from_arg_list,
         "FROM_UTC_TIMESTAMP": lambda args, dialect: exp.AtTimeZone(
             this=exp.cast(
@@ -51,17 +51,17 @@ class Parser(HiveParser):
             zone=seq_get(args, 1),
         ),
         "LTRIM": lambda args: build_trim(args, reverse_args=True),
-        "INT": _build_as_cast("int"),
+        "INT": build_as_cast("int"),
         "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
         "RLIKE": exp.RegexpLike.from_arg_list,
         "RTRIM": lambda args: build_trim(args, is_left=False, reverse_args=True),
         "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
         "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
-        "STRING": _build_as_cast("string"),
+        "STRING": build_as_cast("string"),
         "SLICE": exp.ArraySlice.from_arg_list,
-        "TIMESTAMP": _build_as_cast("timestamp"),
+        "TIMESTAMP": build_as_cast("timestamp"),
         "TO_TIMESTAMP": lambda args: (
-            _build_as_cast("timestamp")(args)
+            build_as_cast("timestamp")(args)
             if len(args) == 1
             else build_formatted_time(exp.StrToTime, "spark")(args)
         ),

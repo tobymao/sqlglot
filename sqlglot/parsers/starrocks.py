@@ -35,19 +35,20 @@ class StarRocksParser(MySQLParser):
         # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
         def parse_rollup_index() -> exp.RollupIndex:
             return self.expression(
-                exp.RollupIndex,
-                this=self._parse_id_var(),
-                expressions=self._parse_wrapped_id_vars(),
-                from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
-                properties=self.expression(
-                    exp.Properties, expressions=self._parse_wrapped_properties()
+                exp.RollupIndex(
+                    this=self._parse_id_var(),
+                    expressions=self._parse_wrapped_id_vars(),
+                    from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
+                    properties=self.expression(
+                        exp.Properties(expressions=self._parse_wrapped_properties())
+                    )
+                    if self._match_text_seq("PROPERTIES")
+                    else None,
                 )
-                if self._match_text_seq("PROPERTIES")
-                else None,
             )
 
         return self.expression(
-            exp.RollupProperty, expressions=self._parse_wrapped_csv(parse_rollup_index)
+            exp.RollupProperty(expressions=self._parse_wrapped_csv(parse_rollup_index))
         )
 
     def _parse_create(self) -> exp.Create | exp.Command:
@@ -85,10 +86,11 @@ class StarRocksParser(MySQLParser):
 
     def _parse_partitioned_by(self) -> exp.PartitionedByProperty:
         return self.expression(
-            exp.PartitionedByProperty,
-            this=exp.Schema(
-                expressions=self._parse_wrapped_csv(self._parse_assignment, optional=True)
-            ),
+            exp.PartitionedByProperty(
+                this=exp.Schema(
+                    expressions=self._parse_wrapped_csv(self._parse_assignment, optional=True)
+                )
+            )
         )
 
     def _parse_partition_property(
@@ -112,9 +114,9 @@ class StarRocksParser(MySQLParser):
         self._match_r_paren()
 
         return self.expression(
-            exp.PartitionByRangeProperty,
-            partition_expressions=expr,
-            create_expressions=create_expressions,
+            exp.PartitionByRangeProperty(
+                partition_expressions=expr, create_expressions=create_expressions
+            )
         )
 
     def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
@@ -125,7 +127,7 @@ class StarRocksParser(MySQLParser):
         self._match_text_seq("EVERY")
         every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
         return self.expression(
-            exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
+            exp.PartitionByRangePropertyDynamic(start=start, end=end, every=every)
         )
 
     def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
@@ -148,10 +150,7 @@ class StarRocksParser(MySQLParser):
             unit = None
 
         return self.expression(
-            exp.RefreshTriggerProperty,
-            method=method,
-            kind=kind,
-            starts=start,
-            every=every,
-            unit=unit,
+            exp.RefreshTriggerProperty(
+                method=method, kind=kind, starts=start, every=every, unit=unit
+            )
         )

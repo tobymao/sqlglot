@@ -86,12 +86,12 @@ class PostgresParser(parser.Parser):
 
     PROPERTY_PARSERS = {
         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "INPUT"},
-        "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
+        "SET": lambda self: self.expression(exp.SetConfigProperty(this=self._parse_set())),
     }
 
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
-        TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder, jdbc=True),
+        TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder(jdbc=True)),
         TokenType.MOD: lambda self: self._parse_query_parameter(),
     }
 
@@ -136,7 +136,7 @@ class PostgresParser(parser.Parser):
 
     NO_PAREN_FUNCTION_PARSERS = {
         **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
-        "VARIADIC": lambda self: self.expression(exp.Variadic, this=self._parse_bitwise()),
+        "VARIADIC": lambda self: self.expression(exp.Variadic(this=self._parse_bitwise())),
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -148,9 +148,7 @@ class PostgresParser(parser.Parser):
         **parser.Parser.FUNCTION_PARSERS,
         "DATE_PART": lambda self: self._parse_date_part(),
         "JSON_AGG": lambda self: self.expression(
-            exp.JSONArrayAgg,
-            this=self._parse_lambda(),
-            order=self._parse_order(),
+            exp.JSONArrayAgg(this=self._parse_lambda(), order=self._parse_order())
         ),
         "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
     }
@@ -168,7 +166,7 @@ class PostgresParser(parser.Parser):
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
         TokenType.DAT: lambda self, this: self.expression(
-            exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
+            exp.MatchAgainst(this=self._parse_bitwise(), expressions=[this])
         ),
     }
 
@@ -180,7 +178,7 @@ class PostgresParser(parser.Parser):
     UNARY_PARSERS = {
         **parser.Parser.UNARY_PARSERS,
         # The `~` token is remapped from TILDE to RLIKE in Postgres due to the binary REGEXP LIKE operator
-        TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
+        TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot(this=self._parse_unary())),
     }
 
     JSON_ARROWS_REQUIRE_JSON_TYPE = True
@@ -256,10 +254,11 @@ class PostgresParser(parser.Parser):
             InOutColumnConstraint expression representing the parameter mode.
         """
         return self.expression(
-            exp.InOutColumnConstraint,
-            input_=(param_mode in {TokenType.IN, TokenType.INOUT}),
-            output=(param_mode in {TokenType.OUT, TokenType.INOUT}),
-            variadic=(param_mode == TokenType.VARIADIC),
+            exp.InOutColumnConstraint(
+                input_=(param_mode in {TokenType.IN, TokenType.INOUT}),
+                output=(param_mode in {TokenType.OUT, TokenType.INOUT}),
+                variadic=(param_mode == TokenType.VARIADIC),
+            )
         )
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expr]:
@@ -288,7 +287,7 @@ class PostgresParser(parser.Parser):
             else None
         )
         self._match_text_seq("S")
-        return self.expression(exp.Placeholder, this=this)
+        return self.expression(exp.Placeholder(this=this))
 
     def _parse_date_part(self) -> exp.Expr:
         part = self._parse_type()
@@ -298,16 +297,18 @@ class PostgresParser(parser.Parser):
         if part and isinstance(part, (exp.Column, exp.Literal)):
             part = exp.var(part.name)
 
-        return self.expression(exp.Extract, this=part, expression=value)
+        return self.expression(exp.Extract(this=part, expression=value))
 
     def _parse_unique_key(self) -> t.Optional[exp.Expr]:
         return None
 
     def _parse_jsonb_exists(self) -> exp.JSONBExists:
         return self.expression(
-            exp.JSONBExists,
-            this=self._parse_bitwise(),
-            path=self._match(TokenType.COMMA) and self.dialect.to_json_path(self._parse_bitwise()),
+            exp.JSONBExists(
+                this=self._parse_bitwise(),
+                path=self._match(TokenType.COMMA)
+                and self.dialect.to_json_path(self._parse_bitwise()),
+            )
         )
 
     def _parse_generated_as_identity(
@@ -320,7 +321,7 @@ class PostgresParser(parser.Parser):
         this = super()._parse_generated_as_identity()
 
         if self._match_text_seq("STORED"):
-            this = self.expression(exp.ComputedColumnConstraint, this=this.expression)
+            this = self.expression(exp.ComputedColumnConstraint(this=this.expression))
 
         return this
 

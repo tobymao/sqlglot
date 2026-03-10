@@ -654,10 +654,11 @@ class SnowflakeParser(parser.Parser):
         "MODIFY": lambda self: self._parse_alter_table_alter(),
         "SESSION": lambda self: self._parse_alter_session(),
         "UNSET": lambda self: self.expression(
-            exp.Set,
-            tag=self._match_text_seq("TAG"),
-            expressions=self._parse_csv(self._parse_id_var),
-            unset=True,
+            exp.Set(
+                tag=self._match_text_seq("TAG"),
+                expressions=self._parse_csv(self._parse_id_var),
+                unset=True,
+            )
         ),
     }
 
@@ -675,7 +676,7 @@ class SnowflakeParser(parser.Parser):
         "LOCATION": lambda self: self._parse_location_property(),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: self._match_text_seq("TEMPLATE")
-        and self.expression(exp.UsingTemplateProperty, this=self._parse_statement()),
+        and self.expression(exp.UsingTemplateProperty(this=self._parse_statement())),
     }
 
     TYPE_CONVERTERS = {
@@ -735,32 +736,33 @@ class SnowflakeParser(parser.Parser):
     LAMBDAS = {
         **parser.Parser.LAMBDAS,
         TokenType.ARROW: lambda self, expressions: self.expression(
-            exp.Lambda,
-            this=self._replace_lambda(
-                self._parse_assignment(),
-                expressions,
-            ),
-            expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            exp.Lambda(
+                this=self._replace_lambda(
+                    self._parse_assignment(),
+                    expressions,
+                ),
+                expressions=[e.this if isinstance(e, exp.Cast) else e for e in expressions],
+            )
         ),
     }
 
     COLUMN_OPERATORS = {
         **parser.Parser.COLUMN_OPERATORS,
         TokenType.EXCLAMATION: lambda self, this, attr: self.expression(
-            exp.ModelAttribute, this=this, expression=attr
+            exp.ModelAttribute(this=this, expression=attr)
         ),
     }
 
     def _parse_directory(self) -> exp.DirectoryStage:
         table = self._parse_table_parts()
         this: exp.Expr = table.this if isinstance(table, exp.Table) else table
-        return self.expression(exp.DirectoryStage, this=this)
+        return self.expression(exp.DirectoryStage(this=this))
 
     def _parse_use(self) -> exp.Use:
         if self._match_text_seq("SECONDARY", "ROLES"):
             this = self._match_texts(("ALL", "NONE")) and exp.var(self._prev.text.upper())
             roles = None if this else self._parse_csv(lambda: self._parse_table(schema=False))
-            return self.expression(exp.Use, kind="SECONDARY ROLES", this=this, expressions=roles)
+            return self.expression(exp.Use(kind="SECONDARY ROLES", this=this, expressions=roles))
 
         return super()._parse_use()
 
@@ -776,15 +778,12 @@ class SnowflakeParser(parser.Parser):
             #
             # https://docs.snowflake.com/en/sql-reference/functions/in
             # Context: https://github.com/tobymao/sqlglot/issues/3890
-            return self.expression(exp.NEQ, this=this.this, expression=exp.All(this=query.unnest()))
+            return self.expression(exp.NEQ(this=this.this, expression=exp.All(this=query.unnest())))
 
-        return self.expression(exp.Not, this=this)
+        return self.expression(exp.Not(this=this))
 
     def _parse_tag(self) -> exp.Tags:
-        return self.expression(
-            exp.Tags,
-            expressions=self._parse_wrapped_csv(self._parse_property),
-        )
+        return self.expression(exp.Tags(expressions=self._parse_wrapped_csv(self._parse_property)))
 
     def _parse_with_constraint(self) -> t.Optional[exp.Expr]:
         if self._prev.token_type != TokenType.WITH:
@@ -793,16 +792,18 @@ class SnowflakeParser(parser.Parser):
         if self._match_text_seq("MASKING", "POLICY"):
             policy = self._parse_column()
             return self.expression(
-                exp.MaskingPolicyColumnConstraint,
-                this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
-                expressions=self._match(TokenType.USING)
-                and self._parse_wrapped_csv(self._parse_id_var),
+                exp.MaskingPolicyColumnConstraint(
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                    expressions=self._match(TokenType.USING)
+                    and self._parse_wrapped_csv(self._parse_id_var),
+                )
             )
         if self._match_text_seq("PROJECTION", "POLICY"):
             policy = self._parse_column()
             return self.expression(
-                exp.ProjectionPolicyColumnConstraint,
-                this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                exp.ProjectionPolicyColumnConstraint(
+                    this=policy.to_dot() if isinstance(policy, exp.Column) else policy
+                )
             )
         if self._match(TokenType.TAG):
             return self._parse_tag()
@@ -834,7 +835,7 @@ class SnowflakeParser(parser.Parser):
         # Handle both syntaxes: DATE_PART(part, expr) and DATE_PART(part FROM expr)
         expression = self._match_set((TokenType.FROM, TokenType.COMMA)) and self._parse_bitwise()
         return self.expression(
-            exp.Extract, this=map_date_part(this, self.dialect), expression=expression
+            exp.Extract(this=map_date_part(this, self.dialect), expression=expression)
         )
 
     def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expr]:
@@ -889,7 +890,7 @@ class SnowflakeParser(parser.Parser):
 
                 self._match(TokenType.COMMA)
 
-            table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
+            table = self.expression(exp.Table(this=table, format=file_format, pattern=pattern))
         else:
             table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
 
@@ -933,7 +934,7 @@ class SnowflakeParser(parser.Parser):
                 super()._parse_id_var(any_token=any_token, tokens=tokens) or self._parse_string()
             )
             self._match_r_paren()
-            return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
+            return self.expression(exp.Anonymous(this="IDENTIFIER", expressions=[identifier]))
 
         return super()._parse_id_var(any_token=any_token, tokens=tokens)
 
@@ -969,18 +970,19 @@ class SnowflakeParser(parser.Parser):
                 scope = self._parse_table_parts()
 
         return self.expression(
-            exp.Show,
-            terse=terse,
-            this=this,
-            history=history,
-            like=like,
-            scope=scope,
-            scope_kind=scope_kind,
-            starts_with=self._match_text_seq("STARTS", "WITH") and self._parse_string(),
-            limit=self._parse_limit(),
-            from_=self._parse_string() if self._match(TokenType.FROM) else None,
-            privileges=self._match_text_seq("WITH", "PRIVILEGES")
-            and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
+            exp.Show(
+                terse=terse,
+                this=this,
+                history=history,
+                like=like,
+                scope=scope,
+                scope_kind=scope_kind,
+                starts_with=self._match_text_seq("STARTS", "WITH") and self._parse_string(),
+                limit=self._parse_limit(),
+                from_=self._parse_string() if self._match(TokenType.FROM) else None,
+                privileges=self._match_text_seq("WITH", "PRIVILEGES")
+                and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
+            )
         )
 
     def _parse_put(self) -> exp.Put | exp.Command:
@@ -988,10 +990,11 @@ class SnowflakeParser(parser.Parser):
             return self._parse_as_command(self._prev)
 
         return self.expression(
-            exp.Put,
-            this=self._parse_string(),
-            target=self._parse_location_path(),
-            properties=self._parse_properties(),
+            exp.Put(
+                this=self._parse_string(),
+                target=self._parse_location_path(),
+                properties=self._parse_properties(),
+            )
         )
 
     def _parse_get(self) -> t.Optional[exp.Expr]:
@@ -1009,15 +1012,12 @@ class SnowflakeParser(parser.Parser):
             return self._parse_as_command(start)
 
         return self.expression(
-            exp.Get,
-            this=self._parse_string(),
-            target=target,
-            properties=self._parse_properties(),
+            exp.Get(this=self._parse_string(), target=target, properties=self._parse_properties())
         )
 
     def _parse_location_property(self) -> exp.LocationProperty:
         self._match(TokenType.EQ)
-        return self.expression(exp.LocationProperty, this=self._parse_location_path())
+        return self.expression(exp.LocationProperty(this=self._parse_location_path()))
 
     def _parse_file_location(self) -> t.Optional[exp.Expr]:
         # Parse either a subquery or a staged file
@@ -1050,14 +1050,14 @@ class SnowflakeParser(parser.Parser):
         typ = self._parse_types()
 
         if typ:
-            return self.expression(exp.Cast, this=this, to=typ)
+            return self.expression(exp.Cast(this=this, to=typ))
 
         return this
 
     def _parse_foreign_key(self) -> exp.ForeignKey:
         # inlineFK, the REFERENCES columns are implied
         if self._match(TokenType.REFERENCES, advance=False):
-            return self.expression(exp.ForeignKey)
+            return self.expression(exp.ForeignKey())
 
         # outoflineFK, explicitly names the columns
         return super()._parse_foreign_key()
@@ -1069,16 +1069,10 @@ class SnowflakeParser(parser.Parser):
         else:
             expressions = [self._parse_format_name()]
 
-        return self.expression(
-            exp.FileFormatProperty,
-            expressions=expressions,
-        )
+        return self.expression(exp.FileFormatProperty(expressions=expressions))
 
     def _parse_credentials_property(self) -> exp.CredentialsProperty:
-        return self.expression(
-            exp.CredentialsProperty,
-            expressions=self._parse_wrapped_options(),
-        )
+        return self.expression(exp.CredentialsProperty(expressions=self._parse_wrapped_options()))
 
     def _parse_semantic_view(self) -> exp.SemanticView:
         kwargs: t.Dict[str, t.Any] = {"this": self._parse_table_parts()}
@@ -1095,7 +1089,7 @@ class SnowflakeParser(parser.Parser):
                 self.raise_error("Expecting ) or encountered unexpected keyword")
                 break
 
-        return self.expression(exp.SemanticView, **kwargs)
+        return self.expression(exp.SemanticView(**kwargs))
 
     def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
         set = super()._parse_set(unset=unset, tag=tag)

@@ -192,7 +192,7 @@ class DuckDBParser(parser.Parser):
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
         TokenType.PARAMETER: lambda self: (
-            self.expression(exp.Placeholder, this=self._prev.text)
+            self.expression(exp.Placeholder(this=self._prev.text))
             if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
             else None
         ),
@@ -230,7 +230,7 @@ class DuckDBParser(parser.Parser):
             return None
 
         this = self._replace_lambda(self._parse_assignment(), expressions)
-        return self.expression(exp.Lambda, this=this, expressions=expressions, colon=True)
+        return self.expression(exp.Lambda(this=this, expressions=expressions, colon=True))
 
     def _parse_expression(self) -> t.Optional[exp.Expr]:
         # DuckDB supports prefix aliases, e.g. foo: 1
@@ -244,7 +244,7 @@ class DuckDBParser(parser.Parser):
                 # Moves the comment next to the alias in `alias: expr /* comment */`
                 comments += this.pop_comments() or []
 
-            return self.expression(exp.Alias, comments=comments, this=this, alias=alias)
+            return self.expression(exp.Alias(this=this, alias=alias), comments=comments)
 
         return super()._parse_expression()
 
@@ -305,10 +305,10 @@ class DuckDBParser(parser.Parser):
 
     def _parse_map(self) -> exp.ToMap | exp.Map:
         if self._match(TokenType.L_BRACE, advance=False):
-            return self.expression(exp.ToMap, this=self._parse_bracket())
+            return self.expression(exp.ToMap(this=self._parse_bracket()))
 
         args = self._parse_wrapped_csv(self._parse_assignment)
-        return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
+        return self.expression(exp.Map(keys=seq_get(args, 0), values=seq_get(args, 1)))
 
     def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expr]:
         return self._parse_field_def()
@@ -321,9 +321,10 @@ class DuckDBParser(parser.Parser):
     def _parse_attach_detach(self, is_attach: bool = True) -> exp.Attach | exp.Detach:
         def _parse_attach_option() -> exp.AttachOption:
             return self.expression(
-                exp.AttachOption,
-                this=self._parse_var(any_token=True),
-                expression=self._parse_field(any_token=True),
+                exp.AttachOption(
+                    this=self._parse_var(any_token=True),
+                    expression=self._parse_field(any_token=True),
+                )
             )
 
         self._match(TokenType.DATABASE)
@@ -336,13 +337,13 @@ class DuckDBParser(parser.Parser):
             expressions = None
 
         return (
-            self.expression(exp.Attach, this=this, exists=exists, expressions=expressions)
+            self.expression(exp.Attach(this=this, exists=exists, expressions=expressions))
             if is_attach
-            else self.expression(exp.Detach, this=this, exists=exists)
+            else self.expression(exp.Detach(this=this, exists=exists))
         )
 
     def _parse_show_duckdb(self, this: str) -> exp.Show:
-        return self.expression(exp.Show, this=this)
+        return self.expression(exp.Show(this=this))
 
     def _parse_force(self) -> exp.Install | exp.Command:
         # FORCE can only be followed by INSTALL or CHECKPOINT
@@ -354,10 +355,11 @@ class DuckDBParser(parser.Parser):
 
     def _parse_install(self, force: bool = False) -> exp.Install:
         return self.expression(
-            exp.Install,
-            this=self._parse_id_var(),
-            from_=self._parse_var_or_string() if self._match(TokenType.FROM) else None,
-            force=force,
+            exp.Install(
+                this=self._parse_id_var(),
+                from_=self._parse_var_or_string() if self._match(TokenType.FROM) else None,
+                force=force,
+            )
         )
 
     def _parse_primary(self) -> t.Optional[exp.Expr]:

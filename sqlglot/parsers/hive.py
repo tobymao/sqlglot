@@ -154,20 +154,21 @@ class HiveParser(parser.Parser):
             record_reader = self._parse_string()
 
         return self.expression(
-            exp.QueryTransform,
-            expressions=args,
-            command_script=command_script,
-            schema=schema,
-            row_format_before=row_format_before,
-            record_writer=record_writer,
-            row_format_after=row_format_after,
-            record_reader=record_reader,
+            exp.QueryTransform(
+                expressions=args,
+                command_script=command_script,
+                schema=schema,
+                row_format_before=row_format_before,
+                record_writer=record_writer,
+                row_format_after=row_format_after,
+                record_reader=record_reader,
+            )
         )
 
     def _parse_quantile_function(self, func: t.Type[F]) -> F:
         if self._match(TokenType.DISTINCT):
             first_arg: t.Optional[exp.Expr] = self.expression(
-                exp.Distinct, expressions=[self._parse_lambda()]
+                exp.Distinct(expressions=[self._parse_lambda()])
             )
         else:
             self._match(TokenType.ALL)
@@ -221,11 +222,7 @@ class HiveParser(parser.Parser):
         this = self._parse_field(any_token=True)
 
         if self.CHANGE_COLUMN_ALTER_SYNTAX and self._match_text_seq("TYPE"):
-            return self.expression(
-                exp.AlterColumn,
-                this=this,
-                dtype=self._parse_types(schema=True),
-            )
+            return self.expression(exp.AlterColumn(this=this, dtype=self._parse_types(schema=True)))
 
         column_new = self._parse_field(any_token=True)
         dtype = self._parse_types(schema=True)
@@ -238,11 +235,7 @@ class HiveParser(parser.Parser):
             )
 
         return self.expression(
-            exp.AlterColumn,
-            this=this,
-            rename_to=column_new,
-            dtype=dtype,
-            comment=comment,
+            exp.AlterColumn(this=this, rename_to=column_new, dtype=dtype, comment=comment)
         )
 
     def _parse_partition_and_order(
@@ -264,7 +257,7 @@ class HiveParser(parser.Parser):
             self._parse_identifier() or self._parse_primary_or_var()
         )
         self._match(TokenType.R_BRACE)
-        return self.expression(exp.Parameter, this=this, expression=expression)
+        return self.expression(exp.Parameter(this=this, expression=expression))
 
     def _to_prop_eq(self, expression: exp.Expr, index: int) -> exp.Expr:
         if expression.is_star:
@@ -275,4 +268,4 @@ class HiveParser(parser.Parser):
         else:
             key = exp.to_identifier(f"col{index + 1}")
 
-        return self.expression(exp.PropertyEQ, this=key, expression=expression)
+        return self.expression(exp.PropertyEQ(this=key, expression=expression))

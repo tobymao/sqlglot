@@ -271,12 +271,10 @@ class BigQueryParser(parser.Parser):
     FUNCTION_PARSERS = {
         **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "TRIM"},
         "ARRAY": lambda self: self.expression(
-            exp.Array,
-            expressions=[self._parse_statement()],
-            struct_name_inheritance=True,
+            exp.Array(expressions=[self._parse_statement()], struct_name_inheritance=True)
         ),
         "JSON_ARRAY": lambda self: self.expression(
-            exp.JSONArray, expressions=self._parse_csv(self._parse_bitwise)
+            exp.JSONArray(expressions=self._parse_csv(self._parse_bitwise))
         ),
         "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
         "PREDICT": lambda self: self._parse_ml(exp.Predict),
@@ -301,7 +299,7 @@ class BigQueryParser(parser.Parser):
     PROPERTY_PARSERS: t.ClassVar = {
         **parser.Parser.PROPERTY_PARSERS,
         "NOT DETERMINISTIC": lambda self: self.expression(
-            exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
+            exp.StabilityProperty(this=exp.Literal.string("VOLATILE"))
         ),
         "OPTIONS": lambda self: self._parse_with_property(),
     }
@@ -344,7 +342,7 @@ class BigQueryParser(parser.Parser):
         if self._match(TokenType.COMMAND):
             self._retreat(index)
             return self._parse_as_command(self._prev)
-        return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
+        return self.expression(exp.ForIn(this=this, expression=self._parse_statement()))
 
     def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expr]:
         this = super()._parse_table_part(schema=schema) or self._parse_number()
@@ -581,11 +579,9 @@ class BigQueryParser(parser.Parser):
         self._match(TokenType.COMMA)
 
         return self.expression(
-            expr_type,
-            this=this,
-            expression=expression,
-            params_struct=self._parse_bitwise(),
-            **kwargs,
+            expr_type(
+                this=this, expression=expression, params_struct=self._parse_bitwise(), **kwargs
+            )
         )
 
     def _parse_translate(self) -> exp.Translate | exp.MLTranslate:
@@ -600,7 +596,7 @@ class BigQueryParser(parser.Parser):
         self._match(TokenType.TABLE)
         this = self._parse_table()
 
-        expr = self.expression(exp.FeaturesAtTime, this=this)
+        expr = self.expression(exp.FeaturesAtTime(this=this))
 
         while self._match(TokenType.COMMA):
             arg = self._parse_lambda()
@@ -625,10 +621,9 @@ class BigQueryParser(parser.Parser):
         query_table = self._parse_table()
 
         expr = self.expression(
-            exp.VectorSearch,
-            this=base_table,
-            column_to_search=column_to_search,
-            query_table=query_table,
+            exp.VectorSearch(
+                this=base_table, column_to_search=column_to_search, query_table=query_table
+            )
         )
 
         while self._match(TokenType.COMMA):
@@ -647,10 +642,11 @@ class BigQueryParser(parser.Parser):
         self._match_text_seq("DATA")
 
         return self.expression(
-            exp.Export,
-            connection=self._match_text_seq("WITH", "CONNECTION") and self._parse_table_parts(),
-            options=self._parse_properties(),
-            this=self._match_text_seq("AS") and self._parse_select(),
+            exp.Export(
+                connection=self._match_text_seq("WITH", "CONNECTION") and self._parse_table_parts(),
+                options=self._parse_properties(),
+                this=self._match_text_seq("AS") and self._parse_select(),
+            )
         )
 
     def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:

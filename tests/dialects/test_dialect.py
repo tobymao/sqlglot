@@ -5294,7 +5294,7 @@ FROM subquery2""",
             "SELECT ROW_NUMBER() OVER (PARTITION BY event_time + CAST(INTERVAL '00:00:01' AS INTERVAL)) AS foo FROM t",
         )
 
-    def test_subclass_dialect_parser(self):
+    def test_patch_dialect_parser(self):
         class CustomSnowflakeParser(SnowflakeParser):
             FUNCTIONS = {
                 **SnowflakeParser.FUNCTIONS,

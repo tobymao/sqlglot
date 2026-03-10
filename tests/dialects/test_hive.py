@@ -967,6 +967,16 @@ class TestHive(Validator):
         )
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
 
+        self.validate_all(
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+            write={
+                "hive": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "spark2": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "spark": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+            },
+        )
+
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")

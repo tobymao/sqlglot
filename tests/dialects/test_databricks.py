@@ -260,6 +260,11 @@ class TestDatabricks(Validator):
             "CREATE TABLE tbl (id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1))"
         )
 
+        self.validate_identity(
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT get_json_object(c, '$.x-y') FROM t""",
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+        ).selects[0].expression.assert_is(exp.JSONPath)
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

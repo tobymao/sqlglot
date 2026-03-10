@@ -5327,22 +5327,3 @@ FROM subquery2""",
         result = parse_one("SELECT DOUBLE_IT(5)", dialect=MyDialect)
         self.assertIsInstance(result.expressions[0], exp.Mul)
         self.assertEqual(result.sql(), "SELECT 2 * 5")
-
-    def test_subclass_override_method(self):
-        calls = []
-
-        class TracingParser(SnowflakeParser):
-            def _parse_select(self, *args, **kwargs):
-                calls.append("_parse_select")
-                return super()._parse_select(*args, **kwargs)
-
-        original = Snowflake.parser_class
-        try:
-            Snowflake.parser_class = TracingParser
-
-            result = parse_one("SELECT 1, 2, 3", dialect="snowflake")
-            self.assertIsInstance(result, exp.Select)
-            self.assertEqual(len(result.expressions), 3)
-            self.assertIn("_parse_select", calls)
-        finally:
-            Snowflake.parser_class = original

@@ -242,7 +242,10 @@ class Hive(Dialect):
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
-        VAR_TOKENS = {*jsonpath.JSONPathTokenizer.VAR_TOKENS, TokenType.DASH}
+        VAR_TOKENS = {
+            *jsonpath.JSONPathTokenizer.VAR_TOKENS,
+            TokenType.DASH,
+        }
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']

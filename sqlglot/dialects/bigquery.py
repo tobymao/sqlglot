@@ -362,8 +362,8 @@ class BigQuery(Dialect):
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         VAR_TOKENS = {
+            *jsonpath.JSONPathTokenizer.VAR_TOKENS,
             TokenType.DASH,
-            TokenType.VAR,
         }
 
     class Tokenizer(tokens.Tokenizer):

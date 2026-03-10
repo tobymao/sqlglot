@@ -2131,6 +2131,15 @@ class DuckDB(Dialect):
             """,
         )
 
+        # Snowflake: NULL array input -> NULL result; NULL key -> pair omitted.
+        # LIST_ZIP(NULL, ...) returns [] in DuckDB (not NULL), so an explicit NULL guard is required.
+        # LIST_FILTER strips NULL-keyed pairs to avoid "Map keys can not be NULL" error.
+        # Returns MAP type, not OBJECT.
+        ARRAYS_TO_OBJECT_TEMPLATE: exp.Expr = exp.maybe_parse(
+            "CASE WHEN :arr1 IS NULL OR :arr2 IS NULL THEN NULL"
+            " ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_ZIP(:arr1, :arr2), __p -> __p[0] IS NOT NULL)) END"
+        )
+
         # Template for ARRAYS_ZIP transpilation
         # Snowflake pads to longest array; DuckDB LIST_ZIP truncates to shortest
         # Uses RANGE + indexing to match Snowflake behavior
@@ -3266,6 +3275,18 @@ class DuckDB(Dialect):
                 transform_struct=transform_struct,
             )
             return self.sql(result)
+
+        def arraystoobject_sql(self, expression: exp.ArraysToObject) -> str:
+            self.unsupported(
+                "ARRAYS_TO_OBJECT returns OBJECT type; DuckDB equivalent returns MAP type"
+            )
+            return self.sql(
+                exp.replace_placeholders(
+                    self.ARRAYS_TO_OBJECT_TEMPLATE.copy(),
+                    arr1=expression.this,
+                    arr2=expression.expression,
+                )
+            )
 
         def lower_sql(self, expression: exp.Lower) -> str:
             result_sql = self.func("LOWER", _cast_to_varchar(expression.this))

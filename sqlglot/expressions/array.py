@@ -168,6 +168,10 @@ class ArraySum(Expression, Func):
 # Array conversion / utility
 
 
+class ArraysToObject(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class ArraysZip(Expression, Func):
     arg_types = {"expressions": False}
     is_var_len_args = True

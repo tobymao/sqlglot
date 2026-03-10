@@ -1069,6 +1069,16 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT ARRAYS_TO_OBJECT(['a', 'b'], [1, 2])",
+            read={
+                "snowflake": "SELECT ARRAYS_TO_OBJECT(['a', 'b'], [1, 2])",
+            },
+            write={
+                "snowflake": "SELECT ARRAYS_TO_OBJECT(['a', 'b'], [1, 2])",
+                "duckdb": "SELECT CASE WHEN ['a', 'b'] IS NULL OR [1, 2] IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_ZIP(['a', 'b'], [1, 2]), __p -> NOT __p[1] IS NULL)) END",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAYS_OVERLAP(col1, col2)",
             read={
                 "snowflake": "SELECT ARRAYS_OVERLAP(col1, col2)",

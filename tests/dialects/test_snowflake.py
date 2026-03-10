@@ -4491,30 +4491,28 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
-        for prefix in ("DESCRIBE", "DESC"):
-            for kind, object_name in (
-                ("DYNAMIC TABLE", "db.schema.t1"),
-                ("MATERIALIZED VIEW", "my_view"),
-                ("EXTERNAL VOLUME", "vol1"),
-                ("COMPUTE POOL", "pool1"),
-                ("MASKING POLICY", "db.schema.pol1"),
-                ("ROW ACCESS POLICY", "pol1"),
-                ("API INTEGRATION", "int1"),
-                ("APPLICATION PACKAGE", "pkg1"),
-                ("SECURITY INTEGRATION", "int1"),
-                ("NETWORK RULE", "rule1"),
-                ("ICEBERG TABLE", "db.schema.t1"),
-                ("HYBRID TABLE", "t1"),
-                ("CATALOG INTEGRATION", "int1"),
-                ("DATABASE ROLE", "role1"),
-            ):
-                query = f"{prefix} {kind} {object_name}"
-                expected = f"DESCRIBE {kind} {object_name}"
-                with self.subTest(query=query):
-                    ast = parse_one(query, dialect="snowflake")
-                    self.assertIsInstance(ast, exp.Describe)
-                    self.assertEqual(ast.args.get("kind"), kind)
-                    self.assertEqual(ast.sql("snowflake"), expected)
+        for kind, object_name in (
+            ("DYNAMIC TABLE", "db.schema.t1"),
+            ("MATERIALIZED VIEW", "my_view"),
+            ("EXTERNAL VOLUME", "vol1"),
+            ("COMPUTE POOL", "pool1"),
+            ("MASKING POLICY", "db.schema.pol1"),
+            ("ROW ACCESS POLICY", "pol1"),
+            ("API INTEGRATION", "int1"),
+            ("APPLICATION PACKAGE", "pkg1"),
+            ("SECURITY INTEGRATION", "int1"),
+            ("NETWORK RULE", "rule1"),
+            ("ICEBERG TABLE", "db.schema.t1"),
+            ("HYBRID TABLE", "t1"),
+            ("CATALOG INTEGRATION", "int1"),
+            ("DATABASE ROLE", "role1"),
+        ):
+            with self.subTest(kind=kind):
+                self.validate_identity(f"DESCRIBE {kind} {object_name}")
+                self.validate_identity(
+                    f"DESC {kind} {object_name}", f"DESCRIBE {kind} {object_name}"
+                )
+
         self.validate_all(
             "ENDSWITH('abc', 'c')",
             read={

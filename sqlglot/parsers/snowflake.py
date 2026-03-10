@@ -776,26 +776,21 @@ class SnowflakeParser(parser.Parser):
         return self.expression(exp.DirectoryStage(this=this))
 
     def _parse_describe(self) -> exp.Describe:
-        kind = None
         for text_seq in self.DESCRIBE_KINDS:
             if self._match_text_seq(*text_seq):
-                kind = " ".join(text_seq)
-                break
+                this = self._parse_table(schema=True)
+                properties = self._parse_properties()
+                expressions = properties.expressions if properties else None
 
-        if not kind:
-            kind = self._match_set(self.CREATABLES) and self._prev.text or None
+                return self.expression(
+                    exp.Describe(
+                        this=this,
+                        kind=" ".join(text_seq),
+                        expressions=expressions,
+                    )
+                )
 
-        this = self._parse_table(schema=True)
-        properties = self._parse_properties()
-        expressions = properties.expressions if properties else None
-
-        return self.expression(
-            exp.Describe(
-                this=this,
-                kind=kind,
-                expressions=expressions,
-            )
-        )
+        return super()._parse_describe()
 
     def _parse_use(self) -> exp.Use:
         if self._match_text_seq("SECONDARY", "ROLES"):

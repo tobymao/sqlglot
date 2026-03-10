@@ -733,6 +733,23 @@ class SnowflakeParser(parser.Parser):
 
     NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
+    DESCRIBE_KINDS: t.ClassVar = (
+        ("ROW", "ACCESS", "POLICY"),
+        ("APPLICATION", "PACKAGE"),
+        ("API", "INTEGRATION"),
+        ("CATALOG", "INTEGRATION"),
+        ("COMPUTE", "POOL"),
+        ("DATABASE", "ROLE"),
+        ("DYNAMIC", "TABLE"),
+        ("EXTERNAL", "VOLUME"),
+        ("HYBRID", "TABLE"),
+        ("ICEBERG", "TABLE"),
+        ("MASKING", "POLICY"),
+        ("MATERIALIZED", "VIEW"),
+        ("NETWORK", "RULE"),
+        ("SECURITY", "INTEGRATION"),
+    )
+
     LAMBDAS = {
         **parser.Parser.LAMBDAS,
         TokenType.ARROW: lambda self, expressions: self.expression(
@@ -757,6 +774,28 @@ class SnowflakeParser(parser.Parser):
         table = self._parse_table_parts()
         this: exp.Expr = table.this if isinstance(table, exp.Table) else table
         return self.expression(exp.DirectoryStage(this=this))
+
+    def _parse_describe(self) -> exp.Describe:
+        kind = None
+        for text_seq in self.DESCRIBE_KINDS:
+            if self._match_text_seq(*text_seq):
+                kind = " ".join(text_seq)
+                break
+
+        if not kind:
+            kind = self._match_set(self.CREATABLES) and self._prev.text or None
+
+        this = self._parse_table(schema=True)
+        properties = self._parse_properties()
+        expressions = properties.expressions if properties else None
+
+        return self.expression(
+            exp.Describe(
+                this=this,
+                kind=kind,
+                expressions=expressions,
+            )
+        )
 
     def _parse_use(self) -> exp.Use:
         if self._match_text_seq("SECONDARY", "ROLES"):

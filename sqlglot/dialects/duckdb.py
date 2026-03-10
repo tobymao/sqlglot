@@ -3667,13 +3667,48 @@ class DuckDB(Dialect):
             return self.sql(expression, "this")
 
         def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
-            this = self.sql(expression, "this")
-            null_text = self.sql(expression, "null")
+            null = expression.args.get("null")
 
-            if null_text:
-                this = f"LIST_TRANSFORM({this}, x -> COALESCE(x, {null_text}))"
+            if expression.args.get("null_is_empty"):
+                x = exp.to_identifier("x")
+                list_transform = exp.Transform(
+                    this=expression.this.copy(),
+                    expression=exp.Lambda(
+                        this=exp.Coalesce(
+                            this=exp.cast(x, "TEXT"), expressions=[exp.Literal.string("")]
+                        ),
+                        expressions=[x],
+                    ),
+                )
+                return self.sql(
+                    exp.case()
+                    .when(expression.this.is_(exp.null()), exp.null())
+                    .else_(
+                        exp.Coalesce(
+                            this=exp.ArrayToString(
+                                this=list_transform, expression=expression.expression
+                            ),
+                            expressions=[exp.Literal.string("")],
+                        )
+                    )
+                )
 
-            return self.func("ARRAY_TO_STRING", this, expression.expression)
+            if null:
+                x = exp.to_identifier("x")
+                return self.sql(
+                    exp.ArrayToString(
+                        this=exp.Transform(
+                            this=expression.this,
+                            expression=exp.Lambda(
+                                this=exp.Coalesce(this=x, expressions=[null]),
+                                expressions=[x],
+                            ),
+                        ),
+                        expression=expression.expression,
+                    )
+                )
+
+            return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
 
         def _regexp_extract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
             this = expression.this

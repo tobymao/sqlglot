@@ -1868,13 +1868,10 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "ARRAY_TO_STRING(x, '')",
-            read={
-                "duckdb": "ARRAY_TO_STRING(x, '')",
-            },
             write={
                 "spark": "ARRAY_JOIN(x, '')",
                 "snowflake": "ARRAY_TO_STRING(x, '')",
-                "duckdb": "ARRAY_TO_STRING(x, '')",
+                "duckdb": "CASE WHEN x IS NULL THEN NULL ELSE COALESCE(ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), ''), '') END",
             },
         )
         self.validate_all(

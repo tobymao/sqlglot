@@ -125,7 +125,6 @@ class TestDuckDB(Validator):
                 "bigquery": "ARRAY_TO_STRING(arr, delim)",
                 "postgres": "ARRAY_TO_STRING(arr, delim)",
                 "presto": "ARRAY_JOIN(arr, delim)",
-                "snowflake": "ARRAY_TO_STRING(arr, delim)",
                 "spark": "ARRAY_JOIN(arr, delim)",
             },
             write={
@@ -137,6 +136,10 @@ class TestDuckDB(Validator):
                 "spark": "ARRAY_JOIN(arr, delim)",
                 "tsql": "STRING_AGG(arr, delim)",
             },
+        )
+        self.validate_all(
+            "CASE WHEN arr IS NULL THEN NULL ELSE COALESCE(ARRAY_TO_STRING(LIST_TRANSFORM(arr, x -> COALESCE(CAST(x AS TEXT), '')), delim), '') END",
+            read={"snowflake": "ARRAY_TO_STRING(arr, delim)"},
         )
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",

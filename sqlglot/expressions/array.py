@@ -174,7 +174,7 @@ class ArraysZip(Expression, Func):
 
 
 class ArrayToString(Expression, Func):
-    arg_types = {"this": True, "expression": True, "null": False}
+    arg_types = {"this": True, "expression": True, "null": False, "null_is_empty": False}
     _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 

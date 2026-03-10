@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 import typing as t
 from copy import deepcopy
 from functools import partial
 from collections import defaultdict
 
-from sqlglot import exp, generator, tokens, transforms
+from sqlglot import exp, generator, jsonpath, tokens, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
@@ -240,6 +241,9 @@ class Hive(Dialect):
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        VAR_TOKENS = {*jsonpath.JSONPathTokenizer.VAR_TOKENS, TokenType.DASH}
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
@@ -288,6 +292,7 @@ class Hive(Dialect):
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
+        SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
         SUPPORTS_TO_NUMBER = False
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME: t.Optional[str] = None

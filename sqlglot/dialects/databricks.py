@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from collections import defaultdict
 
-from sqlglot import exp, transforms, jsonpath
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     timestamptrunc_sql,
@@ -37,7 +37,7 @@ class Databricks(Spark):
             exp.DType.INTERVAL,
         }
 
-    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+    class JSONPathTokenizer(Spark.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
 
     class Tokenizer(Spark.Tokenizer):
@@ -53,6 +53,7 @@ class Databricks(Spark):
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = False
+        SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
         QUOTE_JSON_PATH = False
         PARSE_JSON_NAME = "PARSE_JSON"
 

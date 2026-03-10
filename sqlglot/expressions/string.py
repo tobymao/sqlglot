@@ -172,7 +172,7 @@ class SplitPart(Expression, Func):
         "this": True,
         "delimiter": False,
         "part_index": False,
-        "part_index_zero_as_one": False,  # usually part_index is 1-based, however Snowflake treats allows 0 and treats it as 1
+        "part_index_zero_as_one": False,  # usually part_index is 1-based, however Snowflake allows 0 and treats it as 1
         "empty_delimiter_returns_whole": False,  # whether the whole input string should be returned if the delimiter string is empty (i.e. Snowflake)
     }
 

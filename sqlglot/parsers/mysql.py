@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     isnull_to_is_null,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -50,7 +50,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class MySQLParser(parser.Parser):
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,

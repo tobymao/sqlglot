@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.helper import mypyc_attr
 from sqlglot.parsers.tsql import TSQLParser
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class FabricParser(TSQLParser):
     def _parse_create(self) -> exp.Create | exp.Command:
         create = super()._parse_create()

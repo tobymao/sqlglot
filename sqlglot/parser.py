@@ -9,7 +9,7 @@ from collections import defaultdict
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, TokenError, concat_messages, merge_errors
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import ensure_list, mypyc_attr, seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser_core import ParserCore
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -261,7 +261,6 @@ def _resolve_dialect(dialect: t.Any) -> t.Any:
     return Dialect.get_or_raise(dialect)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Parser:
     """
     Parser consumes a list of tokens produced by the Tokenizer and produces a parsed syntax tree.

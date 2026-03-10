@@ -3,12 +3,11 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class MaterializeParser(PostgresParser):
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,

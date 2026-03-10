@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_replace_with_optional_replacement,
     date_trunc_to_time,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 
 
 def _build_approx_percentile(args: t.List) -> exp.Expr:
@@ -52,7 +52,6 @@ def _build_to_char(args: t.List) -> exp.TimeToStr:
     return build_formatted_time(exp.TimeToStr, "teradata")(args)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class PrestoParser(parser.Parser):
     VALUES_FOLLOWED_BY_PAREN = False
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True

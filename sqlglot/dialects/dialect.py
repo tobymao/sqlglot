@@ -24,6 +24,7 @@ from sqlglot.helper import (
 )
 from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
+from sqlglot.parsers.base import BaseParser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
@@ -258,7 +259,10 @@ class _Dialect(type):
         klass.jsonpath_tokenizer_class = klass.__dict__.get(
             "JSONPathTokenizer", type("JSONPathTokenizer", base_jsonpath_tokenizer, {})
         )
-        klass.parser_class = klass.__dict__.get("Parser", type("Parser", base_parser, {}))
+        owns_parser = "Parser" in klass.__dict__ or "parser_class" in klass.__dict__
+        klass.parser_class = klass.__dict__.get(
+            "Parser", klass.__dict__.get("parser_class", base_parser[0])
+        )
         klass.generator_class = klass.__dict__.get(
             "Generator", type("Generator", base_generator, {})
         )
@@ -315,77 +319,79 @@ class _Dialect(type):
 
             klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
 
-        if enum not in ("", "doris", "mysql"):
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.STRAIGHT_JOIN,
-            }
-            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
-                TokenType.STRAIGHT_JOIN,
-            }
-
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
-        if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
-                TokenType.ANTI,
-                TokenType.SEMI,
-            }
+        # Only mutate the parser class if this dialect defines its own (via "Parser" or
+        # "parser_class" in __dict__). Otherwise the parser class is inherited and mutating
+        # it would bleed into other dialects that share the same class.
+        if owns_parser:
+            if enum not in ("", "doris", "mysql"):
+                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                    TokenType.STRAIGHT_JOIN,
+                }
+                klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                    TokenType.STRAIGHT_JOIN,
+                }
 
-        if enum not in (
-            "",
-            "postgres",
-            "duckdb",
-            "redshift",
-            "snowflake",
-            "presto",
-            "trino",
-            "mysql",
-            "singlestore",
-        ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-            no_paren_functions.pop(TokenType.LOCALTIME, None)
-            if enum != "oracle":
-                no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            if not klass.SUPPORTS_SEMI_ANTI_JOIN:
+                klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                    TokenType.ANTI,
+                    TokenType.SEMI,
+                }
 
-        if enum in (
-            "",
-            "postgres",
-            "duckdb",
-            "trino",
-        ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-            no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
-        else:
-            # For dialects that don't support this keyword, treat it as a regular identifier
-            # This fixes the "Unexpected token" error in BQ, Spark, etc.
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.CURRENT_CATALOG,
-            }
+            if enum not in (
+                "",
+                "postgres",
+                "duckdb",
+                "redshift",
+                "snowflake",
+                "presto",
+                "trino",
+                "mysql",
+                "singlestore",
+            ):
+                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+                no_paren_functions.pop(TokenType.LOCALTIME, None)
+                if enum != "oracle":
+                    no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
+                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
 
-        if enum in (
-            "",
-            "duckdb",
-            "spark",
-            "postgres",
-            "tsql",
-        ):
-            no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-            no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
-            klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
-        else:
-            klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                TokenType.SESSION_USER,
-            }
+            if enum in (
+                "",
+                "postgres",
+                "duckdb",
+                "trino",
+            ):
+                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+                no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
+                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            else:
+                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                    TokenType.CURRENT_CATALOG,
+                }
 
-        klass.parser_class.SHOW_TRIE = new_trie(
-            key.split(" ") for key in klass.parser_class.SHOW_PARSERS
-        )
-        klass.parser_class.SET_TRIE = new_trie(
-            key.split(" ") for key in klass.parser_class.SET_PARSERS
-        )
+            if enum in (
+                "",
+                "duckdb",
+                "spark",
+                "postgres",
+                "tsql",
+            ):
+                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
+                no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
+                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
+            else:
+                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
+                    TokenType.SESSION_USER,
+                }
+
+            klass.parser_class.SHOW_TRIE = new_trie(
+                key.split(" ") for key in klass.parser_class.SHOW_PARSERS
+            )
+            klass.parser_class.SET_TRIE = new_trie(
+                key.split(" ") for key in klass.parser_class.SET_PARSERS
+            )
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
@@ -823,7 +829,7 @@ class Dialect(metaclass=_Dialect):
 
     tokenizer_class = Tokenizer
     jsonpath_tokenizer_class = JSONPathTokenizer
-    parser_class = Parser
+    parser_class = BaseParser
     generator_class = Generator
 
     # A trie of the time_mapping keys

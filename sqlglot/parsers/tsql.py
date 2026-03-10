@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     map_date_part,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -303,7 +303,6 @@ def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=this, unit=unit)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class TSQLParser(parser.Parser):
     SET_REQUIRES_ASSIGNMENT_DELIMITER = False
     LOG_DEFAULTS_TO_LN = True

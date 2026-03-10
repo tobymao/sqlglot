@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     build_timestamp_trunc,
 )
-from sqlglot.helper import is_int, mypyc_attr, seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -80,7 +80,6 @@ def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
     )
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class PostgresParser(parser.Parser):
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 

@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     map_date_part,
 )
-from sqlglot.helper import is_date_unit, is_int, mypyc_attr, seq_get
+from sqlglot.helper import is_date_unit, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -316,7 +316,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser],
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"

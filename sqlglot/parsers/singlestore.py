@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser, _show_parser
 from sqlglot.tokens import TokenType
 
@@ -25,7 +25,6 @@ def cast_to_time6(
     )
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class SingleStoreParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,

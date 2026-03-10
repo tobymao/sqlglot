@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     pivot_column_names,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -64,7 +64,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDBParser], ex
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 

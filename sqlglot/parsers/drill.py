@@ -2,10 +2,8 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time
-from sqlglot.helper import mypyc_attr
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DrillParser(parser.Parser):
     STRICT_CAST = False
 

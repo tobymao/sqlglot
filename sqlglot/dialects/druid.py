@@ -1,8 +1,11 @@
 from sqlglot import exp, generator
 from sqlglot.dialects.dialect import rename_func, Dialect
+from sqlglot.parsers.druid import DruidParser
 
 
 class Druid(Dialect):
+    Parser = DruidParser
+
     class Generator(generator.Generator):
         # https://druid.apache.org/docs/latest/querying/sql-data-types/
         TYPE_MAPPING = {

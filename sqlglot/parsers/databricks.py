@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parsers.spark import SparkParser
 from sqlglot.tokens import TokenType
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DatabricksParser(SparkParser):
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = True

@@ -16,6 +16,7 @@ from sqlglot.dialects import BigQuery, Hive, Snowflake, Spark2
 from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
+from sqlglot.parsers.snowflake import SnowflakeParser
 
 
 class Validator(unittest.TestCase):
@@ -5292,3 +5293,37 @@ FROM subquery2""",
             "SELECT ROW_NUMBER() OVER(PARTITION BY event_time + interval '00:00:01'::interval) AS foo FROM t",
             "SELECT ROW_NUMBER() OVER (PARTITION BY event_time + CAST(INTERVAL '00:00:01' AS INTERVAL)) AS foo FROM t",
         )
+
+    def test_patch_dialect_parser(self):
+        class CustomSnowflakeParser(SnowflakeParser):
+            FUNCTIONS = {
+                **SnowflakeParser.FUNCTIONS,
+                "MY_CUSTOM_FUNC": exp.Length.from_arg_list,
+            }
+
+        original = Snowflake.parser_class
+        try:
+            Snowflake.parser_class = CustomSnowflakeParser
+
+            result = parse_one("SELECT 1", dialect="snowflake")
+            self.assertIsInstance(result, exp.Select)
+
+            result = parse_one("SELECT MY_CUSTOM_FUNC(a)", dialect="snowflake")
+            self.assertIsInstance(result.find(exp.Length), exp.Length)
+        finally:
+            Snowflake.parser_class = original
+
+    def test_custom_dialect(self):
+        class MyDialect(Dialect):
+            class Parser(SnowflakeParser):
+                FUNCTIONS = {
+                    **SnowflakeParser.FUNCTIONS,
+                    "DOUBLE_IT": lambda args: exp.Mul(
+                        this=exp.Literal.number(2),
+                        expression=args[0] if args else exp.Null(),
+                    ),
+                }
+
+        result = parse_one("SELECT DOUBLE_IT(5)", dialect=MyDialect)
+        self.assertIsInstance(result.expressions[0], exp.Mul)
+        self.assertEqual(result.sql(), "SELECT 2 * 5")

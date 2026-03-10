@@ -54,4 +54,4 @@ class DatabricksParser(SparkParser):
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
-        return self.expression(exp.CurrentDate)
+        return self.expression(exp.CurrentDate())

@@ -106,7 +106,7 @@ class SparkParser(Spark2Parser):
     def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
         this = self._parse_id_var()
         self._match(TokenType.R_BRACE)
-        return self.expression(exp.Placeholder, this=this, widget=True)
+        return self.expression(exp.Placeholder(this=this, widget=True))
 
     FUNCTION_PARSERS = {
         **Spark2Parser.FUNCTION_PARSERS,
@@ -127,7 +127,7 @@ class SparkParser(Spark2Parser):
     ):
         this = super()._parse_generated_as_identity()
         if this.expression:
-            return self.expression(exp.ComputedColumnConstraint, this=this.expression)
+            return self.expression(exp.ComputedColumnConstraint(this=this.expression))
         return this
 
     def _parse_pivot_aggregation(self) -> t.Optional[exp.Expr]:

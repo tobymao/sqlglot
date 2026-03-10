@@ -168,16 +168,8 @@ class SingleStoreParser(MySQLParser):
 
     COLUMN_OPERATORS = {
         **MySQLParser.COLUMN_OPERATORS,
-        TokenType.COLON_GT: lambda self, this, to: self.expression(
-            exp.Cast,
-            this=this,
-            to=to,
-        ),
-        TokenType.NCOLON_GT: lambda self, this, to: self.expression(
-            exp.TryCast,
-            this=this,
-            to=to,
-        ),
+        TokenType.COLON_GT: lambda self, this, to: self.expression(exp.Cast(this=this, to=to)),
+        TokenType.NCOLON_GT: lambda self, this, to: self.expression(exp.TryCast(this=this, to=to)),
         TokenType.DCOLON: lambda self, this, path: build_json_extract_path(exp.JSONExtract)(
             [this, exp.Literal.string(path.name)]
         ),
@@ -188,10 +180,7 @@ class SingleStoreParser(MySQLParser):
             exp.JSONExtractScalar, json_type="DOUBLE"
         )([this, exp.Literal.string(path.name)]),
         TokenType.DCOLONQMARK: lambda self, this, path: self.expression(
-            exp.JSONExists,
-            this=this,
-            path=path.name,
-            from_dcolonqmark=True,
+            exp.JSONExists(this=this, path=path.name, from_dcolonqmark=True)
         ),
     }
     COLUMN_OPERATORS = {
@@ -251,7 +240,7 @@ class SingleStoreParser(MySQLParser):
     ALTER_PARSERS = {
         **MySQLParser.ALTER_PARSERS,
         "CHANGE": lambda self: self.expression(
-            exp.RenameColumn, this=self._parse_column(), to=self._parse_column()
+            exp.RenameColumn(this=self._parse_column(), to=self._parse_column())
         ),
     }
 

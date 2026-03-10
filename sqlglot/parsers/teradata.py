@@ -52,7 +52,7 @@ class TeradataParser(parser.Parser):
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.DATABASE: lambda self: self.expression(
-            exp.Use, this=self._parse_table(schema=False)
+            exp.Use(this=self._parse_table(schema=False))
         ),
         TokenType.REPLACE: lambda self: self._parse_create(),
         TokenType.LOCK: lambda self: self._parse_locking_statement(),
@@ -67,9 +67,7 @@ class TeradataParser(parser.Parser):
             self.raise_error("Expected SELECT statement after LOCKING clause")
 
         return self.expression(
-            exp.LockingStatement,
-            this=locking_property,
-            expression=wrapped_query,
+            exp.LockingStatement(this=locking_property, expression=wrapped_query)
         )
 
     SET_PARSERS = {
@@ -101,21 +99,23 @@ class TeradataParser(parser.Parser):
         self._match_texts(self.CHARSET_TRANSLATORS)
 
         return self.expression(
-            exp.TranslateCharacters,
-            this=this,
-            expression=self._prev.text.upper(),
-            with_error=self._match_text_seq("WITH", "ERROR"),
+            exp.TranslateCharacters(
+                this=this,
+                expression=self._prev.text.upper(),
+                with_error=self._match_text_seq("WITH", "ERROR"),
+            )
         )
 
     # FROM before SET in Teradata UPDATE syntax
     # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
     def _parse_update(self) -> exp.Update:
         return self.expression(
-            exp.Update,
-            this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
-            from_=self._parse_from(joins=True),
-            expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
-            where=self._parse_where(),
+            exp.Update(
+                this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
+                from_=self._parse_from(joins=True),
+                expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+                where=self._parse_where(),
+            )
         )
 
     def _parse_rangen(self):
@@ -125,7 +125,7 @@ class TeradataParser(parser.Parser):
         expressions = self._parse_csv(self._parse_assignment)
         each = self._match_text_seq("EACH") and self._parse_assignment()
 
-        return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
+        return self.expression(exp.RangeN(this=this, expressions=expressions, each=each))
 
     def _parse_query_band(self) -> exp.QueryBand:
         # Parse: SET QUERY_BAND = 'key=value;key2=value2;' FOR SESSION|TRANSACTION
@@ -150,12 +150,7 @@ class TeradataParser(parser.Parser):
         else:
             scope = None
 
-        return self.expression(
-            exp.QueryBand,
-            this=query_band_string,
-            scope=scope,
-            update=update,
-        )
+        return self.expression(exp.QueryBand(this=query_band_string, scope=scope, update=update))
 
     def _parse_index_params(self) -> exp.IndexParameters:
         this = super()._parse_index_params()
@@ -200,6 +195,6 @@ class TeradataParser(parser.Parser):
             fmt_string = self._parse_string()
             self._match_r_paren()
 
-            this = self.expression(exp.FormatPhrase, this=this, format=fmt_string)
+            this = self.expression(exp.FormatPhrase(this=this, format=fmt_string))
 
         return this

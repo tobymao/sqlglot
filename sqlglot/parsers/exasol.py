@@ -91,18 +91,14 @@ class ExasolParser(parser.Parser):
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,
         "COMMENT": lambda self: self.expression(
-            exp.CommentColumnConstraint,
-            this=self._match(TokenType.IS) and self._parse_string(),
+            exp.CommentColumnConstraint(this=self._match(TokenType.IS) and self._parse_string())
         ),
     }
 
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.RLIKE: lambda self, this: self.expression(
-            exp.RegexpLike,
-            this=this,
-            expression=self._parse_bitwise(),
-            full_match=True,
+            exp.RegexpLike(this=this, expression=self._parse_bitwise(), full_match=True)
         ),
     }
 

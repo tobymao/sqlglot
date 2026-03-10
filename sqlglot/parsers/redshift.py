@@ -61,7 +61,7 @@ class RedshiftParser(PostgresParser):
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,
         "APPROXIMATE": lambda self: self._parse_approximate_count(),
-        "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, sysdate=True),
+        "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp(sysdate=True)),
     }
 
     SUPPORTS_IMPLICIT_UNNEST = True
@@ -86,20 +86,20 @@ class RedshiftParser(PostgresParser):
             is_db_reference=is_db_reference,
         )
 
-        return self.expression(exp.Pivot, this=table, unpivot=True) if unpivot else table
+        return self.expression(exp.Pivot(this=table, unpivot=True)) if unpivot else table
 
     def _parse_convert(self, strict: bool, safe: t.Optional[bool] = None) -> t.Optional[exp.Expr]:
         to = self._parse_types()
         self._match(TokenType.COMMA)
         this = self._parse_bitwise()
-        return self.expression(exp.TryCast, this=this, to=to, safe=safe)
+        return self.expression(exp.TryCast(this=this, to=to, safe=safe))
 
     def _parse_approximate_count(self) -> t.Optional[exp.ApproxDistinct]:
         index = self._index - 1
         func = self._parse_function()
 
         if isinstance(func, exp.Count) and isinstance(func.this, exp.Distinct):
-            return self.expression(exp.ApproxDistinct, this=seq_get(func.this.expressions, 0))
+            return self.expression(exp.ApproxDistinct(this=seq_get(func.this.expressions, 0)))
         self._retreat(index)
         return None
 

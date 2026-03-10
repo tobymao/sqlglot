@@ -18,7 +18,7 @@ class MaterializeParser(PostgresParser):
     LAMBDAS = {
         **PostgresParser.LAMBDAS,
         TokenType.FARROW: lambda self, expressions: self.expression(
-            exp.Kwarg, this=seq_get(expressions, 0), expression=self._parse_assignment()
+            exp.Kwarg(this=seq_get(expressions, 0), expression=self._parse_assignment())
         ),
     }
 
@@ -27,7 +27,7 @@ class MaterializeParser(PostgresParser):
 
     def _parse_map(self) -> exp.ToMap:
         if self._match(TokenType.L_PAREN):
-            to_map = self.expression(exp.ToMap, this=self._parse_select())
+            to_map = self.expression(exp.ToMap(this=self._parse_select()))
             self._match_r_paren()
             return to_map
 
@@ -42,4 +42,4 @@ class MaterializeParser(PostgresParser):
         if not self._match(TokenType.R_BRACKET):
             self.raise_error("Expecting ]")
 
-        return self.expression(exp.ToMap, this=self.expression(exp.Struct, expressions=entries))
+        return self.expression(exp.ToMap(this=self.expression(exp.Struct(expressions=entries))))

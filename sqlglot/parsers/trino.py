@@ -42,18 +42,20 @@ class TrinoParser(PrestoParser):
             return None
 
         return self.expression(
-            exp.JSONExtractQuote,
-            option=self._tokens[self._index - 2].text.upper(),
-            scalar=self._match_text_seq("ON", "SCALAR", "STRING"),
+            exp.JSONExtractQuote(
+                option=self._tokens[self._index - 2].text.upper(),
+                scalar=self._match_text_seq("ON", "SCALAR", "STRING"),
+            )
         )
 
     def _parse_json_query(self) -> exp.JSONExtract:
         return self.expression(
-            exp.JSONExtract,
-            this=self._parse_bitwise(),
-            expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
-            option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
-            json_query=True,
-            quote=self._parse_json_query_quote(),
-            on_condition=self._parse_on_condition(),
+            exp.JSONExtract(
+                this=self._parse_bitwise(),
+                expression=self._match(TokenType.COMMA) and self._parse_bitwise(),
+                option=self._parse_var_from_options(self.JSON_QUERY_OPTIONS, raise_unmatched=False),
+                json_query=True,
+                quote=self._parse_json_query_quote(),
+                on_condition=self._parse_on_condition(),
+            )
         )

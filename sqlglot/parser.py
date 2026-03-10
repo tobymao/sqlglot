@@ -6073,11 +6073,12 @@ class Parser:
             json_path_expr.set("escape", escape)
 
         return self.expression(
-            exp.JSONExtract,
-            this=this,
-            expression=json_path_expr,
-            variant_extract=True,
-            requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+            exp.JSONExtract(
+                this=this,
+                expression=json_path_expr,
+                variant_extract=True,
+                requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+            )
         )
 
     def _parse_colon_as_variant_extract(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
@@ -6119,7 +6120,7 @@ class Parser:
                 # can't be in the JSON path string since the index is a column reference.
                 # We traverse Dot/Bracket layers from outside in, collecting segments, then
                 # process them inside out.
-                segments = []
+                segments: t.List[t.Tuple[exp.Bracket, t.List[str]]] = []
                 node = path
                 while True:
                     suffixes = []
@@ -6154,19 +6155,7 @@ class Parser:
         # The VARIANT extract in Snowflake/Databricks is parsed as a JSONExtract; Snowflake uses the json_path in GET_PATH() while
         # Databricks transforms it back to the colon/dot notation
         if json_path:
-            json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
-
-            if json_path_expr:
-                json_path_expr.set("escape", escape)
-
-            this = self.expression(
-                exp.JSONExtract(
-                    this=this,
-                    expression=json_path_expr,
-                    variant_extract=True,
-                    requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
-                )
-            )
+            this = self._build_json_extract(this, json_path, escape)
 
             while casts:
                 this = self.expression(exp.Cast(this=this, to=casts.pop()))

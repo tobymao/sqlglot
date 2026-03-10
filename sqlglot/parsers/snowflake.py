@@ -631,6 +631,13 @@ class Parser(parser.Parser):
         "ILIKE": build_like(exp.ILike),
         "SEARCH": _build_search,
         "SKEW": exp.Skewness.from_arg_list,
+        "SPLIT_PART": lambda args: exp.SplitPart(
+            this=seq_get(args, 0),
+            delimiter=seq_get(args, 1),
+            part_index=seq_get(args, 2),
+            part_index_zero_as_one=True,
+            empty_delimiter_returns_whole=True,
+        ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,

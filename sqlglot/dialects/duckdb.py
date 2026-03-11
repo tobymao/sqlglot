@@ -803,37 +803,43 @@ def _week_unit_to_dow(unit: t.Optional[exp.Expr]) -> t.Optional[int]:
     return None
 
 
-def _build_week_trunc_expression(date_expr: exp.Expr, start_dow: int) -> exp.Expr:
+def _build_week_trunc_expression(
+    date_expr: exp.Expr,
+    start_dow: int,
+    preserve_start_day: bool = False,
+) -> exp.Expr:
     """
     Build DATE_TRUNC expression for week boundaries with custom start day.
 
+    DuckDB's DATE_TRUNC('WEEK', ...) always returns Monday. To align to a different
+    start day, we shift the date before truncating.
+
     Args:
-        date_expr: The date expression to truncate
-        shift_days: ISO 8601 day-of-week number (Monday=0, ..., Sunday=6)
+        date_expr: The date expression to truncate.
+        start_dow: ISO 8601 day-of-week number (Monday=1, ..., Sunday=7).
+        preserve_start_day: If True, reverse the shift after truncating so the result lands on the
+            correct week start day. Needed for DATE_TRUNC (absolute result matters) but
+            not for DATE_DIFF (only relative alignment matters).
 
-    DuckDB's DATE_TRUNC('WEEK', ...) aligns weeks to Monday (ISO standard).
-    To align to a different start day, we shift the date before truncating.
-
-    Shift formula: Sunday (7) gets +1, others get (1 - start_dow)
-    Examples:
-        Monday (1): shift = 0 (no shift needed)
-        Tuesday (2): shift = -1 (shift back 1 day) ...
-        Sunday (7): shift = +1 (shift forward 1 day, wraps to next Monday-based week)
+    Shift formula: Sunday (7) gets +1, others get (1 - start_dow).
     """
     shift_days = 1 if start_dow == 7 else 1 - start_dow
+    truncated = exp.func("DATE_TRUNC", unit=exp.var("WEEK"), this=date_expr)
 
-    # Shift date to align week boundaries with the desired start day
-    # No shift needed for Monday-based weeks (shift_days == 0)
-    shifted_date = (
-        exp.DateAdd(
-            this=date_expr,
-            expression=exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY")),
+    if shift_days == 0:
+        return truncated
+
+    shift = exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY"))
+    shifted_date = exp.DateAdd(this=date_expr, expression=shift)
+    truncated.set("this", shifted_date)
+
+    if preserve_start_day:
+        interval = exp.Interval(this=exp.Literal.string(str(-shift_days)), unit=exp.var("DAY"))
+        return exp.cast(
+            exp.DateAdd(this=truncated, expression=interval), to=exp.DType.DATE, copy=False
         )
-        if shift_days != 0
-        else date_expr
-    )
 
-    return exp.DateTrunc(unit=exp.var("WEEK"), this=shifted_date)
+    return truncated
 
 
 def _date_diff_sql(self: DuckDB.Generator, expression: exp.DateDiff) -> str:
@@ -3850,9 +3856,18 @@ class DuckDB(Dialect):
             return super().hexstring_sql(expression, binary_function_repr="UNHEX")
 
         def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
-            unit = unit_to_str(expression)
+            unit = expression.args.get("unit")
             date = expression.this
-            result = self.func("DATE_TRUNC", unit, date)
+
+            week_start = _week_unit_to_dow(unit)
+            unit = unit_to_str(expression)
+
+            if week_start:
+                result = self.sql(
+                    _build_week_trunc_expression(date, week_start, preserve_start_day=True)
+                )
+            else:
+                result = self.func("DATE_TRUNC", unit, date)
 
             if (
                 expression.args.get("input_type_preserved")

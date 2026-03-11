@@ -804,7 +804,9 @@ def _week_unit_to_dow(unit: t.Optional[exp.Expr]) -> t.Optional[int]:
 
 
 def _build_week_trunc_expression(
-    date_expr: exp.Expr, start_dow: int, unshift: bool = False
+    date_expr: exp.Expr,
+    start_dow: int,
+    preserve_start_day: bool = False,
 ) -> exp.Expr:
     """
     Build DATE_TRUNC expression for week boundaries with custom start day.
@@ -815,7 +817,7 @@ def _build_week_trunc_expression(
     Args:
         date_expr: The date expression to truncate.
         start_dow: ISO 8601 day-of-week number (Monday=1, ..., Sunday=7).
-        unshift: If True, reverse the shift after truncating so the result lands on the
+        preserve_start_day: If True, reverse the shift after truncating so the result lands on the
             correct week start day. Needed for DATE_TRUNC (absolute result matters) but
             not for DATE_DIFF (only relative alignment matters).
 
@@ -831,7 +833,7 @@ def _build_week_trunc_expression(
     shifted_date = exp.DateAdd(this=date_expr, expression=shift)
     truncated.set("this", shifted_date)
 
-    if unshift:
+    if preserve_start_day:
         interval = exp.Interval(this=exp.Literal.string(str(-shift_days)), unit=exp.var("DAY"))
         return exp.cast(
             exp.DateAdd(this=truncated, expression=interval), to=exp.DType.DATE, copy=False
@@ -3859,7 +3861,9 @@ class DuckDB(Dialect):
 
             week_start = _week_unit_to_dow(unit)
             if week_start:
-                result = self.sql(_build_week_trunc_expression(date, week_start, unshift=True))
+                result = self.sql(
+                    _build_week_trunc_expression(date, week_start, preserve_start_day=True)
+                )
             else:
                 unit = unit_to_str(expression)
                 result = self.func("DATE_TRUNC", unit, date)

@@ -279,12 +279,10 @@ def _build_round(args: t.List) -> exp.Round:
 
 def _build_array_sort(args: t.List) -> exp.SortArray:
     asc = seq_get(args, 1)
-    return exp.SortArray(
-        this=seq_get(args, 0),
-        asc=asc,
-        nulls_first=seq_get(args, 2)
-        or (exp.true() if isinstance(asc, exp.Boolean) and not asc.this else None),
-    )
+    nulls_first = seq_get(args, 2)
+    if nulls_first is None and isinstance(asc, exp.Boolean):
+        nulls_first = exp.Boolean(this=not asc.this)
+    return exp.SortArray(this=seq_get(args, 0), asc=asc, nulls_first=nulls_first)
 
 
 def _build_generator(args: t.List) -> exp.Generator:

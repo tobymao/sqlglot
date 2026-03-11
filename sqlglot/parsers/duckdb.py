@@ -21,20 +21,6 @@ def _build_sort_array_desc(args: t.List) -> exp.Expr:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _build_list_sort(args: t.List) -> exp.SortArray:
-    order = seq_get(args, 1)
-    null_order = seq_get(args, 2)
-    if order is None:
-        return exp.SortArray(this=seq_get(args, 0))
-    asc = not (isinstance(order, exp.Literal) and order.name.upper() == "DESC")
-    nulls_first = isinstance(null_order, exp.Literal) and "FIRST" in null_order.name.upper()
-    return exp.SortArray(
-        this=seq_get(args, 0),
-        asc=exp.Boolean(this=asc),
-        nulls_first=exp.Boolean(this=nulls_first),
-    )
-
-
 def _build_array_prepend(args: t.List) -> exp.Expr:
     return exp.ArrayPrepend(this=seq_get(args, 1), expression=seq_get(args, 0))
 
@@ -118,7 +104,7 @@ class DuckDBParser(parser.Parser):
         "ARRAY_PREPEND": _build_array_prepend,
         "ARRAY_REVERSE_SORT": _build_sort_array_desc,
         "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
-        "ARRAY_SORT": _build_list_sort,
+        "ARRAY_SORT": exp.SortArray.from_arg_list,
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
         "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
@@ -157,7 +143,7 @@ class DuckDBParser(parser.Parser):
         "LIST_MIN": exp.ArrayMin.from_arg_list,
         "LIST_PREPEND": _build_array_prepend,
         "LIST_REVERSE_SORT": _build_sort_array_desc,
-        "LIST_SORT": _build_list_sort,
+        "LIST_SORT": exp.SortArray.from_arg_list,
         "LIST_TRANSFORM": exp.Transform.from_arg_list,
         "LIST_VALUE": lambda args: exp.Array(expressions=args),
         "MAKE_DATE": exp.DateFromParts.from_arg_list,

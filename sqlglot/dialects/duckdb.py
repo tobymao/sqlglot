@@ -2462,62 +2462,20 @@ class DuckDB(Dialect):
             return f"SHOW {expression.name}"
 
         def sortarray_sql(self, expression: exp.SortArray) -> str:
-            """
-            Translates Snowflake's ARRAY_SORT(arr[, asc[, nulls_first]]) to DuckDB's LIST_SORT.
-
-            Always emits explicit 'ASC'/'DESC' and 'NULLS FIRST'/'NULLS LAST' because DuckDB's
-            default (ASC NULLS FIRST) differs from Snowflake's (ASC NULLS LAST), and DuckDB's
-            null ordering default is PRAGMA-configurable.
-
-            - Literal/absent boolean args: uses LIST_SORT with explicit ordering strings.
-            - Runtime boolean expressions: emits LIST_FILTER + LIST_SORT + LIST_CONCAT to
-              evaluate sort direction and NULL placement at query time.
-
-            Snowflake default: nulls_first = NOT asc (NULLS FIRST when descending).
-            """
             asc = expression.args.get("asc")
             nulls_first = expression.args.get("nulls_first")
             arr = expression.this
-
-            if (asc is None or isinstance(asc, exp.Boolean)) and (
-                nulls_first is None or isinstance(nulls_first, exp.Boolean)
-            ):
-                return self.func(
-                    "LIST_SORT",
-                    arr,
-                    exp.Literal.string("DESC" if asc == exp.false() else "ASC"),
-                    exp.Literal.string(
-                        "NULLS FIRST" if nulls_first == exp.true() else "NULLS LAST"
-                    ),
-                )
-
-            asc_expr = asc or exp.true()
-            nf_expr = nulls_first if nulls_first is not None else exp.not_(asc_expr.copy())
-            nl_expr = exp.not_(nulls_first.copy()) if nulls_first is not None else asc_expr.copy()
-
-            x = exp.to_identifier("x")
-            is_null = x.is_(exp.null())
-            null_arr = exp.ArrayFilter(
-                this=arr.copy(),
-                expression=exp.Lambda(this=is_null, expressions=[x.copy()]),
-            )
-            non_null_arr = exp.ArrayFilter(
-                this=arr.copy(),
-                expression=exp.Lambda(this=exp.not_(is_null.copy()), expressions=[x.copy()]),
-            )
-            order = (
-                exp.case()
-                .when(asc_expr, exp.Literal.string("ASC"))
-                .else_(exp.Literal.string("DESC"))
-            )
-            return self.sql(
-                exp.ArrayConcat(
-                    this=exp.case().when(nf_expr, null_arr.copy()).else_(exp.array()),
-                    expressions=[
-                        exp.func("LIST_SORT", non_null_arr, order),
-                        exp.case().when(nl_expr, null_arr.copy()).else_(exp.array()),
-                    ],
-                )
+            descending = asc == exp.false()
+            want_nulls_first = nulls_first == exp.true()
+            if not descending and not want_nulls_first:
+                return self.func("LIST_SORT", arr)
+            if not want_nulls_first:
+                return self.func("ARRAY_REVERSE_SORT", arr)
+            return self.func(
+                "LIST_SORT",
+                arr,
+                exp.Literal.string("DESC" if descending else "ASC"),
+                exp.Literal.string("NULLS FIRST"),
             )
 
         def install_sql(self, expression: exp.Install) -> str:

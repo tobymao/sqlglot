@@ -699,7 +699,7 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_SORT(x)",
             read={"snowflake": "SELECT ARRAY_SORT(x)"},
             write={
-                "duckdb": "SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')",
+                "duckdb": "SELECT LIST_SORT(x)",
                 "snowflake": "SELECT ARRAY_SORT(x)",
             },
         )
@@ -709,30 +709,6 @@ class TestSnowflake(Validator):
             write={
                 "duckdb": "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
                 "snowflake": "SELECT ARRAY_SORT(x, FALSE)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x, 1 = 0)",
-            read={"snowflake": "SELECT ARRAY_SORT(x, 1 = 0)"},
-            write={
-                "duckdb": "SELECT LIST_CONCAT(CASE WHEN NOT 1 = 0 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END, LIST_SORT(LIST_FILTER(x, x -> NOT x IS NULL), CASE WHEN 1 = 0 THEN 'ASC' ELSE 'DESC' END), CASE WHEN 1 = 0 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END)",
-                "snowflake": "SELECT ARRAY_SORT(x, 1 = 0)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x, TRUE, 1 = 1)",
-            read={"snowflake": "SELECT ARRAY_SORT(x, TRUE, 1 = 1)"},
-            write={
-                "duckdb": "SELECT LIST_CONCAT(CASE WHEN 1 = 1 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END, LIST_SORT(LIST_FILTER(x, x -> NOT x IS NULL), CASE WHEN TRUE THEN 'ASC' ELSE 'DESC' END), CASE WHEN NOT 1 = 1 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END)",
-                "snowflake": "SELECT ARRAY_SORT(x, TRUE, 1 = 1)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x, 1 = 0, 1 = 1)",
-            read={"snowflake": "SELECT ARRAY_SORT(x, 1 = 0, 1 = 1)"},
-            write={
-                "duckdb": "SELECT LIST_CONCAT(CASE WHEN 1 = 1 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END, LIST_SORT(LIST_FILTER(x, x -> NOT x IS NULL), CASE WHEN 1 = 0 THEN 'ASC' ELSE 'DESC' END), CASE WHEN NOT 1 = 1 THEN LIST_FILTER(x, x -> x IS NULL) ELSE [] END)",
-                "snowflake": "SELECT ARRAY_SORT(x, 1 = 0, 1 = 1)",
             },
         )
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")

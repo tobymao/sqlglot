@@ -734,7 +734,7 @@ class TestHive(Validator):
                 "spark": "SELECT SORT_ARRAY(x, FALSE)",
             },
             write={
-                "duckdb": "SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')",
+                "duckdb": "SELECT ARRAY_REVERSE_SORT(x)",
                 "presto": "SELECT ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
                 "hive": "SELECT SORT_ARRAY(x, FALSE)",
                 "spark": "SELECT SORT_ARRAY(x, FALSE)",

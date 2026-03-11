@@ -1477,7 +1477,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SORT_ARRAY(x)",
             write={
-                "duckdb": "LIST_SORT(x, 'ASC', 'NULLS LAST')",
+                "duckdb": "LIST_SORT(x)",
                 "hive": "SORT_ARRAY(x)",
                 "presto": "ARRAY_SORT(x)",
                 "snowflake": "ARRAY_SORT(x)",

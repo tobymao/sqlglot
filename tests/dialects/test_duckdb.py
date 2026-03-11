@@ -2672,7 +2672,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST('Skiing is fun!' AS VARIANT)",
-                # "snowflake": "SELECT TO_VARIANT('Skiing is fun!')",
+                "snowflake": "SELECT TO_VARIANT('Skiing is fun!')",
             },
         )
 
@@ -2683,7 +2683,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST(3.14 AS VARIANT)",
-                # "snowflake": "SELECT TO_VARIANT(3.14)",
+                "snowflake": "SELECT TO_VARIANT(3.14)",
             },
         )
 
@@ -2694,7 +2694,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST('2024-01-25 01:02:03' AS VARIANT)",
-                # "snowflake": "SELECT TO_VARIANT('2024-01-25 01:02:03')",
+                "snowflake": "SELECT TO_VARIANT('2024-01-25 01:02:03')",
             },
         )
 
@@ -2705,6 +2705,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST(['San Mateo', 'Seattle', 'Berlin'] AS VARIANT)",
+                "snowflake": "SELECT TO_VARIANT(['San Mateo', 'Seattle', 'Berlin'])",
             },
         )
 
@@ -2715,5 +2716,6 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": 'SELECT CAST(JSON(\'{"key1": "value1", "key2": "value2"}\') AS VARIANT)',
+                "snowflake": 'SELECT TO_VARIANT(PARSE_JSON(\'{"key1": "value1", "key2": "value2"}\'))',
             },
         )

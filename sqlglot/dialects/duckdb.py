@@ -269,13 +269,6 @@ def _to_boolean_sql(self: DuckDB.Generator, expression: exp.ToBoolean) -> str:
     return self.sql(case_expr)
 
 
-def _to_variant_sql(self: DuckDB.Generator, expression: exp.ToVariant) -> str:
-    """
-    This converts: TO_VARIANT(expr) -> CAST(expr AS VARIANT)
-    """
-    return self.sql(exp.cast(expression.this, exp.DataType.build("VARIANT")))
-
-
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     this = expression.this
@@ -1763,7 +1756,9 @@ class DuckDB(Dialect):
             ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.ToBoolean: _to_boolean_sql,
-            exp.ToVariant: _to_variant_sql,
+            exp.ToVariant: lambda self, e: self.sql(
+                exp.cast(e.this, exp.DataType.build("VARIANT"))
+            ),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",

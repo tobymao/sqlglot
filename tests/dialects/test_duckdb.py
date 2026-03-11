@@ -834,7 +834,7 @@ class TestDuckDB(Validator):
         self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'g')")
         self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'gi')")
         self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, 'ims')")
-
+        self.validate_identity("SELECT SPLIT_PART('11.22.33', '.', 1)")
         self.validate_identity(
             "SELECT NTH_VALUE(is_deleted, 2) OVER (PARTITION BY id) AS nth_is_deleted FROM my_table"
         )

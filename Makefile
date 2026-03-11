@@ -9,7 +9,7 @@ endif
 SO_BACKUP := /tmp/sqlglot_so_backup
 
 hidec:
-	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - --remove-files 2>/dev/null; true
+	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - 2>/dev/null && find sqlglot sqlglotc -name "*.so" -delete; true
 
 showc:
 	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true

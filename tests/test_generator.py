@@ -4,8 +4,13 @@ from sqlglot import exp, parse_one
 from sqlglot.expressions import Expression, Func
 from sqlglot.parsers.snowflake import SnowflakeParser
 
+import sqlglot.expressions.core as _core_module
+
+_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith(".so")
+
 
 class TestGenerator(unittest.TestCase):
+    @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_fallback_function_sql(self):
         class SpecialUdf(Expression, Func):
             arg_types = {"a": True, "b": False}
@@ -18,6 +23,7 @@ class TestGenerator(unittest.TestCase):
         finally:
             del SnowflakeParser.FUNCTIONS["SPECIAL_UDF"]
 
+    @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_fallback_function_var_args_sql(self):
         class SpecialUdf(Expression, Func):
             arg_types = {"a": True, "expressions": False}

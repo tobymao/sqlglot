@@ -85,17 +85,16 @@ class Selectable(Expr):
         return _named_selects(self)
 
 
-# TODO (mypyc): t.Any needed so compiled code uses Python attribute dispatch, not trait vtable
-def _named_selects(self: t.Any) -> t.List[str]:
-    return [select.output_name for select in self.selects]
+def _named_selects(self: Expr) -> t.List[str]:
+    selectable = t.cast(Selectable, self)
+    return [select.output_name for select in selectable.selects]
 
 
 @trait
 class DerivedTable(Selectable):
     @property
     def selects(self) -> t.List[Expr]:
-        # TODO (mypyc): make this self.this
-        this = self.args.get("this")
+        this = self.this
         return this.selects if isinstance(this, Query) else []
 
 

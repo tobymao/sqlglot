@@ -6,8 +6,14 @@ from sqlglot import exp, parse_one
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.helpers import load_sql_fixtures
 
+import sqlglot.expressions.core as _core_module
 
-class CustomExpression(exp.Expression): ...
+_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith(".so")
+
+
+if not _EXPRESSION_IS_COMPILED:
+
+    class CustomExpression(exp.Expression): ...
 
 
 class TestSerde(unittest.TestCase):
@@ -21,6 +27,7 @@ class TestSerde(unittest.TestCase):
                 after = self.dump_load(before)
                 self.assertEqual(repr(before), repr(after))
 
+    @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_custom_expression(self):
         before = CustomExpression()
         after = self.dump_load(before)

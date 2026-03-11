@@ -3860,14 +3860,14 @@ class DuckDB(Dialect):
             date = expression.this
 
             week_start = _week_unit_to_dow(unit)
+            unit = unit_to_str(expression)
+
             if week_start:
                 result = self.sql(
                     _build_week_trunc_expression(date, week_start, preserve_start_day=True)
                 )
             else:
                 result = self.func("DATE_TRUNC", unit, date)
-
-            unit = unit_to_str(expression)
 
             if (
                 expression.args.get("input_type_preserved")

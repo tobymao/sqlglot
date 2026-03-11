@@ -340,9 +340,29 @@ class SnowflakeParser(parser.Parser):
         TokenType.VOLUME,
     }
 
-    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {
-        TokenType.MATCH_CONDITION
+    ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
+        TokenType.INTEGRATION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
     }
+
+    TABLE_ALIAS_TOKENS = (
+        parser.Parser.TABLE_ALIAS_TOKENS
+        | {
+            TokenType.INTEGRATION,
+            TokenType.PACKAGE,
+            TokenType.POLICY,
+            TokenType.POOL,
+            TokenType.ROLE,
+            TokenType.RULE,
+            TokenType.VOLUME,
+            TokenType.WINDOW,
+        }
+    ) - {TokenType.MATCH_CONDITION}
 
     COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 

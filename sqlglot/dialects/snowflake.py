@@ -1022,7 +1022,7 @@ class Snowflake(Dialect):
 
             properties = expression.args.get("properties")
             if properties:
-                qualifier = " ".join(self.sql(p) for p in properties.expressions)
+                qualifier = self.expressions(properties, sep=" ")
                 kind = f" {qualifier} {kind_value}"
             else:
                 kind = f" {kind_value}"

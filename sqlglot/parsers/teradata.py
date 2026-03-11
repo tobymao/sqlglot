@@ -5,11 +5,17 @@ import typing as t
 from sqlglot import exp, parser
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.trie import new_trie
 
 
 class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
+
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
 
     CHARSET_TRANSLATORS = {
         "GRAPHIC_TO_KANJISJIS",
@@ -73,6 +79,8 @@ class TeradataParser(parser.Parser):
         **parser.Parser.SET_PARSERS,
         "QUERY_BAND": lambda self: self._parse_query_band(),
     }
+
+    SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,

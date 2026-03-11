@@ -47,6 +47,7 @@ class OracleParser(parser.Parser):
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.SYSTIMESTAMP: exp.Systimestamp,
     }
 

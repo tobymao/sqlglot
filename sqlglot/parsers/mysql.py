@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     Dialect,
     build_date_delta,
@@ -51,6 +52,14 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
 
 
 class MySQLParser(parser.Parser):
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+    }
+
+    ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.STRAIGHT_JOIN}
+
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
         TokenType.DATABASE,
@@ -71,7 +80,11 @@ class MySQLParser(parser.Parser):
         TokenType.DPIPE: exp.Or,
     }
 
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
+    TABLE_ALIAS_TOKENS = (
+        (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI})
+        - parser.Parser.TABLE_INDEX_HINT_TOKENS
+        - {TokenType.STRAIGHT_JOIN}
+    )
 
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
@@ -223,6 +236,9 @@ class MySQLParser(parser.Parser):
         "CHARSET": lambda self: self._parse_set_item_charset("CHARACTER SET"),
         "NAMES": lambda self: self._parse_set_item_names(),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+    SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,

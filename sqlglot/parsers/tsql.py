@@ -309,6 +309,11 @@ class TSQLParser(parser.Parser):
     STRING_ALIASES = True
     NO_PAREN_IF_COMMANDS = False
 
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.SESSION_USER: exp.SessionUser,
+    }
+
     QUERY_MODIFIER_PARSERS = {
         **parser.Parser.QUERY_MODIFIER_PARSERS,
         TokenType.OPTION: lambda self: ("options", self._parse_options()),
@@ -318,7 +323,9 @@ class TSQLParser(parser.Parser):
     # T-SQL does not allow BEGIN to be used as an identifier
     ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
+    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI}) - {
+        TokenType.BEGIN
+    }
     COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
     UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.BEGIN}
 

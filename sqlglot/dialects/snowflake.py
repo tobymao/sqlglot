@@ -378,7 +378,6 @@ class Snowflake(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
-    SUPPORTS_SEMI_ANTI_JOIN = False
     PREFER_CTE_ALIAS_COLUMN = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False

@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
 )
 from sqlglot.helper import seq_get
+from sqlglot.tokens import TokenType
 
 
 def _build_approx_percentile(args: t.List) -> exp.Expr:
@@ -55,6 +56,17 @@ def _build_to_char(args: t.List) -> exp.TimeToStr:
 class PrestoParser(parser.Parser):
     VALUES_FOLLOWED_BY_PAREN = False
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
+
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+    }
+
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,

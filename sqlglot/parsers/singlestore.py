@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     build_formatted_time,
     build_json_extract_path,
@@ -235,6 +236,8 @@ class SingleStoreParser(MySQLParser):
         "USERS FOR ROLE": _show_parser("USERS FOR ROLE", target=True),
         "USERS FOR GROUP": _show_parser("USERS FOR GROUP", target=True),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
     ALTER_PARSERS = {
         **MySQLParser.ALTER_PARSERS,

@@ -9,7 +9,6 @@ from sqlglot.parsers.solr import SolrParser
 class Solr(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     DPIPE_IS_STRING_CONCAT = False
-    SUPPORTS_SEMI_ANTI_JOIN = False
 
     Parser = SolrParser
 

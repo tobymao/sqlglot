@@ -259,7 +259,6 @@ class _Dialect(type):
         klass.jsonpath_tokenizer_class = klass.__dict__.get(
             "JSONPathTokenizer", type("JSONPathTokenizer", base_jsonpath_tokenizer, {})
         )
-        owns_parser = "Parser" in klass.__dict__ or "parser_class" in klass.__dict__
         klass.parser_class = klass.__dict__.get(
             "Parser", klass.__dict__.get("parser_class", base_parser[0])
         )
@@ -322,77 +321,6 @@ class _Dialect(type):
         if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
             klass.generator_class.SUPPORTS_DECODE_CASE = False
 
-        # Only mutate the parser class if this dialect defines its own (via "Parser" or
-        # "parser_class" in __dict__). Otherwise the parser class is inherited and mutating
-        # it would bleed into other dialects that share the same class.
-        if owns_parser:
-            if enum not in ("", "doris", "mysql"):
-                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                    TokenType.STRAIGHT_JOIN,
-                }
-                klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
-                    TokenType.STRAIGHT_JOIN,
-                }
-
-            if not klass.SUPPORTS_SEMI_ANTI_JOIN:
-                klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
-                    TokenType.ANTI,
-                    TokenType.SEMI,
-                }
-
-            if enum not in (
-                "",
-                "postgres",
-                "duckdb",
-                "redshift",
-                "snowflake",
-                "presto",
-                "trino",
-                "mysql",
-                "singlestore",
-            ):
-                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-                no_paren_functions.pop(TokenType.LOCALTIME, None)
-                if enum != "oracle":
-                    no_paren_functions.pop(TokenType.LOCALTIMESTAMP, None)
-                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
-
-            if enum in (
-                "",
-                "postgres",
-                "duckdb",
-                "trino",
-            ):
-                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-                no_paren_functions[TokenType.CURRENT_CATALOG] = exp.CurrentCatalog
-                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
-            else:
-                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                    TokenType.CURRENT_CATALOG,
-                }
-
-            if enum in (
-                "",
-                "duckdb",
-                "spark",
-                "postgres",
-                "tsql",
-            ):
-                no_paren_functions = klass.parser_class.NO_PAREN_FUNCTIONS.copy()
-                no_paren_functions[TokenType.SESSION_USER] = exp.SessionUser
-                klass.parser_class.NO_PAREN_FUNCTIONS = no_paren_functions
-            else:
-                klass.parser_class.ID_VAR_TOKENS = klass.parser_class.ID_VAR_TOKENS | {
-                    TokenType.SESSION_USER,
-                }
-
-            klass.parser_class.SHOW_TRIE = new_trie(
-                key.split(" ") for key in klass.parser_class.SHOW_PARSERS
-            )
-            klass.parser_class.SET_TRIE = new_trie(
-                key.split(" ") for key in klass.parser_class.SET_PARSERS
-            )
-
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,
             *klass.DATE_PART_MAPPING.keys(),
@@ -432,9 +360,6 @@ class Dialect(metaclass=_Dialect):
 
     SUPPORTS_USER_DEFINED_TYPES = True
     """Whether user-defined data types are supported."""
-
-    SUPPORTS_SEMI_ANTI_JOIN = True
-    """Whether `SEMI` or `ANTI` joins are supported."""
 
     SUPPORTS_COLUMN_JOIN_MARKS = False
     """Whether the old-style outer join (+) syntax is supported."""

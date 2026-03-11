@@ -269,7 +269,6 @@ class Exasol(Dialect):
     # https://docs.exasol.com/db/latest/sql_references/data_types/datatypesoverview.htm
     SUPPORTS_USER_DEFINED_TYPES = False
     # https://docs.exasol.com/db/latest/sql/select.htm
-    SUPPORTS_SEMI_ANTI_JOIN = False
     SUPPORTS_COLUMN_JOIN_MARKS = True
     NULL_ORDERING = "nulls_are_last"
     # https://docs.exasol.com/db/latest/sql_references/literals.htm#StringLiterals

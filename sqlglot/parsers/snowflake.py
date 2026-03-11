@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     Dialect,
     build_default_decimal_type,
@@ -332,14 +333,16 @@ class SnowflakeParser(parser.Parser):
         TokenType.MATCH_CONDITION,
     }
 
-    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {
-        TokenType.MATCH_CONDITION
-    }
+    TABLE_ALIAS_TOKENS = (
+        parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI, TokenType.WINDOW}
+    ) - {TokenType.MATCH_CONDITION}
 
     COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.CURRENT_TIME: exp.Localtime,
     }
 
@@ -711,6 +714,8 @@ class SnowflakeParser(parser.Parser):
         "PROCEDURES": _show_parser("PROCEDURES"),
         "WAREHOUSES": _show_parser("WAREHOUSES"),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,

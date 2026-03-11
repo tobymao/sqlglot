@@ -21,6 +21,11 @@ class SQLiteParser(parser.Parser):
     JOINS_HAVE_EQUAL_PRECEDENCE = True
     ADD_JOIN_ON_TRUE = True
 
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
+
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),

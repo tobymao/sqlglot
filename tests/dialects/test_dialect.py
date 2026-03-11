@@ -18,6 +18,10 @@ from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
 from sqlglot.parsers.snowflake import SnowflakeParser
 
+import sqlglot.parsers.base as _base_module
+
+_PARSER_IS_COMPILED = getattr(_base_module, "__file__", "").endswith(".so")
+
 
 class Validator(unittest.TestCase):
     dialect = None
@@ -5294,6 +5298,7 @@ FROM subquery2""",
             "SELECT ROW_NUMBER() OVER (PARTITION BY event_time + CAST(INTERVAL '00:00:01' AS INTERVAL)) AS foo FROM t",
         )
 
+    @unittest.skipIf(_PARSER_IS_COMPILED, "mypyc compiled parsers cannot be subclassed")
     def test_patch_dialect_parser(self):
         class CustomSnowflakeParser(SnowflakeParser):
             FUNCTIONS = {
@@ -5313,6 +5318,7 @@ FROM subquery2""",
         finally:
             Snowflake.parser_class = original
 
+    @unittest.skipIf(_PARSER_IS_COMPILED, "mypyc compiled parsers cannot be subclassed")
     def test_custom_dialect(self):
         class MyDialect(Dialect):
             class Parser(SnowflakeParser):

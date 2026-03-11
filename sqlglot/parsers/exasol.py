@@ -29,6 +29,11 @@ def _build_nullifzero(args: t.List) -> exp.If:
 
 
 class ExasolParser(parser.Parser):
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
+
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         **{f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit) for unit in DATE_UNITS},

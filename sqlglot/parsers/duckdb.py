@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     binary_from_function,
     build_default_decimal_type,
@@ -66,6 +67,14 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDBParser], ex
 
 class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
+
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+        TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
+        TokenType.SESSION_USER: exp.SessionUser,
+    }
 
     BITWISE = {k: v for k, v in parser.Parser.BITWISE.items() if k != TokenType.CARET}
 
@@ -183,11 +192,6 @@ class DuckDBParser(parser.Parser):
         "@": lambda self: exp.Abs(this=self._parse_bitwise()),
     }
 
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
-        TokenType.SEMI,
-        TokenType.ANTI,
-    }
-
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
         TokenType.PARAMETER: lambda self: (
@@ -217,6 +221,9 @@ class DuckDBParser(parser.Parser):
         **parser.Parser.SET_PARSERS,
         "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+    SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
     def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expr]:
         index = self._index

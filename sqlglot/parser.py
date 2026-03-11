@@ -10,6 +10,7 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, TokenError, concat_messages, merge_errors
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import ensure_list, seq_get
+from sqlglot.trie import new_trie
 from sqlglot.parser_core import ParserCore
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -371,14 +372,12 @@ class Parser:
         "VAR_MAP": build_var_map,
     }
 
-    NO_PAREN_FUNCTIONS: t.ClassVar = {
+    NO_PAREN_FUNCTIONS: t.ClassVar[t.Dict] = {
         TokenType.CURRENT_DATE: exp.CurrentDate,
         TokenType.CURRENT_DATETIME: exp.CurrentDate,
         TokenType.CURRENT_TIME: exp.CurrentTime,
         TokenType.CURRENT_TIMESTAMP: exp.CurrentTimestamp,
         TokenType.CURRENT_USER: exp.CurrentUser,
-        TokenType.LOCALTIME: exp.Localtime,
-        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.CURRENT_ROLE: exp.CurrentRole,
     }
 
@@ -600,7 +599,7 @@ class Parser:
     }
 
     # Tokens that can represent identifiers
-    ID_VAR_TOKENS: t.ClassVar = {
+    ID_VAR_TOKENS: t.ClassVar[t.Set] = {
         TokenType.ALL,
         TokenType.ANALYZE,
         TokenType.ATTACH,
@@ -692,6 +691,11 @@ class Parser:
         TokenType.USE,
         TokenType.VOLATILE,
         TokenType.WINDOW,
+        TokenType.CURRENT_CATALOG,
+        TokenType.LOCALTIME,
+        TokenType.LOCALTIMESTAMP,
+        TokenType.SESSION_USER,
+        TokenType.STRAIGHT_JOIN,
         *ALTERABLES,
         *CREATABLES,
         *SUBQUERY_PREDICATES,
@@ -699,7 +703,7 @@ class Parser:
         *NO_PAREN_FUNCTIONS,
     } - {TokenType.UNION}
 
-    TABLE_ALIAS_TOKENS: t.ClassVar = ID_VAR_TOKENS - {
+    TABLE_ALIAS_TOKENS: t.ClassVar[t.Set] = ID_VAR_TOKENS - {
         TokenType.ANTI,
         TokenType.ASOF,
         TokenType.FULL,
@@ -1710,9 +1714,8 @@ class Parser:
     # can omit the span unit `DAY TO MINUTE` or `DAY TO SECOND`
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT: t.ClassVar = False
 
-    # Autofilled
-    SHOW_TRIE: t.ClassVar[t.Dict] = {}
-    SET_TRIE: t.ClassVar[t.Dict] = {}
+    SHOW_TRIE: t.ClassVar[t.Dict] = new_trie(key.split(" ") for key in SHOW_PARSERS)
+    SET_TRIE: t.ClassVar[t.Dict] = new_trie(key.split(" ") for key in SET_PARSERS)
 
     def __init__(
         self,

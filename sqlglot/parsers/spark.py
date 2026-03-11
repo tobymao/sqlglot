@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import build_date_delta, build_like
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import build_with_ignore_nulls
@@ -52,11 +53,18 @@ def _build_dateadd(args: t.List) -> exp.Expr:
 
 
 class SparkParser(Spark2Parser):
+    NO_PAREN_FUNCTIONS = {
+        **Spark2Parser.NO_PAREN_FUNCTIONS,
+        TokenType.SESSION_USER: exp.SessionUser,
+    }
+
     SET_PARSERS = {
         **Spark2Parser.SET_PARSERS,
         "VAR": lambda self: self._parse_set_item_assignment("VARIABLE"),
         "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
     }
+
+    SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
     FUNCTIONS = {
         **Spark2Parser.FUNCTIONS,

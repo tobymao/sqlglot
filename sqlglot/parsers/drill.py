@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time
+from sqlglot.tokens import TokenType
 
 
 class DrillParser(parser.Parser):
     STRICT_CAST = False
+
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,

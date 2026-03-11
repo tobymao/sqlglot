@@ -85,6 +85,11 @@ def datetype_handler(args: t.List[exp.Expr], dialect: DialectType) -> exp.Expr:
 class DremioParser(parser.Parser):
     LOG_DEFAULTS_TO_LN = True
 
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
+
     NO_PAREN_FUNCTION_PARSERS = {
         **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
         "CURRENT_DATE_UTC": lambda self: self._parse_current_date_utc(),

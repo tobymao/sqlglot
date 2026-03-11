@@ -8,6 +8,11 @@ from sqlglot.tokens import TokenType
 
 
 class TrinoParser(PrestoParser):
+    NO_PAREN_FUNCTIONS = {
+        **PrestoParser.NO_PAREN_FUNCTIONS,
+        TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
+    }
+
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,

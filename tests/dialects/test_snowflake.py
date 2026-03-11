@@ -4491,24 +4491,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
-        for kind, object_name in (
-            ("DYNAMIC TABLE", "db.schema.t1"),
-            ("MATERIALIZED VIEW", "my_view"),
-            ("EXTERNAL VOLUME", "vol1"),
-            ("COMPUTE POOL", "pool1"),
-            ("MASKING POLICY", "db.schema.pol1"),
-            ("ROW ACCESS POLICY", "pol1"),
-            ("API INTEGRATION", "int1"),
-            ("APPLICATION PACKAGE", "pkg1"),
-            ("SECURITY INTEGRATION", "int1"),
-            ("NETWORK RULE", "rule1"),
-            ("ICEBERG TABLE", "db.schema.t1"),
-            ("HYBRID TABLE", "t1"),
-            ("CATALOG INTEGRATION", "int1"),
-            ("DATABASE ROLE", "role1"),
+        for kind, object_name, prop_type in (
+            ("DYNAMIC TABLE", "db.schema.t1", exp.DynamicProperty),
+            ("MATERIALIZED VIEW", "my_view", exp.MaterializedProperty),
+            ("EXTERNAL VOLUME", "vol1", exp.ExternalProperty),
+            ("COMPUTE POOL", "pool1", exp.ComputeProperty),
+            ("MASKING POLICY", "db.schema.pol1", exp.MaskingProperty),
+            ("ROW ACCESS POLICY", "pol1", exp.RowAccessProperty),
+            ("API INTEGRATION", "int1", exp.ApiProperty),
+            ("APPLICATION PACKAGE", "pkg1", exp.ApplicationProperty),
+            ("SECURITY INTEGRATION", "int1", exp.SecurityIntegrationProperty),
+            ("NETWORK RULE", "rule1", exp.NetworkProperty),
+            ("ICEBERG TABLE", "db.schema.t1", exp.IcebergProperty),
+            ("HYBRID TABLE", "t1", exp.HybridProperty),
+            ("CATALOG INTEGRATION", "int1", exp.CatalogProperty),
+            ("DATABASE ROLE", "role1", exp.DatabaseProperty),
         ):
             with self.subTest(kind=kind):
-                self.validate_identity(f"DESCRIBE {kind} {object_name}")
+                ast = self.validate_identity(f"DESCRIBE {kind} {object_name}")
+                self.assertEqual(ast.args["kind"], kind.split()[-1])
+                self.assertIsInstance(ast.find(prop_type), prop_type)
                 self.validate_identity(
                     f"DESC {kind} {object_name}", f"DESCRIBE {kind} {object_name}"
                 )

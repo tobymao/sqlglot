@@ -125,6 +125,7 @@ class Describe(Expression):
         "this": True,
         "style": False,
         "kind": False,
+        "properties": False,
         "expressions": False,
         "partition": False,
         "format": False,

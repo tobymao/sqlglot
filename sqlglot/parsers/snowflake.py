@@ -679,6 +679,29 @@ class SnowflakeParser(parser.Parser):
         and self.expression(exp.UsingTemplateProperty(this=self._parse_statement())),
     }
 
+    DESCRIBE_QUALIFIER_PARSERS: t.ClassVar[t.Dict[str, t.Callable]] = {
+        "API": lambda self: self.expression(exp.ApiProperty()),
+        "APPLICATION": lambda self: self.expression(exp.ApplicationProperty()),
+        "CATALOG": lambda self: self.expression(exp.CatalogProperty()),
+        "COMPUTE": lambda self: self.expression(exp.ComputeProperty()),
+        "DATABASE": lambda self: self.expression(exp.DatabaseProperty())
+        if self._curr and self._curr.text.upper() == "ROLE"
+        else None,
+        "DYNAMIC": lambda self: self.expression(exp.DynamicProperty()),
+        "EXTERNAL": lambda self: self.expression(exp.ExternalProperty()),
+        "HYBRID": lambda self: self.expression(exp.HybridProperty()),
+        "ICEBERG": lambda self: self.expression(exp.IcebergProperty()),
+        "MASKING": lambda self: self.expression(exp.MaskingProperty()),
+        "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty()),
+        "NETWORK": lambda self: self.expression(exp.NetworkProperty()),
+        "ROW": lambda self: self.expression(exp.RowAccessProperty())
+        if self._match_text_seq("ACCESS")
+        else None,
+        "SECURITY": lambda self: self.expression(exp.SecurityIntegrationProperty())
+        if self._curr and self._curr.text.upper() == "INTEGRATION"
+        else None,
+    }
+
     TYPE_CONVERTERS = {
         # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
         exp.DType.DECIMAL: build_default_decimal_type(precision=38, scale=0),
@@ -733,22 +756,16 @@ class SnowflakeParser(parser.Parser):
 
     NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
-    DESCRIBE_KINDS: t.ClassVar = (
-        ("ROW", "ACCESS", "POLICY"),
-        ("APPLICATION", "PACKAGE"),
-        ("API", "INTEGRATION"),
-        ("CATALOG", "INTEGRATION"),
-        ("COMPUTE", "POOL"),
-        ("DATABASE", "ROLE"),
-        ("DYNAMIC", "TABLE"),
-        ("EXTERNAL", "VOLUME"),
-        ("HYBRID", "TABLE"),
-        ("ICEBERG", "TABLE"),
-        ("MASKING", "POLICY"),
-        ("MATERIALIZED", "VIEW"),
-        ("NETWORK", "RULE"),
-        ("SECURITY", "INTEGRATION"),
-    )
+    CREATABLES = {
+        *parser.Parser.CREATABLES,
+        TokenType.INTEGRATION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
+    }
 
     LAMBDAS = {
         **parser.Parser.LAMBDAS,
@@ -776,20 +793,29 @@ class SnowflakeParser(parser.Parser):
         return self.expression(exp.DirectoryStage(this=this))
 
     def _parse_describe(self) -> exp.Describe:
-        for text_seq in self.DESCRIBE_KINDS:
-            if self._match_text_seq(*text_seq):
-                this = self._parse_table(schema=True)
-                properties = self._parse_properties()
-                expressions = properties.expressions if properties else None
+        index = self._index
 
-                return self.expression(
-                    exp.Describe(
-                        this=this,
-                        kind=" ".join(text_seq),
-                        expressions=expressions,
+        if self._match_texts(self.DESCRIBE_QUALIFIER_PARSERS):
+            qualifier = self.DESCRIBE_QUALIFIER_PARSERS[self._prev.text.upper()](self)
+
+            if qualifier:
+                kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+
+                if kind:
+                    this = self._parse_table(schema=True)
+                    properties = self.expression(exp.Properties(expressions=[qualifier]))
+                    post_props = self._parse_properties()
+                    expressions = post_props.expressions if post_props else None
+                    return self.expression(
+                        exp.Describe(
+                            this=this,
+                            kind=kind,
+                            properties=properties,
+                            expressions=expressions,
+                        )
                     )
-                )
 
+        self._retreat(index)
         return super()._parse_describe()
 
     def _parse_use(self) -> exp.Use:

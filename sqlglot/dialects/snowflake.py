@@ -502,13 +502,19 @@ class Snowflake(Dialect):
             "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
+            "INTEGRATION": TokenType.INTEGRATION,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NCHAR VARYING": TokenType.VARCHAR,
+            "PACKAGE": TokenType.PACKAGE,
+            "POLICY": TokenType.POLICY,
+            "POOL": TokenType.POOL,
             "PUT": TokenType.PUT,
             "REMOVE": TokenType.COMMAND,
             "RM": TokenType.COMMAND,
+            "ROLE": TokenType.ROLE,
+            "RULE": TokenType.RULE,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
             "SQL_DOUBLE": TokenType.DOUBLE,
@@ -519,6 +525,7 @@ class Snowflake(Dialect):
             "TAG": TokenType.TAG,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
+            "VOLUME": TokenType.VOLUME,
             "WAREHOUSE": TokenType.WAREHOUSE,
             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
             # FLOAT is a synonym for DOUBLE in Snowflake
@@ -1011,9 +1018,15 @@ class Snowflake(Dialect):
             return f"SHOW {terse}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
 
         def describe_sql(self, expression: exp.Describe) -> str:
-            # Default to table if kind is unknown
             kind_value = expression.args.get("kind") or "TABLE"
-            kind = f" {kind_value}" if kind_value else ""
+
+            properties = expression.args.get("properties")
+            if properties:
+                qualifier = " ".join(self.sql(p) for p in properties.expressions)
+                kind = f" {qualifier} {kind_value}"
+            else:
+                kind = f" {kind_value}"
+
             this = f" {self.sql(expression, 'this')}"
             expressions = self.expressions(expression, flat=True)
             expressions = f" {expressions}" if expressions else ""

@@ -330,7 +330,14 @@ class SnowflakeParser(parser.Parser):
     ID_VAR_TOKENS = {
         *parser.Parser.ID_VAR_TOKENS,
         TokenType.EXCEPT,
+        TokenType.INTEGRATION,
         TokenType.MATCH_CONDITION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
     }
 
     TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {

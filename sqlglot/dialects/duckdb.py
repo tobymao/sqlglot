@@ -3569,23 +3569,26 @@ class DuckDB(Dialect):
                 # Handle Snowflake's "index 0 and 1 both return first element" behavior
                 if expression.args.get("part_index_zero_as_one"):
                     # Convert 0 to 1 for compatibility
-                    part_index_arg = (
-                        exp.case()
+
+                    part_index_arg = exp.Paren(
+                        this=exp.case()
                         .when(part_index_arg.eq(exp.Literal.number("0")), exp.Literal.number("1"))
                         .else_(part_index_arg)
                     )
 
-                # Generate DuckDB SQL manually to avoid recursion
-                base_func_sql = f"SPLIT_PART({self.sql(string_arg)}, {self.sql(delimiter_arg)}, {self.sql(part_index_arg)})"
+                # Use Anonymous to avoid recursion
+                base_func_expr: exp.Expr = exp.Anonymous(
+                    this="SPLIT_PART", expressions=[string_arg, delimiter_arg, part_index_arg]
+                )
                 needs_case_transform = False
-                case_expr = exp.case().else_(base_func_sql)
+                case_expr = exp.case().else_(base_func_expr)
 
                 if expression.args.get("empty_delimiter_returns_whole"):
                     # When delimiter is empty string:
                     # - Return whole string if part_index is 1 or -1
                     # - Return empty string otherwise
-                    empty_case = (
-                        exp.case()
+                    empty_case = exp.Paren(
+                        this=exp.case()
                         .when(
                             exp.or_(
                                 part_index_arg.eq(exp.Literal.number("1")),
@@ -3599,7 +3602,21 @@ class DuckDB(Dialect):
                     case_expr = case_expr.when(delimiter_arg.eq(exp.Literal.string("")), empty_case)
                     needs_case_transform = True
 
-                return self.sql(case_expr) if needs_case_transform else base_func_sql
+                """
+                Output looks something like this:
+
+                CASE 
+                WHEN delimiter is '' THEN 
+                    (
+                        CASE 
+                        WHEN adjusted_part_index = 1 OR adjusted_part_index = -1 THEN input
+                        ELSE '' END
+                    ) 
+                ELSE SPLIT_PART(input, delimiter, adjusted_part_index) 
+                END
+
+                """
+                return self.sql(case_expr if needs_case_transform else base_func_expr)
 
             return self.function_fallback_sql(expression)
 

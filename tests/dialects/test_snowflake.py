@@ -222,7 +222,7 @@ class TestSnowflake(Validator):
             "SELECT SPLIT_PART('11.22.33', '.', 2)",
             write={
                 "snowflake": "SELECT SPLIT_PART('11.22.33', '.', 2)",
-                "duckdb": "SELECT CASE WHEN '.' = '' THEN CASE WHEN CASE WHEN 2 = 0 THEN 1 ELSE 2 END = 1 OR CASE WHEN 2 = 0 THEN 1 ELSE 2 END = -1 THEN '11.22.33' ELSE '' END ELSE SPLIT_PART('11.22.33', '.', CASE WHEN 2 = 0 THEN 1 ELSE 2 END) END",
+                "duckdb": "SELECT CASE WHEN '.' = '' THEN (CASE WHEN (CASE WHEN 2 = 0 THEN 1 ELSE 2 END) = 1 OR (CASE WHEN 2 = 0 THEN 1 ELSE 2 END) = -1 THEN '11.22.33' ELSE '' END) ELSE SPLIT_PART('11.22.33', '.', (CASE WHEN 2 = 0 THEN 1 ELSE 2 END)) END",
             },
         )
         self.validate_all(

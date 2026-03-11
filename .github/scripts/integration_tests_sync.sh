@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Unset git env vars that leak from parent hook context into submodule commands
+unset GIT_INDEX_FILE GIT_DIR
+
 SUBMODULE_DIR="sqlglot-integration-tests"
 
 # Graceful no-op when the submodule is absent (public contributors)
@@ -17,10 +20,21 @@ ensure_branch() {
   current=$(git -C "$SUBMODULE_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 
   if [ "$current" != "$branch" ]; then
+    # Stash any uncommitted/untracked changes so branch switch doesn't fail
+    local stashed=0
+    if [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ]; then
+      git -C "$SUBMODULE_DIR" stash push --include-untracked --quiet 2>/dev/null && stashed=1
+    fi
+
     if git -C "$SUBMODULE_DIR" show-ref --verify --quiet "refs/heads/$branch"; then
       git -C "$SUBMODULE_DIR" checkout "$branch" --quiet
     else
       git -C "$SUBMODULE_DIR" checkout -b "$branch" --quiet
+    fi
+
+    # Restore stashed changes on the new branch
+    if [ "$stashed" = "1" ]; then
+      git -C "$SUBMODULE_DIR" stash pop --quiet 2>/dev/null || true
     fi
   fi
 }
@@ -42,6 +56,23 @@ case "${1:-}" in
     # Stage the updated submodule pointer in the parent
     if ! git diff --quiet -- "$SUBMODULE_DIR"; then
       git add "$SUBMODULE_DIR"
+    fi
+    ;;
+
+  post-commit)
+    # The pre-commit framework's stashing undoes submodule changes made during
+    # pre-commit. Re-commit the submodule and amend the parent to include it.
+    ensure_branch
+
+    if [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ]; then
+      BRANCH=$(git rev-parse --abbrev-ref HEAD)
+      git -C "$SUBMODULE_DIR" add -A
+      git -C "$SUBMODULE_DIR" commit -m "Sync: $BRANCH"
+    fi
+
+    if ! git diff --quiet -- "$SUBMODULE_DIR"; then
+      git add "$SUBMODULE_DIR"
+      git commit --amend --no-edit --no-verify
     fi
     ;;
 
@@ -108,7 +139,7 @@ case "${1:-}" in
     ;;
 
   *)
-    echo "Usage: $0 {checkout|commit|push|merge}" >&2
+    echo "Usage: $0 {checkout|commit|post-commit|push|merge}" >&2
     exit 1
     ;;
 esac

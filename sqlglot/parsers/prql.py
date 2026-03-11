@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -17,7 +17,6 @@ def _resolve_projection(s: exp.Expr, projections: t.Dict[str, exp.Expr]) -> exp.
     return s
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class PRQLParser(parser.Parser):
     CONJUNCTION = {
         **parser.Parser.CONJUNCTION,

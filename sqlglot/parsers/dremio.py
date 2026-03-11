@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     build_timetostr_or_tochar,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -82,9 +82,13 @@ def datetype_handler(args: t.List[exp.Expr], dialect: DialectType) -> exp.Expr:
     )
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DremioParser(parser.Parser):
     LOG_DEFAULTS_TO_LN = True
+
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
 
     NO_PAREN_FUNCTION_PARSERS = {
         **parser.Parser.NO_PAREN_FUNCTION_PARSERS,

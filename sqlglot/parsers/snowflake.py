@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     Dialect,
     build_default_decimal_type,
@@ -15,7 +16,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     map_date_part,
 )
-from sqlglot.helper import is_date_unit, is_int, mypyc_attr, seq_get
+from sqlglot.helper import is_date_unit, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -316,7 +317,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser],
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
@@ -333,14 +333,16 @@ class SnowflakeParser(parser.Parser):
         TokenType.MATCH_CONDITION,
     }
 
-    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}) - {
-        TokenType.MATCH_CONDITION
-    }
+    TABLE_ALIAS_TOKENS = (
+        parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI, TokenType.WINDOW}
+    ) - {TokenType.MATCH_CONDITION}
 
     COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.CURRENT_TIME: exp.Localtime,
     }
 
@@ -712,6 +714,8 @@ class SnowflakeParser(parser.Parser):
         "PROCEDURES": _show_parser("PROCEDURES"),
         "WAREHOUSES": _show_parser("WAREHOUSES"),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,

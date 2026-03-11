@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from sqlglot import exp, parser
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class TableauParser(parser.Parser):
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,

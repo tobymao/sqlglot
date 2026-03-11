@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_regexp_extract
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -39,7 +39,6 @@ def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
     )
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class HiveParser(parser.Parser):
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = False

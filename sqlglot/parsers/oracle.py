@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
 
@@ -19,7 +19,6 @@ def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
     return build_formatted_time(exp.StrToTime, "oracle")(args)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class OracleParser(parser.Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
@@ -48,6 +47,7 @@ class OracleParser(parser.Parser):
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.SYSTIMESTAMP: exp.Systimestamp,
     }
 

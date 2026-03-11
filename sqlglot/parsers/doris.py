@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
@@ -24,7 +24,6 @@ def _build_date_trunc(args: t.List[exp.Expr]) -> exp.Expr:
     return exp.TimestampTrunc(this=this, unit=unit)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,

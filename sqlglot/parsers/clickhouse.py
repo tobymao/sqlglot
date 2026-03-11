@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     build_like,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import Token, TokenType
 
 if t.TYPE_CHECKING:
@@ -233,7 +233,6 @@ AGG_FUNC_MAPPING: t.Mapping[str, t.Tuple[str, str | None]] = {
 } | {f: (f, None) for f in AGG_FUNCTIONS}
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class ClickHouseParser(parser.Parser):
     # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
     # * select x from t1 union all select x from t2 limit 1;

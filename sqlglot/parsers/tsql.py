@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     map_date_part,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import build_coalesce
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -303,12 +303,16 @@ def _build_datetrunc(args: t.List) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=this, unit=unit)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class TSQLParser(parser.Parser):
     SET_REQUIRES_ASSIGNMENT_DELIMITER = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     NO_PAREN_IF_COMMANDS = False
+
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.SESSION_USER: exp.SessionUser,
+    }
 
     QUERY_MODIFIER_PARSERS = {
         **parser.Parser.QUERY_MODIFIER_PARSERS,
@@ -319,7 +323,9 @@ class TSQLParser(parser.Parser):
     # T-SQL does not allow BEGIN to be used as an identifier
     ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
+    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI}) - {
+        TokenType.BEGIN
+    }
     COMMENT_TABLE_ALIAS_TOKENS = parser.Parser.COMMENT_TABLE_ALIAS_TOKENS - {TokenType.BEGIN}
     UPDATE_ALIAS_TOKENS = parser.Parser.UPDATE_ALIAS_TOKENS - {TokenType.BEGIN}
 

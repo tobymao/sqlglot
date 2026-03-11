@@ -772,6 +772,10 @@ class TestSnowflake(Validator):
             "CAST(x AS GEOMETRY)",
             "TO_GEOMETRY(x)",
         )
+        self.validate_identity("TO_GEOGRAPHY(x)")
+        self.validate_identity("TO_GEOMETRY(x)")
+        self.validate_identity("TO_GEOGRAPHY(x, y)")
+        self.validate_identity("TO_GEOMETRY(x, y)")
         self.validate_identity(
             "transform(x, a int -> a + a + 1)",
             "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",

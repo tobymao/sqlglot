@@ -211,7 +211,7 @@ class ToBoolean(Expression, Func):
 
 
 class ToVariant(Expression, Func):
-    arg_types = {"this": True}
+    pass
 
 
 # Session / context functions

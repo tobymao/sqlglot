@@ -20,7 +20,6 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
     ensure_list,
-    mypyc_attr,
     seq_get,
     to_bool,
     trait,
@@ -42,7 +41,6 @@ POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
-@mypyc_attr(allow_interpreted_subclasses=True, native_class=True)
 @trait
 class Expr:
     """
@@ -115,8 +113,6 @@ class Expr:
 
         for arg_key, value in self.args.items():
             self._set_parent(arg_key, value)
-        if hasattr(self, "_post_init"):
-            self._post_init()
 
     @property
     def this(self) -> t.Any:
@@ -481,7 +477,6 @@ class Expr:
         raise NotImplementedError
 
 
-@mypyc_attr(allow_interpreted_subclasses=True, native_class=True)
 class Expression(Expr):
     __slots__ = (
         "args",
@@ -670,10 +665,6 @@ class Expression(Expr):
         self._type = dtype  # type: ignore[assignment]
 
     def is_type(self, *dtypes: DATA_TYPE) -> bool:
-        # TODO (mypyc)
-        # Access _type directly (not via .type property) to avoid a mypyc shadow vtable bug
-        # where CPY_GET_ATTR(self, ..., 17, ...) incorrectly calls the setter on interpreted
-        # subclasses instead of the getter.
         t = self._type
         return t is not None and t.is_type(*dtypes)
 
@@ -761,7 +752,7 @@ class Expression(Expr):
             self.args[arg_key] = []
         self._set_parent(arg_key, value)
         values = self.args[arg_key]
-        if hasattr(value, "parent"):
+        if isinstance(value, Expr):
             value.index = len(values)
         values.append(value)
 
@@ -1149,16 +1140,18 @@ class Expression(Expr):
         Returns:
             A list of error messages for all possible errors that were found.
         """
-        errors: t.List[str] = []
-
         if UNITTEST:
             for k in self.args:
                 if k not in self.arg_types:
                     raise TypeError(f"Unexpected keyword: '{k}' for {self.__class__}")
 
+        errors: t.Optional[t.List[str]] = None
+
         for k in self.required_args:
             v = self.args.get(k)
             if v is None or (isinstance(v, list) and not v):
+                if errors is None:
+                    errors = []
                 errors.append(f"Required keyword: '{k}' missing for {self.__class__}")
 
         if (
@@ -1167,12 +1160,14 @@ class Expression(Expr):
             and len(args) > len(self.arg_types)
             and not self.is_var_len_args
         ):
+            if errors is None:
+                errors = []
             errors.append(
                 f"The number of provided arguments ({len(args)}) is greater than "
                 f"the maximum number of supported arguments ({len(self.arg_types)})"
             )
 
-        return errors
+        return errors or []
 
     def and_(
         self,
@@ -1272,19 +1267,24 @@ class Expression(Expr):
             The updated expression.
         """
         if other is None:
-            self.meta["line"] = line
-            self.meta["col"] = col
-            self.meta["start"] = start
-            self.meta["end"] = end
+            meta = self.meta
+            meta["line"] = line
+            meta["col"] = col
+            meta["start"] = start
+            meta["end"] = end
         elif isinstance(other, Expr):
-            for k in POSITION_META_KEYS:
-                if k in other.meta:
-                    self.meta[k] = other.meta[k]
+            other_meta = other._meta
+            if other_meta:
+                meta = self.meta
+                for k in POSITION_META_KEYS:
+                    if k in other_meta:
+                        meta[k] = other_meta[k]
         else:
-            self.meta["line"] = other.line
-            self.meta["col"] = other.col
-            self.meta["start"] = other.start
-            self.meta["end"] = other.end
+            meta = self.meta
+            meta["line"] = other.line
+            meta["col"] = other.col
+            meta["start"] = other.start
+            meta["end"] = other.end
         return self
 
     def as_(
@@ -1937,9 +1937,7 @@ class TimeUnit(Expr):
         ):
             unit = Var(this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper())
             self.args["unit"] = unit
-            # TODO (mypyc): change back to self._set_parent("unit", unit)
-            unit.parent = self
-            unit.arg_key = "unit"
+            self._set_parent("unit", unit)
         elif type(unit).__name__ == "Week":
             unit.set("this", Var(this=unit.this.name.upper()))  # type: ignore[union-attr]
 
@@ -1959,11 +1957,7 @@ class IntervalOp(TimeUnit):
     def interval(self) -> "Interval":
         from sqlglot.expressions.datatypes import Interval
 
-        # TODO (mypyc):
-        # Access self.args directly instead of self.expression to avoid mypyc
-        # dispatching to ExpressionCore.expression (which raises NotImplementedError)
-        # rather than the concrete Expr.expression implementation.
-        expr = self.args.get("expression")
+        expr = self.expression
         return Interval(
             this=expr.copy() if expr is not None else None,
             unit=self.unit.copy() if self.unit else None,
@@ -2461,16 +2455,8 @@ def _to_s(node: t.Any, verbose: bool = False, level: int = 0, repr_str: bool = F
     if isinstance(node, Expr):
         args = {k: v for k, v in node.args.items() if (v is not None and v != []) or verbose}
 
-        # TODO (mypyc):
-        # Access _type directly (not via .type property) to avoid a mypyc shadow vtable bug
-        # where CPY_GET_ATTR_TRAIT(node, CPyType_core___Expr, 16, ...) calls the setter
-        # instead of the getter on interpreted subclasses. Replicate the type property logic:
-        # for Cast nodes, fall back to the `to` argument when _type is not set.
-        _node_type = node._type
-        if _node_type is None and node.is_cast:
-            _node_type = node.args.get("to")
-        if (_node_type or verbose) and type(node).__name__ != "DataType":
-            args["_type"] = _node_type
+        if (node.type or verbose) and type(node).__name__ != "DataType":
+            args["_type"] = node.type
         if node.comments or verbose:
             args["_comments"] = node.comments
 

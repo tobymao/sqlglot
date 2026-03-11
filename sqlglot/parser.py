@@ -6061,6 +6061,26 @@ class Parser:
 
         return this
 
+    def _build_json_extract(
+        self,
+        this: t.Optional[exp.Expr],
+        json_path: t.List[str],
+        escape: t.Optional[bool],
+    ) -> exp.JSONExtract:
+        json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
+
+        if json_path_expr:
+            json_path_expr.set("escape", escape)
+
+        return self.expression(
+            exp.JSONExtract(
+                this=this,
+                expression=json_path_expr,
+                variant_extract=True,
+                requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+            )
+        )
+
     def _parse_colon_as_variant_extract(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
         casts = []
         json_path = []
@@ -6096,24 +6116,46 @@ class Parser:
                 if isinstance(path, exp.Identifier) and path.quoted:
                     escape = True
 
+                # Dynamic brackets (e.g. value:a[s.x].b.c or value:a[s.x].r.d[s.y])
+                # can't be in the JSON path string since the index is a column reference.
+                # We traverse Dot/Bracket layers from outside in, collecting segments, then
+                # process them inside out.
+                segments: t.List[t.Tuple[exp.Bracket, t.List[str]]] = []
+                node = path
+                while True:
+                    suffixes = []
+                    while isinstance(node, exp.Dot):
+                        suffixes.append(node.expression.sql(dialect=self.dialect))
+                        node = node.this
+
+                    if isinstance(node, exp.Bracket) and any(
+                        e.find(exp.Column) for e in node.expressions
+                    ):
+                        suffixes.reverse()
+                        segments.append((node, suffixes))
+                        node = node.this
+                    else:
+                        break
+
+                if segments:
+                    json_path.append(segments[-1][0].this.sql(dialect=self.dialect))
+                    for bracket, suffixes in reversed(segments):
+                        this = self._build_json_extract(this, json_path, escape)
+                        this = exp.Bracket(this=this, expressions=bracket.expressions)
+                        json_path = suffixes
+
+                    if json_path:
+                        this = self._build_json_extract(this, json_path, None)
+
+                    json_path = []
+                    continue
+
                 json_path.append(self._find_sql(self._tokens[start_index], end_token))
 
         # The VARIANT extract in Snowflake/Databricks is parsed as a JSONExtract; Snowflake uses the json_path in GET_PATH() while
         # Databricks transforms it back to the colon/dot notation
         if json_path:
-            json_path_expr = self.dialect.to_json_path(exp.Literal.string(".".join(json_path)))
-
-            if json_path_expr:
-                json_path_expr.set("escape", escape)
-
-            this = self.expression(
-                exp.JSONExtract(
-                    this=this,
-                    expression=json_path_expr,
-                    variant_extract=True,
-                    requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
-                )
-            )
+            this = self._build_json_extract(this, json_path, escape)
 
             while casts:
                 this = self.expression(exp.Cast(this=this, to=casts.pop()))

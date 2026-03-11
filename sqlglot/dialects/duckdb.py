@@ -822,18 +822,19 @@ def _build_week_trunc_expression(
     Shift formula: Sunday (7) gets +1, others get (1 - start_dow).
     """
     shift_days = 1 if start_dow == 7 else 1 - start_dow
+    truncated = exp.func("DATE_TRUNC", unit=exp.var("WEEK"), this=date_expr)
 
     if shift_days == 0:
-        return exp.DateTrunc(unit=exp.var("WEEK"), this=date_expr)
+        return truncated
 
     shift = exp.Interval(this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY"))
     shifted_date = exp.DateAdd(this=date_expr, expression=shift)
-    truncated = exp.DateTrunc(unit=exp.var("WEEK"), this=shifted_date)
+    truncated.set("this", shifted_date)
 
     if unshift:
-        reverse = exp.Interval(this=exp.Literal.string(str(-shift_days)), unit=exp.var("DAY"))
+        interval = exp.Interval(this=exp.Literal.string(str(-shift_days)), unit=exp.var("DAY"))
         return exp.cast(
-            exp.DateAdd(this=truncated, expression=reverse), to=exp.DataType.Type.DATE, copy=False
+            exp.DateAdd(this=truncated, expression=interval), to=exp.DType.DATE, copy=False
         )
 
     return truncated
@@ -3858,10 +3859,10 @@ class DuckDB(Dialect):
 
             week_start = _week_unit_to_dow(unit)
             if week_start:
-                return self.sql(_build_week_trunc_expression(date, week_start, unshift=True))
-
-            unit = unit_to_str(expression)
-            result = self.func("DATE_TRUNC", unit, date)
+                result = self.sql(_build_week_trunc_expression(date, week_start, unshift=True))
+            else:
+                unit = unit_to_str(expression)
+                result = self.func("DATE_TRUNC", unit, date)
 
             if (
                 expression.args.get("input_type_preserved")

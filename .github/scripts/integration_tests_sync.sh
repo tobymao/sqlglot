@@ -41,10 +41,14 @@ ensure_branch() {
 
 case "${1:-}" in
   checkout)
-    ensure_branch
+    # No-op: branch creation is deferred to commit/post-commit to avoid
+    # creating empty branches when switching parent branches.
     ;;
 
   commit)
+    # Skip if submodule has no changes
+    [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ] || exit 0
+
     ensure_branch
 
     if [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ]; then
@@ -62,6 +66,12 @@ case "${1:-}" in
   post-commit)
     # The pre-commit framework's stashing undoes submodule changes made during
     # pre-commit. Re-commit the submodule and amend the parent to include it.
+
+    # Skip if submodule has no changes and pointer is up to date
+    if [ -z "$(git -C "$SUBMODULE_DIR" status --porcelain)" ] && git diff --quiet -- "$SUBMODULE_DIR"; then
+      exit 0
+    fi
+
     ensure_branch
 
     if [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ]; then

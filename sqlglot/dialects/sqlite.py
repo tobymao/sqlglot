@@ -308,6 +308,12 @@ class SQLite(Dialect):
 
             return self.sql(expression, "this")
 
+        def greatest_sql(self, expression: exp.Greatest) -> str:
+            if expression.expressions:
+                return rename_func("MAX")(self, expression)
+
+            return self.sql(expression, "this")
+
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = expression.this
             this = f" {this}" if this else ""

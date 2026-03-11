@@ -240,10 +240,10 @@ class DuckDBParser(parser.Parser):
 
     def _parse_expression(self) -> t.Optional[exp.Expr]:
         # DuckDB supports prefix aliases, e.g. foo: 1
-        if self._next and self._next.token_type == TokenType.COLON:
+        if self._next.token_type == TokenType.COLON:
             alias = self._parse_id_var(tokens=self.ALIAS_TOKENS)
             self._match(TokenType.COLON)
-            comments = self._prev_comments or []
+            comments = self._prev_comments
 
             this = self._parse_assignment()
             if isinstance(this, exp.Expr):
@@ -265,10 +265,10 @@ class DuckDBParser(parser.Parser):
         consume_pipe: bool = False,
     ) -> t.Optional[exp.Expr]:
         # DuckDB supports prefix aliases, e.g. FROM foo: bar
-        if self._next and self._next.token_type == TokenType.COLON:
+        if self._next.token_type == TokenType.COLON:
             alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
             self._match(TokenType.COLON)
-            comments = self._prev_comments or []
+            comments = self._prev_comments
         else:
             alias = None
             comments = []

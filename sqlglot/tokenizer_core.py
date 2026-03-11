@@ -449,8 +449,9 @@ class TokenType(IntEnum):
     NAMESPACE = auto()
     EXPORT = auto()
 
-    # sentinel
+    # sentinels
     HIVE_TOKEN_STREAM = auto()
+    SENTINEL = auto()
 
     def __str__(self) -> str:
         return f"TokenType.{self.name}"
@@ -506,6 +507,9 @@ class Token:
         self.start = start
         self.end = end
         self.comments = [] if comments is None else comments
+
+    def __bool__(self) -> bool:
+        return self.token_type != TokenType.SENTINEL
 
     def __repr__(self) -> str:
         attributes = ", ".join(

@@ -4515,6 +4515,15 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                     f"DESC {kind} {object_name}", f"DESCRIBE {kind} {object_name}"
                 )
 
+        # Verify new keyword tokens work as identifiers and aliases
+        self.validate_identity(
+            "CREATE TABLE t (role VARCHAR, integration INT, policy VARCHAR, pool INT, volume INT, rule VARCHAR, package VARCHAR)"
+        )
+        for token in ("role", "integration", "policy", "pool", "volume", "rule", "package"):
+            with self.subTest(token=token):
+                self.validate_identity(f"SELECT {token} FROM t")
+                self.validate_identity(f"SELECT 1 AS {token}")
+
         self.validate_all(
             "ENDSWITH('abc', 'c')",
             read={

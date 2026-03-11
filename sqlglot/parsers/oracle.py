@@ -132,11 +132,11 @@ class OracleParser(parser.Parser):
         if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
             return None
 
-        this = self._curr.text
+        name = self._curr.text
 
         self._advance(2)
         args = self._parse_hint_args()
-        this = self.expression(exp.Anonymous(this=this, expressions=args))
+        this = self.expression(exp.Anonymous(this=name, expressions=args))
         self._match_r_paren(this)
         return this
 

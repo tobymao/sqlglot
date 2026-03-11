@@ -622,6 +622,12 @@ class SnowflakeParser(parser.Parser):
         "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),
         "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ),
         "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ),
+        "TO_GEOGRAPHY": lambda args: exp.cast(args[0], exp.DType.GEOGRAPHY)
+        if len(args) == 1
+        else exp.Anonymous(this="TO_GEOGRAPHY", expressions=args),
+        "TO_GEOMETRY": lambda args: exp.cast(args[0], exp.DType.GEOMETRY)
+        if len(args) == 1
+        else exp.Anonymous(this="TO_GEOMETRY", expressions=args),
         "TO_VARCHAR": build_timetostr_or_tochar,
         "TO_JSON": exp.JSONFormat.from_arg_list,
         "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,

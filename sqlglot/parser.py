@@ -268,7 +268,7 @@ def _resolve_dialect(dialect: t.Any) -> t.Any:
     return Dialect.get_or_raise(dialect)
 
 
-SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "")
+SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
 class Parser:
@@ -1808,11 +1808,7 @@ class Parser:
         return False
 
     def _match_texts(self, texts: t.Any, advance: bool = True) -> bool:
-        if (
-            self._curr
-            and self._curr.token_type != TokenType.STRING
-            and self._curr.text.upper() in texts
-        ):
+        if self._curr.token_type != TokenType.STRING and self._curr.text.upper() in texts:
             if advance:
                 self._advance()
             return True

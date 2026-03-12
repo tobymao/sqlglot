@@ -158,7 +158,9 @@ def qualify_tables(
                 )
 
                 source_fqn = ".".join(p.name for p in source.parts)
-                table_aliases[source_fqn] = source.args["alias"].this.copy()
+                had_explicit_alias = table_alias and table_alias.name
+                if not had_explicit_alias or source_fqn not in table_aliases:
+                    table_aliases[source_fqn] = source.args["alias"].this.copy()
 
                 if pivot:
                     target_alias = source.alias if pivot.unpivot else None

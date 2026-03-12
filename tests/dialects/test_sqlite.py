@@ -69,6 +69,13 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "SELECT MAX(a, b) FROM t",
+            read={
+                "postgres": "SELECT GREATEST(a, b) FROM t",
+                "sqlite": "SELECT MAX(a, b) FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_GROUP_ARRAY(name) FROM t",
             read={
                 "postgres": "SELECT JSON_AGG(name) FROM t",
@@ -140,6 +147,7 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all("x", read={"snowflake": "LEAST(x)"})
+        self.validate_all("x", read={"postgres": "GREATEST(x)"})
         self.validate_all("MIN(x)", read={"snowflake": "MIN(x)"}, write={"snowflake": "MIN(x)"})
         self.validate_all(
             "MIN(x, y, z)",

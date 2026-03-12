@@ -4515,14 +4515,20 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                     f"DESC {kind} {object_name}", f"DESCRIBE {kind} {object_name}"
                 )
 
-        # Verify new keyword tokens work as identifiers and aliases
-        self.validate_identity(
-            "CREATE TABLE t (role VARCHAR, integration INT, policy VARCHAR, pool INT, volume INT, rule VARCHAR, package VARCHAR)"
-        )
-        for token in ("role", "integration", "policy", "pool", "volume", "rule", "package"):
+        # Verify keyword tokens used by DESCRIBE work as identifiers and aliases
+        from sqlglot import parser
+        from sqlglot.parsers.snowflake import SnowflakeParser
+
+        tokens = {t.name.lower() for t in SnowflakeParser.CREATABLES - parser.Parser.CREATABLES}
+        tokens |= {k.lower() for k in SnowflakeParser.DESCRIBE_QUALIFIER_PARSERS}
+
+        for token in sorted(tokens):
             with self.subTest(token=token):
                 self.validate_identity(f"SELECT {token} FROM t")
                 self.validate_identity(f"SELECT 1 AS {token}")
+
+        cols = ", ".join(f"{t} VARCHAR" for t in sorted(tokens))
+        self.validate_identity(f"CREATE TABLE t ({cols})")
 
         self.validate_all(
             "ENDSWITH('abc', 'c')",

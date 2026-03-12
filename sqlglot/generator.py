@@ -253,7 +253,7 @@ class Generator(metaclass=_Generator):
     # such as window specifications, aggregate functions etc
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
-    # Window functions that support NULLS FIRST/LAST even when NULL_ORDERING_SUPPORTED is False
+    # Window functions that support NULLS FIRST/LAST
     WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING: t.ClassVar[t.Tuple[t.Type[exp.Expression], ...]] = ()
 
     # Whether ignore nulls is inside the agg or outside.
@@ -2831,8 +2831,7 @@ class Generator(metaclass=_Generator):
                 window_this = None
                 spec = None
 
-            # Analytic functions (e.g. LAST_VALUE) support NULLS FIRST/LAST
-            # with a ROWS spec in some dialects like BigQuery
+            # Bigquery supports NULLS FIRST/LAST with ROWS spec for some aggregate functions
             if not (
                 spec
                 and spec.text("kind").upper() == "ROWS"

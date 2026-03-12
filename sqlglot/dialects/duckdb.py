@@ -2465,6 +2465,8 @@ class DuckDB(Dialect):
             asc = expression.args.get("asc")
             nulls_first = expression.args.get("nulls_first")
             arr = expression.this
+            if not isinstance(asc, exp.Boolean):
+                return self.func("LIST_SORT", arr, asc, nulls_first)
             descending = asc == exp.false()
             want_nulls_first = nulls_first == exp.true()
             if not descending and not want_nulls_first:

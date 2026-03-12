@@ -985,8 +985,15 @@ class TestDuckDB(Validator):
                 "spark": "SORT_ARRAY(x)",
             },
         )
-        self.validate_identity("SELECT LIST_SORT([1, NULL, 0], 'DESC', 'NULLS FIRST')")
-        self.validate_identity("SELECT LIST_SORT([1, NULL, 0], 'ASC', 'NULLS FIRST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS FIRST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS' || ' FIRST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC', 'NULLS' || ' FIRST')")
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={

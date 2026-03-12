@@ -20,6 +20,6 @@ setup(
         # Compiles from source on the user's machine.
         "c": ["sqlglotc"],
         # Deprecated: the Rust tokenizer has been replaced by sqlglotc.
-        "rs": ["sqlglotrs==0.13.0"],
+        "rs": ["sqlglotrs==0.13.0", "sqlglotc"],
     },
 )

@@ -210,6 +210,10 @@ class ToBoolean(Expression, Func):
     arg_types = {"this": True, "safe": False}
 
 
+class ToVariant(Expression, Func):
+    pass
+
+
 # Session / context functions
 
 

@@ -11,7 +11,7 @@ from sqlglot.optimizer.simplify import Simplifier, flatten
 logger = logging.getLogger("sqlglot")
 
 
-def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int = 128):
+def normalize(expression: exp.Expr, dnf: bool = False, max_distance: int = 128) -> exp.Expr:
     """
     Rewrite sqlglot AST into conjunctive normal form or disjunctive normal form.
 
@@ -26,7 +26,7 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
         dnf: rewrite in disjunctive normal form instead.
         max_distance (int): the maximal estimated distance from cnf/dnf to attempt conversion
     Returns:
-        sqlglot.Expression: normalized expression
+        sqlglot.Expr: normalized expression
     """
     simplifier = Simplifier(annotate_new_expressions=False)
 
@@ -66,7 +66,7 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
     return expression
 
 
-def normalized(expression: exp.Expression, dnf: bool = False) -> bool:
+def normalized(expression: exp.Expr, dnf: bool = False) -> bool:
     """
     Checks whether a given expression is in a normal form of interest.
 
@@ -91,7 +91,7 @@ def normalized(expression: exp.Expression, dnf: bool = False) -> bool:
 
 
 def normalization_distance(
-    expression: exp.Expression, dnf: bool = False, max_: float = float("inf")
+    expression: exp.Expr, dnf: bool = False, max_: float = float("inf")
 ) -> int:
     """
     The difference in the number of predicates between a given expression and its normalized form.

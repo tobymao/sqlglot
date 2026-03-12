@@ -2,17 +2,14 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    binary_from_function,
     bool_xor_sql,
-    build_replace_with_optional_replacement,
-    date_trunc_to_time,
+    bracket_to_element_at_sql,
     datestrtodate_sql,
     encode_decode_sql,
-    build_formatted_time,
     if_sql,
     left_to_substring_sql,
     no_ilike_sql,
@@ -29,14 +26,13 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
     unit_to_str,
     sequence_sql,
-    build_regexp_extract,
     explode_to_unnest_sql,
     sha2_digest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
+from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import unqualify_columns
 from sqlglot.generator import unsupported_args
@@ -101,10 +97,8 @@ def _str_to_time_sql(
 def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
-        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DataType.Type.DATE))
-    return self.sql(
-        exp.cast(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP), exp.DataType.Type.DATE)
-    )
+        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DType.DATE))
+    return self.sql(exp.cast(exp.cast(expression.this, exp.DType.TIMESTAMP), exp.DType.DATE))
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
@@ -114,38 +108,10 @@ def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
-    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP)
-    expr = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP)
+    this = exp.cast(expression.this, exp.DType.TIMESTAMP)
+    expr = exp.cast(expression.expression, exp.DType.TIMESTAMP)
     unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
-
-
-def _build_approx_percentile(args: t.List) -> exp.Expression:
-    if len(args) == 4:
-        return exp.ApproxQuantile(
-            this=seq_get(args, 0),
-            weight=seq_get(args, 1),
-            quantile=seq_get(args, 2),
-            accuracy=seq_get(args, 3),
-        )
-    if len(args) == 3:
-        return exp.ApproxQuantile(
-            this=seq_get(args, 0), quantile=seq_get(args, 1), accuracy=seq_get(args, 2)
-        )
-    return exp.ApproxQuantile.from_arg_list(args)
-
-
-def _build_from_unixtime(args: t.List) -> exp.Expression:
-    if len(args) == 3:
-        return exp.UnixToTime(
-            this=seq_get(args, 0),
-            hours=seq_get(args, 1),
-            minutes=seq_get(args, 2),
-        )
-    if len(args) == 2:
-        return exp.UnixToTime(this=seq_get(args, 0), zone=seq_get(args, 1))
-
-    return exp.UnixToTime.from_arg_list(args)
 
 
 def _first_last_sql(self: Presto.Generator, expression: exp.Func) -> str:
@@ -171,25 +137,14 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
-def _to_int(self: Presto.Generator, expression: exp.Expression) -> exp.Expression:
+def _to_int(self: Presto.Generator, expression: exp.Expr) -> exp.Expr:
     if not expression.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         annotate_types(expression, dialect=self.dialect)
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
-        return exp.cast(expression, to=exp.DataType.Type.BIGINT)
+        return exp.cast(expression, to=exp.DType.BIGINT)
     return expression
-
-
-def _build_to_char(args: t.List) -> exp.TimeToStr:
-    fmt = seq_get(args, 1)
-    if isinstance(fmt, exp.Literal):
-        # We uppercase this to match Teradata's format mapping keys
-        fmt.set("this", fmt.this.upper())
-
-    # We use "teradata" on purpose here, because the time formats are different in Presto.
-    # See https://prestodb.io/docs/current/functions/teradata.html?highlight=to_char#to_char
-    return build_formatted_time(exp.TimeToStr, "teradata")(args)
 
 
 def _date_delta_sql(
@@ -217,9 +172,9 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
         if (
             isinstance(alias, exp.TableAlias)
             and isinstance(exploded_type, exp.DataType)
-            and exploded_type.is_type(exp.DataType.Type.ARRAY)
+            and exploded_type.is_type(exp.DType.ARRAY)
             and exploded_type.expressions
-            and exploded_type.expressions[0].is_type(exp.DataType.Type.STRUCT)
+            and exploded_type.expressions[0].is_type(exp.DType.STRUCT)
         ):
             # When unnesting a ROW in Presto, it produces N columns, so we need to fix the alias
             alias.set("columns", [c.this.copy() for c in exploded_type.expressions[0].expressions])
@@ -229,7 +184,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
     return explode_to_unnest_sql(self, expression)
 
 
-def amend_exploded_column_table(expression: exp.Expression) -> exp.Expression:
+def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
     # We check for expression.type because the columns can be amended only if types were inferred
     if isinstance(expression, exp.Select) and expression.type:
         for lateral in expression.args.get("laterals") or []:
@@ -262,7 +217,6 @@ class Presto(Dialect):
     NULL_ORDERING = "nulls_are_last"
     TIME_FORMAT = MySQL.TIME_FORMAT
     STRICT_STRING_CONCAT = True
-    SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
@@ -310,75 +264,7 @@ class Presto(Dialect):
         KEYWORDS.pop("/*+")
         KEYWORDS.pop("QUALIFY")
 
-    class Parser(parser.Parser):
-        VALUES_FOLLOWED_BY_PAREN = False
-        ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "ARBITRARY": exp.AnyValue.from_arg_list,
-            "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
-            "APPROX_PERCENTILE": _build_approx_percentile,
-            "BITWISE_AND": binary_from_function(exp.BitwiseAnd),
-            "BITWISE_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
-            "BITWISE_OR": binary_from_function(exp.BitwiseOr),
-            "BITWISE_XOR": binary_from_function(exp.BitwiseXor),
-            "CARDINALITY": exp.ArraySize.from_arg_list,
-            "CONTAINS": exp.ArrayContains.from_arg_list,
-            "DATE_ADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
-            "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
-            "DATE_TRUNC": date_trunc_to_time,
-            "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
-            "DOW": exp.DayOfWeekIso.from_arg_list,
-            "DOY": exp.DayOfYear.from_arg_list,
-            "ELEMENT_AT": lambda args: exp.Bracket(
-                this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
-            ),
-            "FROM_HEX": exp.Unhex.from_arg_list,
-            "FROM_UNIXTIME": _build_from_unixtime,
-            "FROM_UTF8": lambda args: exp.Decode(
-                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
-            ),
-            "JSON_FORMAT": lambda args: exp.JSONFormat(
-                this=seq_get(args, 0), options=seq_get(args, 1), is_json=True
-            ),
-            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
-            "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
-            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
-            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                replacement=seq_get(args, 2) or exp.Literal.string(""),
-            ),
-            "REPLACE": build_replace_with_optional_replacement,
-            "ROW": exp.Struct.from_arg_list,
-            "SEQUENCE": exp.GenerateSeries.from_arg_list,
-            "SET_AGG": exp.ArrayUniqueAgg.from_arg_list,
-            "SPLIT_TO_MAP": exp.StrToMap.from_arg_list,
-            "STRPOS": lambda args: exp.StrPosition(
-                this=seq_get(args, 0), substr=seq_get(args, 1), occurrence=seq_get(args, 2)
-            ),
-            "SLICE": exp.ArraySlice.from_arg_list,
-            "TO_CHAR": _build_to_char,
-            "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
-            "TO_UTF8": lambda args: exp.Encode(
-                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
-            ),
-            "MD5": exp.MD5Digest.from_arg_list,
-            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
-            "WEEK": exp.WeekOfYear.from_arg_list,
-        }
-
-        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
-        FUNCTION_PARSERS.pop("TRIM")
+    Parser = PrestoParser
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -409,18 +295,18 @@ class Presto(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.DATETIME64: "TIMESTAMP",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.HLLSKETCH: "HYPERLOGLOG",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.STRUCT: "ROW",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMETZ: "TIME",
+            exp.DType.BINARY: "VARBINARY",
+            exp.DType.BIT: "BOOLEAN",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.DATETIME64: "TIMESTAMP",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.HLLSKETCH: "HYPERLOGLOG",
+            exp.DType.INT: "INTEGER",
+            exp.DType.STRUCT: "ROW",
+            exp.DType.TEXT: "VARCHAR",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMETZ: "TIME",
         }
 
         TRANSFORMS = {
@@ -511,6 +397,7 @@ class Presto(Dialect):
                 ]
             ),
             exp.SortArray: _no_sort_array,
+            exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
             exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
@@ -545,6 +432,12 @@ class Presto(Dialect):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
+            # Note: Presto's TRUNCATE always returns DOUBLE, even with decimals=0, whereas
+            # most dialects return INT (SQLite also returns REAL, see sqlite.py). This creates
+            # a bidirectional transpilation gap: Presto→Other may change float division to int
+            # division, and vice versa. Modeling precisely would require exp.FloatTrunc or
+            # similar, deemed overengineering for this subtle semantic difference.
+            exp.Trunc: rename_func("TRUNCATE"),
             exp.Xor: bool_xor_sql,
             exp.MD5Digest: rename_func("MD5"),
             exp.SHA: rename_func("SHA1"),
@@ -632,7 +525,7 @@ class Presto(Dialect):
             value = expression.expression
 
             ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
-            to_unix: exp.Expression = exp.TimeToUnix(this=ts)
+            to_unix: exp.Expr = exp.TimeToUnix(this=ts)
 
             if scale:
                 to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))
@@ -648,8 +541,8 @@ class Presto(Dialect):
 
                 this = annotate_types(this, dialect=self.dialect)
 
-            if not (is_json or this.is_type(exp.DataType.Type.JSON)):
-                this.replace(exp.cast(this, exp.DataType.Type.JSON))
+            if not (is_json or this.is_type(exp.DType.JSON)):
+                this.replace(exp.cast(this, exp.DType.JSON))
 
             return self.function_fallback_sql(expression)
 
@@ -673,10 +566,8 @@ class Presto(Dialect):
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
             this = expression.this
-            value_as_text = exp.cast(this, exp.DataType.Type.TEXT)
-            value_as_timestamp = (
-                exp.cast(this, exp.DataType.Type.TIMESTAMP) if this.is_string else this
-            )
+            value_as_text = exp.cast(this, exp.DType.TEXT)
+            value_as_timestamp = exp.cast(this, exp.DType.TIMESTAMP) if this.is_string else this
 
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
 
@@ -693,19 +584,7 @@ class Presto(Dialect):
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):
-                return self.func(
-                    "ELEMENT_AT",
-                    expression.this,
-                    seq_get(
-                        apply_index_offset(
-                            expression.this,
-                            expression.expressions,
-                            1 - expression.args.get("offset", 0),
-                            dialect=self.dialect,
-                        ),
-                        0,
-                    ),
-                )
+                return bracket_to_element_at_sql(self, expression)
             return super().bracket_sql(expression)
 
         def struct_sql(self, expression: exp.Struct) -> str:
@@ -720,7 +599,7 @@ class Presto(Dialect):
 
             for e in expression.expressions:
                 if isinstance(e, exp.PropertyEQ):
-                    if e.type and e.type.is_type(exp.DataType.Type.UNKNOWN):
+                    if e.type and e.type.is_type(exp.DType.UNKNOWN):
                         unknown_type = True
                     else:
                         schema.append(f"{self.sql(e, 'this')} {self.sql(e.type)}")
@@ -749,7 +628,7 @@ class Presto(Dialect):
             return f"START TRANSACTION{modes}"
 
         def offset_limit_modifiers(
-            self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
+            self, expression: exp.Expr, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
         ) -> t.List[str]:
             return [
                 self.sql(expression, "offset"),

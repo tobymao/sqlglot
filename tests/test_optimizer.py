@@ -180,8 +180,10 @@ class TestOptimizer(unittest.TestCase):
                     )
                 if dialect:
                     func_kwargs["dialect"] = dialect
-                if canonicalize_table_aliases:
-                    func_kwargs["canonicalize_table_aliases"] = canonicalize_table_aliases
+                if canonicalize_table_aliases is not None:
+                    func_kwargs["canonicalize_table_aliases"] = string_to_bool(
+                        canonicalize_table_aliases
+                    )
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -204,7 +206,7 @@ class TestOptimizer(unittest.TestCase):
                 )
                 for expression in optimized.walk():
                     for arg_key, arg in expression.args.items():
-                        if isinstance(arg, exp.Expression):
+                        if isinstance(arg, exp.Expr):
                             self.assertEqual(arg_key, arg.arg_key)
                             self.assertIs(arg.parent, expression)
 
@@ -218,7 +220,7 @@ class TestOptimizer(unittest.TestCase):
 
     @patch("sqlglot.generator.logger")
     def test_optimize(self, logger):
-        self.assertEqual(optimizer.optimize("x = 1 + 1", identify=None).sql(), "x = 2")
+        self.assertEqual(optimizer.optimize("x = 1 + 1", identify=False).sql(), "x = 2")
 
         schema = {
             "x": {"a": "INT", "b": "INT"},
@@ -1936,7 +1938,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             self.assertIsInstance(optimizer.simplify.gen(func()), str)
 
     def test_normalization_distance(self):
-        def gen_expr(depth: int) -> exp.Expression:
+        def gen_expr(depth: int) -> exp.Expr:
             return parse_one(" OR ".join("a AND b" for _ in range(depth)))
 
         self.assertEqual(4, normalization_distance(gen_expr(2), max_=100))
@@ -1963,7 +1965,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         dialect = "bigquery"
         schema = {"d": {"s": {"t": {"c1": "int64", "c2": "struct<f1 int64, f2 string>"}}}}
 
-        def _annotate(query: str) -> exp.Expression:
+        def _annotate(query: str) -> exp.Expr:
             expression = parse_one(query, dialect=dialect)
             qual = optimizer.qualify.qualify(expression, schema=schema, dialect=dialect)
             return optimizer.annotate_types.annotate_types(qual, schema=schema, dialect=dialect)
@@ -2182,7 +2184,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             }
         }
 
-        def _parse_and_optimize(query: str, dialect: str) -> exp.Expression:
+        def _parse_and_optimize(query: str, dialect: str) -> exp.Expr:
             query = parse_one(query, dialect=dialect)
             optimized = optimizer.optimize(query, schema=schema, dialect=dialect)
             return optimized.sql(dialect=dialect)
@@ -2226,6 +2228,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         assert (
             sql
             == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
+        )
+
+        query = parse_one(
+            "SELECT JSON_VALUE(item.id) FROM UNNEST(JSON_QUERY_ARRAY(PARSE_JSON('[{\"id\": 1}]'))) AS item",
+            dialect="bigquery",
+        )
+        optimized = optimizer.optimize(query, dialect="bigquery")
+        for i in optimized.find_all(exp.Identifier):
+            self.assertNotIsInstance(i.this, exp.Identifier)
+        assert (
+            optimized.sql("bigquery")
+            == "SELECT JSON_VALUE(`item`.`id`, '$') AS `_col_0` FROM UNNEST(JSON_QUERY_ARRAY(PARSE_JSON('[{\"id\": 1}]'), '$')) AS `item`"
         )
 
     def test_deep_ast_type_annotation(self):

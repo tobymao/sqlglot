@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pre-commit bench bench-parse bench-optimize test test-fast test-fast-rs unit style check docs docs-serve
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
 
 ifdef UV
     PIP := uv pip
@@ -6,57 +6,83 @@ else
     PIP := pip
 endif
 
+SO_BACKUP := /tmp/sqlglot_so_backup
+
+hidec:
+	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - 2>/dev/null && find sqlglot sqlglotc -name "*.so" -delete; true
+
+showc:
+	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true
+
+clean:
+	rm -rf build sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
+	find sqlglot sqlglotc build -name "*.so" -delete 2>/dev/null; true
+
 install:
 	$(PIP) install -e .
 
-install-dev: install-dev-core install-dev-rs
-
-install-dev-rs-release:
-	cd sqlglotrs/ && python -m maturin develop -r
-
-install-dev-rs:
-	@unset CONDA_PREFIX && \
-	cd sqlglotrs/ && python -m maturin develop
-
-install-dev-core:
+install-dev:
 	$(PIP) install -e ".[dev]"
+	git submodule update --init 2>/dev/null || true
+	@if ! command -v gh >/dev/null 2>&1; then \
+		echo ""; \
+		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
+		printf "Install it via brew? [y/N] "; \
+		read answer; \
+		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+			brew install gh; \
+		else \
+			echo "Skipping. You can install it later: https://cli.github.com/"; \
+		fi; \
+	fi
+
+install-devc: clean
+	cd sqlglotc && $(PIP) install -e .
+
+install-devc-release: clean
+	MYPYC_OPT=3 $(MAKE) install-devc
 
 install-pre-commit:
 	pre-commit install
+	pre-commit install --hook-type post-checkout
+	pre-commit install --hook-type pre-push
+	pre-commit install --hook-type post-merge
+	@printf '#!/bin/bash\n.github/scripts/integration_tests_sync.sh post-commit\n' > .git/hooks/post-commit
+	@chmod +x .git/hooks/post-commit
 
 bench: bench-parse bench-optimize
 
-bench-parse: install-dev-rs-release
+bench-parse:
 	python -m benchmarks.parse
 
-bench-optimize: install-dev-rs-release
+bench-optimize:
 	python -m benchmarks.optimize
 
-test:
-	SQLGLOTRS_TOKENIZER=0 python -m unittest
+test: hidec
+	trap '$(MAKE) showc' EXIT; python -m unittest
 
 test-fast:
-	SQLGLOTRS_TOKENIZER=0 python -m unittest --failfast
+	python -m unittest --failfast
 
-test-rs:
-	RUST_BACKTRACE=1 python -m unittest
+unit: hidec
+	trap '$(MAKE) showc' EXIT; SKIP_INTEGRATION=1 python -m unittest
 
-test-fast-rs:
-	RUST_BACKTRACE=1 python -m unittest --failfast
+testc: install-devc
+	python -m unittest
 
-unit:
-	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest
-
-unit-rs:
-	SKIP_INTEGRATION=1 RUST_BACKTRACE=1 python -m unittest
+unitc: install-devc
+	SKIP_INTEGRATION=1 python -m unittest
 
 style:
 	pre-commit run --all-files
 
-check: style test test-rs
+check: style test testc
 
 docs:
 	python pdoc/cli.py -o docs
 
 docs-serve:
 	python pdoc/cli.py --port 8002
+
+resolve-integration-conflicts:
+	cd sqlglot-integration-tests && git pull --rebase --autostash

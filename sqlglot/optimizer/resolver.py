@@ -70,10 +70,10 @@ class Resolver:
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
 
-        node, _ = self.scope.selected_sources.get(table_name)
+        node: exp.Expr = self.scope.selected_sources[table_name][0]
 
         if isinstance(node, exp.Query):
-            while node and node.alias != table_name:
+            while node and node.alias != table_name and node.parent:
                 node = node.parent
 
         node_alias = node.args.get("alias")
@@ -91,7 +91,7 @@ class Resolver:
             }
         return self._all_columns
 
-    def get_source_columns_from_set_op(self, expression: exp.Expression) -> t.List[str]:
+    def get_source_columns_from_set_op(self, expression: exp.Expr) -> t.List[str]:
         if isinstance(expression, exp.Select):
             return expression.named_selects
         if isinstance(expression, exp.Subquery) and isinstance(expression.this, exp.SetOperation):
@@ -152,12 +152,12 @@ class Resolver:
                     unnest = source.expression
 
                     # if type is not annotated yet, try to get it from the schema
-                    if not unnest.type or unnest.type.is_type(exp.DataType.Type.UNKNOWN):
+                    if not unnest.type or unnest.type.is_type(exp.DType.UNKNOWN):
                         unnest_expr = seq_get(unnest.expressions, 0)
                         if isinstance(unnest_expr, exp.Column) and self.scope.parent:
                             col_type = self._get_unnest_column_type(unnest_expr)
                             # extract element type if it's an ARRAY
-                            if col_type and col_type.is_type(exp.DataType.Type.ARRAY):
+                            if col_type and col_type.is_type(exp.DType.ARRAY):
                                 element_types = col_type.expressions
                                 if element_types:
                                     unnest.type = element_types[0].copy()
@@ -165,26 +165,26 @@ class Resolver:
                                 if col_type:
                                     unnest.type = col_type.copy()
                     # check if the result type is a STRUCT - extract struct field names
-                    if unnest.is_type(exp.DataType.Type.STRUCT):
+                    if unnest.is_type(exp.DType.STRUCT):
                         for k in unnest.type.expressions:  # type: ignore
                             columns.append(k.name)
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
-
             else:
-                select = seq_get(source.expression.selects, 0)
+                selectable = source.expression.assert_is(exp.Selectable)
+                select = seq_get(selectable.selects, 0)
 
                 if isinstance(select, exp.QueryTransform):
                     # https://spark.apache.org/docs/3.5.1/sql-ref-syntax-qry-select-transform.html
                     schema = select.args.get("schema")
                     columns = [c.name for c in schema.expressions] if schema else ["key", "value"]
                 else:
-                    columns = source.expression.named_selects
+                    columns = selectable.named_selects
 
             node, _ = self.scope.selected_sources.get(name) or (None, None)
             if isinstance(node, Scope):
                 column_aliases = node.expression.alias_column_names
-            elif isinstance(node, exp.Expression):
+            elif isinstance(node, exp.Expr):
                 column_aliases = node.alias_column_names
             else:
                 column_aliases = []
@@ -350,6 +350,7 @@ class Resolver:
             The DataType of the column, or None if not found.
         """
         scope = self.scope.parent
+        assert scope
 
         # if column is qualified, use that table, otherwise disambiguate using the resolver
         if column.table:
@@ -381,13 +382,13 @@ class Resolver:
         if isinstance(source, exp.Table):
             # base table - get the column type from schema
             col_type: t.Optional[exp.DataType] = self.schema.get_column_type(source, column)
-            if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+            if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 return col_type
         elif isinstance(source, Scope):
             # iterate over all sources in the scope
             for source_name, nested_source in source.sources.items():
                 col_type = self._get_column_type_from_scope(nested_source, column)
-                if col_type and not col_type.is_type(exp.DataType.Type.UNKNOWN):
+                if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                     return col_type
 
         return None

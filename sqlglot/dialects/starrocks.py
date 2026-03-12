@@ -6,18 +6,17 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
-    build_timestamp_trunc,
     rename_func,
     unit_to_str,
     inline_array_sql,
     property_sql,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import seq_get
+from sqlglot.parsers.starrocks import StarRocksParser
 from sqlglot.tokens import TokenType
 
 
-def _eliminate_between_in_delete(expression: exp.Expression) -> exp.Expression:
+def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
     """
     StarRocks doesn't support BETWEEN in DELETE statements, so we convert
     BETWEEN expressions to explicit comparisons.
@@ -65,152 +64,7 @@ class StarRocks(MySQL):
             "LARGEINT": TokenType.INT128,
         }
 
-    class Parser(MySQL.Parser):
-        FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
-            "DATE_TRUNC": build_timestamp_trunc,
-            "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
-            ),
-            "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
-            ),
-            "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
-            "REGEXP": exp.RegexpLike.from_arg_list,
-        }
-
-        PROPERTY_PARSERS = {
-            **MySQL.Parser.PROPERTY_PARSERS,
-            "PROPERTIES": lambda self: self._parse_wrapped_properties(),
-            "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
-            "ROLLUP": lambda self: self._parse_rollup_property(),
-            "REFRESH": lambda self: self._parse_refresh_property(),
-        }
-
-        def _parse_rollup_property(self) -> exp.RollupProperty:
-            # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
-            def parse_rollup_index() -> exp.RollupIndex:
-                return self.expression(
-                    exp.RollupIndex,
-                    this=self._parse_id_var(),
-                    expressions=self._parse_wrapped_id_vars(),
-                    from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
-                    properties=self.expression(
-                        exp.Properties, expressions=self._parse_wrapped_properties()
-                    )
-                    if self._match_text_seq("PROPERTIES")
-                    else None,
-                )
-
-            return self.expression(
-                exp.RollupProperty, expressions=self._parse_wrapped_csv(parse_rollup_index)
-            )
-
-        def _parse_create(self) -> exp.Create | exp.Command:
-            create = super()._parse_create()
-
-            # Starrocks' primary key is defined outside of the schema, so we need to move it there
-            # https://docs.starrocks.io/docs/table_design/table_types/primary_key_table/#usage
-            if isinstance(create, exp.Create) and isinstance(create.this, exp.Schema):
-                props = create.args.get("properties")
-                if props:
-                    primary_key = props.find(exp.PrimaryKey)
-                    if primary_key:
-                        create.this.append("expressions", primary_key.pop())
-
-            return create
-
-        def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
-            unnest = super()._parse_unnest(with_alias=with_alias)
-
-            if unnest:
-                alias = unnest.args.get("alias")
-
-                if not alias:
-                    # Starrocks defaults to naming the table alias as "unnest"
-                    alias = exp.TableAlias(
-                        this=exp.to_identifier("unnest"), columns=[exp.to_identifier("unnest")]
-                    )
-                    unnest.set("alias", alias)
-                elif not alias.args.get("columns"):
-                    # Starrocks defaults to naming the UNNEST column as "unnest"
-                    # if it's not otherwise specified
-                    alias.set("columns", [exp.to_identifier("unnest")])
-
-            return unnest
-
-        def _parse_partitioned_by(self) -> exp.PartitionedByProperty:
-            return self.expression(
-                exp.PartitionedByProperty,
-                this=exp.Schema(
-                    expressions=self._parse_wrapped_csv(self._parse_assignment, optional=True)
-                ),
-            )
-
-        def _parse_partition_property(
-            self,
-        ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
-            expr = super()._parse_partition_property()
-
-            if not expr:
-                return self._parse_partitioned_by()
-
-            if isinstance(expr, exp.Property):
-                return expr
-
-            self._match_l_paren()
-
-            if self._match_text_seq("START", advance=False):
-                create_expressions = self._parse_csv(self._parse_partitioning_granularity_dynamic)
-            else:
-                create_expressions = None
-
-            self._match_r_paren()
-
-            return self.expression(
-                exp.PartitionByRangeProperty,
-                partition_expressions=expr,
-                create_expressions=create_expressions,
-            )
-
-        def _parse_partitioning_granularity_dynamic(self) -> exp.PartitionByRangePropertyDynamic:
-            self._match_text_seq("START")
-            start = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("END")
-            end = self._parse_wrapped(self._parse_string)
-            self._match_text_seq("EVERY")
-            every = self._parse_wrapped(lambda: self._parse_interval() or self._parse_number())
-            return self.expression(
-                exp.PartitionByRangePropertyDynamic, start=start, end=end, every=every
-            )
-
-        def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
-            """
-            REFRESH [DEFERRED | IMMEDIATE]
-                    [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
-            """
-            method = self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
-            kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
-            start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
-
-            if self._match_text_seq("EVERY"):
-                self._match_l_paren()
-                self._match_text_seq("INTERVAL")
-                every = self._parse_number()
-                unit = self._parse_var(any_token=True)
-                self._match_r_paren()
-            else:
-                every = None
-                unit = None
-
-            return self.expression(
-                exp.RefreshTriggerProperty,
-                method=method,
-                kind=kind,
-                starts=start,
-                every=every,
-                unit=unit,
-            )
+    Parser = StarRocksParser
 
     class Generator(MySQL.Generator):
         EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -230,11 +84,13 @@ class StarRocks(MySQL):
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT128: "LARGEINT",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.TIMESTAMP: "DATETIME",
-            exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
+            exp.DType.INT128: "LARGEINT",
+            exp.DType.TEXT: "STRING",
+            exp.DType.TIMESTAMP: "DATETIME",
+            exp.DType.TIMESTAMPTZ: "DATETIME",
         }
+
+        SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_SCHEMA
 
         PROPERTIES_LOCATION = {
             **MySQL.Generator.PROPERTIES_LOCATION,
@@ -251,6 +107,7 @@ class StarRocks(MySQL):
             exp.ArrayFilter: rename_func("ARRAY_FILTER"),
             exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", unit_to_str(e), e.this, e.expression
             ),
@@ -261,6 +118,7 @@ class StarRocks(MySQL):
             exp.Property: property_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
+            exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
             exp.StDistance: st_distance_sphere,
             exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),

@@ -216,3 +216,13 @@ class TestDremio(Validator):
     def test_datetype(self):
         self.validate_identity("DATETYPE(2024,2,2)", "DATE('2024-02-02')")
         self.validate_identity("DATETYPE(x,y,z)", "CAST(CONCAT(x, '-', y, '-', z) AS DATE)")
+
+    def test_try_cast(self):
+        self.validate_all(
+            "CAST(a AS FLOAT)",
+            read={
+                "dremio": "CAST(a AS FLOAT)",
+                "": "TRY_CAST(a AS FLOAT)",
+                "hive": "CAST(a AS FLOAT)",
+            },
+        )

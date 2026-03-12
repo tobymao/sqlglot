@@ -13,6 +13,15 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity(
+            "SELECT col.^nested, t.col2.^nested, t.col3.^nested.twice FROM t"
+        ).selects[0].assert_is(exp.NestedJSONSelect)
+
+        self.validate_identity(
+            "cast(notEmpty(report_task_id)?report_task_id:'-1' AS text)",
+            "CAST(CASE WHEN notEmpty(report_task_id) THEN report_task_id ELSE '-1' END AS String)",
+        )
+
         expr = quote_identifiers(self.parse_one("{start_date:String}"), dialect="clickhouse")
         self.assertEqual(expr.sql("clickhouse"), "{start_date: String}")
 
@@ -38,6 +47,10 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT 1 AND (1 = 2)")
         self.validate_identity("SELECT json.a.:Int64")
         self.validate_identity("SELECT json.a.:JSON.b.:Int64")
+        self.validate_identity('SELECT json.a.b.:"Array(JSON)".c')
+        self.validate_identity('SELECT json.a.b.:"Array(Array(JSON))".c')
+        self.validate_identity("SELECT json.a.b[].c", 'SELECT json.a.b.:"Array(JSON)".c')
+        self.validate_identity("SELECT json.a.b[][]", 'SELECT json.a.b.:"Array(Array(JSON))"')
         self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")
         self.validate_identity("CAST(1 AS Bool)")
         self.validate_identity("SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))")
@@ -93,6 +106,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT groupUniqArray(2)(a)")
         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
+        self.validate_identity("jaroWinklerSimilarity('hello', 'world')")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL NOT IN (SELECT * FROM bar)")
         self.validate_identity("POSITION(haystack, needle)")
@@ -110,6 +124,15 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER '{cluster}'")
+
+        # Numeric trunc
+        self.validate_identity("trunc(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("trunc(3.14159)").assert_is(exp.Trunc)
+        self.validate_all(
+            "trunc(3.14159, 2)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_identity("EXCHANGE TABLES x.a AND y.b", check_command_warning=True)
         self.validate_identity("CREATE TABLE test (id UInt8) ENGINE=Null()")
         self.validate_identity(
@@ -577,6 +600,11 @@ class TestClickhouse(Validator):
             """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES (('test'), (1), (2))""",
         )
 
+        self.validate_identity(
+            "INSERT INTO t (n.a, n.b) VALUES (1, [1, 2])",
+            "INSERT INTO t (n.a, n.b) VALUES ((1), ([1, 2]))",
+        )
+
         self.validate_identity("SELECT 1 FORMAT TabSeparated")
         self.validate_identity("SELECT * FROM t FORMAT TabSeparated")
         self.validate_identity("SELECT FORMAT")
@@ -647,7 +675,7 @@ class TestClickhouse(Validator):
             "SELECT name FROM data WHERE NOT ((SELECT DISTINCT name FROM data) IS NULL)",
         )
 
-        self.validate_identity("SELECT 1_2_3_4_5")
+        self.validate_identity("SELECT 1_2_3_4_5", "SELECT 12345")
         self.validate_identity("SELECT 1_b", "SELECT 1_b")
         self.validate_identity(
             "SELECT COUNT(1) FROM table SETTINGS additional_table_filters = {'a': 'b', 'c': 'd'}"
@@ -661,6 +689,10 @@ class TestClickhouse(Validator):
 
         self.validate_identity("farmFingerprint64(x1, x2, x3)")
 
+        self.validate_identity("cityHash64()")
+        self.validate_identity("cityHash64(x)")
+        self.validate_identity("cityHash64(x, y, z)")
+
         self.validate_identity("cosineDistance(x, y)")
         self.validate_identity("L2Distance(x, y)")
         self.validate_identity("tuple(1 = 1, 'foo' = 'foo')")
@@ -672,6 +704,8 @@ class TestClickhouse(Validator):
         self.validate_identity("currentDatabase()", "CURRENT_DATABASE()")
         self.validate_identity("currentSchemas(TRUE)", "CURRENT_SCHEMAS(TRUE)")
 
+        self.validate_identity("VERSION()")
+
         self.validate_identity(
             "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
         )
@@ -679,6 +713,23 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT or(0, 1, -2)", "SELECT 0 OR 1 OR -2")
         self.validate_identity("SELECT and(1, 2, 3)", "SELECT 1 AND 2 AND 3")
         self.validate_identity("SELECT or(and(3, 0), 5)", "SELECT (3 AND 0) OR 5")
+
+        self.validate_identity("arrayCompact([1, 1, nan, nan, 2, 3, 3, 3])").assert_is(
+            exp.ArrayCompact
+        )
+        self.validate_identity("arrayConcat([1, 2], [3, 4])").assert_is(exp.ArrayConcat)
+        self.validate_identity("arrayDistinct([1, 2, 2, 3, 1])").assert_is(exp.ArrayDistinct)
+        self.validate_identity("arrayExcept([1, 2, 3, 2, 4], [3, 5])").assert_is(exp.ArrayExcept)
+        self.validate_identity("SELECT UTCTimestamp()", "SELECT CURRENT_TIMESTAMP('UTC')")
+
+        for global_ in ["", "GLOBAL "]:
+            for side in ["", "LEFT ", "RIGHT ", "FULL "]:
+                for strictness in ["ANY ", "ALL "]:
+                    sql = f"SELECT * FROM foo1 {global_}{side}{strictness}JOIN foo2 ON foo1.id = foo2.id"
+                    with self.subTest(sql=sql):
+                        self.validate_identity(sql)
+
+        self.validate_identity("SELECT []")
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
@@ -823,6 +874,41 @@ class TestClickhouse(Validator):
             with self.subTest(f"Casting to ClickHouse {data_type}"):
                 self.validate_identity(f"SELECT CAST(val AS {data_type})")
 
+    def test_json_type(self):
+        data_types = [
+            "JSON",
+            "JSON(col1 String, SKIP col2)",
+            "JSON(col1 String, SKIP REGEXP 'col[0-9]+')",
+            "JSON(col1 String, max_dynamic_paths = 2)",
+            "JSON(col1.nested String, SKIP col2.nested)",
+        ]
+        for i, data_type in enumerate(data_types):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(f"SELECT CAST(val AS {data_type})")
+
+        data_types_non_idempotent = [
+            ("JSON()", "JSON"),
+        ]
+        for i, (dt_in, dt_out) in enumerate(data_types_non_idempotent):
+            with self.subTest(f"Casting to ClickHouse JSON[{i}]"):
+                self.validate_identity(
+                    f"SELECT CAST(val as {dt_in})", write_sql=f"SELECT CAST(val AS {dt_out})"
+                )
+
+        # Multiline JSON type and non-case-sensitive SKIP
+        self.validate_identity(
+            """SELECT CAST(val AS JSON(
+                col1 String,
+                skip col2,
+                max_dynamic_paths=2
+            ))""",
+            "SELECT CAST(val AS JSON(col1 String, SKIP col2, max_dynamic_paths = 2))",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(val AS JSON(col1 String, col2 JSON(colA String, SKIP colB)))"
+        )
+
     def test_aggregate_function_column_with_any_keyword(self):
         # Regression test for https://github.com/tobymao/sqlglot/issues/4723
         self.validate_all(
@@ -929,6 +1015,37 @@ ORDER BY (
         self.validate_identity(
             'CREATE TABLE t1 ("x" UInt32, "y" Dynamic, "z" Dynamic(max_types = 10)) ENGINE=MergeTree ORDER BY x'
         )
+        self.validate_identity(
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY id",
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY (id)",
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY tuple()",
+            "CREATE TABLE test_table (id Int32, name String) ENGINE=MergeTree PRIMARY KEY (tuple())",
+        )
+
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK (a < 10)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME (a > 5)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK a < 10) ENGINE=MergeTree ORDER BY a",
+            "CREATE TABLE t (a UInt32, CONSTRAINT a_constraint CHECK (a < 10)) ENGINE=MergeTree ORDER BY a",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME a > 5) ENGINE=MergeTree ORDER BY a",
+            "CREATE TABLE t (a UInt32, CONSTRAINT c1 ASSUME (a > 5)) ENGINE=MergeTree ORDER BY a",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT t CHECK (SELECT 1)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a UInt32, CONSTRAINT t ASSUME (SELECT 1)) ENGINE=MergeTree ORDER BY a"
+        )
+        self.validate_identity("CREATE TABLE t (check UInt32)")
+        self.validate_identity("CREATE TABLE t (assume UInt32)")
 
         self.validate_all(
             "CREATE DATABASE x",
@@ -1235,6 +1352,19 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(CLICKHOUSE(HOST 'localhost' PORT tcpPort() USER 'default' DB CURRENT_DATABASE())) LIFETIME(MIN 1 MAX 10) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(FILE(PATH '/tmp/test.csv' FORMAT CSVWithNames)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"
+        )
+        self.validate_identity(
+            "CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(NULL()) LAYOUT(CACHE(SIZE_IN_CELLS 1000)) LIFETIME(MIN 0 MAX 1)"
+        )
+        self.validate_identity(
+            """CREATE DICTIONARY dict1 (key UInt64) PRIMARY KEY (key) SOURCE(EXECUTABLE(COMMAND 'echo "1"' FORMAT TabSeparated)) LIFETIME(MIN 0 MAX 1) LAYOUT(FLAT())"""
+        )
+
         self.validate_all(
             """
             CREATE TABLE t (
@@ -1289,6 +1419,9 @@ LIFETIME(MIN 0 MAX 0)""",
             pretty=True,
         )
 
+        self.validate_identity("DROP TABLE t SYNC")
+        self.validate_identity("DROP DATABASE IF EXISTS d SYNC")
+
     def test_agg_functions(self):
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this
@@ -1325,6 +1458,85 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity("SELECT approx_top_sum(N, reserved)(column, weight) FROM t").selects[
             0
         ].assert_is(exp.ParameterizedAgg)
+
+    def test_agg_functions_multiple_suffixes(self):
+        # Regression test: single-suffix
+        self.validate_identity("SELECT uniqExactIf(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Double suffix: If + Merge
+        self.validate_identity("SELECT countIfMerge(state) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT uniqExactIfMerge(state) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Triple suffix: ArgMin + If + State (#4814)
+        self.validate_identity("SELECT avgArgMinIfState(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Double suffix + parameters: If + State with quantile parameter
+        self.validate_identity("SELECT quantileIfState(0.5)(col, cond) FROM t").selects[
+            0
+        ].assert_is(exp.CombinedParameterizedAgg)
+
+        # Collision-prone bases: "Map" is both a valid suffix and part of the function name.
+        # These must parse as the base function (AnonymousAggFunc), not as sum/min/max + Map suffix.
+        self.validate_identity("SELECT sumMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT minMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+        self.validate_identity("SELECT maxMap(k, v) FROM t").selects[0].assert_is(
+            exp.AnonymousAggFunc
+        )
+
+        # Single-suffix chains on collision-prone bases
+        self.validate_identity("SELECT sumMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT minMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT maxMapIf(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT sumMapState(k, v) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # Multi-suffix chain on a collision-prone base
+        self.validate_identity("SELECT sumMapIfState(k, v, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+
+        # example of a nontrivial query:
+        sum_merge_if_merge = (
+            self.validate_identity(
+                "SELECT sumMergeIfMerge(s) FROM (SELECT sumMergeIfState(agg, 1 = 1) AS s "
+                "FROM (SELECT sumState(toFloat64(number)) AS agg FROM numbers(10)))"
+            )
+            .selects[0]
+            .assert_is(exp.CombinedAggFunc)
+        )
+        assert sum_merge_if_merge.name == "sumMergeIfMerge"
+
+    def test_detach(self):
+        for kind in ("TABLE", "VIEW", "DICTIONARY", "DATABASE"):
+            with self.subTest(f"Test DETACH with {kind}"):
+                self.validate_identity(f"DETACH {kind} t")
+                self.validate_identity(f"DETACH {kind} IF EXISTS t")
+                self.validate_identity(f"DETACH {kind} IF EXISTS db.t")
+                self.validate_identity(f"DETACH {kind} t ON CLUSTER c")
+                self.validate_identity(f"DETACH {kind} t PERMANENTLY")
+                self.validate_identity(f"DETACH {kind} t SYNC")
+                self.validate_identity(
+                    f"DETACH {kind} IF EXISTS db.t ON CLUSTER c PERMANENTLY SYNC"
+                )
 
     def test_drop_on_cluster(self):
         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
@@ -1584,3 +1796,20 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_sql_security(self):
+        stmts = [
+            "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY DEFINER DEFINER=CURRENT_USER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE VIEW v SQL SECURITY NONE AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY INVOKER AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v TO t SQL SECURITY NONE AS SELECT 1",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER='alice'",
+            "ALTER TABLE v MODIFY SQL SECURITY DEFINER DEFINER=CURRENT_USER",
+        ]
+        for stmt in stmts:
+            with self.subTest(stmt):
+                self.validate_identity(stmt)

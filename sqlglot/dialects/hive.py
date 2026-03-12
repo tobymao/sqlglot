@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 import typing as t
 from copy import deepcopy
 from functools import partial
 from collections import defaultdict
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, jsonpath, tokens, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
@@ -13,7 +14,6 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
     datestrtodate_sql,
-    build_formatted_time,
     if_sql,
     is_parse_json,
     left_to_substring_sql,
@@ -35,7 +35,6 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
     sequence_sql,
     property_sql,
-    build_regexp_extract,
 )
 from sqlglot.transforms import (
     remove_unique_constraints,
@@ -43,15 +42,11 @@ from sqlglot.transforms import (
     preprocess,
     move_schema_columns_to_partitioned_by,
 )
-from sqlglot.helper import seq_get
+from sqlglot.parsers.hive import HiveParser
 from sqlglot.tokens import TokenType
 from sqlglot.generator import unsupported_args
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.typing.hive import EXPRESSION_METADATA
-
-if t.TYPE_CHECKING:
-    from sqlglot._typing import F
-
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -182,34 +177,6 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     return self.func("TO_DATE", expression.this)
 
 
-def _build_with_ignore_nulls(
-    exp_class: t.Type[exp.Expression],
-) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
-    def _parse(args: t.List[exp.Expression]) -> exp.Expression:
-        this = exp_class(this=seq_get(args, 0))
-        if seq_get(args, 1) == exp.true():
-            return exp.IgnoreNulls(this=this)
-        return this
-
-    return _parse
-
-
-def _build_to_date(args: t.List) -> exp.TsOrDsToDate:
-    expr = build_formatted_time(exp.TsOrDsToDate, "hive")(args)
-    expr.set("safe", True)
-    return expr
-
-
-def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
-    expression = seq_get(args, 1)
-    if expression:
-        expression = expression * -1
-
-    return exp.TsOrDsAdd(
-        this=seq_get(args, 0), expression=expression, unit=exp.Literal.string("DAY")
-    )
-
-
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -233,7 +200,7 @@ class Hive(Dialect):
     for target_type in {
         *exp.DataType.NUMERIC_TYPES,
         *exp.DataType.TEMPORAL_TYPES,
-        exp.DataType.Type.INTERVAL,
+        exp.DType.INTERVAL,
     }:
         COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
@@ -274,6 +241,12 @@ class Hive(Dialect):
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
+    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+        VAR_TOKENS = {
+            *jsonpath.JSONPathTokenizer.VAR_TOKENS,
+            TokenType.DASH,
+        }
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
@@ -309,241 +282,7 @@ class Hive(Dialect):
             "BD": "DECIMAL",
         }
 
-    class Parser(parser.Parser):
-        LOG_DEFAULTS_TO_LN = True
-        STRICT_CAST = False
-        VALUES_FOLLOWED_BY_PAREN = False
-        JOINS_HAVE_EQUAL_PRECEDENCE = True
-        ADD_JOIN_ON_TRUE = True
-        ALTER_TABLE_PARTITIONS = True
-
-        CHANGE_COLUMN_ALTER_SYNTAX = False
-        # Whether the dialect supports using ALTER COLUMN syntax with CHANGE COLUMN.
-
-        FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
-            "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
-            "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
-        }
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "BASE64": exp.ToBase64.from_arg_list,
-            "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
-            "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-            "DATE_ADD": lambda args: exp.TsOrDsAdd(
-                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
-            ),
-            "DATE_FORMAT": lambda args: build_formatted_time(exp.TimeToStr, "hive")(
-                [
-                    exp.TimeStrToTime(this=seq_get(args, 0)),
-                    seq_get(args, 1),
-                ]
-            ),
-            "DATE_SUB": _build_date_add,
-            "DATEDIFF": lambda args: exp.DateDiff(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
-            ),
-            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "FIRST": _build_with_ignore_nulls(exp.First),
-            "FIRST_VALUE": _build_with_ignore_nulls(exp.FirstValue),
-            "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
-            "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
-                this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
-            ),
-            "LAST": _build_with_ignore_nulls(exp.Last),
-            "LAST_VALUE": _build_with_ignore_nulls(exp.LastValue),
-            "MAP": parser.build_var_map,
-            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
-            "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
-            "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
-            "SEQUENCE": exp.GenerateSeries.from_arg_list,
-            "SIZE": exp.ArraySize.from_arg_list,
-            "SPLIT": exp.RegexpSplit.from_arg_list,
-            "STR_TO_MAP": lambda args: exp.StrToMap(
-                this=seq_get(args, 0),
-                pair_delim=seq_get(args, 1) or exp.Literal.string(","),
-                key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
-            ),
-            "TO_DATE": _build_to_date,
-            "TO_JSON": exp.JSONFormat.from_arg_list,
-            "TRUNC": exp.TimestampTrunc.from_arg_list,
-            "UNBASE64": exp.FromBase64.from_arg_list,
-            "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
-                args or [exp.CurrentTimestamp()]
-            ),
-            "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
-        }
-
-        NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "TRANSFORM": lambda self: self._parse_transform(),
-        }
-
-        NO_PAREN_FUNCTIONS = parser.Parser.NO_PAREN_FUNCTIONS.copy()
-        NO_PAREN_FUNCTIONS.pop(TokenType.CURRENT_TIME)
-
-        PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,
-            "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
-                expressions=self._parse_wrapped_csv(self._parse_property)
-            ),
-        }
-
-        ALTER_PARSERS = {
-            **parser.Parser.ALTER_PARSERS,
-            "CHANGE": lambda self: self._parse_alter_table_change(),
-        }
-
-        def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
-            if not self._match(TokenType.L_PAREN, advance=False):
-                self._retreat(self._index - 1)
-                return None
-
-            args = self._parse_wrapped_csv(self._parse_lambda)
-            row_format_before = self._parse_row_format(match_row=True)
-
-            record_writer = None
-            if self._match_text_seq("RECORDWRITER"):
-                record_writer = self._parse_string()
-
-            if not self._match(TokenType.USING):
-                return exp.Transform.from_arg_list(args)
-
-            command_script = self._parse_string()
-
-            self._match(TokenType.ALIAS)
-            schema = self._parse_schema()
-
-            row_format_after = self._parse_row_format(match_row=True)
-            record_reader = None
-            if self._match_text_seq("RECORDREADER"):
-                record_reader = self._parse_string()
-
-            return self.expression(
-                exp.QueryTransform,
-                expressions=args,
-                command_script=command_script,
-                schema=schema,
-                row_format_before=row_format_before,
-                record_writer=record_writer,
-                row_format_after=row_format_after,
-                record_reader=record_reader,
-            )
-
-        def _parse_quantile_function(self, func: t.Type[F]) -> F:
-            if self._match(TokenType.DISTINCT):
-                first_arg: t.Optional[exp.Expression] = self.expression(
-                    exp.Distinct, expressions=[self._parse_lambda()]
-                )
-            else:
-                self._match(TokenType.ALL)
-                first_arg = self._parse_lambda()
-
-            args = [first_arg]
-            if self._match(TokenType.COMMA):
-                args.extend(self._parse_function_args())
-
-            return func.from_arg_list(args)
-
-        def _parse_types(
-            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-        ) -> t.Optional[exp.Expression]:
-            """
-            Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
-            STRING in all contexts except for schema definitions. For example, this is in Spark v3.4.0:
-
-                spark-sql (default)> select cast(1234 as varchar(2));
-                23/06/06 15:51:18 WARN CharVarcharUtils: The Spark cast operator does not support
-                char/varchar type and simply treats them as string type. Please use string type
-                directly to avoid confusion. Otherwise, you can set spark.sql.legacy.charVarcharAsString
-                to true, so that Spark treat them as string type as same as Spark 3.0 and earlier
-
-                1234
-                Time taken: 4.265 seconds, Fetched 1 row(s)
-
-            This shows that Spark doesn't truncate the value into '12', which is inconsistent with
-            what other dialects (e.g. postgres) do, so we need to drop the length to transpile correctly.
-
-            Reference: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
-            """
-            this = super()._parse_types(
-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
-            )
-
-            if this and not schema:
-                return this.transform(
-                    lambda node: (
-                        node.replace(exp.DataType.build("text"))
-                        if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
-                        else node
-                    ),
-                    copy=False,
-                )
-
-            return this
-
-        def _parse_alter_table_change(self) -> t.Optional[exp.Expression]:
-            self._match(TokenType.COLUMN)
-            this = self._parse_field(any_token=True)
-
-            if self.CHANGE_COLUMN_ALTER_SYNTAX and self._match_text_seq("TYPE"):
-                return self.expression(
-                    exp.AlterColumn,
-                    this=this,
-                    dtype=self._parse_types(schema=True),
-                )
-
-            column_new = self._parse_field(any_token=True)
-            dtype = self._parse_types(schema=True)
-
-            comment = self._match(TokenType.COMMENT) and self._parse_string()
-
-            if not this or not column_new or not dtype:
-                self.raise_error(
-                    "Expected 'CHANGE COLUMN' to be followed by 'column_name' 'column_name' 'data_type'"
-                )
-
-            return self.expression(
-                exp.AlterColumn,
-                this=this,
-                rename_to=column_new,
-                dtype=dtype,
-                comment=comment,
-            )
-
-        def _parse_partition_and_order(
-            self,
-        ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
-            return (
-                (
-                    self._parse_csv(self._parse_assignment)
-                    if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
-                    else []
-                ),
-                super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
-            )
-
-        def _parse_parameter(self) -> exp.Parameter:
-            self._match(TokenType.L_BRACE)
-            this = self._parse_identifier() or self._parse_primary_or_var()
-            expression = self._match(TokenType.COLON) and (
-                self._parse_identifier() or self._parse_primary_or_var()
-            )
-            self._match(TokenType.R_BRACE)
-            return self.expression(exp.Parameter, this=this, expression=expression)
-
-        def _to_prop_eq(self, expression: exp.Expression, index: int) -> exp.Expression:
-            if expression.is_star:
-                return expression
-
-            if isinstance(expression, exp.Column):
-                key = expression.this
-            else:
-                key = exp.to_identifier(f"col{index + 1}")
-
-            return self.expression(exp.PropertyEQ, this=key, expression=expression)
+    Parser = HiveParser
 
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
@@ -556,6 +295,7 @@ class Hive(Dialect):
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
+        SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
         SUPPORTS_TO_NUMBER = False
         WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
         PARSE_JSON_NAME: t.Optional[str] = None
@@ -580,16 +320,16 @@ class Hive(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.BLOB: "BINARY",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.ROWVERSION: "BINARY",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.TIME: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.UTINYINT: "SMALLINT",
-            exp.DataType.Type.VARBINARY: "BINARY",
+            exp.DType.BIT: "BOOLEAN",
+            exp.DType.BLOB: "BINARY",
+            exp.DType.DATETIME: "TIMESTAMP",
+            exp.DType.ROWVERSION: "BINARY",
+            exp.DType.TEXT: "STRING",
+            exp.DType.TIME: "TIMESTAMP",
+            exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.UTINYINT: "SMALLINT",
+            exp.DType.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {
@@ -720,7 +460,7 @@ class Hive(Dialect):
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expression], ...] = (
+        TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expr], ...] = (
             exp.DateDiff,
             exp.Day,
             exp.Month,
@@ -776,13 +516,20 @@ class Hive(Dialect):
                 expression.this.this if isinstance(expression.this, exp.Order) else expression.this,
             )
 
+        # Hive/Spark lack native numeric TRUNC. CAST to BIGINT truncates toward zero (not rounds).
+        # Potential enhancement: a TRUNC_TEMPLATE using FLOOR/CEIL with scale (Spark 3.3+)
+        # could preserve decimals: CASE WHEN x >= 0 THEN FLOOR(x, d) ELSE CEIL(x, d) END
+        @unsupported_args("decimals")
+        def trunc_sql(self, expression: exp.Trunc) -> str:
+            return self.sql(exp.cast(expression.this, exp.DType.BIGINT))
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
                 not expression.expressions or expression.expressions[0].name == "MAX"
             ):
                 expression = exp.DataType.build("text")
-            elif expression.is_type(exp.DataType.Type.TEXT) and expression.expressions:
-                expression.set("this", exp.DataType.Type.VARCHAR)
+            elif expression.is_type(exp.DType.TEXT) and expression.expressions:
+                expression.set("this", exp.DType.VARCHAR)
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
             elif expression.is_type("float"):

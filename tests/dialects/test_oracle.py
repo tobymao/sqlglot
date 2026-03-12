@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError, ParseError, parse_one, parse
+from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.qualify import qualify
 
@@ -85,6 +85,9 @@ class TestOracle(Validator):
         )
         self.validate_identity(
             "SELECT COUNT(1) INTO V_Temp FROM TABLE(CAST(somelist AS data_list)) WHERE col LIKE '%contact'"
+        )
+        self.validate_identity(
+            "SELECT * FROM t WHERE c LIKE (:v)",
         )
         self.validate_identity(
             "SELECT department_id INTO v_department_id FROM departments FETCH FIRST 1 ROWS ONLY"
@@ -754,6 +757,92 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
 
+    def test_trunc_type_inference(self):
+        # Tests for build_trunc discrimination logic (shared across Oracle, Exasol, Snowflake)
+        # 5 cases: temporal+?, ?+string, numeric+?, ?+int, ?+?
+
+        # temporal + string: first arg typed as temporal
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(SYSDATE, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # ? + string: untyped first arg, string second arg infers DateTrunc
+        self.parse_one("TRUNC(col, 'MONTH')").assert_is(exp.DateTrunc)
+
+        # numeric + int: first arg typed as numeric (literal infers type)
+        self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+
+        # ? + int: untyped first arg, int second arg infers Trunc
+        self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
+
+        # ? + ?: neither arg typed, fallback to Anonymous
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
+
+    def test_trunc(self):
+        # Numeric truncation identity and transpilation
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
+        self.validate_all(
+            "TRUNC(3.14159)",
+            write={
+                "oracle": "TRUNC(3.14159)",
+                "postgres": "TRUNC(3.14159)",
+                "mysql": "TRUNCATE(3.14159)",
+                "tsql": "ROUND(3.14159, 0, 1)",
+            },
+        )
+
+        # Cross-dialect numeric truncation transpilation
+        self.validate_all(
+            "TRUNC(3.14159, 2)",
+            read={
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "snowflake": "TRUNC(3.14159, 2)",
+            },
+            write={
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+                "snowflake": "TRUNC(3.14159, 2)",
+                "bigquery": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159)",
+                "presto": "TRUNCATE(3.14159, 2)",
+                "clickhouse": "trunc(3.14159, 2)",
+                "spark": "CAST(3.14159 AS BIGINT)",
+            },
+        )
+
+        # Date truncation with various units
+        for unit in ("DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):
+            with self.subTest(f"Date TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    write={
+                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    },
+                )
+
+        # Timestamp truncation with various units
+        for unit in ("HOUR", "MINUTE", "SECOND", "DAY", "MONTH", "YEAR"):
+            with self.subTest(f"Timestamp TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    write={
+                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATETIME2))",
+                        "spark": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    },
+                )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")
         self.validate_identity("ANALYZE INDEX ndx")
@@ -840,8 +929,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         """
 
         expected_sqls = [
-            "CREATE OR REPLACE PROCEDURE query_emp(p_id IN VARCHAR2, p_name OUT VARCHAR2, p_salary OUT NUMBER) AS BEGIN SELECT last_name, salary INTO p_name, p_salary FROM employees WHERE employee_id = p_id",
-            "END",
+            "CREATE OR REPLACE PROCEDURE query_emp(p_id IN VARCHAR2, p_name OUT VARCHAR2, p_salary OUT NUMBER) AS BEGIN SELECT last_name, salary INTO p_name, p_salary FROM employees WHERE employee_id = p_id; END",
         ]
 
         for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
@@ -861,10 +949,25 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         """
 
         expected_sqls = [
-            "CREATE OR REPLACE PROCEDURE test_proc(a NUMBER, b IN NUMBER, c IN OUT NUMBER, d OUT NUMBER) AS BEGIN c := c + a + b",
-            "d := 42 + c",
-            "END",
+            "CREATE OR REPLACE PROCEDURE test_proc(a NUMBER, b IN NUMBER, c IN OUT NUMBER, d OUT NUMBER) AS BEGIN c := c + a + b; d := 42 + c; END",
         ]
 
         for expr, expected_sql in zip(parse(sql, read="oracle"), expected_sqls):
             self.assertEqual(expr.sql(dialect="oracle"), expected_sql)
+
+    def test_create_trigger(self):
+        """Test that Oracle CREATE TRIGGER statements fall back to Command parsing."""
+        self.validate_identity(
+            "CREATE TRIGGER check_salary BEFORE INSERT ON employees FOR EACH ROW BEGIN :NEW.status := 'PENDING' END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER audit_trigger AFTER UPDATE ON accounts FOR EACH ROW BEGIN INSERT INTO audit_log (user_id, old_balance, new_balance, changed_at) VALUES (:OLD.id, :OLD.balance, :NEW.balance, SYSDATE) END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view FOR EACH ROW BEGIN INSERT INTO employees (id, name, dept_id) VALUES (:NEW.id, :NEW.name, :NEW.dept_id) END",
+            check_command_warning=True,
+        )

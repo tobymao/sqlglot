@@ -292,7 +292,7 @@ class TestTransforms(unittest.TestCase):
         )
 
     def test_inherit_struct_field_names(self):
-        def _parse_and_set_struct_name_inheritance(sql: str) -> exp.Expression:
+        def _parse_and_set_struct_name_inheritance(sql: str) -> exp.Expr:
             ast = exp.maybe_parse(sql)
             for array in ast.find_all(exp.Array):
                 array.set("struct_name_inheritance", True)

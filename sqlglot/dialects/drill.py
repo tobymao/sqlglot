@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
-    build_formatted_time,
     no_trycast_sql,
     rename_func,
     strposition_sql,
@@ -14,13 +13,14 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
 from sqlglot.generator import unsupported_args
+from sqlglot.parsers.drill import DrillParser
 
 
 def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
+        return self.sql(exp.cast(this, exp.DType.DATE))
     return self.func("TO_DATE", this, time_format)
 
 
@@ -32,7 +32,6 @@ class Drill(Dialect):
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
     SUPPORTS_USER_DEFINED_TYPES = False
-    SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
 
@@ -75,18 +74,7 @@ class Drill(Dialect):
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")
 
-    class Parser(parser.Parser):
-        STRICT_CAST = False
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "REPEATED_COUNT": exp.ArraySize.from_arg_list,
-            "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
-            "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
-            "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
-        }
-
-        LOG_DEFAULTS_TO_LN = True
+    Parser = DrillParser
 
     class Generator(generator.Generator):
         JOIN_HINTS = False
@@ -99,15 +87,15 @@ class Drill(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.SMALLINT: "INTEGER",
-            exp.DataType.Type.TINYINT: "INTEGER",
-            exp.DataType.Type.BINARY: "VARBINARY",
-            exp.DataType.Type.TEXT: "VARCHAR",
-            exp.DataType.Type.NCHAR: "VARCHAR",
-            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DType.INT: "INTEGER",
+            exp.DType.SMALLINT: "INTEGER",
+            exp.DType.TINYINT: "INTEGER",
+            exp.DType.BINARY: "VARBINARY",
+            exp.DType.TEXT: "VARCHAR",
+            exp.DType.NCHAR: "VARCHAR",
+            exp.DType.TIMESTAMPLTZ: "TIMESTAMP",
+            exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DType.DATETIME: "TIMESTAMP",
         }
 
         PROPERTIES_LOCATION = {
@@ -143,7 +131,7 @@ class Drill(Dialect):
             ),
             exp.StrPosition: strposition_sql,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),

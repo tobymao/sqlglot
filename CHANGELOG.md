@@ -1,6 +1,816 @@
 Changelog
 =========
 
+## [v29.0.1] - 2026-02-23
+### :boom: BREAKING CHANGES
+- due to [`fdfdfb1`](https://github.com/tobymao/sqlglot/commit/fdfdfb1703f1f408ad01453147e3d269f0911fef) - support GET_CURRENT_TIME() for DuckDB *(PR [#7126](https://github.com/tobymao/sqlglot/pull/7126) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support GET_CURRENT_TIME() for DuckDB (#7126)
+
+
+### :sparkles: New Features
+- [`fdfdfb1`](https://github.com/tobymao/sqlglot/commit/fdfdfb1703f1f408ad01453147e3d269f0911fef) - **duckdb**: support GET_CURRENT_TIME() for DuckDB *(PR [#7126](https://github.com/tobymao/sqlglot/pull/7126) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :wrench: Chores
+- [`21a2a57`](https://github.com/tobymao/sqlglot/commit/21a2a5773717f675963dddbdba3df9343da60abe) - actually emit warning *(commit by [@tobymao](https://github.com/tobymao))*
+
+
+## [v29.0.0] - 2026-02-23
+### :boom: BREAKING CHANGES
+- due to [`c8ddcc3`](https://github.com/tobymao/sqlglot/commit/c8ddcc383bab07b807ed1d6b6f9bef91417e43c1) - Annotate COLLATION(expr) for Spark/DBX *(PR [#6957](https://github.com/tobymao/sqlglot/pull/6957) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate COLLATION(expr) for Spark/DBX (#6957)
+
+- due to [`fc4b332`](https://github.com/tobymao/sqlglot/commit/fc4b3326a14a1b42bc954914ce43b8dad7ef23b2) - Annotate BITMAP_COUNT(expr) for Spark/DBX *(PR [#6956](https://github.com/tobymao/sqlglot/pull/6956) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate BITMAP_COUNT(expr) for Spark/DBX (#6956)
+
+- due to [`8725010`](https://github.com/tobymao/sqlglot/commit/87250100eb2a1d2c206a26cce276f7babec0e409) - add exp.Trunc for numeric truncation *(PR [#6923](https://github.com/tobymao/sqlglot/pull/6923) by [@doripo](https://github.com/doripo))*:
+
+  add exp.Trunc for numeric truncation (#6923)
+
+- due to [`1418494`](https://github.com/tobymao/sqlglot/commit/1418494f777358f4b6bd1e05ee5cb02591d92c74) - Annotate FORMAT_STRING(expr) for Spark/DBX *(PR [#6962](https://github.com/tobymao/sqlglot/pull/6962) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate FORMAT_STRING(expr) for Spark/DBX (#6962)
+
+- due to [`37fa84e`](https://github.com/tobymao/sqlglot/commit/37fa84e389b6bcbc94326d3defb4664d0826fb3f) - support `CURRENT_VERSION()` transpilation for Spark *(PR [#6964](https://github.com/tobymao/sqlglot/pull/6964) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `CURRENT_VERSION()` transpilation for Spark (#6964)
+
+- due to [`51d3ebd`](https://github.com/tobymao/sqlglot/commit/51d3ebdca83e114449590d9f337ae6902659a8b4) - transpile `CURRENT_VERSION()` to MySQL *(PR [#6965](https://github.com/tobymao/sqlglot/pull/6965) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  transpile `CURRENT_VERSION()` to MySQL (#6965)
+
+- due to [`9008553`](https://github.com/tobymao/sqlglot/commit/90085534eb8863f588003bdf65d96771729889aa) - transpile CURRENT_VERSION() to ClickHouse, Postgres, Trino, Redshift *(PR [#6966](https://github.com/tobymao/sqlglot/pull/6966) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  transpile CURRENT_VERSION() to ClickHouse, Postgres, Trino, Redshift (#6966)
+
+- due to [`e8b379e`](https://github.com/tobymao/sqlglot/commit/e8b379eb67d034f829d2fd50daefea2a98b83976) - Map SQLITE_VERSION() to exp.CurrentVersion expression *(PR [#6967](https://github.com/tobymao/sqlglot/pull/6967) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Map SQLITE_VERSION() to exp.CurrentVersion expression (#6967)
+
+- due to [`dfd299f`](https://github.com/tobymao/sqlglot/commit/dfd299fcfaf7a61d13b073e7b59d6bdd0748c7b8) - Annotate `RANDSTR(expr)` for Spark/DBX *(PR [#6971](https://github.com/tobymao/sqlglot/pull/6971) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `RANDSTR(expr)` for Spark/DBX (#6971)
+
+- due to [`969e45d`](https://github.com/tobymao/sqlglot/commit/969e45d3ba1db25f4561b122b9401b5608356f58) - Annotate REPEAT(expr) for Hive, Spark, DBX *(PR [#6974](https://github.com/tobymao/sqlglot/pull/6974) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate REPEAT(expr) for Hive, Spark, DBX (#6974)
+
+- due to [`ade3639`](https://github.com/tobymao/sqlglot/commit/ade3639b337d0222a00feec7ac9762571586f7ab) - transpilation support current_database *(PR [#6973](https://github.com/tobymao/sqlglot/pull/6973) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support current_database (#6973)
+
+- due to [`57093d1`](https://github.com/tobymao/sqlglot/commit/57093d15d5bbc2217366ace42db109e215dca79f) - Annotate `OVERLAY(expr)` for Spark/DBX *(PR [#6970](https://github.com/tobymao/sqlglot/pull/6970) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `OVERLAY(expr)` for Spark/DBX (#6970)
+
+- due to [`f5b2328`](https://github.com/tobymao/sqlglot/commit/f5b23281b6829bace426808f0a55e73590b70bbd) - Annotate RIGHT(expr) for Spark/DBX *(PR [#6980](https://github.com/tobymao/sqlglot/pull/6980) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate RIGHT(expr) for Spark/DBX (#6980)
+
+- due to [`61a0d3f`](https://github.com/tobymao/sqlglot/commit/61a0d3f05be478dd4552e6559b6781891d4a3447) - add support for JAROWINKLER_SIMILARITY *(PR [#6977](https://github.com/tobymao/sqlglot/pull/6977) by [@kyle-cheung](https://github.com/kyle-cheung))*:
+
+  add support for JAROWINKLER_SIMILARITY (#6977)
+
+- due to [`9d1f4e0`](https://github.com/tobymao/sqlglot/commit/9d1f4e0ea6f8b66b022a5263320275ed43efb5f3) - transpilation support current_schema *(PR [#6976](https://github.com/tobymao/sqlglot/pull/6976) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support current_schema (#6976)
+
+- due to [`0d345aa`](https://github.com/tobymao/sqlglot/commit/0d345aafd037b047808716dfdb60cc554d47941d) - Annotate REPLACE(expr) for Hive, Spark and DBX *(PR [#6975](https://github.com/tobymao/sqlglot/pull/6975) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate REPLACE(expr) for Hive, Spark and DBX (#6975)
+
+- due to [`19f9000`](https://github.com/tobymao/sqlglot/commit/19f900031c9abe26bebb541e8907ca263454055c) - transpilation support current_version *(PR [#6960](https://github.com/tobymao/sqlglot/pull/6960) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support current_version (#6960)
+
+- due to [`f103a16`](https://github.com/tobymao/sqlglot/commit/f103a166aca95da726ac9281816181e53b916dc3) - support parsing `VERSION()` for ClickHouse *(PR [#6986](https://github.com/tobymao/sqlglot/pull/6986) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support parsing `VERSION()` for ClickHouse (#6986)
+
+- due to [`2751c8f`](https://github.com/tobymao/sqlglot/commit/2751c8ff1d6c4acc1a0d407e601d572886ceffc3) - parse support for `VERSION()` *(PR [#6985](https://github.com/tobymao/sqlglot/pull/6985) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  parse support for `VERSION()` (#6985)
+
+- due to [`37db91c`](https://github.com/tobymao/sqlglot/commit/37db91c5cea14488654a2b69aceab13b6c6a98b7) - Annotate `REVERSE(expr)` for Hive, Spark and DBX *(PR [#6979](https://github.com/tobymao/sqlglot/pull/6979) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `REVERSE(expr)` for Hive, Spark and DBX (#6979)
+
+- due to [`f4d53a2`](https://github.com/tobymao/sqlglot/commit/f4d53a2d0f9aadf7fc63e484d64821cddf5d1f17) - support parsing VERSION() for Postgres/Redshift *(PR [#6987](https://github.com/tobymao/sqlglot/pull/6987) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support parsing VERSION() for Postgres/Redshift (#6987)
+
+- due to [`71bb0c3`](https://github.com/tobymao/sqlglot/commit/71bb0c3f7947c1959160c8b401354ceddee2e8ce) - support for version() for trino *(PR [#6988](https://github.com/tobymao/sqlglot/pull/6988) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support for version() for trino (#6988)
+
+- due to [`fbca704`](https://github.com/tobymao/sqlglot/commit/fbca7040cd3ae9eb0bc599b5ce656724fccafab1) - Annotate SPLIT(expr) for Hive/Spark/DBX *(PR [#6990](https://github.com/tobymao/sqlglot/pull/6990) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate SPLIT(expr) for Hive/Spark/DBX (#6990)
+
+- due to [`264e95f`](https://github.com/tobymao/sqlglot/commit/264e95f04d95f2cd7bcf255ee7ae160db36882a7) - Move TRANSLATE(expr) annotator to base *(PR [#6992](https://github.com/tobymao/sqlglot/pull/6992) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move TRANSLATE(expr) annotator to base (#6992)
+
+- due to [`eb8ad51`](https://github.com/tobymao/sqlglot/commit/eb8ad518142dc91e25d37310cb9cbfa33c44fe34) - Annotate FILTER(expr, func) for Spark/DBX *(PR [#6995](https://github.com/tobymao/sqlglot/pull/6995) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate FILTER(expr, func) for Spark/DBX (#6995)
+
+- due to [`12e0869`](https://github.com/tobymao/sqlglot/commit/12e0869ff6820b35884e189b2b4f29aef56c3a51) - annotate CURRENT_TIMESTAMP for MySQL *(PR [#7004](https://github.com/tobymao/sqlglot/pull/7004) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate CURRENT_TIMESTAMP for MySQL (#7004)
+
+- due to [`cbdad37`](https://github.com/tobymao/sqlglot/commit/cbdad3762dd6935d75405a0c33a1656cab8c2d1e) - support CURTIME() for MySQL/SingleStore *(PR [#7005](https://github.com/tobymao/sqlglot/pull/7005) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support CURTIME() for MySQL/SingleStore (#7005)
+
+- due to [`d16cc62`](https://github.com/tobymao/sqlglot/commit/d16cc62ea8342bec91092f8c7cf2504364581a7e) - annotate ADD_MONTH(expr) for Hive/Spark/DBX *(PR [#7003](https://github.com/tobymao/sqlglot/pull/7003) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate ADD_MONTH(expr) for Hive/Spark/DBX (#7003)
+
+- due to [`6381c48`](https://github.com/tobymao/sqlglot/commit/6381c4825c1929da56363035be2c4ae7a90336dd) - support NOW() for exasol *(PR [#7006](https://github.com/tobymao/sqlglot/pull/7006) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support NOW() for exasol (#7006)
+
+- due to [`d9ea168`](https://github.com/tobymao/sqlglot/commit/d9ea1683a98252ad43948be32fbd7cf77d17b67c) - annotate CURRENT_USER to base *(PR [#7007](https://github.com/tobymao/sqlglot/pull/7007) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate CURRENT_USER to base (#7007)
+
+- due to [`7a2a777`](https://github.com/tobymao/sqlglot/commit/7a2a777fb8c215b51436942645965792257b8dc9) - annotate FROM_UTC_TIMESTAMP(expr) for Spark/DBX *(PR [#7008](https://github.com/tobymao/sqlglot/pull/7008) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate FROM_UTC_TIMESTAMP(expr) for Spark/DBX (#7008)
+
+- due to [`8be32fd`](https://github.com/tobymao/sqlglot/commit/8be32fde55c8d256e73fd504246f695bf550f4cb) - support MAKE_TIMESTAMP(expr) for Spark/DBX *(PR [#7009](https://github.com/tobymao/sqlglot/pull/7009) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support MAKE_TIMESTAMP(expr) for Spark/DBX (#7009)
+
+- due to [`b951d74`](https://github.com/tobymao/sqlglot/commit/b951d740a934a8f46ce2c96caf7d8ae80b61604c) - annotate NEXT_DAY(expr) for Hive/Spark/DBX *(PR [#7010](https://github.com/tobymao/sqlglot/pull/7010) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate NEXT_DAY(expr) for Hive/Spark/DBX (#7010)
+
+- due to [`404797a`](https://github.com/tobymao/sqlglot/commit/404797acfb1a9f860bd87880fecacd79cb1b2161) - Move `CURRENT_SCHEMA()` to Base Annotator *(PR [#7021](https://github.com/tobymao/sqlglot/pull/7021) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move `CURRENT_SCHEMA()` to Base Annotator (#7021)
+
+- due to [`994d3a3`](https://github.com/tobymao/sqlglot/commit/994d3a37983791d4e8484d6d39b819a1cff2f774) - robust STAR with EXCLUDE (redshift) *(PR [#6972](https://github.com/tobymao/sqlglot/pull/6972) by [@geooo109](https://github.com/geooo109))*:
+
+  robust STAR with EXCLUDE (redshift) (#6972)
+
+- due to [`3ea80fb`](https://github.com/tobymao/sqlglot/commit/3ea80fb86482e257c4565ab7876dd6cdd60a7be2) - annotate REVERSE(str) for DuckDB *(PR [#7018](https://github.com/tobymao/sqlglot/pull/7018) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate REVERSE(str) for DuckDB (#7018)
+
+- due to [`352fb94`](https://github.com/tobymao/sqlglot/commit/352fb94c46e5dd0dfd824b4472b03cccf21d3f56) - annotate ISODOW(expr) for DuckDB *(PR [#7016](https://github.com/tobymao/sqlglot/pull/7016) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate ISODOW(expr) for DuckDB (#7016)
+
+- due to [`c2e5954`](https://github.com/tobymao/sqlglot/commit/c2e59545d8030b1d2e7859631c9d75ea0f6df883) - annotate COUNTIF(expr) for DuckDB *(PR [#7012](https://github.com/tobymao/sqlglot/pull/7012) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate COUNTIF(expr) for DuckDB (#7012)
+
+- due to [`e35ee14`](https://github.com/tobymao/sqlglot/commit/e35ee143b08f671175e730e602e9a5dcd9155fde) - annotate CountIf(expr) for ClickHouse *(PR [#7013](https://github.com/tobymao/sqlglot/pull/7013) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate CountIf(expr) for ClickHouse (#7013)
+
+- due to [`b73be3e`](https://github.com/tobymao/sqlglot/commit/b73be3e8c95b44f2cd71498592bd4b5b63ba02d9) - support `today()` for duckdb *(PR [#7015](https://github.com/tobymao/sqlglot/pull/7015) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `today()` for duckdb (#7015)
+
+- due to [`36e3310`](https://github.com/tobymao/sqlglot/commit/36e3310959260a7b1124a60589cdc90a3e631624) - support current_schema as no_param *(PR [#7000](https://github.com/tobymao/sqlglot/pull/7000) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support current_schema as no_param (#7000)
+
+- due to [`fd8860b`](https://github.com/tobymao/sqlglot/commit/fd8860b8b8d5e0c29c53597485c656923375e1d9) - annotate FORMAT(expr) for DuckDB *(PR [#7017](https://github.com/tobymao/sqlglot/pull/7017) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate FORMAT(expr) for DuckDB (#7017)
+
+- due to [`eecdfa1`](https://github.com/tobymao/sqlglot/commit/eecdfa1b15ac1808f93107d2ad6a51f52ffaf7cc) - Annotate `DAYOFWEEK(expr)`, `DAYOFMONTH(expr)` for Hive/Spark/DBX *(PR [#6996](https://github.com/tobymao/sqlglot/pull/6996) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `DAYOFWEEK(expr)`, `DAYOFMONTH(expr)` for Hive/Spark/DBX (#6996)
+
+- due to [`4fc26f0`](https://github.com/tobymao/sqlglot/commit/4fc26f086701cebb3d3974b762d12e1435f4a195) - annotate `TIME_BUCKET(expr)` for DuckDB *(PR [#7014](https://github.com/tobymao/sqlglot/pull/7014) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate `TIME_BUCKET(expr)` for DuckDB (#7014)
+
+- due to [`00e6d9a`](https://github.com/tobymao/sqlglot/commit/00e6d9af02971aad6e7102cae3af2a7192fa7070) - annotate `UNIX_DATE(expr)` for Spark/DBX *(PR [#7011](https://github.com/tobymao/sqlglot/pull/7011) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate `UNIX_DATE(expr)` for Spark/DBX (#7011)
+
+- due to [`86a5509`](https://github.com/tobymao/sqlglot/commit/86a5509bfcb8df6a8cf8b0971d9d12ae3204f2af) - support user for exasol *(PR [#7001](https://github.com/tobymao/sqlglot/pull/7001) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support user for exasol (#7001)
+
+- due to [`b27c163`](https://github.com/tobymao/sqlglot/commit/b27c163fcce0a4b0a4f75d131cdc105353e95464) - support `CURDATE` for Exasol *(PR [#6999](https://github.com/tobymao/sqlglot/pull/6999) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `CURDATE` for Exasol (#6999)
+
+- due to [`47dc558`](https://github.com/tobymao/sqlglot/commit/47dc5589f8b165d9f0296e6aa48de337f556f1a4) - annotate ARRAY_COMPACT(expr) for Spark/DBX *(PR [#7034](https://github.com/tobymao/sqlglot/pull/7034) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate ARRAY_COMPACT(expr) for Spark/DBX (#7034)
+
+- due to [`9d7db06`](https://github.com/tobymao/sqlglot/commit/9d7db06cf8ef66583f11b6d54af573bb28f4434b) - Generator for ARRAY_INSERT(expr) *(PR [#7036](https://github.com/tobymao/sqlglot/pull/7036) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Generator for ARRAY_INSERT(expr) (#7036)
+
+- due to [`235b8ac`](https://github.com/tobymao/sqlglot/commit/235b8ac24d41324239d6581b5636ad19ec7b9376) - annotate `ARRAY_INTERSECT(expr)` for Hive/Spark/DBX *(PR [#7037](https://github.com/tobymao/sqlglot/pull/7037) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate `ARRAY_INTERSECT(expr)` for Hive/Spark/DBX (#7037)
+
+- due to [`f476d07`](https://github.com/tobymao/sqlglot/commit/f476d071a1412fb2d9cd6f39067380252ab4c15a) - update transpilation of SEQ functions and GENERATOR for DuckDB *(PR [#7029](https://github.com/tobymao/sqlglot/pull/7029) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  update transpilation of SEQ functions and GENERATOR for DuckDB (#7029)
+
+- due to [`643a6c7`](https://github.com/tobymao/sqlglot/commit/643a6c7d97292eb29ba1bac6523747e161544a1a) - Transpilation support for Snowflake REGEXP_LIKE to DuckDB *(PR [#7030](https://github.com/tobymao/sqlglot/pull/7030) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Transpilation support for Snowflake REGEXP_LIKE to DuckDB (#7030)
+
+- due to [`b1f0542`](https://github.com/tobymao/sqlglot/commit/b1f05428d8a4d441398c0f3d4a65b49b0eda2729) - tokenizer optimizations *(PR [#7038](https://github.com/tobymao/sqlglot/pull/7038) by [@geooo109](https://github.com/geooo109))*:
+
+  tokenizer optimizations (#7038)
+
+- due to [`70d6f2b`](https://github.com/tobymao/sqlglot/commit/70d6f2b5d8c0f37550ba7a288c5f7f7021c66bd7) - annotate `ARRAY_INSERT(expr)` for Spark/DBX *(PR [#7044](https://github.com/tobymao/sqlglot/pull/7044) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate `ARRAY_INSERT(expr)` for Spark/DBX (#7044)
+
+- due to [`3019d0a`](https://github.com/tobymao/sqlglot/commit/3019d0a0110a503b68b2a3cf7f93be1000f20a40) - Map BIT_GET to GETBIT for Spark/DBX *(PR [#7041](https://github.com/tobymao/sqlglot/pull/7041) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Map BIT_GET to GETBIT for Spark/DBX (#7041)
+
+- due to [`27ae429`](https://github.com/tobymao/sqlglot/commit/27ae42987864949f74b784d3dbb063bd3450e0dc) - transpile BIT_COUNT to DuckDB *(PR [#7039](https://github.com/tobymao/sqlglot/pull/7039) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  transpile BIT_COUNT to DuckDB (#7039)
+
+- due to [`f6cbd27`](https://github.com/tobymao/sqlglot/commit/f6cbd27fd61937efba6879f20f5ff0239e678469) - Add support for trigger DDL statements *(PR [#6978](https://github.com/tobymao/sqlglot/pull/6978) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add support for trigger DDL statements (#6978)
+
+- due to [`749cf18`](https://github.com/tobymao/sqlglot/commit/749cf18dbcb8d1d0c7d144e6481ecc3a443d4a0e) - require original SQL in `Parser.parse` *(PR [#7045](https://github.com/tobymao/sqlglot/pull/7045) by [@georgesittas](https://github.com/georgesittas))*:
+
+  require original SQL in `Parser.parse` (#7045)
+
+- due to [`f9d1f73`](https://github.com/tobymao/sqlglot/commit/f9d1f73b490e6694da0e800d9a5a70e1ba7f38d5) - refactor colon (extract) parsing precedence *(PR [#7046](https://github.com/tobymao/sqlglot/pull/7046) by [@georgesittas](https://github.com/georgesittas))*:
+
+  refactor colon (extract) parsing precedence (#7046)
+
+- due to [`c5939c1`](https://github.com/tobymao/sqlglot/commit/c5939c12c6816437f5abda3322f99cc597b1616c) - Map curdate to current_date for Spark/DBX *(PR [#7048](https://github.com/tobymao/sqlglot/pull/7048) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Map curdate to current_date for Spark/DBX (#7048)
+
+- due to [`58419e1`](https://github.com/tobymao/sqlglot/commit/58419e1f47119a135276a722b85ccfa92ae3d1f1) - move `SessionUser` to base *(PR [#7049](https://github.com/tobymao/sqlglot/pull/7049) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  move `SessionUser` to base (#7049)
+
+- due to [`13ee312`](https://github.com/tobymao/sqlglot/commit/13ee31281fe21c670f8ce1656520c18762e8402f) - use `IntEnum` instead of auto/string enums *(PR [#7050](https://github.com/tobymao/sqlglot/pull/7050) by [@georgesittas](https://github.com/georgesittas))*:
+
+  use `IntEnum` instead of auto/string enums (#7050)
+
+- due to [`f98cba1`](https://github.com/tobymao/sqlglot/commit/f98cba17caa8f3c2dcd5669f3525094c5dd58781) - move exp.Rand to base *(PR [#7065](https://github.com/tobymao/sqlglot/pull/7065) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  move exp.Rand to base (#7065)
+
+- due to [`4f8a49c`](https://github.com/tobymao/sqlglot/commit/4f8a49cd42ef37178cd0626554bfd263a140046e) - Transpilation support for Snowflake REGEXP_COUNT to DuckDB *(PR [#7054](https://github.com/tobymao/sqlglot/pull/7054) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Transpilation support for Snowflake REGEXP_COUNT to DuckDB (#7054)
+
+- due to [`eaba8dc`](https://github.com/tobymao/sqlglot/commit/eaba8dc26b2ec28b8074eb0cf2b3db086cf7ccc3) - move DEGREES(expr) to base *(PR [#7074](https://github.com/tobymao/sqlglot/pull/7074) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  move DEGREES(expr) to base (#7074)
+
+- due to [`a87c1b4`](https://github.com/tobymao/sqlglot/commit/a87c1b46b54ef7f6895c68666c05041924691576) - annotate DEGREES(expr) for T-SQL *(PR [#7077](https://github.com/tobymao/sqlglot/pull/7077) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate DEGREES(expr) for T-SQL (#7077)
+
+- due to [`f057a1b`](https://github.com/tobymao/sqlglot/commit/f057a1b912d473a77f111d33f40ecce2f6d54cf8) - move MONTHNAME to base *(PR [#7083](https://github.com/tobymao/sqlglot/pull/7083) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  move MONTHNAME to base (#7083)
+
+- due to [`dd2cf85`](https://github.com/tobymao/sqlglot/commit/dd2cf850134a2833d0da5eb58206accc298c9e0a) - support `UTCTimestamp` *(PR [#7082](https://github.com/tobymao/sqlglot/pull/7082) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `UTCTimestamp` (#7082)
+
+- due to [`7ff13c6`](https://github.com/tobymao/sqlglot/commit/7ff13c690dddd9e1024b1a4ab6c9532f67bdece8) - transpilation support map_contains_key *(PR [#7070](https://github.com/tobymao/sqlglot/pull/7070) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support map_contains_key (#7070)
+
+- due to [`6fa494d`](https://github.com/tobymao/sqlglot/commit/6fa494da191753da8b85fb6a706b99f7f4950f43) - support `arrayCompact(expr)` function *(PR [#7084](https://github.com/tobymao/sqlglot/pull/7084) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `arrayCompact(expr)` function (#7084)
+
+- due to [`a58c37d`](https://github.com/tobymao/sqlglot/commit/a58c37d24441f12af92df329269910bc7b5a0c8f) - transpilation of Snowflake REGEXP_REPLACE to DuckDB *(PR [#7078](https://github.com/tobymao/sqlglot/pull/7078) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  transpilation of Snowflake REGEXP_REPLACE to DuckDB (#7078)
+
+- due to [`dfcd5d7`](https://github.com/tobymao/sqlglot/commit/dfcd5d75f1caf3a32d5930a91f4fb1de598aa914) - Add Exasol reserved keywords to exasol dialect *(PR [#7086](https://github.com/tobymao/sqlglot/pull/7086) by [@nnamdi16](https://github.com/nnamdi16))*:
+
+  Add Exasol reserved keywords to exasol dialect (#7086)
+
+- due to [`7664358`](https://github.com/tobymao/sqlglot/commit/7664358b27599936dacb2b7d8e5329fe32425e62) - fix parsing error in json_value for exasol dialect *(PR [#7088](https://github.com/tobymao/sqlglot/pull/7088) by [@nnamdi16](https://github.com/nnamdi16))*:
+
+  fix parsing error in json_value for exasol dialect (#7088)
+
+- due to [`217e960`](https://github.com/tobymao/sqlglot/commit/217e960f57675cc5f5cb9ff9996c048a31d8004c) - annotate ARRAY_CONTAINS *(PR [#7099](https://github.com/tobymao/sqlglot/pull/7099) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate ARRAY_CONTAINS (#7099)
+
+- due to [`1074d66`](https://github.com/tobymao/sqlglot/commit/1074d66231d1de64b6b9aa43de6afbdc6717da5f) - transpilation of Snowflake REGEXP_INSTR to DuckDB *(PR [#7097](https://github.com/tobymao/sqlglot/pull/7097) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  transpilation of Snowflake REGEXP_INSTR to DuckDB (#7097)
+
+- due to [`ab1c2ab`](https://github.com/tobymao/sqlglot/commit/ab1c2ab44556a8f7ffe7dad09e4b50e75b122b5d) - annotate PERCENTILE/APPROX_PERCENTILE for hive, spark2, spark, dbx *(PR [#7100](https://github.com/tobymao/sqlglot/pull/7100) by [@geooo109](https://github.com/geooo109))*:
+
+  annotate PERCENTILE/APPROX_PERCENTILE for hive, spark2, spark, dbx (#7100)
+
+- due to [`0f8287d`](https://github.com/tobymao/sqlglot/commit/0f8287d8e5ff1eee2aea29001443ee00a4b2ae47) - annotate BIT_OR(expr) for Spark/DBX *(PR [#7101](https://github.com/tobymao/sqlglot/pull/7101) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate BIT_OR(expr) for Spark/DBX (#7101)
+
+- due to [`e19abfd`](https://github.com/tobymao/sqlglot/commit/e19abfded7c159c30f53063d10ae57406553f75d) - annotate BIT_AND(expr) for Spark/DBX *(PR [#7103](https://github.com/tobymao/sqlglot/pull/7103) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate BIT_AND(expr) for Spark/DBX (#7103)
+
+- due to [`0c4f74f`](https://github.com/tobymao/sqlglot/commit/0c4f74f6574d3acf06935626615e2e1f14ae9c04) - parse and annotate ELEMENT_AT for spark2, spark, dbx *(PR [#7104](https://github.com/tobymao/sqlglot/pull/7104) by [@geooo109](https://github.com/geooo109))*:
+
+  parse and annotate ELEMENT_AT for spark2, spark, dbx (#7104)
+
+- due to [`8b8aef0`](https://github.com/tobymao/sqlglot/commit/8b8aef01197b670a727a59e46727b5a57f106a5d) - annotate BIT_XOR(expr) for Spark/DBX *(PR [#7106](https://github.com/tobymao/sqlglot/pull/7106) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate BIT_XOR(expr) for Spark/DBX (#7106)
+
+- due to [`1b1d57a`](https://github.com/tobymao/sqlglot/commit/1b1d57a3541f48291a1534a0b1a28948f8b8207e) - transpilation of Snowflake REGEXP_SUBSTR and REGEXP_SUBSTR_ALL to DuckDB *(PR [#7095](https://github.com/tobymao/sqlglot/pull/7095) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  transpilation of Snowflake REGEXP_SUBSTR and REGEXP_SUBSTR_ALL to DuckDB (#7095)
+
+- due to [`4f964db`](https://github.com/tobymao/sqlglot/commit/4f964db9bfbe42b31dc9f191e687cb2f5f7db0d8) - remove prefix from data type and cleanup *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  remove prefix from data type and cleanup
+
+- due to [`0858599`](https://github.com/tobymao/sqlglot/commit/0858599e274567f7a8c9361afab1526cd2d58eea) - support arrayConcat to clickhouse *(PR [#7108](https://github.com/tobymao/sqlglot/pull/7108) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support arrayConcat to clickhouse (#7108)
+
+- due to [`73ab9af`](https://github.com/tobymao/sqlglot/commit/73ab9af9c95274b3feac9278145432c27695054e) - support arrayDistinct(expr) for clickhouse *(PR [#7114](https://github.com/tobymao/sqlglot/pull/7114) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support arrayDistinct(expr) for clickhouse (#7114)
+
+- due to [`37fa8c7`](https://github.com/tobymao/sqlglot/commit/37fa8c7219a2f17a351f948d6eb314a543f8784d) - Split core functionality to TokenizerCore *(PR [#7116](https://github.com/tobymao/sqlglot/pull/7116) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Split core functionality to TokenizerCore (#7116)
+
+- due to [`1150e39`](https://github.com/tobymao/sqlglot/commit/1150e3911b0b82a9683f765de11605b14fd66ddb) - expression_core which is now compilable by mypyc *(PR [#7117](https://github.com/tobymao/sqlglot/pull/7117) by [@tobymao](https://github.com/tobymao))*:
+
+  expression_core which is now compilable by mypyc (#7117)
+
+- due to [`f796956`](https://github.com/tobymao/sqlglot/commit/f796956d3cc857995572d715b8db530b2d76b8d6) - annotate `ArrayDistinct` for Hive/Spark/DBX *(PR [#7119](https://github.com/tobymao/sqlglot/pull/7119) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate `ArrayDistinct` for Hive/Spark/DBX (#7119)
+
+- due to [`2069b06`](https://github.com/tobymao/sqlglot/commit/2069b06284d6998d94c43c16d4b46ac50ea0d84a) - annotate ARRAY_EXCEPT for Hive/Spark/DBX *(PR [#7123](https://github.com/tobymao/sqlglot/pull/7123) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate ARRAY_EXCEPT for Hive/Spark/DBX (#7123)
+
+- due to [`5a30754`](https://github.com/tobymao/sqlglot/commit/5a30754df09ddb1260b394c812596adb03c2710d) - support `current_localtimestamp()` for DuckDB *(PR [#7128](https://github.com/tobymao/sqlglot/pull/7128) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support `current_localtimestamp()` for DuckDB (#7128)
+
+- due to [`93bf337`](https://github.com/tobymao/sqlglot/commit/93bf337ca2af1b5d9b06d6bf3c50c5bcce680077) - annotate date_diff(expr) for DuckDB *(PR [#7125](https://github.com/tobymao/sqlglot/pull/7125) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate date_diff(expr) for DuckDB (#7125)
+
+
+### :sparkles: New Features
+- [`c8ddcc3`](https://github.com/tobymao/sqlglot/commit/c8ddcc383bab07b807ed1d6b6f9bef91417e43c1) - **optimizer**: Annotate COLLATION(expr) for Spark/DBX *(PR [#6957](https://github.com/tobymao/sqlglot/pull/6957) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`fc4b332`](https://github.com/tobymao/sqlglot/commit/fc4b3326a14a1b42bc954914ce43b8dad7ef23b2) - **optimizer**: Annotate BITMAP_COUNT(expr) for Spark/DBX *(PR [#6956](https://github.com/tobymao/sqlglot/pull/6956) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`8725010`](https://github.com/tobymao/sqlglot/commit/87250100eb2a1d2c206a26cce276f7babec0e409) - add exp.Trunc for numeric truncation *(PR [#6923](https://github.com/tobymao/sqlglot/pull/6923) by [@doripo](https://github.com/doripo))*
+- [`1418494`](https://github.com/tobymao/sqlglot/commit/1418494f777358f4b6bd1e05ee5cb02591d92c74) - **optimizer**: Annotate FORMAT_STRING(expr) for Spark/DBX *(PR [#6962](https://github.com/tobymao/sqlglot/pull/6962) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ff1fd52`](https://github.com/tobymao/sqlglot/commit/ff1fd521147cb66acc36f2da7b1590d9e7f8140f) - **generator**: Add numeric TRUNC output for additional dialects *(PR [#6961](https://github.com/tobymao/sqlglot/pull/6961) by [@doripo](https://github.com/doripo))*
+- [`37fa84e`](https://github.com/tobymao/sqlglot/commit/37fa84e389b6bcbc94326d3defb4664d0826fb3f) - **snowflake**: support `CURRENT_VERSION()` transpilation for Spark *(PR [#6964](https://github.com/tobymao/sqlglot/pull/6964) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`51d3ebd`](https://github.com/tobymao/sqlglot/commit/51d3ebdca83e114449590d9f337ae6902659a8b4) - **snowflake**: transpile `CURRENT_VERSION()` to MySQL *(PR [#6965](https://github.com/tobymao/sqlglot/pull/6965) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`9008553`](https://github.com/tobymao/sqlglot/commit/90085534eb8863f588003bdf65d96771729889aa) - **snowflake**: transpile CURRENT_VERSION() to ClickHouse, Postgres, Trino, Redshift *(PR [#6966](https://github.com/tobymao/sqlglot/pull/6966) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`e8b379e`](https://github.com/tobymao/sqlglot/commit/e8b379eb67d034f829d2fd50daefea2a98b83976) - **sqlite**: Map SQLITE_VERSION() to exp.CurrentVersion expression *(PR [#6967](https://github.com/tobymao/sqlglot/pull/6967) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dfd299f`](https://github.com/tobymao/sqlglot/commit/dfd299fcfaf7a61d13b073e7b59d6bdd0748c7b8) - **optimizer**: Annotate `RANDSTR(expr)` for Spark/DBX *(PR [#6971](https://github.com/tobymao/sqlglot/pull/6971) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`969e45d`](https://github.com/tobymao/sqlglot/commit/969e45d3ba1db25f4561b122b9401b5608356f58) - **optimizer**: Annotate REPEAT(expr) for Hive, Spark, DBX *(PR [#6974](https://github.com/tobymao/sqlglot/pull/6974) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ade3639`](https://github.com/tobymao/sqlglot/commit/ade3639b337d0222a00feec7ac9762571586f7ab) - **snowflake**: transpilation support current_database *(PR [#6973](https://github.com/tobymao/sqlglot/pull/6973) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`57093d1`](https://github.com/tobymao/sqlglot/commit/57093d15d5bbc2217366ace42db109e215dca79f) - **optimizer**: Annotate `OVERLAY(expr)` for Spark/DBX *(PR [#6970](https://github.com/tobymao/sqlglot/pull/6970) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f5b2328`](https://github.com/tobymao/sqlglot/commit/f5b23281b6829bace426808f0a55e73590b70bbd) - **optimizer**: Annotate RIGHT(expr) for Spark/DBX *(PR [#6980](https://github.com/tobymao/sqlglot/pull/6980) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`61a0d3f`](https://github.com/tobymao/sqlglot/commit/61a0d3f05be478dd4552e6559b6781891d4a3447) - **snowflake**: add support for JAROWINKLER_SIMILARITY *(PR [#6977](https://github.com/tobymao/sqlglot/pull/6977) by [@kyle-cheung](https://github.com/kyle-cheung))*
+- [`9d1f4e0`](https://github.com/tobymao/sqlglot/commit/9d1f4e0ea6f8b66b022a5263320275ed43efb5f3) - **snowflake**: transpilation support current_schema *(PR [#6976](https://github.com/tobymao/sqlglot/pull/6976) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`0d345aa`](https://github.com/tobymao/sqlglot/commit/0d345aafd037b047808716dfdb60cc554d47941d) - **optimizer**: Annotate REPLACE(expr) for Hive, Spark and DBX *(PR [#6975](https://github.com/tobymao/sqlglot/pull/6975) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`19f9000`](https://github.com/tobymao/sqlglot/commit/19f900031c9abe26bebb541e8907ca263454055c) - **snowflake**: transpilation support current_version *(PR [#6960](https://github.com/tobymao/sqlglot/pull/6960) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`f103a16`](https://github.com/tobymao/sqlglot/commit/f103a166aca95da726ac9281816181e53b916dc3) - **optimizer**: support parsing `VERSION()` for ClickHouse *(PR [#6986](https://github.com/tobymao/sqlglot/pull/6986) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2751c8f`](https://github.com/tobymao/sqlglot/commit/2751c8ff1d6c4acc1a0d407e601d572886ceffc3) - **mysql**: parse support for `VERSION()` *(PR [#6985](https://github.com/tobymao/sqlglot/pull/6985) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`37db91c`](https://github.com/tobymao/sqlglot/commit/37db91c5cea14488654a2b69aceab13b6c6a98b7) - **optimizer**: Annotate `REVERSE(expr)` for Hive, Spark and DBX *(PR [#6979](https://github.com/tobymao/sqlglot/pull/6979) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f4d53a2`](https://github.com/tobymao/sqlglot/commit/f4d53a2d0f9aadf7fc63e484d64821cddf5d1f17) - **postgres**: support parsing VERSION() for Postgres/Redshift *(PR [#6987](https://github.com/tobymao/sqlglot/pull/6987) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`71bb0c3`](https://github.com/tobymao/sqlglot/commit/71bb0c3f7947c1959160c8b401354ceddee2e8ce) - **trino**: support for version() for trino *(PR [#6988](https://github.com/tobymao/sqlglot/pull/6988) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`fbca704`](https://github.com/tobymao/sqlglot/commit/fbca7040cd3ae9eb0bc599b5ce656724fccafab1) - **optimizer**: Annotate SPLIT(expr) for Hive/Spark/DBX *(PR [#6990](https://github.com/tobymao/sqlglot/pull/6990) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`264e95f`](https://github.com/tobymao/sqlglot/commit/264e95f04d95f2cd7bcf255ee7ae160db36882a7) - **optimizer**: Move TRANSLATE(expr) annotator to base *(PR [#6992](https://github.com/tobymao/sqlglot/pull/6992) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`eb8ad51`](https://github.com/tobymao/sqlglot/commit/eb8ad518142dc91e25d37310cb9cbfa33c44fe34) - **optimizer**: Annotate FILTER(expr, func) for Spark/DBX *(PR [#6995](https://github.com/tobymao/sqlglot/pull/6995) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`12e0869`](https://github.com/tobymao/sqlglot/commit/12e0869ff6820b35884e189b2b4f29aef56c3a51) - **optimizer**: annotate CURRENT_TIMESTAMP for MySQL *(PR [#7004](https://github.com/tobymao/sqlglot/pull/7004) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`cbdad37`](https://github.com/tobymao/sqlglot/commit/cbdad3762dd6935d75405a0c33a1656cab8c2d1e) - **mysql**: support CURTIME() for MySQL/SingleStore *(PR [#7005](https://github.com/tobymao/sqlglot/pull/7005) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`d16cc62`](https://github.com/tobymao/sqlglot/commit/d16cc62ea8342bec91092f8c7cf2504364581a7e) - **optimizer**: annotate ADD_MONTH(expr) for Hive/Spark/DBX *(PR [#7003](https://github.com/tobymao/sqlglot/pull/7003) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6381c48`](https://github.com/tobymao/sqlglot/commit/6381c4825c1929da56363035be2c4ae7a90336dd) - **exasol**: support NOW() for exasol *(PR [#7006](https://github.com/tobymao/sqlglot/pull/7006) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`d9ea168`](https://github.com/tobymao/sqlglot/commit/d9ea1683a98252ad43948be32fbd7cf77d17b67c) - **optimizer**: annotate CURRENT_USER to base *(PR [#7007](https://github.com/tobymao/sqlglot/pull/7007) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`7a2a777`](https://github.com/tobymao/sqlglot/commit/7a2a777fb8c215b51436942645965792257b8dc9) - **optimizer**: annotate FROM_UTC_TIMESTAMP(expr) for Spark/DBX *(PR [#7008](https://github.com/tobymao/sqlglot/pull/7008) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`8be32fd`](https://github.com/tobymao/sqlglot/commit/8be32fde55c8d256e73fd504246f695bf550f4cb) - **spark**: support MAKE_TIMESTAMP(expr) for Spark/DBX *(PR [#7009](https://github.com/tobymao/sqlglot/pull/7009) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b951d74`](https://github.com/tobymao/sqlglot/commit/b951d740a934a8f46ce2c96caf7d8ae80b61604c) - **optimizer**: annotate NEXT_DAY(expr) for Hive/Spark/DBX *(PR [#7010](https://github.com/tobymao/sqlglot/pull/7010) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`404797a`](https://github.com/tobymao/sqlglot/commit/404797acfb1a9f860bd87880fecacd79cb1b2161) - **optimizer**: Move `CURRENT_SCHEMA()` to Base Annotator *(PR [#7021](https://github.com/tobymao/sqlglot/pull/7021) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`994d3a3`](https://github.com/tobymao/sqlglot/commit/994d3a37983791d4e8484d6d39b819a1cff2f774) - **parser**: robust STAR with EXCLUDE (redshift) *(PR [#6972](https://github.com/tobymao/sqlglot/pull/6972) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#6963](https://github.com/tobymao/sqlglot/issues/6963) opened by [@iboland](https://github.com/iboland)*
+- [`3ea80fb`](https://github.com/tobymao/sqlglot/commit/3ea80fb86482e257c4565ab7876dd6cdd60a7be2) - **optimizer**: annotate REVERSE(str) for DuckDB *(PR [#7018](https://github.com/tobymao/sqlglot/pull/7018) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`352fb94`](https://github.com/tobymao/sqlglot/commit/352fb94c46e5dd0dfd824b4472b03cccf21d3f56) - **optimizer**: annotate ISODOW(expr) for DuckDB *(PR [#7016](https://github.com/tobymao/sqlglot/pull/7016) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`c2e5954`](https://github.com/tobymao/sqlglot/commit/c2e59545d8030b1d2e7859631c9d75ea0f6df883) - **optimizer**: annotate COUNTIF(expr) for DuckDB *(PR [#7012](https://github.com/tobymao/sqlglot/pull/7012) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`e35ee14`](https://github.com/tobymao/sqlglot/commit/e35ee143b08f671175e730e602e9a5dcd9155fde) - **optimizer**: annotate CountIf(expr) for ClickHouse *(PR [#7013](https://github.com/tobymao/sqlglot/pull/7013) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6971c17`](https://github.com/tobymao/sqlglot/commit/6971c1730b14b0516ff3aca3780f6d84203e6993) - **snowflake**: support aliases in semantic view dimensions *(PR [#6994](https://github.com/tobymao/sqlglot/pull/6994) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#6993](https://github.com/tobymao/sqlglot/issues/6993) opened by [@sgomezvillamor](https://github.com/sgomezvillamor)*
+- [`b73be3e`](https://github.com/tobymao/sqlglot/commit/b73be3e8c95b44f2cd71498592bd4b5b63ba02d9) - **duckdb**: support `today()` for duckdb *(PR [#7015](https://github.com/tobymao/sqlglot/pull/7015) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`36e3310`](https://github.com/tobymao/sqlglot/commit/36e3310959260a7b1124a60589cdc90a3e631624) - **exasol**: support current_schema as no_param *(PR [#7000](https://github.com/tobymao/sqlglot/pull/7000) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`fd8860b`](https://github.com/tobymao/sqlglot/commit/fd8860b8b8d5e0c29c53597485c656923375e1d9) - **optimizer**: annotate FORMAT(expr) for DuckDB *(PR [#7017](https://github.com/tobymao/sqlglot/pull/7017) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`eecdfa1`](https://github.com/tobymao/sqlglot/commit/eecdfa1b15ac1808f93107d2ad6a51f52ffaf7cc) - **optimizer**: Annotate `DAYOFWEEK(expr)`, `DAYOFMONTH(expr)` for Hive/Spark/DBX *(PR [#6996](https://github.com/tobymao/sqlglot/pull/6996) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`4fc26f0`](https://github.com/tobymao/sqlglot/commit/4fc26f086701cebb3d3974b762d12e1435f4a195) - **optimizer**: annotate `TIME_BUCKET(expr)` for DuckDB *(PR [#7014](https://github.com/tobymao/sqlglot/pull/7014) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`00e6d9a`](https://github.com/tobymao/sqlglot/commit/00e6d9af02971aad6e7102cae3af2a7192fa7070) - **optimizer**: annotate `UNIX_DATE(expr)` for Spark/DBX *(PR [#7011](https://github.com/tobymao/sqlglot/pull/7011) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`86a5509`](https://github.com/tobymao/sqlglot/commit/86a5509bfcb8df6a8cf8b0971d9d12ae3204f2af) - **exasol**: support user for exasol *(PR [#7001](https://github.com/tobymao/sqlglot/pull/7001) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b27c163`](https://github.com/tobymao/sqlglot/commit/b27c163fcce0a4b0a4f75d131cdc105353e95464) - **optimizer**: support `CURDATE` for Exasol *(PR [#6999](https://github.com/tobymao/sqlglot/pull/6999) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`47dc558`](https://github.com/tobymao/sqlglot/commit/47dc5589f8b165d9f0296e6aa48de337f556f1a4) - **optimizer**: annotate ARRAY_COMPACT(expr) for Spark/DBX *(PR [#7034](https://github.com/tobymao/sqlglot/pull/7034) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`235b8ac`](https://github.com/tobymao/sqlglot/commit/235b8ac24d41324239d6581b5636ad19ec7b9376) - **optimizer**: annotate `ARRAY_INTERSECT(expr)` for Hive/Spark/DBX *(PR [#7037](https://github.com/tobymao/sqlglot/pull/7037) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`643a6c7`](https://github.com/tobymao/sqlglot/commit/643a6c7d97292eb29ba1bac6523747e161544a1a) - **snowflake**: Transpilation support for Snowflake REGEXP_LIKE to DuckDB *(PR [#7030](https://github.com/tobymao/sqlglot/pull/7030) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`70d6f2b`](https://github.com/tobymao/sqlglot/commit/70d6f2b5d8c0f37550ba7a288c5f7f7021c66bd7) - **optimizer**: annotate `ARRAY_INSERT(expr)` for Spark/DBX *(PR [#7044](https://github.com/tobymao/sqlglot/pull/7044) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`1011fca`](https://github.com/tobymao/sqlglot/commit/1011fca568e29db2b13d88da29dfbf6df3f41af4) - **duckdb**: transpile Snowflake's current_schemas *(PR [#7042](https://github.com/tobymao/sqlglot/pull/7042) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`3019d0a`](https://github.com/tobymao/sqlglot/commit/3019d0a0110a503b68b2a3cf7f93be1000f20a40) - **spark**: Map BIT_GET to GETBIT for Spark/DBX *(PR [#7041](https://github.com/tobymao/sqlglot/pull/7041) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`27ae429`](https://github.com/tobymao/sqlglot/commit/27ae42987864949f74b784d3dbb063bd3450e0dc) - **spark**: transpile BIT_COUNT to DuckDB *(PR [#7039](https://github.com/tobymao/sqlglot/pull/7039) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f6cbd27`](https://github.com/tobymao/sqlglot/commit/f6cbd27fd61937efba6879f20f5ff0239e678469) - **postgres**: Add support for trigger DDL statements *(PR [#6978](https://github.com/tobymao/sqlglot/pull/6978) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+  - :arrow_lower_right: *addresses issue [#6926](https://github.com/tobymao/sqlglot/issues/6926) opened by [@Badg](https://github.com/Badg)*
+- [`c5939c1`](https://github.com/tobymao/sqlglot/commit/c5939c12c6816437f5abda3322f99cc597b1616c) - **spark**: Map curdate to current_date for Spark/DBX *(PR [#7048](https://github.com/tobymao/sqlglot/pull/7048) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`58419e1`](https://github.com/tobymao/sqlglot/commit/58419e1f47119a135276a722b85ccfa92ae3d1f1) - **optimizer**: move `SessionUser` to base *(PR [#7049](https://github.com/tobymao/sqlglot/pull/7049) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`3c67ec0`](https://github.com/tobymao/sqlglot/commit/3c67ec0007b509ec58297bf2c61f17d095b694b6) - **duckdb**: Add traspilation support for NULL values in ARRAY_CONTAINS function *(PR [#7055](https://github.com/tobymao/sqlglot/pull/7055) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`f98cba1`](https://github.com/tobymao/sqlglot/commit/f98cba17caa8f3c2dcd5669f3525094c5dd58781) - **optimizer**: move exp.Rand to base *(PR [#7065](https://github.com/tobymao/sqlglot/pull/7065) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`4f8a49c`](https://github.com/tobymao/sqlglot/commit/4f8a49cd42ef37178cd0626554bfd263a140046e) - **snowflake**: Transpilation support for Snowflake REGEXP_COUNT to DuckDB *(PR [#7054](https://github.com/tobymao/sqlglot/pull/7054) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`eaba8dc`](https://github.com/tobymao/sqlglot/commit/eaba8dc26b2ec28b8074eb0cf2b3db086cf7ccc3) - **optimizer**: move DEGREES(expr) to base *(PR [#7074](https://github.com/tobymao/sqlglot/pull/7074) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a87c1b4`](https://github.com/tobymao/sqlglot/commit/a87c1b46b54ef7f6895c68666c05041924691576) - **optimizer**: annotate DEGREES(expr) for T-SQL *(PR [#7077](https://github.com/tobymao/sqlglot/pull/7077) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f057a1b`](https://github.com/tobymao/sqlglot/commit/f057a1b912d473a77f111d33f40ecce2f6d54cf8) - **optimizer**: move MONTHNAME to base *(PR [#7083](https://github.com/tobymao/sqlglot/pull/7083) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dd2cf85`](https://github.com/tobymao/sqlglot/commit/dd2cf850134a2833d0da5eb58206accc298c9e0a) - **clickhouse**: support `UTCTimestamp` *(PR [#7082](https://github.com/tobymao/sqlglot/pull/7082) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`7ff13c6`](https://github.com/tobymao/sqlglot/commit/7ff13c690dddd9e1024b1a4ab6c9532f67bdece8) - **snowflake**: transpilation support map_contains_key *(PR [#7070](https://github.com/tobymao/sqlglot/pull/7070) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`6fa494d`](https://github.com/tobymao/sqlglot/commit/6fa494da191753da8b85fb6a706b99f7f4950f43) - **clickhouse**: support `arrayCompact(expr)` function *(PR [#7084](https://github.com/tobymao/sqlglot/pull/7084) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a58c37d`](https://github.com/tobymao/sqlglot/commit/a58c37d24441f12af92df329269910bc7b5a0c8f) - **snowflake**: transpilation of Snowflake REGEXP_REPLACE to DuckDB *(PR [#7078](https://github.com/tobymao/sqlglot/pull/7078) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`3a453d0`](https://github.com/tobymao/sqlglot/commit/3a453d045a261b82ed6a84b661da0c9a86e3161d) - **duckdb**: Add transpilation support for NULLs in ARRAY_DISTINCT *(PR [#7069](https://github.com/tobymao/sqlglot/pull/7069) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`dfcd5d7`](https://github.com/tobymao/sqlglot/commit/dfcd5d75f1caf3a32d5930a91f4fb1de598aa914) - **exasol**: Add Exasol reserved keywords to exasol dialect *(PR [#7086](https://github.com/tobymao/sqlglot/pull/7086) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`b569a3d`](https://github.com/tobymao/sqlglot/commit/b569a3d7628600608144d1d93e17eab4cafe4217) - **DuckDb**: Add transpilation support for ARRAY_MAX and ARRAY_MIN functions *(PR [#7080](https://github.com/tobymao/sqlglot/pull/7080) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`1074d66`](https://github.com/tobymao/sqlglot/commit/1074d66231d1de64b6b9aa43de6afbdc6717da5f) - **snowflake**: transpilation of Snowflake REGEXP_INSTR to DuckDB *(PR [#7097](https://github.com/tobymao/sqlglot/pull/7097) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`ab1c2ab`](https://github.com/tobymao/sqlglot/commit/ab1c2ab44556a8f7ffe7dad09e4b50e75b122b5d) - **optimizer**: annotate PERCENTILE/APPROX_PERCENTILE for hive, spark2, spark, dbx *(PR [#7100](https://github.com/tobymao/sqlglot/pull/7100) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7096](https://github.com/tobymao/sqlglot/issues/7096) opened by [@sunilmishra-amp](https://github.com/sunilmishra-amp)*
+- [`0f8287d`](https://github.com/tobymao/sqlglot/commit/0f8287d8e5ff1eee2aea29001443ee00a4b2ae47) - **optimizer**: annotate BIT_OR(expr) for Spark/DBX *(PR [#7101](https://github.com/tobymao/sqlglot/pull/7101) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`e19abfd`](https://github.com/tobymao/sqlglot/commit/e19abfded7c159c30f53063d10ae57406553f75d) - **optimizer**: annotate BIT_AND(expr) for Spark/DBX *(PR [#7103](https://github.com/tobymao/sqlglot/pull/7103) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`0c4f74f`](https://github.com/tobymao/sqlglot/commit/0c4f74f6574d3acf06935626615e2e1f14ae9c04) - **optimizer**: parse and annotate ELEMENT_AT for spark2, spark, dbx *(PR [#7104](https://github.com/tobymao/sqlglot/pull/7104) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7096](https://github.com/tobymao/sqlglot/issues/7096) opened by [@sunilmishra-amp](https://github.com/sunilmishra-amp)*
+- [`8b8aef0`](https://github.com/tobymao/sqlglot/commit/8b8aef01197b670a727a59e46727b5a57f106a5d) - **optimizer**: annotate BIT_XOR(expr) for Spark/DBX *(PR [#7106](https://github.com/tobymao/sqlglot/pull/7106) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ce09e81`](https://github.com/tobymao/sqlglot/commit/ce09e81bcda5c439825af54ac4e6eef124694833) - **DuckDB**: Enable transpilation for ARRAY_EXCEPT function *(PR [#7094](https://github.com/tobymao/sqlglot/pull/7094) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`1b1d57a`](https://github.com/tobymao/sqlglot/commit/1b1d57a3541f48291a1534a0b1a28948f8b8207e) - **snowflake**: transpilation of Snowflake REGEXP_SUBSTR and REGEXP_SUBSTR_ALL to DuckDB *(PR [#7095](https://github.com/tobymao/sqlglot/pull/7095) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`0858599`](https://github.com/tobymao/sqlglot/commit/0858599e274567f7a8c9361afab1526cd2d58eea) - **clickhouse**: support arrayConcat to clickhouse *(PR [#7108](https://github.com/tobymao/sqlglot/pull/7108) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`9100ea7`](https://github.com/tobymao/sqlglot/commit/9100ea742cd83fd70aaf3192ceeba8abeda61b47) - **parser**: support DECLARE spark, dbx *(PR [#7113](https://github.com/tobymao/sqlglot/pull/7113) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7112](https://github.com/tobymao/sqlglot/issues/7112) opened by [@aersam](https://github.com/aersam)*
+- [`73ab9af`](https://github.com/tobymao/sqlglot/commit/73ab9af9c95274b3feac9278145432c27695054e) - **clickhouse**: support arrayDistinct(expr) for clickhouse *(PR [#7114](https://github.com/tobymao/sqlglot/pull/7114) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f796956`](https://github.com/tobymao/sqlglot/commit/f796956d3cc857995572d715b8db530b2d76b8d6) - **optimizer**: annotate `ArrayDistinct` for Hive/Spark/DBX *(PR [#7119](https://github.com/tobymao/sqlglot/pull/7119) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2069b06`](https://github.com/tobymao/sqlglot/commit/2069b06284d6998d94c43c16d4b46ac50ea0d84a) - **optimizer**: annotate ARRAY_EXCEPT for Hive/Spark/DBX *(PR [#7123](https://github.com/tobymao/sqlglot/pull/7123) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`5a30754`](https://github.com/tobymao/sqlglot/commit/5a30754df09ddb1260b394c812596adb03c2710d) - **duckdb**: support `current_localtimestamp()` for DuckDB *(PR [#7128](https://github.com/tobymao/sqlglot/pull/7128) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :bug: Bug Fixes
+- [`836cc60`](https://github.com/tobymao/sqlglot/commit/836cc60c8177339e15bfef3bd3b7d98569400385) - **parser**: Limit named PK parsing to MySQL only *(PR [#6991](https://github.com/tobymao/sqlglot/pull/6991) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#6989](https://github.com/tobymao/sqlglot/issues/6989) opened by [@sgomezvillamor](https://github.com/sgomezvillamor)*
+- [`495920e`](https://github.com/tobymao/sqlglot/commit/495920eb3c447949e0c787adf347c8bcd7035764) - **snowflake**: Parse MODIFY as ALTER in ALTER TABLE *(PR [#7024](https://github.com/tobymao/sqlglot/pull/7024) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#7023](https://github.com/tobymao/sqlglot/issues/7023) opened by [@abhaysharma419](https://github.com/abhaysharma419)*
+- [`1e753a3`](https://github.com/tobymao/sqlglot/commit/1e753a35405edaf9b6a1b90fccd74eaef23a028b) - **parser**: parse cast argument using _parse_assignment closes [#7027](https://github.com/tobymao/sqlglot/pull/7027) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`67e47a4`](https://github.com/tobymao/sqlglot/commit/67e47a47582cf0970ee6a9e40c9014ba04a0c065) - Support missing meta when updating position metadata for an expression *(PR [#7032](https://github.com/tobymao/sqlglot/pull/7032) by [@izeigerman](https://github.com/izeigerman))*
+- [`9bffc99`](https://github.com/tobymao/sqlglot/commit/9bffc99efec77605292e3332dfd626754441f9d8) - **snowflake**: wrap jarowinkler similarity in UPPER for case-insensitivty *(PR [#7022](https://github.com/tobymao/sqlglot/pull/7022) by [@kyle-cheung](https://github.com/kyle-cheung))*
+- [`9d7db06`](https://github.com/tobymao/sqlglot/commit/9d7db06cf8ef66583f11b6d54af573bb28f4434b) - **spark**: Generator for ARRAY_INSERT(expr) *(PR [#7036](https://github.com/tobymao/sqlglot/pull/7036) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+  - :arrow_lower_right: *fixes issue [#7035](https://github.com/tobymao/sqlglot/issues/7035) opened by [@AbhishekASLK](https://github.com/AbhishekASLK)*
+- [`f476d07`](https://github.com/tobymao/sqlglot/commit/f476d071a1412fb2d9cd6f39067380252ab4c15a) - **duckdb**: update transpilation of SEQ functions and GENERATOR for DuckDB *(PR [#7029](https://github.com/tobymao/sqlglot/pull/7029) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+  - :arrow_lower_right: *fixes issue [#6998](https://github.com/tobymao/sqlglot/issues/6998) opened by [@kyle-cheung](https://github.com/kyle-cheung)*
+- [`aa14297`](https://github.com/tobymao/sqlglot/commit/aa142974382fa4115234834e082ca594e00eefa4) - **duckdb**: transpile LATERAL VIEW INLINE from spark to DuckDB *(PR [#7033](https://github.com/tobymao/sqlglot/pull/7033) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`f9d1f73`](https://github.com/tobymao/sqlglot/commit/f9d1f73b490e6694da0e800d9a5a70e1ba7f38d5) - **snowflake**: refactor colon (extract) parsing precedence *(PR [#7046](https://github.com/tobymao/sqlglot/pull/7046) by [@georgesittas](https://github.com/georgesittas))*
+- [`5ef8bef`](https://github.com/tobymao/sqlglot/commit/5ef8befd435fa644ae7e8ca80c8564207f7ad014) - **bigquery**: Parse & generate table alias before its version *(PR [#7075](https://github.com/tobymao/sqlglot/pull/7075) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#7073](https://github.com/tobymao/sqlglot/issues/7073) opened by [@chelsea-lin](https://github.com/chelsea-lin)*
+- [`bd4db6b`](https://github.com/tobymao/sqlglot/commit/bd4db6bef103c2d810e661948d2e3ddda0bf2c67) - **parser**: INTERVAL units with DCOLON *(PR [#7076](https://github.com/tobymao/sqlglot/pull/7076) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7072](https://github.com/tobymao/sqlglot/issues/7072) opened by [@ligfx](https://github.com/ligfx)*
+- [`7664358`](https://github.com/tobymao/sqlglot/commit/7664358b27599936dacb2b7d8e5329fe32425e62) - **exasol**: fix parsing error in json_value for exasol dialect *(PR [#7088](https://github.com/tobymao/sqlglot/pull/7088) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`af8c3e9`](https://github.com/tobymao/sqlglot/commit/af8c3e9222224ee4878bc81dac0dee032e4863a7) - missing comments in subquery *(commit by [@tobymao](https://github.com/tobymao))*
+- [`217e960`](https://github.com/tobymao/sqlglot/commit/217e960f57675cc5f5cb9ff9996c048a31d8004c) - **optimizer**: annotate ARRAY_CONTAINS *(PR [#7099](https://github.com/tobymao/sqlglot/pull/7099) by [@geooo109](https://github.com/geooo109))*
+- [`3ff4e0d`](https://github.com/tobymao/sqlglot/commit/3ff4e0d0b97041f72b759f1fd2bd0ec561c96423) - **deploy**: Fix _version not exists *(PR [#7129](https://github.com/tobymao/sqlglot/pull/7129) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`93bf337`](https://github.com/tobymao/sqlglot/commit/93bf337ca2af1b5d9b06d6bf3c50c5bcce680077) - **optimizer**: annotate date_diff(expr) for DuckDB *(PR [#7125](https://github.com/tobymao/sqlglot/pull/7125) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`4a38462`](https://github.com/tobymao/sqlglot/commit/4a3846280d00b94cc677baff63d90e3f1361cd8a) - **deploy**: Use GA ARM machine *(PR [#7131](https://github.com/tobymao/sqlglot/pull/7131) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :zap: Performance Improvements
+- [`a8aa371`](https://github.com/tobymao/sqlglot/commit/a8aa371f3f8d5964b8625a2f92f302ae1be297ea) - improve `DataType.build` perf by removing unnecessary constructor *(PR [#7092](https://github.com/tobymao/sqlglot/pull/7092) by [@georgesittas](https://github.com/georgesittas))*
+- [`f12a58f`](https://github.com/tobymao/sqlglot/commit/f12a58f86501ef726335f147b7171d01b162ea79) - extract Column instance check out of _set_type in annotate_types *(PR [#7091](https://github.com/tobymao/sqlglot/pull/7091) by [@georgesittas](https://github.com/georgesittas))*
+- [`ddbf64c`](https://github.com/tobymao/sqlglot/commit/ddbf64ceef63150ffef5e60b5601af0e84a9f54b) - optimize large query performance in optimizer pipeline *(PR [#7090](https://github.com/tobymao/sqlglot/pull/7090) by [@sabrikaragonen](https://github.com/sabrikaragonen))*
+  - :arrow_lower_right: *addresses issue [#5112](https://github.com/tobymao/sqlglot/issues/5112) opened by [@karakanb](https://github.com/karakanb)*
+
+### :recycle: Refactors
+- [`749cf18`](https://github.com/tobymao/sqlglot/commit/749cf18dbcb8d1d0c7d144e6481ecc3a443d4a0e) - require original SQL in `Parser.parse` *(PR [#7045](https://github.com/tobymao/sqlglot/pull/7045) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#7031](https://github.com/tobymao/sqlglot/issues/7031) opened by [@ultrabear](https://github.com/ultrabear)*
+- [`13ee312`](https://github.com/tobymao/sqlglot/commit/13ee31281fe21c670f8ce1656520c18762e8402f) - use `IntEnum` instead of auto/string enums *(PR [#7050](https://github.com/tobymao/sqlglot/pull/7050) by [@georgesittas](https://github.com/georgesittas))*
+- [`4f964db`](https://github.com/tobymao/sqlglot/commit/4f964db9bfbe42b31dc9f191e687cb2f5f7db0d8) - remove prefix from data type and cleanup *(commit by [@tobymao](https://github.com/tobymao))*
+- [`1150e39`](https://github.com/tobymao/sqlglot/commit/1150e3911b0b82a9683f765de11605b14fd66ddb) - expression_core which is now compilable by mypyc *(PR [#7117](https://github.com/tobymao/sqlglot/pull/7117) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`1c5e168`](https://github.com/tobymao/sqlglot/commit/1c5e1684dbb6f508f08b30e9ea96393b25ef0185) - generate CNAME file at docs build time *(PR [#6958](https://github.com/tobymao/sqlglot/pull/6958) by [@georgesittas](https://github.com/georgesittas))*
+- [`fd80f4b`](https://github.com/tobymao/sqlglot/commit/fd80f4b9dbbb2a3709e4ea09118b826677b0d3e8) - transpilation test for LEAD from Snowflake to DuckDB *(PR [#6968](https://github.com/tobymao/sqlglot/pull/6968) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`4f82c90`](https://github.com/tobymao/sqlglot/commit/4f82c901bcc829d142248306202c89d440cbed86) - duckdb version() tests *(commit by [@geooo109](https://github.com/geooo109))*
+- [`eabd68f`](https://github.com/tobymao/sqlglot/commit/eabd68fa952b0b7ce86927a22e5fb03f94915a21) - used dictionary comprehension in annotators *(PR [#7025](https://github.com/tobymao/sqlglot/pull/7025) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`11da02f`](https://github.com/tobymao/sqlglot/commit/11da02f2bf7128c191576f68ffb0b5d881a1e8f2) - **optimizer**: move `CurrentVersion` annotator to base *(PR [#6997](https://github.com/tobymao/sqlglot/pull/6997) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b1f0542`](https://github.com/tobymao/sqlglot/commit/b1f05428d8a4d441398c0f3d4a65b49b0eda2729) - tokenizer optimizations *(PR [#7038](https://github.com/tobymao/sqlglot/pull/7038) by [@geooo109](https://github.com/geooo109))*
+- [`214043c`](https://github.com/tobymao/sqlglot/commit/214043c5a9f3215d2811603c62701b59b0e61f05) - update license version *(PR [#7047](https://github.com/tobymao/sqlglot/pull/7047) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`5172f1a`](https://github.com/tobymao/sqlglot/commit/5172f1a5ff62ebc0bcca4f27ab5b79c0aefbdf6a) - refactor _scan *(PR [#7051](https://github.com/tobymao/sqlglot/pull/7051) by [@geooo109](https://github.com/geooo109))*
+- [`6c08a77`](https://github.com/tobymao/sqlglot/commit/6c08a77598dd672ae0f05eb4b36edfba520f4002) - improve scope module perf by replacing instance checks with type checks *(PR [#7066](https://github.com/tobymao/sqlglot/pull/7066) by [@georgesittas](https://github.com/georgesittas))*
+- [`c2f7761`](https://github.com/tobymao/sqlglot/commit/c2f7761f4f75ceabf7df781e5431b19b6eade3d6) - improve schema module perf by caching normalized tables/names *(PR [#7068](https://github.com/tobymao/sqlglot/pull/7068) by [@georgesittas](https://github.com/georgesittas))*
+- [`13f1b06`](https://github.com/tobymao/sqlglot/commit/13f1b06570a20d2f8e6a9cc22b5a20e2d1af8674) - **snowflake**: add transpilation test for LAST_VALUE from snowflake to duckdb *(PR [#7079](https://github.com/tobymao/sqlglot/pull/7079) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`92c364a`](https://github.com/tobymao/sqlglot/commit/92c364ae64cf68fc60d9418cfea17a8414e37333) - refactor map_contains_key from sf to duckdb *(commit by [@geooo109](https://github.com/geooo109))*
+- [`9b4524a`](https://github.com/tobymao/sqlglot/commit/9b4524aa4c2deac4dcc46a628370101e9677a4c2) - small opts for generator sql method *(PR [#7085](https://github.com/tobymao/sqlglot/pull/7085) by [@geooo109](https://github.com/geooo109))*
+- [`aba0db1`](https://github.com/tobymao/sqlglot/commit/aba0db107a0cf02471234c54ffb982f8dca9cfcd) - remove `classproperty` as it is dead code *(PR [#7087](https://github.com/tobymao/sqlglot/pull/7087) by [@georgesittas](https://github.com/georgesittas))*
+- [`f927329`](https://github.com/tobymao/sqlglot/commit/f927329f3f47d2ed7835715103015d5316d2943a) - add some type hints *(PR [#7089](https://github.com/tobymao/sqlglot/pull/7089) by [@georgesittas](https://github.com/georgesittas))*
+- [`2935e95`](https://github.com/tobymao/sqlglot/commit/2935e957116e584287572a770a1ecd48a2407a9d) - refactor RANK/DENSE_RANK for exasol *(commit by [@geooo109](https://github.com/geooo109))*
+- [`37fa8c7`](https://github.com/tobymao/sqlglot/commit/37fa8c7219a2f17a351f948d6eb314a543f8784d) - **tokenizer**: Split core functionality to TokenizerCore *(PR [#7116](https://github.com/tobymao/sqlglot/pull/7116) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3e8f551`](https://github.com/tobymao/sqlglot/commit/3e8f551addd2240f8c79d88692180c4ca27a4149) - update claude.md *(commit by [@tobymao](https://github.com/tobymao))*
+
+
+## [v28.10.0] - 2026-02-04
+### :boom: BREAKING CHANGES
+- due to [`55698db`](https://github.com/tobymao/sqlglot/commit/55698dbca84078160248e412cf595dd26aababef) - Annotate MAKE_TIME(expr) for DuckDB *(PR [#6931](https://github.com/tobymao/sqlglot/pull/6931) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate MAKE_TIME(expr) for DuckDB (#6931)
+
+- due to [`e750ce7`](https://github.com/tobymao/sqlglot/commit/e750ce7c4ac8235e395fe077c6c9b6d5572affaf) - Transpilation for SHA2 and SHA2_BINARY from Snowflake to DuckDB *(PR [#6929](https://github.com/tobymao/sqlglot/pull/6929) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Transpilation for SHA2 and SHA2_BINARY from Snowflake to DuckDB (#6929)
+
+- due to [`9b05968`](https://github.com/tobymao/sqlglot/commit/9b05968e23fe94f804d22d77bf91ab44071aea73) - Annotate BIT_LENGTH(expr) for DuckDB *(PR [#6932](https://github.com/tobymao/sqlglot/pull/6932) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate BIT_LENGTH(expr) for DuckDB (#6932)
+
+- due to [`2050362`](https://github.com/tobymao/sqlglot/commit/20503623debdc11d739746461e8bfb8c13514a58) - Annotate LENGTH(expr) for DuckDB *(PR [#6937](https://github.com/tobymao/sqlglot/pull/6937) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate LENGTH(expr) for DuckDB (#6937)
+
+- due to [`e803c7f`](https://github.com/tobymao/sqlglot/commit/e803c7f86e518dccfc19c2543394cd9758c59899) - Moved SIN, COS, TAN, COT to Base *(PR [#6936](https://github.com/tobymao/sqlglot/pull/6936) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Moved SIN, COS, TAN, COT to Base (#6936)
+
+- due to [`973d25d`](https://github.com/tobymao/sqlglot/commit/973d25dac469934394af4b1a6e0a11e04ad8524f) - support transpilation of ARRAY_REMOVE_AT *(PR [#6930](https://github.com/tobymao/sqlglot/pull/6930) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*:
+
+  support transpilation of ARRAY_REMOVE_AT (#6930)
+
+- due to [`2e2ff03`](https://github.com/tobymao/sqlglot/commit/2e2ff0363d72cc7cc80b308c6c62496969199b50) - Refactor RPAD/LPAD  *(PR [#6869](https://github.com/tobymao/sqlglot/pull/6869) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Refactor RPAD/LPAD  (#6869)
+
+- due to [`62aeff8`](https://github.com/tobymao/sqlglot/commit/62aeff8b978f372615a113cbd2ea86e26dd3ba55) - Annotate CURRENT_CATALOG to Base *(PR [#6940](https://github.com/tobymao/sqlglot/pull/6940) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate CURRENT_CATALOG to Base (#6940)
+
+- due to [`04002ae`](https://github.com/tobymao/sqlglot/commit/04002aedb48ee1d11f077b66a63722127f027243) - transpile NTH_VALUE from Snowflake to DuckDB *(PR [#6882](https://github.com/tobymao/sqlglot/pull/6882) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  transpile NTH_VALUE from Snowflake to DuckDB (#6882)
+
+- due to [`bdce7c7`](https://github.com/tobymao/sqlglot/commit/bdce7c722efa37d44ee1ba85aa4c77f958e0b19f) - Annotate DAYOFMONTH(expr), DAYOFYEAR(expr) for MySQL *(PR [#6941](https://github.com/tobymao/sqlglot/pull/6941) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DAYOFMONTH(expr), DAYOFYEAR(expr) for MySQL (#6941)
+
+- due to [`edbbb59`](https://github.com/tobymao/sqlglot/commit/edbbb597998dbdb77fa89e9a98d6ae56f0915b00) - Annotate WEEK(expr) for MySQL *(PR [#6942](https://github.com/tobymao/sqlglot/pull/6942) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate WEEK(expr) for MySQL (#6942)
+
+- due to [`ccb484b`](https://github.com/tobymao/sqlglot/commit/ccb484b82bc665b39e6a0700a885567d19882623) - Annotate HOUR(expr) for MySQL, Hive, Spark, DBX *(PR [#6943](https://github.com/tobymao/sqlglot/pull/6943) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate HOUR(expr) for MySQL, Hive, Spark, DBX (#6943)
+
+- due to [`852adec`](https://github.com/tobymao/sqlglot/commit/852adeca09c7776810eb691a04a570e0cf673aa3) - Move `MD5(expr)` to Base *(PR [#6944](https://github.com/tobymao/sqlglot/pull/6944) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move `MD5(expr)` to Base (#6944)
+
+- due to [`2326eae`](https://github.com/tobymao/sqlglot/commit/2326eae50e6ecd47d4a8b2c848a93b720538187a) - Move ASIN, ACOS, ATAN to Base *(PR [#6945](https://github.com/tobymao/sqlglot/pull/6945) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move ASIN, ACOS, ATAN to Base (#6945)
+
+- due to [`7989906`](https://github.com/tobymao/sqlglot/commit/79899060ed3331a55ca1c935e00376a1c137840c) - Move ASINH, ACOSH, ATANH to Base *(PR [#6946](https://github.com/tobymao/sqlglot/pull/6946) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move ASINH, ACOSH, ATANH to Base (#6946)
+
+- due to [`713d22f`](https://github.com/tobymao/sqlglot/commit/713d22f0d44790f8dc7d80ba12ae920815a28c51) - Annotate LENGTH, LEVENSHTEIN_DISTANCE for Presto/Trino *(PR [#6947](https://github.com/tobymao/sqlglot/pull/6947) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate LENGTH, LEVENSHTEIN_DISTANCE for Presto/Trino (#6947)
+
+- due to [`0e872dc`](https://github.com/tobymao/sqlglot/commit/0e872dcb5337d13befe981261466ca14a788ef1e) - Annotate POSITION and STRPOS for Trino/Presto *(PR [#6948](https://github.com/tobymao/sqlglot/pull/6948) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate POSITION and STRPOS for Trino/Presto (#6948)
+
+- due to [`d01657a`](https://github.com/tobymao/sqlglot/commit/d01657a581a42f1588436882d190b20f4ea004a0) - Annotate WIDTH_BUCKET(expr) for Presto/Trino *(PR [#6950](https://github.com/tobymao/sqlglot/pull/6950) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate WIDTH_BUCKET(expr) for Presto/Trino (#6950)
+
+- due to [`cec0f27`](https://github.com/tobymao/sqlglot/commit/cec0f27f17f01c7b1355f1c1306a0f08af639331) - Annotate BITWISE OPERATORS for Presto/Trino *(PR [#6951](https://github.com/tobymao/sqlglot/pull/6951) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate BITWISE OPERATORS for Presto/Trino (#6951)
+
+- due to [`2292d0d`](https://github.com/tobymao/sqlglot/commit/2292d0d477ea9aaa7016539deb1435164ee749da) - Move SINH, COSH, TANH to Base *(PR [#6954](https://github.com/tobymao/sqlglot/pull/6954) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Move SINH, COSH, TANH to Base (#6954)
+
+- due to [`686ab6a`](https://github.com/tobymao/sqlglot/commit/686ab6ab6da7a1bc7652846989aedd014a9a6d41) - Use replace instead of set for JSON dot access identifiers *(PR [#6953](https://github.com/tobymao/sqlglot/pull/6953) by [@georgesittas](https://github.com/georgesittas))*:
+
+  Use replace instead of set for JSON dot access identifiers (#6953)
+
+
+### :sparkles: New Features
+- [`55698db`](https://github.com/tobymao/sqlglot/commit/55698dbca84078160248e412cf595dd26aababef) - **optimizer**: Annotate MAKE_TIME(expr) for DuckDB *(PR [#6931](https://github.com/tobymao/sqlglot/pull/6931) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`e750ce7`](https://github.com/tobymao/sqlglot/commit/e750ce7c4ac8235e395fe077c6c9b6d5572affaf) - **snowflake**: Transpilation for SHA2 and SHA2_BINARY from Snowflake to DuckDB *(PR [#6929](https://github.com/tobymao/sqlglot/pull/6929) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`9b05968`](https://github.com/tobymao/sqlglot/commit/9b05968e23fe94f804d22d77bf91ab44071aea73) - **optimizer**: Annotate BIT_LENGTH(expr) for DuckDB *(PR [#6932](https://github.com/tobymao/sqlglot/pull/6932) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2050362`](https://github.com/tobymao/sqlglot/commit/20503623debdc11d739746461e8bfb8c13514a58) - **optimizer**: Annotate LENGTH(expr) for DuckDB *(PR [#6937](https://github.com/tobymao/sqlglot/pull/6937) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`e803c7f`](https://github.com/tobymao/sqlglot/commit/e803c7f86e518dccfc19c2543394cd9758c59899) - **optimizer**: Moved SIN, COS, TAN, COT to Base *(PR [#6936](https://github.com/tobymao/sqlglot/pull/6936) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`973d25d`](https://github.com/tobymao/sqlglot/commit/973d25dac469934394af4b1a6e0a11e04ad8524f) - **duckdb**: support transpilation of ARRAY_REMOVE_AT *(PR [#6930](https://github.com/tobymao/sqlglot/pull/6930) by [@fivetran-MichaelLee](https://github.com/fivetran-MichaelLee))*
+- [`2e2ff03`](https://github.com/tobymao/sqlglot/commit/2e2ff0363d72cc7cc80b308c6c62496969199b50) - **snowflake**: Refactor RPAD/LPAD  *(PR [#6869](https://github.com/tobymao/sqlglot/pull/6869) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`62aeff8`](https://github.com/tobymao/sqlglot/commit/62aeff8b978f372615a113cbd2ea86e26dd3ba55) - **optimizer**: Annotate CURRENT_CATALOG to Base *(PR [#6940](https://github.com/tobymao/sqlglot/pull/6940) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`04002ae`](https://github.com/tobymao/sqlglot/commit/04002aedb48ee1d11f077b66a63722127f027243) - **snowflake**: transpile NTH_VALUE from Snowflake to DuckDB *(PR [#6882](https://github.com/tobymao/sqlglot/pull/6882) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`ccb484b`](https://github.com/tobymao/sqlglot/commit/ccb484b82bc665b39e6a0700a885567d19882623) - **optimizer**: Annotate HOUR(expr) for MySQL, Hive, Spark, DBX *(PR [#6943](https://github.com/tobymao/sqlglot/pull/6943) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`852adec`](https://github.com/tobymao/sqlglot/commit/852adeca09c7776810eb691a04a570e0cf673aa3) - **optimizer**: Move `MD5(expr)` to Base *(PR [#6944](https://github.com/tobymao/sqlglot/pull/6944) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2326eae`](https://github.com/tobymao/sqlglot/commit/2326eae50e6ecd47d4a8b2c848a93b720538187a) - **optimizer**: Move ASIN, ACOS, ATAN to Base *(PR [#6945](https://github.com/tobymao/sqlglot/pull/6945) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`7989906`](https://github.com/tobymao/sqlglot/commit/79899060ed3331a55ca1c935e00376a1c137840c) - **optimizer**: Move ASINH, ACOSH, ATANH to Base *(PR [#6946](https://github.com/tobymao/sqlglot/pull/6946) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`713d22f`](https://github.com/tobymao/sqlglot/commit/713d22f0d44790f8dc7d80ba12ae920815a28c51) - **optimizer**: Annotate LENGTH, LEVENSHTEIN_DISTANCE for Presto/Trino *(PR [#6947](https://github.com/tobymao/sqlglot/pull/6947) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`0e872dc`](https://github.com/tobymao/sqlglot/commit/0e872dcb5337d13befe981261466ca14a788ef1e) - **optimizer**: Annotate POSITION and STRPOS for Trino/Presto *(PR [#6948](https://github.com/tobymao/sqlglot/pull/6948) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`d01657a`](https://github.com/tobymao/sqlglot/commit/d01657a581a42f1588436882d190b20f4ea004a0) - **optimizer**: Annotate WIDTH_BUCKET(expr) for Presto/Trino *(PR [#6950](https://github.com/tobymao/sqlglot/pull/6950) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`cec0f27`](https://github.com/tobymao/sqlglot/commit/cec0f27f17f01c7b1355f1c1306a0f08af639331) - **optimizer**: Annotate BITWISE OPERATORS for Presto/Trino *(PR [#6951](https://github.com/tobymao/sqlglot/pull/6951) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2292d0d`](https://github.com/tobymao/sqlglot/commit/2292d0d477ea9aaa7016539deb1435164ee749da) - **optimizer**: Move SINH, COSH, TANH to Base *(PR [#6954](https://github.com/tobymao/sqlglot/pull/6954) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :bug: Bug Fixes
+- [`12c7cf4`](https://github.com/tobymao/sqlglot/commit/12c7cf46e47d7be0a54881db171fb07e6793507a) - **dremio**: Generate exp.TryCast as CAST *(PR [#6928](https://github.com/tobymao/sqlglot/pull/6928) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#6927](https://github.com/tobymao/sqlglot/issues/6927) opened by [@AyushPatel101](https://github.com/AyushPatel101)*
+- [`087f70b`](https://github.com/tobymao/sqlglot/commit/087f70b8f7a0c7a7858580a20b0d7542a0b53c6b) - **tsql**: datepart when part is quoted *(PR [#6934](https://github.com/tobymao/sqlglot/pull/6934) by [@flow3d](https://github.com/flow3d))*
+- [`bdce7c7`](https://github.com/tobymao/sqlglot/commit/bdce7c722efa37d44ee1ba85aa4c77f958e0b19f) - **optimizer**: Annotate DAYOFMONTH(expr), DAYOFYEAR(expr) for MySQL *(PR [#6941](https://github.com/tobymao/sqlglot/pull/6941) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`edbbb59`](https://github.com/tobymao/sqlglot/commit/edbbb597998dbdb77fa89e9a98d6ae56f0915b00) - **optimizer**: Annotate WEEK(expr) for MySQL *(PR [#6942](https://github.com/tobymao/sqlglot/pull/6942) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`686ab6a`](https://github.com/tobymao/sqlglot/commit/686ab6ab6da7a1bc7652846989aedd014a9a6d41) - **optimizer**: Use replace instead of set for JSON dot access identifiers *(PR [#6953](https://github.com/tobymao/sqlglot/pull/6953) by [@georgesittas](https://github.com/georgesittas))*
+
+
+## [v28.9.0] - 2026-02-02
+### :boom: BREAKING CHANGES
+- due to [`e9ff474`](https://github.com/tobymao/sqlglot/commit/e9ff4743e63c332ae8a4a101f976d4909918992a) - Annotate MINUTE, MONTH for DuckDB *(PR [#6919](https://github.com/tobymao/sqlglot/pull/6919) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate MINUTE, MONTH for DuckDB (#6919)
+
+- due to [`96dc339`](https://github.com/tobymao/sqlglot/commit/96dc339e0811c70dd12f92c297d2ff25456c71b7) - Annotate DAYOFWEEK, DAYOFYEAR for DuckDB *(PR [#6920](https://github.com/tobymao/sqlglot/pull/6920) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DAYOFWEEK, DAYOFYEAR for DuckDB (#6920)
+
+- due to [`b56f685`](https://github.com/tobymao/sqlglot/commit/b56f685193982590ea03b681cf542c0157e751d4) - Annotate DAY, HOUR, SECOND and DAYOFMONTH *(PR [#6922](https://github.com/tobymao/sqlglot/pull/6922) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DAY, HOUR, SECOND and DAYOFMONTH (#6922)
+
+- due to [`6e418ec`](https://github.com/tobymao/sqlglot/commit/6e418ecc95085e41a4fe4fed856bc3a08f4c46f8) - Annotate EPOCH(expr) for DuckDB *(PR [#6924](https://github.com/tobymao/sqlglot/pull/6924) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate EPOCH(expr) for DuckDB (#6924)
+
+- due to [`abd8d1b`](https://github.com/tobymao/sqlglot/commit/abd8d1bc5d892299dbe46a8208e23a4b2c1c833b) - Transpilation of SHA1 from Snowflake to DuckDB  *(PR [#6888](https://github.com/tobymao/sqlglot/pull/6888) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  Transpilation of SHA1 from Snowflake to DuckDB  (#6888)
+
+- due to [`b2f5430`](https://github.com/tobymao/sqlglot/commit/b2f543030789ccf889fc6e065985fbeb821c26b7) - Annotate TO_DAYS(expr) for DuckDB *(PR [#6925](https://github.com/tobymao/sqlglot/pull/6925) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate TO_DAYS(expr) for DuckDB (#6925)
+
+
+### :sparkles: New Features
+- [`e9ff474`](https://github.com/tobymao/sqlglot/commit/e9ff4743e63c332ae8a4a101f976d4909918992a) - **optimizer**: Annotate MINUTE, MONTH for DuckDB *(PR [#6919](https://github.com/tobymao/sqlglot/pull/6919) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`96dc339`](https://github.com/tobymao/sqlglot/commit/96dc339e0811c70dd12f92c297d2ff25456c71b7) - **optimizer**: Annotate DAYOFWEEK, DAYOFYEAR for DuckDB *(PR [#6920](https://github.com/tobymao/sqlglot/pull/6920) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b56f685`](https://github.com/tobymao/sqlglot/commit/b56f685193982590ea03b681cf542c0157e751d4) - **optimizer**: Annotate DAY, HOUR, SECOND and DAYOFMONTH *(PR [#6922](https://github.com/tobymao/sqlglot/pull/6922) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6e418ec`](https://github.com/tobymao/sqlglot/commit/6e418ecc95085e41a4fe4fed856bc3a08f4c46f8) - **optimizer**: Annotate EPOCH(expr) for DuckDB *(PR [#6924](https://github.com/tobymao/sqlglot/pull/6924) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`abd8d1b`](https://github.com/tobymao/sqlglot/commit/abd8d1bc5d892299dbe46a8208e23a4b2c1c833b) - **snowflake**: Transpilation of SHA1 from Snowflake to DuckDB  *(PR [#6888](https://github.com/tobymao/sqlglot/pull/6888) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b2f5430`](https://github.com/tobymao/sqlglot/commit/b2f543030789ccf889fc6e065985fbeb821c26b7) - **optimizer**: Annotate TO_DAYS(expr) for DuckDB *(PR [#6925](https://github.com/tobymao/sqlglot/pull/6925) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :wrench: Chores
+- [`dfb2d3b`](https://github.com/tobymao/sqlglot/commit/dfb2d3b17d20f69536620976676a2b7248fdb699) - generate API docs before checking out api-docs branch *(PR [#6921](https://github.com/tobymao/sqlglot/pull/6921) by [@georgesittas](https://github.com/georgesittas))*
+
+
+## [v28.8.0] - 2026-02-02
+### :boom: BREAKING CHANGES
+- due to [`9d2a12a`](https://github.com/tobymao/sqlglot/commit/9d2a12a650afcdaffe780144af26a0f21a6ec4e6) - Annotate SIN for DuckDB *(PR [#6892](https://github.com/tobymao/sqlglot/pull/6892) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate SIN for DuckDB (#6892)
+
+- due to [`d8e13ae`](https://github.com/tobymao/sqlglot/commit/d8e13ae8c3f14495fd7ea356bf53e338e6a5347e) - Annotate COS for DuckDB *(PR [#6893](https://github.com/tobymao/sqlglot/pull/6893) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate COS for DuckDB (#6893)
+
+- due to [`25f718c`](https://github.com/tobymao/sqlglot/commit/25f718cea3a62034d6a5c263e80e5b0363e3f394) - Annotate STUFF for TSQL *(PR [#6890](https://github.com/tobymao/sqlglot/pull/6890) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate STUFF for TSQL (#6890)
+
+- due to [`bec45a5`](https://github.com/tobymao/sqlglot/commit/bec45a55377e9802fe5c572371834e12d760f180) - Annotate `ISINF(expr)` for DuckDB *(PR [#6894](https://github.com/tobymao/sqlglot/pull/6894) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `ISINF(expr)` for DuckDB (#6894)
+
+- due to [`aab8243`](https://github.com/tobymao/sqlglot/commit/aab8243a19d776c65473e67a2dcb1fb71af19175) - Annotate ISNAN(expr) for Base *(PR [#6895](https://github.com/tobymao/sqlglot/pull/6895) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ISNAN(expr) for Base (#6895)
+
+- due to [`482128e`](https://github.com/tobymao/sqlglot/commit/482128e30aa0d607b7e5fcd2bde142eefcf02c4a) - Annotate TAN for DuckDB *(PR [#6896](https://github.com/tobymao/sqlglot/pull/6896) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate TAN for DuckDB (#6896)
+
+- due to [`a6d7f6e`](https://github.com/tobymao/sqlglot/commit/a6d7f6e1ef9cd5d22598a3e21cc69162b07c28a1) - Annotate `COT` for DuckDB *(PR [#6897](https://github.com/tobymao/sqlglot/pull/6897) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `COT` for DuckDB (#6897)
+
+- due to [`2ec7c2b`](https://github.com/tobymao/sqlglot/commit/2ec7c2b4a58bad3e736d021e7e414d00e7c16187) - Annotate RANDOM() for DuckDB *(PR [#6898](https://github.com/tobymao/sqlglot/pull/6898) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate RANDOM() for DuckDB (#6898)
+
+- due to [`a0b053d`](https://github.com/tobymao/sqlglot/commit/a0b053d10c5d7303f0f335be8ffe235f5a8727d9) - Annotate ATAN(expr) for DuckDB *(PR [#6900](https://github.com/tobymao/sqlglot/pull/6900) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ATAN(expr) for DuckDB (#6900)
+
+- due to [`f39b514`](https://github.com/tobymao/sqlglot/commit/f39b514936e6188799bf1c392937050d8aef6ac8) - Annotate ASIN(expr) for DuckDB *(PR [#6901](https://github.com/tobymao/sqlglot/pull/6901) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ASIN(expr) for DuckDB (#6901)
+
+- due to [`5fb98a1`](https://github.com/tobymao/sqlglot/commit/5fb98a1a0106b2e4740f8ae72fabeb424dacd07e) - Annotate ACOS(expr) for DuckDB *(PR [#6902](https://github.com/tobymao/sqlglot/pull/6902) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ACOS(expr) for DuckDB (#6902)
+
+- due to [`9e95d95`](https://github.com/tobymao/sqlglot/commit/9e95d95578ac8cb07076322c9f099467f17efb3f) - Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB *(PR [#6903](https://github.com/tobymao/sqlglot/pull/6903) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB (#6903)
+
+- due to [`a8fef30`](https://github.com/tobymao/sqlglot/commit/a8fef30ed6760bd095bd2c6b156ea7cd80c322d0) - Annotate DEGREES(expr) for MySQL *(PR [#6913](https://github.com/tobymao/sqlglot/pull/6913) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate DEGREES(expr) for MySQL (#6913)
+
+- due to [`887d03a`](https://github.com/tobymao/sqlglot/commit/887d03af0fa10aef492cb54d8b48e5fc3a1ee6d1) - Annotate arc trignometric func for MySQL *(PR [#6912](https://github.com/tobymao/sqlglot/pull/6912) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate arc trignometric func for MySQL (#6912)
+
+- due to [`dc6bc5a`](https://github.com/tobymao/sqlglot/commit/dc6bc5af83dc6c2d9dee3ae82b7792fdc285450e) - Annotate SIN, COS, TAN, COT for MySQL *(PR [#6911](https://github.com/tobymao/sqlglot/pull/6911) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate SIN, COS, TAN, COT for MySQL (#6911)
+
+- due to [`6cae76f`](https://github.com/tobymao/sqlglot/commit/6cae76fb6de11b2b49db0bb5409495ddb676da05) - Annotate `SECOND(expr)` to `INT` *(PR [#6910](https://github.com/tobymao/sqlglot/pull/6910) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate `SECOND(expr)` to `INT` (#6910)
+
+- due to [`bd595a6`](https://github.com/tobymao/sqlglot/commit/bd595a6afb724ed1e5ca64122bf1dd69a3adc473) - Annotate QUARTER(expr) for DuckDB *(PR [#6905](https://github.com/tobymao/sqlglot/pull/6905) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate QUARTER(expr) for DuckDB (#6905)
+
+- due to [`8e625b5`](https://github.com/tobymao/sqlglot/commit/8e625b5fae51659c2317a9c7a732114e047da9e0) - Annotate ATAN2 for DuckDB *(PR [#6904](https://github.com/tobymao/sqlglot/pull/6904) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate ATAN2 for DuckDB (#6904)
+
+- due to [`ea678d2`](https://github.com/tobymao/sqlglot/commit/ea678d26dee0bfb223660b587744c6635c036f2f) - support transpilation of CURRENT_TIME from snowflake to duckdb *(PR [#6909](https://github.com/tobymao/sqlglot/pull/6909) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of CURRENT_TIME from snowflake to duckdb (#6909)
+
+- due to [`8e4f4b3`](https://github.com/tobymao/sqlglot/commit/8e4f4b386cd5f7484bbe32c9d8921e2fef4b02c1) - Annotate QUARTER(expr) to INT instead of TINYINT *(PR [#6906](https://github.com/tobymao/sqlglot/pull/6906) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate QUARTER(expr) to INT instead of TINYINT (#6906)
+
+- due to [`a94e45a`](https://github.com/tobymao/sqlglot/commit/a94e45a3c55f744b20c35c2a5cc61bab0a3678d7) - Annotate MONTH(expr) to INT instead of TINYINT *(PR [#6907](https://github.com/tobymao/sqlglot/pull/6907) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Annotate MONTH(expr) to INT instead of TINYINT (#6907)
+
+- due to [`db51b75`](https://github.com/tobymao/sqlglot/commit/db51b7517229df2c6cf446962a9732e548a168f5) - Moved `YEAR`, `QUARTER`, `WEEK` to snowflake *(PR [#6918](https://github.com/tobymao/sqlglot/pull/6918) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  Moved `YEAR`, `QUARTER`, `WEEK` to snowflake (#6918)
+
+
+### :sparkles: New Features
+- [`9d2a12a`](https://github.com/tobymao/sqlglot/commit/9d2a12a650afcdaffe780144af26a0f21a6ec4e6) - **duckdb**: Annotate SIN for DuckDB *(PR [#6892](https://github.com/tobymao/sqlglot/pull/6892) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`d8e13ae`](https://github.com/tobymao/sqlglot/commit/d8e13ae8c3f14495fd7ea356bf53e338e6a5347e) - **optimizer**: Annotate COS for DuckDB *(PR [#6893](https://github.com/tobymao/sqlglot/pull/6893) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`25f718c`](https://github.com/tobymao/sqlglot/commit/25f718cea3a62034d6a5c263e80e5b0363e3f394) - **tsql**: Annotate STUFF for TSQL *(PR [#6890](https://github.com/tobymao/sqlglot/pull/6890) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`bec45a5`](https://github.com/tobymao/sqlglot/commit/bec45a55377e9802fe5c572371834e12d760f180) - **optimizer**: Annotate `ISINF(expr)` for DuckDB *(PR [#6894](https://github.com/tobymao/sqlglot/pull/6894) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`aab8243`](https://github.com/tobymao/sqlglot/commit/aab8243a19d776c65473e67a2dcb1fb71af19175) - **optimmizer**: Annotate ISNAN(expr) for Base *(PR [#6895](https://github.com/tobymao/sqlglot/pull/6895) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`482128e`](https://github.com/tobymao/sqlglot/commit/482128e30aa0d607b7e5fcd2bde142eefcf02c4a) - **optimizer**: Annotate TAN for DuckDB *(PR [#6896](https://github.com/tobymao/sqlglot/pull/6896) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a6d7f6e`](https://github.com/tobymao/sqlglot/commit/a6d7f6e1ef9cd5d22598a3e21cc69162b07c28a1) - **optimizer**: Annotate `COT` for DuckDB *(PR [#6897](https://github.com/tobymao/sqlglot/pull/6897) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`2ec7c2b`](https://github.com/tobymao/sqlglot/commit/2ec7c2b4a58bad3e736d021e7e414d00e7c16187) - **optimizer**: Annotate RANDOM() for DuckDB *(PR [#6898](https://github.com/tobymao/sqlglot/pull/6898) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a0b053d`](https://github.com/tobymao/sqlglot/commit/a0b053d10c5d7303f0f335be8ffe235f5a8727d9) - **optimizer**: Annotate ATAN(expr) for DuckDB *(PR [#6900](https://github.com/tobymao/sqlglot/pull/6900) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`f39b514`](https://github.com/tobymao/sqlglot/commit/f39b514936e6188799bf1c392937050d8aef6ac8) - **optimmizer**: Annotate ASIN(expr) for DuckDB *(PR [#6901](https://github.com/tobymao/sqlglot/pull/6901) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`5fb98a1`](https://github.com/tobymao/sqlglot/commit/5fb98a1a0106b2e4740f8ae72fabeb424dacd07e) - **optimizer**: Annotate ACOS(expr) for DuckDB *(PR [#6902](https://github.com/tobymao/sqlglot/pull/6902) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`9e95d95`](https://github.com/tobymao/sqlglot/commit/9e95d95578ac8cb07076322c9f099467f17efb3f) - **optimizer**: Annotate ASINH(expr), ACOSH(expr), ATANH(expr) for DuckDB *(PR [#6903](https://github.com/tobymao/sqlglot/pull/6903) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a8fef30`](https://github.com/tobymao/sqlglot/commit/a8fef30ed6760bd095bd2c6b156ea7cd80c322d0) - **optimizer**: Annotate DEGREES(expr) for MySQL *(PR [#6913](https://github.com/tobymao/sqlglot/pull/6913) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`887d03a`](https://github.com/tobymao/sqlglot/commit/887d03af0fa10aef492cb54d8b48e5fc3a1ee6d1) - **optimizer**: Annotate arc trignometric func for MySQL *(PR [#6912](https://github.com/tobymao/sqlglot/pull/6912) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`dc6bc5a`](https://github.com/tobymao/sqlglot/commit/dc6bc5af83dc6c2d9dee3ae82b7792fdc285450e) - **optimizer**: Annotate SIN, COS, TAN, COT for MySQL *(PR [#6911](https://github.com/tobymao/sqlglot/pull/6911) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`6cae76f`](https://github.com/tobymao/sqlglot/commit/6cae76fb6de11b2b49db0bb5409495ddb676da05) - **mysql**: Annotate `SECOND(expr)` to `INT` *(PR [#6910](https://github.com/tobymao/sqlglot/pull/6910) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`bd595a6`](https://github.com/tobymao/sqlglot/commit/bd595a6afb724ed1e5ca64122bf1dd69a3adc473) - **optimizer**: Annotate QUARTER(expr) for DuckDB *(PR [#6905](https://github.com/tobymao/sqlglot/pull/6905) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`8e625b5`](https://github.com/tobymao/sqlglot/commit/8e625b5fae51659c2317a9c7a732114e047da9e0) - **optimizer**: Annotate ATAN2 for DuckDB *(PR [#6904](https://github.com/tobymao/sqlglot/pull/6904) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ea678d2`](https://github.com/tobymao/sqlglot/commit/ea678d26dee0bfb223660b587744c6635c036f2f) - **snowflake**: support transpilation of CURRENT_TIME from snowflake to duckdb *(PR [#6909](https://github.com/tobymao/sqlglot/pull/6909) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`db51b75`](https://github.com/tobymao/sqlglot/commit/db51b7517229df2c6cf446962a9732e548a168f5) - **optimizer**: Moved `YEAR`, `QUARTER`, `WEEK` to snowflake *(PR [#6918](https://github.com/tobymao/sqlglot/pull/6918) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+
+### :bug: Bug Fixes
+- [`8e4f4b3`](https://github.com/tobymao/sqlglot/commit/8e4f4b386cd5f7484bbe32c9d8921e2fef4b02c1) - **optimizer**: Annotate QUARTER(expr) to INT instead of TINYINT *(PR [#6906](https://github.com/tobymao/sqlglot/pull/6906) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`a94e45a`](https://github.com/tobymao/sqlglot/commit/a94e45a3c55f744b20c35c2a5cc61bab0a3678d7) - **mysql**: Annotate MONTH(expr) to INT instead of TINYINT *(PR [#6907](https://github.com/tobymao/sqlglot/pull/6907) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`1fd5914`](https://github.com/tobymao/sqlglot/commit/1fd591403ad306912ac448a761540662c7a7f487) - **parser**: Literal number strings *(PR [#6916](https://github.com/tobymao/sqlglot/pull/6916) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#6908](https://github.com/tobymao/sqlglot/issues/6908) opened by [@Matt711](https://github.com/Matt711)*
+- [`0a065be`](https://github.com/tobymao/sqlglot/commit/0a065be1e00739f47f52166b7cbc890f1a4aea41) - **postgres**: Allow reserved tokens too in EXCLUDE WITH constraint *(PR [#6917](https://github.com/tobymao/sqlglot/pull/6917) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#6914](https://github.com/tobymao/sqlglot/issues/6914) opened by [@Badg](https://github.com/Badg)*
+
+### :wrench: Chores
+- [`a65c870`](https://github.com/tobymao/sqlglot/commit/a65c8701a30652bfadd4d39cf729a9e13c1fa769) - add CLAUDE.md to document guidelines for SQLGlot coding *(PR [#6899](https://github.com/tobymao/sqlglot/pull/6899) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+
+
 ## [v28.7.0] - 2026-01-30
 ### :boom: BREAKING CHANGES
 - due to [`ed4ba08`](https://github.com/tobymao/sqlglot/commit/ed4ba08940212f7ed9b67ea01b51f8df38fe85d2) - add support for Bitwise NOT *(PR [#6740](https://github.com/tobymao/sqlglot/pull/6740) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
@@ -12441,3 +13251,8 @@ Changelog
 [v28.5.0]: https://github.com/tobymao/sqlglot/compare/v28.4.1...v28.5.0
 [v28.6.0]: https://github.com/tobymao/sqlglot/compare/v28.5.0...v28.6.0
 [v28.7.0]: https://github.com/tobymao/sqlglot/compare/v28.6.0...v28.7.0
+[v28.8.0]: https://github.com/tobymao/sqlglot/compare/v28.7.0...v28.8.0
+[v28.9.0]: https://github.com/tobymao/sqlglot/compare/v28.8.0...v28.9.0
+[v28.10.0]: https://github.com/tobymao/sqlglot/compare/v28.9.0...v28.10.0
+[v29.0.0]: https://github.com/tobymao/sqlglot/compare/v28.10.1...v29.0.0
+[v29.0.1]: https://github.com/tobymao/sqlglot/compare/v29.0.0...v29.0.1

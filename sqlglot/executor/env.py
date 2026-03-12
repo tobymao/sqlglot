@@ -99,32 +99,32 @@ def substring(this, start=None, length=None):
 
 @null_if_any
 def cast(this, to):
-    if to == exp.DataType.Type.DATE:
+    if to == exp.DType.DATE:
         if isinstance(this, datetime.datetime):
             return this.date()
         if isinstance(this, datetime.date):
             return this
         if isinstance(this, str):
             return datetime.date.fromisoformat(this)
-    if to == exp.DataType.Type.TIME:
+    if to == exp.DType.TIME:
         if isinstance(this, datetime.datetime):
             return this.time()
         if isinstance(this, datetime.time):
             return this
         if isinstance(this, str):
             return datetime.time.fromisoformat(this)
-    if to in (exp.DataType.Type.DATETIME, exp.DataType.Type.TIMESTAMP):
+    if to in (exp.DType.DATETIME, exp.DType.TIMESTAMP):
         if isinstance(this, datetime.datetime):
             return this
         if isinstance(this, datetime.date):
             return datetime.datetime(this.year, this.month, this.day)
         if isinstance(this, str):
             return datetime.datetime.fromisoformat(this)
-    if to == exp.DataType.Type.BOOLEAN:
+    if to == exp.DType.BOOLEAN:
         return bool(this)
     if to in exp.DataType.TEXT_TYPES:
         return str(this)
-    if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:
+    if to in {exp.DType.FLOAT, exp.DType.DOUBLE}:
         return float(this)
     if to in exp.DataType.NUMERIC_TYPES:
         return int(this)

@@ -276,6 +276,15 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
+        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
+
+        # Numeric TRUNC from other dialects - Spark has no native support, uses CAST to BIGINT
+        self.validate_all(
+            "CAST(3.14159 AS BIGINT)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col, 10)")
         self.validate_identity("SELECT APPROX_TOP_K_ACCUMULATE(col)")
         self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
@@ -381,10 +390,76 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            read={
+                "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "spark": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            },
+            write={
+                "spark2": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+                "databricks": "SELECT ELEMENT_AT(ARRAY(1, 2, 3), 1)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.costs) c",
+            write={
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c",
+            },
+        )
+        self.validate_all(
+            "SELECT h.id, amount FROM hourlycostagg h LATERAL VIEW inline(h.adjustments) as type, val, curr",
+            write={
+                "duckdb": "SELECT h.id, amount FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth => 2)) AS _u_0(type, val, curr)",
+            },
+        )
+        self.validate_all(
+            """
+            WITH hourlycostagg AS (
+                SELECT
+                    101 AS id,
+                    ARRAY(
+                        STRUCT(10.0 AS amount, 'USD' AS currency),
+                        STRUCT(20.0 AS amount, 'EUR' AS currency)
+                    ) AS costs,
+                    ARRAY(
+                        STRUCT('tax' AS type, 0.15 AS val, 'EUR' AS currency),
+                        STRUCT('fee' AS type, 5.00 AS val, 'EUR' AS currency)
+                    ) AS adjustments,
+                    ARRAY(
+                        STRUCT(
+                            12.0 AS length,
+                            STRUCT('A' AS tag, 98.5 AS score) AS details
+                        ),
+                        STRUCT(
+                            23.0 AS length,
+                            STRUCT('B' AS tag, 99.5 AS score) AS details
+                        )
+                    ) AS info
+            )
+            SELECT
+                h.id,
+                amount,
+                currency,
+                type,
+                val,
+                leng
+            FROM hourlycostagg h
+            LATERAL VIEW inline(h.costs) c
+            LATERAL VIEW inline(h.adjustments) as type, val, curr
+            LATERAL VIEW inline(h.info) exploded as leng, det
+            """,
+            write={
+                "duckdb": "WITH hourlycostagg AS (SELECT 101 AS id, [{'amount': 10.0, 'currency': 'USD'}, {'amount': 20.0, 'currency': 'EUR'}] AS costs, [{'type': 'tax', 'val': 0.15, 'currency': 'EUR'}, {'type': 'fee', 'val': 5.00, 'currency': 'EUR'}] AS adjustments, [{'length': 12.0, 'details': {'tag': 'A', 'score': 98.5}}, {'length': 23.0, 'details': {'tag': 'B', 'score': 99.5}}] AS info) SELECT h.id, amount, currency, type, val, leng FROM hourlycostagg AS h CROSS JOIN LATERAL (SELECT UNNEST(h.costs, max_depth => 2)) AS c CROSS JOIN LATERAL (SELECT UNNEST(h.adjustments, max_depth => 2)) AS _u_1(type, val, curr) CROSS JOIN LATERAL (SELECT UNNEST(h.info, max_depth => 2)) AS exploded(leng, det)",
+            },
+        )
+        self.validate_all(
             "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
             write={
                 "presto": "SELECT id_column, name, age FROM test_table CROSS JOIN UNNEST(struc_column) AS explode_view(name, age)",
                 "spark": "SELECT id_column, name, age FROM test_table LATERAL VIEW INLINE(struc_column) explode_view AS name, age",
+                "duckdb": "SELECT id_column, name, age FROM test_table CROSS JOIN LATERAL (SELECT UNNEST(struc_column, max_depth => 2)) AS explode_view(name, age)",
             },
         )
         self.validate_all(
@@ -945,10 +1020,44 @@ TBLPROPERTIES (
                 "databricks": "foo ILIKE 'pattern' ESCAPE '!'",
             },
         )
+        self.validate_identity("BIT_GET(11, 0)", "GETBIT(11, 0)")
         self.validate_identity("BITMAP_OR_AGG(x)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 12, 13, 14, 14, 15)")
         self.validate_identity("SELECT name, GROUPING_ID() FROM customer GROUP BY ROLLUP (name)")
+        self.validate_identity("SELECT MAKE_TIMESTAMP(2014, 12, 28, 6, 30, 45.887)")
+        self.validate_identity("SELECT CURDATE()", "SELECT CURRENT_DATE")
+
+        self.validate_all(
+            "SELECT BIT_COUNT(0)",
+            write={
+                "spark": "SELECT BIT_COUNT(0)",
+                "databricks": "SELECT BIT_COUNT(0)",
+                "duckdb": "SELECT BIT_COUNT(0)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+            read={
+                "spark": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+                "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+            },
+            write={
+                "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
+            },
+        )
+
+        self.validate_all(
+            "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
+            read={
+                "spark": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
+                "databricks": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
+            },
+            write={
+                "databricks": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
+            },
+        )
 
     def test_bool_or(self):
         self.validate_all(
@@ -1202,3 +1311,74 @@ TBLPROPERTIES (
         approx_quantile_expr.this.assert_is(exp.Distinct)
         approx_quantile_expr.args.get("quantile").assert_is(exp.Literal)
         approx_quantile_expr.args.get("accuracy").assert_is(exp.Literal)
+
+    def test_array_insert(self):
+        self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            read={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+            write={
+                "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+                "spark": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+            },
+        )
+
+    def test_declare(self):
+        self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
+        self.validate_identity("DECLARE x INT")
+        self.validate_identity("DECLARE VARIABLE myvar INT DEFAULT 5", "DECLARE myvar INT = 5")
+        self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
+        self.validate_identity("DECLARE x INT = 5")
+        self.validate_identity("DECLARE five = 5")
+        self.validate_identity("DECLARE OR REPLACE five = 55")
+        self.validate_identity("DECLARE VARIABLE size DEFAULT 6", "DECLARE size = 6")
+        self.validate_identity("DECLARE some_var STRING")
+
+    def test_set_variable(self):
+        self.validate_all(
+            "SET VAR v = 5",
+            write={
+                "spark": "SET VARIABLE v = 5",
+                "databricks": "SET VARIABLE v = 5",
+            },
+        )
+        self.validate_all(
+            "SET VARIABLE v = 5",
+            write={
+                "spark": "SET VARIABLE v = 5",
+                "databricks": "SET VARIABLE v = 5",
+            },
+        )
+
+        self.validate_all(
+            "SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))",
+            write={
+                "spark": "SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))",
+                "databricks": "SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))",
+            },
+        )
+
+        self.validate_all(
+            "SET VARIABLE v = DEFAULT",
+            write={
+                "spark": "SET VARIABLE v = DEFAULT",
+                "databricks": "SET VARIABLE v = DEFAULT",
+            },
+        )
+
+        self.validate_all(
+            "SET VARIABLE v1 = 1, v2 = '2'",
+            write={
+                "spark": "SET VARIABLE v1 = 1, v2 = '2'",
+                "databricks": "SET VARIABLE v1 = 1, v2 = '2'",
+            },
+        )
+
+        self.validate_all(
+            "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
+            write={
+                "spark": "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
+                "databricks": "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
+            },
+        )

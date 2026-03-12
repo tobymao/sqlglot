@@ -263,7 +263,7 @@ class TestStarrocks(Validator):
                     f"CREATE TABLE test_table (col1 INT, col2 DATE) PARTITION BY ({cols})",
                 )
 
-        # Expression-based partitioning
+        # Expr-based partitioning
         self.validate_identity(
             "CREATE TABLE test_table (col2 DATE) PARTITION BY DATE_TRUNC('DAY', col2)"
         )

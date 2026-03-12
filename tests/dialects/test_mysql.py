@@ -221,6 +221,10 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE employees (id INT, store_id INT) PARTITION BY LIST (store_id) (PARTITION pNorth VALUES IN (3, 5, 6), PARTITION pSouth VALUES IN (1, 2, 10))"
         )
+        self.validate_identity(
+            "CREATE FUNCTION f () RETURNS VARCHAR LANGUAGE SQL SQL SECURITY INVOKER SELECT 'abc'",
+            "CREATE FUNCTION f() RETURNS TEXT LANGUAGE SQL SQL SECURITY INVOKER AS SELECT 'abc'",
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")
@@ -243,6 +247,7 @@ class TestMySQL(Validator):
         self.validate_identity("""SELECT * FROM foo WHERE 'ab' MEMBER OF(content)""")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("SELECT CURRENT_ROLE()")
+        self.validate_identity("SELECT CURTIME()", "SELECT CURRENT_TIME()")
         self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS CHAR) FROM foo")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ')")
@@ -361,6 +366,7 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
+        self.validate_identity("SELECT VERSION()")
 
     def test_types(self):
         for char_type in MySQL.Generator.CHAR_CAST_MAPPING:
@@ -648,6 +654,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y')",
                 "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy')",
+                "exasol": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'YYYY')",
             },
         )
         self.validate_all(
@@ -669,6 +676,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
                 "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy-mm-DD')",
+                "exasol": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'YYYY-MM-DD')",
             },
         )
         self.validate_all(
@@ -704,6 +712,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%T')",
                 "snowflake": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMP), 'hh24:mi:ss')",
+                "exasol": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMP), 'HH:MI:SS')",
             },
         )
         self.validate_all(
@@ -727,10 +736,12 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATEDIFF(x, y)",
             read={
+                "exasol": "SELECT DAYS_BETWEEN(x, y)",
                 "presto": "SELECT DATE_DIFF('DAY', y, x)",
                 "redshift": "SELECT DATEDIFF(DAY, y, x)",
             },
             write={
+                "exasol": "SELECT DAYS_BETWEEN(x, y)",
                 "mysql": "SELECT DATEDIFF(x, y)",
                 "presto": "SELECT DATE_DIFF('DAY', y, x)",
                 "redshift": "SELECT DATEDIFF(DAY, y, x)",
@@ -1554,6 +1565,26 @@ COMMENT='客户账户表'"""
         self.validate_identity("x MOD y", "x % y").assert_is(exp.Mod)
         self.validate_identity("MOD(x, y)", "x % y").assert_is(exp.Mod)
 
+    def test_numeric_trunc(self):
+        # MySQL uses TRUNCATE for numeric truncation
+        self.validate_identity("TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNCATE(price, 0)").assert_is(exp.Trunc)
+
+        # TRUNC alias normalizes to TRUNCATE in MySQL
+        self.validate_identity("TRUNC(3.14159, 2)", "TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
+
+        # Cross-dialect numeric truncation transpilation
+        self.validate_all(
+            "TRUNCATE(3.14159, 2)",
+            write={
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "snowflake": "TRUNC(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+            },
+        )
+
     def test_valid_interval_units(self):
         for unit in (
             "SECOND_MICROSECOND",
@@ -1570,3 +1601,20 @@ COMMENT='客户账户表'"""
         ):
             with self.subTest(f"Testing INTERVAL unit: {unit}"):
                 self.validate_identity(f"DATE_ADD(base_date, INTERVAL day_interval {unit})")
+
+    def test_create_trigger(self):
+        """Test that MySQL CREATE TRIGGER statements fall back to Command parsing."""
+        self.validate_identity(
+            "CREATE TRIGGER check_age BEFORE INSERT ON users FOR EACH ROW BEGIN SET NEW.created_at = NOW() END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER audit_update AFTER UPDATE ON accounts FOR EACH ROW BEGIN INSERT INTO audit_log (user_id, old_balance, new_balance, changed_at) VALUES (OLD.user_id, OLD.balance, NEW.balance, NOW()) END",
+            check_command_warning=True,
+        )
+
+        self.validate_identity(
+            "CREATE TRIGGER track_deletes BEFORE DELETE ON orders FOR EACH ROW BEGIN UPDATE statistics SET delete_count = delete_count + 1 WHERE table_name = 'orders' END",
+            check_command_warning=True,
+        )

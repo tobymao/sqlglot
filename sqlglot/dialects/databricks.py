@@ -3,16 +3,14 @@ from __future__ import annotations
 from copy import deepcopy
 from collections import defaultdict
 
-from sqlglot import exp, transforms, jsonpath, parser
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     date_delta_sql,
-    build_date_delta,
     timestamptrunc_sql,
-    build_formatted_time,
     groupconcat_sql,
 )
 from sqlglot.dialects.spark import Spark
-from sqlglot.helper import seq_get
+from sqlglot.parsers.databricks import DatabricksParser
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
@@ -34,12 +32,12 @@ class Databricks(Spark):
         COERCES_TO[text_type] |= {
             *exp.DataType.NUMERIC_TYPES,
             *exp.DataType.TEMPORAL_TYPES,
-            exp.DataType.Type.BINARY,
-            exp.DataType.Type.BOOLEAN,
-            exp.DataType.Type.INTERVAL,
+            exp.DType.BINARY,
+            exp.DType.BOOLEAN,
+            exp.DType.INTERVAL,
         }
 
-    class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
+    class JSONPathTokenizer(Spark.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
 
     class Tokenizer(Spark.Tokenizer):
@@ -48,60 +46,20 @@ class Databricks(Spark):
             "VOID": TokenType.VOID,
         }
 
-    class Parser(Spark.Parser):
-        LOG_DEFAULTS_TO_LN = True
-        STRICT_CAST = True
-        COLON_IS_VARIANT_EXTRACT = True
-
-        FUNCTIONS = {
-            **Spark.Parser.FUNCTIONS,
-            "GETDATE": exp.CurrentTimestamp.from_arg_list,
-            "DATEADD": build_date_delta(exp.DateAdd),
-            "DATE_ADD": build_date_delta(exp.DateAdd),
-            "DATEDIFF": build_date_delta(exp.DateDiff),
-            "DATE_DIFF": build_date_delta(exp.DateDiff),
-            "NOW": exp.CurrentTimestamp.from_arg_list,
-            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
-            "UNIFORM": lambda args: exp.Uniform(
-                this=seq_get(args, 0), expression=seq_get(args, 1), seed=seq_get(args, 2)
-            ),
-        }
-
-        NO_PAREN_FUNCTION_PARSERS = {
-            **Spark.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "CURDATE": lambda self: self._parse_curdate(),
-        }
-
-        FACTOR = {
-            **Spark.Parser.FACTOR,
-            TokenType.COLON: exp.JSONExtract,
-        }
-
-        COLUMN_OPERATORS = {
-            **parser.Parser.COLUMN_OPERATORS,
-            TokenType.QDCOLON: lambda self, this, to: self.expression(
-                exp.TryCast,
-                this=this,
-                to=to,
-            ),
-        }
-
-        def _parse_curdate(self) -> exp.CurrentDate:
-            # CURDATE, an alias for CURRENT_DATE, has optional parentheses
-            if self._match(TokenType.L_PAREN):
-                self._match_r_paren()
-            return self.expression(exp.CurrentDate)
+    Parser = DatabricksParser
 
     class Generator(Spark.Generator):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         COPY_PARAMS_ARE_WRAPPED = False
         COPY_PARAMS_EQ_REQUIRED = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = False
+        SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
         QUOTE_JSON_PATH = False
         PARSE_JSON_NAME = "PARSE_JSON"
 
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
+            exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(
@@ -138,7 +96,7 @@ class Databricks(Spark):
 
         TYPE_MAPPING = {
             **Spark.Generator.TYPE_MAPPING,
-            exp.DataType.Type.NULL: "VOID",
+            exp.DType.NULL: "VOID",
         }
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
@@ -153,12 +111,6 @@ class Databricks(Spark):
                 expression.set("kind", exp.DataType.build("bigint"))
 
             return super().columndef_sql(expression, sep)
-
-        def generatedasidentitycolumnconstraint_sql(
-            self, expression: exp.GeneratedAsIdentityColumnConstraint
-        ) -> str:
-            expression.set("this", True)  # trigger ALWAYS in super class
-            return super().generatedasidentitycolumnconstraint_sql(expression)
 
         def jsonpath_sql(self, expression: exp.JSONPath) -> str:
             expression.set("escape", None)

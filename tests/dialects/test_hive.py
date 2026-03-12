@@ -365,6 +365,7 @@ class TestHive(Validator):
             "a RLIKE 'x'",
             write={
                 "duckdb": "REGEXP_MATCHES(a, 'x')",
+                "exasol": "a REGEXP_LIKE '.*x.*'",
                 "presto": "REGEXP_LIKE(a, 'x')",
                 "hive": "a RLIKE 'x'",
                 "spark": "a RLIKE 'x'",
@@ -375,6 +376,7 @@ class TestHive(Validator):
             "a REGEXP 'x'",
             write={
                 "duckdb": "REGEXP_MATCHES(a, 'x')",
+                "exasol": "a REGEXP_LIKE '.*x.*'",
                 "presto": "REGEXP_LIKE(a, 'x')",
                 "hive": "a RLIKE 'x'",
                 "spark": "a RLIKE 'x'",
@@ -885,6 +887,16 @@ class TestHive(Validator):
                 "presto": "SELECT DATE_TRUNC('MONTH', TRY_CAST(ds AS TIMESTAMP))",
             },
         )
+
+        # Hive TRUNC is date-only, should parse to TimestampTrunc (not numeric Trunc)
+        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.TimestampTrunc)
+
+        # Numeric TRUNC from other dialects - Hive has no native support, uses CAST to BIGINT
+        self.validate_all(
+            "CAST(3.14159 AS BIGINT)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
+
         self.validate_all(
             "REGEXP_EXTRACT('abc', '(a)(b)(c)')",
             read={
@@ -954,6 +966,16 @@ class TestHive(Validator):
             "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
         )
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
+
+        self.validate_all(
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+            write={
+                "hive": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "spark2": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "spark": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+            },
+        )
 
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")

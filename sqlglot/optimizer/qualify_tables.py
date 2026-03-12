@@ -35,7 +35,7 @@ def qualify_tables(
         'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
-        expression: Expression to qualify
+        expression: Expr to qualify
         db: Database name
         catalog: Catalog name
         on_qualify: Callback after a table has been qualified.
@@ -74,7 +74,7 @@ def qualify_tables(
                 _qualify(node)
 
     def _set_alias(
-        expression: exp.Expression,
+        expression: exp.Expr,
         canonical_aliases: t.Dict[str, str],
         target_alias: t.Optional[str] = None,
         scope: t.Optional[Scope] = None,
@@ -147,7 +147,7 @@ def qualify_tables(
                     elif type(table_this) in dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES:
                         function_columns = ensure_list(source.alias_or_name)
                         source.set("alias", None)
-                        name = None
+                        name = ""
 
                 _set_alias(
                     source,
@@ -190,7 +190,7 @@ def qualify_tables(
                 _set_alias(table, canonical_aliases, target_alias=table.name)
 
         for column in local_columns:
-            table = column.table
+            column_table = column.table
 
             if column.db:
                 table_alias = table_aliases.get(".".join(p.name for p in column.parts[0:-1]))
@@ -202,8 +202,8 @@ def qualify_tables(
                     column.set("table", table_alias.copy())
             elif (
                 canonical_aliases
-                and table
-                and (canonical_table := canonical_aliases.get(table, "")) != column.table
+                and column_table
+                and (canonical_table := canonical_aliases.get(column_table, "")) != column_table
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
                 column.set("table", exp.to_identifier(canonical_table))

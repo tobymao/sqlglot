@@ -18,14 +18,14 @@ if t.TYPE_CHECKING:
 
 
 def qualify_columns(
-    expression: exp.Expression,
+    expression: exp.Expr,
     schema: t.Dict | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
     allow_partial_qualification: bool = False,
     dialect: DialectType = None,
-) -> exp.Expression:
+) -> exp.Expr:
     """
     Rewrite sqlglot AST to have fully qualified columns.
 
@@ -37,7 +37,7 @@ def qualify_columns(
         'SELECT tbl.col AS col FROM tbl'
 
     Args:
-        expression: Expression to qualify.
+        expression: Expr to qualify.
         schema: Database schema.
         expand_alias_refs: Whether to expand references to aliases.
         expand_stars: Whether to expand star queries. This is a necessary step
@@ -198,7 +198,7 @@ def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
     return itertools.chain(name_columns, value_columns)
 
 
-def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) -> None:
+def _pop_table_column_aliases(derived_tables: t.Iterable[exp.Expr]) -> None:
     """
     Remove table column aliases.
 
@@ -261,7 +261,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             table = table or source_table
 
             if i == 0 or using_identifier_count == 1:
-                lhs: exp.Expression = exp.column(identifier, table=table)
+                lhs: exp.Expr = exp.column(identifier, table=table)
             else:
                 coalesce_columns = [
                     exp.column(identifier, table=t)
@@ -294,7 +294,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
                 coalesce_args = [exp.column(column.name, table=table) for table in tables]
-                replacement: exp.Expression = exp.func("coalesce", *coalesce_args)
+                replacement: exp.Expr = exp.func("coalesce", *coalesce_args)
 
                 if isinstance(column.parent, exp.Select):
                     # Ensure the USING column keeps its name if it's projected
@@ -324,12 +324,12 @@ def _expand_alias_refs(
     if not isinstance(expression, exp.Select) or dialect.DISABLES_ALIAS_REF_EXPANSION:
         return
 
-    alias_to_expression: t.Dict[str, t.Tuple[exp.Expression, int]] = {}
+    alias_to_expression: t.Dict[str, t.Tuple[exp.Expr, int]] = {}
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
     def replace_columns(
-        node: t.Optional[exp.Expression], resolve_table: bool = False, literal_index: bool = False
+        node: t.Optional[exp.Expr], resolve_table: bool = False, literal_index: bool = False
     ) -> None:
         nonlocal replaced
         is_group_by = isinstance(node, exp.Group)
@@ -401,20 +401,21 @@ def _expand_alias_refs(
         if isinstance(projection, exp.Alias):
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 
-    parent_scope = scope
+    parent_scope: t.Optional[Scope] = scope
     on_right_sub_tree = False
     while parent_scope and not parent_scope.is_cte:
-        if parent_scope.is_union:
-            on_right_sub_tree = parent_scope.parent.expression.right is parent_scope.expression
-        parent_scope = parent_scope.parent
+        if parent_scope := parent_scope.parent:
+            if isinstance(parent_scope.expression, exp.Union):
+                on_right_sub_tree = parent_scope.expression.right is parent_scope.expression
 
     # We shouldn't expand aliases if they match the recursive CTE's columns
     # and we are in the recursive part (right sub tree) of the CTE
     if parent_scope and on_right_sub_tree:
-        cte = parent_scope.expression.parent
-        if cte.find_ancestor(exp.With).recursive:
-            for recursive_cte_column in cte.args["alias"].columns or cte.this.selects:
-                alias_to_expression.pop(recursive_cte_column.output_name, None)
+        if cte := parent_scope.expression.parent:
+            with_ = cte.find_ancestor(exp.With)
+            if with_ and with_.recursive:
+                for recursive_cte_column in cte.args["alias"].columns or cte.this.selects:
+                    alias_to_expression.pop(recursive_cte_column.output_name, None)
 
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"), literal_index=True)
@@ -440,12 +441,20 @@ def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
 
 
 def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+    expression = scope.expression
+
+    if not isinstance(expression, exp.Selectable):
+        return
+
+    # TODO (mypyc): rebind to exp.Expr to avoid Selectable trait vtable dispatch for .args
+    expr: exp.Expr = expression
+
     for modifier_key in ("order", "distinct"):
-        modifier = scope.expression.args.get(modifier_key)
+        modifier = expr.args.get(modifier_key)
         if isinstance(modifier, exp.Distinct):
             modifier = modifier.args.get("on")
 
-        if not isinstance(modifier, exp.Expression):
+        if not isinstance(modifier, exp.Expr):
             continue
 
         modifier_expressions = modifier.expressions
@@ -465,31 +474,37 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
             original.replace(expanded)
 
-        if scope.expression.args.get("group"):
-            selects = {s.this: exp.column(s.alias_or_name) for s in scope.expression.selects}
+        if expr.args.get("group"):
+            selects = {s.this: exp.column(s.alias_or_name) for s in expression.selects}
 
-            for expression in modifier_expressions:
-                expression.replace(
-                    exp.to_identifier(_select_by_pos(scope, expression).alias)
-                    if expression.is_int
-                    else selects.get(expression, expression)
+            for node in modifier_expressions:
+                node.replace(
+                    exp.to_identifier(_select_by_pos(expression, node).alias)
+                    if node.is_int
+                    else selects.get(node, node)
                 )
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expression], dialect: Dialect, alias: bool = False
-) -> t.List[exp.Expression]:
-    new_nodes: t.List[exp.Expression] = []
+    scope: Scope, expressions: t.Iterable[exp.Expr], dialect: Dialect, alias: bool = False
+) -> t.List[exp.Expr]:
+    new_nodes: t.List[exp.Expr] = []
     ambiguous_projections = None
 
+    expression = scope.expression
+
+    if not isinstance(expression, exp.Selectable):
+        return new_nodes
+
     for node in expressions:
-        if node.is_int:
-            select = _select_by_pos(scope, t.cast(exp.Literal, node))
+        if node.is_int and isinstance(node, exp.Literal):
+            select = _select_by_pos(expression, node)
 
             if alias:
                 new_nodes.append(exp.column(select.args["alias"].copy()))
             else:
-                select = select.this
+                # TODO (mypyc): use a separate variable to avoid reusing `select` (Alias) with a different type
+                select_expr: exp.Expr = select.this
 
                 if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
@@ -497,35 +512,35 @@ def _expand_positional_references(
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to
                         ambiguous_projections = {
                             s.alias_or_name
-                            for s in scope.expression.selects
+                            for s in expression.selects
                             if s.alias_or_name in scope.selected_sources
                         }
 
                     ambiguous = any(
                         column.parts[0].name in ambiguous_projections
-                        for column in select.find_all(exp.Column)
+                        for column in select_expr.find_all(exp.Column)
                     )
                 else:
                     ambiguous = False
 
                 if (
-                    isinstance(select, exp.CONSTANTS)
-                    or select.is_number
-                    or select.find(exp.Explode, exp.Unnest)
+                    isinstance(select_expr, exp.CONSTANTS)
+                    or select_expr.is_number
+                    or select_expr.find(exp.Explode, exp.Unnest)
                     or ambiguous
                 ):
                     new_nodes.append(node)
                 else:
-                    new_nodes.append(select.copy())
+                    new_nodes.append(select_expr.copy())
         else:
             new_nodes.append(node)
 
     return new_nodes
 
 
-def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
+def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
     try:
-        return scope.expression.selects[int(node.this) - 1].assert_is(exp.Alias)
+        return expression.selects[int(node.this) - 1].assert_is(exp.Alias)
     except IndexError:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
@@ -542,7 +557,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if isinstance(column, exp.Dot):
             continue
 
-        column_table: t.Optional[str | exp.Identifier] = column.table
+        column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
@@ -555,7 +570,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         ):
             root, *parts = column.parts
 
-            if root.name in scope.sources:
+            if isinstance(root, exp.Identifier) and root.name in scope.sources:
                 # The struct is already qualified, but we still need to change the AST
                 column_table = root
                 root, *parts = parts
@@ -608,17 +623,17 @@ def _qualify_columns(
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
-            column_table = resolver.get_table(column)
+            table = resolver.get_table(column)
 
             if (
-                column_table
-                and isinstance(source := scope.sources.get(column_table.name), Scope)
+                table
+                and isinstance(source := scope.sources.get(table.name), Scope)
                 and id(column) in source.column_index
             ):
                 continue
 
-            if column_table:
-                column.set("table", column_table)
+            if table:
+                column.set("table", table)
             elif (
                 resolver.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
@@ -630,9 +645,9 @@ def _qualify_columns(
     for pivot in scope.pivots:
         for column in pivot.find_all(exp.Column):
             if not column.table and column.name in resolver.all_columns:
-                column_table = resolver.get_table(column.name)
-                if column_table:
-                    column.set("table", column_table)
+                table = resolver.get_table(column.name)
+                if table:
+                    column.set("table", table)
 
 
 def _expand_struct_stars_no_parens(
@@ -641,7 +656,7 @@ def _expand_struct_stars_no_parens(
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
     dot_column = expression.find(exp.Column)
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
         return []
 
     # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
@@ -658,7 +673,7 @@ def _expand_struct_stars_no_parens(
             if not isinstance(field.this, exp.Identifier):
                 return []
 
-            if field.name == part.name and field.kind.is_type(exp.DataType.Type.STRUCT):
+            if field.name == part.name and field.kind.is_type(exp.DType.STRUCT):
                 starting_struct = field
                 break
         else:
@@ -684,7 +699,7 @@ def _expand_struct_stars_no_parens(
             table=dot_column.args.get("table"),
             fields=t.cast(t.List[exp.Identifier], parts),
         )
-        new_selections.append(alias(new_column, this, copy=False))
+        new_selections.append(alias(new_column, this, copy=False).assert_is(exp.Alias))
 
     return new_selections
 
@@ -698,7 +713,7 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
 
     # find column definition to get data-type
     dot_column = expression.find(exp.Column)
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DataType.Type.STRUCT):
+    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
         return []
 
     parent = dot_column.parent
@@ -745,7 +760,7 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> t.List[exp.Alias]:
     for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
         new_identifier = struct_field_def.this.copy()
         new_dot = exp.Dot.build([outer_paren.copy(), new_identifier])
-        new_alias = alias(new_dot, new_identifier, copy=False)
+        new_alias = alias(new_dot, new_identifier, copy=False).assert_is(exp.Alias)
         new_selections.append(new_alias)
 
     return new_selections
@@ -760,7 +775,7 @@ def _expand_stars(
 ) -> None:
     """Expand stars to lists of column selections"""
 
-    new_selections: t.List[exp.Expression] = []
+    new_selections: t.List[exp.Expr] = []
     except_columns: t.Dict[int, t.Set[str]] = {}
     replace_columns: t.Dict[int, t.Dict[str, exp.Alias]] = {}
     rename_columns: t.Dict[int, t.Dict[str, str]] = {}
@@ -795,32 +810,38 @@ def _expand_stars(
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
-    for expression in scope.expression.selects:
-        tables = []
+    scope_expression = scope.expression
+
+    if not isinstance(scope_expression, exp.Selectable):
+        return
+
+    for expression in scope_expression.selects:
+        tables: t.List[str] = []
         if isinstance(expression, exp.Star):
             tables.extend(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
             _add_rename_columns(expression, tables, rename_columns)
         elif expression.is_star:
-            if not isinstance(expression, exp.Dot):
+            if isinstance(expression, exp.Column):
                 tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
-            elif (
-                dialect.SUPPORTS_STRUCT_STAR_EXPANSION
-                and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
-            ):
-                struct_fields = _expand_struct_stars_no_parens(expression)
-                if struct_fields:
-                    new_selections.extend(struct_fields)
-                    continue
-            elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
-                struct_fields = _expand_struct_stars_with_parens(expression)
-                if struct_fields:
-                    new_selections.extend(struct_fields)
-                    continue
+            elif isinstance(expression, exp.Dot):
+                if (
+                    dialect.SUPPORTS_STRUCT_STAR_EXPANSION
+                    and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
+                ):
+                    struct_fields = _expand_struct_stars_no_parens(expression)
+                    if struct_fields:
+                        new_selections.extend(struct_fields)
+                        continue
+                elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
+                    struct_fields = _expand_struct_stars_with_parens(expression)
+                    if struct_fields:
+                        new_selections.extend(struct_fields)
+                        continue
 
         if not tables:
             new_selections.append(expression)
@@ -864,8 +885,9 @@ def _expand_stars(
                     continue
                 if name in using_column_tables and table in using_column_tables[name]:
                     coalesced_columns.add(name)
-                    tables = using_column_tables[name]
-                    coalesce_args = [exp.column(name, table=table) for table in tables]
+                    # TODO (mypyc): use a separate variable to avoid reusing `tables` (list) with dict type
+                    using_tables = using_column_tables[name]
+                    coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
                     new_selections.append(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
@@ -880,12 +902,12 @@ def _expand_stars(
                     )
 
     # Ensures we don't overwrite the initial selections with an empty list
-    if new_selections and isinstance(scope.expression, exp.Select):
-        scope.expression.set("expressions", new_selections)
+    if new_selections and isinstance(scope_expression, exp.Select):
+        scope_expression.set("expressions", new_selections)
 
 
 def _add_except_columns(
-    expression: exp.Expression, tables, except_columns: t.Dict[int, t.Set[str]]
+    expression: exp.Expr, tables, except_columns: t.Dict[int, t.Set[str]]
 ) -> None:
     except_ = expression.args.get("except_")
 
@@ -899,7 +921,7 @@ def _add_except_columns(
 
 
 def _add_rename_columns(
-    expression: exp.Expression, tables, rename_columns: t.Dict[int, t.Dict[str, str]]
+    expression: exp.Expr, tables, rename_columns: t.Dict[int, t.Dict[str, str]]
 ) -> None:
     rename = expression.args.get("rename")
 
@@ -913,7 +935,7 @@ def _add_rename_columns(
 
 
 def _add_replace_columns(
-    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Dict[str, exp.Alias]]
+    expression: exp.Expr, tables, replace_columns: t.Dict[int, t.Dict[str, exp.Alias]]
 ) -> None:
     replace = expression.args.get("replace")
 
@@ -926,18 +948,24 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expr) -> None:
     """Ensure all output columns are aliased"""
-    if isinstance(scope_or_expression, exp.Expression):
+    if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
         if not isinstance(scope, Scope):
             return
     else:
         scope = scope_or_expression
 
+    expression = scope.expression
+
+    if not isinstance(expression, exp.Selectable):
+        return
+
     new_selections = []
+
     for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(scope.expression.selects, scope.outer_columns)
+        itertools.zip_longest(expression.selects, scope.outer_columns)
     ):
         if selection is None or isinstance(selection, exp.QueryTransform):
             break
@@ -956,8 +984,8 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
 
         new_selections.append(selection)
 
-    if new_selections and isinstance(scope.expression, exp.Select):
-        scope.expression.set("expressions", new_selections)
+    if new_selections and isinstance(expression, exp.Select):
+        expression.set("expressions", new_selections)
 
 
 def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:

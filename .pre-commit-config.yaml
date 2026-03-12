@@ -1,24 +1,47 @@
 repos:
   - repo: local
     hooks:
+      - id: sync-integration-tests-commit
+        name: sync-integration-tests-commit
+        entry: .github/scripts/integration_tests_sync.sh commit
+        language: script
+        stages: [pre-commit]
+        always_run: true
+        pass_filenames: false
+      - id: sync-integration-tests-checkout
+        name: sync-integration-tests-checkout
+        entry: .github/scripts/integration_tests_sync.sh checkout
+        language: script
+        stages: [post-checkout]
+        always_run: true
+        pass_filenames: false
+      - id: sync-integration-tests-push
+        name: sync-integration-tests-push
+        entry: .github/scripts/integration_tests_sync.sh push
+        language: script
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false
+      - id: sync-integration-tests-merge
+        name: sync-integration-tests-merge
+        entry: .github/scripts/integration_tests_sync.sh merge
+        language: script
+        stages: [post-merge]
+        always_run: true
+        pass_filenames: false
       - id: ruff
         name: ruff
         description: "Run 'ruff' for extremely fast Python linting"
         entry: ruff check
           --force-exclude --fix
-          --ignore E721
-          --ignore E741
         language: python
         types_or: [python, pyi]
         require_serial: true
         additional_dependencies: []
-        files: ^(sqlglot/|tests/|setup.py)
       - id: ruff-format
         name: ruff-format
         description: "Run 'ruff format' for extremely fast Python formatting"
         entry: ruff format
-          --force-exclude
-          --line-length 100
         language: python
         types_or: [python, pyi]
         require_serial: true

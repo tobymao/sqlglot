@@ -5,8 +5,6 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
-    build_formatted_time,
-    build_json_extract_path,
     json_extract_segments,
     json_path_key_only_name,
     rename_func,
@@ -16,22 +14,10 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     timestampdiff_sql,
 )
-from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql, _show_parser
+from sqlglot.dialects.mysql import MySQL, _remove_ts_or_ds_to_date, date_add_sql
 from sqlglot.expressions import DataType
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get
-
-
-def cast_to_time6(
-    expression: t.Optional[exp.Expression], time_type: DataType.Type = exp.DataType.Type.TIME
-) -> exp.Cast:
-    return exp.Cast(
-        this=expression,
-        to=exp.DataType.build(
-            time_type,
-            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
-        ),
-    )
+from sqlglot.parsers.singlestore import SingleStoreParser, cast_to_time6
 
 
 class SingleStore(MySQL):
@@ -85,249 +71,7 @@ class SingleStore(MySQL):
             "RECORD": TokenType.STRUCT,
         }
 
-    class Parser(MySQL.Parser):
-        FUNCTIONS = {
-            **MySQL.Parser.FUNCTIONS,
-            "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
-            "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
-            "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
-            "STR_TO_DATE": build_formatted_time(exp.StrToDate, "mysql"),
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
-            # The first argument of following functions is converted to TIME(6)
-            # This is needed because exp.TimeToStr is converted to DATE_FORMAT
-            # which interprets the first argument as DATETIME and fails to parse
-            # string literals like '12:05:47' without a date part.
-            "TIME_FORMAT": lambda args: exp.TimeToStr(
-                this=cast_to_time6(seq_get(args, 0)),
-                format=MySQL.format_time(seq_get(args, 1)),
-            ),
-            "HOUR": lambda args: exp.cast(
-                exp.TimeToStr(
-                    this=cast_to_time6(seq_get(args, 0)),
-                    format=MySQL.format_time(exp.Literal.string("%k")),
-                ),
-                DataType.Type.INT,
-            ),
-            "MICROSECOND": lambda args: exp.cast(
-                exp.TimeToStr(
-                    this=cast_to_time6(seq_get(args, 0)),
-                    format=MySQL.format_time(exp.Literal.string("%f")),
-                ),
-                DataType.Type.INT,
-            ),
-            "SECOND": lambda args: exp.cast(
-                exp.TimeToStr(
-                    this=cast_to_time6(seq_get(args, 0)),
-                    format=MySQL.format_time(exp.Literal.string("%s")),
-                ),
-                DataType.Type.INT,
-            ),
-            "MINUTE": lambda args: exp.cast(
-                exp.TimeToStr(
-                    this=cast_to_time6(seq_get(args, 0)),
-                    format=MySQL.format_time(exp.Literal.string("%i")),
-                ),
-                DataType.Type.INT,
-            ),
-            "MONTHNAME": lambda args: exp.TimeToStr(
-                this=seq_get(args, 0),
-                format=MySQL.format_time(exp.Literal.string("%M")),
-            ),
-            "WEEKDAY": lambda args: exp.paren(exp.DayOfWeek(this=seq_get(args, 0)) + 5, copy=False)
-            % 7,
-            "UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
-            "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
-            "TIME_BUCKET": lambda args: exp.DateBin(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                origin=seq_get(args, 2),
-            ),
-            "BSON_EXTRACT_BSON": build_json_extract_path(exp.JSONBExtract),
-            "BSON_EXTRACT_STRING": build_json_extract_path(
-                exp.JSONBExtractScalar, json_type="STRING"
-            ),
-            "BSON_EXTRACT_DOUBLE": build_json_extract_path(
-                exp.JSONBExtractScalar, json_type="DOUBLE"
-            ),
-            "BSON_EXTRACT_BIGINT": build_json_extract_path(
-                exp.JSONBExtractScalar, json_type="BIGINT"
-            ),
-            "JSON_EXTRACT_JSON": build_json_extract_path(exp.JSONExtract),
-            "JSON_EXTRACT_STRING": build_json_extract_path(
-                exp.JSONExtractScalar, json_type="STRING"
-            ),
-            "JSON_EXTRACT_DOUBLE": build_json_extract_path(
-                exp.JSONExtractScalar, json_type="DOUBLE"
-            ),
-            "JSON_EXTRACT_BIGINT": build_json_extract_path(
-                exp.JSONExtractScalar, json_type="BIGINT"
-            ),
-            "JSON_ARRAY_CONTAINS_STRING": lambda args: exp.JSONArrayContains(
-                this=seq_get(args, 1),
-                expression=seq_get(args, 0),
-                json_type="STRING",
-            ),
-            "JSON_ARRAY_CONTAINS_DOUBLE": lambda args: exp.JSONArrayContains(
-                this=seq_get(args, 1),
-                expression=seq_get(args, 0),
-                json_type="DOUBLE",
-            ),
-            "JSON_ARRAY_CONTAINS_JSON": lambda args: exp.JSONArrayContains(
-                this=seq_get(args, 1),
-                expression=seq_get(args, 0),
-                json_type="JSON",
-            ),
-            "JSON_KEYS": lambda args: exp.JSONKeys(
-                this=seq_get(args, 0),
-                expressions=args[1:],
-            ),
-            "JSON_PRETTY": exp.JSONFormat.from_arg_list,
-            "JSON_BUILD_ARRAY": lambda args: exp.JSONArray(expressions=args),
-            "JSON_BUILD_OBJECT": lambda args: exp.JSONObject(expressions=args),
-            "DATE": exp.Date.from_arg_list,
-            "DAYNAME": lambda args: exp.TimeToStr(
-                this=seq_get(args, 0),
-                format=MySQL.format_time(exp.Literal.string("%W")),
-            ),
-            "TIMESTAMPDIFF": lambda args: exp.TimestampDiff(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
-            ),
-            "APPROX_COUNT_DISTINCT": exp.Hll.from_arg_list,
-            "APPROX_PERCENTILE": lambda args, dialect: exp.ApproxQuantile(
-                this=seq_get(args, 0),
-                quantile=seq_get(args, 1),
-                error_tolerance=seq_get(args, 2),
-            ),
-            "VARIANCE": exp.VariancePop.from_arg_list,
-            "INSTR": exp.Contains.from_arg_list,
-            "REGEXP_MATCH": lambda args: exp.RegexpExtractAll(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                parameters=seq_get(args, 2),
-            ),
-            "REGEXP_SUBSTR": lambda args: exp.RegexpExtract(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                position=seq_get(args, 2),
-                occurrence=seq_get(args, 3),
-                parameters=seq_get(args, 4),
-            ),
-            "REDUCE": lambda args: exp.Reduce(
-                initial=seq_get(args, 0),
-                this=seq_get(args, 1),
-                merge=seq_get(args, 2),
-            ),
-        }
-
-        FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
-            **MySQL.Parser.FUNCTION_PARSERS,
-            "JSON_AGG": lambda self: exp.JSONArrayAgg(
-                this=self._parse_term(),
-                order=self._parse_order(),
-            ),
-        }
-
-        NO_PAREN_FUNCTIONS = {
-            **MySQL.Parser.NO_PAREN_FUNCTIONS,
-            TokenType.UTC_DATE: exp.UtcDate,
-            TokenType.UTC_TIME: exp.UtcTime,
-            TokenType.UTC_TIMESTAMP: exp.UtcTimestamp,
-        }
-
-        CAST_COLUMN_OPERATORS = {TokenType.COLON_GT, TokenType.NCOLON_GT}
-
-        COLUMN_OPERATORS = {
-            **MySQL.Parser.COLUMN_OPERATORS,
-            TokenType.COLON_GT: lambda self, this, to: self.expression(
-                exp.Cast,
-                this=this,
-                to=to,
-            ),
-            TokenType.NCOLON_GT: lambda self, this, to: self.expression(
-                exp.TryCast,
-                this=this,
-                to=to,
-            ),
-            TokenType.DCOLON: lambda self, this, path: build_json_extract_path(exp.JSONExtract)(
-                [this, exp.Literal.string(path.name)]
-            ),
-            TokenType.DCOLONDOLLAR: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtractScalar, json_type="STRING"
-            )([this, exp.Literal.string(path.name)]),
-            TokenType.DCOLONPERCENT: lambda self, this, path: build_json_extract_path(
-                exp.JSONExtractScalar, json_type="DOUBLE"
-            )([this, exp.Literal.string(path.name)]),
-            TokenType.DCOLONQMARK: lambda self, this, path: self.expression(
-                exp.JSONExists,
-                this=this,
-                path=path.name,
-                from_dcolonqmark=True,
-            ),
-        }
-        COLUMN_OPERATORS.pop(TokenType.ARROW)
-        COLUMN_OPERATORS.pop(TokenType.DARROW)
-        COLUMN_OPERATORS.pop(TokenType.HASH_ARROW)
-        COLUMN_OPERATORS.pop(TokenType.DHASH_ARROW)
-        COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
-
-        SHOW_PARSERS = {
-            **MySQL.Parser.SHOW_PARSERS,
-            "AGGREGATES": _show_parser("AGGREGATES"),
-            "CDC EXTRACTOR POOL": _show_parser("CDC EXTRACTOR POOL"),
-            "CREATE AGGREGATE": _show_parser("CREATE AGGREGATE", target=True),
-            "CREATE PIPELINE": _show_parser("CREATE PIPELINE", target=True),
-            "CREATE PROJECTION": _show_parser("CREATE PROJECTION", target=True),
-            "DATABASE STATUS": _show_parser("DATABASE STATUS"),
-            "DISTRIBUTED_PLANCACHE STATUS": _show_parser("DISTRIBUTED_PLANCACHE STATUS"),
-            "FULLTEXT SERVICE METRICS LOCAL": _show_parser("FULLTEXT SERVICE METRICS LOCAL"),
-            "FULLTEXT SERVICE METRICS FOR NODE": _show_parser(
-                "FULLTEXT SERVICE METRICS FOR NODE", target=True
-            ),
-            "FULLTEXT SERVICE STATUS": _show_parser("FULLTEXT SERVICE STATUS"),
-            "FUNCTIONS": _show_parser("FUNCTIONS"),
-            "GROUPS": _show_parser("GROUPS"),
-            "GROUPS FOR ROLE": _show_parser("GROUPS FOR ROLE", target=True),
-            "GROUPS FOR USER": _show_parser("GROUPS FOR USER", target=True),
-            "INDEXES": _show_parser("INDEX", target="FROM"),
-            "KEYS": _show_parser("INDEX", target="FROM"),
-            "LINKS": _show_parser("LINKS", target="ON"),
-            "LOAD ERRORS": _show_parser("LOAD ERRORS"),
-            "LOAD WARNINGS": _show_parser("LOAD WARNINGS"),
-            "PARTITIONS": _show_parser("PARTITIONS", target="ON"),
-            "PIPELINES": _show_parser("PIPELINES"),
-            "PLAN": _show_parser("PLAN", target=True),
-            "PLANCACHE": _show_parser("PLANCACHE"),
-            "PROCEDURES": _show_parser("PROCEDURES"),
-            "PROJECTIONS": _show_parser("PROJECTIONS", target="ON TABLE"),
-            "REPLICATION STATUS": _show_parser("REPLICATION STATUS"),
-            "REPRODUCTION": _show_parser("REPRODUCTION"),
-            "RESOURCE POOLS": _show_parser("RESOURCE POOLS"),
-            "ROLES": _show_parser("ROLES"),
-            "ROLES FOR USER": _show_parser("ROLES FOR USER", target=True),
-            "ROLES FOR GROUP": _show_parser("ROLES FOR GROUP", target=True),
-            "STATUS EXTENDED": _show_parser("STATUS EXTENDED"),
-            "USERS": _show_parser("USERS"),
-            "USERS FOR ROLE": _show_parser("USERS FOR ROLE", target=True),
-            "USERS FOR GROUP": _show_parser("USERS FOR GROUP", target=True),
-        }
-
-        ALTER_PARSERS = {
-            **MySQL.Parser.ALTER_PARSERS,
-            "CHANGE": lambda self: self.expression(
-                exp.RenameColumn, this=self._parse_column(), to=self._parse_column()
-            ),
-        }
-
-        def _parse_vector_expressions(
-            self, expressions: t.List[exp.Expression]
-        ) -> t.List[exp.Expression]:
-            type_name = expressions[1].name.upper()
-            if type_name in self.dialect.VECTOR_TYPE_ALIASES:
-                type_name = self.dialect.VECTOR_TYPE_ALIASES[type_name]
-
-            return [exp.DataType.build(type_name, dialect=self.dialect), expressions[0]]
+    Parser = SingleStoreParser
 
     class Generator(MySQL.Generator):
         SUPPORTS_UESCAPE = False
@@ -411,7 +155,7 @@ class SingleStore(MySQL):
             exp.DateBin: unsupported_args("unit", "zone")(
                 lambda self, e: self.func("TIME_BUCKET", e.this, e.expression, e.args.get("origin"))
             ),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ", e.this, e.args.get("zone"), "'UTC'"
             ),
@@ -437,9 +181,7 @@ class SingleStore(MySQL):
             else self.func("DATEDIFF", e.this, e.expression),
             exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.CurrentDatetime: lambda self, e: self.sql(
-                cast_to_time6(
-                    exp.CurrentTimestamp(this=exp.Literal.number(6)), exp.DataType.Type.DATETIME
-                )
+                cast_to_time6(exp.CurrentTimestamp(this=exp.Literal.number(6)), exp.DType.DATETIME)
             ),
             exp.JSONExtract: unsupported_args(
                 "only_json_types",
@@ -578,91 +320,91 @@ class SingleStore(MySQL):
         TRANSFORMS.pop(exp.CurrentDate)
 
         UNSUPPORTED_TYPES = {
-            exp.DataType.Type.ARRAY,
-            exp.DataType.Type.AGGREGATEFUNCTION,
-            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION,
-            exp.DataType.Type.BIGSERIAL,
-            exp.DataType.Type.BPCHAR,
-            exp.DataType.Type.DATEMULTIRANGE,
-            exp.DataType.Type.DATERANGE,
-            exp.DataType.Type.DYNAMIC,
-            exp.DataType.Type.HLLSKETCH,
-            exp.DataType.Type.HSTORE,
-            exp.DataType.Type.IMAGE,
-            exp.DataType.Type.INET,
-            exp.DataType.Type.INT128,
-            exp.DataType.Type.INT256,
-            exp.DataType.Type.INT4MULTIRANGE,
-            exp.DataType.Type.INT4RANGE,
-            exp.DataType.Type.INT8MULTIRANGE,
-            exp.DataType.Type.INT8RANGE,
-            exp.DataType.Type.INTERVAL,
-            exp.DataType.Type.IPADDRESS,
-            exp.DataType.Type.IPPREFIX,
-            exp.DataType.Type.IPV4,
-            exp.DataType.Type.IPV6,
-            exp.DataType.Type.LIST,
-            exp.DataType.Type.MAP,
-            exp.DataType.Type.LOWCARDINALITY,
-            exp.DataType.Type.MONEY,
-            exp.DataType.Type.MULTILINESTRING,
-            exp.DataType.Type.NAME,
-            exp.DataType.Type.NESTED,
-            exp.DataType.Type.NOTHING,
-            exp.DataType.Type.NULL,
-            exp.DataType.Type.NUMMULTIRANGE,
-            exp.DataType.Type.NUMRANGE,
-            exp.DataType.Type.OBJECT,
-            exp.DataType.Type.RANGE,
-            exp.DataType.Type.ROWVERSION,
-            exp.DataType.Type.SERIAL,
-            exp.DataType.Type.SMALLSERIAL,
-            exp.DataType.Type.SMALLMONEY,
-            exp.DataType.Type.SUPER,
-            exp.DataType.Type.TIMETZ,
-            exp.DataType.Type.TIMESTAMPNTZ,
-            exp.DataType.Type.TIMESTAMPLTZ,
-            exp.DataType.Type.TIMESTAMPTZ,
-            exp.DataType.Type.TIMESTAMP_NS,
-            exp.DataType.Type.TSMULTIRANGE,
-            exp.DataType.Type.TSRANGE,
-            exp.DataType.Type.TSTZMULTIRANGE,
-            exp.DataType.Type.TSTZRANGE,
-            exp.DataType.Type.UINT128,
-            exp.DataType.Type.UINT256,
-            exp.DataType.Type.UNION,
-            exp.DataType.Type.UNKNOWN,
-            exp.DataType.Type.USERDEFINED,
-            exp.DataType.Type.UUID,
-            exp.DataType.Type.VARIANT,
-            exp.DataType.Type.XML,
-            exp.DataType.Type.TDIGEST,
+            exp.DType.ARRAY,
+            exp.DType.AGGREGATEFUNCTION,
+            exp.DType.SIMPLEAGGREGATEFUNCTION,
+            exp.DType.BIGSERIAL,
+            exp.DType.BPCHAR,
+            exp.DType.DATEMULTIRANGE,
+            exp.DType.DATERANGE,
+            exp.DType.DYNAMIC,
+            exp.DType.HLLSKETCH,
+            exp.DType.HSTORE,
+            exp.DType.IMAGE,
+            exp.DType.INET,
+            exp.DType.INT128,
+            exp.DType.INT256,
+            exp.DType.INT4MULTIRANGE,
+            exp.DType.INT4RANGE,
+            exp.DType.INT8MULTIRANGE,
+            exp.DType.INT8RANGE,
+            exp.DType.INTERVAL,
+            exp.DType.IPADDRESS,
+            exp.DType.IPPREFIX,
+            exp.DType.IPV4,
+            exp.DType.IPV6,
+            exp.DType.LIST,
+            exp.DType.MAP,
+            exp.DType.LOWCARDINALITY,
+            exp.DType.MONEY,
+            exp.DType.MULTILINESTRING,
+            exp.DType.NAME,
+            exp.DType.NESTED,
+            exp.DType.NOTHING,
+            exp.DType.NULL,
+            exp.DType.NUMMULTIRANGE,
+            exp.DType.NUMRANGE,
+            exp.DType.OBJECT,
+            exp.DType.RANGE,
+            exp.DType.ROWVERSION,
+            exp.DType.SERIAL,
+            exp.DType.SMALLSERIAL,
+            exp.DType.SMALLMONEY,
+            exp.DType.SUPER,
+            exp.DType.TIMETZ,
+            exp.DType.TIMESTAMPNTZ,
+            exp.DType.TIMESTAMPLTZ,
+            exp.DType.TIMESTAMPTZ,
+            exp.DType.TIMESTAMP_NS,
+            exp.DType.TSMULTIRANGE,
+            exp.DType.TSRANGE,
+            exp.DType.TSTZMULTIRANGE,
+            exp.DType.TSTZRANGE,
+            exp.DType.UINT128,
+            exp.DType.UINT256,
+            exp.DType.UNION,
+            exp.DType.UNKNOWN,
+            exp.DType.USERDEFINED,
+            exp.DType.UUID,
+            exp.DType.VARIANT,
+            exp.DType.XML,
+            exp.DType.TDIGEST,
         }
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BIGDECIMAL: "DECIMAL",
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.DATE32: "DATE",
-            exp.DataType.Type.DATETIME64: "DATETIME",
-            exp.DataType.Type.DECIMAL32: "DECIMAL",
-            exp.DataType.Type.DECIMAL64: "DECIMAL",
-            exp.DataType.Type.DECIMAL128: "DECIMAL",
-            exp.DataType.Type.DECIMAL256: "DECIMAL",
-            exp.DataType.Type.ENUM8: "ENUM",
-            exp.DataType.Type.ENUM16: "ENUM",
-            exp.DataType.Type.FIXEDSTRING: "TEXT",
-            exp.DataType.Type.GEOMETRY: "GEOGRAPHY",
-            exp.DataType.Type.POINT: "GEOGRAPHYPOINT",
-            exp.DataType.Type.RING: "GEOGRAPHY",
-            exp.DataType.Type.LINESTRING: "GEOGRAPHY",
-            exp.DataType.Type.POLYGON: "GEOGRAPHY",
-            exp.DataType.Type.MULTIPOLYGON: "GEOGRAPHY",
-            exp.DataType.Type.STRUCT: "RECORD",
-            exp.DataType.Type.JSONB: "BSON",
-            exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP",
-            exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP(6)",
+            exp.DType.BIGDECIMAL: "DECIMAL",
+            exp.DType.BIT: "BOOLEAN",
+            exp.DType.DATE32: "DATE",
+            exp.DType.DATETIME64: "DATETIME",
+            exp.DType.DECIMAL32: "DECIMAL",
+            exp.DType.DECIMAL64: "DECIMAL",
+            exp.DType.DECIMAL128: "DECIMAL",
+            exp.DType.DECIMAL256: "DECIMAL",
+            exp.DType.ENUM8: "ENUM",
+            exp.DType.ENUM16: "ENUM",
+            exp.DType.FIXEDSTRING: "TEXT",
+            exp.DType.GEOMETRY: "GEOGRAPHY",
+            exp.DType.POINT: "GEOGRAPHYPOINT",
+            exp.DType.RING: "GEOGRAPHY",
+            exp.DType.LINESTRING: "GEOGRAPHY",
+            exp.DType.POLYGON: "GEOGRAPHY",
+            exp.DType.MULTIPOLYGON: "GEOGRAPHY",
+            exp.DType.STRUCT: "RECORD",
+            exp.DType.JSONB: "BSON",
+            exp.DType.TIMESTAMP: "TIMESTAMP",
+            exp.DType.TIMESTAMP_S: "TIMESTAMP",
+            exp.DType.TIMESTAMP_MS: "TIMESTAMP(6)",
         }
 
         # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/
@@ -1735,7 +1477,7 @@ class SingleStore(MySQL):
 
         @unsupported_args("on_condition")
         def jsonvalue_sql(self, expression: exp.JSONValue) -> str:
-            res: exp.Expression = exp.JSONExtractScalar(
+            res: exp.Expr = exp.JSONExtractScalar(
                 this=expression.this,
                 expression=expression.args.get("path"),
                 json_type="STRING",
@@ -1767,27 +1509,27 @@ class SingleStore(MySQL):
 
         @unsupported_args("kind", "values")
         def datatype_sql(self, expression: exp.DataType) -> str:
-            if expression.args.get("nested") and not expression.is_type(exp.DataType.Type.STRUCT):
+            if expression.args.get("nested") and not expression.is_type(exp.DType.STRUCT):
                 self.unsupported(
                     f"Argument 'nested' is not supported for representation of '{expression.this.value}' in SingleStore"
                 )
 
-            if expression.is_type(exp.DataType.Type.VARBINARY) and not expression.expressions:
+            if expression.is_type(exp.DType.VARBINARY) and not expression.expressions:
                 # `VARBINARY` must always have a size - if it doesn't, we always generate `BLOB`
                 return "BLOB"
             if expression.is_type(
-                exp.DataType.Type.DECIMAL32,
-                exp.DataType.Type.DECIMAL64,
-                exp.DataType.Type.DECIMAL128,
-                exp.DataType.Type.DECIMAL256,
+                exp.DType.DECIMAL32,
+                exp.DType.DECIMAL64,
+                exp.DType.DECIMAL128,
+                exp.DType.DECIMAL256,
             ):
                 scale = self.expressions(expression, flat=True)
 
-                if expression.is_type(exp.DataType.Type.DECIMAL32):
+                if expression.is_type(exp.DType.DECIMAL32):
                     precision = "9"
-                elif expression.is_type(exp.DataType.Type.DECIMAL64):
+                elif expression.is_type(exp.DType.DECIMAL64):
                     precision = "18"
-                elif expression.is_type(exp.DataType.Type.DECIMAL128):
+                elif expression.is_type(exp.DType.DECIMAL128):
                     precision = "38"
                 else:
                     # 65 is a maximum precision supported in SingleStore
@@ -1796,7 +1538,7 @@ class SingleStore(MySQL):
                     return f"DECIMAL({precision}, {scale[0]})"
                 else:
                     return f"DECIMAL({precision})"
-            if expression.is_type(exp.DataType.Type.VECTOR):
+            if expression.is_type(exp.DType.VECTOR):
                 expressions = expression.expressions
                 if len(expressions) == 2:
                     type_name = self.sql(expressions[0])

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -18,19 +18,11 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.parser import binary_range_parser
+from sqlglot.parsers.sqlite import SQLiteParser
 from sqlglot.tokens import TokenType
 
 
-def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
-    if len(args) == 1:
-        args.append(exp.CurrentTimestamp())
-    if len(args) == 2:
-        return exp.TimeToStr(this=exp.TsOrDsToTimestamp(this=args[1]), format=args[0])
-    return exp.Anonymous(this="STRFTIME", expressions=args)
-
-
-def _transform_create(expression: exp.Expression) -> exp.Expression:
+def _transform_create(expression: exp.Expr) -> exp.Expr:
     """Move primary key to a column and enforce auto_increment on primary keys."""
     schema = expression.this
 
@@ -64,7 +56,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
+def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.ColumnDef):
         return expression
 
@@ -87,7 +79,6 @@ def _generated_to_auto_increment(expression: exp.Expression) -> exp.Expression:
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
-    SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
@@ -110,49 +101,7 @@ class SQLite(Dialect):
 
         COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE}
 
-    class Parser(parser.Parser):
-        STRING_ALIASES = True
-        ALTER_RENAME_REQUIRES_COLUMN = False
-        JOINS_HAVE_EQUAL_PRECEDENCE = True
-        ADD_JOIN_ON_TRUE = True
-
-        FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,
-            "EDITDIST3": exp.Levenshtein.from_arg_list,
-            "STRFTIME": _build_strftime,
-            "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
-            "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
-        }
-
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.ATTACH: lambda self: self._parse_attach_detach(),
-            TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
-        }
-
-        RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,
-            # https://www.sqlite.org/lang_expr.html
-            TokenType.MATCH: binary_range_parser(exp.Match),
-        }
-
-        def _parse_unique(self) -> exp.UniqueColumnConstraint:
-            # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
-            # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
-            if self._curr.text.upper() in self.CONSTRAINT_PARSERS:
-                return self.expression(exp.UniqueColumnConstraint)
-
-            return super()._parse_unique()
-
-        def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
-            self._match(TokenType.DATABASE)
-            this = self._parse_expression()
-
-            return (
-                self.expression(exp.Attach, this=this)
-                if is_attach
-                else self.expression(exp.Detach, this=this)
-            )
+    Parser = SQLiteParser
 
     class Generator(generator.Generator):
         JOIN_HINTS = False
@@ -177,22 +126,22 @@ class SQLite(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.BOOLEAN: "INTEGER",
-            exp.DataType.Type.TINYINT: "INTEGER",
-            exp.DataType.Type.SMALLINT: "INTEGER",
-            exp.DataType.Type.INT: "INTEGER",
-            exp.DataType.Type.BIGINT: "INTEGER",
-            exp.DataType.Type.FLOAT: "REAL",
-            exp.DataType.Type.DOUBLE: "REAL",
-            exp.DataType.Type.DECIMAL: "REAL",
-            exp.DataType.Type.CHAR: "TEXT",
-            exp.DataType.Type.NCHAR: "TEXT",
-            exp.DataType.Type.VARCHAR: "TEXT",
-            exp.DataType.Type.NVARCHAR: "TEXT",
-            exp.DataType.Type.BINARY: "BLOB",
-            exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DType.BOOLEAN: "INTEGER",
+            exp.DType.TINYINT: "INTEGER",
+            exp.DType.SMALLINT: "INTEGER",
+            exp.DType.INT: "INTEGER",
+            exp.DType.BIGINT: "INTEGER",
+            exp.DType.FLOAT: "REAL",
+            exp.DType.DOUBLE: "REAL",
+            exp.DType.DECIMAL: "REAL",
+            exp.DType.CHAR: "TEXT",
+            exp.DType.NCHAR: "TEXT",
+            exp.DType.VARCHAR: "TEXT",
+            exp.DType.NVARCHAR: "TEXT",
+            exp.DType.BINARY: "BLOB",
+            exp.DType.VARBINARY: "BLOB",
         }
-        TYPE_MAPPING.pop(exp.DataType.Type.BLOB)
+        TYPE_MAPPING.pop(exp.DType.BLOB)
 
         TOKEN_MAPPING = {
             TokenType.AUTO_INCREMENT: "AUTOINCREMENT",
@@ -208,11 +157,16 @@ class SQLite(Dialect):
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.CurrentVersion: lambda *_: "SQLITE_VERSION()",
             exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.If: rename_func("IIF"),
             exp.ILike: no_ilike_sql,
+            exp.JSONArrayAgg: unsupported_args("order", "null_handling", "return_type", "strict")(
+                rename_func("JSON_GROUP_ARRAY")
+            ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
+            exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e, name="JSON_GROUP_OBJECT"),
             exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
                 rename_func("EDITDIST3")
             ),
@@ -249,6 +203,18 @@ class SQLite(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
+        def bitwiseandagg_sql(self, expression: exp.BitwiseAndAgg) -> str:
+            self.unsupported("BITWISE_AND aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
+
+        def bitwiseoragg_sql(self, expression: exp.BitwiseOrAgg) -> str:
+            self.unsupported("BITWISE_OR aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
+
+        def bitwisexoragg_sql(self, expression: exp.BitwiseXorAgg) -> str:
+            self.unsupported("BITWISE_XOR aggregation is not supported in SQLite")
+            return self.function_fallback_sql(expression)
+
         def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
             if expression.expressions:
                 return self.function_fallback_sql(expression)
@@ -266,6 +232,14 @@ class SQLite(Dialect):
                 return self.func("DATE", expression.this)
 
             return super().cast_sql(expression)
+
+        # Note: SQLite's TRUNC always returns REAL (e.g., trunc(10.99) -> 10.0), not INTEGER.
+        # This creates a transpilation gap affecting division semantics, similar to Presto.
+        # Unlike Presto where this only affects decimals=0, SQLite has no decimals parameter
+        # so every use of TRUNC is affected. Modeling precisely would require exp.FloatTrunc.
+        @unsupported_args("decimals")
+        def trunc_sql(self, expression: exp.Trunc) -> str:
+            return self.func("TRUNC", expression.this)
 
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
             parent = expression.parent
@@ -329,7 +303,7 @@ class SQLite(Dialect):
             return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
 
         def least_sql(self, expression: exp.Least) -> str:
-            if len(expression.expressions) > 1:
+            if expression.expressions:
                 return rename_func("MIN")(self, expression)
 
             return self.sql(expression, "this")

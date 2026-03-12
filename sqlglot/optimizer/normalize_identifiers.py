@@ -63,7 +63,7 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
     if isinstance(expression, str):
         expression = exp.parse_identifier(expression, dialect=dialect)
 
-    for node in expression.walk(prune=lambda n: n.meta.get("case_sensitive")):
+    for node in expression.walk(prune=lambda n: bool(n.meta.get("case_sensitive"))):
         if not node.meta.get("case_sensitive"):
             if store_original_column_identifiers and isinstance(node, exp.Column):
                 # TODO: This does not handle non-column cases, e.g PARSE_JSON(...).key

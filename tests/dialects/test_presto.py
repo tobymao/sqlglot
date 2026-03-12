@@ -718,6 +718,14 @@ class TestPresto(Validator):
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
+
+        # Numeric TRUNCATE
+        self.validate_identity("TRUNCATE(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNCATE(3.14159)").assert_is(exp.Trunc)
+        self.validate_all(
+            "TRUNCATE(3.14159, 2)",
+            read={"postgres": "TRUNC(3.14159, 2)"},
+        )
         self.validate_identity("SELECT * FROM (VALUES (1))")
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
@@ -1044,10 +1052,10 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT sum(n) FROM t",
+            "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT SUM(n) FROM t",
             write={
                 "presto": "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
-                "spark": UnsupportedError,
+                "spark": "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
             },
         )
 
@@ -1135,6 +1143,10 @@ class TestPresto(Validator):
                 "presto": "SELECT NULLABLE FROM system.jdbc.types",
                 "trino": "SELECT NULLABLE FROM system.jdbc.types",
             },
+        )
+
+        self.validate_identity(
+            "SELECT * FROM foo FOR TIMESTAMP AS OF CAST('2020-01-01 00:00:00' AS TIMESTAMP) AS bar"
         )
 
     def test_encode_decode(self):

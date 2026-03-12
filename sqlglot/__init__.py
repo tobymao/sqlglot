@@ -20,7 +20,7 @@ from sqlglot.errors import (
     UnsupportedError as UnsupportedError,
 )
 from sqlglot.expressions import (
-    Expression as Expression,
+    Expr as Expr,
     alias_ as alias,
     and_ as and_,
     case as case,
@@ -87,7 +87,7 @@ def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) ->
 
 def parse(
     sql: str, read: DialectType = None, dialect: DialectType = None, **opts
-) -> t.List[t.Optional[Expression]]:
+) -> t.List[t.Optional[Expr]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -108,7 +108,7 @@ def parse_one(sql: str, *, into: t.Type[E], **opts) -> E: ...
 
 
 @t.overload
-def parse_one(sql: str, **opts) -> Expression: ...
+def parse_one(sql: str, **opts) -> Expr: ...
 
 
 def parse_one(
@@ -117,19 +117,19 @@ def parse_one(
     dialect: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
     **opts,
-) -> Expression:
+) -> Expr:
     """
-    Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.
+    Parses the given SQL string and returns a syntax tree.
 
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
         dialect: the SQL dialect (alias for read)
-        into: the SQLGlot Expression to parse into.
+        into: the SQLGlot Expr to parse into.
         **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
-        The syntax tree for the first parsed statement.
+        A single syntax tree if one statement is parsed, otherwise a Block expression containing all parsed syntax trees.
     """
 
     dialect = Dialect.get_or_raise(read or dialect)
@@ -139,12 +139,10 @@ def parse_one(
     else:
         result = dialect.parse(sql, **opts)
 
-    for expression in result:
-        if not expression:
-            raise ParseError(f"No expression was parsed from '{sql}'")
-        return expression
-    else:
+    if not result or result[0] is None:
         raise ParseError(f"No expression was parsed from '{sql}'")
+
+    return exp.Block(expressions=result) if len(result) > 1 else result[0]
 
 
 def transpile(

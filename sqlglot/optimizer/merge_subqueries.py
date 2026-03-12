@@ -35,10 +35,10 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html
 
     Args:
-        expression (sqlglot.Expression): expression to optimize
+        expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
     Returns:
-        sqlglot.Expression: optimized expression
+        sqlglot.Expr: optimized expression
     """
     expression = merge_ctes(expression, leave_tables_isolated)
     expression = merge_derived_tables(expression, leave_tables_isolated)
@@ -87,10 +87,14 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
         from_or_join = table.find_ancestor(exp.From, exp.Join)
+        if not isinstance(from_or_join, (exp.From, exp.Join)):
+            continue
         if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
             alias = table.alias_or_name
             _rename_inner_sources(outer_scope, inner_scope, alias)
-            _merge_from(outer_scope, inner_scope, table, alias)
+            _merge_from(
+                outer_scope, inner_scope, t.cast(t.Union[exp.Subquery, exp.Table], table), alias
+            )
             _merge_expressions(outer_scope, inner_scope, alias)
             _merge_order(outer_scope, inner_scope)
             _merge_joins(outer_scope, inner_scope, from_or_join)
@@ -105,8 +109,12 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
+            if not isinstance(from_or_join, (exp.From, exp.Join)):
+                continue
             alias = subquery.alias_or_name
             inner_scope = outer_scope.sources[alias]
+            if not isinstance(inner_scope, Scope):
+                continue
             if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
@@ -130,6 +138,8 @@ def _mergeable(
 
     def _is_a_window_expression_in_unmergable_operation():
         window_aliases = {s.alias_or_name for s in inner_select.selects if s.find(exp.Window)}
+        if not window_aliases:
+            return False
         inner_select_name = from_or_join.alias_or_name
         unmergable_window_columns = [
             column
@@ -138,12 +148,10 @@ def _mergeable(
                 exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc
             )
         ]
-        window_expressions_in_unmergable = [
-            column
+        return any(
+            column.table == inner_select_name and column.name in window_aliases
             for column in unmergable_window_columns
-            if column.table == inner_select_name and column.name in window_aliases
-        ]
-        return any(window_expressions_in_unmergable)
+        )
 
     def _outer_select_joins_on_inner_select_join():
         """
@@ -322,13 +330,16 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         if not projection_name:
             continue
         columns_to_replace = outer_columns.get(projection_name, [])
+        if not columns_to_replace:
+            continue
 
         expression = expression.unalias()
         must_wrap_expression = not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
 
         is_number = expression.is_number
+        last = len(columns_to_replace) - 1
 
-        for column in columns_to_replace:
+        for i, column in enumerate(columns_to_replace):
             parent = column.parent
 
             # Ensures that we don't merge literal numbers in GROUP BY as they have positional context
@@ -347,7 +358,9 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
             if isinstance(parent, exp.Select) and column.name != expression.name:
                 expression = exp.alias_(expression, column.name)
 
-            column.replace(expression.copy())
+            # Skip the expensive deep copy for the last reference since the inner query
+            # is about to be removed, so we can move the expression directly
+            column.replace(expression.copy() if i < last else expression)
 
 
 def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
@@ -382,7 +395,7 @@ def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
             from_or_join.set("on", from_or_join.args.get("on"))
             return
 
-    expression.where(where.this, copy=False)
+    t.cast(exp.Select, expression).where(where.this, copy=False)
 
 
 def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
@@ -393,6 +406,10 @@ def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
         outer_scope (sqlglot.optimizer.scope.Scope)
         inner_scope (sqlglot.optimizer.scope.Scope)
     """
+    inner_order = inner_scope.expression.args.get("order")
+    if not inner_order:
+        return
+
     if (
         any(
             outer_scope.expression.args.get(arg) for arg in ["group", "distinct", "having", "order"]
@@ -402,7 +419,7 @@ def _merge_order(outer_scope: Scope, inner_scope: Scope) -> None:
     ):
         return
 
-    outer_scope.expression.set("order", inner_scope.expression.args.get("order"))
+    outer_scope.expression.set("order", inner_order)
 
 
 def _merge_hints(outer_scope: Scope, inner_scope: Scope) -> None:
@@ -425,7 +442,11 @@ def _pop_cte(inner_scope: Scope) -> None:
         inner_scope (sqlglot.optimizer.scope.Scope)
     """
     cte = inner_scope.expression.parent
+    if not cte:
+        return
     with_ = cte.parent
+    if not with_:
+        return
     if len(with_.expressions) == 1:
         with_.pop()
     else:

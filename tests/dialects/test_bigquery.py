@@ -265,6 +265,9 @@ class TestBigQuery(Validator):
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            "SELECT * FROM foo AS t0 FOR SYSTEM_TIME AS OF '2026-02-12T23:22:21.743416+00:00'",
+        )
+        self.validate_identity(
             '''SELECT b"\\x0a$'x'00"''',
             """SELECT b'\\x0a$\\'x\\'00'""",
         )
@@ -2876,7 +2879,6 @@ OPTIONS (
                 "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
                 "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
                 "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
-                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
                 "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
                 "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
             },
@@ -2884,8 +2886,8 @@ OPTIONS (
                 "bigquery": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
                 "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
                 "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
-                "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
-                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
+                "snowflake": "REGEXP_SUBSTR_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
+                "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]')",
                 "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
                 "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', 'a[0-9]', 0)",
             },
@@ -2898,7 +2900,7 @@ OPTIONS (
                 "bigquery": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
                 "trino": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
                 "presto": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
-                "snowflake": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1, 1, 'c', 1)",
+                "snowflake": "REGEXP_SUBSTR_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1, 1, 'c', 1)",
                 "duckdb": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]', 1)",
                 "spark": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
                 "databricks": "REGEXP_EXTRACT_ALL('a1_a2a3_a4A5a6', '(a)[0-9]')",
@@ -3212,7 +3214,7 @@ OPTIONS (
             write={
                 "bigquery": "SELECT id, mnth FROM t CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(start_month, DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL '1' MONTH)) AS mnth",
                 "duckdb": "SELECT id, mnth FROM t CROSS JOIN UNNEST(CAST(GENERATE_SERIES(start_month, DATE_TRUNC('MONTH', CURRENT_DATE), INTERVAL '1' MONTH) AS DATE[])) AS _t0(mnth)",
-                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) AS mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1 - 1) + 1)) AS _t0(seq, key, path, index, mnth, this)",
+                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) AS mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1)) AS _t0(seq, key, path, index, mnth, this)",
             },
         )
         self.validate_all(
@@ -3220,7 +3222,7 @@ OPTIONS (
             write={
                 "bigquery": "SELECT id, mnth AS a_mnth FROM t CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(start_month, DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL '1' MONTH)) AS mnth",
                 "duckdb": "SELECT id, mnth AS a_mnth FROM t CROSS JOIN UNNEST(CAST(GENERATE_SERIES(start_month, DATE_TRUNC('MONTH', CURRENT_DATE), INTERVAL '1' MONTH) AS DATE[])) AS _t0(mnth)",
-                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) AS a_mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1 - 1) + 1)) AS _t0(seq, key, path, index, mnth, this)",
+                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) AS a_mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1)) AS _t0(seq, key, path, index, mnth, this)",
             },
         )
         self.validate_all(
@@ -3228,7 +3230,7 @@ OPTIONS (
             write={
                 "bigquery": "SELECT id, mnth + 1 AS a_mnth FROM t CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(start_month, DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL '1' MONTH)) AS mnth",
                 "duckdb": "SELECT id, mnth + 1 AS a_mnth FROM t CROSS JOIN UNNEST(CAST(GENERATE_SERIES(start_month, DATE_TRUNC('MONTH', CURRENT_DATE), INTERVAL '1' MONTH) AS DATE[])) AS _t0(mnth)",
-                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) + 1 AS a_mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1 - 1) + 1)) AS _t0(seq, key, path, index, mnth, this)",
+                "snowflake": "SELECT id, DATEADD(MONTH, CAST(mnth AS INT), CAST(start_month AS DATE)) + 1 AS a_mnth FROM t, LATERAL FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, DATEDIFF(MONTH, start_month, DATE_TRUNC('MONTH', CURRENT_DATE)) + 1)) AS _t0(seq, key, path, index, mnth, this)",
             },
         )
 
@@ -3265,6 +3267,45 @@ OPTIONS (
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
+
+        week_trunc = {
+            "MONDAY": ("WEEK(MONDAY)", "DATE_TRUNC('WEEK', date)"),
+            "TUESDAY": (
+                "WEEK(TUESDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-1' DAY) + INTERVAL '1' DAY AS DATE)",
+            ),
+            "WEDNESDAY": (
+                "WEEK(WEDNESDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-2' DAY) + INTERVAL '2' DAY AS DATE)",
+            ),
+            "THURSDAY": (
+                "WEEK(THURSDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-3' DAY) + INTERVAL '3' DAY AS DATE)",
+            ),
+            "FRIDAY": (
+                "WEEK(FRIDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-4' DAY) + INTERVAL '4' DAY AS DATE)",
+            ),
+            "SATURDAY": (
+                "WEEK(SATURDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-5' DAY) + INTERVAL '5' DAY AS DATE)",
+            ),
+            "SUNDAY": (
+                "WEEK",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '1' DAY) + INTERVAL '-1' DAY AS DATE)",
+            ),
+        }
+        for day, (bq_unit, duckdb_sql) in week_trunc.items():
+            with self.subTest(
+                f"Testing transpilation of DATE_TRUNC from Bigquery to Duckdb for unit: {day}"
+            ):
+                self.validate_all(
+                    f"SELECT DATE_TRUNC(date, WEEK({day}))",
+                    write={
+                        "bigquery": f"SELECT DATE_TRUNC(date, {bq_unit})",
+                        "duckdb": f"SELECT {duckdb_sql}",
+                    },
+                )
 
         # BigQuery → DuckDB transpilation tests for DATE_DIFF with week units
         self.validate_all(

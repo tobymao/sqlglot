@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, tokens
 from sqlglot.dialects import Dialect, Hive, Trino
+from sqlglot.parsers.athena import AthenaParser
 from sqlglot.tokens import TokenType, Token
 
 
@@ -56,19 +57,19 @@ class Athena(Dialect):
         opts["trino"] = self._trino
         return super().tokenize(sql, **opts)
 
-    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
+    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expr]]:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().parse(sql, **opts)
 
     def parse_into(
         self, expression_type: exp.IntoType, sql: str, **opts
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[t.Optional[exp.Expr]]:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().parse_into(expression_type, sql, **opts)
 
-    def generate(self, expression: exp.Expression, copy: bool = True, **opts) -> str:
+    def generate(self, expression: exp.Expr, copy: bool = True, **opts) -> str:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().generate(expression, copy=copy, **opts)
@@ -109,34 +110,7 @@ class Athena(Dialect):
 
             return self._trino_tokenizer.tokenize(sql)
 
-    class Parser(parser.Parser):
-        def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-            hive = kwargs.pop("hive", None) or Hive()
-            trino = kwargs.pop("trino", None) or Trino()
-
-            super().__init__(*args, **kwargs)
-
-            self._hive_parser = hive.parser(*args, **{**kwargs, "dialect": hive})
-            self._trino_parser = _TrinoParser(*args, **{**kwargs, "dialect": trino})
-
-        def parse(
-            self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-        ) -> t.List[t.Optional[exp.Expression]]:
-            if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
-                return self._hive_parser.parse(raw_tokens[1:], sql)
-
-            return self._trino_parser.parse(raw_tokens, sql)
-
-        def parse_into(
-            self,
-            expression_types: exp.IntoType,
-            raw_tokens: t.List[Token],
-            sql: t.Optional[str] = None,
-        ) -> t.List[t.Optional[exp.Expression]]:
-            if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
-                return self._hive_parser.parse_into(expression_types, raw_tokens[1:], sql)
-
-            return self._trino_parser.parse_into(expression_types, raw_tokens, sql)
+    Parser = AthenaParser
 
     class Generator(generator.Generator):
         def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
@@ -148,7 +122,7 @@ class Athena(Dialect):
             self._hive_generator = _HiveGenerator(*args, **{**kwargs, "dialect": hive})
             self._trino_generator = _TrinoGenerator(*args, **{**kwargs, "dialect": trino})
 
-        def generate(self, expression: exp.Expression, copy: bool = True) -> str:
+        def generate(self, expression: exp.Expr, copy: bool = True) -> str:
             if _generate_as_hive(expression):
                 generator = self._hive_generator
             else:
@@ -182,7 +156,7 @@ def _tokenize_as_hive(tokens: t.List[Token]) -> bool:
     return False
 
 
-def _generate_as_hive(expression: exp.Expression) -> bool:
+def _generate_as_hive(expression: exp.Expr) -> bool:
     if isinstance(expression, exp.Create):
         if expression.kind == "TABLE":
             properties = expression.args.get("properties")
@@ -267,13 +241,6 @@ class _TrinoTokenizer(Trino.Tokenizer):
 
 
 # Athena extensions to Trino's parser
-class _TrinoParser(Trino.Parser):
-    STATEMENT_PARSERS = {
-        **Trino.Parser.STATEMENT_PARSERS,
-        TokenType.USING: lambda self: self._parse_as_command(self._prev),
-    }
-
-
 # Athena extensions to Trino's generator
 class _TrinoGenerator(Trino.Generator):
     PROPERTIES_LOCATION = {

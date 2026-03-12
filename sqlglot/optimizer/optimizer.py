@@ -40,7 +40,7 @@ RULES = (
 
 
 def optimize(
-    expression: str | exp.Expression,
+    expression: str | exp.Expr,
     schema: t.Optional[dict | Schema] = None,
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
@@ -48,7 +48,7 @@ def optimize(
     rules: t.Sequence[t.Callable] = RULES,
     sql: t.Optional[str] = None,
     **kwargs,
-) -> exp.Expression:
+) -> exp.Expr:
     """
     Rewrite a sqlglot AST into an optimized form.
 

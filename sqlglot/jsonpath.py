@@ -7,7 +7,6 @@ from sqlglot.errors import ParseError
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import Lit
     from sqlglot.dialects.dialect import DialectType
 
 
@@ -66,11 +65,13 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         return f"{msg} at index {i}: {path}"
 
     @t.overload
-    def _match(token_type: TokenType, raise_unmatched: Lit[True] = True) -> Token:
+    def _match(token_type: TokenType, raise_unmatched: t.Literal[True] = True) -> Token:
         pass
 
     @t.overload
-    def _match(token_type: TokenType, raise_unmatched: Lit[False] = False) -> t.Optional[Token]:
+    def _match(
+        token_type: TokenType, raise_unmatched: t.Literal[False] = False
+    ) -> t.Optional[Token]:
         pass
 
     def _match(token_type, raise_unmatched=False):
@@ -213,7 +214,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     return exp.JSONPath(expressions=expressions)
 
 
-JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
+JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = {
     exp.JSONPathFilter: lambda _, e: f"?{e.this}",
     exp.JSONPathKey: lambda self, e: self._jsonpathkey_sql(e),
     exp.JSONPathRecursive: lambda _, e: f"..{e.this or ''}",

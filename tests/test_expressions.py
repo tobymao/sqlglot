@@ -6,7 +6,7 @@ import unittest
 from sqlglot import ParseError, alias, exp, parse_one
 
 
-class TestExpressions(unittest.TestCase):
+class TestExprs(unittest.TestCase):
     maxDiff = None
 
     def test_to_s(self):
@@ -239,7 +239,9 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(exp.table_name(exp.to_table("@foo", dialect="snowflake")), "@foo")
         self.assertEqual(exp.table_name(bq_dashed_table, identify=True), '"a-1"."b"."c"')
         self.assertEqual(
-            exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
+            exp.table_name(
+                parse_one("foo.`{bar,er}`", read="databricks", into=exp.Table), dialect="databricks"
+            ),
             "foo.`{bar,er}`",
         )
         self.assertEqual(
@@ -665,8 +667,8 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
         self.assertEqual(len(list(expression.walk())), 9)
         self.assertEqual(len(list(expression.walk(bfs=False))), 9)
-        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk()))
-        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk(bfs=False)))
+        self.assertTrue(all(isinstance(e, exp.Expr) for e in expression.walk()))
+        self.assertTrue(all(isinstance(e, exp.Expr) for e in expression.walk(bfs=False)))
 
     def test_str_position_order(self):
         str_position_exp = parse_one("STR_POSITION('mytest', 'test')")
@@ -1243,7 +1245,7 @@ FROM foo""",
         parse_one("x").assert_is(exp.Column)
 
         with self.assertRaisesRegex(
-            AssertionError, "x is not <class 'sqlglot.expressions.Identifier'>\\."
+            AssertionError, "x is not <class 'sqlglot.expressions.core.Identifier'>\\."
         ):
             parse_one("x").assert_is(exp.Identifier)
 
@@ -1286,7 +1288,19 @@ FROM foo""",
         assert expr == expr
 
     def test_literal_number(self):
-        for number in (1, -1.1, 1.1, 0, "-1", "1", "1.1", "-1.1", "1e6"):
+        for number in (
+            1,
+            -1.1,
+            1.1,
+            0,
+            "-1",
+            "1",
+            "1.1",
+            "-1.1",
+            "1e6",
+            "inf",
+            "binary_double_nan",
+        ):
             with self.subTest(f"Test Literal number method for: {repr(number)}"):
                 literal = exp.Literal.number(number)
 
@@ -1308,3 +1322,11 @@ FROM foo""",
                     this = literal.this
 
                 self.assertEqual(this, expected_this)
+
+    def test_update_positions_empty_meta(self):
+        expr1 = exp.Column(this="a")
+        expr2 = exp.Column(this="b")
+        expr2.meta.clear()
+
+        expr1.update_positions(expr2)
+        assert expr1.meta == {}

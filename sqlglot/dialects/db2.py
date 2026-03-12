@@ -100,8 +100,7 @@ class Db2(Dialect):
             "SYSTOOLS": TokenType.SCHEMA,
         }
 
-    class Parser(Db2Parser):
-        pass
+    Parser = Db2Parser
 
     class Generator(generator.Generator):
         LIMIT_FETCH = "FETCH"

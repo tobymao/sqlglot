@@ -586,7 +586,7 @@ x + interval '1' month
 | BigQuery | Official |
 | ClickHouse | Official |
 | Databricks | Official |
-| Db2 | Official |
+| Db2 | Community |
 | Doris | Community |
 | Dremio | Community |
 | Drill | Community |

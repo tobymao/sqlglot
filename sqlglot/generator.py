@@ -2831,11 +2831,11 @@ class Generator(metaclass=_Generator):
                 window_this = None
                 spec = None
 
-            # Bigquery supports NULLS FIRST/LAST with ROWS spec for some aggregate functions
+            # Some window functions (e.g. LAST_VALUE, RANK) support NULLS FIRST/LAST
+            # without a spec or with a ROWS spec, but not with RANGE
             if not (
-                spec
-                and spec.text("kind").upper() == "ROWS"
-                and isinstance(window_this, self.WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING)
+                isinstance(window_this, self.WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING)
+                and (not spec or spec.text("kind").upper() == "ROWS")
             ):
                 if window_this and spec:
                     self.unsupported(

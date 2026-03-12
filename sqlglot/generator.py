@@ -2835,7 +2835,7 @@ class Generator(metaclass=_Generator):
             # with a ROWS spec in some dialects like BigQuery
             if not (
                 spec
-                and spec.args.get("kind") == "ROWS"
+                and spec.text("kind").upper() == "ROWS"
                 and isinstance(window_this, self.WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING)
             ):
                 if window_this and spec:

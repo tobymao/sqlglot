@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     max_or_greatest,
     min_or_least,
     rename_func,
-    strposition_sql,
     trim_sql,
     no_ilike_sql,
     no_pivot_sql,
@@ -19,7 +18,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    pass
 
 
 def _date_add_sql(
@@ -44,14 +43,14 @@ def _date_add_sql(
 class DB2(Dialect):
     # DB2 is case-insensitive by default for unquoted identifiers
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
-    
+
     # DB2 supports NULL ordering
     NULL_ORDERING = "nulls_are_large"
-    
+
     # DB2 specific settings
     TYPED_DIVISION = True
     SAFE_DIVISION = True
-    
+
     # Time format mappings for DB2
     # https://www.ibm.com/docs/en/db2/11.5?topic=functions-timestamp-format
     TIME_MAPPING = {
@@ -112,14 +111,14 @@ class DB2(Dialect):
                 this=exp.var("DAYOFYEAR"), expression=seq_get(args, 0)
             ),
             "DAYS": lambda args: exp.DateDiff(
-                this=seq_get(args, 0), expression=exp.Literal.string("1970-01-01"), unit=exp.var("DAY")
+                this=seq_get(args, 0),
+                expression=exp.Literal.string("1970-01-01"),
+                unit=exp.var("DAY"),
             ),
             "MIDNIGHT_SECONDS": lambda args: exp.Anonymous(
                 this="MIDNIGHT_SECONDS", expressions=args
             ),
-            "POSSTR": lambda args: exp.StrPosition(
-                this=seq_get(args, 0), substr=seq_get(args, 1)
-            ),
+            "POSSTR": lambda args: exp.StrPosition(this=seq_get(args, 0), substr=seq_get(args, 1)),
             "VARCHAR_FORMAT": lambda args: exp.TimeToStr(
                 this=seq_get(args, 0), format=seq_get(args, 1)
             ),
@@ -137,7 +136,7 @@ class DB2(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
-        
+
         # DB2 uses CONCAT operator
         CONCAT_COALESCE = True
 
@@ -160,7 +159,8 @@ class DB2(Dialect):
             exp.ArgMin: rename_func("MIN"),
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
-            exp.DateDiff: lambda self, e: f"{self.func('DAYS', e.this)} - {self.func('DAYS', e.expression)}",
+            exp.DateDiff: lambda self,
+            e: f"{self.func('DAYS', e.this)} - {self.func('DAYS', e.expression)}",
             exp.CurrentDate: lambda self, e: "CURRENT DATE",
             exp.CurrentTimestamp: lambda self, e: "CURRENT TIMESTAMP",
             exp.ILike: no_ilike_sql,
@@ -202,29 +202,29 @@ class DB2(Dialect):
                 if precision:
                     return f"DECIMAL({self.expressions(expression, flat=True)})"
                 return "DECIMAL(31, 0)"
-            
+
             return super().datatype_sql(expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             # DB2 uses different CAST syntax for some types
             to_type = expression.to
-            
+
             if to_type.this == exp.DataType.Type.CHAR:
                 # DB2 CHAR casting
                 return f"CHAR({self.sql(expression.this)})"
-            
+
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def extract_sql(self, expression: exp.Extract) -> str:
             this = self.sql(expression, "this")
             expression_sql = self.sql(expression, "expression")
-            
+
             # DB2 uses different function names for some extracts
             if this.upper() == "DAYOFWEEK":
                 return f"DAYOFWEEK({expression_sql})"
             elif this.upper() == "DAYOFYEAR":
                 return f"DAYOFYEAR({expression_sql})"
-            
+
             return f"EXTRACT({this} FROM {expression_sql})"
 
         def concat_sql(self, expression: exp.Concat) -> str:
@@ -232,7 +232,6 @@ class DB2(Dialect):
             expressions = expression.expressions
             if len(expressions) == 2:
                 return f"{self.sql(expressions[0])} || {self.sql(expressions[1])}"
-            
+
             # For multiple arguments, use nested CONCAT or multiple ||
             return " || ".join(self.sql(e) for e in expressions)
-

@@ -43,6 +43,7 @@ SOURCE_FILES = [
         ],
     ),
     *_subpkg_files("parsers"),
+    *_subpkg_files("executor", ["table.py"]),
 ]
 
 

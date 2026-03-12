@@ -9,7 +9,7 @@ from sqlglot.errors import SchemaError
 from sqlglot.helper import dict_depth, first
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
-from sqlglot.helper import mypyc_attr, trait
+from sqlglot.helper import trait
 
 
 if t.TYPE_CHECKING:
@@ -147,7 +147,6 @@ class Schema(abc.ABC):
         return True
 
 
-@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class AbstractMappingSchema:
     def __init__(
         self,

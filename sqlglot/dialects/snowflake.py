@@ -576,7 +576,7 @@ class Snowflake(Dialect):
                 "ARRAY_CONTAINS",
                 e.expression
                 if e.args.get("ensure_variant") is False
-                else exp.cast(e.expression, exp.DType.VARIANT, copy=False),
+                else exp.ToVariant(this=e.expression),
                 e.this,
             ),
             exp.ArrayPosition: lambda self, e: self.func(
@@ -683,7 +683,6 @@ class Snowflake(Dialect):
             exp.ToBoolean: lambda self, e: self.func(
                 f"{'TRY_' if e.args.get('safe') else ''}TO_BOOLEAN", e.this
             ),
-            exp.ToVariant: lambda self, e: self.func("TO_VARIANT", e.this),
             exp.ToDouble: lambda self, e: self.func(
                 f"{'TRY_' if e.args.get('safe') else ''}TO_DOUBLE", e.this, e.args.get("format")
             ),
@@ -896,8 +895,6 @@ class Snowflake(Dialect):
                 return self.func("TO_GEOGRAPHY", expression.this)
             if expression.is_type(exp.DType.GEOMETRY):
                 return self.func("TO_GEOMETRY", expression.this)
-            if expression.is_type(exp.DType.VARIANT):
-                return self.func("TO_VARIANT", expression.this)
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
 

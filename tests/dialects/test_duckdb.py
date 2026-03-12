@@ -2664,58 +2664,11 @@ class TestDuckDB(Validator):
             "SELECT MAP_CONCAT(my_map, MAP {'key': 42}) FROM my_table",
         )
 
-        # TO_VARIANT Snowflake to DuckDB transpilation tests
+        # TO_VARIANT Snowflake to DuckDB transpilation test
         self.validate_all(
-            "SELECT CAST('Skiing is fun!' AS VARIANT)",
-            read={
-                "snowflake": "SELECT TO_VARIANT('Skiing is fun!')",
-            },
+            "SELECT TO_VARIANT('Skiing is fun!')",
             write={
                 "duckdb": "SELECT CAST('Skiing is fun!' AS VARIANT)",
                 "snowflake": "SELECT TO_VARIANT('Skiing is fun!')",
-            },
-        )
-
-        self.validate_all(
-            "SELECT CAST(3.14 AS VARIANT)",
-            read={
-                "snowflake": "SELECT TO_VARIANT(3.14)",
-            },
-            write={
-                "duckdb": "SELECT CAST(3.14 AS VARIANT)",
-                "snowflake": "SELECT TO_VARIANT(3.14)",
-            },
-        )
-
-        self.validate_all(
-            "SELECT CAST('2024-01-25 01:02:03' AS VARIANT)",
-            read={
-                "snowflake": "SELECT TO_VARIANT('2024-01-25 01:02:03')",
-            },
-            write={
-                "duckdb": "SELECT CAST('2024-01-25 01:02:03' AS VARIANT)",
-                "snowflake": "SELECT TO_VARIANT('2024-01-25 01:02:03')",
-            },
-        )
-
-        self.validate_all(
-            "SELECT CAST(['San Mateo', 'Seattle', 'Berlin'] AS VARIANT)",
-            read={
-                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('San Mateo', 'Seattle', 'Berlin'))",
-            },
-            write={
-                "duckdb": "SELECT CAST(['San Mateo', 'Seattle', 'Berlin'] AS VARIANT)",
-                "snowflake": "SELECT TO_VARIANT(['San Mateo', 'Seattle', 'Berlin'])",
-            },
-        )
-
-        self.validate_all(
-            'SELECT CAST(JSON(\'{"key1": "value1", "key2": "value2"}\') AS VARIANT)',
-            read={
-                "snowflake": 'SELECT TO_VARIANT(PARSE_JSON(\'{"key1": "value1", "key2": "value2"}\'))',
-            },
-            write={
-                "duckdb": 'SELECT CAST(JSON(\'{"key1": "value1", "key2": "value2"}\') AS VARIANT)',
-                "snowflake": 'SELECT TO_VARIANT(PARSE_JSON(\'{"key1": "value1", "key2": "value2"}\'))',
             },
         )

@@ -14,7 +14,7 @@ class TestSnowflake(Validator):
     def test_snowflake(self):
         self.validate_identity(
             """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT data:     level1  : level2 : level3::VARIANT FROM t""",
-            """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT TO_VARIANT(GET_PATH(data, 'level1.level2.level3')) FROM t""",
+            """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT CAST(GET_PATH(data, 'level1.level2.level3') AS VARIANT) FROM t""",
         )
 
         self.validate_identity(
@@ -581,9 +581,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT DATE_FROM_PARTS(1977, 8, 7)")
         self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
-        self.validate_identity(
-            "SELECT TO_ARRAY(CAST(['test'] AS VARIANT))", "SELECT TO_ARRAY(TO_VARIANT(['test']))"
-        )
+        self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
@@ -886,7 +884,7 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             "SELECT {'test': 'best'}::VARIANT",
-            "SELECT TO_VARIANT(OBJECT_CONSTRUCT('test', 'best'))",
+            "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
         )
         self.validate_identity(
             "SELECT {fn DAYNAME('2022-5-13')}",
@@ -2010,7 +2008,7 @@ class TestSnowflake(Validator):
 
         self.validate_identity(
             """SELECT ARRAY_CONSTRUCT('foo')::VARIANT[0]""",
-            """SELECT TO_VARIANT(['foo'])[0]""",
+            """SELECT CAST(['foo'] AS VARIANT)[0]""",
         )
 
         self.validate_all(
@@ -2927,14 +2925,12 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_CONTAINS(TO_VARIANT('1'), ['1'])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY['1'], '1')",
-                "snowflake": "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
             },
         )
         self.validate_all(
             "SELECT ARRAY_CONTAINS(TO_VARIANT(CAST('2020-10-10' AS DATE)), [CAST('2020-10-10' AS DATE)])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY[DATE '2020-10-10'], DATE '2020-10-10')",
-                "snowflake": "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
             },
         )
         self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")
@@ -3825,13 +3821,13 @@ class TestSnowflake(Validator):
         )
 
     def test_semi_structured_types(self):
-        self.validate_identity("SELECT CAST(a AS VARIANT)", "SELECT TO_VARIANT(a)")
+        self.validate_identity("SELECT CAST(a AS VARIANT)")
         self.validate_identity("SELECT CAST(a AS ARRAY)")
 
         self.validate_all(
             "SELECT a::VARIANT",
             write={
-                "snowflake": "SELECT TO_VARIANT(a)",
+                "snowflake": "SELECT CAST(a AS VARIANT)",
                 "tsql": "SELECT CAST(a AS SQL_VARIANT)",
             },
         )

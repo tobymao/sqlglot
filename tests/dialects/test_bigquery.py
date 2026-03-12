@@ -2695,7 +2695,7 @@ OPTIONS (
                 },
             )
 
-    def test_null_ordering_in_analytic_functions(self):
+    def test_null_ordering_with_rows_frame(self):
         for func_call in (
             "FIRST_VALUE(col1)",
             "LAST_VALUE(col1)",

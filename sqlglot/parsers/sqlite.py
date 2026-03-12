@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.helper import mypyc_attr
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -16,12 +15,16 @@ def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class SQLiteParser(parser.Parser):
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True
     ADD_JOIN_ON_TRUE = True
+
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,

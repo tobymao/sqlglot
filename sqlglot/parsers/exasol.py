@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
     build_timetostr_or_tochar,
     build_trunc,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
@@ -28,8 +28,12 @@ def _build_nullifzero(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class ExasolParser(parser.Parser):
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+        TokenType.ANTI,
+        TokenType.SEMI,
+    }
+
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         **{f"ADD_{unit}S": build_date_delta(exp.DateAdd, default_unit=unit) for unit in DATE_UNITS},

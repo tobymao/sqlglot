@@ -163,7 +163,9 @@ class BigQueryParser(parser.Parser):
 
     TABLE_ALIAS_TOKENS: t.ClassVar = {
         *parser.Parser.TABLE_ALIAS_TOKENS,
+        TokenType.ANTI,
         TokenType.GRANT,
+        TokenType.SEMI,
     } - {TokenType.ASC, TokenType.DESC}
 
     COMMENT_TABLE_ALIAS_TOKENS: t.ClassVar = {

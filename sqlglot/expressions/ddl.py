@@ -23,8 +23,7 @@ class DDL(Selectable):
     @property
     def selects(self) -> t.List[Expr]:
         """If this statement contains a query (e.g. a CTAS), this returns the query's projections."""
-        # TODO (mypyc): make this self.expression
-        expression = self.args.get("expression")
+        expression = self.expression
         return expression.selects if isinstance(expression, Query) else []
 
     @property
@@ -33,8 +32,7 @@ class DDL(Selectable):
         If this statement contains a query (e.g. a CTAS), this returns the output
         names of the query's projections.
         """
-        # TODO (mypyc): make this self.expression
-        expression = self.args.get("expression")
+        expression = self.expression
         return expression.named_selects if isinstance(expression, Query) else []
 
 

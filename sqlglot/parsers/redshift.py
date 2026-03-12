@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.parser import build_convert_timezone
 from sqlglot.tokens import TokenType
@@ -28,7 +28,6 @@ def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _builder
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class RedshiftParser(PostgresParser):
     FUNCTIONS = {
         **{k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "GET_BIT"},
@@ -105,7 +104,7 @@ class RedshiftParser(PostgresParser):
 
     def _parse_projections(self) -> t.Tuple[t.List[exp.Expr], t.Optional[t.List[exp.Expr]]]:
         projections, _ = super()._parse_projections()
-        if self._prev and self._prev.text.upper() == "EXCLUDE" and self._curr:
+        if self._prev.text.upper() == "EXCLUDE" and self._curr:
             self._retreat(self._index - 1)
 
         # EXCLUDE clause always comes at the end of the projection list and applies to it as a whole

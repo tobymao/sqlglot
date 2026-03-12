@@ -9,7 +9,7 @@ endif
 SO_BACKUP := /tmp/sqlglot_so_backup
 
 hidec:
-	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - --remove-files 2>/dev/null; true
+	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - 2>/dev/null && find sqlglot sqlglotc -name "*.so" -delete; true
 
 showc:
 	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true
@@ -24,7 +24,6 @@ install:
 install-dev:
 	$(PIP) install -e ".[dev]"
 	git submodule update --init 2>/dev/null || true
-	git config --local submodule.recurse true 2>/dev/null || true
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo ""; \
 		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
@@ -48,6 +47,8 @@ install-pre-commit:
 	pre-commit install --hook-type post-checkout
 	pre-commit install --hook-type pre-push
 	pre-commit install --hook-type post-merge
+	@printf '#!/bin/bash\n.github/scripts/integration_tests_sync.sh post-commit\n' > .git/hooks/post-commit
+	@chmod +x .git/hooks/post-commit
 
 bench: bench-parse bench-optimize
 

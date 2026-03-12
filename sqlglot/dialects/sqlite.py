@@ -79,7 +79,6 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
-    SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False

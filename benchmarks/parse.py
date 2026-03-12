@@ -1,41 +1,12 @@
-import collections
-import collections.abc
-import pyperf
+import inspect
+import os
+import subprocess
+import sys
+import tempfile
+import time
 
-# Patch for Python 3.10+ compatibility with legacy parsers (moz_sql_parser)
-collections.Iterable = collections.abc.Iterable
 
-try:
-    import sqlfluff
-except ImportError:
-    sqlfluff = None
-
-try:
-    import moz_sql_parser
-except ImportError:
-    moz_sql_parser = None
-
-try:
-    import sqloxide
-except ImportError:
-    sqloxide = None
-
-try:
-    import sqlparse
-except ImportError:
-    sqlparse = None
-
-try:
-    import sqltree
-except ImportError:
-    sqltree = None
-
-try:
-    import polyglot_sql
-except ImportError:
-    polyglot_sql = None
-
-import sqlglot  # noqa: E402
+# --- Query definitions ---
 
 large_in = (
     "SELECT * FROM t WHERE x IN (" + ", ".join(f"'s{i}'" for i in range(20000)) + ")"
@@ -62,7 +33,7 @@ deep_arithmetic += "*".join(str(i) for i in range(500))
 deep_arithmetic += " AS b FROM x"
 
 nested_subqueries = (
-    "SELECT * FROM " + "".join("(SELECT * FROM " for _ in range(50)) + "t" + ")" * 50
+    "SELECT * FROM " + "".join("(SELECT * FROM " for _ in range(20)) + "t" + ")" * 20
 )
 
 many_columns = "SELECT " + ", ".join(f"c{i}" for i in range(1000)) + " FROM t"
@@ -90,7 +61,7 @@ many_windows = (
     + " FROM t"
 )
 
-nested_functions = "SELECT " + "COALESCE(" * 50 + "x" + ", NULL)" * 50 + " FROM t"
+nested_functions = "SELECT " + "COALESCE(" * 20 + "x" + ", NULL)" * 20 + " FROM t"
 
 large_strings = "SELECT " + ", ".join(f"'{'x' * 100}'" for i in range(500)) + " FROM t"
 
@@ -191,35 +162,6 @@ ORDER BY
 LIMIT 100
 """
 
-
-def sqlglot_parse(sql):
-    sqlglot.parse_one(sql, error_level=sqlglot.ErrorLevel.IGNORE)
-
-
-def sqltree_parse(sql):
-    sqltree.api.sqltree(sql.replace('"', "`").replace("''", '"'))
-
-
-def sqlparse_parse(sql):
-    sqlparse.parse(sql)
-
-
-def moz_sql_parser_parse(sql):
-    moz_sql_parser.parse(sql)
-
-
-def sqloxide_parse(sql):
-    sqloxide.parse_sql(sql, dialect="ansi")
-
-
-def sqlfluff_parse(sql):
-    sqlfluff.parse(sql)
-
-
-def polyglot_sql_parse(sql):
-    polyglot_sql.parse(sql)
-
-
 QUERIES = {
     "tpch": tpch,
     "short": short,
@@ -240,42 +182,278 @@ QUERIES = {
 }
 
 
-def _can_parse(fn, sql):
-    try:
-        fn(sql)
-        return True
-    except Exception:
-        return False
+# --- Parser definitions ---
 
 
-LARGE_QUERIES = {"large_in", "values", "many_unions", "many_numbers"}
+def sqlglot_parse(sql):
+    import sqlglot
+
+    sqlglot.parse_one(sql, error_level=sqlglot.ErrorLevel.IGNORE)
 
 
-def run_benchmarks():
+def sqltree_parse(sql):
+    import sqltree
+
+    sqltree.api.sqltree(sql.replace('"', "`").replace("''", '"'))
+
+
+def sqlparse_parse(sql):
+    import sqlparse
+
+    sqlparse.parse(sql)
+
+
+def moz_sql_parser_parse(sql):
+    import moz_sql_parser
+
+    moz_sql_parser.parse(sql)
+
+
+def sqloxide_parse(sql):
+    import sqloxide
+
+    sqloxide.parse_sql(sql, dialect="ansi")
+
+
+def sqlfluff_parse(sql):
+    import sqlfluff
+
+    sqlfluff.parse(sql)
+
+
+def polyglot_sql_parse(sql):
+    import polyglot_sql
+
+    polyglot_sql.parse_one(sql)
+
+
+THIRD_PARTY_PARSERS = {
+    "sqltree": sqltree_parse,
+    "sqlparse": sqlparse_parse,
+    "sqlfluff": sqlfluff_parse,
+    "moz_sql_parser": moz_sql_parser_parse,
+    "sqloxide": sqloxide_parse,
+    "polyglot_sql": polyglot_sql_parse,
+}
+
+DISPLAY_NAMES = {
+    "sqlglot": "sqlglot",
+    "sqlglotc": "sqlglot[c]",
+    "polyglot_sql": "polyglot-sql",
+    "sqltree": "sqltree",
+    "sqlparse": "sqlparse",
+    "moz_sql_parser": "moz_sql_parser",
+    "sqlfluff": "sqlfluff",
+    "sqloxide": "sqloxide",
+}
+
+
+# --- Third-party parser discovery ---
+
+
+def _check_parser(parse_fn, queries):
+    """Check which queries a parser can handle, one subprocess per query (isolates segfaults).
+    Returns None if not installed, else set of query names."""
+    fn_name = parse_fn.__name__
+    source = inspect.getsource(parse_fn)
+    supported = set()
+    installed = None
+
+    for name, sql in queries.items():
+        code = f"""import signal
+
+def _timeout(signum, frame):
+    raise TimeoutError()
+
+signal.signal(signal.SIGALRM, _timeout)
+signal.alarm(5)
+
+{source}
+
+{fn_name}({repr(sql)})
+"""
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf8", suffix=".py", delete=True) as f:
+            f.write(code)
+            f.flush()
+            try:
+                result = subprocess.run([sys.executable, f.name], capture_output=True, timeout=10)
+            except subprocess.TimeoutExpired:
+                installed = True
+                continue
+            if b"ModuleNotFoundError" in result.stderr:
+                return None
+            installed = True
+            if result.returncode == 0:
+                supported.add(name)
+
+    return supported if installed else None
+
+
+def _discover_parsers():
+    """Discover available third-party parsers and which queries they support."""
+    valid_pairs = set()
+    available = []
+    for parser_name, parse_fn in THIRD_PARTY_PARSERS.items():
+        supported = _check_parser(parse_fn, QUERIES)
+        if supported is None:
+            continue
+        for query_name in supported:
+            valid_pairs.add((parser_name, query_name))
+        available.append(parser_name)
+    return available, valid_pairs
+
+
+# --- Benchmarking ---
+
+
+def _bench(name, fn, *args, iterations=5):
+    """Benchmark fn(*args) and return the median time in seconds."""
+    times = []
+    for _ in range(iterations):
+        t0 = time.perf_counter()
+        fn(*args)
+        times.append(time.perf_counter() - t0)
+        if times[-1] > 1:
+            break
+    times.sort()
+    median = times[len(times) // 2]
+    print(f"  {name}: {_fmt_time(median)}")
+    return median
+
+
+def _bench_sqlglot(results):
+    """Benchmark sqlglot (or sqlglotc if .so loaded) and add to results."""
     import sqlglot.expressions.core as _ec
 
     prefix = "sqlglotc" if _ec.__file__.endswith(".so") else "sqlglot"
-
     for query_name, sql in QUERIES.items():
-        if query_name in LARGE_QUERIES:
-            runner = pyperf.Runner(values=3, warmups=1, loops=1, processes=4)
-        else:
-            runner = pyperf.Runner(values=3, warmups=1, loops=10, processes=4)
+        results[f"{prefix}:{query_name}"] = _bench(f"{prefix}:{query_name}", sqlglot_parse, sql)
+    return prefix
 
-        runner.bench_func(f"parse_{prefix}_{query_name}", sqlglot_parse, sql)
-        if sqltree and _can_parse(sqltree_parse, sql):
-            runner.bench_func(f"parse_sqltree_{query_name}", sqltree_parse, sql)
-        if sqlparse and query_name != "deep_arithmetic" and _can_parse(sqlparse_parse, sql):
-            runner.bench_func(f"parse_sqlparse_{query_name}", sqlparse_parse, sql)
-        if moz_sql_parser and _can_parse(moz_sql_parser_parse, sql):
-            runner.bench_func(f"parse_moz_sql_parser_{query_name}", moz_sql_parser_parse, sql)
-        if sqloxide and _can_parse(sqloxide_parse, sql):
-            runner.bench_func(f"parse_sqloxide_{query_name}", sqloxide_parse, sql)
-        if polyglot_sql and _can_parse(polyglot_sql_parse, sql):
-            runner.bench_func(f"parse_polyglot_sql_{query_name}", polyglot_sql_parse, sql)
-        if sqlfluff and _can_parse(sqlfluff_parse, sql):
-            runner.bench_func(f"parse_sqlfluff_{query_name}", sqlfluff_parse, sql)
+
+def _bench_third_party(results):
+    """Benchmark third-party parsers and add to results. Returns list of available parser names."""
+    available, valid_pairs = _discover_parsers()
+    for query_name, sql in QUERIES.items():
+        for parser_name, parse_fn in THIRD_PARTY_PARSERS.items():
+            if (parser_name, query_name) in valid_pairs:
+                results[f"{parser_name}:{query_name}"] = _bench(
+                    f"{parser_name}:{query_name}", parse_fn, sql
+                )
+    return available
+
+
+# --- Table printing ---
+
+
+def _fmt_ratio(ratio):
+    return f"{ratio:.2f}"
+
+
+def _fmt_time(seconds):
+    if seconds >= 1:
+        return f"{seconds:.2f} sec"
+    if seconds >= 1e-3:
+        return f"{seconds * 1e3:.2f} ms"
+    return f"{seconds * 1e6:.1f} us"
+
+
+def _print_table(base_parser, all_parsers, results):
+    query_width = max(len(q) for q in QUERIES)
+    query_width = max(query_width, len("Query"))
+
+    # Pre-compute all cells to determine column widths
+    cells = {}
+    for query_name in QUERIES:
+        base_time = results.get(f"{base_parser}:{query_name}")
+        for p in all_parsers:
+            t = results.get(f"{p}:{query_name}")
+            if t is not None and base_time:
+                ratio = t / base_time
+                cells[(p, query_name)] = f"{t:.6f} ({_fmt_ratio(ratio)})"
+            else:
+                cells[(p, query_name)] = "N/A"
+
+    col_widths = {}
+    for p in all_parsers:
+        name = DISPLAY_NAMES.get(p, p)
+        w = len(name)
+        for query_name in QUERIES:
+            w = max(w, len(cells[(p, query_name)]))
+        col_widths[p] = w
+
+    header = f"| {'Query':>{query_width}} |"
+    sep = f"| {'-' * query_width} |"
+    for p in all_parsers:
+        name = DISPLAY_NAMES.get(p, p)
+        header += f" {name:>{col_widths[p]}} |"
+        sep += f" {'-' * col_widths[p]} |"
+
+    print()
+    print(header)
+    print(sep)
+
+    for query_name in QUERIES:
+        row = f"| {query_name:>{query_width}} |"
+        for p in all_parsers:
+            row += f" {cells[(p, query_name)]:>{col_widths[p]}} |"
+        print(row)
+
+
+# --- Subprocess entry point for .so mode ---
+
+
+def _has_so_files():
+    import glob
+
+    return bool(glob.glob("sqlglot/**/*.so", recursive=True))
+
+
+def _run_subprocess():
+    """Run sqlglot benchmarks and print results to stdout as key=value lines."""
+    results = {}
+    _bench_sqlglot(results)
+    for key, value in results.items():
+        print(f"{key}={value}")
+
+
+# --- Main ---
 
 
 if __name__ == "__main__":
-    run_benchmarks()
+    if os.environ.get("_BENCH_SUBPROCESS"):
+        _run_subprocess()
+    elif _has_so_files():
+        # Run sqlglotc in subprocess (needs separate process to isolate .so imports)
+        print("=== Running sqlglot[c] ===", flush=True)
+        env = {**os.environ, "_BENCH_SUBPROCESS": "1"}
+        proc = subprocess.run(
+            [sys.executable, __file__], env=env, capture_output=True, text=True, check=True
+        )
+        # Extract results from subprocess output, print the rest
+        results = {}
+        for line in proc.stdout.splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                results[key] = float(value)
+            else:
+                print(line)
+
+        # Hide .so files and run pure Python + third-party in this process
+        print("\n=== Hiding .so files ===", flush=True)
+        subprocess.run(["make", "hidec"], check=True, capture_output=True)
+
+        try:
+            print("\n=== Running pure Python + third-party parsers ===", flush=True)
+            _bench_sqlglot(results)
+            available = _bench_third_party(results)
+        finally:
+            subprocess.run(["make", "showc"], capture_output=True)
+
+        _print_table("sqlglot", ["sqlglot", "sqlglotc"] + available, results)
+    else:
+        # No .so files: run everything directly
+        results = {}
+        prefix = _bench_sqlglot(results)
+        available = _bench_third_party(results)
+        _print_table(prefix, [prefix] + available, results)

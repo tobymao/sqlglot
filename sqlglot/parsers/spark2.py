@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     pivot_column_names,
 )
-from sqlglot.helper import ensure_list, mypyc_attr, seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import HiveParser
 from sqlglot.parser import build_trim
 
@@ -17,7 +17,6 @@ def build_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expr]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True

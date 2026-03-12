@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     binary_from_function,
     build_default_decimal_type,
@@ -11,7 +12,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     pivot_column_names,
 )
-from sqlglot.helper import mypyc_attr, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -64,9 +65,16 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[DuckDBParser], ex
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
+
+    NO_PAREN_FUNCTIONS = {
+        **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+        TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
+        TokenType.SESSION_USER: exp.SessionUser,
+    }
 
     BITWISE = {k: v for k, v in parser.Parser.BITWISE.items() if k != TokenType.CARET}
 
@@ -184,11 +192,6 @@ class DuckDBParser(parser.Parser):
         "@": lambda self: exp.Abs(this=self._parse_bitwise()),
     }
 
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
-        TokenType.SEMI,
-        TokenType.ANTI,
-    }
-
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
         TokenType.PARAMETER: lambda self: (
@@ -219,6 +222,9 @@ class DuckDBParser(parser.Parser):
         "VARIABLE": lambda self: self._parse_set_item_assignment("VARIABLE"),
     }
 
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+    SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
+
     def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expr]:
         index = self._index
         if not self._match_text_seq("LAMBDA"):
@@ -234,10 +240,10 @@ class DuckDBParser(parser.Parser):
 
     def _parse_expression(self) -> t.Optional[exp.Expr]:
         # DuckDB supports prefix aliases, e.g. foo: 1
-        if self._next and self._next.token_type == TokenType.COLON:
+        if self._next.token_type == TokenType.COLON:
             alias = self._parse_id_var(tokens=self.ALIAS_TOKENS)
             self._match(TokenType.COLON)
-            comments = self._prev_comments or []
+            comments = self._prev_comments
 
             this = self._parse_assignment()
             if isinstance(this, exp.Expr):
@@ -259,10 +265,10 @@ class DuckDBParser(parser.Parser):
         consume_pipe: bool = False,
     ) -> t.Optional[exp.Expr]:
         # DuckDB supports prefix aliases, e.g. FROM foo: bar
-        if self._next and self._next.token_type == TokenType.COLON:
+        if self._next.token_type == TokenType.COLON:
             alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
             self._match(TokenType.COLON)
-            comments = self._prev_comments or []
+            comments = self._prev_comments
         else:
             alias = None
             comments = []

@@ -3268,6 +3268,45 @@ OPTIONS (
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",
         )
 
+        week_trunc = {
+            "MONDAY": ("WEEK(MONDAY)", "DATE_TRUNC('WEEK', date)"),
+            "TUESDAY": (
+                "WEEK(TUESDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-1' DAY) + INTERVAL '1' DAY AS DATE)",
+            ),
+            "WEDNESDAY": (
+                "WEEK(WEDNESDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-2' DAY) + INTERVAL '2' DAY AS DATE)",
+            ),
+            "THURSDAY": (
+                "WEEK(THURSDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-3' DAY) + INTERVAL '3' DAY AS DATE)",
+            ),
+            "FRIDAY": (
+                "WEEK(FRIDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-4' DAY) + INTERVAL '4' DAY AS DATE)",
+            ),
+            "SATURDAY": (
+                "WEEK(SATURDAY)",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '-5' DAY) + INTERVAL '5' DAY AS DATE)",
+            ),
+            "SUNDAY": (
+                "WEEK",
+                "CAST(DATE_TRUNC('WEEK', date + INTERVAL '1' DAY) + INTERVAL '-1' DAY AS DATE)",
+            ),
+        }
+        for day, (bq_unit, duckdb_sql) in week_trunc.items():
+            with self.subTest(
+                f"Testing transpilation of DATE_TRUNC from Bigquery to Duckdb for unit: {day}"
+            ):
+                self.validate_all(
+                    f"SELECT DATE_TRUNC(date, WEEK({day}))",
+                    write={
+                        "bigquery": f"SELECT DATE_TRUNC(date, {bq_unit})",
+                        "duckdb": f"SELECT {duckdb_sql}",
+                    },
+                )
+
         # BigQuery → DuckDB transpilation tests for DATE_DIFF with week units
         self.validate_all(
             "SELECT DATE_DIFF('2024-06-15', '2024-01-08', WEEK(MONDAY))",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     Dialect,
     build_default_decimal_type,
@@ -15,7 +16,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     map_date_part,
 )
-from sqlglot.helper import is_date_unit, is_int, mypyc_attr, seq_get
+from sqlglot.helper import is_date_unit, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -316,7 +317,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser],
     return _parse
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
@@ -353,12 +353,14 @@ class SnowflakeParser(parser.Parser):
     TABLE_ALIAS_TOKENS = (
         parser.Parser.TABLE_ALIAS_TOKENS
         | {
+            TokenType.ANTI,
             TokenType.INTEGRATION,
             TokenType.PACKAGE,
             TokenType.POLICY,
             TokenType.POOL,
             TokenType.ROLE,
             TokenType.RULE,
+            TokenType.SEMI,
             TokenType.VOLUME,
             TokenType.WINDOW,
         }
@@ -368,6 +370,8 @@ class SnowflakeParser(parser.Parser):
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
+        TokenType.LOCALTIME: exp.Localtime,
+        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
         TokenType.CURRENT_TIME: exp.Localtime,
     }
 
@@ -647,6 +651,12 @@ class SnowflakeParser(parser.Parser):
         "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),
         "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ),
         "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ),
+        "TO_GEOGRAPHY": lambda args: exp.cast(args[0], exp.DType.GEOGRAPHY)
+        if len(args) == 1
+        else exp.Anonymous(this="TO_GEOGRAPHY", expressions=args),
+        "TO_GEOMETRY": lambda args: exp.cast(args[0], exp.DType.GEOMETRY)
+        if len(args) == 1
+        else exp.Anonymous(this="TO_GEOMETRY", expressions=args),
         "TO_VARCHAR": build_timetostr_or_tochar,
         "TO_JSON": exp.JSONFormat.from_arg_list,
         "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
@@ -658,6 +668,13 @@ class SnowflakeParser(parser.Parser):
         "ILIKE": build_like(exp.ILike),
         "SEARCH": _build_search,
         "SKEW": exp.Skewness.from_arg_list,
+        "SPLIT_PART": lambda args: exp.SplitPart(
+            this=seq_get(args, 0),
+            delimiter=seq_get(args, 1),
+            part_index=seq_get(args, 2),
+            part_index_zero_as_one=True,
+            empty_delimiter_returns_whole=True,
+        ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,
@@ -762,6 +779,8 @@ class SnowflakeParser(parser.Parser):
         "PROCEDURES": _show_parser("PROCEDURES"),
         "WAREHOUSES": _show_parser("WAREHOUSES"),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,

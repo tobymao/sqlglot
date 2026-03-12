@@ -1,36 +1,41 @@
 import unittest
 
 from sqlglot import exp, parse_one
-from sqlglot.expressions import Func
-from sqlglot.parser import Parser
-from sqlglot.tokens import Tokenizer
+from sqlglot.expressions import Expression, Func
+from sqlglot.parsers.snowflake import SnowflakeParser
+
+import sqlglot.expressions.core as _core_module
+
+_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith(".so")
 
 
 class TestGenerator(unittest.TestCase):
+    @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_fallback_function_sql(self):
-        class SpecialUDF(Func):
+        class SpecialUdf(Expression, Func):
             arg_types = {"a": True, "b": False}
 
-        class NewParser(Parser):
-            FUNCTIONS = SpecialUDF.default_parser_mappings()
+        SnowflakeParser.FUNCTIONS["SPECIAL_UDF"] = SpecialUdf.from_arg_list
+        try:
+            sql = "SELECT SPECIAL_UDF(a) FROM x"
+            expression = parse_one(sql, dialect="snowflake")
+            self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a) FROM x")
+        finally:
+            del SnowflakeParser.FUNCTIONS["SPECIAL_UDF"]
 
-        sql = "SELECT SPECIAL_UDF(a) FROM x"
-        tokens = Tokenizer().tokenize(sql)
-        expression = NewParser().parse(tokens, sql)[0]
-        self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a) FROM x")
-
+    @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_fallback_function_var_args_sql(self):
-        class SpecialUDF(Func):
+        class SpecialUdf(Expression, Func):
             arg_types = {"a": True, "expressions": False}
             is_var_len_args = True
 
-        class NewParser(Parser):
-            FUNCTIONS = SpecialUDF.default_parser_mappings()
-
-        sql = "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x"
-        tokens = Tokenizer().tokenize(sql)
-        expression = NewParser().parse(tokens, sql)[0]
-        self.assertEqual(expression.sql(), sql)
+        SnowflakeParser.FUNCTIONS["SPECIAL_UDF"] = SpecialUdf.from_arg_list
+        try:
+            sql = "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x"
+            expression = parse_one(sql, dialect="snowflake")
+            self.assertEqual(expression.sql(), sql)
+        finally:
+            del SnowflakeParser.FUNCTIONS["SPECIAL_UDF"]
 
         self.assertEqual(
             exp.DateTrunc(this=exp.to_column("event_date"), unit=exp.var("MONTH")).sql(),

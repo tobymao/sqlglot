@@ -118,7 +118,6 @@ def _timestrtotime_sql(self: TSQL.Generator, expression: exp.TimeStrToTime):
 
 
 class TSQL(Dialect):
-    SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True
     CONCAT_COALESCE = True

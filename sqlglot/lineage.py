@@ -80,7 +80,6 @@ def lineage(
     scope: t.Optional[Scope] = None,
     trim_selects: bool = True,
     copy: bool = True,
-    read_only: bool = False,
     **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
@@ -94,10 +93,6 @@ def lineage(
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
         copy: Whether to copy the Expr arguments.
-        read_only: Whether the returned node graph is read-only. Enables optimizations
-            such as sharing cached nodes across CTE references, producing a DAG instead
-            of a tree. When False (default), cached nodes are copied to ensure each
-            reference is independent and safely mutable.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:

@@ -10,14 +10,14 @@ from sqlglot.schema import AbstractMappingSchema, normalize_name
 class Table:
     def __init__(
         self,
-        columns: t.Iterable,
-        rows: t.Optional[t.List] = None,
+        columns: t.Any = None,
+        rows: t.Any = None,
         column_range: t.Optional[range] = None,
     ) -> None:
-        self.columns = tuple(columns)
+        self.columns: t.Any = tuple(columns) if columns is not None else ()
         self.column_range = column_range
-        self.reader = RowReader(self.columns, self.column_range)
-        self.rows = rows or []
+        self.reader: t.Any = RowReader(self.columns, self.column_range)
+        self.rows: t.Any = rows or []
         if rows:
             assert len(rows[0]) == len(self.columns)
         self.range_reader = RangeReader(self)
@@ -30,7 +30,7 @@ class Table:
             )
         self.reader = RowReader(self.columns, self.column_range)
 
-    def append(self, row: t.List) -> None:
+    def append(self, row: t.Any) -> None:
         assert len(row) == len(self.columns)
         self.rows.append(row)
 
@@ -91,8 +91,8 @@ class TableIter:
 
 
 class RangeReader:
-    def __init__(self, table: Table) -> None:
-        self.table = table
+    def __init__(self, table: t.Any = None) -> None:
+        self.table: t.Any = table
         self.range = range(0)
 
     def __len__(self) -> int:
@@ -103,10 +103,12 @@ class RangeReader:
 
 
 class RowReader:
-    def __init__(self, columns, column_range=None):
-        self.columns = {
-            column: i for i, column in enumerate(columns) if not column_range or i in column_range
-        }
+    def __init__(self, columns=None, column_range=None):
+        self.columns = (
+            {column: i for i, column in enumerate(columns) if not column_range or i in column_range}
+            if columns is not None
+            else {}
+        )
         self.row = None
 
     def __getitem__(self, column):

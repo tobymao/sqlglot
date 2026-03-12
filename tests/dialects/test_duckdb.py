@@ -985,6 +985,8 @@ class TestDuckDB(Validator):
                 "spark": "SORT_ARRAY(x)",
             },
         )
+        self.validate_identity("SELECT LIST_SORT([1, NULL, 0], 'DESC', 'NULLS FIRST')")
+        self.validate_identity("SELECT LIST_SORT([1, NULL, 0], 'ASC', 'NULLS FIRST')")
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={

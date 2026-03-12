@@ -4521,6 +4521,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
 
         tokens = {t.name.lower() for t in SnowflakeParser.CREATABLES - parser.Parser.CREATABLES}
         tokens |= {k.lower() for k in SnowflakeParser.DESCRIBE_QUALIFIER_PARSERS}
+        tokens -= {"row"}  # ROW is not a valid identifier in Snowflake
 
         for token in sorted(tokens):
             with self.subTest(token=token):

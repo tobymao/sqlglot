@@ -29,6 +29,14 @@ class AlgorithmProperty(Property):
     arg_types = {"this": True}
 
 
+class ApiProperty(Property):
+    arg_types = {}
+
+
+class ApplicationProperty(Property):
+    arg_types = {}
+
+
 class AutoIncrementProperty(Property):
     arg_types = {"this": True}
 
@@ -55,6 +63,10 @@ class BlockCompressionProperty(Property):
     }
 
 
+class CatalogProperty(Property):
+    arg_types = {}
+
+
 class CharacterSetProperty(Property):
     arg_types = {"this": True, "default": True}
 
@@ -65,6 +77,10 @@ class ChecksumProperty(Property):
 
 class CollateProperty(Property):
     arg_types = {"this": True, "default": False}
+
+
+class ComputeProperty(Property):
+    arg_types = {}
 
 
 class CopyGrantsProperty(Property):
@@ -83,6 +99,10 @@ class DataBlocksizeProperty(Property):
 
 class DataDeletionProperty(Property):
     arg_types = {"on": True, "filter_column": False, "retention_period": False}
+
+
+class DatabaseProperty(Property):
+    arg_types = {}
 
 
 class DefinerProperty(Property):
@@ -110,6 +130,10 @@ class EngineProperty(Property):
 
 
 class HeapProperty(Property):
+    arg_types = {}
+
+
+class HybridProperty(Property):
     arg_types = {}
 
 
@@ -245,12 +269,20 @@ class LogProperty(Property):
     arg_types = {"no": True}
 
 
+class MaskingProperty(Property):
+    arg_types = {}
+
+
 class MaterializedProperty(Property):
     arg_types = {"this": False}
 
 
 class MergeBlockRatioProperty(Property):
     arg_types = {"this": False, "no": False, "default": False, "percent": False}
+
+
+class NetworkProperty(Property):
+    arg_types = {}
 
 
 class NoPrimaryIndexProperty(Property):
@@ -291,6 +323,10 @@ class RollupProperty(Property):
 
 class RollupIndex(Expression):
     arg_types = {"this": True, "expressions": True, "from_index": False, "properties": False}
+
+
+class RowAccessProperty(Property):
+    arg_types = {}
 
 
 class PartitionByListProperty(Property):
@@ -442,6 +478,10 @@ class TemporaryProperty(Property):
 
 
 class SecureProperty(Property):
+    arg_types = {}
+
+
+class SecurityIntegrationProperty(Property):
     arg_types = {}
 
 

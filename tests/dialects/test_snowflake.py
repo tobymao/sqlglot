@@ -4500,6 +4500,47 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "spark": "DESCRIBE db.table",
             },
         )
+
+        for kind, object_name, prop_type in (
+            ("DYNAMIC TABLE", "db.schema.t1", exp.DynamicProperty),
+            ("MATERIALIZED VIEW", "my_view", exp.MaterializedProperty),
+            ("EXTERNAL VOLUME", "vol1", exp.ExternalProperty),
+            ("COMPUTE POOL", "pool1", exp.ComputeProperty),
+            ("MASKING POLICY", "db.schema.pol1", exp.MaskingProperty),
+            ("ROW ACCESS POLICY", "pol1", exp.RowAccessProperty),
+            ("API INTEGRATION", "int1", exp.ApiProperty),
+            ("APPLICATION PACKAGE", "pkg1", exp.ApplicationProperty),
+            ("SECURITY INTEGRATION", "int1", exp.SecurityIntegrationProperty),
+            ("NETWORK RULE", "rule1", exp.NetworkProperty),
+            ("ICEBERG TABLE", "db.schema.t1", exp.IcebergProperty),
+            ("HYBRID TABLE", "t1", exp.HybridProperty),
+            ("CATALOG INTEGRATION", "int1", exp.CatalogProperty),
+            ("DATABASE ROLE", "role1", exp.DatabaseProperty),
+        ):
+            with self.subTest(kind=kind):
+                ast = self.validate_identity(f"DESCRIBE {kind} {object_name}")
+                self.assertEqual(ast.args["kind"], kind.split()[-1])
+                self.assertIsInstance(ast.find(prop_type), prop_type)
+                self.validate_identity(
+                    f"DESC {kind} {object_name}", f"DESCRIBE {kind} {object_name}"
+                )
+
+        # Verify keyword tokens used by DESCRIBE work as identifiers and aliases
+        from sqlglot import parser
+        from sqlglot.parsers.snowflake import SnowflakeParser
+
+        tokens = {t.name.lower() for t in SnowflakeParser.CREATABLES - parser.Parser.CREATABLES}
+        tokens |= {k.lower() for k in SnowflakeParser.DESCRIBE_QUALIFIER_PARSERS}
+        tokens -= {"row"}  # ROW is not a valid identifier in Snowflake
+
+        for token in sorted(tokens):
+            with self.subTest(token=token):
+                self.validate_identity(f"SELECT {token} FROM t")
+                self.validate_identity(f"SELECT 1 AS {token}")
+
+        cols = ", ".join(f"{t} VARCHAR" for t in sorted(tokens))
+        self.validate_identity(f"CREATE TABLE t ({cols})")
+
         self.validate_all(
             "ENDSWITH('abc', 'c')",
             read={

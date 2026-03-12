@@ -330,11 +330,40 @@ class SnowflakeParser(parser.Parser):
     ID_VAR_TOKENS = {
         *parser.Parser.ID_VAR_TOKENS,
         TokenType.EXCEPT,
+        TokenType.INTEGRATION,
         TokenType.MATCH_CONDITION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
+    }
+
+    ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
+        TokenType.INTEGRATION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
     }
 
     TABLE_ALIAS_TOKENS = (
-        parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI, TokenType.WINDOW}
+        parser.Parser.TABLE_ALIAS_TOKENS
+        | {
+            TokenType.ANTI,
+            TokenType.INTEGRATION,
+            TokenType.PACKAGE,
+            TokenType.POLICY,
+            TokenType.POOL,
+            TokenType.ROLE,
+            TokenType.RULE,
+            TokenType.SEMI,
+            TokenType.VOLUME,
+            TokenType.WINDOW,
+        }
     ) - {TokenType.MATCH_CONDITION}
 
     COLON_PLACEHOLDER_TOKENS = ID_VAR_TOKENS | {TokenType.NUMBER}
@@ -694,6 +723,29 @@ class SnowflakeParser(parser.Parser):
         and self.expression(exp.UsingTemplateProperty(this=self._parse_statement())),
     }
 
+    DESCRIBE_QUALIFIER_PARSERS: t.ClassVar[t.Dict[str, t.Callable]] = {
+        "API": lambda self: self.expression(exp.ApiProperty()),
+        "APPLICATION": lambda self: self.expression(exp.ApplicationProperty()),
+        "CATALOG": lambda self: self.expression(exp.CatalogProperty()),
+        "COMPUTE": lambda self: self.expression(exp.ComputeProperty()),
+        "DATABASE": lambda self: self.expression(exp.DatabaseProperty())
+        if self._curr and self._curr.text.upper() == "ROLE"
+        else None,
+        "DYNAMIC": lambda self: self.expression(exp.DynamicProperty()),
+        "EXTERNAL": lambda self: self.expression(exp.ExternalProperty()),
+        "HYBRID": lambda self: self.expression(exp.HybridProperty()),
+        "ICEBERG": lambda self: self.expression(exp.IcebergProperty()),
+        "MASKING": lambda self: self.expression(exp.MaskingProperty()),
+        "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty()),
+        "NETWORK": lambda self: self.expression(exp.NetworkProperty()),
+        "ROW": lambda self: self.expression(exp.RowAccessProperty())
+        if self._match_text_seq("ACCESS")
+        else None,
+        "SECURITY": lambda self: self.expression(exp.SecurityIntegrationProperty())
+        if self._curr and self._curr.text.upper() == "INTEGRATION"
+        else None,
+    }
+
     TYPE_CONVERTERS = {
         # https://docs.snowflake.com/en/sql-reference/data-types-numeric#number
         exp.DType.DECIMAL: build_default_decimal_type(precision=38, scale=0),
@@ -750,6 +802,17 @@ class SnowflakeParser(parser.Parser):
 
     NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
+    CREATABLES = {
+        *parser.Parser.CREATABLES,
+        TokenType.INTEGRATION,
+        TokenType.PACKAGE,
+        TokenType.POLICY,
+        TokenType.POOL,
+        TokenType.ROLE,
+        TokenType.RULE,
+        TokenType.VOLUME,
+    }
+
     LAMBDAS = {
         **parser.Parser.LAMBDAS,
         TokenType.ARROW: lambda self, expressions: self.expression(
@@ -774,6 +837,32 @@ class SnowflakeParser(parser.Parser):
         table = self._parse_table_parts()
         this: exp.Expr = table.this if isinstance(table, exp.Table) else table
         return self.expression(exp.DirectoryStage(this=this))
+
+    def _parse_describe(self) -> exp.Describe:
+        index = self._index
+
+        if self._match_texts(self.DESCRIBE_QUALIFIER_PARSERS):
+            qualifier = self.DESCRIBE_QUALIFIER_PARSERS[self._prev.text.upper()](self)
+
+            if qualifier:
+                kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+
+                if kind:
+                    this = self._parse_table(schema=True)
+                    properties = self.expression(exp.Properties(expressions=[qualifier]))
+                    post_props = self._parse_properties()
+                    expressions = post_props.expressions if post_props else None
+                    return self.expression(
+                        exp.Describe(
+                            this=this,
+                            kind=kind,
+                            properties=properties,
+                            expressions=expressions,
+                        )
+                    )
+
+        self._retreat(index)
+        return super()._parse_describe()
 
     def _parse_use(self) -> exp.Use:
         if self._match_text_seq("SECONDARY", "ROLES"):

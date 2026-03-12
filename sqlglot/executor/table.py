@@ -91,8 +91,8 @@ class TableIter:
 
 
 class RangeReader:
-    def __init__(self, table: Table) -> None:
-        self.table = table
+    def __init__(self, table: t.Any = None) -> None:
+        self.table: t.Any = table
         self.range = range(0)
 
     def __len__(self) -> int:
@@ -103,10 +103,12 @@ class RangeReader:
 
 
 class RowReader:
-    def __init__(self, columns, column_range=None):
-        self.columns = {
-            column: i for i, column in enumerate(columns) if not column_range or i in column_range
-        }
+    def __init__(self, columns=None, column_range=None):
+        self.columns = (
+            {column: i for i, column in enumerate(columns) if not column_range or i in column_range}
+            if columns is not None
+            else {}
+        )
         self.row = None
 
     def __getitem__(self, column):

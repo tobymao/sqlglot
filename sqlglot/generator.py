@@ -253,6 +253,9 @@ class Generator(metaclass=_Generator):
     # such as window specifications, aggregate functions etc
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
+    # Window functions that support NULLS FIRST/LAST even when NULL_ORDERING_SUPPORTED is False
+    WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING: t.ClassVar[t.Tuple[t.Type[exp.Expr]]] = ()
+
     # Whether ignore nulls is inside the agg or outside.
     # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
     IGNORE_NULLS_IN_FUNC = False
@@ -2820,35 +2823,52 @@ class Generator(metaclass=_Generator):
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
             window = expression.find_ancestor(exp.Window, exp.Select)
-            if isinstance(window, exp.Window) and window.args.get("spec"):
-                self.unsupported(
-                    f"'{nulls_sort_change.strip()}' translation not supported in window functions"
-                )
-                nulls_sort_change = ""
-            elif self.NULL_ORDERING_SUPPORTED is False and (
-                (asc and nulls_sort_change == " NULLS LAST")
-                or (desc and nulls_sort_change == " NULLS FIRST")
-            ):
-                # BigQuery does not allow these ordering/nulls combinations when used under
-                # an aggregation func or under a window containing one
-                ancestor = expression.find_ancestor(exp.AggFunc, exp.Window, exp.Select)
 
-                if isinstance(ancestor, exp.Window):
-                    ancestor = ancestor.this
-                if isinstance(ancestor, exp.AggFunc):
+            if isinstance(window, exp.Window):
+                window_this = window.this
+                spec = window.args.get("spec")
+            else:
+                window_this = None
+                spec = None
+
+            # Analytic functions (e.g. LAST_VALUE) support NULLS FIRST/LAST
+            # with a ROWS spec in some dialects like BigQuery
+            if not (
+                spec
+                and spec.args.get("kind") == "ROWS"
+                and isinstance(window_this, self.WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING)
+            ):
+                if window and spec:
                     self.unsupported(
-                        f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
+                        f"'{nulls_sort_change.strip()}' translation not supported in window functions"
                     )
                     nulls_sort_change = ""
-            elif self.NULL_ORDERING_SUPPORTED is None:
-                if expression.this.is_int:
-                    self.unsupported(
-                        f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
-                    )
-                elif not isinstance(expression.this, exp.Rand):
-                    null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-                    this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
-                nulls_sort_change = ""
+                elif self.NULL_ORDERING_SUPPORTED is False and (
+                    (asc and nulls_sort_change == " NULLS LAST")
+                    or (desc and nulls_sort_change == " NULLS FIRST")
+                ):
+                    # BigQuery does not allow these ordering/nulls combinations when used under
+                    # an aggregation func or under a window containing one
+                    ancestor = expression.find_ancestor(exp.AggFunc, exp.Window, exp.Select)
+
+                    if isinstance(ancestor, exp.Window):
+                        ancestor = ancestor.this
+                    if isinstance(ancestor, exp.AggFunc):
+                        self.unsupported(
+                            f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
+                        )
+                        nulls_sort_change = ""
+                elif self.NULL_ORDERING_SUPPORTED is None:
+                    if expression.this.is_int:
+                        self.unsupported(
+                            f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
+                        )
+                    elif not isinstance(expression.this, exp.Rand):
+                        null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+                        this = (
+                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                        )
+                    nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")
         with_fill = f" {with_fill}" if with_fill else ""

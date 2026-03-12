@@ -441,6 +441,12 @@ class BigQuery(Dialect):
 
         SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
 
+        WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING = (
+            exp.FirstValue,
+            exp.LastValue,
+            exp.NthValue,
+        )
+
         TS_OR_DS_TYPES = (
             exp.TsOrDsToDatetime,
             exp.TsOrDsToTimestamp,

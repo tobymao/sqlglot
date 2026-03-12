@@ -2695,6 +2695,18 @@ OPTIONS (
                 },
             )
 
+    def test_null_ordering_in_analytic_functions(self):
+        for func_call in (
+            "FIRST_VALUE(col1)",
+            "LAST_VALUE(col1)",
+            "NTH_VALUE(col1, 2)",
+        ):
+            for sort_order, null_order in (("ASC", "NULLS LAST"), ("DESC", "NULLS FIRST")):
+                with self.subTest(f"Testing Bigquery's {func_call} with {sort_order} {null_order}"):
+                    self.validate_identity(
+                        f"WITH t AS (SELECT 1 AS id, 2 AS col1) SELECT {func_call} OVER (PARTITION BY id ORDER BY col1 {sort_order} {null_order} ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t"
+                    )
+
     def test_json_extract(self):
         self.validate_all(
             """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",

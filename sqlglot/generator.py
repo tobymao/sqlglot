@@ -254,7 +254,7 @@ class Generator(metaclass=_Generator):
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
     # Window functions that support NULLS FIRST/LAST
-    WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING: t.ClassVar[t.Tuple[t.Type[exp.Expression], ...]] = ()
+    WINDOW_FUNCS_WITH_NULL_ORDERING: t.ClassVar[t.Tuple[t.Type[exp.Expression], ...]] = ()
 
     # Whether ignore nulls is inside the agg or outside.
     # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
@@ -2834,7 +2834,7 @@ class Generator(metaclass=_Generator):
             # Some window functions (e.g. LAST_VALUE, RANK) support NULLS FIRST/LAST
             # without a spec or with a ROWS spec, but not with RANGE
             if not (
-                isinstance(window_this, self.WINDOW_FRAME_FUNCS_WITH_NULL_ORDERING)
+                isinstance(window_this, self.WINDOW_FUNCS_WITH_NULL_ORDERING)
                 and (not spec or spec.text("kind").upper() == "ROWS")
             ):
                 if window_this and spec:

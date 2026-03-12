@@ -576,7 +576,7 @@ class Snowflake(Dialect):
                 "ARRAY_CONTAINS",
                 e.expression
                 if e.args.get("ensure_variant") is False
-                else exp.ToVariant(this=e.expression),
+                else exp.cast(e.expression, exp.DType.VARIANT, copy=False),
                 e.this,
             ),
             exp.ArrayPosition: lambda self, e: self.func(

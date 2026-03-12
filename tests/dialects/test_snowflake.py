@@ -134,7 +134,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT BOOLOR(1, 0)")
         self.validate_identity("SELECT TO_BOOLEAN('true')")
         self.validate_identity("SELECT TO_BOOLEAN(1)")
-        self.validate_identity("SELECT TO_VARIANT('test')")
         self.validate_identity("SELECT TO_VARIANT(123)")
         self.validate_identity("SELECT IS_NULL_VALUE(GET_PATH(payload, 'field'))")
         self.validate_identity("SELECT RTRIMMED_LENGTH(' ABCD ')")
@@ -2922,13 +2921,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TRY_HEX_DECODE_STRING('48656C6C6F')")
 
         self.validate_all(
-            "SELECT ARRAY_CONTAINS(TO_VARIANT('1'), ['1'])",
+            "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY['1'], '1')",
             },
         )
         self.validate_all(
-            "SELECT ARRAY_CONTAINS(TO_VARIANT(CAST('2020-10-10' AS DATE)), [CAST('2020-10-10' AS DATE)])",
+            "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY[DATE '2020-10-10'], DATE '2020-10-10')",
             },

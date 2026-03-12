@@ -1755,7 +1755,7 @@ class RecursiveWithSearch(Expression):
 
 
 class With(Expression):
-    arg_types = {"expressions": True, "recursive": False, "search": False}
+    arg_types = {"expressions": True, "recursive": False, "search": False, "hint": False}
 
     @property
     def recursive(self) -> bool:
@@ -2591,6 +2591,7 @@ class Revoke(Expression):
 
 class Group(Expression):
     arg_types = {
+        "hint": False,
         "expressions": False,
         "grouping_sets": False,
         "cube": False,
@@ -2622,6 +2623,8 @@ class Limit(Expression):
         "expression": True,
         "offset": False,
         "limit_options": False,
+        "partition_by": False,
+        "order": False,
         "expressions": False,
     }
 
@@ -2837,6 +2840,15 @@ class MatchRecognize(Expression):
         "pattern": False,
         "define": False,
         "alias": False,
+    }
+
+
+class Timeseries(Expression):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "partition_by": False,
+        "order": False,
     }
 
 
@@ -3520,6 +3532,8 @@ class Tuple(Expression):
 
 
 QUERY_MODIFIERS = {
+    "when": False,
+    "timeseries": False,
     "match": False,
     "laterals": False,
     "joins": False,

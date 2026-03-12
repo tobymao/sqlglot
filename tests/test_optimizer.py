@@ -600,6 +600,13 @@ class TestOptimizer(unittest.TestCase):
             "SELECT (SELECT `col_st`.`value` AS `value` FROM UNNEST(`b`.`col_st`) AS `col_st`) AS `vcol1` FROM `t` AS `b`",
         )
 
+        # Schema-qualified table joined twice (once unaliased, once aliased) should resolve correctly
+        result = optimizer.qualify.qualify(
+            parse_one("SELECT 1 FROM dbo.a JOIN dbo.b ON dbo.b.id = dbo.a.id JOIN dbo.b AS x ON x.id = dbo.a.id"),
+        ).sql()
+        first_on = result.split(" ON ")[1].split(" JOIN")[0]
+        self.assertNotIn('"x"', first_on)
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

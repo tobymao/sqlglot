@@ -2934,12 +2934,14 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY['1'], '1')",
+                "snowflake": "SELECT ARRAY_CONTAINS(CAST('1' AS VARIANT), ['1'])",
             },
         )
         self.validate_all(
             "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
             read={
                 "presto": "SELECT CONTAINS(ARRAY[DATE '2020-10-10'], DATE '2020-10-10')",
+                "snowflake": "SELECT ARRAY_CONTAINS(CAST(CAST('2020-10-10' AS DATE) AS VARIANT), [CAST('2020-10-10' AS DATE)])",
             },
         )
         self.validate_identity("SELECT ARRAY_CONTAINS(1, [1])")

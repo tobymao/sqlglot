@@ -2664,11 +2664,10 @@ class TestDuckDB(Validator):
             "SELECT MAP_CONCAT(my_map, MAP {'key': 42}) FROM my_table",
         )
 
-        # TO_VARIANT Snowflake to DuckDB transpilation test
         self.validate_all(
-            "SELECT TO_VARIANT('Skiing is fun!')",
+            "SELECT TO_VARIANT('1')",
             write={
-                "duckdb": "SELECT CAST('Skiing is fun!' AS VARIANT)",
-                "snowflake": "SELECT TO_VARIANT('Skiing is fun!')",
+                "duckdb": "SELECT CAST('1' AS VARIANT)",
+                "snowflake": "SELECT TO_VARIANT('1')",
             },
         )

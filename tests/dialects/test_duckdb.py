@@ -2671,3 +2671,26 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+        # HASH_AGG transpilation tests
+        self.validate_all(
+            "SELECT HASH_AGG(col1)",
+            write={
+                "duckdb": "SELECT COALESCE(BIT_XOR(HASH(col1)), 0)",
+                "snowflake": "SELECT HASH_AGG(col1)",
+            },
+        )
+        self.validate_all(
+            "SELECT HASH_AGG(col1, col2)",
+            write={
+                "duckdb": "SELECT COALESCE(BIT_XOR(HASH((col1, col2))), 0)",
+                "snowflake": "SELECT HASH_AGG(col1, col2)",
+            },
+        )
+        self.validate_all(
+            "SELECT HASH_AGG(DISTINCT col1)",
+            write={
+                "duckdb": "SELECT COALESCE(BIT_XOR(DISTINCT HASH(col1)), 0)",
+                "snowflake": "SELECT HASH_AGG(DISTINCT col1)",
+            },
+        )

@@ -4090,6 +4090,61 @@ class DuckDB(Dialect):
 
             return super().filter_sql(expression)
 
+        def hashagg_sql(self, expression: exp.HashAgg) -> str:
+            # HASH_AGG(col) -> COALESCE(BIT_XOR(HASH(col)), 0)
+            # HASH_AGG(col1, col2) -> COALESCE(BIT_XOR(HASH((col1, col2))), 0)
+            # HASH_AGG(DISTINCT col) -> COALESCE(BIT_XOR(DISTINCT HASH(col)), 0)
+            # HASH_AGG(*) -> COALESCE(BIT_XOR(HASH(*)), 0)
+
+            this = expression.this
+            expressions = expression.expressions
+
+            # Handle DISTINCT
+            if isinstance(this, exp.Distinct):
+                distinct = True
+                cols = this.expressions
+            else:
+                distinct = False
+                cols = [this]
+
+            # Add additional columns from expressions
+            if expressions:
+                cols.extend(expressions)
+
+            # Build HASH argument
+            if len(cols) == 1:
+                if isinstance(cols[0], exp.Star):
+                    # HASH(*) is not supported in DuckDB - HASH() requires explicit columns
+                    # Generate a warning and use a placeholder
+                    self.unsupported(
+                        "HASH_AGG(*) cannot be fully transpiled to DuckDB. "
+                        "DuckDB's HASH() function requires explicit columns, not *. "
+                        "Please rewrite as HASH_AGG(col1, col2, ...) with specific columns."
+                    )
+                    # Fall back to using Star - will cause runtime error but preserves intent
+                    hash_arg = exp.Star()
+                else:
+                    # HASH(col)
+                    hash_arg = cols[0]
+            else:
+                # HASH((col1, col2, ...))  - use Tuple for multiple columns
+                hash_arg = exp.Tuple(expressions=cols)
+
+            # Build HASH(...) function
+            hash_func = exp.Anonymous(this="HASH", expressions=[hash_arg])
+
+            # Add DISTINCT if needed - wrap hash_func in Distinct
+            if distinct:
+                hash_func = exp.Distinct(expressions=[hash_func])
+
+            # Build BIT_XOR aggregate
+            bit_xor = exp.BitwiseXorAgg(this=hash_func)
+
+            # Wrap with COALESCE(..., 0)
+            result = exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)])
+
+            return self.sql(result)
+
         def _corr_sql(
             self,
             expression: t.Union[exp.Filter, exp.Window, exp.Corr],

@@ -154,10 +154,8 @@ class Oracle(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
-            exp.StrPosition: lambda self, e: (
-                strposition_sql(
-                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
-                )
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
@@ -171,8 +169,9 @@ class Oracle(Dialect):
             exp.ToNumber: to_number_with_nls_param,
             exp.Trim: _trim_sql,
             exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
-            exp.UnixToTime: lambda self,
-            e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            exp.UnixToTime: lambda self, e: (
+                f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)"
+            ),
             exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
             exp.UtcTime: rename_func("UTC_TIME"),
             exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",

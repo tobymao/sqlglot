@@ -605,16 +605,16 @@ class Snowflake(Dialect):
             exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
             exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
-            exp.CurrentTimestamp: lambda self, e: self.func("SYSDATE")
-            if e.args.get("sysdate")
-            else self.function_fallback_sql(e),
+            exp.CurrentTimestamp: lambda self, e: (
+                self.func("SYSDATE") if e.args.get("sysdate") else self.function_fallback_sql(e)
+            ),
             exp.CurrentSchemas: lambda self, e: self.func("CURRENT_SCHEMAS"),
-            exp.Localtime: lambda self, e: self.func("CURRENT_TIME", e.this)
-            if e.this
-            else "CURRENT_TIME",
-            exp.Localtimestamp: lambda self, e: self.func("CURRENT_TIMESTAMP", e.this)
-            if e.this
-            else "CURRENT_TIMESTAMP",
+            exp.Localtime: lambda self, e: (
+                self.func("CURRENT_TIME", e.this) if e.this else "CURRENT_TIME"
+            ),
+            exp.Localtimestamp: lambda self, e: (
+                self.func("CURRENT_TIMESTAMP", e.this) if e.this else "CURRENT_TIMESTAMP"
+            ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: date_delta_sql("TIMESTAMPADD"),
@@ -647,8 +647,9 @@ class Snowflake(Dialect):
             ),
             exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
             exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
-            exp.FileFormatProperty: lambda self,
-            e: f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})",
+            exp.FileFormatProperty: lambda self, e: (
+                f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})"
+            ),
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), "'UTC'", e.this
             ),

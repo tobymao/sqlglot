@@ -659,12 +659,16 @@ class SnowflakeParser(parser.Parser):
         "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),
         "TO_TIMESTAMP_NTZ": _build_datetime("TO_TIMESTAMP_NTZ", exp.DType.TIMESTAMPNTZ),
         "TO_TIMESTAMP_TZ": _build_datetime("TO_TIMESTAMP_TZ", exp.DType.TIMESTAMPTZ),
-        "TO_GEOGRAPHY": lambda args: exp.cast(args[0], exp.DType.GEOGRAPHY)
-        if len(args) == 1
-        else exp.Anonymous(this="TO_GEOGRAPHY", expressions=args),
-        "TO_GEOMETRY": lambda args: exp.cast(args[0], exp.DType.GEOMETRY)
-        if len(args) == 1
-        else exp.Anonymous(this="TO_GEOMETRY", expressions=args),
+        "TO_GEOGRAPHY": lambda args: (
+            exp.cast(args[0], exp.DType.GEOGRAPHY)
+            if len(args) == 1
+            else exp.Anonymous(this="TO_GEOGRAPHY", expressions=args)
+        ),
+        "TO_GEOMETRY": lambda args: (
+            exp.cast(args[0], exp.DType.GEOMETRY)
+            if len(args) == 1
+            else exp.Anonymous(this="TO_GEOMETRY", expressions=args)
+        ),
         "TO_VARCHAR": build_timetostr_or_tochar,
         "TO_JSON": exp.JSONFormat.from_arg_list,
         "VECTOR_COSINE_SIMILARITY": exp.CosineDistance.from_arg_list,
@@ -727,8 +731,10 @@ class SnowflakeParser(parser.Parser):
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
         "LOCATION": lambda self: self._parse_location_property(),
         "TAG": lambda self: self._parse_tag(),
-        "USING": lambda self: self._match_text_seq("TEMPLATE")
-        and self.expression(exp.UsingTemplateProperty(this=self._parse_statement())),
+        "USING": lambda self: (
+            self._match_text_seq("TEMPLATE")
+            and self.expression(exp.UsingTemplateProperty(this=self._parse_statement()))
+        ),
     }
 
     DESCRIBE_QUALIFIER_PARSERS: t.ClassVar[t.Dict[str, t.Callable]] = {
@@ -736,9 +742,11 @@ class SnowflakeParser(parser.Parser):
         "APPLICATION": lambda self: self.expression(exp.ApplicationProperty()),
         "CATALOG": lambda self: self.expression(exp.CatalogProperty()),
         "COMPUTE": lambda self: self.expression(exp.ComputeProperty()),
-        "DATABASE": lambda self: self.expression(exp.DatabaseProperty())
-        if self._curr and self._curr.text.upper() == "ROLE"
-        else None,
+        "DATABASE": lambda self: (
+            self.expression(exp.DatabaseProperty())
+            if self._curr and self._curr.text.upper() == "ROLE"
+            else None
+        ),
         "DYNAMIC": lambda self: self.expression(exp.DynamicProperty()),
         "EXTERNAL": lambda self: self.expression(exp.ExternalProperty()),
         "HYBRID": lambda self: self.expression(exp.HybridProperty()),
@@ -746,12 +754,14 @@ class SnowflakeParser(parser.Parser):
         "MASKING": lambda self: self.expression(exp.MaskingProperty()),
         "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty()),
         "NETWORK": lambda self: self.expression(exp.NetworkProperty()),
-        "ROW": lambda self: self.expression(exp.RowAccessProperty())
-        if self._match_text_seq("ACCESS")
-        else None,
-        "SECURITY": lambda self: self.expression(exp.SecurityIntegrationProperty())
-        if self._curr and self._curr.text.upper() == "INTEGRATION"
-        else None,
+        "ROW": lambda self: (
+            self.expression(exp.RowAccessProperty()) if self._match_text_seq("ACCESS") else None
+        ),
+        "SECURITY": lambda self: (
+            self.expression(exp.SecurityIntegrationProperty())
+            if self._curr and self._curr.text.upper() == "INTEGRATION"
+            else None
+        ),
     }
 
     TYPE_CONVERTERS = {

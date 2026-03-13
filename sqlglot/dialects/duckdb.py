@@ -1636,11 +1636,15 @@ class DuckDB(Dialect):
             exp.CurrentSchemas: lambda self, e: self.func(
                 "current_schemas", e.this if e.this else exp.true()
             ),
-            exp.CurrentTimestamp: lambda self, e: self.sql(
-                exp.AtTimeZone(this=exp.var("CURRENT_TIMESTAMP"), zone=exp.Literal.string("UTC"))
-            )
-            if e.args.get("sysdate")
-            else "CURRENT_TIMESTAMP",
+            exp.CurrentTimestamp: lambda self, e: (
+                self.sql(
+                    exp.AtTimeZone(
+                        this=exp.var("CURRENT_TIMESTAMP"), zone=exp.Literal.string("UTC")
+                    )
+                )
+                if e.args.get("sysdate")
+                else "CURRENT_TIMESTAMP"
+            ),
             exp.CurrentVersion: rename_func("version"),
             exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
@@ -1668,11 +1672,13 @@ class DuckDB(Dialect):
             exp.DatetimeDiff: _date_diff_sql,
             exp.DatetimeSub: _date_delta_to_binary_interval_op(),
             exp.DatetimeAdd: _date_delta_to_binary_interval_op(),
-            exp.DateToDi: lambda self,
-            e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
+            exp.DateToDi: lambda self, e: (
+                f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)"
+            ),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
-            exp.DiToDate: lambda self,
-            e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
+            exp.DiToDate: lambda self, e: (
+                f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)"
+            ),
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.EqualNull: lambda self, e: self.sql(
                 exp.NullSafeEQ(this=e.this, expression=e.expression)
@@ -1760,8 +1766,9 @@ class DuckDB(Dialect):
                 exp.cast(e.this, exp.DataType.build("VARIANT", dialect="duckdb"))
             ),
             exp.TimeToUnix: rename_func("EPOCH"),
-            exp.TsOrDiToDi: lambda self,
-            e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
+            exp.TsOrDiToDi: lambda self, e: (
+                f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)"
+            ),
             exp.TsOrDsAdd: _date_delta_to_binary_interval_op(),
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",

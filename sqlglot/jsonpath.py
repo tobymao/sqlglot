@@ -227,8 +227,9 @@ JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = {
         if p is not None
     ),
     exp.JSONPathSubscript: lambda self, e: self._jsonpathsubscript_sql(e),
-    exp.JSONPathUnion: lambda self,
-    e: f"[{','.join(self.json_path_part(p) for p in e.expressions)}]",
+    exp.JSONPathUnion: lambda self, e: (
+        f"[{','.join(self.json_path_part(p) for p in e.expressions)}]"
+    ),
     exp.JSONPathWildcard: lambda *_: "*",
 }
 

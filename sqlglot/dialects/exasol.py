@@ -427,10 +427,8 @@ class Exasol(Dialect):
                 e.args.get("zone"),
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/instr.htm
-            exp.StrPosition: lambda self, e: (
-                strposition_sql(
-                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
-                )
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
             ),
             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/hash_sha%5B1%5D.htm#HASH_SHA%5B1%5D
             exp.SHA: rename_func("HASH_SHA"),

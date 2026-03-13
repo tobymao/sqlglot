@@ -126,11 +126,11 @@ class PostgresParser(parser.Parser):
         "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
         "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
         "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
-        "WIDTH_BUCKET": lambda args: exp.WidthBucket(
-            this=seq_get(args, 0), threshold=seq_get(args, 1)
-        )
-        if len(args) == 2
-        else exp.WidthBucket.from_arg_list(args),
+        "WIDTH_BUCKET": lambda args: (
+            exp.WidthBucket(this=seq_get(args, 0), threshold=seq_get(args, 1))
+            if len(args) == 2
+            else exp.WidthBucket.from_arg_list(args)
+        ),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -222,8 +222,10 @@ class PostgresParser(parser.Parser):
         # Try parsing next token as a built-in type (not UDT)
         # If successful, the keyword is an identifier, not a mode
         is_followed_by_builtin_type = self._try_parse(
-            lambda: self._advance()  # type: ignore
-            or self._parse_types(check_func=False, allow_identifiers=False),
+            lambda: (
+                self._advance()  # type: ignore
+                or self._parse_types(check_func=False, allow_identifiers=False)
+            ),
             retreat=True,
         )
         if is_followed_by_builtin_type:
@@ -236,8 +238,10 @@ class PostgresParser(parser.Parser):
             return None
 
         is_followed_by_any_type = self._try_parse(
-            lambda: self._advance(2)  # type: ignore
-            or self._parse_types(check_func=False, allow_identifiers=True),
+            lambda: (
+                self._advance(2)  # type: ignore
+                or self._parse_types(check_func=False, allow_identifiers=True)
+            ),
             retreat=True,
         )
 

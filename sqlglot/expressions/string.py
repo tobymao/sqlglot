@@ -177,6 +177,14 @@ class SplitPart(Expression, Func):
     }
 
 
+class Strtok(Expression, Func):
+    arg_types = {
+        "this": True,
+        "delimiter": False,
+        "part_index": False,
+    }
+
+
 class StartsWith(Expression, Func):
     _sql_names = ["STARTS_WITH", "STARTSWITH"]
     arg_types = {"this": True, "expression": True}

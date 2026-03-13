@@ -4112,7 +4112,6 @@ class DuckDB(Dialect):
                 cols.extend(expressions)
 
             # Build HASH argument
-            hash_arg: exp.Expression
             if len(cols) == 1:
                 if isinstance(cols[0], exp.Star):
                     # HASH(*) is not supported in DuckDB - HASH() requires explicit columns
@@ -4132,7 +4131,7 @@ class DuckDB(Dialect):
                 hash_arg = exp.Tuple(expressions=cols)
 
             # Build HASH(...) function
-            hash_func: exp.Expression = exp.Anonymous(this="HASH", expressions=[hash_arg])
+            hash_func = exp.Anonymous(this="HASH", expressions=[hash_arg])
 
             # Add DISTINCT if needed - wrap hash_func in Distinct
             if distinct:

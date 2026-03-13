@@ -138,8 +138,9 @@ class Spark(Spark2):
             exp.GroupConcat: _groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.JSONKeys: rename_func("JSON_OBJECT_KEYS"),
-            exp.PartitionedByProperty: lambda self,
-            e: f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}",
+            exp.PartitionedByProperty: lambda self, e: (
+                f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}"
+            ),
             exp.SafeAdd: rename_func("TRY_ADD"),
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),

@@ -29,9 +29,9 @@ EXPRESSION_METADATA = {
     },
     exp.Mod: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "expression")},
     exp.Rand: {
-        "annotator": lambda self, e: self._annotate_by_args(e, "this")
-        if e.this
-        else self._set_type(e, exp.DType.DOUBLE)
+        "annotator": lambda self, e: (
+            self._annotate_by_args(e, "this") if e.this else self._set_type(e, exp.DType.DOUBLE)
+        )
     },
     exp.MD5Digest: {"returns": exp.DType.VARBINARY},
 }

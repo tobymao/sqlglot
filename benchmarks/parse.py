@@ -43,13 +43,13 @@ large_case = (
 )
 
 complex_where = "SELECT * FROM t WHERE " + " AND ".join(
-    f"(c{i} > {i} OR c{i} LIKE '%s{i}%' OR c{i} BETWEEN {i} AND {i+10} OR c{i} IS NULL)"
+    f"(c{i} > {i} OR c{i} LIKE '%s{i}%' OR c{i} BETWEEN {i} AND {i + 10} OR c{i} IS NULL)"
     for i in range(200)
 )
 
 many_ctes = (
     "WITH "
-    + ", ".join(f"t{i} AS (SELECT {i} AS a FROM t{i-1 if i else 'base'})" for i in range(200))
+    + ", ".join(f"t{i} AS (SELECT {i} AS a FROM t{i - 1 if i else 'base'})" for i in range(200))
     + " SELECT * FROM t199"
 )
 

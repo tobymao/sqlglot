@@ -297,8 +297,9 @@ class MySQL(Dialect):
             exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
             exp.DayOfWeek: _remove_ts_or_ds_to_date(rename_func("DAYOFWEEK")),
             exp.DayOfYear: _remove_ts_or_ds_to_date(rename_func("DAYOFYEAR")),
-            exp.GroupConcat: lambda self,
-            e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
+            exp.GroupConcat: lambda self, e: (
+                f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})"""
+            ),
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.Length: length_or_char_length_sql,

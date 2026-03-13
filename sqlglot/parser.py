@@ -355,9 +355,11 @@ class Parser:
         "RIGHTPAD": lambda args: build_pad(args, is_left=False),
         "RPAD": lambda args: build_pad(args, is_left=False),
         "RTRIM": lambda args: build_trim(args, is_left=False),
-        "SCOPE_RESOLUTION": lambda args: exp.ScopeResolution(expression=seq_get(args, 0))
-        if len(args) != 2
-        else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1)),
+        "SCOPE_RESOLUTION": lambda args: (
+            exp.ScopeResolution(expression=seq_get(args, 0))
+            if len(args) != 2
+            else exp.ScopeResolution(this=seq_get(args, 0), expression=seq_get(args, 1))
+        ),
         "STRPOS": exp.StrPosition.from_arg_list,
         "CHARINDEX": lambda args: build_locate_strposition(args),
         "INSTR": exp.StrPosition.from_arg_list,
@@ -1269,10 +1271,12 @@ class Parser:
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint(allow_null=True)),
         "ON": lambda self: (
-            self._match(TokenType.UPDATE)
-            and self.expression(exp.OnUpdateColumnConstraint(this=self._parse_function()))
-        )
-        or self.expression(exp.OnProperty(this=self._parse_id_var())),
+            (
+                self._match(TokenType.UPDATE)
+                and self.expression(exp.OnUpdateColumnConstraint(this=self._parse_function()))
+            )
+            or self.expression(exp.OnProperty(this=self._parse_id_var()))
+        ),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint(this=self._parse_string())),
         "PERIOD": lambda self: self._parse_period_for_system_time(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
@@ -4988,9 +4992,11 @@ class Parser:
 
             elements["expressions"].extend(
                 self._parse_csv(
-                    lambda: None
-                    if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
-                    else self._parse_disjunction()
+                    lambda: (
+                        None
+                        if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
+                        else self._parse_disjunction()
+                    )
                 )
             )
 

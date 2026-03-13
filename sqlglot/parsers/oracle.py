@@ -60,10 +60,14 @@ class OracleParser(parser.Parser):
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
-        "GLOBAL": lambda self: self._match_text_seq("TEMPORARY")
-        and self.expression(exp.TemporaryProperty(this="GLOBAL")),
-        "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
-        and self.expression(exp.TemporaryProperty(this="PRIVATE")),
+        "GLOBAL": lambda self: (
+            self._match_text_seq("TEMPORARY")
+            and self.expression(exp.TemporaryProperty(this="GLOBAL"))
+        ),
+        "PRIVATE": lambda self: (
+            self._match_text_seq("TEMPORARY")
+            and self.expression(exp.TemporaryProperty(this="PRIVATE"))
+        ),
         "FORCE": lambda self: self.expression(exp.ForceProperty()),
     }
 

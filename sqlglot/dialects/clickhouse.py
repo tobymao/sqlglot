@@ -398,10 +398,12 @@ class ClickHouse(Dialect):
             exp.CurrentSchemas: rename_func("CURRENT_SCHEMAS"),
             exp.CountIf: rename_func("countIf"),
             exp.CosineDistance: rename_func("cosineDistance"),
-            exp.CompressColumnConstraint: lambda self,
-            e: f"CODEC({self.expressions(e, key='this', flat=True)})",
-            exp.ComputedColumnConstraint: lambda self,
-            e: f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}",
+            exp.CompressColumnConstraint: lambda self, e: (
+                f"CODEC({self.expressions(e, key='this', flat=True)})"
+            ),
+            exp.ComputedColumnConstraint: lambda self, e: (
+                f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}"
+            ),
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.CurrentVersion: rename_func("VERSION"),
             exp.DateAdd: _datetime_delta_sql("DATE_ADD"),

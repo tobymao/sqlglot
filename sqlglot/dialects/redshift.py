@@ -106,8 +106,9 @@ class Redshift(Postgres):
             exp.ArrayConcat: array_concat_sql("ARRAY_CONCAT"),
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
-            exp.ApproxDistinct: lambda self,
-            e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
+            exp.ApproxDistinct: lambda self, e: (
+                f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})"
+            ),
             exp.CurrentTimestamp: lambda self, e: (
                 "SYSDATE" if e.args.get("sysdate") else "GETDATE()"
             ),
@@ -133,10 +134,12 @@ class Redshift(Postgres):
                     transforms.unnest_generate_date_array_using_recursive_cte,
                 ]
             ),
-            exp.SortKeyProperty: lambda self,
-            e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
-            exp.StartsWith: lambda self,
-            e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
+            exp.SortKeyProperty: lambda self, e: (
+                f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})"
+            ),
+            exp.StartsWith: lambda self, e: (
+                f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'"
+            ),
             exp.StringToArray: rename_func("SPLIT_TO_ARRAY"),
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),

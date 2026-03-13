@@ -351,20 +351,24 @@ class Presto(Dialect):
                 "DATE_DIFF", unit_to_str(e), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateToDi: lambda self,
-            e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
+            exp.DateToDi: lambda self, e: (
+                f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)"
+            ),
             exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
             exp.DayOfWeek: lambda self, e: f"(({self.func('DAY_OF_WEEK', e.this)} % 7) + 1)",
             exp.DayOfWeekIso: rename_func("DAY_OF_WEEK"),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
-            exp.DiToDate: lambda self,
-            e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
+            exp.DiToDate: lambda self, e: (
+                f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)"
+            ),
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
-            exp.FileFormatProperty: lambda self,
-            e: f"format={self.sql(exp.Literal.string(e.name))}",
+            exp.FileFormatProperty: lambda self, e: (
+                f"format={self.sql(exp.Literal.string(e.name))}"
+            ),
             exp.First: _first_last_sql,
-            exp.FromTimeZone: lambda self,
-            e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
+            exp.FromTimeZone: lambda self, e: (
+                f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
+            ),
             exp.GenerateSeries: sequence_sql,
             exp.GenerateDateArray: sequence_sql,
             exp.If: if_sql(),
@@ -416,17 +420,20 @@ class Presto(Dialect):
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
             exp.ToChar: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
-            exp.TsOrDiToDi: lambda self,
-            e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
+            exp.TsOrDiToDi: lambda self, e: (
+                f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)"
+            ),
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.Unhex: rename_func("FROM_HEX"),
-            exp.UnixToStr: lambda self,
-            e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
+            exp.UnixToStr: lambda self, e: (
+                f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})"
+            ),
             exp.UnixToTime: _unix_to_time_sql,
-            exp.UnixToTimeStr: lambda self,
-            e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
+            exp.UnixToTimeStr: lambda self, e: (
+                f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)"
+            ),
             exp.VariancePop: rename_func("VAR_POP"),
             exp.With: transforms.preprocess([transforms.add_recursive_cte_column_names]),
             exp.WithinGroup: transforms.preprocess(

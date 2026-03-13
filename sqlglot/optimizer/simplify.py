@@ -533,8 +533,12 @@ class Simplifier:
     CONCATS = (exp.Concat, exp.DPipe)
 
     DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expr], DateTruncBinaryTransform] = {
-        exp.LT: lambda l, dt, u, d, t: l
-        < date_literal(dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u), t),
+        exp.LT: lambda l, dt, u, d, t: (
+            l
+            < date_literal(
+                dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u), t
+            )
+        ),
         exp.GT: lambda l, dt, u, d, t: l >= date_literal(date_floor(dt, u, d) + interval(u), t),
         exp.LTE: lambda l, dt, u, d, t: l < date_literal(date_floor(dt, u, d) + interval(u), t),
         exp.GTE: lambda l, dt, u, d, t: l >= date_literal(date_ceil(dt, u, d), t),

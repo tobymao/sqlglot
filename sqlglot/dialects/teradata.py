@@ -145,13 +145,12 @@ class Teradata(Dialect):
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
-            exp.StrPosition: lambda self, e: (
-                strposition_sql(
-                    self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
-                )
+            exp.StrPosition: lambda self, e: strposition_sql(
+                self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
             ),
-            exp.StrToDate: lambda self,
-            e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
+            exp.StrToDate: lambda self, e: (
+                f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})"
+            ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",

@@ -94,9 +94,11 @@ class SingleStore(MySQL):
 
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
-            exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e))
-            if e.args.get("format")
-            else self.func("DATE", e.this),
+            exp.TsOrDsToDate: lambda self, e: (
+                self.func("TO_DATE", e.this, self.format_time(e))
+                if e.args.get("format")
+                else self.func("DATE", e.this)
+            ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.StrToDate: lambda self, e: self.func(
@@ -159,12 +161,15 @@ class SingleStore(MySQL):
             exp.FromTimeZone: lambda self, e: self.func(
                 "CONVERT_TZ", e.this, e.args.get("zone"), "'UTC'"
             ),
-            exp.DiToDate: lambda self,
-            e: f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})",
-            exp.DateToDi: lambda self,
-            e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
-            exp.TsOrDiToDi: lambda self,
-            e: f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)",
+            exp.DiToDate: lambda self, e: (
+                f"STR_TO_DATE({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT})"
+            ),
+            exp.DateToDi: lambda self, e: (
+                f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)"
+            ),
+            exp.TsOrDiToDi: lambda self, e: (
+                f"(DATE_FORMAT({self.sql(e, 'this')}, {SingleStore.DATEINT_FORMAT}) :> INT)"
+            ),
             exp.Time: unsupported_args("zone")(lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
             exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
             exp.DatetimeTrunc: unsupported_args("zone")(timestamptrunc_sql()),
@@ -172,13 +177,17 @@ class SingleStore(MySQL):
             exp.DatetimeDiff: timestampdiff_sql,
             exp.DateTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.DateDiff: unsupported_args("zone")(
-                lambda self, e: timestampdiff_sql(self, e)
+                lambda self, e: (
+                    timestampdiff_sql(self, e)
+                    if e.unit is not None
+                    else self.func("DATEDIFF", e.this, e.expression)
+                )
+            ),
+            exp.TsOrDsDiff: lambda self, e: (
+                timestampdiff_sql(self, e)
                 if e.unit is not None
                 else self.func("DATEDIFF", e.this, e.expression)
             ),
-            exp.TsOrDsDiff: lambda self, e: timestampdiff_sql(self, e)
-            if e.unit is not None
-            else self.func("DATEDIFF", e.this, e.expression),
             exp.TimestampTrunc: unsupported_args("zone")(timestamptrunc_sql()),
             exp.CurrentDatetime: lambda self, e: self.sql(
                 cast_to_time6(exp.CurrentTimestamp(this=exp.Literal.number(6)), exp.DType.DATETIME)

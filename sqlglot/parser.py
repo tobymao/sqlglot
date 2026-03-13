@@ -2162,9 +2162,7 @@ class Parser:
         if kind == "COLUMN":
             this = self._parse_column()
         else:
-            this = self._parse_table_parts(
-                schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
-            )
+            this = self._parse_table_parts(schema=True, is_db_reference=kind == "SCHEMA")
 
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 

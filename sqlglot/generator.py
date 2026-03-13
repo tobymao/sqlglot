@@ -2839,7 +2839,7 @@ class Generator(metaclass=_Generator):
             ):
                 if window_this and spec:
                     self.unsupported(
-                        f"'{nulls_sort_change.strip()}' translation not supported in window functions"
+                        f"'{nulls_sort_change.strip()}' translation not supported in window function {window_this.sql_name()}"
                     )
                     nulls_sort_change = ""
                 elif self.NULL_ORDERING_SUPPORTED is False and (
@@ -2854,7 +2854,7 @@ class Generator(metaclass=_Generator):
                         ancestor = ancestor.this
                     if isinstance(ancestor, exp.AggFunc):
                         self.unsupported(
-                            f"'{nulls_sort_change.strip()}' translation not supported for aggregate functions with {sort_order} sort order"
+                            f"'{nulls_sort_change.strip()}' translation not supported for aggregate function {ancestor.sql_name()} with {sort_order} sort order"
                         )
                         nulls_sort_change = ""
                 elif self.NULL_ORDERING_SUPPORTED is None:

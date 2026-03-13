@@ -467,6 +467,15 @@ class Hive(Dialect):
             exp.Year,
         )
 
+        IGNORE_NULLS_FUNCS = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            this = expression.this
+            if isinstance(this, self.IGNORE_NULLS_FUNCS):
+                return self.func(this.sql_name(), this.this, exp.true())
+
+            return super().ignorenulls_sql(expression)
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             return rename_func("EXPLODE")(self, expression)
 

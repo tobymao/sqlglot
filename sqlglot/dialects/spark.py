@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
 )
 from sqlglot.parsers.spark import SparkParser
+from sqlglot import generator
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
 from sqlglot.typing.spark import EXPRESSION_METADATA
 from sqlglot.helper import seq_get
@@ -159,6 +160,9 @@ class Spark(Spark2):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.With)
+
+        def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+            return generator.Generator.ignorenulls_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):

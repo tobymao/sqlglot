@@ -951,17 +951,64 @@ class TestHive(Validator):
         )
 
         self.validate_all(
-            "SELECT FIRST(sample_col) IGNORE NULLS",
+            "SELECT FIRST(sample_col, TRUE)",
             read={
-                "hive": "SELECT FIRST(sample_col, TRUE)",
-                "spark2": "SELECT FIRST(sample_col, TRUE)",
                 "spark": "SELECT FIRST(sample_col, TRUE)",
                 "databricks": "SELECT FIRST(sample_col, TRUE)",
             },
             write={
+                "hive": "SELECT FIRST(sample_col, TRUE)",
+                "spark2": "SELECT FIRST(sample_col, TRUE)",
+                "spark": "SELECT FIRST(sample_col) IGNORE NULLS",
+                "databricks": "SELECT FIRST(sample_col) IGNORE NULLS",
                 "duckdb": "SELECT ANY_VALUE(sample_col)",
             },
         )
+
+        self.validate_all(
+            "SELECT FIRST_VALUE(sample_col, TRUE)",
+            read={
+                "spark": "SELECT FIRST_VALUE(sample_col, TRUE)",
+                "databricks": "SELECT FIRST_VALUE(sample_col, TRUE)",
+            },
+            write={
+                "hive": "SELECT FIRST_VALUE(sample_col, TRUE)",
+                "spark2": "SELECT FIRST_VALUE(sample_col, TRUE)",
+                "spark": "SELECT FIRST_VALUE(sample_col) IGNORE NULLS",
+                "databricks": "SELECT FIRST_VALUE(sample_col) IGNORE NULLS",
+                "duckdb": "SELECT FIRST_VALUE(sample_col IGNORE NULLS)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAST_VALUE(sample_col, TRUE)",
+            read={
+                "spark": "SELECT LAST_VALUE(sample_col, TRUE)",
+                "databricks": "SELECT LAST_VALUE(sample_col, TRUE)",
+            },
+            write={
+                "hive": "SELECT LAST_VALUE(sample_col, TRUE)",
+                "spark2": "SELECT LAST_VALUE(sample_col, TRUE)",
+                "spark": "SELECT LAST_VALUE(sample_col) IGNORE NULLS",
+                "databricks": "SELECT LAST_VALUE(sample_col) IGNORE NULLS",
+                "duckdb": "SELECT LAST_VALUE(sample_col IGNORE NULLS)",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAST(sample_col, TRUE)",
+            read={
+                "spark": "SELECT LAST(sample_col, TRUE)",
+                "databricks": "SELECT LAST(sample_col, TRUE)",
+            },
+            write={
+                "hive": "SELECT LAST(sample_col, TRUE)",
+                "spark2": "SELECT LAST(sample_col, TRUE)",
+                "spark": "SELECT LAST(sample_col) IGNORE NULLS",
+                "databricks": "SELECT LAST(sample_col) IGNORE NULLS",
+            },
+        )
+
         self.validate_identity(
             "DATE_SUB(CURRENT_DATE, 1 + 1)", "DATE_ADD(CURRENT_DATE, (1 + 1) * -1)"
         )

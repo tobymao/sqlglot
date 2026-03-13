@@ -674,6 +674,11 @@ class SnowflakeParser(parser.Parser):
             part_index_zero_as_one=True,
             empty_delimiter_returns_whole=True,
         ),
+        "STRTOK": lambda args: exp.Strtok(
+            this=seq_get(args, 0),
+            delimiter=seq_get(args, 1) or exp.Literal.string(" "),
+            part_index=seq_get(args, 2) or exp.Literal.number("1"),
+        ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,

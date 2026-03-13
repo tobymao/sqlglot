@@ -2462,16 +2462,24 @@ class DuckDB(Dialect):
             return f"SHOW {expression.name}"
 
         def sortarray_sql(self, expression: exp.SortArray) -> str:
+            arr = expression.this
             asc = expression.args.get("asc")
             nulls_first = expression.args.get("nulls_first")
-            arr = expression.this
-            if not isinstance(asc, exp.Boolean):
+
+            if not isinstance(asc, exp.Boolean) and not isinstance(nulls_first, exp.Boolean):
                 return self.func("LIST_SORT", arr, asc, nulls_first)
+
+            nulls_are_first = nulls_first == exp.true()
+            nulls_first_sql = exp.Literal.string("NULLS FIRST") if nulls_are_first else None
+
+            if not isinstance(asc, exp.Boolean):
+                return self.func("LIST_SORT", arr, asc, nulls_first_sql)
+
             descending = asc == exp.false()
-            want_nulls_first = nulls_first == exp.true()
-            if not descending and not want_nulls_first:
+
+            if not descending and not nulls_are_first:
                 return self.func("LIST_SORT", arr)
-            if not want_nulls_first:
+            if not nulls_are_first:
                 return self.func("ARRAY_REVERSE_SORT", arr)
             return self.func(
                 "LIST_SORT",

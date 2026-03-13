@@ -711,6 +711,14 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT ARRAY_SORT(x, FALSE)",
             },
         )
+        self.validate_all(
+            "SELECT ARRAY_SORT(x, foo, TRUE)",
+            read={"snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)"},
+            write={
+                "duckdb": "SELECT LIST_SORT(x, foo, 'NULLS FIRST')",
+                "snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)",
+            },
+        )
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
         self.validate_identity(
             "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"

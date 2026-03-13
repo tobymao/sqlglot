@@ -872,19 +872,20 @@ class TestParser(unittest.TestCase):
 
         # single part name no catalog and schema name in db
         for dialect in [None, "bigquery", "snowflake", "duckdb"]:
-            ast = parse_one("DROP SCHEMA IF EXISTS myschema")
-            self.assertEqual(
-                ast,
-                exp.Drop(
-                    this=exp.Table(
-                        this=None,
-                        db=exp.Identifier(this="myschema", quoted=False),
+            with self.subTest(f"DROP SCHEMA for {dialect}"):
+                ast = parse_one("DROP SCHEMA IF EXISTS myschema", dialect=dialect)
+                self.assertEqual(
+                    ast,
+                    exp.Drop(
+                        this=exp.Table(
+                            this=None,
+                            db=exp.Identifier(this="myschema", quoted=False),
+                        ),
+                        kind="SCHEMA",
+                        exists=True,
                     ),
-                    kind="SCHEMA",
-                    exists=True,
-                ),
-            )
-            self.assertEqual(ast.sql(), "DROP SCHEMA IF EXISTS myschema")
+                )
+                self.assertEqual(ast.sql(), "DROP SCHEMA IF EXISTS myschema")
 
     def test_parse_create_schema(self):
         for dialect in [None, "bigquery", "snowflake"]:

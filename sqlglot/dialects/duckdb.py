@@ -4039,38 +4039,73 @@ class DuckDB(Dialect):
             part_index_arg = expression.args.get("part_index")
 
             if delimiter_arg and part_index_arg:
-                # Convert delimiter characters to escaped regex character class
-                if delimiter_arg.is_string:
-                    delimiter_chars = delimiter_arg.this
-                    if delimiter_chars:  # Non-empty delimiter
-                        # Escape special regex chars, but handle character class escaping properly
-                        escaped_chars = re.escape(delimiter_chars)
-                        regex_pattern = exp.Literal.string(f"[{escaped_chars}]")
-                    else:  # Empty delimiter - use empty string pattern, as [] is invalid regex for duckdb's REGEXP_REPLACE
-                        regex_pattern = exp.Literal.string("")
-                else:
-                    # For non-literal delimiters, escape regex chars and build character class at runtime
-                    escaped_delimiter = exp.Anonymous(
-                        this="REGEXP_REPLACE",
-                        expressions=[
-                            delimiter_arg,
-                            exp.Literal.string(r"([\[\]^.\-*+?(){}|$])"),  # Escape problematic regex chars
-                            exp.Literal.string(r"\\\1"),          # Replace with escaped version
-                            exp.Literal.string("g")               # Global flag
-                        ]
-                    )
-                    # CASE WHEN delimiter = '' THEN '' ELSE CONCAT('[', escaped_delimiter, ']') END
-                    regex_pattern = exp.case().when(
-                        delimiter_arg.eq(exp.Literal.string("")),
-                        exp.Literal.string("")
-                    ).else_(
+                """
+                DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB. 
+                We may need to adjust this if we want to support transpilation from other dialects
+     
+                CASE 
+                    -- Snowflake: empty delimiter + empty input string → NULL
+                    WHEN delimiter = '' AND input_str = '' THEN NULL 
+
+                    -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return input string if index is 1
+                    WHEN delimiter = '' AND index = 1 THEN input_str 
+                    
+                    -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return NULL if index is not 1
+                    WHEN delimiter = '' THEN NULL 
+
+                    -- Snowflake: negative indices return NULL
+                    WHEN index < 0 THEN NULL 
+
+                    -- Snowflake: return NULL if any argument is NULL
+                    WHEN input_str IS NULL OR delimiter IS NULL OR index IS NULL THEN NULL 
+
+
+                    ELSE LIST_FILTER(
+                        REGEXP_SPLIT_TO_ARRAY(
+                            input_str, 
+                            CASE 
+                                -- if delimiter is '', we don't want to surround it with '[' and ']' as '[]' is invalid for DuckDB 
+                                WHEN delimiter = '' THEN '' 
+
+                                -- handle problematic regex characters in delimiter with REGEXP_REPLACE
+                                -- turn delimiter into a regex char set, otherwise DuckDB will match in order, which we don't want
+                                ELSE '[' || REGEXP_REPLACE(delimiter, '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' 
+                            END
+                        ), 
+                        
+                        -- Snowflake: don't return empty strings
+                        x -> NOT x = ''
+                    )[index] 
+                END
+                """
+
+                # Escape regex chars and build character class at runtime using REGEXP_REPLACE
+                escaped_delimiter = exp.Anonymous(
+                    this="REGEXP_REPLACE",
+                    expressions=[
+                        delimiter_arg,
+                        exp.Literal.string(
+                            r"([\[\]^.\-*+?(){}|$\\])"
+                        ),  # Escape problematic regex chars
+                        exp.Literal.string(
+                            r"\\\1"
+                        ),  # Replace with escaped version using $1 backreference
+                        exp.Literal.string("g"),  # Global flag
+                    ],
+                )
+                # CASE WHEN delimiter = '' THEN '' ELSE CONCAT('[', escaped_delimiter, ']') END
+                regex_pattern = (
+                    exp.case()
+                    .when(delimiter_arg.eq(exp.Literal.string("")), exp.Literal.string(""))
+                    .else_(
                         exp.func(
                             "CONCAT",
                             exp.Literal.string("["),
                             escaped_delimiter,
-                            exp.Literal.string("]")
+                            exp.Literal.string("]"),
                         )
                     )
+                )
 
                 # STRTOK skips empty strings, so we need to filter them out
                 # LIST_FILTER(REGEXP_SPLIT_TO_ARRAY(string, pattern), x -> x != '')[index]
@@ -4080,47 +4115,53 @@ class DuckDB(Dialect):
                 filtered_array = exp.func(
                     "LIST_FILTER",
                     split_array,
-                    exp.Lambda(this=exp.not_(is_empty.copy()), expressions=[x.copy()])
+                    exp.Lambda(this=exp.not_(is_empty.copy()), expressions=[x.copy()]),
                 )
                 base_func = exp.Bracket(
                     this=filtered_array,
                     expressions=[part_index_arg],
                     offset=1,
                 )
-                
+
                 # Build conditional logic for Snowflake semantics
                 case_expr = exp.case().else_(base_func)
 
                 # Handle empty delimiter cases
-                case_expr = case_expr.when(
-                    exp.and_(
+                case_expr = (
+                    case_expr.when(
+                        exp.and_(
+                            delimiter_arg.eq(exp.Literal.string("")),
+                            string_arg.eq(exp.Literal.string("")),
+                        ),
+                        exp.null(),  # Empty delimiter + empty string → NULL
+                    )
+                    .when(
+                        exp.and_(
+                            delimiter_arg.eq(exp.Literal.string("")),
+                            part_index_arg.eq(exp.Literal.number("1")),
+                        ),
+                        string_arg,  # Empty delimiter + index 1 → return whole string
+                    )
+                    .when(
                         delimiter_arg.eq(exp.Literal.string("")),
-                        string_arg.eq(exp.Literal.string(""))
-                    ),
-                    exp.null()  # Empty delimiter + empty string → NULL
-                ).when(
-                    exp.and_(
-                        delimiter_arg.eq(exp.Literal.string("")),
-                        part_index_arg.eq(exp.Literal.number("1"))
-                    ),
-                    string_arg  # Empty delimiter + index 1 → return whole string
-                ).when(
-                    delimiter_arg.eq(exp.Literal.string("")),
-                    exp.null()  # Empty delimiter + index != 1 → NULL
+                        exp.null(),  # Empty delimiter + index != 1 → NULL
+                    )
                 )
 
                 # Check for negative index (return NULL)
                 case_expr = case_expr.when(
-                    exp.LT(this=part_index_arg, expression=exp.Literal.number("0")),
-                    exp.null()
+                    exp.LT(this=part_index_arg, expression=exp.Literal.number("0")), exp.null()
                 )
 
                 # Check for NULL arguments if needed
-                combined_null_check = exp.or_(*[arg.is_(exp.null()) for arg in [string_arg, delimiter_arg, part_index_arg]], copy=False)
+                combined_null_check = exp.or_(
+                    *[arg.is_(exp.null()) for arg in [string_arg, delimiter_arg, part_index_arg]],
+                    copy=False,
+                )
                 case_expr = case_expr.when(combined_null_check, exp.null())
 
                 return self.sql(case_expr)
-            
+
             return self.function_fallback_sql(expression)
 
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:

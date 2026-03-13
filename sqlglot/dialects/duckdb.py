@@ -531,11 +531,6 @@ def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     return self.func("ARRAY_SORT", expression.this)
 
 
-def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
-    name = "ARRAY_REVERSE_SORT" if expression.args.get("asc") == exp.false() else "ARRAY_SORT"
-    return self.func(name, expression.this)
-
-
 def _array_contains_sql(self: DuckDB.Generator, expression: exp.ArrayContains) -> str:
     this = expression.this
     expr = expression.expression
@@ -1738,7 +1733,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.SortArray: _sort_array_sql,
             exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
@@ -2466,6 +2460,25 @@ class DuckDB(Dialect):
 
         def show_sql(self, expression: exp.Show) -> str:
             return f"SHOW {expression.name}"
+
+        def sortarray_sql(self, expression: exp.SortArray) -> str:
+            asc = expression.args.get("asc")
+            nulls_first = expression.args.get("nulls_first")
+            arr = expression.this
+            if not isinstance(asc, exp.Boolean):
+                return self.func("LIST_SORT", arr, asc, nulls_first)
+            descending = asc == exp.false()
+            want_nulls_first = nulls_first == exp.true()
+            if not descending and not want_nulls_first:
+                return self.func("LIST_SORT", arr)
+            if not want_nulls_first:
+                return self.func("ARRAY_REVERSE_SORT", arr)
+            return self.func(
+                "LIST_SORT",
+                arr,
+                exp.Literal.string("DESC" if descending else "ASC"),
+                exp.Literal.string("NULLS FIRST"),
+            )
 
         def install_sql(self, expression: exp.Install) -> str:
             force = "FORCE " if expression.args.get("force") else ""

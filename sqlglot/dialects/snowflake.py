@@ -731,7 +731,6 @@ class Snowflake(Dialect):
             exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
             exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
             exp.LowerHex: rename_func("TO_CHAR"),
-            exp.SortArray: rename_func("ARRAY_SORT"),
             exp.Skewness: rename_func("SKEW"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
@@ -789,6 +788,13 @@ class Snowflake(Dialect):
                 "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
             ),
         }
+
+        def sortarray_sql(self, expression: exp.SortArray) -> str:
+            asc = expression.args.get("asc")
+            nulls_first = expression.args.get("nulls_first")
+            if asc == exp.false() and nulls_first == exp.true():
+                nulls_first = None
+            return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
 
         def nthvalue_sql(self, expression: exp.NthValue) -> str:
             result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))

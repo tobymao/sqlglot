@@ -695,6 +695,22 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT GET_PATH(foo, 'bar')")
         self.validate_identity("SELECT a, exclude, b FROM xxx")
         self.validate_identity("SELECT ARRAY_SORT(x, TRUE, FALSE)")
+        self.validate_all(
+            "SELECT ARRAY_SORT(x)",
+            read={"snowflake": "SELECT ARRAY_SORT(x)"},
+            write={
+                "duckdb": "SELECT LIST_SORT(x)",
+                "snowflake": "SELECT ARRAY_SORT(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_SORT(x, FALSE)",
+            read={"snowflake": "SELECT ARRAY_SORT(x, FALSE)"},
+            write={
+                "duckdb": "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+                "snowflake": "SELECT ARRAY_SORT(x, FALSE)",
+            },
+        )
         self.validate_identity("SELECT BOOLXOR_AGG(col) FROM tbl")
         self.validate_identity(
             "SELECT PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY col) OVER (PARTITION BY category)"

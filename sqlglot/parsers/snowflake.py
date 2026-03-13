@@ -277,6 +277,14 @@ def _build_round(args: t.List) -> exp.Round:
     return expression
 
 
+def _build_array_sort(args: t.List) -> exp.SortArray:
+    asc = seq_get(args, 1)
+    nulls_first = seq_get(args, 2)
+    if nulls_first is None and isinstance(asc, exp.Boolean):
+        nulls_first = exp.Boolean(this=not asc.this)
+    return exp.SortArray(this=seq_get(args, 0), asc=asc, nulls_first=nulls_first)
+
+
 def _build_generator(args: t.List) -> exp.Generator:
     """
     Build Generator expression, unwrapping Snowflake's named parameters.
@@ -423,7 +431,7 @@ class SnowflakeParser(parser.Parser):
             end=seq_get(args, 2),
             zero_based=True,
         ),
-        "ARRAY_SORT": exp.SortArray.from_arg_list,
+        "ARRAY_SORT": _build_array_sort,
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
         "ARRAYS_OVERLAP": lambda args: exp.ArrayOverlaps(
             this=seq_get(args, 0), expression=seq_get(args, 1), null_safe=True

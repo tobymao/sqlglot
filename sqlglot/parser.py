@@ -1741,9 +1741,6 @@ class Parser:
         self.error_message_context: int = error_message_context
         self.max_errors: int = max_errors
         self.dialect: t.Any = _resolve_dialect(dialect)
-        self._column_continuation_tokens: t.FrozenSet = (
-            frozenset(self.COLUMN_OPERATORS) | self._EXTRA_COLUMN_CONTINUATION_TOKENS
-        )
         self.reset()
 
     def reset(self) -> None:
@@ -5714,14 +5711,17 @@ class Parser:
             return self.UNARY_PARSERS[self._prev.token_type](self)
         return self._parse_type()
 
-    # Tokens that indicate a simple column reference can be created directly
-    _FAST_COLUMN_TOKENS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.VAR, TokenType.IDENTIFIER})
+    # Tokens that indicate a simple column reference
+    FAST_COLUMN_TOKENS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.VAR, TokenType.IDENTIFIER})
 
-    # Extra tokens (beyond COLUMN_OPERATORS keys) that prevent the column fast path
-    _EXTRA_COLUMN_CONTINUATION_TOKENS: t.ClassVar[t.FrozenSet] = frozenset(
+    BRACKETS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.L_BRACKET, TokenType.L_BRACE})
+
+    # Postfix tokens that prevent the bare column fast path
+    COLUMN_POSTFIX_TOKENS: t.ClassVar[t.FrozenSet] = frozenset(
         {
             TokenType.L_PAREN,
             TokenType.L_BRACKET,
+            TokenType.L_BRACE,
             TokenType.COLON,
             TokenType.JOIN_MARKER,
         }
@@ -5730,92 +5730,68 @@ class Parser:
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
     ) -> t.Optional[exp.Expr]:
-        # Fast path for column references: if the current token is a simple identifier
-        # (VAR/IDENTIFIER), skip _parse_interval and _parse_types which can't match.
-        # For bare columns (not followed by DOT, L_PAREN, etc.), also skip the full
-        # _parse_column chain and construct the Column node directly.
-        curr = self._curr
-        curr_tt = curr.token_type
-        if (
-            curr_tt in self._FAST_COLUMN_TOKENS
-            and not fallback_to_identifier
-            and curr.text.upper() not in self.NO_PAREN_FUNCTION_PARSERS
-        ):
-            next_tt = self._next.token_type
+        # Fast path: VAR/IDENTIFIER tokens can't be intervals or type keywords,
+        # so skip _parse_interval and _parse_types and go straight to _parse_column.
+        if not fallback_to_identifier and self._curr.token_type in self.FAST_COLUMN_TOKENS:
+            return self._parse_column()
 
-            if next_tt not in self._column_continuation_tokens:
-                # Fast path: bare column (e.g. `col` not followed by `.`, `(`, `::`, etc.)
-                self._advance()
-                ident = self.expression(
-                    exp.Identifier(this=curr.text, quoted=curr_tt == TokenType.IDENTIFIER),
-                    curr,
-                )
-                return self.expression(exp.Column(this=ident), comments=ident.pop_comments())
+        if interval := parse_interval and self._parse_interval():
+            return self._parse_column_ops(interval)
 
-            # We know it's a VAR/IDENTIFIER so it can't be an interval or type keyword.
-            # Skip _parse_interval and _parse_types, fall through to _parse_column below.
-        else:
-            if interval := parse_interval and self._parse_interval():
-                return self._parse_column_ops(interval)
+        index = self._index
+        data_type = self._parse_types(check_func=True, allow_identifiers=False)
 
-            index = self._index
-            data_type = self._parse_types(check_func=True, allow_identifiers=False)
+        # parse_types() returns a Cast if we parsed BQ's inline constructor <type>(<values>) e.g.
+        # STRUCT<a INT, b STRING>(1, 'foo'), which is canonicalized to CAST(<values> AS <type>)
+        if isinstance(data_type, exp.Cast):
+            # This constructor can contain ops directly after it, for instance struct unnesting:
+            # STRUCT<a INT, b STRING>(1, 'foo').* --> CAST(STRUCT(1, 'foo') AS STRUCT<a iNT, b STRING).*
+            return self._parse_column_ops(data_type)
 
-            # parse_types() returns a Cast if we parsed BQ's inline constructor <type>(<values>) e.g.
-            # STRUCT<a INT, b STRING>(1, 'foo'), which is canonicalized to CAST(<values> AS <type>)
-            if isinstance(data_type, exp.Cast):
-                # This constructor can contain ops directly after it, for instance struct unnesting:
-                # STRUCT<a INT, b STRING>(1, 'foo').* --> CAST(STRUCT(1, 'foo') AS STRUCT<a iNT, b STRING).*
+        if data_type:
+            index2 = self._index
+            this = self._parse_primary()
+
+            if isinstance(this, exp.Literal):
+                literal = this.name
+                this = self._parse_column_ops(this)
+
+                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
+                if parser:
+                    return parser(self, this, data_type)
+
+                if (
+                    self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
+                    and data_type.is_type(exp.DType.TIMESTAMP)
+                    and TIME_ZONE_RE.search(literal)
+                ):
+                    data_type = exp.DataType.build("TIMESTAMPTZ")
+
+                return self.expression(exp.Cast(this=this, to=data_type))
+
+            # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
+            # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )
+            #
+            # If the index difference here is greater than 1, that means the parser itself must have
+            # consumed additional tokens such as the DECIMAL scale and precision in the above example.
+            #
+            # If it's not greater than 1, then it must be 1, because we've consumed at least the type
+            # keyword, meaning that the expressions arg of the DataType must have gotten set by a
+            # callable in the TYPE_CONVERTERS mapping. For example, Snowflake converts DECIMAL to
+            # DECIMAL(38, 0)) in order to facilitate the data type's transpilation.
+            #
+            # In these cases, we don't really want to return the converted type, but instead retreat
+            # and try to parse a Column or Identifier in the section below.
+            if data_type.expressions and index2 - index > 1:
+                self._retreat(index2)
                 return self._parse_column_ops(data_type)
 
-            if data_type:
-                index2 = self._index
-                this = self._parse_primary()
-
-                if isinstance(this, exp.Literal):
-                    literal = this.name
-                    this = self._parse_column_ops(this)
-
-                    parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
-                    if parser:
-                        return parser(self, this, data_type)
-
-                    if (
-                        self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
-                        and data_type.is_type(exp.DType.TIMESTAMP)
-                        and TIME_ZONE_RE.search(literal)
-                    ):
-                        data_type = exp.DataType.build("TIMESTAMPTZ")
-
-                    return self.expression(exp.Cast(this=this, to=data_type))
-
-                # The expressions arg gets set by the parser when we have something like DECIMAL(38, 0)
-                # in the input SQL. In that case, we'll produce these tokens: DECIMAL ( 38 , 0 )
-                #
-                # If the index difference here is greater than 1, that means the parser itself must have
-                # consumed additional tokens such as the DECIMAL scale and precision in the above example.
-                #
-                # If it's not greater than 1, then it must be 1, because we've consumed at least the type
-                # keyword, meaning that the expressions arg of the DataType must have gotten set by a
-                # callable in the TYPE_CONVERTERS mapping. For example, Snowflake converts DECIMAL to
-                # DECIMAL(38, 0)) in order to facilitate the data type's transpilation.
-                #
-                # In these cases, we don't really want to return the converted type, but instead retreat
-                # and try to parse a Column or Identifier in the section below.
-                if data_type.expressions and index2 - index > 1:
-                    self._retreat(index2)
-                    return self._parse_column_ops(data_type)
-
-                self._retreat(index)
+            self._retreat(index)
 
         if fallback_to_identifier:
             return self._parse_id_var()
 
-        this = self._parse_column()
-        if this and self.COLON_IS_VARIANT_EXTRACT:
-            this = self._parse_colon_as_variant_extract(this)
-
-        return this
+        return self._parse_column()
 
     def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
         this = self._parse_type()
@@ -6149,13 +6125,92 @@ class Parser:
         )
 
     def _parse_column(self) -> t.Optional[exp.Expr]:
-        this = self._parse_column_reference()
-        if not this:
-            this = self._parse_bracket(this)
-        column = self._parse_column_ops(this) if this else this
+        column: t.Optional[exp.Expr] = self._parse_column_fast_path()
+        if column is None:
+            this = self._parse_column_reference()
+            if not this:
+                this = self._parse_bracket(this)
+            column = self._parse_column_ops(this) if this else this
 
-        if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
-            column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+        if column:
+            if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS:
+                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+            if self.COLON_IS_VARIANT_EXTRACT:
+                column = self._parse_colon_as_variant_extract(column)
+
+        return column
+
+    def _parse_column_fast_path(self) -> t.Optional[exp.Column | exp.Dot]:
+        """Fast path for simple column and dot references (a, a.b, ...).
+
+        Greedily consumes VAR/IDENTIFIER tokens separated by DOTs, then checks
+        that nothing complex follows. If it does, retreats and returns None so
+        the slow path can handle it. For >4 parts, wraps in exp.Dot nodes.
+        """
+        index = self._index
+        parts: t.Optional[t.List[exp.Identifier]] = None
+        all_comments: t.Optional[t.List[str]] = None
+
+        while self._match_set(self.FAST_COLUMN_TOKENS):
+            token = self._prev
+            comments = self._prev_comments
+
+            if parts is None and token.text.upper() in self.NO_PAREN_FUNCTION_PARSERS:
+                self._retreat(index)
+                return None
+
+            has_dot = self._match(TokenType.DOT)
+
+            if has_dot and self._curr.token_type not in self.FAST_COLUMN_TOKENS:
+                self._retreat(index)
+                return None
+
+            if not has_dot:
+                curr_tt = self._curr.token_type
+                if curr_tt in self.COLUMN_OPERATORS or curr_tt in self.COLUMN_POSTFIX_TOKENS:
+                    self._retreat(index)
+                    return None
+
+            if parts is None:
+                parts = []
+
+            if comments:
+                if all_comments is None:
+                    all_comments = []
+                all_comments.extend(comments)
+                self._prev_comments = []
+
+            parts.append(
+                self.expression(
+                    exp.Identifier(
+                        this=token.text, quoted=token.token_type == TokenType.IDENTIFIER
+                    ),
+                    token,
+                )
+            )
+
+            if not has_dot:
+                break
+
+        if parts is None:
+            return None
+
+        n = len(parts)
+
+        if n == 1:
+            column: exp.Column | exp.Dot = exp.Column(this=parts[0])
+        elif n == 2:
+            column = exp.Column(this=parts[1], table=parts[0])
+        elif n == 3:
+            column = exp.Column(this=parts[2], table=parts[1], db=parts[0])
+        else:
+            column = exp.Column(this=parts[3], table=parts[2], db=parts[1], catalog=parts[0])
+
+            for i in range(4, n):
+                column = exp.Dot(this=column, expression=parts[i])
+
+        if all_comments:
+            column.add_comments(all_comments)
 
         return column
 
@@ -6280,7 +6335,8 @@ class Parser:
         return self._parse_types()
 
     def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
-        this = self._parse_bracket(this)
+        while self._curr.token_type in self.BRACKETS:
+            this = self._parse_bracket(this)
 
         column_operators = self.COLUMN_OPERATORS
         cast_column_operators = self.CAST_COLUMN_OPERATORS
@@ -7096,7 +7152,7 @@ class Parser:
         return expression
 
     def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
-        if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
+        if not self._match_set(self.BRACKETS):
             return this
 
         if self.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:

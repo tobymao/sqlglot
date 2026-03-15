@@ -307,7 +307,7 @@ def _discover_parsers():
 
 
 def _bench(name, fn, *args, iterations=5):
-    """Benchmark fn(*args) and return the median time in seconds."""
+    """Benchmark fn(*args) and return the best time in seconds."""
     times = []
     for _ in range(iterations):
         t0 = time.perf_counter()
@@ -315,10 +315,9 @@ def _bench(name, fn, *args, iterations=5):
         times.append(time.perf_counter() - t0)
         if times[-1] > 1:
             break
-    times.sort()
-    median = times[len(times) // 2]
-    print(f"  {name}: {_fmt_time(median)}")
-    return median
+    best = min(times)
+    print(f"  {name}: {_fmt_time(best)}")
+    return best
 
 
 def _bench_sqlglot(results):

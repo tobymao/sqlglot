@@ -1,6 +1,412 @@
 Changelog
 =========
 
+## [v30.0.0] - 2026-03-16
+### :boom: BREAKING CHANGES
+- due to [`8ee0646`](https://github.com/tobymao/sqlglot/commit/8ee0646baa6dfae7e96ca86e2c1af5d53fc04290) - Transpile numeric literals with underscores from ClickHouse to other dialects *(PR [#7132](https://github.com/tobymao/sqlglot/pull/7132) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Transpile numeric literals with underscores from ClickHouse to other dialects (#7132)
+
+- due to [`81a3763`](https://github.com/tobymao/sqlglot/commit/81a37636c374690d12fe0b57d78adf2310daf3cb) - cast string literals to TIMESTAMP in TO_CHAR generation *(PR [#7127](https://github.com/tobymao/sqlglot/pull/7127) by [@marconae](https://github.com/marconae))*:
+
+  cast string literals to TIMESTAMP in TO_CHAR generation (#7127)
+
+- due to [`dff662a`](https://github.com/tobymao/sqlglot/commit/dff662a1389bdfbe6c331ca31dd37f76a6353429) - add transpilation support for ARRAY_GENERATE_RANGE function *(PR [#7107](https://github.com/tobymao/sqlglot/pull/7107) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  add transpilation support for ARRAY_GENERATE_RANGE function (#7107)
+
+- due to [`8e6b61f`](https://github.com/tobymao/sqlglot/commit/8e6b61f18e465b24ad9e20a8e1509486177fbb32) - transpilation support MAP_DELETE *(PR [#7139](https://github.com/tobymao/sqlglot/pull/7139) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support MAP_DELETE (#7139)
+
+- due to [`351e958`](https://github.com/tobymao/sqlglot/commit/351e958c3cd8a1395826ef624979275b246490f8) - fix parsing error in json_extract for exasol *(PR [#7098](https://github.com/tobymao/sqlglot/pull/7098) by [@nnamdi16](https://github.com/nnamdi16))*:
+
+  fix parsing error in json_extract for exasol (#7098)
+
+- due to [`1b1db57`](https://github.com/tobymao/sqlglot/commit/1b1db5728903d6468eba3d07da2a468395bf628b) - transpilation support MAP_SIZE *(PR [#7146](https://github.com/tobymao/sqlglot/pull/7146) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support MAP_SIZE (#7146)
+
+- due to [`0b4e26b`](https://github.com/tobymao/sqlglot/commit/0b4e26b8e7045bcf68992b6a2c8a5fd51b8262d7) - annotate EXTRACT(expr) for DuckDB *(PR [#7154](https://github.com/tobymao/sqlglot/pull/7154) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate EXTRACT(expr) for DuckDB (#7154)
+
+- due to [`95d7d20`](https://github.com/tobymao/sqlglot/commit/95d7d2052b1ed8fc64a99d557b8b085ad466100e) - annotate `TO_TIMESTAMP` as `TIMESTAMPTZ` fixes [#7155](https://github.com/tobymao/sqlglot/pull/7155) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  annotate `TO_TIMESTAMP` as `TIMESTAMPTZ` fixes #7155
+
+- due to [`7cc4332`](https://github.com/tobymao/sqlglot/commit/7cc43327ba72b3a1af6d8f2f489a97b997748ee9) - support transpilation of function RIGHT from Snowflake to DuckDB *(PR [#7148](https://github.com/tobymao/sqlglot/pull/7148) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of function RIGHT from Snowflake to DuckDB (#7148)
+
+- due to [`ad9d114`](https://github.com/tobymao/sqlglot/commit/ad9d114aea7f7553485631372d99ec5e5cf85045) - Enable transpilation for ARRAY_POSITION function *(PR [#7153](https://github.com/tobymao/sqlglot/pull/7153) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Enable transpilation for ARRAY_POSITION function (#7153)
+
+- due to [`684ff4a`](https://github.com/tobymao/sqlglot/commit/684ff4a13b1220fd5d3c0ec597cbdc630a3b9c03) - support arrayExcept for ClickHouse *(PR [#7161](https://github.com/tobymao/sqlglot/pull/7161) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support arrayExcept for ClickHouse (#7161)
+
+- due to [`74fd80c`](https://github.com/tobymao/sqlglot/commit/74fd80cdf055c828cedfac43b4b54132d18558bb) - split up expressions.py *(PR [#7160](https://github.com/tobymao/sqlglot/pull/7160) by [@tobymao](https://github.com/tobymao))*:
+
+  split up expressions.py (#7160)
+
+- due to [`d5840c5`](https://github.com/tobymao/sqlglot/commit/d5840c53f6a359def002c0b634a48706519b11e7) - support transpilation of RANDOM from Snowflake to DuckDB *(PR [#7163](https://github.com/tobymao/sqlglot/pull/7163) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of RANDOM from Snowflake to DuckDB (#7163)
+
+- due to [`07ef171`](https://github.com/tobymao/sqlglot/commit/07ef1711fdff0fa8f877b93f5be8921424eed438) - Add support for multiple-suffix combined aggregate functions in Clickhouse dialect *(PR [#7109](https://github.com/tobymao/sqlglot/pull/7109) by [@emanb29](https://github.com/emanb29))*:
+
+  Add support for multiple-suffix combined aggregate functions in Clickhouse dialect (#7109)
+
+- due to [`280e247`](https://github.com/tobymao/sqlglot/commit/280e24726be22a4f06261168d5dfc74b361dd04d) - Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION *(PR [#7145](https://github.com/tobymao/sqlglot/pull/7145) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION (#7145)
+
+- due to [`542e392`](https://github.com/tobymao/sqlglot/commit/542e3920fb7d232b523e950820750e549a8d909a) - Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION *(PR [#7145](https://github.com/tobymao/sqlglot/pull/7145) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION (#7145)
+
+- due to [`363167c`](https://github.com/tobymao/sqlglot/commit/363167c6609fa80b6014851b4415adca17b00df4) - parse FILE column *(PR [#7184](https://github.com/tobymao/sqlglot/pull/7184) by [@geooo109](https://github.com/geooo109))*:
+
+  parse FILE column (#7184)
+
+- due to [`f630d75`](https://github.com/tobymao/sqlglot/commit/f630d7579231f29fa5637b48f1be0b5665eb36b3) - support dotcolon with JSON *(PR [#7191](https://github.com/tobymao/sqlglot/pull/7191) by [@geooo109](https://github.com/geooo109))*:
+
+  support dotcolon with JSON (#7191)
+
+- due to [`29399bb`](https://github.com/tobymao/sqlglot/commit/29399bbed44a74d95257040fd36f0a0f6de7c7d8) - remove invalid group by distinct during custom transformation of group by all *(PR [#7197](https://github.com/tobymao/sqlglot/pull/7197) by [@nnamdi16](https://github.com/nnamdi16))*:
+
+  remove invalid group by distinct during custom transformation of group by all (#7197)
+
+- due to [`e0947ad`](https://github.com/tobymao/sqlglot/commit/e0947adcaeb1e3cb829e584e0b071c598c64cfa9) - set default window frame for certain Snowflake ranking functions during transpilation *(PR [#7195](https://github.com/tobymao/sqlglot/pull/7195) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  set default window frame for certain Snowflake ranking functions during transpilation (#7195)
+
+- due to [`4a3254f`](https://github.com/tobymao/sqlglot/commit/4a3254fbd1bfee7aa6787d3fc31832d8e9771932) - transpilation support MAP_PICK  *(PR [#7189](https://github.com/tobymao/sqlglot/pull/7189) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support MAP_PICK  (#7189)
+
+- due to [`9431fd4`](https://github.com/tobymao/sqlglot/commit/9431fd457dc4dbad7a963828c5303889573079d3) - annotate CURRENT_TIMESTAMP for TSQL *(PR [#7208](https://github.com/tobymao/sqlglot/pull/7208) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate CURRENT_TIMESTAMP for TSQL (#7208)
+
+- due to [`4087a15`](https://github.com/tobymao/sqlglot/commit/4087a152c5d4372ab53644061980b81a9174db1e) - properly handle GENERATED ALWAYS/BY DEFAULT *(PR [#7210](https://github.com/tobymao/sqlglot/pull/7210) by [@anna-stepien](https://github.com/anna-stepien))*:
+
+  properly handle GENERATED ALWAYS/BY DEFAULT (#7210)
+
+- due to [`a39d3e9`](https://github.com/tobymao/sqlglot/commit/a39d3e999e707114226edb806061b80e0164489a) - Implement transpilation for ARRAYS_OVERLAP function *(PR [#7200](https://github.com/tobymao/sqlglot/pull/7200) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Implement transpilation for ARRAYS_OVERLAP function (#7200)
+
+- due to [`ed5e179`](https://github.com/tobymao/sqlglot/commit/ed5e1792a30e5172620e263edcae65f2f892f55b) - Added tests for to_array *(PR [#7201](https://github.com/tobymao/sqlglot/pull/7201) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Added tests for to_array (#7201)
+
+- due to [`3ef5db9`](https://github.com/tobymao/sqlglot/commit/3ef5db9ca10527e237340cc24612d63d4d1bcf1b) - support DETACH *(PR [#7215](https://github.com/tobymao/sqlglot/pull/7215) by [@geooo109](https://github.com/geooo109))*:
+
+  support DETACH (#7215)
+
+- due to [`b5f888e`](https://github.com/tobymao/sqlglot/commit/b5f888e403b20dc9729eb7f01f5cc5227f173ce2) - handle NULL discrepancy during transpilation of SPLIT from Snowflake to DuckDB *(PR [#7216](https://github.com/tobymao/sqlglot/pull/7216) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  handle NULL discrepancy during transpilation of SPLIT from Snowflake to DuckDB (#7216)
+
+- due to [`5599478`](https://github.com/tobymao/sqlglot/commit/55994785bae54dd37ffc40b085878d186780f033) - Compile base & BigQuery's parser with mypyc *(PR [#7206](https://github.com/tobymao/sqlglot/pull/7206) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Compile base & BigQuery's parser with mypyc (#7206)
+
+- due to [`3c02ea8`](https://github.com/tobymao/sqlglot/commit/3c02ea8a2c515d53e89c0d7455392a2b8fac2d8a) - handle empty separator for SPLIT transpilation (Snowflake -> Duckdb) *(PR [#7224](https://github.com/tobymao/sqlglot/pull/7224) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  handle empty separator for SPLIT transpilation (Snowflake -> Duckdb) (#7224)
+
+- due to [`c34bc2d`](https://github.com/tobymao/sqlglot/commit/c34bc2d17c2467b433d49e8e84611ec6acb39580) - transpilation support MAP_INSERT *(PR [#7190](https://github.com/tobymao/sqlglot/pull/7190) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  transpilation support MAP_INSERT (#7190)
+
+- due to [`8256e08`](https://github.com/tobymao/sqlglot/commit/8256e08e55bb12ac3598e2b1f936e5ef380e2cf8) - Extract Spark parser for mypyc compilation *(PR [#7235](https://github.com/tobymao/sqlglot/pull/7235) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Spark parser for mypyc compilation (#7235)
+
+- due to [`2379947`](https://github.com/tobymao/sqlglot/commit/237994706746d6a294bfae0b413a0ec479645c2c) - Extract SingleStore parser for mypyc compilation *(PR [#7250](https://github.com/tobymao/sqlglot/pull/7250) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract SingleStore parser for mypyc compilation (#7250)
+
+- due to [`27b6f56`](https://github.com/tobymao/sqlglot/commit/27b6f56a3871a0d2152e3eb26ac26dd56a4b5ff3) - Extract Doris parser for mypyc compilation *(PR [#7249](https://github.com/tobymao/sqlglot/pull/7249) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Doris parser for mypyc compilation (#7249)
+
+- due to [`5c8b003`](https://github.com/tobymao/sqlglot/commit/5c8b0037e2a6a8ccd5588234bb591d42904e8a02) - Extract StarRocks parser for mypyc compilation *(PR [#7248](https://github.com/tobymao/sqlglot/pull/7248) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract StarRocks parser for mypyc compilation (#7248)
+
+- due to [`669bc3f`](https://github.com/tobymao/sqlglot/commit/669bc3f7711253d4ecf044c2ec956c0f38a74463) - Extract Materialize parser for mypyc compilation *(PR [#7247](https://github.com/tobymao/sqlglot/pull/7247) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Materialize parser for mypyc compilation (#7247)
+
+- due to [`5b51c64`](https://github.com/tobymao/sqlglot/commit/5b51c64a0d620469e696fcb7a2e86915b7f9a925) - Extract RisingWave parser for mypyc compilation *(PR [#7246](https://github.com/tobymao/sqlglot/pull/7246) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract RisingWave parser for mypyc compilation (#7246)
+
+- due to [`6982d44`](https://github.com/tobymao/sqlglot/commit/6982d442ecebbeb38ee3cda1ab530b813dcff988) - Extract Solr parser for mypyc compilation *(PR [#7244](https://github.com/tobymao/sqlglot/pull/7244) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Solr parser for mypyc compilation (#7244)
+
+- due to [`a57b632`](https://github.com/tobymao/sqlglot/commit/a57b632c512ff8be65629ea30dc9cd0fe69cb1d3) - Extract Redshift parser for mypyc compilation *(PR [#7245](https://github.com/tobymao/sqlglot/pull/7245) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Redshift parser for mypyc compilation (#7245)
+
+- due to [`364fca7`](https://github.com/tobymao/sqlglot/commit/364fca74025eab10f8ba34f2498f9545321e8a3f) - Extract Tableau parser for mypyc compilation *(PR [#7243](https://github.com/tobymao/sqlglot/pull/7243) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Tableau parser for mypyc compilation (#7243)
+
+- due to [`ab6331f`](https://github.com/tobymao/sqlglot/commit/ab6331fc920636e47c6bb03825086642d9425b77) - Extract SQLite parser for mypyc compilation *(PR [#7240](https://github.com/tobymao/sqlglot/pull/7240) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract SQLite parser for mypyc compilation (#7240)
+
+- due to [`df6f052`](https://github.com/tobymao/sqlglot/commit/df6f05268e15f5de1685552ea87c69d2f5bd48c6) - Extract Drill parser for mypyc compilation *(PR [#7242](https://github.com/tobymao/sqlglot/pull/7242) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Drill parser for mypyc compilation (#7242)
+
+- due to [`125ea72`](https://github.com/tobymao/sqlglot/commit/125ea7216a01f0d5288517b1aa7203c43b4e737a) - Extract Dremio parser for mypyc compilation *(PR [#7241](https://github.com/tobymao/sqlglot/pull/7241) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Dremio parser for mypyc compilation (#7241)
+
+- due to [`a485038`](https://github.com/tobymao/sqlglot/commit/a485038a64dd560de093153b23c43f33526d4bf1) - Extract Exasol parser for mypyc compilation *(PR [#7239](https://github.com/tobymao/sqlglot/pull/7239) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Exasol parser for mypyc compilation (#7239)
+
+- due to [`113447f`](https://github.com/tobymao/sqlglot/commit/113447f587891d431af063fa4f18f021033bcb88) - Extract PRQL parser for mypyc compilation *(PR [#7238](https://github.com/tobymao/sqlglot/pull/7238) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract PRQL parser for mypyc compilation (#7238)
+
+- due to [`0872db7`](https://github.com/tobymao/sqlglot/commit/0872db71adc1da464d0d7022dbb58b064bd96abb) - Extract Teradata parser for mypyc compilation *(PR [#7237](https://github.com/tobymao/sqlglot/pull/7237) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Teradata parser for mypyc compilation (#7237)
+
+- due to [`0fe1afd`](https://github.com/tobymao/sqlglot/commit/0fe1afd39a5105bc9406ecac0ea78c26254d7f9e) - Extract Oracle parser for mypyc compilation *(PR [#7236](https://github.com/tobymao/sqlglot/pull/7236) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Oracle parser for mypyc compilation (#7236)
+
+- due to [`47e75e5`](https://github.com/tobymao/sqlglot/commit/47e75e5bb29c6ecd142ca4c51e27ac4ed9996f74) - Extract Snowflake parser for mypyc compilation *(PR [#7229](https://github.com/tobymao/sqlglot/pull/7229) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Snowflake parser for mypyc compilation (#7229)
+
+- due to [`ea035e1`](https://github.com/tobymao/sqlglot/commit/ea035e15793c047df58af9f9a901c7b7c8ed07e2) - Rename Parser to <Dialect>Parser and auto-discover parsers in setup.py *(PR [#7252](https://github.com/tobymao/sqlglot/pull/7252) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Rename Parser to <Dialect>Parser and auto-discover parsers in setup.py (#7252)
+
+- due to [`e8d0dab`](https://github.com/tobymao/sqlglot/commit/e8d0dabf10d4afe22f2277d46cf931c39409063e) - Extract Databricks parser for mypyc compilation *(PR [#7253](https://github.com/tobymao/sqlglot/pull/7253) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Databricks parser for mypyc compilation (#7253)
+
+- due to [`8c799ad`](https://github.com/tobymao/sqlglot/commit/8c799adf70cc0136f1c6647c3212239c83f6cbe1) - Extract Fabric parser for mypyc compilation *(PR [#7254](https://github.com/tobymao/sqlglot/pull/7254) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract Fabric parser for mypyc compilation (#7254)
+
+- due to [`b155a29`](https://github.com/tobymao/sqlglot/commit/b155a29574fbc57720637343529623c02b0db43a) - expression to not use **kwargs because it allocates multiple dicts *(PR [#7256](https://github.com/tobymao/sqlglot/pull/7256) by [@tobymao](https://github.com/tobymao))*:
+
+  expression to not use **kwargs because it allocates multiple dicts (#7256)
+
+- due to [`17c2fc7`](https://github.com/tobymao/sqlglot/commit/17c2fc774fda32eb2f1c1baed354db10d4d11e3d) - JSON path with brackets containing non literals *(PR [#7251](https://github.com/tobymao/sqlglot/pull/7251) by [@geooo109](https://github.com/geooo109))*:
+
+  JSON path with brackets containing non literals (#7251)
+
+- due to [`3d7bbb5`](https://github.com/tobymao/sqlglot/commit/3d7bbb5fd2689aed1b2f659abd8d1b18db421104) - parse single-arg TO_{GEOMETRY_GEOGRAPHY} as Cast *(PR [#7270](https://github.com/tobymao/sqlglot/pull/7270) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse single-arg TO_{GEOMETRY_GEOGRAPHY} as Cast (#7270)
+
+- due to [`5a9a522`](https://github.com/tobymao/sqlglot/commit/5a9a52212f6ba975e1f671b712a89befe9c2d606) - support transpilation of SPLIT_PART from snowflake to duckdb *(PR [#7258](https://github.com/tobymao/sqlglot/pull/7258) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*:
+
+  support transpilation of SPLIT_PART from snowflake to duckdb (#7258)
+
+- due to [`a13995e`](https://github.com/tobymao/sqlglot/commit/a13995e7c3441bcd8442b8a210cadd2055199492) - Move `ParserCore` back to `Parser` *(PR [#7268](https://github.com/tobymao/sqlglot/pull/7268) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Move `ParserCore` back to `Parser` (#7268)
+
+- due to [`07f6893`](https://github.com/tobymao/sqlglot/commit/07f68932e39f148c267ce1b12086b85d4d485bf7) - Fully compile schema *(PR [#7276](https://github.com/tobymao/sqlglot/pull/7276) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Fully compile schema (#7276)
+
+- due to [`79d72db`](https://github.com/tobymao/sqlglot/commit/79d72dbd2c770c53f9ec9c36dd67ae63860ba4fe) - Transpilation support for to_variant *(PR [#7262](https://github.com/tobymao/sqlglot/pull/7262) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for to_variant (#7262)
+
+- due to [`3f94428`](https://github.com/tobymao/sqlglot/commit/3f94428507d7207ca99e76cebef9375bd3648f4d) - Transpilation support for HASH_AGG *(commit by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for HASH_AGG
+
+- due to [`1bd952b`](https://github.com/tobymao/sqlglot/commit/1bd952bfc68926405e5fe7efb1bb833dd6dd6dfb) - Transpilation support for HASH_AGG *(commit by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for HASH_AGG
+
+- due to [`bfa4818`](https://github.com/tobymao/sqlglot/commit/bfa48188e45601491f981c4cea8a4bd8a2c6a0a2) - Implement transpilation for ARRAY_SORT function *(PR [#7223](https://github.com/tobymao/sqlglot/pull/7223) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Implement transpilation for ARRAY_SORT function (#7223)
+
+- due to [`4b64898`](https://github.com/tobymao/sqlglot/commit/4b648985a166ac091b8a46af1590caf59f9bc31b) - robust support for IGNORE NULLS *(PR [#7288](https://github.com/tobymao/sqlglot/pull/7288) by [@geooo109](https://github.com/geooo109))*:
+
+  robust support for IGNORE NULLS (#7288)
+
+
+### :sparkles: New Features
+- [`8ee0646`](https://github.com/tobymao/sqlglot/commit/8ee0646baa6dfae7e96ca86e2c1af5d53fc04290) - **clickhouse**: Transpile numeric literals with underscores from ClickHouse to other dialects *(PR [#7132](https://github.com/tobymao/sqlglot/pull/7132) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`68da927`](https://github.com/tobymao/sqlglot/commit/68da927d3418eccfe261c22c6e39d8742f52f01c) - **exasol**: support REGEXP_LIKE binary predicate *(PR [#7136](https://github.com/tobymao/sqlglot/pull/7136) by [@marconae](https://github.com/marconae))*
+- [`1b5a7d7`](https://github.com/tobymao/sqlglot/commit/1b5a7d7e2a65665bb3cb0e8efc11062bf891ee28) - **exasol**: transpile FROM_UNIXTIME to FROM_POSIX_TIME *(PR [#7133](https://github.com/tobymao/sqlglot/pull/7133) by [@marconae](https://github.com/marconae))*
+- [`dff662a`](https://github.com/tobymao/sqlglot/commit/dff662a1389bdfbe6c331ca31dd37f76a6353429) - **duckdb**: add transpilation support for ARRAY_GENERATE_RANGE function *(PR [#7107](https://github.com/tobymao/sqlglot/pull/7107) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`8e6b61f`](https://github.com/tobymao/sqlglot/commit/8e6b61f18e465b24ad9e20a8e1509486177fbb32) - **snowflake**: transpilation support MAP_DELETE *(PR [#7139](https://github.com/tobymao/sqlglot/pull/7139) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`483791d`](https://github.com/tobymao/sqlglot/commit/483791d66302a463041094c668421a1d4cc8061e) - **clickhouse**: support nested JSON subcolumn access *(PR [#7140](https://github.com/tobymao/sqlglot/pull/7140) by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog))*
+- [`260f116`](https://github.com/tobymao/sqlglot/commit/260f116df06a4e5e7eb81f87713b84e551e012c8) - **clickhouse**: support JSON type arguments *(PR [#7141](https://github.com/tobymao/sqlglot/pull/7141) by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog))*
+- [`1b1db57`](https://github.com/tobymao/sqlglot/commit/1b1db5728903d6468eba3d07da2a468395bf628b) - **snowflake**: transpilation support MAP_SIZE *(PR [#7146](https://github.com/tobymao/sqlglot/pull/7146) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`0b4e26b`](https://github.com/tobymao/sqlglot/commit/0b4e26b8e7045bcf68992b6a2c8a5fd51b8262d7) - **optimizer**: annotate EXTRACT(expr) for DuckDB *(PR [#7154](https://github.com/tobymao/sqlglot/pull/7154) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b2e736c`](https://github.com/tobymao/sqlglot/commit/b2e736cd4ae1dd949b5ac59ae263599f8d6f259c) - postgres -> sqlite transpilation improvements *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`c91e8d9`](https://github.com/tobymao/sqlglot/commit/c91e8d9dd8a9cdcfaec791144326cf6038edf414) - **clickhouse**: ANY/ALL joins *(PR [#7157](https://github.com/tobymao/sqlglot/pull/7157) by [@geooo109](https://github.com/geooo109))*
+- [`7cc4332`](https://github.com/tobymao/sqlglot/commit/7cc43327ba72b3a1af6d8f2f489a97b997748ee9) - **duckdb**: support transpilation of function RIGHT from Snowflake to DuckDB *(PR [#7148](https://github.com/tobymao/sqlglot/pull/7148) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`63f2981`](https://github.com/tobymao/sqlglot/commit/63f29812e41e1d7d4bb3de349f33c42ee8103498) - **trino**: Add support for ARRAY_FIRST(array, x -> predicate) *(PR [#7147](https://github.com/tobymao/sqlglot/pull/7147) by [@gertjanal](https://github.com/gertjanal))*
+- [`d76dc36`](https://github.com/tobymao/sqlglot/commit/d76dc36a0c2b15ff795725f1a71431ba247eda96) - **clickhouse**: add support for sql security property *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`ad9d114`](https://github.com/tobymao/sqlglot/commit/ad9d114aea7f7553485631372d99ec5e5cf85045) - **DuckDB**: Enable transpilation for ARRAY_POSITION function *(PR [#7153](https://github.com/tobymao/sqlglot/pull/7153) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`684ff4a`](https://github.com/tobymao/sqlglot/commit/684ff4a13b1220fd5d3c0ec597cbdc630a3b9c03) - **clickhouse**: support arrayExcept for ClickHouse *(PR [#7161](https://github.com/tobymao/sqlglot/pull/7161) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`b97da8d`](https://github.com/tobymao/sqlglot/commit/b97da8dea15c39867b23db01624464e7d15427e7) - **spark, dbx**: robust SET support *(PR [#7166](https://github.com/tobymao/sqlglot/pull/7166) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7165](https://github.com/tobymao/sqlglot/issues/7165) opened by [@aersam](https://github.com/aersam)*
+- [`c74049c`](https://github.com/tobymao/sqlglot/commit/c74049c2c573522c398b3e179a09a7b49b52f54f) - **databricks**: Add support for HANDLER and PARAMETER STYLE properties *(PR [#7150](https://github.com/tobymao/sqlglot/pull/7150) by [@aersam](https://github.com/aersam))*
+- [`d5840c5`](https://github.com/tobymao/sqlglot/commit/d5840c53f6a359def002c0b634a48706519b11e7) - **duckdb**: support transpilation of RANDOM from Snowflake to DuckDB *(PR [#7163](https://github.com/tobymao/sqlglot/pull/7163) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`07ef171`](https://github.com/tobymao/sqlglot/commit/07ef1711fdff0fa8f877b93f5be8921424eed438) - **Clickhouse**: Add support for multiple-suffix combined aggregate functions in Clickhouse dialect *(PR [#7109](https://github.com/tobymao/sqlglot/pull/7109) by [@emanb29](https://github.com/emanb29))*
+- [`e18a24e`](https://github.com/tobymao/sqlglot/commit/e18a24e108976910e55b77d863fa4b5eeb622684) - **exasol**: Custom Transformation of GROUP BY ALL in exasol dialect *(PR [#7151](https://github.com/tobymao/sqlglot/pull/7151) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`280e247`](https://github.com/tobymao/sqlglot/commit/280e24726be22a4f06261168d5dfc74b361dd04d) - **duckdb**: Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION *(PR [#7145](https://github.com/tobymao/sqlglot/pull/7145) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`542e392`](https://github.com/tobymao/sqlglot/commit/542e3920fb7d232b523e950820750e549a8d909a) - **duckdb**: Add transpilation support for NULLs and mutiset semantics in ARRAY_INTERSECTION *(PR [#7145](https://github.com/tobymao/sqlglot/pull/7145) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`ff61214`](https://github.com/tobymao/sqlglot/commit/ff61214ab3f3ee48a413020867144a7f4d0b39c3) - **databricks**: Add support for DECLARE OR REPLACE *(PR [#7169](https://github.com/tobymao/sqlglot/pull/7169) by [@aersam](https://github.com/aersam))*
+  - :arrow_lower_right: *addresses issue [#7168](https://github.com/tobymao/sqlglot/issues/7168) opened by [@aersam](https://github.com/aersam)*
+- [`90e8cab`](https://github.com/tobymao/sqlglot/commit/90e8cab0a54c225698f1cfa33d0ddbc92793fa15) - **clickhouse**: support robust ASSUME/CHECK constraints *(PR [#7170](https://github.com/tobymao/sqlglot/pull/7170) by [@geooo109](https://github.com/geooo109))*
+- [`4273991`](https://github.com/tobymao/sqlglot/commit/427399151aa69ff934c802b3452bd4ad4f7010e7) - **clickhouse**: support DROP with SYNC *(PR [#7172](https://github.com/tobymao/sqlglot/pull/7172) by [@geooo109](https://github.com/geooo109))*
+- [`0c5c3f1`](https://github.com/tobymao/sqlglot/commit/0c5c3f17637df659004036c37c569ad42da21dd4) - **duckdb**: support GROUPS for WINDOW *(PR [#7185](https://github.com/tobymao/sqlglot/pull/7185) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7176](https://github.com/tobymao/sqlglot/issues/7176) opened by [@denis-komarov](https://github.com/denis-komarov)*
+- [`af05677`](https://github.com/tobymao/sqlglot/commit/af05677fe08a2830bb0a18587f0c0f8dfbc5b9bd) - make Query and DerivedTable inherit from Selectable *(commit by [@tobymao](https://github.com/tobymao))*
+- [`cab0f24`](https://github.com/tobymao/sqlglot/commit/cab0f24ad212eea592f532628f4fc10489fc32f7) - compile scope for mypy *(PR [#7192](https://github.com/tobymao/sqlglot/pull/7192) by [@tobymao](https://github.com/tobymao))*
+- [`8db0323`](https://github.com/tobymao/sqlglot/commit/8db03233f88f106f0339e53237a5f054c4e61b3a) - compile qualify and resolver *(PR [#7193](https://github.com/tobymao/sqlglot/pull/7193) by [@tobymao](https://github.com/tobymao))*
+- [`3de5d29`](https://github.com/tobymao/sqlglot/commit/3de5d29ef5fd19e2f1ac0b2681e29e8a6c6fbd48) - **duckdb**: Add transpilation support for ARRAY_SLICE function *(PR [#7188](https://github.com/tobymao/sqlglot/pull/7188) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`e0947ad`](https://github.com/tobymao/sqlglot/commit/e0947adcaeb1e3cb829e584e0b071c598c64cfa9) - **Snowflake**: set default window frame for certain Snowflake ranking functions during transpilation *(PR [#7195](https://github.com/tobymao/sqlglot/pull/7195) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`4a3254f`](https://github.com/tobymao/sqlglot/commit/4a3254fbd1bfee7aa6787d3fc31832d8e9771932) - **snowflake**: transpilation support MAP_PICK  *(PR [#7189](https://github.com/tobymao/sqlglot/pull/7189) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`9431fd4`](https://github.com/tobymao/sqlglot/commit/9431fd457dc4dbad7a963828c5303889573079d3) - **optimizer**: annotate CURRENT_TIMESTAMP for TSQL *(PR [#7208](https://github.com/tobymao/sqlglot/pull/7208) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`cc8724d`](https://github.com/tobymao/sqlglot/commit/cc8724d791938e440c8d72d72c4ec301ca02eee9) - **clickhouse**: support cityHash64 *(PR [#7209](https://github.com/tobymao/sqlglot/pull/7209) by [@geooo109](https://github.com/geooo109))*
+- [`a39d3e9`](https://github.com/tobymao/sqlglot/commit/a39d3e999e707114226edb806061b80e0164489a) - **duckdb**: Implement transpilation for ARRAYS_OVERLAP function *(PR [#7200](https://github.com/tobymao/sqlglot/pull/7200) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`3ef5db9`](https://github.com/tobymao/sqlglot/commit/3ef5db9ca10527e237340cc24612d63d4d1bcf1b) - **clickhouse**: support DETACH *(PR [#7215](https://github.com/tobymao/sqlglot/pull/7215) by [@geooo109](https://github.com/geooo109))*
+- [`b5f888e`](https://github.com/tobymao/sqlglot/commit/b5f888e403b20dc9729eb7f01f5cc5227f173ce2) - **Snowflake**: handle NULL discrepancy during transpilation of SPLIT from Snowflake to DuckDB *(PR [#7216](https://github.com/tobymao/sqlglot/pull/7216) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`5599478`](https://github.com/tobymao/sqlglot/commit/55994785bae54dd37ffc40b085878d186780f033) - Compile base & BigQuery's parser with mypyc *(PR [#7206](https://github.com/tobymao/sqlglot/pull/7206) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`319f359`](https://github.com/tobymao/sqlglot/commit/319f3591e53013b972c57057c65479d7024a4388) - **tsql**: Move parser out and enable compilation *(PR [#7221](https://github.com/tobymao/sqlglot/pull/7221) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3c02ea8`](https://github.com/tobymao/sqlglot/commit/3c02ea8a2c515d53e89c0d7455392a2b8fac2d8a) - **snowflake**: handle empty separator for SPLIT transpilation (Snowflake -> Duckdb) *(PR [#7224](https://github.com/tobymao/sqlglot/pull/7224) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`c34bc2d`](https://github.com/tobymao/sqlglot/commit/c34bc2d17c2467b433d49e8e84611ec6acb39580) - **snowflake**: transpilation support MAP_INSERT *(PR [#7190](https://github.com/tobymao/sqlglot/pull/7190) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`4ae6c3d`](https://github.com/tobymao/sqlglot/commit/4ae6c3d8fe774c57647491572b764a4c2767704a) - fast path for tokenizer *(PR [#7226](https://github.com/tobymao/sqlglot/pull/7226) by [@tobymao](https://github.com/tobymao))*
+- [`5a9a522`](https://github.com/tobymao/sqlglot/commit/5a9a52212f6ba975e1f671b712a89befe9c2d606) - **Snowflake**: support transpilation of SPLIT_PART from snowflake to duckdb *(PR [#7258](https://github.com/tobymao/sqlglot/pull/7258) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`dc4a7ef`](https://github.com/tobymao/sqlglot/commit/dc4a7ef7a1739ecc6b4ff8ff1ab018d61d7bcffa) - support multi-word DESCRIBE kinds in Snowflake *(PR [#7260](https://github.com/tobymao/sqlglot/pull/7260) by [@sabir-akhadov-localstack](https://github.com/sabir-akhadov-localstack))*
+- [`f15b8b0`](https://github.com/tobymao/sqlglot/commit/f15b8b018ddb0aa1bd26683c439ab2d063ca9cd8) - transpile postgres GREATEST(x,y) to MAX in sqlite *(PR [#7274](https://github.com/tobymao/sqlglot/pull/7274) by [@treysp](https://github.com/treysp))*
+- [`79d72db`](https://github.com/tobymao/sqlglot/commit/79d72dbd2c770c53f9ec9c36dd67ae63860ba4fe) - **snowflake**: Transpilation support for to_variant *(PR [#7262](https://github.com/tobymao/sqlglot/pull/7262) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`bfa4818`](https://github.com/tobymao/sqlglot/commit/bfa48188e45601491f981c4cea8a4bd8a2c6a0a2) - **duckdb**: Implement transpilation for ARRAY_SORT function *(PR [#7223](https://github.com/tobymao/sqlglot/pull/7223) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`81a3763`](https://github.com/tobymao/sqlglot/commit/81a37636c374690d12fe0b57d78adf2310daf3cb) - **exasol**: cast string literals to TIMESTAMP in TO_CHAR generation *(PR [#7127](https://github.com/tobymao/sqlglot/pull/7127) by [@marconae](https://github.com/marconae))*
+- [`351e958`](https://github.com/tobymao/sqlglot/commit/351e958c3cd8a1395826ef624979275b246490f8) - **exasol**: fix parsing error in json_extract for exasol *(PR [#7098](https://github.com/tobymao/sqlglot/pull/7098) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`95d7d20`](https://github.com/tobymao/sqlglot/commit/95d7d2052b1ed8fc64a99d557b8b085ad466100e) - **redshift**: annotate `TO_TIMESTAMP` as `TIMESTAMPTZ` fixes [#7155](https://github.com/tobymao/sqlglot/pull/7155) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`50d58a5`](https://github.com/tobymao/sqlglot/commit/50d58a5843cfc02f11acf0fe28b2ad7c9a59e252) - **parser**: support more DICTIONARY properties *(PR [#7158](https://github.com/tobymao/sqlglot/pull/7158) by [@geooo109](https://github.com/geooo109))*
+- [`363167c`](https://github.com/tobymao/sqlglot/commit/363167c6609fa80b6014851b4415adca17b00df4) - **duckdb**: parse FILE column *(PR [#7184](https://github.com/tobymao/sqlglot/pull/7184) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7175](https://github.com/tobymao/sqlglot/issues/7175) opened by [@denis-komarov](https://github.com/denis-komarov)*
+- [`baa9974`](https://github.com/tobymao/sqlglot/commit/baa9974b8042eaef7897537772b1002c30e503b8) - **duckdb**: fix IGNORE NULLS in AGG FUNC *(PR [#7187](https://github.com/tobymao/sqlglot/pull/7187) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7179](https://github.com/tobymao/sqlglot/issues/7179) opened by [@denis-komarov](https://github.com/denis-komarov)*
+- [`f630d75`](https://github.com/tobymao/sqlglot/commit/f630d7579231f29fa5637b48f1be0b5665eb36b3) - **clickhouse**: support dotcolon with JSON *(PR [#7191](https://github.com/tobymao/sqlglot/pull/7191) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7183](https://github.com/tobymao/sqlglot/issues/7183) opened by [@telperions](https://github.com/telperions)*
+- [`eea5880`](https://github.com/tobymao/sqlglot/commit/eea58807411edf962a1cdc28e02337a428866665) - **snowflake**: suppor positional `GENERATOR` args *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`29399bb`](https://github.com/tobymao/sqlglot/commit/29399bbed44a74d95257040fd36f0a0f6de7c7d8) - **exasol**: remove invalid group by distinct during custom transformation of group by all *(PR [#7197](https://github.com/tobymao/sqlglot/pull/7197) by [@nnamdi16](https://github.com/nnamdi16))*
+- [`3ee3db5`](https://github.com/tobymao/sqlglot/commit/3ee3db59de23de0bbaed85c8779b6663b435a1e9) - **clickhouse**: support nested field for INSERT *(PR [#7199](https://github.com/tobymao/sqlglot/pull/7199) by [@geooo109](https://github.com/geooo109))*
+- [`81bc810`](https://github.com/tobymao/sqlglot/commit/81bc8102a7fbb33188869694800e8db9ae84541a) - **clickhouse**: make ArrayDistinct transpilable *(commit by [@timoha](https://github.com/timoha))*
+- [`6b21d7a`](https://github.com/tobymao/sqlglot/commit/6b21d7a5932afdc6ba117c808203777db9f329a2) - **clickhouse**: empty brackets handling *(PR [#7211](https://github.com/tobymao/sqlglot/pull/7211) by [@geooo109](https://github.com/geooo109))*
+- [`4087a15`](https://github.com/tobymao/sqlglot/commit/4087a152c5d4372ab53644061980b81a9174db1e) - **databricks**: properly handle GENERATED ALWAYS/BY DEFAULT *(PR [#7210](https://github.com/tobymao/sqlglot/pull/7210) by [@anna-stepien](https://github.com/anna-stepien))*
+- [`37b0f9f`](https://github.com/tobymao/sqlglot/commit/37b0f9f6b897d4289d87dfd78d42ca3df64870ba) - **spark, dbx**: support RECURSIVE ctes *(PR [#7214](https://github.com/tobymao/sqlglot/pull/7214) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7213](https://github.com/tobymao/sqlglot/issues/7213) opened by [@aersam](https://github.com/aersam)*
+- [`e990b67`](https://github.com/tobymao/sqlglot/commit/e990b671120ce66036ffdc4c65e5db8b36eaec5f) - **redshift**: avoid warning for IGNORE/RESPECT NULLS *(PR [#7222](https://github.com/tobymao/sqlglot/pull/7222) by [@geooo109](https://github.com/geooo109))*
+- [`172e399`](https://github.com/tobymao/sqlglot/commit/172e399f6211f73708ba9e423cf90c9ff83ffba3) - **hive, spark, dbx**: dash in json path *(PR [#7257](https://github.com/tobymao/sqlglot/pull/7257) by [@geooo109](https://github.com/geooo109))*
+- [`17c2fc7`](https://github.com/tobymao/sqlglot/commit/17c2fc774fda32eb2f1c1baed354db10d4d11e3d) - **snowflake**: JSON path with brackets containing non literals *(PR [#7251](https://github.com/tobymao/sqlglot/pull/7251) by [@geooo109](https://github.com/geooo109))*
+- [`fd87f53`](https://github.com/tobymao/sqlglot/commit/fd87f53f7ab5d68904555e9fae0a025c134faeaf) - **duckdb**: transpile DATE_TRUNC from bigquery *(PR [#7263](https://github.com/tobymao/sqlglot/pull/7263) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7261](https://github.com/tobymao/sqlglot/issues/7261) opened by [@MaxHalford](https://github.com/MaxHalford)*
+- [`3d7bbb5`](https://github.com/tobymao/sqlglot/commit/3d7bbb5fd2689aed1b2f659abd8d1b18db421104) - **snowflake**: parse single-arg TO_{GEOMETRY_GEOGRAPHY} as Cast *(PR [#7270](https://github.com/tobymao/sqlglot/pull/7270) by [@georgesittas](https://github.com/georgesittas))*
+- [`3e16da6`](https://github.com/tobymao/sqlglot/commit/3e16da64c0c32bd970b2ab5fd5ff2fdc3a134feb) - Make unit silently failing to move .so *(PR [#7272](https://github.com/tobymao/sqlglot/pull/7272) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`c3eb8e2`](https://github.com/tobymao/sqlglot/commit/c3eb8e22c8ed83029a38640ae569d829c7258d0d) - **optimizer**: `qualify_tables` overwriting FQN alias mapping for duplicate tables *(PR [#7278](https://github.com/tobymao/sqlglot/pull/7278) by [@cg-roling](https://github.com/cg-roling))*
+- [`0527315`](https://github.com/tobymao/sqlglot/commit/0527315a23dc44c736de80fa753125da764e95ba) - Drop schema with if exists displacing catalog *(PR [#7285](https://github.com/tobymao/sqlglot/pull/7285) by [@themisvaltinos](https://github.com/themisvaltinos))*
+- [`a2964dd`](https://github.com/tobymao/sqlglot/commit/a2964ddb88ac518a57e19c620358e7e4a03e611e) - **duckdb**: complete ARRAY_SORT transpilation logic *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6d6250d`](https://github.com/tobymao/sqlglot/commit/6d6250db9b8bf257d86a59266c48a02fe10cd1b3) - **bigquery**: no warning for window funcs with NULL order *(PR [#7280](https://github.com/tobymao/sqlglot/pull/7280) by [@geooo109](https://github.com/geooo109))*
+- [`4b64898`](https://github.com/tobymao/sqlglot/commit/4b648985a166ac091b8a46af1590caf59f9bc31b) - **hive, spark**: robust support for IGNORE NULLS *(PR [#7288](https://github.com/tobymao/sqlglot/pull/7288) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7282](https://github.com/tobymao/sqlglot/issues/7282) opened by [@catlynkong](https://github.com/catlynkong)*
+- [`4cb1a7f`](https://github.com/tobymao/sqlglot/commit/4cb1a7faf3e5a431ea482f34e197485a1611d8c4) - handle single-element `RANGE` during duckdb->spark transpilation *(PR [#7294](https://github.com/tobymao/sqlglot/pull/7294) by [@ShubhamKapoor992](https://github.com/ShubhamKapoor992))*
+  - :arrow_lower_right: *fixes issue [#7291](https://github.com/tobymao/sqlglot/issues/7291) opened by [@huydo862003](https://github.com/huydo862003)*
+- [`002bdaf`](https://github.com/tobymao/sqlglot/commit/002bdafbd5315d7e7fa67903478ed888fb1b1229) - don't warn for sqlglotrs if sqlglotc is found *(PR [#7290](https://github.com/tobymao/sqlglot/pull/7290) by [@rolandwalker](https://github.com/rolandwalker))*
+- [`0eb5aae`](https://github.com/tobymao/sqlglot/commit/0eb5aae8e348774ae5f12bd7e0140da6f8e16da4) - **optimizer**: add forward-reference guard to pushdown_dnf, fixing cycle error *(PR [#7299](https://github.com/tobymao/sqlglot/pull/7299) by [@snovik75](https://github.com/snovik75))*
+  - :arrow_lower_right: *fixes issue [#7297](https://github.com/tobymao/sqlglot/issues/7297) opened by [@snovik75](https://github.com/snovik75)*
+- [`6f471f1`](https://github.com/tobymao/sqlglot/commit/6f471f1bfb466b32f04c814a0beb6fa23e045eff) - unnest_subqueries crashes when correlated subquery is inside a function in SELECT *(PR [#7300](https://github.com/tobymao/sqlglot/pull/7300) by [@snovik75](https://github.com/snovik75))*
+  - :arrow_lower_right: *fixes issue [#7295](https://github.com/tobymao/sqlglot/issues/7295) opened by [@snovik75](https://github.com/snovik75)*
+
+### :zap: Performance Improvements
+- [`489ba1d`](https://github.com/tobymao/sqlglot/commit/489ba1dd0b6024f2d876b474b451b5e6fa8d27de) - **parser**: fast path for column reference parsing *(PR [#7293](https://github.com/tobymao/sqlglot/pull/7293) by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`74fd80c`](https://github.com/tobymao/sqlglot/commit/74fd80cdf055c828cedfac43b4b54132d18558bb) - split up expressions.py *(PR [#7160](https://github.com/tobymao/sqlglot/pull/7160) by [@tobymao](https://github.com/tobymao))*
+- [`8256e08`](https://github.com/tobymao/sqlglot/commit/8256e08e55bb12ac3598e2b1f936e5ef380e2cf8) - Extract Spark parser for mypyc compilation *(PR [#7235](https://github.com/tobymao/sqlglot/pull/7235) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2379947`](https://github.com/tobymao/sqlglot/commit/237994706746d6a294bfae0b413a0ec479645c2c) - Extract SingleStore parser for mypyc compilation *(PR [#7250](https://github.com/tobymao/sqlglot/pull/7250) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`27b6f56`](https://github.com/tobymao/sqlglot/commit/27b6f56a3871a0d2152e3eb26ac26dd56a4b5ff3) - Extract Doris parser for mypyc compilation *(PR [#7249](https://github.com/tobymao/sqlglot/pull/7249) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`5c8b003`](https://github.com/tobymao/sqlglot/commit/5c8b0037e2a6a8ccd5588234bb591d42904e8a02) - Extract StarRocks parser for mypyc compilation *(PR [#7248](https://github.com/tobymao/sqlglot/pull/7248) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`669bc3f`](https://github.com/tobymao/sqlglot/commit/669bc3f7711253d4ecf044c2ec956c0f38a74463) - Extract Materialize parser for mypyc compilation *(PR [#7247](https://github.com/tobymao/sqlglot/pull/7247) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`5b51c64`](https://github.com/tobymao/sqlglot/commit/5b51c64a0d620469e696fcb7a2e86915b7f9a925) - Extract RisingWave parser for mypyc compilation *(PR [#7246](https://github.com/tobymao/sqlglot/pull/7246) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`6982d44`](https://github.com/tobymao/sqlglot/commit/6982d442ecebbeb38ee3cda1ab530b813dcff988) - Extract Solr parser for mypyc compilation *(PR [#7244](https://github.com/tobymao/sqlglot/pull/7244) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`a57b632`](https://github.com/tobymao/sqlglot/commit/a57b632c512ff8be65629ea30dc9cd0fe69cb1d3) - Extract Redshift parser for mypyc compilation *(PR [#7245](https://github.com/tobymao/sqlglot/pull/7245) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`364fca7`](https://github.com/tobymao/sqlglot/commit/364fca74025eab10f8ba34f2498f9545321e8a3f) - Extract Tableau parser for mypyc compilation *(PR [#7243](https://github.com/tobymao/sqlglot/pull/7243) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`ab6331f`](https://github.com/tobymao/sqlglot/commit/ab6331fc920636e47c6bb03825086642d9425b77) - Extract SQLite parser for mypyc compilation *(PR [#7240](https://github.com/tobymao/sqlglot/pull/7240) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`df6f052`](https://github.com/tobymao/sqlglot/commit/df6f05268e15f5de1685552ea87c69d2f5bd48c6) - Extract Drill parser for mypyc compilation *(PR [#7242](https://github.com/tobymao/sqlglot/pull/7242) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`125ea72`](https://github.com/tobymao/sqlglot/commit/125ea7216a01f0d5288517b1aa7203c43b4e737a) - Extract Dremio parser for mypyc compilation *(PR [#7241](https://github.com/tobymao/sqlglot/pull/7241) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`a485038`](https://github.com/tobymao/sqlglot/commit/a485038a64dd560de093153b23c43f33526d4bf1) - Extract Exasol parser for mypyc compilation *(PR [#7239](https://github.com/tobymao/sqlglot/pull/7239) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`113447f`](https://github.com/tobymao/sqlglot/commit/113447f587891d431af063fa4f18f021033bcb88) - Extract PRQL parser for mypyc compilation *(PR [#7238](https://github.com/tobymao/sqlglot/pull/7238) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`0872db7`](https://github.com/tobymao/sqlglot/commit/0872db71adc1da464d0d7022dbb58b064bd96abb) - Extract Teradata parser for mypyc compilation *(PR [#7237](https://github.com/tobymao/sqlglot/pull/7237) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`0fe1afd`](https://github.com/tobymao/sqlglot/commit/0fe1afd39a5105bc9406ecac0ea78c26254d7f9e) - Extract Oracle parser for mypyc compilation *(PR [#7236](https://github.com/tobymao/sqlglot/pull/7236) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`47e75e5`](https://github.com/tobymao/sqlglot/commit/47e75e5bb29c6ecd142ca4c51e27ac4ed9996f74) - Extract Snowflake parser for mypyc compilation *(PR [#7229](https://github.com/tobymao/sqlglot/pull/7229) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`ea035e1`](https://github.com/tobymao/sqlglot/commit/ea035e15793c047df58af9f9a901c7b7c8ed07e2) - Rename Parser to <Dialect>Parser and auto-discover parsers in setup.py *(PR [#7252](https://github.com/tobymao/sqlglot/pull/7252) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`e8d0dab`](https://github.com/tobymao/sqlglot/commit/e8d0dabf10d4afe22f2277d46cf931c39409063e) - Extract Databricks parser for mypyc compilation *(PR [#7253](https://github.com/tobymao/sqlglot/pull/7253) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`8c799ad`](https://github.com/tobymao/sqlglot/commit/8c799adf70cc0136f1c6647c3212239c83f6cbe1) - Extract Fabric parser for mypyc compilation *(PR [#7254](https://github.com/tobymao/sqlglot/pull/7254) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`b155a29`](https://github.com/tobymao/sqlglot/commit/b155a29574fbc57720637343529623c02b0db43a) - expression to not use **kwargs because it allocates multiple dicts *(PR [#7256](https://github.com/tobymao/sqlglot/pull/7256) by [@tobymao](https://github.com/tobymao))*
+- [`07f6893`](https://github.com/tobymao/sqlglot/commit/07f68932e39f148c267ce1b12086b85d4d485bf7) - Fully compile schema *(PR [#7276](https://github.com/tobymao/sqlglot/pull/7276) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :white_check_mark: Tests
+- [`ed5e179`](https://github.com/tobymao/sqlglot/commit/ed5e1792a30e5172620e263edcae65f2f892f55b) - **snowflake**: Added tests for to_array *(PR [#7201](https://github.com/tobymao/sqlglot/pull/7201) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`3f94428`](https://github.com/tobymao/sqlglot/commit/3f94428507d7207ca99e76cebef9375bd3648f4d) - **snowflake**: Transpilation support for HASH_AGG *(commit by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`1bd952b`](https://github.com/tobymao/sqlglot/commit/1bd952bfc68926405e5fe7efb1bb833dd6dd6dfb) - **snowflake**: Transpilation support for HASH_AGG *(commit by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+
+### :wrench: Chores
+- [`76c7eeb`](https://github.com/tobymao/sqlglot/commit/76c7eeb7657a5435f1086c16317927b2780c6ad9) - cleanup makefile *(commit by [@tobymao](https://github.com/tobymao))*
+- [`588e565`](https://github.com/tobymao/sqlglot/commit/588e5650467f5cb9903ac1fa5ece59c3bfb42c8e) - **exasol**: DAYS_BETWEEN tests *(PR [#7135](https://github.com/tobymao/sqlglot/pull/7135) by [@marconae](https://github.com/marconae))*
+- [`ea424bf`](https://github.com/tobymao/sqlglot/commit/ea424bf865aa4d7bbca62b834f6994c05232fdf0) - **tokenizer**: Replace SPACE_CHARS with str.isspace *(PR [#7134](https://github.com/tobymao/sqlglot/pull/7134) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`e1c26c5`](https://github.com/tobymao/sqlglot/commit/e1c26c5425a602030e5fefd5fe76614081fe3991) - keep api-docs in sync with main, only add docs/ on top *(PR [#7137](https://github.com/tobymao/sqlglot/pull/7137) by [@georgesittas](https://github.com/georgesittas))*
+- [`f69a152`](https://github.com/tobymao/sqlglot/commit/f69a152d51666abd832a497299db1fefdfaa3ec9) - add tests for transpiling LAG from snowflake to duckdb *(PR [#7138](https://github.com/tobymao/sqlglot/pull/7138) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`842462e`](https://github.com/tobymao/sqlglot/commit/842462e2fc36f7d69ecc4989d0c8d4600e013c61) - move ruff config to pyproject.toml *(PR [#7149](https://github.com/tobymao/sqlglot/pull/7149) by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog))*
+- [`4a955cb`](https://github.com/tobymao/sqlglot/commit/4a955cb993ae24d91a5094b7849ceb60ab963419) - scan all modules under sqlglot/ for doc tests *(PR [#7162](https://github.com/tobymao/sqlglot/pull/7162) by [@georgesittas](https://github.com/georgesittas))*
+- [`3a930da`](https://github.com/tobymao/sqlglot/commit/3a930dad611743a4b6b1d647e27af2324db4f755) - add integration test automations *(PR [#7167](https://github.com/tobymao/sqlglot/pull/7167) by [@georgesittas](https://github.com/georgesittas))*
+- [`151f961`](https://github.com/tobymao/sqlglot/commit/151f961f6575e9cdd54a1cab3dad66fa2a12774c) - update parse_one description *(PR [#7181](https://github.com/tobymao/sqlglot/pull/7181) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7173](https://github.com/tobymao/sqlglot/issues/7173) opened by [@AhlamHani](https://github.com/AhlamHani)*
+- [`ab8331c`](https://github.com/tobymao/sqlglot/commit/ab8331c67dd43ee2add85520507211203e85817f) - consolidate `SecurityProperty` and `SqlSecurityProperty` *(PR [#7174](https://github.com/tobymao/sqlglot/pull/7174) by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog))*
+- [`4f5abdb`](https://github.com/tobymao/sqlglot/commit/4f5abdb3fb0cfcaaca9763ced38a7920c2eab548) - refactor SQL SECURITY property location logic in MySQL *(PR [#7186](https://github.com/tobymao/sqlglot/pull/7186) by [@georgesittas](https://github.com/georgesittas))*
+- [`a3fecc5`](https://github.com/tobymao/sqlglot/commit/a3fecc5dbc827c0873cd83cfc8388b081bcec75b) - qol improvements to integration test workflow *(PR [#7198](https://github.com/tobymao/sqlglot/pull/7198) by [@georgesittas](https://github.com/georgesittas))*
+- [`95f6c35`](https://github.com/tobymao/sqlglot/commit/95f6c354b06482d202e496b3d7df3e1dd9bbdcaf) - minor refactor for snowflake window gen *(commit by [@geooo109](https://github.com/geooo109))*
+- [`175360e`](https://github.com/tobymao/sqlglot/commit/175360ecf17c839c67e6dc83a7da97823a406e0f) - clickhouse test ARRAY_DISTINCT refactor *(commit by [@geooo109](https://github.com/geooo109))*
+- [`55594ed`](https://github.com/tobymao/sqlglot/commit/55594edfa998f4174570268d88595f08a7078c66) - cleanup MAP_PICK tests in duckdb *(commit by [@geooo109](https://github.com/geooo109))*
+- [`c341a3d`](https://github.com/tobymao/sqlglot/commit/c341a3d7351e619d8935866611ffb23a32de24f4) - **test**: add test for SPLIT transpilation from Snowflake to DuckDB *(PR [#7212](https://github.com/tobymao/sqlglot/pull/7212) by [@fivetran-felixhuang](https://github.com/fivetran-felixhuang))*
+- [`03d2a4b`](https://github.com/tobymao/sqlglot/commit/03d2a4bf87efed98df98927cca705cc9dcfc9d76) - cleanup duckdb ARRAY_OVERLAPS *(commit by [@geooo109](https://github.com/geooo109))*
+- [`7a74228`](https://github.com/tobymao/sqlglot/commit/7a7422896e75c9c260c3737982597438f5128e0b) - duckdb tests style *(commit by [@geooo109](https://github.com/geooo109))*
+- [`7df5bd4`](https://github.com/tobymao/sqlglot/commit/7df5bd487d942eeee3f6cf1ab26777405ce90b94) - **perf**: lineage cte memoization *(PR [#7207](https://github.com/tobymao/sqlglot/pull/7207) by [@treff7es](https://github.com/treff7es))*
+- [`0787c74`](https://github.com/tobymao/sqlglot/commit/0787c74f5351d7eeb825eba75e6112241aeb1d98) - remove read-only flag in lineage, always use shared refs *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`7f3a18b`](https://github.com/tobymao/sqlglot/commit/7f3a18bcda811a5c259d6524e64eea2ed78ea83a) - **parser**: Add backwards compatibility tests *(PR [#7255](https://github.com/tobymao/sqlglot/pull/7255) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`fa42909`](https://github.com/tobymao/sqlglot/commit/fa4290956b922f173042170b7ff85fd29eb1f0d4) - do not run integration tests on make unit *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6da7d90`](https://github.com/tobymao/sqlglot/commit/6da7d9061508c2b04ae81a6de2af82736879da38) - replace greek characters in `DATETIME_DELTA` type variable fixes [#7264](https://github.com/tobymao/sqlglot/pull/7264) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`a13995e`](https://github.com/tobymao/sqlglot/commit/a13995e7c3441bcd8442b8a210cadd2055199492) - **parser**: Move `ParserCore` back to `Parser` *(PR [#7268](https://github.com/tobymao/sqlglot/pull/7268) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`4efd393`](https://github.com/tobymao/sqlglot/commit/4efd393b143fddc1e8a6481e36c333d89c0025a4) - update benchmarks *(commit by [@tobymao](https://github.com/tobymao))*
+- [`20ebebf`](https://github.com/tobymao/sqlglot/commit/20ebebf40805e25f7e2496326b595480e10b7a32) - get rid of unused `read_only` kwarg in lineage *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`b8cbea0`](https://github.com/tobymao/sqlglot/commit/b8cbea02713989174a2bad32a17a85d763539f58) - make rs depend on sqlglotc *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d5e6d96`](https://github.com/tobymao/sqlglot/commit/d5e6d965288c0929e0a4ef9a9db292fb28bbf3d1) - clean up VARIANT tests for duckdb and sf *(commit by [@geooo109](https://github.com/geooo109))*
+- [`ea76ca5`](https://github.com/tobymao/sqlglot/commit/ea76ca55405efdb09a1ea0dbb2d02d1892260b71) - unpin ruff *(PR [#7287](https://github.com/tobymao/sqlglot/pull/7287) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v29.0.1] - 2026-02-23
 ### :boom: BREAKING CHANGES
 - due to [`fdfdfb1`](https://github.com/tobymao/sqlglot/commit/fdfdfb1703f1f408ad01453147e3d269f0911fef) - support GET_CURRENT_TIME() for DuckDB *(PR [#7126](https://github.com/tobymao/sqlglot/pull/7126) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
@@ -13256,3 +13662,4 @@ Changelog
 [v28.10.0]: https://github.com/tobymao/sqlglot/compare/v28.9.0...v28.10.0
 [v29.0.0]: https://github.com/tobymao/sqlglot/compare/v28.10.1...v29.0.0
 [v29.0.1]: https://github.com/tobymao/sqlglot/compare/v29.0.0...v29.0.1
+[v30.0.0]: https://github.com/tobymao/sqlglot/compare/v29.0.1...v30.0.0

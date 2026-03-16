@@ -6316,59 +6316,61 @@ class Parser:
             )
         )
 
+    def _build_extract(
+        self,
+        this: t.Optional[exp.Expr],
+        path_parts: t.List[exp.JSONPathPart],
+        escape: t.Optional[bool],
+    ) -> t.Tuple[t.Optional[exp.Expr], t.List[exp.JSONPathPart]]:
+        if len(path_parts) > 1:
+            this = self._build_variant_extract(this, path_parts, escape)
+            path_parts = [exp.JSONPathRoot()]
+
+        return this, path_parts
+
     def _parse_colon_as_variant_extract(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
         path_parts: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
         escape = None
 
         while self._match(TokenType.COLON):
             key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
+
             if key:
                 if isinstance(key, exp.Identifier) and key.quoted:
                     escape = True
                 path_parts.append(exp.JSONPathKey(this=key.name))
-            elif not (self._curr and self._curr.token_type == TokenType.L_BRACKET):
-                break
 
             while True:
                 if self._match(TokenType.DOT):
                     next_key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
+
                     if next_key:
                         path_parts.append(exp.JSONPathKey(this=next_key.name))
                     else:
                         self.raise_error("Expected key name after '.'")
-
                 elif self._match(TokenType.L_BRACKET):
                     bracket_expr = self._parse_bracket_key_value()
 
                     if not self._match(TokenType.R_BRACKET):
                         self.raise_error("Expected ]")
 
-                    if bracket_expr:
-                        if bracket_expr.is_string:
-                            path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
-                        elif bracket_expr.is_star:
-                            path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
-                        elif bracket_expr.is_number:
-                            path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
-                        else:
-                            # Dynamic bracket — flush path, wrap with bracket
-                            if len(path_parts) > 1:
-                                this = self._build_variant_extract(this, path_parts, escape)
-                                path_parts = [exp.JSONPathRoot()]
+                    if not bracket_expr:
+                        continue
 
-                            this = self.expression(
-                                exp.Bracket(
-                                    this=this,
-                                    expressions=[bracket_expr],
-                                    json_access=True,
-                                )
-                            )
+                    if bracket_expr.is_string:
+                        path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
+                    elif bracket_expr.is_star:
+                        path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
+                    elif bracket_expr.is_number:
+                        path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
+                    else:
+                        this, path_parts = self._build_extract(this, path_parts, escape)
+                        this = self.expression(
+                            exp.Bracket(this=this, expressions=[bracket_expr], json_access=True)
+                        )
 
                 elif self._match(TokenType.DCOLON):
-                    # ::cast — flush path, apply cast, continue parsing brackets
-                    if len(path_parts) > 1:
-                        this = self._build_variant_extract(this, path_parts, escape)
-                        path_parts = [exp.JSONPathRoot()]
+                    this, path_parts = self._build_extract(this, path_parts, escape)
 
                     cast_type = self._parse_types()
                     if cast_type:
@@ -6378,8 +6380,7 @@ class Parser:
                 else:
                     break
 
-        if len(path_parts) > 1:
-            this = self._build_variant_extract(this, path_parts, escape)
+        this, _ = self._build_extract(this, path_parts, escape)
 
         return this
 

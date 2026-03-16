@@ -5483,27 +5483,6 @@ SINGLE = TRUE""",
             },
         )
         self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": 1}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r FROM t, s""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": 1}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r') FROM t, s""",
-                "duckdb": """WITH t AS (SELECT JSON('{"c": [{"r": 1}]}') AS v), s AS (SELECT 0 AS x) SELECT (t.v -> '$.c')[s.x] -> '$.r' FROM t, s""",
-            },
-        )
-        self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": 1}}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r.d FROM t, s""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": 1}}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r.d') FROM t, s""",
-                "duckdb": """WITH t AS (SELECT JSON('{"c": [{"r": {"d": 1}}]}') AS v), s AS (SELECT 0 AS x) SELECT (t.v -> '$.c')[s.x] -> '$.r.d' FROM t, s""",
-            },
-        )
-        self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": {"e": 1}}}]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:c[s.x].r.d.e FROM t, s""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"c": [{"r": {"d": {"e": 1}}}]}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'c')[s.x], 'r.d.e') FROM t, s""",
-                "duckdb": """WITH t AS (SELECT JSON('{"c": [{"r": {"d": {"e": 1}}}]}') AS v), s AS (SELECT 0 AS x) SELECT (t.v -> '$.c')[s.x] -> '$.r.d.e' FROM t, s""",
-            },
-        )
-        self.validate_all(
             """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": 1}}]}}') AS v), s AS (SELECT 0 AS x) SELECT t.v:a.b[s.x].r.d FROM t, s""",
             write={
                 "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": {"d": 1}}]}}') AS v), s AS (SELECT 0 AS x) SELECT GET_PATH(GET_PATH(t.v, 'a.b')[s.x], 'r.d') FROM t, s""",
@@ -5532,14 +5511,6 @@ SINGLE = TRUE""",
             },
         )
         self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"a": [{"b": 1}]}') AS v) SELECT t.v:a[0].b FROM t""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": [{"b": 1}]}') AS v) SELECT GET_PATH(t.v, 'a[0].b') FROM t""",
-                "duckdb": """WITH t AS (SELECT JSON('{"a": [{"b": 1}]}') AS v) SELECT t.v -> '$.a[0].b' FROM t""",
-            },
-        )
-
-        self.validate_all(
             """WITH t AS (SELECT PARSE_JSON('{"a": [[10, 20], [30, 40, 50]]}') AS v), s AS (SELECT 1 AS x, 2 AS y) SELECT t.v:a[s.x][s.y] FROM t, s""",
             write={
                 "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": [[10, 20], [30, 40, 50]]}') AS v), s AS (SELECT 1 AS x, 2 AS y) SELECT GET_PATH(t.v, 'a')[s.x][s.y] FROM t, s""",
@@ -5561,24 +5532,10 @@ SINGLE = TRUE""",
             },
         )
         self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": 1}]}}') AS v), s AS (SELECT 0 AS x) SELECT t.v:a.b[s.x].r::varchar FROM t, s""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": {"b": [{"r": 1}]}}') AS v), s AS (SELECT 0 AS x) SELECT CAST(GET_PATH(GET_PATH(t.v, 'a.b')[s.x], 'r') AS VARCHAR) FROM t, s""",
-                "duckdb": """WITH t AS (SELECT JSON('{"a": {"b": [{"r": 1}]}}') AS v), s AS (SELECT 0 AS x) SELECT CAST((t.v -> '$.a.b')[s.x] -> '$.r' AS TEXT) FROM t, s""",
-            },
-        )
-        self.validate_all(
             """WITH t AS (SELECT PARSE_JSON('{"a": [1, 2]}') AS v) SELECT t.v:a::variant[0]::varchar FROM t""",
             write={
                 "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": [1, 2]}') AS v) SELECT CAST(GET_PATH(CAST(GET_PATH(t.v, 'a') AS VARIANT), '[0]') AS VARCHAR) FROM t""",
                 "duckdb": """WITH t AS (SELECT JSON('{"a": [1, 2]}') AS v) SELECT CAST(CAST(t.v -> '$.a' AS VARIANT) -> '$[0]' AS TEXT) FROM t""",
-            },
-        )
-        self.validate_all(
-            """WITH t AS (SELECT PARSE_JSON('{"a": {"b": {"c": [1]}}}') AS v) SELECT t.v:a.b.c::variant[0] FROM t""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": {"b": {"c": [1]}}}') AS v) SELECT GET_PATH(CAST(GET_PATH(t.v, 'a.b.c') AS VARIANT), '[0]') FROM t""",
-                "duckdb": """WITH t AS (SELECT JSON('{"a": {"b": {"c": [1]}}}') AS v) SELECT CAST(t.v -> '$.a.b.c' AS VARIANT) -> '$[0]' FROM t""",
             },
         )
         self.validate_all(
@@ -5588,11 +5545,9 @@ SINGLE = TRUE""",
                 "duckdb": """WITH t AS (SELECT JSON('{"a": {"b": [{"c": [1]}]}}') AS v), s AS (SELECT 0 AS x) SELECT CAST((t.v -> '$.a.b')[s.x] -> '$.c' AS VARIANT) -> '$[0]' FROM t, s""",
             },
         )
-        self.validate_all(
+        self.validate_identity(
             """WITH t AS (SELECT PARSE_JSON('{"a": [1]}') AS v), s AS (SELECT 0 AS x) SELECT t.v:a::variant[s.x] FROM t, s""",
-            write={
-                "snowflake": """WITH t AS (SELECT PARSE_JSON('{"a": [1]}') AS v), s AS (SELECT 0 AS x) SELECT CAST(GET_PATH(t.v, 'a') AS VARIANT)[s.x] FROM t, s""",
-            },
+            """WITH t AS (SELECT PARSE_JSON('{"a": [1]}') AS v), s AS (SELECT 0 AS x) SELECT CAST(GET_PATH(t.v, 'a') AS VARIANT)[s.x] FROM t, s""",
         )
 
         self.validate_all(

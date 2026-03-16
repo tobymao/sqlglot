@@ -7,7 +7,7 @@ else
 endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
-FIND_SO := find . -name "*.so" -not -path "./.env/*" -not -path "*/build/*"
+FIND_SO := find . -name "*.so" -not -path "*/build/*" -not -path "*/site-packages/*"
 
 hidec:
 	rm -rf $(SO_BACKUP) && $(FIND_SO) | tar cf $(SO_BACKUP) -T - 2>/dev/null && $(FIND_SO) -delete; true

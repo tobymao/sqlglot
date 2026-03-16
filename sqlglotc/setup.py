@@ -69,14 +69,10 @@ class build_ext(_build_ext):
                 sub_module = ".".join(parts[1:])
                 dst = os.path.join(sqlglot_src, self.get_ext_filename(sub_module))
             else:
-                # Default: mypyc runtime helper (e.g., HASH__mypyc) goes in current dir.
-                package = ".".join(parts[:-1])
-                package_dir = build_py.get_package_dir(package)
-                dst = (
-                    os.path.join(package_dir, os.path.basename(filename))
-                    if package_dir
-                    else os.path.basename(filename)
-                )
+                # Place the mypyc runtime helper (e.g., HASH__mypyc) in the repo root
+                # so it is importable (must be on sys.path, not inside a package).
+                repo_root = os.path.dirname(sqlglot_src) if os.path.isdir(sqlglot_src) else here
+                dst = os.path.join(repo_root, os.path.basename(filename))
             self.copy_file(src, dst, level=self.verbose)
 
 

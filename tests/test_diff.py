@@ -346,7 +346,9 @@ class TestDiff(unittest.TestCase):
         )
 
     def test_none_args_are_not_treated_as_leaves(self):
-        expr_src = parse_one("a.b")
+        expr_src = exp.Column(
+            this=exp.to_identifier("b"), table=exp.to_identifier("a"), db=None, catalog=None
+        )
         expr_tgt = exp.Column(this=exp.to_identifier("b"), table=exp.to_identifier("a"))
 
         self.assertEqual(set(expr_src.args), {"this", "table", "db", "catalog"})

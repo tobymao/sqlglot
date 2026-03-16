@@ -741,6 +741,22 @@ class Parser:
 
     TRIM_TYPES: t.ClassVar = {"LEADING", "TRAILING", "BOTH"}
 
+    # Tokens that indicate a simple column reference
+    FAST_COLUMN_TOKENS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.VAR, TokenType.IDENTIFIER})
+
+    BRACKETS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.L_BRACKET, TokenType.L_BRACE})
+
+    # Postfix tokens that prevent the bare column fast path
+    COLUMN_POSTFIX_TOKENS: t.ClassVar[t.FrozenSet] = frozenset(
+        {
+            TokenType.L_PAREN,
+            TokenType.L_BRACKET,
+            TokenType.L_BRACE,
+            TokenType.COLON,
+            TokenType.JOIN_MARKER,
+        }
+    )
+
     FUNC_TOKENS: t.ClassVar = {
         TokenType.COLLATE,
         TokenType.COMMAND,
@@ -1782,12 +1798,14 @@ class Parser:
         if index != self._index:
             self._advance(index - self._index)
 
-    def _add_comments(self, expression: t.Any) -> None:
+    def _add_comments(self, expression: t.Optional[exp.Expr]) -> None:
         if expression and self._prev_comments:
             expression.add_comments(self._prev_comments)
             self._prev_comments = []
 
-    def _match(self, token_type: TokenType, advance: bool = True, expression: t.Any = None) -> bool:
+    def _match(
+        self, token_type: TokenType, advance: bool = True, expression: t.Optional[exp.Expr] = None
+    ) -> bool:
         if self._curr.token_type == token_type:
             if advance:
                 self._advance()
@@ -1795,7 +1813,7 @@ class Parser:
             return True
         return False
 
-    def _match_set(self, types: t.Any, advance: bool = True) -> bool:
+    def _match_set(self, types: t.Collection[TokenType], advance: bool = True) -> bool:
         if self._curr.token_type in types:
             if advance:
                 self._advance()
@@ -1811,7 +1829,7 @@ class Parser:
             return True
         return False
 
-    def _match_texts(self, texts: t.Any, advance: bool = True) -> bool:
+    def _match_texts(self, texts: t.Collection[str], advance: bool = True) -> bool:
         if self._curr.token_type != TokenType.STRING and self._curr.text.upper() in texts:
             if advance:
                 self._advance()
@@ -1865,16 +1883,16 @@ class Parser:
 
         self.errors.append(error)
 
-    def validate_expression(self, expression: t.Any, args: t.Optional[t.List] = None) -> t.Any:
+    def validate_expression(self, expression: E, args: t.Optional[t.List] = None) -> E:
         if self.error_level != ErrorLevel.IGNORE:
             for error_message in expression.error_messages(args):
                 self.raise_error(error_message)
         return expression
 
-    def _try_parse(self, parse_method: t.Callable, retreat: bool = False) -> t.Optional[t.Any]:
+    def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> t.Optional[T]:
         index = self._index
         error_level = self.error_level
-        this: t.Optional[t.Any] = None
+        this: t.Optional[T] = None
 
         self.error_level = ErrorLevel.IMMEDIATE
         try:
@@ -1960,7 +1978,9 @@ class Parser:
         if token:
             instance.update_positions(token)
         instance.add_comments(comments) if comments else self._add_comments(instance)
-        return self.validate_expression(instance)
+        if not instance.is_primitive:
+            instance = self.validate_expression(instance)
+        return instance
 
     def _parse_batch_statements(
         self,
@@ -2114,7 +2134,7 @@ class Parser:
             )
         )
 
-    def _parse_condition(self) -> t.Any:
+    def _parse_condition(self) -> t.Optional[exp.Expr]:
         return self._parse_wrapped(parse_method=self._parse_expression, optional=True)
 
     def _parse_block(self) -> exp.Block:
@@ -2588,7 +2608,7 @@ class Parser:
 
         return None
 
-    def _parse_wrapped_properties(self) -> t.List[exp.Expr]:
+    def _parse_wrapped_properties(self) -> t.List[exp.Expr | t.List[exp.Expr]]:
         return self._parse_wrapped_csv(self._parse_property)
 
     def _parse_property(self) -> exp.Expr | t.List[exp.Expr] | None:
@@ -2788,7 +2808,10 @@ class Parser:
             return prop
 
         if self._match(TokenType.L_PAREN, advance=False):
-            return self._parse_wrapped_properties()
+            result: t.List[exp.Expr] = []
+            for i in self._parse_wrapped_properties():
+                result.extend(i) if isinstance(i, list) else result.append(i)
+            return result
 
         if self._match_text_seq("JOURNAL"):
             return self._parse_withjournaltable()
@@ -3470,7 +3493,7 @@ class Parser:
         )
 
     def _parse_update(self) -> exp.Update:
-        kwargs: t.Dict[str, t.Any] = {
+        kwargs: t.Dict[str, object] = {
             "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
         }
         while self._curr:
@@ -5118,7 +5141,7 @@ class Parser:
         return self.expression(exp_class(expressions=self._parse_csv(self._parse_ordered)))
 
     def _parse_ordered(
-        self, parse_method: t.Optional[t.Callable] = None
+        self, parse_method: t.Optional[t.Callable[[], t.Optional[exp.Expr]]] = None
     ) -> t.Optional[exp.Ordered]:
         this = parse_method() if parse_method else self._parse_disjunction()
         if not this:
@@ -5714,6 +5737,25 @@ class Parser:
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
     ) -> t.Optional[exp.Expr]:
+        curr = self._curr
+        curr_token_type = curr.token_type
+
+        # fast path section for simple common cases
+        # for columns, it's basic schema.table.col
+        if not fallback_to_identifier and curr_token_type in self.FAST_COLUMN_TOKENS:
+            return self._parse_column()
+
+        next_token_type = self._next.token_type
+
+        # similar fast path for literals, :: and -> have special behavior, so we use COLUMN_OPERATORS is clean enough
+        if next_token_type not in self.COLUMN_OPERATORS:
+            if curr_token_type == TokenType.STRING and next_token_type != TokenType.STRING:
+                self._advance()
+                return self.expression(exp.Literal(this=curr.text, is_string=True), curr)
+            if curr_token_type == TokenType.NUMBER:
+                self._advance()
+                return self.expression(exp.Literal(this=curr.text, is_string=False), curr)
+
         if interval := parse_interval and self._parse_interval():
             return self._parse_column_ops(interval)
 
@@ -5770,13 +5812,7 @@ class Parser:
         if fallback_to_identifier:
             return self._parse_id_var()
 
-        this = self._parse_column()
-        if this:
-            this = self._parse_column_ops(this)
-        if this and self.COLON_IS_VARIANT_EXTRACT:
-            this = self._parse_colon_as_variant_extract(this)
-
-        return this
+        return self._parse_column()
 
     def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
         this = self._parse_type()
@@ -6110,11 +6146,91 @@ class Parser:
         )
 
     def _parse_column(self) -> t.Optional[exp.Expr]:
-        this = self._parse_column_reference()
-        column = self._parse_column_ops(this) if this else self._parse_bracket(this)
+        column: t.Optional[exp.Expr] = self._parse_column_fast_path()
+        if column is None:
+            this = self._parse_column_reference()
+            if not this:
+                this = self._parse_bracket(this)
+            column = self._parse_column_ops(this) if this else this
 
-        if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and column:
-            column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+        if column:
+            if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS:
+                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+            if self.COLON_IS_VARIANT_EXTRACT:
+                column = self._parse_colon_as_variant_extract(column)
+
+        return column
+
+    def _parse_column_fast_path(self) -> t.Optional[exp.Column | exp.Dot]:
+        """Fast path for simple column and dot references (a, a.b, ...).
+
+        Greedily consumes VAR/IDENTIFIER tokens separated by DOTs, then checks
+        that nothing complex follows. If it does, retreats and returns None so
+        the slow path can handle it. For >4 parts, wraps in exp.Dot nodes.
+        """
+        index = self._index
+        parts: t.Optional[t.List[exp.Identifier]] = None
+        all_comments: t.Optional[t.List[str]] = None
+
+        while self._match_set(self.FAST_COLUMN_TOKENS):
+            token = self._prev
+            comments = self._prev_comments
+
+            if parts is None and token.text.upper() in self.NO_PAREN_FUNCTION_PARSERS:
+                self._retreat(index)
+                return None
+
+            has_dot = self._match(TokenType.DOT)
+            curr_tt = self._curr.token_type
+
+            if not has_dot:
+                if curr_tt in self.COLUMN_OPERATORS or curr_tt in self.COLUMN_POSTFIX_TOKENS:
+                    self._retreat(index)
+                    return None
+            elif curr_tt not in self.FAST_COLUMN_TOKENS:
+                self._retreat(index)
+                return None
+
+            if parts is None:
+                parts = []
+
+            if comments:
+                if all_comments is None:
+                    all_comments = []
+                all_comments.extend(comments)
+                self._prev_comments = []
+
+            parts.append(
+                self.expression(
+                    exp.Identifier(
+                        this=token.text, quoted=token.token_type == TokenType.IDENTIFIER
+                    ),
+                    token,
+                )
+            )
+
+            if not has_dot:
+                break
+
+        if parts is None:
+            return None
+
+        n = len(parts)
+
+        if n == 1:
+            column: exp.Column | exp.Dot = exp.Column(this=parts[0])
+        elif n == 2:
+            column = exp.Column(this=parts[1], table=parts[0])
+        elif n == 3:
+            column = exp.Column(this=parts[2], table=parts[1], db=parts[0])
+        else:
+            column = exp.Column(this=parts[3], table=parts[2], db=parts[1], catalog=parts[0])
+
+            for i in range(4, n):
+                column = exp.Dot(this=column, expression=parts[i])
+
+        if all_comments:
+            column.add_comments(all_comments)
 
         return column
 
@@ -6239,7 +6355,8 @@ class Parser:
         return self._parse_types()
 
     def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
-        this = self._parse_bracket(this)
+        while self._curr.token_type in self.BRACKETS:
+            this = self._parse_bracket(this)
 
         column_operators = self.COLUMN_OPERATORS
         cast_column_operators = self.CAST_COLUMN_OPERATORS
@@ -7055,7 +7172,7 @@ class Parser:
         return expression
 
     def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
-        if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
+        if not self._match_set(self.BRACKETS):
             return this
 
         if self.MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS:
@@ -7974,20 +8091,23 @@ class Parser:
         return [expression] if expression else None
 
     def _parse_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
-    ) -> t.List[exp.Expr]:
+        self, parse_method: t.Callable[[], t.Optional[T]], sep: TokenType = TokenType.COMMA
+    ) -> t.List[T]:
         parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
         while self._match(sep):
-            self._add_comments(parse_result)
+            if isinstance(parse_result, exp.Expr):
+                self._add_comments(parse_result)
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
 
         return items
 
-    def _parse_tokens(self, parse_method: t.Callable, expressions: t.Dict) -> t.Optional[exp.Expr]:
+    def _parse_tokens(
+        self, parse_method: t.Callable[[], t.Optional[exp.Expr]], expressions: t.Dict
+    ) -> t.Optional[exp.Expr]:
         this = parse_method()
 
         while self._match_set(expressions):
@@ -8003,13 +8123,16 @@ class Parser:
         return self._parse_wrapped_csv(self._parse_id_var, optional=optional)
 
     def _parse_wrapped_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA, optional: bool = False
-    ) -> t.List[exp.Expr]:
+        self,
+        parse_method: t.Callable[[], t.Optional[T]],
+        sep: TokenType = TokenType.COMMA,
+        optional: bool = False,
+    ) -> t.List[T]:
         return self._parse_wrapped(
             lambda: self._parse_csv(parse_method, sep=sep), optional=optional
         )
 
-    def _parse_wrapped(self, parse_method: t.Callable, optional: bool = False) -> t.Any:
+    def _parse_wrapped(self, parse_method: t.Callable[[], T], optional: bool = False) -> T:
         wrapped = self._match(TokenType.L_PAREN)
         if not wrapped and not optional:
             self.raise_error("Expecting (")

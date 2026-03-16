@@ -456,7 +456,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.DETACH: lambda self: self._parse_detach(),
     }
 
-    def _parse_wrapped_select_or_assignment(self) -> t.Optional[exp.Expression]:
+    def _parse_wrapped_select_or_assignment(self) -> t.Optional[exp.Expr]:
         return self._parse_wrapped(
             lambda: self._parse_select() or self._parse_assignment(), optional=True
         )

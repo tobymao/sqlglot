@@ -96,7 +96,7 @@ def pushdown(condition, sources, scope_ref_count, dialect, join_index=None):
     if cnf_like:
         pushdown_cnf(predicates, sources, scope_ref_count, join_index=join_index)
     else:
-        pushdown_dnf(predicates, sources, scope_ref_count)
+        pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
 
 
 def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
@@ -125,7 +125,7 @@ def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
                     node.where(inner_predicate, copy=False)
 
 
-def pushdown_dnf(predicates, sources, scope_ref_count):
+def pushdown_dnf(predicates, sources, scope_ref_count, join_index=None):
     """
     If the predicates are in DNF form, we can only push down conditions that are in all blocks.
     Additionally, we can't remove predicates from their original form.
@@ -165,6 +165,11 @@ def pushdown_dnf(predicates, sources, scope_ref_count):
             predicate = conditions[name]
 
             if isinstance(node, exp.Join):
+                if join_index:
+                    this_index = join_index.get(name, -1)
+                    predicate_tables = exp.column_table_names(predicate, name)
+                    if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
+                        continue
                 node.on(predicate, copy=False)
             elif isinstance(node, exp.Select):
                 inner_predicate = replace_aliases(node, predicate)

@@ -71,3 +71,11 @@ SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") JOIN x AS x ON u.val < x.
 # dialect: athena
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") CROSS JOIN x AS x WHERE x.a > u.val;
 SELECT x.a, u.val FROM UNNEST(ARRAY[0, 1]) AS u("val") JOIN x AS x ON u.val < x.a WHERE TRUE;
+
+-- DNF: cross-table predicate is only pushed to the last eligible JOIN (not to an earlier JOIN that doesn't yet have all referenced tables in scope)
+SELECT a.id, b.val, c.name FROM t_a AS a INNER JOIN t_b AS b ON b.a_id = a.id INNER JOIN t_c AS c ON c.b_id = b.id WHERE (b.flag = 1 AND c.active = 1) OR (b.flag = 2 AND c.active = 0);
+SELECT a.id, b.val, c.name FROM t_a AS a INNER JOIN t_b AS b ON a.id = b.a_id INNER JOIN t_c AS c ON ((b.flag = 1 AND c.active = 1) OR (b.flag = 2 AND c.active = 0)) AND b.id = c.b_id WHERE (b.flag = 1 AND c.active = 1) OR (b.flag = 2 AND c.active = 0);
+
+-- DNF: single-table predicate is pushed to its own JOIN regardless of join order
+SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON b.a_id = a.id WHERE (b.flag = 1 AND b.active = 1) OR (b.flag = 2 AND b.active = 0);
+SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON ((b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1)) AND a.id = b.a_id WHERE (b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1);

@@ -58,7 +58,6 @@ def _source_paths():
 class build_ext(_build_ext):
     def copy_extensions_to_source(self):
         """For editable installs, put sqlglot.* .so files in the sqlglot source dir."""
-        build_py = self.get_finalized_command("build_py")
         for ext in self.extensions:
             fullname = self.get_ext_fullname(ext.name)
             filename = self.get_ext_filename(fullname)
@@ -69,14 +68,10 @@ class build_ext(_build_ext):
                 sub_module = ".".join(parts[1:])
                 dst = os.path.join(sqlglot_src, self.get_ext_filename(sub_module))
             else:
-                # Default: mypyc runtime helper (e.g., HASH__mypyc) goes in current dir.
-                package = ".".join(parts[:-1])
-                package_dir = build_py.get_package_dir(package)
-                dst = (
-                    os.path.join(package_dir, os.path.basename(filename))
-                    if package_dir
-                    else os.path.basename(filename)
-                )
+                # Place the mypyc runtime helper (e.g., HASH__mypyc) in the repo root
+                # so it is importable (must be on sys.path, not inside a package).
+                repo_root = os.path.dirname(sqlglot_src) if os.path.isdir(sqlglot_src) else here
+                dst = os.path.join(repo_root, os.path.basename(filename))
             self.copy_file(src, dst, level=self.verbose)
 
 
@@ -105,6 +100,6 @@ class sdist(_sdist):
 setup(
     name="sqlglotc",
     packages=[],
-    ext_modules=mypycify(_source_paths(), opt_level=os.environ.get("MYPYC_OPT", "0")),
+    ext_modules=mypycify(_source_paths(), opt_level=os.environ.get("MYPYC_OPT", "3")),
     cmdclass={"build_ext": build_ext, "sdist": sdist},
 )

@@ -11,11 +11,12 @@ permissions:
 jobs:
   # Build mypyc wheels for each platform and Python version.
   build-wheels:
-    name: Build wheels (${{ matrix.os }}, ${{ matrix.archs }})
-    runs-on: ${{ matrix.os }}
+    name: Build wheels (${{ matrix.platform.os }}, ${{ matrix.platform.archs }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.platform.os }}
     strategy:
       matrix:
-        include:
+        python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp314"]
+        platform:
           - os: ubuntu-latest
             archs: x86_64
           - os: ubuntu-24.04-arm
@@ -33,12 +34,13 @@ jobs:
           package-dir: sqlglotc
           output-dir: wheelhouse
         env:
-          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*
-          CIBW_ARCHS: ${{ matrix.archs }}
+          CIBW_BUILD: ${{ matrix.python }}-*
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_ARCHS: ${{ matrix.platform.archs }}
           CIBW_ENVIRONMENT: MYPYC_OPT=3
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.archs }}
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.archs }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
   # Build the sqlglotc sdist (source-only, no wheels — always compiles on install).

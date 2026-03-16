@@ -7,16 +7,17 @@ else
 endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
+FIND_SO := find . -name "*.so" -not -path "*/build/*" -not -path "*/site-packages/*"
 
 hidec:
-	rm -rf $(SO_BACKUP) && find sqlglot sqlglotc -name "*.so" | tar cf $(SO_BACKUP) -T - 2>/dev/null && find sqlglot sqlglotc -name "*.so" -delete; true
+	rm -rf $(SO_BACKUP) && $(FIND_SO) | tar cf $(SO_BACKUP) -T - 2>/dev/null && $(FIND_SO) -delete; true
 
 showc:
 	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true
 
 clean:
 	rm -rf build sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
-	find sqlglot sqlglotc build -name "*.so" -delete 2>/dev/null; true
+	$(FIND_SO) -delete 2>/dev/null; true
 
 install:
 	$(PIP) install -e .
@@ -36,11 +37,11 @@ install-dev:
 		fi; \
 	fi
 
-install-devc: clean
-	cd sqlglotc && $(PIP) install -e .
+install-devc:
+	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace
 
 install-devc-release: clean
-	MYPYC_OPT=3 $(MAKE) install-devc
+	cd sqlglotc && $(PIP) install -e .
 
 install-pre-commit:
 	pre-commit install

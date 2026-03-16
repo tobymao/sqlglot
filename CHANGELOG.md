@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v30.0.1] - 2026-03-16
+### :bug: Bug Fixes
+- [`7bcad5c`](https://github.com/tobymao/sqlglot/commit/7bcad5c61673a8567e9c22d059ed4326e6698457) - auto pin sqlglotc version to sqlglot so there's no version mismatch closes [#7304](https://github.com/tobymao/sqlglot/pull/7304) *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v30.0.0] - 2026-03-16
 ### :boom: BREAKING CHANGES
 - due to [`8ee0646`](https://github.com/tobymao/sqlglot/commit/8ee0646baa6dfae7e96ca86e2c1af5d53fc04290) - Transpile numeric literals with underscores from ClickHouse to other dialects *(PR [#7132](https://github.com/tobymao/sqlglot/pull/7132) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -13663,3 +13668,4 @@ Changelog
 [v29.0.0]: https://github.com/tobymao/sqlglot/compare/v28.10.1...v29.0.0
 [v29.0.1]: https://github.com/tobymao/sqlglot/compare/v29.0.0...v29.0.1
 [v30.0.0]: https://github.com/tobymao/sqlglot/compare/v29.0.1...v30.0.0
+[v30.0.1]: https://github.com/tobymao/sqlglot/compare/v30.0.0...v30.0.1

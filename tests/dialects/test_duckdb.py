@@ -138,8 +138,8 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "CASE WHEN arr IS NULL THEN NULL ELSE COALESCE(ARRAY_TO_STRING(LIST_TRANSFORM(arr, x -> COALESCE(CAST(x AS TEXT), '')), delim), '') END",
-            read={"snowflake": "ARRAY_TO_STRING(arr, delim)"},
+            "SELECT CASE WHEN arr IS NULL THEN NULL WHEN delim IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(arr, x -> COALESCE(CAST(x AS TEXT), '')), delim) END",
+            read={"snowflake": "SELECT ARRAY_TO_STRING(arr, delim)"},
         )
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",

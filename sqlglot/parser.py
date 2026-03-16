@@ -6366,7 +6366,7 @@ class Parser:
                     else:
                         this, path_parts = self._build_extract(this, path_parts, escape)
                         this = self.expression(
-                            exp.Bracket(this=this, expressions=[bracket_expr], json_access=True)
+                            exp.Bracket(this=this, expressions=[bracket_expr], json_access=True),
                         )
 
                 elif self._match(TokenType.DCOLON):

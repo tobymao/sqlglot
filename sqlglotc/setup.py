@@ -58,7 +58,6 @@ def _source_paths():
 class build_ext(_build_ext):
     def copy_extensions_to_source(self):
         """For editable installs, put sqlglot.* .so files in the sqlglot source dir."""
-        build_py = self.get_finalized_command("build_py")
         for ext in self.extensions:
             fullname = self.get_ext_fullname(ext.name)
             filename = self.get_ext_filename(fullname)

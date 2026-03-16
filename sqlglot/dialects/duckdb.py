@@ -2202,6 +2202,60 @@ class DuckDB(Dialect):
             """
         )
 
+        """
+        Template for Strtok function.
+
+        DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB.
+        We may need to adjust this if we want to support transpilation from other dialects
+
+        CASE
+            -- Snowflake: empty delimiter + empty input string → NULL
+            WHEN delimiter = '' AND input_str = '' THEN NULL
+
+            -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return input string if index is 1
+            WHEN delimiter = '' AND index = 1 THEN input_str
+
+            -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return NULL if index is not 1
+            WHEN delimiter = '' THEN NULL
+
+            -- Snowflake: negative indices return NULL
+            WHEN index < 0 THEN NULL
+
+            -- Snowflake: return NULL if any argument is NULL
+            WHEN input_str IS NULL OR delimiter IS NULL OR index IS NULL THEN NULL
+
+
+            ELSE LIST_FILTER(
+                REGEXP_SPLIT_TO_ARRAY(
+                    input_str,
+                    CASE
+                        -- if delimiter is '', we don't want to surround it with '[' and ']' as '[]' is invalid for DuckDB
+                        WHEN delimiter = '' THEN ''
+
+                        -- handle problematic regex characters in delimiter with REGEXP_REPLACE
+                        -- turn delimiter into a regex char set, otherwise DuckDB will match in order, which we don't want
+                        ELSE '[' || REGEXP_REPLACE(delimiter, problematic_char_set, '\\\1', 'g') || ']'
+                    END
+                ),
+
+                -- Snowflake: don't return empty strings
+                x -> NOT x = ''
+            )[index]
+        END
+        """
+        STRTOK_TEMPLATE: exp.Expr = exp.maybe_parse(
+            """
+            CASE
+                WHEN :delimiter = '' AND :string = '' THEN NULL
+                WHEN :delimiter = '' AND :part_index = 1 THEN :string
+                WHEN :delimiter = '' THEN NULL
+                WHEN :part_index < 0 THEN NULL
+                WHEN :string IS NULL OR :delimiter IS NULL OR :part_index IS NULL THEN NULL
+                ELSE :base_func
+            END
+            """
+        )
+
         def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
             cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
             return self.sql(
@@ -4039,46 +4093,6 @@ class DuckDB(Dialect):
             part_index_arg = expression.args.get("part_index")
 
             if delimiter_arg and part_index_arg:
-                """
-                DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB. 
-                We may need to adjust this if we want to support transpilation from other dialects
-     
-                CASE 
-                    -- Snowflake: empty delimiter + empty input string → NULL
-                    WHEN delimiter = '' AND input_str = '' THEN NULL 
-
-                    -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return input string if index is 1
-                    WHEN delimiter = '' AND index = 1 THEN input_str 
-                    
-                    -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return NULL if index is not 1
-                    WHEN delimiter = '' THEN NULL 
-
-                    -- Snowflake: negative indices return NULL
-                    WHEN index < 0 THEN NULL 
-
-                    -- Snowflake: return NULL if any argument is NULL
-                    WHEN input_str IS NULL OR delimiter IS NULL OR index IS NULL THEN NULL 
-
-
-                    ELSE LIST_FILTER(
-                        REGEXP_SPLIT_TO_ARRAY(
-                            input_str, 
-                            CASE 
-                                -- if delimiter is '', we don't want to surround it with '[' and ']' as '[]' is invalid for DuckDB 
-                                WHEN delimiter = '' THEN '' 
-
-                                -- handle problematic regex characters in delimiter with REGEXP_REPLACE
-                                -- turn delimiter into a regex char set, otherwise DuckDB will match in order, which we don't want
-                                ELSE '[' || REGEXP_REPLACE(delimiter, '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' 
-                            END
-                        ), 
-                        
-                        -- Snowflake: don't return empty strings
-                        x -> NOT x = ''
-                    )[index] 
-                END
-                """
-
                 # Escape regex chars and build character class at runtime using REGEXP_REPLACE
                 escaped_delimiter = exp.Anonymous(
                     this="REGEXP_REPLACE",
@@ -4123,44 +4137,16 @@ class DuckDB(Dialect):
                     offset=1,
                 )
 
-                # Build conditional logic for Snowflake semantics
-                case_expr = exp.case().else_(base_func)
-
-                # Handle empty delimiter cases
-                case_expr = (
-                    case_expr.when(
-                        exp.and_(
-                            delimiter_arg.eq(exp.Literal.string("")),
-                            string_arg.eq(exp.Literal.string("")),
-                        ),
-                        exp.null(),  # Empty delimiter + empty string → NULL
-                    )
-                    .when(
-                        exp.and_(
-                            delimiter_arg.eq(exp.Literal.string("")),
-                            part_index_arg.eq(exp.Literal.number("1")),
-                        ),
-                        string_arg,  # Empty delimiter + index 1 → return whole string
-                    )
-                    .when(
-                        delimiter_arg.eq(exp.Literal.string("")),
-                        exp.null(),  # Empty delimiter + index != 1 → NULL
-                    )
+                # Use template with the built regex pattern
+                result = exp.replace_placeholders(
+                    self.STRTOK_TEMPLATE.copy(),
+                    string=string_arg,
+                    delimiter=delimiter_arg,
+                    part_index=part_index_arg,
+                    base_func=base_func
                 )
 
-                # Check for negative index (return NULL)
-                case_expr = case_expr.when(
-                    exp.LT(this=part_index_arg, expression=exp.Literal.number("0")), exp.null()
-                )
-
-                # Check for NULL arguments if needed
-                combined_null_check = exp.or_(
-                    *[arg.is_(exp.null()) for arg in [string_arg, delimiter_arg, part_index_arg]],
-                    copy=False,
-                )
-                case_expr = case_expr.when(combined_null_check, exp.null())
-
-                return self.sql(case_expr)
+                return self.sql(result)
 
             return self.function_fallback_sql(expression)
 

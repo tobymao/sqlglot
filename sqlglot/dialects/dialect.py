@@ -2277,11 +2277,11 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
                 exp.EQ(this=step_value.copy(), expression=zero.copy()),
                 exp.and_(
                     exp.GT(this=step_value.copy(), expression=zero.copy()),
-                    exp.GTE(this=start.copy(), expression=end.copy()),
+                    exp.GT(this=start.copy(), expression=end.copy()),
                 ),
                 exp.and_(
                     exp.LT(this=step_value.copy(), expression=zero.copy()),
-                    exp.LTE(this=start.copy(), expression=end.copy()),
+                    exp.LT(this=start.copy(), expression=end.copy()),
                 ),
             )
             empty_array_or_sequence = exp.If(

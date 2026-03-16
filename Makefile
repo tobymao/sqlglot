@@ -38,6 +38,8 @@ install-dev:
 
 install-devc:
 	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace
+	@# The mypyc runtime .so must be importable; copy it next to the shim .so files
+	@cp sqlglotc/*__mypyc*.so sqlglot/ 2>/dev/null || true
 
 install-devc-release: clean
 	cd sqlglotc && $(PIP) install -e .

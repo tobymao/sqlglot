@@ -25,11 +25,12 @@ from sqlglot.helper import (
     trait,
 )
 
+from sqlglot.tokenizer_core import Token
+
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
-    from sqlglot.tokens import Token
 
 logger = logging.getLogger("sqlglot")
 
@@ -101,6 +102,8 @@ class Expr:
         # This is so that docstrings are not inherited in pdoc
         setattr(cls, "__doc__", getattr(cls, "__doc__", None) or "")
 
+    is_primitive: t.ClassVar[bool] = False
+
     def __init__(self, **args: object) -> None:
         self.args: t.Dict[str, t.Any] = args
         self.parent: t.Optional[Expr] = None
@@ -111,8 +114,9 @@ class Expr:
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
         self._hash: t.Optional[int] = None
 
-        for arg_key, value in self.args.items():
-            self._set_parent(arg_key, value)
+        if not self.is_primitive:
+            for arg_key, value in self.args.items():
+                self._set_parent(arg_key, value)
 
     @property
     def this(self) -> t.Any:
@@ -1266,13 +1270,13 @@ class Expression(Expr):
         Returns:
             The updated expression.
         """
-        if other is None:
+        if isinstance(other, Token):
             meta = self.meta
-            meta["line"] = line
-            meta["col"] = col
-            meta["start"] = start
-            meta["end"] = end
-        elif isinstance(other, Expr):
+            meta["line"] = other.line
+            meta["col"] = other.col
+            meta["start"] = other.start
+            meta["end"] = other.end
+        elif other is not None:
             other_meta = other._meta
             if other_meta:
                 meta = self.meta
@@ -1281,10 +1285,10 @@ class Expression(Expr):
                         meta[k] = other_meta[k]
         else:
             meta = self.meta
-            meta["line"] = other.line
-            meta["col"] = other.col
-            meta["start"] = other.start
-            meta["end"] = other.end
+            meta["line"] = line
+            meta["col"] = col
+            meta["start"] = start
+            meta["end"] = end
         return self
 
     def as_(
@@ -1643,6 +1647,7 @@ class Column(Expression, Condition):
 class Literal(Expression, Condition):
     arg_types = {"this": True, "is_string": True}
     _hash_raw_args = True
+    is_primitive = True
 
     @classmethod
     def number(cls, number) -> Literal | Neg:
@@ -1674,7 +1679,7 @@ class Literal(Expression, Condition):
 
 
 class Var(Expression):
-    pass
+    is_primitive = True
 
 
 class WithinGroup(Expression):
@@ -1695,6 +1700,7 @@ class JoinHint(Expression):
 
 class Identifier(Expression):
     arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
+    is_primitive = True
     _hash_raw_args = True
 
     @property
@@ -1750,6 +1756,8 @@ class Null(Expression, Condition):
 
 
 class Boolean(Expression, Condition):
+    is_primitive = True
+
     def to_py(self) -> bool:
         return self.this
 

@@ -449,19 +449,21 @@ class TableAlias(Expression):
 
 
 class BitString(Expression, Condition):
-    pass
+    is_primitive = True
 
 
 class HexString(Expression, Condition):
     arg_types = {"this": True, "is_integer": False}
+    is_primitive = True
 
 
 class ByteString(Expression, Condition):
     arg_types = {"this": True, "is_bytes": False}
+    is_primitive = True
 
 
 class RawString(Expression, Condition):
-    pass
+    is_primitive = True
 
 
 class UnicodeString(Expression, Condition):
@@ -556,7 +558,7 @@ class Introducer(Expression):
 
 
 class National(Expression):
-    pass
+    is_primitive = True
 
 
 class Partition(Expression):

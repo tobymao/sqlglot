@@ -4,7 +4,8 @@ setup(
     extras_require={
         "dev": [
             "duckdb>=0.6",
-            "mypy",
+            "sqlglot-mypy>=1.19.1.post1",
+            "setuptools_scm",
             "pandas",
             "pandas-stubs",
             "python-dateutil",

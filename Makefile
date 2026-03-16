@@ -36,11 +36,11 @@ install-dev:
 		fi; \
 	fi
 
-install-devc: clean
-	cd sqlglotc && $(PIP) install -e .
+install-devc:
+	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace
 
 install-devc-release: clean
-	MYPYC_OPT=3 $(MAKE) install-devc
+	cd sqlglotc && $(PIP) install -e .
 
 install-pre-commit:
 	pre-commit install

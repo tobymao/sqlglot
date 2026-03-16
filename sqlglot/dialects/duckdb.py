@@ -4143,7 +4143,7 @@ class DuckDB(Dialect):
                     string=string_arg,
                     delimiter=delimiter_arg,
                     part_index=part_index_arg,
-                    base_func=base_func
+                    base_func=base_func,
                 )
 
                 return self.sql(result)

@@ -14,7 +14,7 @@ Homepage = "https://sqlglot.com/"
 Repository = "https://github.com/tobymao/sqlglot"
 
 [build-system]
-requires = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy>=1.19.1.post1"]
+requires = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy>=1.19.1.post1", "types-python-dateutil"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -31,3 +31,4 @@ mypy_path = [".", ".."]
 
 [[tool.mypy.overrides]]
 module = "sqlglot._version"
+ignore_missing_imports = true

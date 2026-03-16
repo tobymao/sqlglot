@@ -193,6 +193,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     parent_predicate = select.find_ancestor(exp.Predicate)
 
+    # When the subquery is embedded inside a function (e.g. COALESCE, TRIM) in the SELECT list,
+    # the ancestor chain contains no Predicate node AND the subquery is not a direct projection.
+    if parent_predicate is None and not is_subquery_projection:
+        return
+
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
     agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg

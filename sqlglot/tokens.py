@@ -8,13 +8,19 @@ from sqlglot.trie import new_trie
 from sqlglot.tokenizer_core import Token, TokenType
 
 try:
+    import sqlglotc  # noqa: F401
+except ImportError:
+    pass
+
+try:
     import sqlglotrs  # type: ignore # noqa: F401
     import warnings
 
-    warnings.warn(
-        "sqlglot[rs] is deprecated and no longer compatible with sqlglot. "
-        "Please use sqlglotc instead for faster parsing: pip install sqlglot[c]",
-    )
+    if "sqlglotc" not in globals():
+        warnings.warn(
+            "sqlglot[rs] is deprecated and no longer compatible with sqlglot. "
+            "Please use sqlglotc instead for faster parsing: pip install sqlglot[c]",
+        )
 except ImportError:
     pass
 

@@ -7,16 +7,17 @@ else
 endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
+FIND_SO := find . -name "*.so" -not -path "./.env/*" -not -path "*/build/*"
 
 hidec:
-	rm -rf $(SO_BACKUP) && (find sqlglot sqlglotc -name "*.so"; ls *__mypyc*.so 2>/dev/null) | tar cf $(SO_BACKUP) -T - 2>/dev/null && find sqlglot sqlglotc -name "*.so" -delete && rm -f *__mypyc*.so; true
+	rm -rf $(SO_BACKUP) && $(FIND_SO) | tar cf $(SO_BACKUP) -T - 2>/dev/null && $(FIND_SO) -delete; true
 
 showc:
 	tar xf $(SO_BACKUP) 2>/dev/null; rm -f $(SO_BACKUP); true
 
 clean:
 	rm -rf build sqlglotc/build sqlglotc/dist sqlglotc/*.egg-info sqlglotc/sqlglot
-	find sqlglot sqlglotc build -name "*.so" -delete 2>/dev/null; rm -f *__mypyc*.so; true
+	$(FIND_SO) -delete 2>/dev/null; true
 
 install:
 	$(PIP) install -e .

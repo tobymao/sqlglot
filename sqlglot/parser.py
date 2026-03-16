@@ -6301,7 +6301,7 @@ class Parser:
 
         return this
 
-    def _build_variant_extract(
+    def _build_json_extract(
         self,
         this: t.Optional[exp.Expr],
         path_parts: t.List[exp.JSONPathPart],
@@ -6323,7 +6323,7 @@ class Parser:
         escape: t.Optional[bool],
     ) -> t.Tuple[t.Optional[exp.Expr], t.List[exp.JSONPathPart]]:
         if len(path_parts) > 1:
-            this = self._build_variant_extract(this, path_parts, escape)
+            this = self._build_json_extract(this, path_parts, escape)
             path_parts = [exp.JSONPathRoot()]
 
         return this, path_parts

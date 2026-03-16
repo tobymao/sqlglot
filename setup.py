@@ -1,4 +1,7 @@
 from setuptools import setup
+from setuptools_scm import get_version
+
+version = get_version(local_scheme="no-local-version")
 
 setup(
     extras_require={
@@ -19,8 +22,8 @@ setup(
             "pyperf",
         ],
         # Compiles from source on the user's machine.
-        "c": ["sqlglotc"],
+        "c": [f"sqlglotc=={version}"],
         # Deprecated: the Rust tokenizer has been replaced by sqlglotc.
-        "rs": ["sqlglotrs==0.13.0", "sqlglotc"],
+        "rs": ["sqlglotrs==0.13.0", f"sqlglotc=={version}"],
     },
 )

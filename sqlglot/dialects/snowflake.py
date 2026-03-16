@@ -1271,27 +1271,6 @@ class Snowflake(Dialect):
 
             return rename_func("SPLIT_PART")(self, expression)
 
-        def strtok_sql(self, expression: exp.Strtok) -> str:
-            # STRTOK(<string> [,<delimiter>] [,<partNumber>])
-            # Omit default parameters to match Snowflake syntax
-            args = [self.sql(expression.this)]
-
-            delimiter = expression.args.get("delimiter")
-            part_index = expression.args.get("part_index")
-
-            # Only include delimiter if it's not the default space
-            if delimiter and not (delimiter.is_string and delimiter.this == " "):
-                args.append(self.sql(delimiter))
-                # Only include part_index if delimiter is present and part_index is not default 1
-                if part_index and not (part_index.is_number and part_index.this == "1"):
-                    args.append(self.sql(part_index))
-            elif part_index and not (part_index.is_number and part_index.this == "1"):
-                # If delimiter is default but part_index is not, we need to include both
-                args.append("' '")
-                args.append(self.sql(part_index))
-
-            return f"STRTOK({', '.join(args)})"
-
         def uniform_sql(self, expression: exp.Uniform) -> str:
             gen = expression.args.get("gen")
             seed = expression.args.get("seed")

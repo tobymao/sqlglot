@@ -5454,7 +5454,6 @@ SINGLE = TRUE""",
         self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
         self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")
 
-        # Verify variant bracket access transpilation and index offset after type annotation
         for sql, (expected_snowflake, expected_duckdb) in [
             (
                 """WITH t AS (SELECT PARSE_JSON('{"a": [1, 2]}') AS v), s AS (SELECT 1 AS x) SELECT t.v:a[s.x] FROM t, s""",

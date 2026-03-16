@@ -109,3 +109,7 @@ WITH t2 AS (SELECT t1.c1 FROM UNNEST((SELECT ARRAY(x.a) FROM x)) AS t1(c1)) SELE
 # title: Skip unnesting GENERATE_SERIES but unnesting the rest in the query
 SELECT t1.c1 > (SELECT SUM(y.a) AS b FROM y) FROM x JOIN GENERATE_SERIES((SELECT MAX(x.a) FROM x AS x), 10, 1) AS t1(c1) ON t1.c1 > x.a;
 SELECT t1.c1 > _u_0.b FROM x JOIN GENERATE_SERIES((SELECT MAX(x.a) FROM x AS x), 10, 1) AS t1(c1) ON t1.c1 > x.a CROSS JOIN (SELECT SUM(y.a) AS b FROM y) AS _u_0;
+
+# title: correlated scalar subquery with EQ + range predicates inside a function in SELECT should not crash (issue #7295)
+SELECT COALESCE((SELECT MAX(b.val) FROM t b WHERE b.val < a.val AND b.id = a.id), a.val) AS result FROM t a;
+SELECT COALESCE((SELECT MAX(b.val) FROM t AS b WHERE b.val < a.val AND b.id = a.id), a.val) AS result FROM t AS a;

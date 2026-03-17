@@ -1,4 +1,4 @@
-# ruff: noqa: F401
+# ruff: noqa: F401, E402
 """
 .. include:: ../README.md
 
@@ -6,6 +6,23 @@
 """
 
 from __future__ import annotations
+
+# bootstrap mypyc runtime: compiled .so modules do a top-level `import HASH__mypyc`,
+# but the runtime .so lives inside sqlglot/. Pre-load it into sys.modules.
+# this is only needed for editable builds
+import sys
+from pathlib import Path
+
+for path in Path(__file__).parent.glob("*__mypyc*.so"):
+    name = path.stem.split(".")[0]
+    if name not in sys.modules:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            spec.loader.exec_module(mod)
 
 import logging
 import typing as t

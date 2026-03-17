@@ -286,6 +286,24 @@ class Parser:
             Default: 3
     """
 
+    __slots__ = (
+        "error_level",
+        "error_message_context",
+        "max_errors",
+        "dialect",
+        "sql",
+        "errors",
+        "_tokens",
+        "_index",
+        "_curr",
+        "_next",
+        "_prev",
+        "_prev_comments",
+        "_pipe_cte_counter",
+        "_chunks",
+        "_chunk_index",
+    )
+
     FUNCTIONS: t.ClassVar[t.Dict[str, t.Callable]] = {
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
         **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
@@ -1763,9 +1781,6 @@ class Parser:
         self.error_message_context: int = error_message_context
         self.max_errors: int = max_errors
         self.dialect: t.Any = _resolve_dialect(dialect)
-        self.reset()
-
-    def reset(self) -> None:
         self.sql: str = ""
         self.errors: t.List[ParseError] = []
         self._tokens: t.List[Token] = []
@@ -1777,6 +1792,19 @@ class Parser:
         self._pipe_cte_counter: int = 0
         self._chunks: t.List[t.List[Token]] = []
         self._chunk_index: int = 0
+
+    def reset(self) -> None:
+        self.sql = ""
+        self.errors = []
+        self._tokens = []
+        self._index = 0
+        self._curr = SENTINEL_NONE
+        self._next = SENTINEL_NONE
+        self._prev = SENTINEL_NONE
+        self._prev_comments = []
+        self._pipe_cte_counter = 0
+        self._chunks = []
+        self._chunk_index = 0
 
     def _advance(self, times: int = 1) -> None:
         index = self._index + times

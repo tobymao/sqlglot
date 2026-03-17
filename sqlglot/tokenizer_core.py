@@ -625,9 +625,6 @@ class TokenizerCore:
         self.numbers_can_be_underscore_separated = numbers_can_be_underscore_separated
         self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
         self.unescaped_sequences = unescaped_sequences
-        self.reset()
-
-    def reset(self) -> None:
         self.sql = ""
         self.size = 0
         self.tokens: t.List[Token] = []
@@ -636,6 +633,20 @@ class TokenizerCore:
         self._line = 1
         self._col = 0
         self._comments: t.List[str] = []
+        self._char = ""
+        self._end = False
+        self._peek = ""
+        self._prev_token_line = -1
+
+    def reset(self) -> None:
+        self.sql = ""
+        self.size = 0
+        self.tokens = []
+        self._start = 0
+        self._current = 0
+        self._line = 1
+        self._col = 0
+        self._comments = []
         self._char = ""
         self._end = False
         self._peek = ""

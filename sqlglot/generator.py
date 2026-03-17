@@ -4087,6 +4087,8 @@ class Generator(metaclass=_Generator):
 
             if isinstance(exprs, exp.Tuple):
                 exprs = exprs.expressions
+            else:
+                exprs = [exprs]
 
             connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
 

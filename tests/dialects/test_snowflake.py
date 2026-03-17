@@ -3179,10 +3179,17 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CURRENT_SCHEMA()")
 
         self.validate_all(
-            "SELECT 1 WHERE 'abc' ILIKE ANY ('%a%')",
+            "SELECT 1 WHERE 'abc' ILIKE ANY('%a%')",
             write={
-                "snowflake": "SELECT 1 WHERE 'abc' ILIKE ANY ('%a%')",
+                "snowflake": "SELECT 1 WHERE 'abc' ILIKE ANY('%a%')",
                 "duckdb": "SELECT 1 WHERE 'abc' ILIKE '%a%'",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 WHERE 'abc' LIKE ALL ('%a%')",
+            write={
+                "snowflake": "SELECT 1 WHERE 'abc' LIKE ALL ('%a%')",
+                "duckdb": "SELECT 1 WHERE 'abc' LIKE '%a%'",
             },
         )
 

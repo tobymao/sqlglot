@@ -835,6 +835,16 @@ class TestExprs(unittest.TestCase):
         self.assertEqual(alias('"foo"', "_bar").sql(), '"foo" AS _bar')
         self.assertEqual(alias("foo", "bar", quoted=True).sql(), 'foo AS "bar"')
 
+    def test_alias_with_placeholder(self):
+        # Snowflake's `AS :name` syntax parses the alias as a Placeholder node.
+        # Regression test: Expression.alias should return the placeholder name, not "".
+        expr = parse_one("SELECT PARSE_JSON(col) AS :userInfo FROM t", dialect="snowflake")
+        select = expr.selects[0]
+        self.assertIsInstance(select.args.get("alias"), exp.Placeholder)
+        self.assertEqual(select.alias, "userInfo")
+        self.assertEqual(select.alias_or_name, "userInfo")
+        self.assertEqual(select.output_name, "userInfo")
+
     def test_unit(self):
         unit = parse_one("timestamp_trunc(current_timestamp, week(thursday))")
         self.assertIsNotNone(unit.find(exp.CurrentTimestamp))

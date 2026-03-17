@@ -434,6 +434,12 @@ class SnowflakeParser(parser.Parser):
         ),
         "ARRAY_SORT": _build_array_sort,
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
+        "ARRAY_TO_STRING": lambda args: exp.ArrayToString(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            null_is_empty=True,
+            null_delim_is_null=True,
+        ),
         "ARRAYS_OVERLAP": lambda args: exp.ArrayOverlaps(
             this=seq_get(args, 0), expression=seq_get(args, 1), null_safe=True
         ),

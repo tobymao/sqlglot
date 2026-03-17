@@ -1867,14 +1867,25 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "ARRAY_TO_STRING(x, '')",
-            read={
-                "duckdb": "ARRAY_TO_STRING(x, '')",
-            },
+            "SELECT ARRAY_TO_STRING(x, '')",
             write={
-                "spark": "ARRAY_JOIN(x, '')",
-                "snowflake": "ARRAY_TO_STRING(x, '')",
-                "duckdb": "ARRAY_TO_STRING(x, '')",
+                "spark": "SELECT ARRAY_JOIN(x, '')",
+                "snowflake": "SELECT ARRAY_TO_STRING(x, '')",
+                "duckdb": "SELECT CASE WHEN '' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), '') END",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_TO_STRING(x, NULL)",
+            write={
+                "snowflake": "SELECT ARRAY_TO_STRING(x, NULL)",
+                "duckdb": "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), NULL) END",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_TO_STRING([], ',')",
+            write={
+                "snowflake": "SELECT ARRAY_TO_STRING([], ',')",
+                "duckdb": "SELECT CASE WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], x -> COALESCE(CAST(x AS TEXT), '')), ',') END",
             },
         )
         self.validate_all(

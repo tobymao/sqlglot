@@ -1201,6 +1201,9 @@ class Snowflake(Dialect):
 
             return expr_sql
 
+        def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+            return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
+
         def array_sql(self, expression: exp.Array) -> str:
             expressions = expression.expressions
 

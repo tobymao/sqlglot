@@ -4115,15 +4115,33 @@ class DuckDB(Dialect):
             hash_arg: exp.Expression
             if len(cols) == 1:
                 if isinstance(cols[0], exp.Star):
-                    # HASH(*) is not supported in DuckDB - HASH() requires explicit columns
-                    # Generate a warning and use a placeholder
-                    self.unsupported(
-                        "HASH_AGG(*) cannot be fully transpiled to DuckDB. "
-                        "DuckDB's HASH() function requires explicit columns, not *. "
-                        "Please rewrite as HASH_AGG(col1, col2, ...) with specific columns."
-                    )
-                    # Fall back to using Star - will cause runtime error but preserves intent
-                    hash_arg = exp.Star()
+                    # HASH(*) needs to be rewritten as HASH(UNPACK(COLUMNS(table.*)))
+                    # Find the table reference from the parent SELECT
+                    select = expression.find_ancestor(exp.Select)
+                    if select and select.args.get("from_"):
+                        from_expr = select.args["from_"].this
+                        if isinstance(from_expr, exp.Table):
+                            # Build: columns(table.*)
+                            table_star = exp.Dot(
+                                this=exp.to_table(from_expr.name), expression=exp.Star()
+                            )
+                            columns_func = exp.Anonymous(this="COLUMNS", expressions=[table_star])
+                            # Build: unpack(columns(table.*))
+                            unpack_func = exp.Anonymous(this="UNPACK", expressions=[columns_func])
+                            hash_arg = unpack_func
+                        else:
+                            # Complex FROM clause (joins, subqueries, etc.) - not supported
+                            self.unsupported(
+                                "HASH_AGG(*) with complex FROM clause (joins/subqueries) is not supported. "
+                                "Please use explicit columns: HASH_AGG(col1, col2, ...)"
+                            )
+                            hash_arg = exp.Star()
+                    else:
+                        # No FROM clause found
+                        self.unsupported(
+                            "HASH_AGG(*) requires a FROM clause with a table reference."
+                        )
+                        hash_arg = exp.Star()
                 else:
                     # HASH(col)
                     hash_arg = cols[0]
@@ -4134,17 +4152,30 @@ class DuckDB(Dialect):
             # Build HASH(...) function
             hash_func: exp.Expression = exp.Anonymous(this="HASH", expressions=[hash_arg])
 
-            # Add DISTINCT if needed - wrap hash_func in Distinct
+            # Handle DISTINCT - it should apply to the source columns before hashing,
+            # not to the hash result. This requires complex rewriting.
             if distinct:
-                hash_func = exp.Distinct(expressions=[hash_func])
+                self.unsupported(
+                    "HASH_AGG(DISTINCT ...) cannot be fully transpiled to DuckDB. "
+                    "The DISTINCT should apply before hashing, which requires subquery rewriting. "
+                    "Consider rewriting manually."
+                )
 
             # Build BIT_XOR aggregate
             bit_xor = exp.BitwiseXorAgg(this=hash_func)
 
-            # Wrap with COALESCE(..., 0)
-            result = exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)])
-
-            return self.sql(result)
+            # Check if this is inside a Window expression
+            # Window functions don't need COALESCE as they return values for all rows
+            parent = expression.parent
+            if isinstance(parent, exp.Window):
+                # For window functions: BIT_XOR(HASH(col)) OVER (...)
+                return self.sql(bit_xor)
+            else:
+                # For regular aggregates: COALESCE(BIT_XOR(HASH(col)), 0)
+                # COALESCE is needed because BIT_XOR returns NULL for empty sets,
+                # but Snowflake's HASH_AGG returns 0 for empty input
+                result = exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)])
+                return self.sql(result)
 
         def _corr_sql(
             self,

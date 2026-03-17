@@ -2688,9 +2688,16 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT HASH_AGG(DISTINCT col1)",
+            "SELECT HASH_AGG(*) FROM my_table",
             write={
-                "duckdb": "SELECT COALESCE(BIT_XOR(DISTINCT HASH(col1)), 0)",
-                "snowflake": "SELECT HASH_AGG(DISTINCT col1)",
+                "duckdb": "SELECT COALESCE(BIT_XOR(HASH(UNPACK(COLUMNS(my_table.*)))), 0) FROM my_table",
+                "snowflake": "SELECT HASH_AGG(*) FROM my_table",
+            },
+        )
+        self.validate_all(
+            "SELECT col2, col1, HASH_AGG(col1) OVER (PARTITION BY col2) AS partition_hash FROM t",
+            write={
+                "duckdb": "SELECT col2, col1, BIT_XOR(HASH(col1)) OVER (PARTITION BY col2) AS partition_hash FROM t",
+                "snowflake": "SELECT col2, col1, HASH_AGG(col1) OVER (PARTITION BY col2) AS partition_hash FROM t",
             },
         )

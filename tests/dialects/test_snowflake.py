@@ -1876,7 +1876,6 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "SELECT ARRAY_TO_STRING(x, NULL)",
-            read={"snowflake": "SELECT ARRAY_TO_STRING(x, NULL)"},
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING(x, NULL)",
                 "duckdb": "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), NULL) END",
@@ -1884,7 +1883,6 @@ class TestSnowflake(Validator):
         )
         self.validate_all(
             "SELECT ARRAY_TO_STRING([], ',')",
-            read={"snowflake": "SELECT ARRAY_TO_STRING([], ',')"},
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING([], ',')",
                 "duckdb": "SELECT CASE WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], x -> COALESCE(CAST(x AS TEXT), '')), ',') END",

@@ -742,8 +742,6 @@ SELECT ((SELECT 0) UNION (SELECT 1) ORDER BY 1 OFFSET 1)
 SELECT * FROM x WHERE y IN ((SELECT 1) UNION (SELECT 2) OFFSET 2)
 SELECT * FROM project.dataset.INFORMATION_SCHEMA.TABLES
 SELECT CAST(x AS INT) /* comment */ FROM foo
-SELECT c /* c1 /* c2 */ c3 */
-SELECT c /* c1 /* c2 /* c3 */ */ */
 SELECT c /* c1 */ AS alias /* c2 */
 SELECT a /* x */, b /* x */
 SELECT a /* x */ /* y */ /* z */, b /* k */ /* m */

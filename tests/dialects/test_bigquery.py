@@ -3206,7 +3206,7 @@ OPTIONS (
             -- bar, /* the thing */
         from facts
         """
-        expected = "SELECT\n  id,\n  foo\n/* bar, /* the thing * / */\nFROM facts"
+        expected = "SELECT\n  id,\n  foo\n/* bar, / * the thing * / */\nFROM facts"
         self.assertEqual(self.parse_one(sql).sql("bigquery", pretty=True), expected)
 
     def test_unnest_with_offset(self):

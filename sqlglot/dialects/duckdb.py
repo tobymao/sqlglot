@@ -2202,47 +2202,45 @@ class DuckDB(Dialect):
             """
         )
 
-        """
-        Template for Strtok function.
-
-        DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB.
-        We may need to adjust this if we want to support transpilation from other dialects
-
-        CASE
-            -- Snowflake: empty delimiter + empty input string → NULL
-            WHEN delimiter = '' AND input_str = '' THEN NULL
-
-            -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return input string if index is 1
-            WHEN delimiter = '' AND index = 1 THEN input_str
-
-            -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return NULL if index is not 1
-            WHEN delimiter = '' THEN NULL
-
-            -- Snowflake: negative indices return NULL
-            WHEN index < 0 THEN NULL
-
-            -- Snowflake: return NULL if any argument is NULL
-            WHEN input_str IS NULL OR delimiter IS NULL OR index IS NULL THEN NULL
-
-
-            ELSE LIST_FILTER(
-                REGEXP_SPLIT_TO_ARRAY(
-                    input_str,
-                    CASE
-                        -- if delimiter is '', we don't want to surround it with '[' and ']' as '[]' is invalid for DuckDB
-                        WHEN delimiter = '' THEN ''
-
-                        -- handle problematic regex characters in delimiter with REGEXP_REPLACE
-                        -- turn delimiter into a regex char set, otherwise DuckDB will match in order, which we don't want
-                        ELSE '[' || REGEXP_REPLACE(delimiter, problematic_char_set, '\\\1', 'g') || ']'
-                    END
-                ),
-
-                -- Snowflake: don't return empty strings
-                x -> NOT x = ''
-            )[index]
-        END
-        """
+        # Template for STRTOK function transpilation
+        #
+        # DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB.
+        # We may need to adjust this if we want to support transpilation from other dialects
+        #
+        # CASE
+        #     -- Snowflake: empty delimiter + empty input string → NULL
+        #     WHEN delimiter = '' AND input_str = '' THEN NULL
+        #
+        #     -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return input string if index is 1
+        #     WHEN delimiter = '' AND index = 1 THEN input_str
+        #
+        #     -- Snowflake: empty delimiter + non-empty input string → treats whole input as 1 token → return NULL if index is not 1
+        #     WHEN delimiter = '' THEN NULL
+        #
+        #     -- Snowflake: negative indices return NULL
+        #     WHEN index < 0 THEN NULL
+        #
+        #     -- Snowflake: return NULL if any argument is NULL
+        #     WHEN input_str IS NULL OR delimiter IS NULL OR index IS NULL THEN NULL
+        #
+        #
+        #     ELSE LIST_FILTER(
+        #         REGEXP_SPLIT_TO_ARRAY(
+        #             input_str,
+        #             CASE
+        #                 -- if delimiter is '', we don't want to surround it with '[' and ']' as '[]' is invalid for DuckDB
+        #                 WHEN delimiter = '' THEN ''
+        #
+        #                 -- handle problematic regex characters in delimiter with REGEXP_REPLACE
+        #                 -- turn delimiter into a regex char set, otherwise DuckDB will match in order, which we don't want
+        #                 ELSE '[' || REGEXP_REPLACE(delimiter, problematic_char_set, '\\\1', 'g') || ']'
+        #             END
+        #         ),
+        #
+        #         -- Snowflake: don't return empty strings
+        #         x -> NOT x = ''
+        #     )[index]
+        # END
         STRTOK_TEMPLATE: exp.Expr = exp.maybe_parse(
             """
             CASE

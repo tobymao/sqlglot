@@ -6306,24 +6306,16 @@ class Parser:
         this: t.Optional[exp.Expr],
         path_parts: t.List[exp.JSONPathPart],
         escape: t.Optional[bool],
-    ) -> exp.JSONExtract:
-        return self.expression(
-            exp.JSONExtract(
-                this=this,
-                expression=exp.JSONPath(expressions=path_parts, escape=escape),
-                variant_extract=True,
-                requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
-            )
-        )
-
-    def _build_extract(
-        self,
-        this: t.Optional[exp.Expr],
-        path_parts: t.List[exp.JSONPathPart],
-        escape: t.Optional[bool],
     ) -> t.Tuple[t.Optional[exp.Expr], t.List[exp.JSONPathPart]]:
         if len(path_parts) > 1:
-            this = self._build_json_extract(this, path_parts, escape)
+            this = self.expression(
+                exp.JSONExtract(
+                    this=this,
+                    expression=exp.JSONPath(expressions=path_parts, escape=escape),
+                    variant_extract=True,
+                    requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
+                )
+            )
             path_parts = [exp.JSONPathRoot()]
 
         return this, path_parts
@@ -6364,13 +6356,13 @@ class Parser:
                     elif bracket_expr.is_number:
                         path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
                     else:
-                        this, path_parts = self._build_extract(this, path_parts, escape)
+                        this, path_parts = self._build_json_extract(this, path_parts, escape)
                         this = self.expression(
                             exp.Bracket(this=this, expressions=[bracket_expr], json_access=True),
                         )
 
                 elif self._match(TokenType.DCOLON):
-                    this, path_parts = self._build_extract(this, path_parts, escape)
+                    this, path_parts = self._build_json_extract(this, path_parts, escape)
 
                     cast_type = self._parse_types()
                     if cast_type:
@@ -6380,7 +6372,7 @@ class Parser:
                 else:
                     break
 
-        this, _ = self._build_extract(this, path_parts, escape)
+        this, _ = self._build_json_extract(this, path_parts, escape)
 
         return this
 

@@ -618,8 +618,8 @@ class Expression(Expr):
         Returns the alias of the expression, or an empty string if it's not aliased.
         """
         alias = self.args.get("alias")
-        if type(alias).__name__ == "TableAlias":
-            return alias.name  # type: ignore[union-attr]
+        if isinstance(alias, Expression):
+            return alias.name
         return self.text("alias")
 
     @property

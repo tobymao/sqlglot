@@ -3,7 +3,7 @@ import csv
 import datetime
 import unittest
 from datetime import date, time
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
 
 import duckdb
 import numpy as np
@@ -158,16 +158,13 @@ class TestExecutor(unittest.TestCase):
             assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
 
     def _mp_execute(self, schema, tables, sqls, tpch):
-        with Pool(
+        with ProcessPoolExecutor(
             initializer=initializer,
             initargs=(schema, tables),
         ) as pool:
-            for i, table in enumerate(
-                pool.starmap(
-                    mp_execute,
-                    ((parse_one(sql), args) for args, sql, _ in sqls),
-                )
-            ):
+            futures = [pool.submit(mp_execute, parse_one(sql), args) for args, sql, _ in sqls]
+            for i, future in enumerate(futures):
+                table = future.result()
                 if table is not None:
                     self.subtestHelper(i, table, tpch=tpch)
 

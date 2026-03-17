@@ -512,6 +512,7 @@ EXPRESSION_METADATA = {
             exp.Soundex,
             exp.SoundexP123,
             exp.SplitPart,
+            exp.Strtok,
             exp.TryBase64DecodeString,
             exp.TryHexDecodeString,
             exp.Uuid,

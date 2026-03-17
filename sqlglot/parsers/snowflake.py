@@ -23,18 +23,6 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
 
 
-def _build_strtok(args: t.List) -> exp.SplitPart:
-    # Add default delimiter (space) if missing - per Snowflake docs
-    if len(args) == 1:
-        args.append(exp.Literal.string(" "))
-
-    # Add default part_index (1) if missing
-    if len(args) == 2:
-        args.append(exp.Literal.number(1))
-
-    return exp.SplitPart.from_arg_list(args)
-
-
 def _build_approx_top_k(args: t.List) -> exp.ApproxTopK:
     """
     Normalizes APPROX_TOP_K arguments to match Snowflake semantics.
@@ -568,7 +556,6 @@ class SnowflakeParser(parser.Parser):
         ),
         "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         "STDDEV_SAMP": exp.Stddev.from_arg_list,
-        "STRTOK": _build_strtok,
         "SYSDATE": lambda args: exp.CurrentTimestamp(this=seq_get(args, 0), sysdate=True),
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
         "TIMEADD": lambda args: exp.TimeAdd(
@@ -693,6 +680,11 @@ class SnowflakeParser(parser.Parser):
             part_index=seq_get(args, 2),
             part_index_zero_as_one=True,
             empty_delimiter_returns_whole=True,
+        ),
+        "STRTOK": lambda args: exp.Strtok(
+            this=seq_get(args, 0),
+            delimiter=seq_get(args, 1) or exp.Literal.string(" "),
+            part_index=seq_get(args, 2) or exp.Literal.number("1"),
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "WEEKISO": exp.WeekOfYear.from_arg_list,

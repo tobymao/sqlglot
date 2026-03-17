@@ -937,6 +937,13 @@ class Parser:
         ),
     }
 
+    # Whether lambda args include type annotations, e.g. TRANSFORM(arr, x INT -> x + 1) in Snowflake
+    TYPED_LAMBDA_ARGS: t.ClassVar[bool] = False
+
+    LAMBDA_ARG_TERMINATORS: t.ClassVar[t.FrozenSet] = frozenset(
+        {TokenType.COMMA, TokenType.R_PAREN}
+    )
+
     COLUMN_OPERATORS: t.ClassVar = {
         TokenType.DOT: None,
         TokenType.DOTCOLON: lambda self, this, to: self.expression(exp.JSONCast(this=this, to=to)),
@@ -5772,24 +5779,8 @@ class Parser:
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
     ) -> t.Optional[exp.Expr]:
-        curr = self._curr
-        curr_token_type = curr.token_type
-
-        # fast path section for simple common cases
-        # for columns, it's basic schema.table.col
-        if not fallback_to_identifier and curr_token_type in self.FAST_COLUMN_TOKENS:
-            return self._parse_column()
-
-        next_token_type = self._next.token_type
-
-        # similar fast path for literals, :: and -> have special behavior, so we use COLUMN_OPERATORS is clean enough
-        if next_token_type not in self.COLUMN_OPERATORS:
-            if curr_token_type == TokenType.STRING and next_token_type != TokenType.STRING:
-                self._advance()
-                return self.expression(exp.Literal(this=curr.text, is_string=True), curr)
-            if curr_token_type == TokenType.NUMBER:
-                self._advance()
-                return self.expression(exp.Literal(this=curr.text, is_string=False), curr)
+        if not fallback_to_identifier and (atom := self._parse_atom()) is not None:
+            return atom
 
         if interval := parse_interval and self._parse_interval():
             return self._parse_column_ops(interval)
@@ -6179,6 +6170,31 @@ class Parser:
         return self._parse_at_time_zone(
             self.expression(exp.AtTimeZone(this=this, zone=self._parse_unary()))
         )
+
+    def _parse_atom(self) -> t.Optional[exp.Expr]:
+        if (
+            self._curr.token_type in self.FAST_COLUMN_TOKENS
+            and (column := self._parse_column()) is not None
+        ):
+            return column
+
+        token = self._curr
+        token_type = token.token_type
+
+        if not (primary_parser := self.PRIMARY_PARSERS.get(token_type)):
+            return None
+
+        next_type = self._next.token_type
+
+        if (
+            next_type in self.COLUMN_OPERATORS
+            or next_type in self.COLUMN_POSTFIX_TOKENS
+            or (token_type == TokenType.STRING and next_type == TokenType.STRING)
+        ):
+            return None
+
+        self._advance()
+        return primary_parser(self, token)
 
     def _parse_column(self) -> t.Optional[exp.Expr]:
         column: t.Optional[exp.Expr] = self._parse_column_fast_path()
@@ -6741,6 +6757,15 @@ class Parser:
         return self._parse_id_var()
 
     def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expr]:
+        next_token_type = self._next.token_type
+
+        # Fast path: simple atom (column, literal, null, bool) followed by , or )
+        if (
+            next_token_type in self.LAMBDA_ARG_TERMINATORS
+            and (atom := self._parse_atom()) is not None
+        ):
+            return atom
+
         index = self._index
 
         if self._match(TokenType.L_PAREN):
@@ -6750,13 +6775,17 @@ class Parser:
 
             if not self._match(TokenType.R_PAREN):
                 self._retreat(index)
-        else:
+            elif self._match_set(self.LAMBDAS):
+                return self.LAMBDAS[self._prev.token_type](self, expressions)
+            else:
+                self._retreat(index)
+        elif self.TYPED_LAMBDA_ARGS or next_token_type in self.LAMBDAS:
             expressions = [self._parse_lambda_arg()]
 
-        if self._match_set(self.LAMBDAS):
-            return self.LAMBDAS[self._prev.token_type](self, expressions)
+            if self._match_set(self.LAMBDAS):
+                return self.LAMBDAS[self._prev.token_type](self, expressions)
 
-        self._retreat(index)
+            self._retreat(index)
 
         this: t.Optional[exp.Expr]
 
@@ -7835,10 +7864,11 @@ class Parser:
         return self._parse_window(self._parse_id_var(), alias=True)
 
     def _parse_respect_or_ignore_nulls(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
-        if self._match_text_seq("IGNORE", "NULLS"):
-            return self.expression(exp.IgnoreNulls(this=this))
-        if self._match_text_seq("RESPECT", "NULLS"):
-            return self.expression(exp.RespectNulls(this=this))
+        if self._curr.token_type == TokenType.VAR:
+            if self._match_text_seq("IGNORE", "NULLS"):
+                return self.expression(exp.IgnoreNulls(this=this))
+            if self._match_text_seq("RESPECT", "NULLS"):
+                return self.expression(exp.RespectNulls(this=this))
         return this
 
     def _parse_having_max(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:

@@ -327,6 +327,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser],
 
 class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
+    TYPED_LAMBDA_ARGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
     COLON_IS_VARIANT_EXTRACT = True
     JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True

@@ -37,7 +37,6 @@ jobs:
           CIBW_BUILD: ${{ matrix.python }}-*
           CIBW_SKIP: "*-musllinux_*"
           CIBW_ARCHS: ${{ matrix.platform.archs }}
-          CIBW_ENVIRONMENT: MYPYC_OPT=3
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.archs }}-${{ matrix.python }}

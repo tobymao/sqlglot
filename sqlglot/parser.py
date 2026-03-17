@@ -559,6 +559,12 @@ class Parser:
         TokenType.SOME: exp.Any,
     }
 
+    SUBQUERY_TOKENS: t.ClassVar = {
+        TokenType.SELECT,
+        TokenType.WITH,
+        TokenType.FROM,
+    }
+
     RESERVED_TOKENS: t.ClassVar = {
         *Tokenizer.SINGLE_TOKENS.values(),
         TokenType.SELECT,
@@ -3758,6 +3764,7 @@ class Parser:
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
+            this = self._parse_query_modifiers(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
             this = self._parse_select() or self._parse_string() or self._parse_table()
@@ -6569,7 +6576,7 @@ class Parser:
 
             if subquery_predicate:
                 expr = None
-                if self._curr.token_type in (TokenType.SELECT, TokenType.WITH):
+                if self._curr.token_type in self.SUBQUERY_TOKENS:
                     expr = self._parse_select()
                     self._match_r_paren()
                 elif prev and prev.token_type in (TokenType.LIKE, TokenType.ILIKE):

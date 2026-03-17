@@ -3680,14 +3680,16 @@ class DuckDB(Dialect):
                         expressions=[x],
                     ),
                 )
-                case = exp.case().when(expression.this.is_(exp.null()), exp.null())
-                if expression.args.get("null_delim_is_null"):
-                    case = case.when(expression.expression.is_(exp.null()), exp.null())
-                return self.sql(
-                    case.else_(
-                        exp.ArrayToString(this=list_transform, expression=expression.expression)
-                    )
+                array_to_string = exp.ArrayToString(
+                    this=list_transform, expression=expression.expression
                 )
+                if expression.args.get("null_delim_is_null"):
+                    return self.sql(
+                        exp.case()
+                        .when(expression.expression.copy().is_(exp.null()), exp.null())
+                        .else_(array_to_string)
+                    )
+                return self.sql(array_to_string)
 
             if null:
                 x = exp.to_identifier("x")

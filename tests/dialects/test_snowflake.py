@@ -1871,7 +1871,7 @@ class TestSnowflake(Validator):
             write={
                 "spark": "SELECT ARRAY_JOIN(x, '')",
                 "snowflake": "SELECT ARRAY_TO_STRING(x, '')",
-                "duckdb": "SELECT CASE WHEN x IS NULL THEN NULL WHEN '' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), '') END",
+                "duckdb": "SELECT CASE WHEN '' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), '') END",
             },
         )
         self.validate_all(
@@ -1879,7 +1879,7 @@ class TestSnowflake(Validator):
             read={"snowflake": "SELECT ARRAY_TO_STRING(x, NULL)"},
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING(x, NULL)",
-                "duckdb": "SELECT CASE WHEN x IS NULL THEN NULL WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), NULL) END",
+                "duckdb": "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), NULL) END",
             },
         )
         self.validate_all(
@@ -1887,7 +1887,7 @@ class TestSnowflake(Validator):
             read={"snowflake": "SELECT ARRAY_TO_STRING([], ',')"},
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING([], ',')",
-                "duckdb": "SELECT CASE WHEN [] IS NULL THEN NULL WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], x -> COALESCE(CAST(x AS TEXT), '')), ',') END",
+                "duckdb": "SELECT CASE WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], x -> COALESCE(CAST(x AS TEXT), '')), ',') END",
             },
         )
         self.validate_all(

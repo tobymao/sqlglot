@@ -852,7 +852,7 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_directory(self) -> exp.DirectoryStage:
         table = self._parse_table_parts()
-        this: exp.Expr = table.this if isinstance(table, exp.Table) else table
+        this = table.this if isinstance(table, exp.Table) else table
         return self.expression(exp.DirectoryStage(this=this))
 
     def _parse_describe(self) -> exp.Describe:
@@ -986,8 +986,12 @@ class SnowflakeParser(parser.Parser):
         return lateral
 
     def _parse_table_parts(
-        self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
-    ) -> exp.Table:
+        self,
+        schema: bool = False,
+        is_db_reference: bool = False,
+        wildcard: bool = False,
+        fast: bool = False,
+    ) -> t.Optional[exp.Table | exp.Dot]:
         # https://docs.snowflake.com/en/user-guide/querying-stage
         if self._match(TokenType.STRING, advance=False):
             table = self._parse_string()
@@ -1015,7 +1019,11 @@ class SnowflakeParser(parser.Parser):
 
             table = self.expression(exp.Table(this=table, format=file_format, pattern=pattern))
         else:
-            table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+            table = super()._parse_table_parts(
+                schema=schema,
+                is_db_reference=is_db_reference,
+                fast=fast,
+            )
 
         return table
 

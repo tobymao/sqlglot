@@ -8,6 +8,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+    from collections.abc import Collection
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -81,7 +82,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
             raise ParseError(_error(f"Expected {token_type}"))
         return None
 
-    def _match_set(types: t.Collection[TokenType]) -> t.Optional[Token]:
+    def _match_set(types: Collection[TokenType]) -> t.Optional[Token]:
         return _advance() if _curr() in types else None
 
     def _parse_literal() -> t.Any:

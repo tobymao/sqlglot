@@ -17,7 +17,7 @@ from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
 from sqlglot.parsers.snowflake import SnowflakeParser
-
+from collections.abc import Iterable
 import sqlglot.parsers.base as _base_module
 
 _PARSER_IS_COMPILED = getattr(_base_module, "__file__", "").endswith(".so")
@@ -33,9 +33,9 @@ class Validator(unittest.TestCase):
         self,
         expression: exp.Expr,
         *,
-        includes: t.Optional[t.Iterable[str]] = None,
-        excludes: t.Optional[t.Iterable[str]] = None,
-        chr_chars: t.Optional[t.Iterable[str]] = None,
+        includes: t.Optional[Iterable[str]] = None,
+        excludes: t.Optional[Iterable[str]] = None,
+        chr_chars: t.Optional[Iterable[str]] = None,
     ) -> str:
         duckdb_sql = expression.sql("duckdb")
 
@@ -5021,9 +5021,9 @@ FROM subquery2""",
         def assert_custom_duckdb_sql(
             query: str,
             *,
-            includes: t.Optional[t.Iterable[str]] = None,
-            excludes: t.Optional[t.Iterable[str]] = None,
-            chr_chars: t.Optional[t.Iterable[str]] = None,
+            includes: t.Optional[Iterable[str]] = None,
+            excludes: t.Optional[Iterable[str]] = None,
+            chr_chars: t.Optional[Iterable[str]] = None,
         ) -> None:
             for dialect in ("bigquery", "snowflake"):
                 with self.subTest(f"DuckDB generation for {query} from {dialect}"):

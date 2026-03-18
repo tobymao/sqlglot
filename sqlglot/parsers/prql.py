@@ -5,7 +5,7 @@ import typing as t
 from sqlglot import exp, parser
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
-
+from collections.abc import Collection
 
 def _select_all(table: exp.Expr) -> t.Optional[exp.Select]:
     return exp.select("*").from_(table, copy=False) if table else None
@@ -165,7 +165,7 @@ class PRQLParser(parser.Parser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        alias_tokens: t.Optional[Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,

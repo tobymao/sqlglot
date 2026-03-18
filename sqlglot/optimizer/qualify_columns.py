@@ -15,11 +15,12 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from collections.abc import Iterator, Iterable
 
 
 def qualify_columns(
     expression: exp.Expr,
-    schema: t.Dict | Schema,
+    schema: dict | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
@@ -187,7 +188,7 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: t.Set[str]) -> None:
         scope.clear_cache()
 
 
-def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
+def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Column]:
     name_columns = [
         field.this
         for field in unpivot.fields
@@ -198,7 +199,7 @@ def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
     return itertools.chain(name_columns, value_columns)
 
 
-def _pop_table_column_aliases(derived_tables: t.Iterable[exp.Expr]) -> None:
+def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
     """
     Remove table column aliases.
 
@@ -486,9 +487,9 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: t.Iterable[exp.Expr], dialect: Dialect, alias: bool = False
-) -> t.List[exp.Expr]:
-    new_nodes: t.List[exp.Expr] = []
+    scope: Scope, expressions: Iterable[exp.Expr], dialect: Dialect, alias: bool = False
+) -> list[exp.Expr]:
+    new_nodes: list[exp.Expr] = []
     ambiguous_projections = None
 
     expression = scope.expression

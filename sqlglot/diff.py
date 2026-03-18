@@ -16,6 +16,7 @@ from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import seq_get
 
 if t.TYPE_CHECKING:
+    from collections.abc  import Iterator, Sequence
     from sqlglot.dialects.dialect import DialectType
 
 
@@ -369,7 +370,7 @@ class ChangeDistiller:
         return bigram_histo
 
 
-def _get_expression_leaves(expression: exp.Expr) -> t.Iterator[exp.Expr]:
+def _get_expression_leaves(expression: exp.Expr) -> Iterator[exp.Expr]:
     has_child_exprs = False
 
     for node in expression.iter_expressions():
@@ -381,7 +382,7 @@ def _get_expression_leaves(expression: exp.Expr) -> t.Iterator[exp.Expr]:
         yield expression
 
 
-def _get_non_expression_leaves(expression: exp.Expr) -> t.Iterator[t.Tuple[str, t.Any]]:
+def _get_non_expression_leaves(expression: exp.Expr) -> Iterator[tuple[str, t.Any]]:
     for arg, value in expression.args.items():
         if (
             value is None
@@ -413,7 +414,7 @@ def _parent_similarity_score(source: t.Optional[exp.Expr], target: t.Optional[ex
     return 1 + _parent_similarity_score(source.parent, target.parent)
 
 
-def _expression_only_args(expression: exp.Expr) -> t.Iterator[exp.Expr]:
+def _expression_only_args(expression: exp.Expr) -> Iterator[exp.Expr]:
     yield from (
         arg
         for arg in expression.iter_expressions()
@@ -422,8 +423,8 @@ def _expression_only_args(expression: exp.Expr) -> t.Iterator[exp.Expr]:
 
 
 def _lcs(
-    seq_a: t.Sequence[T], seq_b: t.Sequence[T], equal: t.Callable[[T, T], bool]
-) -> t.Sequence[t.Optional[T]]:
+    seq_a: Sequence[T], seq_b: Sequence[T], equal: t.Callable[[T, T], bool]
+) -> Sequence[t.Optional[T]]:
     """Calculates the longest common subsequence"""
 
     len_a = len(seq_a)

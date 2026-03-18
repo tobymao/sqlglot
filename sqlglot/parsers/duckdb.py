@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
+from collections.abc import Collection
 
 
 def _build_sort_array_desc(args: t.List) -> exp.Expr:
@@ -258,7 +259,7 @@ class DuckDBParser(parser.Parser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        alias_tokens: t.Optional[Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,

@@ -4607,9 +4607,6 @@ class Parser:
             else:
                 table = exp.Identifier(this="*")
 
-        # We bubble up comments from the Identifier to the Table
-        comments = table.pop_comments() if isinstance(table, exp.Expr) else None
-
         if is_db_reference:
             catalog = db
             db = table
@@ -4620,7 +4617,15 @@ class Parser:
         if not db and is_db_reference:
             self.raise_error(f"Expected database name but got {self._curr}")
 
-        table = self.expression(exp.Table(this=table, db=db, catalog=catalog), comments=comments)
+        table = self.expression(exp.Table(this=table, db=db, catalog=catalog))
+
+        # Bubble up comments from identifier parts to the Table
+        comments = []
+        for part in table.parts:
+            if part_comments := part.pop_comments():
+                comments.extend(part_comments)
+        if comments:
+            table.add_comments(comments)
 
         changes = self._parse_changes()
         if changes:

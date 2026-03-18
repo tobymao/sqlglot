@@ -163,6 +163,10 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM table /* comment 1 */ /* comment 2 */",
         )
         self.validate("SELECT 1 FROM foo -- comment", "SELECT 1 FROM foo /* comment */")
+        self.validate(
+            "SELECT * FROM\n/* comment */\ndb.schema1.tbl PIVOT (SUM(a) FOR b IN ('x', 'y'))",
+            "SELECT * FROM db.schema1.tbl PIVOT(SUM(a) FOR b IN ('x', 'y')) /* comment */",
+        )
         self.validate("SELECT --+5\nx FROM foo", "/* +5 */ SELECT x FROM foo")
         self.validate("SELECT --!5\nx FROM foo", "/* !5 */ SELECT x FROM foo")
         self.validate(

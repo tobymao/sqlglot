@@ -768,7 +768,7 @@ class Parser:
     TRIM_TYPES: t.ClassVar = {"LEADING", "TRAILING", "BOTH"}
 
     # Tokens that indicate a simple column reference
-    FAST_COLUMN_TOKENS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.VAR, TokenType.IDENTIFIER})
+    IDENTIFIER_TOKENS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.VAR, TokenType.IDENTIFIER})
 
     BRACKETS: t.ClassVar[t.FrozenSet] = frozenset({TokenType.L_BRACKET, TokenType.L_BRACE})
 
@@ -936,7 +936,7 @@ class Parser:
     JOIN_HINTS: t.ClassVar[t.Set[str]] = set()
 
     # Tokens that unambiguously end a table reference on the fast path
-    TABLE_FAST_TERMINATORS: t.ClassVar[t.FrozenSet] = frozenset(
+    TABLE_TERMINATORS: t.ClassVar[t.FrozenSet] = frozenset(
         {
             TokenType.COMMA,
             TokenType.GROUP_BY,
@@ -4512,7 +4512,7 @@ class Parser:
         parts: t.Optional[t.List[exp.Identifier]] = None
         all_comments: t.Optional[t.List[str]] = None
 
-        while self._match_set(self.FAST_COLUMN_TOKENS):
+        while self._match_set(self.IDENTIFIER_TOKENS):
             token = self._prev
             comments = self._prev_comments
 
@@ -4523,7 +4523,7 @@ class Parser:
                 if curr_tt in self.TABLE_POSTFIX_TOKENS:
                     self._retreat(index)
                     return None
-            elif curr_tt not in self.FAST_COLUMN_TOKENS:
+            elif curr_tt not in self.IDENTIFIER_TOKENS:
                 self._retreat(index)
                 return None
 
@@ -4659,7 +4659,7 @@ class Parser:
                 curr_tt = self._curr.token_type
                 next_tt = self._next.token_type
 
-                fast_terminators = self.TABLE_FAST_TERMINATORS
+                fast_terminators = self.TABLE_TERMINATORS
 
                 # only return the table if we're sure there are no other operators
                 # MATCH_CONDITION is a special case because it accepts any alias before it like LIMIT
@@ -6303,7 +6303,7 @@ class Parser:
 
     def _parse_atom(self) -> t.Optional[exp.Expr]:
         if (
-            self._curr.token_type in self.FAST_COLUMN_TOKENS
+            self._curr.token_type in self.IDENTIFIER_TOKENS
             and (column := self._parse_column()) is not None
         ):
             return column
@@ -6327,7 +6327,7 @@ class Parser:
         return primary_parser(self, token)
 
     def _parse_column(self) -> t.Optional[exp.Expr]:
-        column: t.Optional[exp.Expr] = self._parse_column_fast_path()
+        column: t.Optional[exp.Expr] = self._parse_column_parts_fast()
         if column is None:
             this = self._parse_column_reference()
             if not this:
@@ -6342,7 +6342,7 @@ class Parser:
 
         return column
 
-    def _parse_column_fast_path(self) -> t.Optional[exp.Column | exp.Dot]:
+    def _parse_column_parts_fast(self) -> t.Optional[exp.Column | exp.Dot]:
         """Fast path for simple column and dot references (a, a.b, ...).
 
         Greedily consumes VAR/IDENTIFIER tokens separated by DOTs, then checks
@@ -6353,7 +6353,7 @@ class Parser:
         parts: t.Optional[t.List[exp.Identifier]] = None
         all_comments: t.Optional[t.List[str]] = None
 
-        while self._match_set(self.FAST_COLUMN_TOKENS):
+        while self._match_set(self.IDENTIFIER_TOKENS):
             token = self._prev
             comments = self._prev_comments
 
@@ -6368,7 +6368,7 @@ class Parser:
                 if curr_tt in self.COLUMN_OPERATORS or curr_tt in self.COLUMN_POSTFIX_TOKENS:
                     self._retreat(index)
                     return None
-            elif curr_tt not in self.FAST_COLUMN_TOKENS:
+            elif curr_tt not in self.IDENTIFIER_TOKENS:
                 self._retreat(index)
                 return None
 

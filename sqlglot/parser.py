@@ -6337,9 +6337,9 @@ class Parser:
                     next_key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
 
                     if next_key:
+                        if isinstance(next_key, exp.Identifier) and next_key.quoted:
+                            escape = True
                         path_parts.append(exp.JSONPathKey(this=next_key.name))
-                    else:
-                        self.raise_error("Expected key name after '.'")
                 elif self._match(TokenType.L_BRACKET):
                     bracket_expr = self._parse_bracket_key_value()
 
@@ -6351,6 +6351,7 @@ class Parser:
 
                     if bracket_expr.is_string:
                         path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
+                        escape = True
                     elif bracket_expr.is_star:
                         path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
                     elif bracket_expr.is_number:

@@ -151,16 +151,16 @@ if __name__ == "__main__":
         )
         print(f"Conclusion: should run tests for {dialects_str}")
     else:
-        print("Conclusion: No tests to run")
+        print("Conclusion: No dialect-specific tests to run, but SQLGlot tests will still run")
 
-    # write output variables
+    # Always dispatch so that run-sqlglot-tests (tests/sqlglot/) runs on every PR.
+    # When no dialects are detected, pass "none" so the integration test matrix is empty.
     lines = []
-    if should_run:
-        lines.append("skip=false")
-        if dialects:
-            lines.append(f"dialects={','.join(dialects)}")
-    else:
-        lines.append("skip=true")
+    lines.append("skip=false")
+    if should_run and dialects:
+        lines.append(f"dialects={','.join(dialects)}")
+    elif not should_run:
+        lines.append("dialects=none")
 
     with github_output.open("a") as f:
         f.writelines(f"{l}\n" for l in lines)

@@ -40,6 +40,9 @@ include = ["sqlglot", "sqlglot.*"]
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
 
+[tool.uv.sources]
+sqlglotc = { path = "./sqlglotc" }
+
 [tool.ruff]
 line-length = 100
 

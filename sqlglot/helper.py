@@ -140,9 +140,9 @@ def csv(*args: str, sep: str = ", ") -> str:
 
 def subclasses(
     module_name: str,
-    classes: t.Type | t.Tuple[t.Type, ...],
-    exclude: t.Set[t.Type] = set(),
-) -> t.List[t.Type]:
+    classes: type[T] | tuple[type[T], ...],
+    exclude: set[type[T]] = set(),
+) -> list[type[T]]:
     """
     Returns all subclasses for a collection of classes, possibly excluding some of them.
 

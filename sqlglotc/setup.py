@@ -12,8 +12,11 @@ sqlglot_src = os.path.join(here, "..", "sqlglot")
 
 def _subpkg_files(subpkg, files=None):
     """List source files from a sqlglot subpackage. Compiles all .py files if `files` is None."""
-    subpkg_dir = os.path.join(sqlglot_src, subpkg)
     if files is None:
+        # Try repo source first, fall back to sdist-bundled copy.
+        subpkg_dir = os.path.join(sqlglot_src, subpkg)
+        if not os.path.isdir(subpkg_dir):
+            subpkg_dir = os.path.join(here, "sqlglot", subpkg)
         files = sorted(
             f for f in os.listdir(subpkg_dir) if f.endswith(".py") and f != "__init__.py"
         )

@@ -7070,6 +7070,8 @@ class Parser:
         return result
 
     def _parse_unique_key(self) -> t.Optional[exp.Expr]:
+        if self._curr and self._curr.text.upper() in self.CONSTRAINT_PARSERS:
+            return None
         return self._parse_id_var(any_token=False)
 
     def _parse_unique(self) -> exp.UniqueColumnConstraint:

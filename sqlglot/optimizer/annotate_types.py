@@ -344,6 +344,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)
+        self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -424,10 +425,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     expr.meta["nonnull"] = True
                 continue
 
-            if scope and isinstance(expr, exp.Column) and not expr.table:
-                if self._resolve_order_by_alias(expr, scope):
-                    continue
-
             spec = self.expression_metadata.get(expr.__class__)
 
             if spec and (annotator := spec.get("annotator")):
@@ -437,29 +434,49 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             else:
                 self._set_type(expr, exp.DType.UNKNOWN)
 
-    def _resolve_order_by_alias(self, expr: exp.Column, scope: Scope) -> bool:
-        # Resolve type for bare columns in ORDER BY that reference projection aliases.
-        # If the projection isn't annotated yet, force its annotation via a recursive
-        # call. Since qualify_columns has already added table qualifiers to projection
-        # columns, the recursive call resolves them via the normal path and does not
-        # re-enter this method.
+    def _fixup_order_by_aliases(self, scope: Scope) -> None:
         query = scope.expression
-        if not isinstance(query, exp.Query) or not expr.find_ancestor(exp.Order):
-            return False
+        if not isinstance(query, exp.Query):
+            return
 
-        matched_type = None
+        order = query.args.get("order")
+        if not order:
+            return
+
+        # Build alias -> type map from fully-annotated projections (last match wins,
+        # consistent with how _expand_alias_refs handles duplicate aliases).
+        alias_types: t.Dict[str, exp.DataType | exp.DType] = {}
         for sel in query.selects:
-            if isinstance(sel, exp.Alias) and sel.alias == expr.name:
-                if not sel.this.type or sel.this.is_type(exp.DType.UNKNOWN):
-                    self._annotate_expression(sel.this, scope)
-                if sel.this.type and not sel.this.is_type(exp.DType.UNKNOWN):
-                    matched_type = sel.this.type
+            if (
+                isinstance(sel, exp.Alias)
+                and sel.this.type
+                and not sel.this.is_type(exp.DType.UNKNOWN)
+            ):
+                alias_types[sel.alias] = sel.this.type
 
-        if matched_type:
-            self._set_type(expr, matched_type)
-            return True
+        if not alias_types:
+            return
 
-        return False
+        fixed = False
+        for ordered in order.expressions:
+            for col in ordered.find_all(exp.Column):
+                if not col.table and col.name in alias_types:
+                    self._set_type(col, alias_types[col.name])
+                    fixed = True
+
+        if not fixed:
+            return
+
+        # Clear derived (non-leaf) types and _visited entries so _annotate_expression
+        # can re-infer them from the updated leaf types. Column and Literal types are
+        # preserved as ground truth. Subquery subtrees are skipped because they belong
+        # to inner scopes already annotated independently.
+        for node in order.walk(prune=lambda n: isinstance(n, exp.Subquery)):
+            if not isinstance(node, (exp.Column, exp.Literal)):
+                node.type = None
+                self._visited.discard(id(node))
+
+        self._annotate_expression(order, scope)
 
     def _maybe_coerce(
         self,

@@ -2477,7 +2477,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # CAST in ORDER BY using alias
         self.assertEqual(_order_types("SELECT x AS y FROM t ORDER BY CAST(y AS TEXT)"), [TEXT])
 
-        # Duplicate alias (last wins, matches DuckDB behavior)
+        # Duplicate alias (last wins, consistent with _expand_alias_refs)
         self.assertEqual(_order_types("SELECT x AS y, z AS y FROM t ORDER BY y"), [TEXT])
 
         # Compound ORDER BY with subquery (reannotation skips inner scope)

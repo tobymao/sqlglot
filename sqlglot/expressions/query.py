@@ -35,6 +35,7 @@ from sqlglot.expressions.core import (
 )
 
 if t.TYPE_CHECKING:
+    from collections.abc import Collection
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DataType
     from sqlglot.expressions.constraints import ColumnConstraint
@@ -865,7 +866,7 @@ class Tuple(Expression):
         self,
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | t.Collection[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
         **opts,
     ) -> In:
@@ -1326,8 +1327,8 @@ class Select(Expression, Query):
     def join(
         self,
         expression: ExpOrStr,
-        on: t.Optional[ExpOrStr | t.List[ExpOrStr]] = None,
-        using: t.Optional[ExpOrStr | t.Collection[ExpOrStr]] = None,
+        on: t.Optional[ExpOrStr | list[ExpOrStr]] = None,
+        using: t.Optional[ExpOrStr | Collection[ExpOrStr]] = None,
         append: bool = True,
         join_type: t.Optional[str] = None,
         join_alias: t.Optional[Identifier | str] = None,

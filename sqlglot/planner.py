@@ -6,18 +6,19 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.eliminate_joins import join_condition
+from collections.abc import Iterator, Sequence, Iterable
 
 
 class Plan:
     def __init__(self, expression: exp.Expr) -> None:
         self.expression = expression.copy()
         self.root = Step.from_expression(self.expression)
-        self._dag: t.Dict[Step, t.Set[Step]] = {}
+        self._dag: dict[Step, set[Step]] = {}
 
     @property
-    def dag(self) -> t.Dict[Step, t.Set[Step]]:
+    def dag(self) -> dict[Step, set[Step]]:
         if not self._dag:
-            dag: t.Dict[Step, t.Set[Step]] = {}
+            dag: dict[Step, set[Step]] = {}
             nodes = {self.root}
 
             while nodes:
@@ -33,7 +34,7 @@ class Plan:
         return self._dag
 
     @property
-    def leaves(self) -> t.Iterator[Step]:
+    def leaves(self) -> Iterator[Step]:
         return (node for node, deps in self.dag.items() if not deps)
 
     def __repr__(self) -> str:
@@ -244,9 +245,9 @@ class Step:
 
     def __init__(self) -> None:
         self.name: t.Optional[str] = None
-        self.dependencies: t.Set[Step] = set()
-        self.dependents: t.Set[Step] = set()
-        self.projections: t.Sequence[exp.Expr] = []
+        self.dependencies: set[Step] = set()
+        self.dependents: set[Step] = set()
+        self.projections: Sequence[exp.Expr] = []
         self.limit: float = math.inf
         self.condition: t.Optional[exp.Expr] = None
 
@@ -335,7 +336,7 @@ class Scan(Step):
 class Join(Step):
     @classmethod
     def from_joins(
-        cls, joins: t.Iterable[exp.Join], ctes: t.Optional[t.Dict[str, Step]] = None
+        cls, joins: Iterable[exp.Join], ctes: t.Optional[dict[str, Step]] = None
     ) -> Join:
         step = Join()
 

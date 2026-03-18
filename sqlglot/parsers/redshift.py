@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import map_date_part
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from collections.abc import Collection
 
 
 def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
@@ -69,7 +70,7 @@ class RedshiftParser(PostgresParser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        alias_tokens: t.Optional[Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,

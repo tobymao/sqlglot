@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import typing as t
-
+from collections.abc import Sequence
 from sqlglot import Schema, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -45,7 +45,7 @@ def optimize(
     db: t.Optional[str | exp.Identifier] = None,
     catalog: t.Optional[str | exp.Identifier] = None,
     dialect: DialectType = None,
-    rules: t.Sequence[t.Callable] = RULES,
+    rules: Sequence[t.Callable] = RULES,
     sql: t.Optional[str] = None,
     **kwargs,
 ) -> exp.Expr:

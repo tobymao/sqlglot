@@ -50,6 +50,7 @@ from sqlglot.expressions.functions import Case, Cast
 from sqlglot.expressions.array import Array
 
 if t.TYPE_CHECKING:
+    from collections.abc import Sequence, Iterable
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
@@ -195,7 +196,7 @@ def delete(
 def insert(
     expression: ExpOrStr,
     into: ExpOrStr,
-    columns: t.Optional[t.Sequence[str | Identifier]] = None,
+    columns: t.Optional[Sequence[str | Identifier]] = None,
     overwrite: t.Optional[bool] = None,
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
@@ -512,9 +513,9 @@ def table_(
 
 
 def values(
-    values: t.Iterable[t.Tuple[object, ...] | Tuple],
+    values: Iterable[tuple[object, ...] | Tuple],
     alias: t.Optional[str] = None,
-    columns: t.Optional[t.Iterable[str] | t.Dict[str, DataType]] = None,
+    columns: t.Optional[Iterable[str] | dict[str, DataType]] = None,
 ) -> Values:
     """Build VALUES statement.
 

@@ -4,7 +4,7 @@ import importlib
 import logging
 import typing as t
 import sys
-
+from collections.abc import Sequence
 from enum import Enum, auto
 from functools import reduce
 
@@ -1391,7 +1391,7 @@ def array_concat_sql(
         Dialects that propagate NULLs need to set `ARRAY_FUNCS_PROPAGATES_NULLS` to True.
     """
 
-    def _build_func_call(self: Generator, func_name: str, args: t.Sequence[exp.Expr]) -> str:
+    def _build_func_call(self: Generator, func_name: str, args: Sequence[exp.Expr]) -> str:
         """Build ARRAY_CONCAT call from a list of arguments, handling variadic vs binary nesting."""
         if self.ARRAY_CONCAT_IS_VAR_LEN:
             return self.func(func_name, *args)

@@ -4161,21 +4161,12 @@ class DuckDB(Dialect):
                     "Consider rewriting manually."
                 )
 
-            # Build BIT_XOR aggregate
             bit_xor = exp.BitwiseXorAgg(this=hash_func)
 
-            # Check if this is inside a Window expression
-            # Window functions don't need COALESCE as they return values for all rows
-            parent = expression.parent
-            if isinstance(parent, exp.Window):
-                # For window functions: BIT_XOR(HASH(col)) OVER (...)
+            if isinstance(expression.parent, exp.Window):
                 return self.sql(bit_xor)
-            else:
-                # For regular aggregates: COALESCE(BIT_XOR(HASH(col)), 0)
-                # COALESCE is needed because BIT_XOR returns NULL for empty sets,
-                # but Snowflake's HASH_AGG returns 0 for empty input
-                result = exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)])
-                return self.sql(result)
+
+            return self.sql(exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)]))
 
         def _corr_sql(
             self,

@@ -16,7 +16,6 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from collections.abc import Sequence
 
-
     ColumnMapping = t.Union[dict, str, list]
 
 

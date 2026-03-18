@@ -16,7 +16,7 @@ from sqlglot import Dialect, expressions as exp
 from sqlglot.helper import seq_get
 
 if t.TYPE_CHECKING:
-    from collections.abc  import Iterator, Sequence
+    from collections.abc import Iterator, Sequence
     from sqlglot.dialects.dialect import DialectType
 
 

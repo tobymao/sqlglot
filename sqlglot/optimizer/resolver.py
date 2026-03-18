@@ -252,9 +252,7 @@ class Resolver:
 
         return None
 
-    def _get_available_source_columns(
-        self, join_ancestor: exp.Join
-    ) -> dict[str, Sequence[str]]:
+    def _get_available_source_columns(self, join_ancestor: exp.Join) -> dict[str, Sequence[str]]:
         """
         Get the source columns that are available at the point where a column is referenced.
 

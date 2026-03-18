@@ -6,7 +6,7 @@ import logging
 import re
 import sys
 import typing as t
-from collections.abc import Collection, Set,  Iterable, Sequence, Iterator, Mapping
+from collections.abc import Collection, Set, Iterable, Sequence, Iterator, Mapping
 from copy import copy
 from difflib import get_close_matches
 from enum import Enum

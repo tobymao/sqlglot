@@ -2690,7 +2690,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT HASH_AGG(*) FROM my_table",
             write={
-                "duckdb": "SELECT COALESCE(BIT_XOR(HASH(UNPACK(COLUMNS(my_table.*)))), 0) FROM my_table",
+                "duckdb": "SELECT COALESCE(BIT_XOR(HASH(UNPACK(COLUMNS(*)))), 0) FROM my_table",
                 "snowflake": "SELECT HASH_AGG(*) FROM my_table",
             },
         )

@@ -4093,7 +4093,7 @@ class DuckDB(Dialect):
         def hashagg_sql(self, expression: exp.HashAgg) -> str:
             # HASH_AGG(col) -> COALESCE(BIT_XOR(HASH(col)), 0)
             # HASH_AGG(col1, col2) -> COALESCE(BIT_XOR(HASH((col1, col2))), 0)
-            # HASH_AGG(DISTINCT col) -> COALESCE(BIT_XOR(DISTINCT HASH(col)), 0)
+            # HASH_AGG(DISTINCT col) -> (SELECT COALESCE(BIT_XOR(HASH(col)), 0) FROM (SELECT DISTINCT col FROM ...))
             # HASH_AGG(*) -> COALESCE(BIT_XOR(HASH(*)), 0)
 
             this = expression.this
@@ -4115,33 +4115,10 @@ class DuckDB(Dialect):
             hash_arg: exp.Expression
             if len(cols) == 1:
                 if isinstance(cols[0], exp.Star):
-                    # HASH(*) needs to be rewritten as HASH(UNPACK(COLUMNS(table.*)))
-                    # Find the table reference from the parent SELECT
-                    select = expression.find_ancestor(exp.Select)
-                    if select and select.args.get("from_"):
-                        from_expr = select.args["from_"].this
-                        if isinstance(from_expr, exp.Table):
-                            # Build: columns(table.*)
-                            table_star = exp.Dot(
-                                this=exp.to_table(from_expr.name), expression=exp.Star()
-                            )
-                            columns_func = exp.Anonymous(this="COLUMNS", expressions=[table_star])
-                            # Build: unpack(columns(table.*))
-                            unpack_func = exp.Anonymous(this="UNPACK", expressions=[columns_func])
-                            hash_arg = unpack_func
-                        else:
-                            # Complex FROM clause (joins, subqueries, etc.) - not supported
-                            self.unsupported(
-                                "HASH_AGG(*) with complex FROM clause (joins/subqueries) is not supported. "
-                                "Please use explicit columns: HASH_AGG(col1, col2, ...)"
-                            )
-                            hash_arg = exp.Star()
-                    else:
-                        # No FROM clause found
-                        self.unsupported(
-                            "HASH_AGG(*) requires a FROM clause with a table reference."
-                        )
-                        hash_arg = exp.Star()
+                    # HASH(*) -> HASH(UNPACK(COLUMNS(*)))
+                    # DuckDB's COLUMNS(*) expands to all columns in current context (works with JOINs)
+                    columns_func = exp.Anonymous(this="COLUMNS", expressions=[cols[0]])
+                    hash_arg = exp.Anonymous(this="UNPACK", expressions=[columns_func])
                 else:
                     # HASH(col)
                     hash_arg = cols[0]
@@ -4152,20 +4129,64 @@ class DuckDB(Dialect):
             # Build HASH(...) function
             hash_func: exp.Expression = exp.Anonymous(this="HASH", expressions=[hash_arg])
 
-            # Handle DISTINCT - it should apply to the source columns before hashing,
-            # not to the hash result. This requires complex rewriting.
+            # Handle DISTINCT - apply to source columns before hashing
+            # We need to wrap this in a subquery: (SELECT ... FROM (SELECT DISTINCT cols FROM ...))
             if distinct:
-                self.unsupported(
-                    "HASH_AGG(DISTINCT ...) cannot be fully transpiled to DuckDB. "
-                    "The DISTINCT should apply before hashing, which requires subquery rewriting. "
-                    "Consider rewriting manually."
-                )
+                # Find the parent SELECT to get the FROM clause
+                select = expression.find_ancestor(exp.Select)
+                if not select or not select.args.get("from_"):
+                    self.unsupported(
+                        "HASH_AGG(DISTINCT ...) requires a FROM clause to apply DISTINCT to source data."
+                    )
+                else:
+                    # Clone the columns for the DISTINCT subquery
+                    distinct_cols = [col.copy() for col in cols]
 
+                    # Build the inner subquery: SELECT DISTINCT col1, col2, ... FROM original_from
+                    inner_select = (
+                        exp.Select(
+                            expressions=[
+                                exp.alias_(col, f"_c{i}", copy=False)
+                                for i, col in enumerate(distinct_cols)
+                            ]
+                        )
+                        .distinct()
+                        .from_(select.args["from_"].copy())
+                    )
+
+                    # Copy WHERE clause if it exists (to filter before DISTINCT)
+                    if select.args.get("where"):
+                        inner_select = inner_select.where(select.args["where"].copy())
+
+                    # Build hash argument references to the inner query columns
+                    if len(cols) == 1:
+                        hash_arg = exp.column("_c0")
+                    else:
+                        hash_arg = exp.Tuple(
+                            expressions=[exp.column(f"_c{i}") for i in range(len(cols))]
+                        )
+
+                    # Rebuild HASH function with references to inner query
+                    hash_func = exp.Anonymous(this="HASH", expressions=[hash_arg])
+
+                    # Build BIT_XOR aggregate
+                    bit_xor = exp.BitwiseXorAgg(this=hash_func)
+
+                    # Build outer select: SELECT COALESCE(BIT_XOR(HASH(...)), 0) FROM (inner_select)
+                    result = exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)])
+                    outer_select = exp.Select(expressions=[result]).from_(
+                        exp.alias_(exp.Subquery(this=inner_select), "_distinct_source", table=True)
+                    )
+
+                    # Return as scalar subquery
+                    return self.sql(exp.Subquery(this=outer_select))
+
+            # Build BIT_XOR aggregate
             bit_xor = exp.BitwiseXorAgg(this=hash_func)
 
+            # Window functions don't need COALESCE, but regular aggregates do (NULL -> 0)
             if isinstance(expression.parent, exp.Window):
                 return self.sql(bit_xor)
-
             return self.sql(exp.Coalesce(this=bit_xor, expressions=[exp.Literal.number(0)]))
 
         def _corr_sql(

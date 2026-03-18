@@ -28,6 +28,7 @@ from sqlglot.helper import (
 from sqlglot.tokenizer_core import Token
 
 if t.TYPE_CHECKING:
+    from builtins import type as typ
     from collections.abc import Iterator, Sequence, Collection
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
@@ -225,13 +226,13 @@ class Expr:
     def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
         raise NotImplementedError
 
-    def find(self, *expression_types: type[E], bfs: bool = True) -> t.Optional[E]:
+    def find(self, *expression_types: typ[E], bfs: bool = True) -> t.Optional[E]:
         raise NotImplementedError
 
-    def find_all(self, *expression_types: type[E], bfs: bool = True) -> Iterator[E]:
+    def find_all(self, *expression_types: typ[E], bfs: bool = True) -> Iterator[E]:
         raise NotImplementedError
 
-    def find_ancestor(self, *expression_types: type[E]) -> t.Optional[E]:
+    def find_ancestor(self, *expression_types: typ[E]) -> t.Optional[E]:
         raise NotImplementedError
 
     @property
@@ -285,7 +286,7 @@ class Expr:
     def pop(self: E) -> E:
         raise NotImplementedError
 
-    def assert_is(self, type_: t.Type[E]) -> E:
+    def assert_is(self, type_: typ[E]) -> E:
         raise NotImplementedError
 
     def error_messages(self, args: t.Optional[Sequence[object]] = None) -> list[str]:
@@ -353,7 +354,7 @@ class Expr:
     ) -> Expr:
         raise NotImplementedError
 
-    def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
+    def _binop(self, klass: typ[E], other: t.Any, reverse: bool = False) -> E:
         raise NotImplementedError
 
     def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr, ...]) -> Bracket:
@@ -843,7 +844,7 @@ class Expression(Expr):
             elif isinstance(vs, Expr):
                 yield t.cast(E, vs)
 
-    def find(self, *expression_types: type[E], bfs: bool = True) -> t.Optional[E]:
+    def find(self, *expression_types: typ[E], bfs: bool = True) -> t.Optional[E]:
         """
         Returns the first node in this tree which matches at least one of
         the specified types.
@@ -857,7 +858,7 @@ class Expression(Expr):
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types: type[E], bfs: bool = True) -> Iterator[E]:
+    def find_all(self, *expression_types: typ[E], bfs: bool = True) -> Iterator[E]:
         """
         Returns a generator object which visits all nodes in this tree and only
         yields those that match at least one of the specified expression types.
@@ -873,7 +874,7 @@ class Expression(Expr):
             if isinstance(expression, expression_types):
                 yield expression
 
-    def find_ancestor(self, *expression_types: t.Type[E]) -> t.Optional[E]:
+    def find_ancestor(self, *expression_types: typ[E]) -> t.Optional[E]:
         """
         Returns a nearest parent matching expression_types.
 
@@ -1116,7 +1117,7 @@ class Expression(Expr):
         self.replace(None)
         return self
 
-    def assert_is(self, type_: t.Type[E]) -> E:
+    def assert_is(self, type_: typ[E]) -> E:
         """
         Assert that this `Expr` is an instance of `type_`.
 
@@ -1302,7 +1303,7 @@ class Expression(Expr):
     ) -> Expr:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
 
-    def _binop(self, klass: type[E], other: t.Any, reverse: bool = False) -> E:
+    def _binop(self, klass: typ[E], other: t.Any, reverse: bool = False) -> E:
         this = self.copy()
         other = convert(other, copy=True)
         if not isinstance(this, klass) and not isinstance(other, klass):
@@ -1475,8 +1476,8 @@ class Expression(Expr):
 
 
 IntoType = t.Union[
-    t.Type[Expr],
-    Collection[t.Type[Expr]],
+    typ[Expr],
+    Collection[typ[Expr]],
 ]
 ExpOrStr = t.Union[int, str, Expr]
 
@@ -1933,7 +1934,7 @@ class TimeUnit(Expr):
         "Y": "YEAR",
     }
 
-    VAR_LIKE: t.ClassVar[t.Tuple[t.Type[Expr], ...]] = (Column, Literal, Var)
+    VAR_LIKE: t.ClassVar[t.Tuple[typ[Expr], ...]] = (Column, Literal, Var)
 
     def __init__(self, **args: object) -> None:
         super().__init__(**args)
@@ -2376,7 +2377,7 @@ TIMESTAMP_PARTS = {
 def maybe_parse(
     sql_or_expression: ExpOrStr,
     *,
-    into: t.Type[E],
+    into: typ[E],
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
@@ -2654,20 +2655,20 @@ def _combine(
 
 
 @t.overload
-def _wrap(expression: None, kind: t.Type[Expr]) -> None: ...
+def _wrap(expression: None, kind: typ[Expr]) -> None: ...
 
 
 @t.overload
-def _wrap(expression: E, kind: t.Type[Expr]) -> E | Paren: ...
+def _wrap(expression: E, kind: typ[Expr]) -> E | Paren: ...
 
 
-def _wrap(expression: t.Optional[E], kind: t.Type[Expr]) -> t.Optional[E] | Paren:
+def _wrap(expression: t.Optional[E], kind: typ[Expr]) -> t.Optional[E] | Paren:
     return Paren(this=expression) if isinstance(expression, kind) else expression
 
 
 def _apply_set_operation(
     *expressions: ExpOrStr,
-    set_operation: t.Type,
+    set_operation: typ,
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,

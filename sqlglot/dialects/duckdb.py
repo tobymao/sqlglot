@@ -3694,14 +3694,14 @@ class DuckDB(Dialect):
                 """
                 Output looks something like this:
 
-                CASE 
-                WHEN delimiter is '' THEN 
+                CASE
+                WHEN delimiter is '' THEN
                     (
-                        CASE 
+                        CASE
                         WHEN adjusted_part_index = 1 OR adjusted_part_index = -1 THEN input
                         ELSE '' END
-                    ) 
-                ELSE SPLIT_PART(input, delimiter, adjusted_part_index) 
+                    )
+                ELSE SPLIT_PART(input, delimiter, adjusted_part_index)
                 END
 
                 """

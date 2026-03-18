@@ -317,6 +317,8 @@ class Parser:
         "ARRAY_APPEND": build_array_append,
         "ARRAY_CAT": build_array_concat,
         "ARRAY_CONCAT": build_array_concat,
+        "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
+        "ARRAY_INTERSECTION": lambda args: exp.ArrayIntersect(expressions=args),
         "ARRAY_PREPEND": build_array_prepend,
         "ARRAY_REMOVE": build_array_remove,
         "COUNT": lambda args: exp.Count(this=seq_get(args, 0), expressions=args[1:], big_int=True),

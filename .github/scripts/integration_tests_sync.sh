@@ -49,6 +49,11 @@ case "${1:-}" in
     # Skip if submodule has no changes
     [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ] || exit 0
 
+    # Only auto-commit submodule changes when the submodule pointer is already
+    # staged in the parent (i.e. the user explicitly `git add`-ed it). This
+    # prevents surprise commits of unrelated WIP in the submodule working tree.
+    git diff --cached --quiet -- "$SUBMODULE_DIR" && exit 0
+
     ensure_branch
 
     if [ -n "$(git -C "$SUBMODULE_DIR" status --porcelain)" ]; then
@@ -66,6 +71,13 @@ case "${1:-}" in
   post-commit)
     # The pre-commit framework's stashing undoes submodule changes made during
     # pre-commit. Re-commit the submodule and amend the parent to include it.
+
+    # Only act if the most recent parent commit references the submodule. This
+    # prevents the post-commit hook from auto-committing unrelated submodule WIP
+    # (e.g. when switching branches or pulling on main).
+    if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q "^${SUBMODULE_DIR}$"; then
+      exit 0
+    fi
 
     # Skip if submodule has no changes and pointer is up to date
     if [ -z "$(git -C "$SUBMODULE_DIR" status --porcelain)" ] && git diff --quiet -- "$SUBMODULE_DIR"; then

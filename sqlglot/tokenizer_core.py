@@ -99,6 +99,7 @@ class TokenType(IntEnum):
     TABLE = auto()
     WAREHOUSE = auto()
     STAGE = auto()
+    STREAM = auto()
     STREAMLIT = auto()
     VAR = auto()
     BIT_STRING = auto()

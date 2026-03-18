@@ -378,11 +378,18 @@ class BigQueryParser(parser.Parser):
         return this
 
     def _parse_table_parts(
-        self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
-    ) -> exp.Table:
+        self,
+        schema: bool = False,
+        is_db_reference: bool = False,
+        wildcard: bool = False,
+        fast: bool = False,
+    ) -> t.Optional[exp.Table | exp.Dot]:
         table = super()._parse_table_parts(
-            schema=schema, is_db_reference=is_db_reference, wildcard=True
+            schema=schema, is_db_reference=is_db_reference, wildcard=True, fast=fast
         )
+
+        if not isinstance(table, exp.Table):
+            return table
 
         # proj-1.db.tbl -- `1.` is tokenized as a float so we need to unravel it here
         if not table.catalog:

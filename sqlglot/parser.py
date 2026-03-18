@@ -715,6 +715,8 @@ class Parser:
         TokenType.SET,
         TokenType.SETTINGS,
         TokenType.SHOW,
+        TokenType.STREAM,
+        TokenType.STREAMLIT,
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUE,
@@ -778,6 +780,17 @@ class Parser:
             TokenType.L_BRACE,
             TokenType.COLON,
             TokenType.JOIN_MARKER,
+        }
+    )
+
+    TABLE_POSTFIX_TOKENS: t.ClassVar[t.FrozenSet] = frozenset(
+        {
+            TokenType.L_PAREN,
+            TokenType.L_BRACKET,
+            TokenType.L_BRACE,
+            TokenType.PIVOT,
+            TokenType.UNPIVOT,
+            TokenType.TABLE_SAMPLE,
         }
     )
 
@@ -921,6 +934,27 @@ class Parser:
     }
 
     JOIN_HINTS: t.ClassVar[t.Set[str]] = set()
+
+    # Tokens that unambiguously end a table reference on the fast path
+    TABLE_FAST_TERMINATORS: t.ClassVar[t.FrozenSet] = frozenset(
+        {
+            TokenType.COMMA,
+            TokenType.GROUP_BY,
+            TokenType.HAVING,
+            TokenType.JOIN,
+            TokenType.LIMIT,
+            TokenType.ON,
+            TokenType.ORDER_BY,
+            TokenType.R_PAREN,
+            TokenType.SEMICOLON,
+            TokenType.SENTINEL,
+            TokenType.WHERE,
+            *SET_OPERATIONS,
+            *JOIN_KINDS,
+            *JOIN_METHODS,
+            *JOIN_SIDES,
+        }
+    )
 
     LAMBDAS: t.ClassVar = {
         TokenType.ARROW: lambda self, expressions: self.expression(
@@ -4248,12 +4282,10 @@ class Parser:
 
     def _parse_stream(self) -> t.Optional[exp.Stream]:
         index = self._index
-        if self._match_text_seq("STREAM"):
-            this = self._try_parse(self._parse_table)
-            if this:
+        if self._match(TokenType.STREAM):
+            if this := self._try_parse(self._parse_table):
                 return self.expression(exp.Stream(this=this))
-
-        self._retreat(index)
+            self._retreat(index)
         return None
 
     def _parse_join_parts(
@@ -4475,11 +4507,81 @@ class Parser:
             or self._parse_placeholder()
         )
 
+    def _parse_table_parts_fast(self) -> t.Optional[exp.Table]:
+        index = self._index
+        parts: t.Optional[t.List[exp.Identifier]] = None
+        all_comments: t.Optional[t.List[str]] = None
+
+        while self._match_set(self.FAST_COLUMN_TOKENS):
+            token = self._prev
+            comments = self._prev_comments
+
+            has_dot = self._match(TokenType.DOT)
+            curr_tt = self._curr.token_type
+
+            if not has_dot:
+                if curr_tt in self.TABLE_POSTFIX_TOKENS:
+                    self._retreat(index)
+                    return None
+            elif curr_tt not in self.FAST_COLUMN_TOKENS:
+                self._retreat(index)
+                return None
+
+            if parts is None:
+                parts = []
+
+            if comments:
+                if all_comments is None:
+                    all_comments = []
+                all_comments.extend(comments)
+                self._prev_comments = []
+
+            parts.append(
+                self.expression(
+                    exp.Identifier(
+                        this=token.text, quoted=token.token_type == TokenType.IDENTIFIER
+                    ),
+                    token,
+                )
+            )
+
+            if not has_dot:
+                break
+
+        if parts is None:
+            return None
+
+        n = len(parts)
+
+        if n == 1:
+            table: exp.Table = exp.Table(this=parts[0])
+        elif n == 2:
+            table = exp.Table(this=parts[1], db=parts[0])
+        elif n >= 3:
+            this: exp.Identifier | exp.Dot = parts[2]
+            for i in range(3, n):
+                this = exp.Dot(this=this, expression=parts[i])
+
+            table = exp.Table(this=this, db=parts[1], catalog=parts[0])
+
+        if table is None:
+            self._retreat(index)
+        elif all_comments:
+            table.add_comments(all_comments)
+        return table
+
     def _parse_table_parts(
-        self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
-    ) -> exp.Table:
-        catalog = None
-        db = None
+        self,
+        schema: bool = False,
+        is_db_reference: bool = False,
+        wildcard: bool = False,
+        fast: bool = False,
+    ) -> t.Optional[exp.Table | exp.Dot]:
+        if fast:
+            return self._parse_table_parts_fast()
+
+        catalog: t.Optional[exp.Expr | str] = None
+        db: t.Optional[exp.Expr | str] = None
         table: t.Optional[exp.Expr | str] = self._parse_table_part(schema=schema)
 
         while self._match(TokenType.DOT):
@@ -4544,24 +4646,47 @@ class Parser:
         parse_partition: bool = False,
         consume_pipe: bool = False,
     ) -> t.Optional[exp.Expr]:
-        stream = self._parse_stream()
-        if stream:
+        if not schema and not is_db_reference and not consume_pipe and not joins:
+            index = self._index
+            table = self._parse_table_parts(fast=True)
+
+            if table is not None:
+                curr_tt = self._curr.token_type
+                next_tt = self._next.token_type
+
+                fast_terminators = self.TABLE_FAST_TERMINATORS
+
+                # only return the table if we're sure there are no other operators
+                # MATCH_CONDITION is a special case because it accepts any alias before it like LIMIT
+                if curr_tt in fast_terminators and next_tt != TokenType.MATCH_CONDITION:
+                    return table
+
+                postfix_tokens = self.TABLE_POSTFIX_TOKENS
+
+                if curr_tt not in postfix_tokens and next_tt not in postfix_tokens:
+                    if alias := self._parse_table_alias(
+                        alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS
+                    ):
+                        table.set("alias", alias)
+
+                    if self._curr.token_type in fast_terminators:
+                        return table
+
+                self._retreat(index)
+
+        if stream := self._parse_stream():
             return stream
 
-        lateral = self._parse_lateral()
-        if lateral:
+        if lateral := self._parse_lateral():
             return lateral
 
-        unnest = self._parse_unnest()
-        if unnest:
+        if unnest := self._parse_unnest():
             return unnest
 
-        values = self._parse_derived_table_values()
-        if values:
+        if values := self._parse_derived_table_values():
             return values
 
-        subquery = self._parse_select(table=True, consume_pipe=consume_pipe)
-        if subquery:
+        if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())
             return subquery
@@ -4593,7 +4718,7 @@ class Parser:
             this.set("only", only)
 
         # Postgres supports a wildcard (table) suffix operator, which is a no-op in this context
-        self._match_text_seq("*")
+        self._match(TokenType.STAR)
 
         parse_partition = parse_partition or self.SUPPORTS_PARTITION_SELECTION
         if parse_partition and self._match(TokenType.PARTITION, advance=False):

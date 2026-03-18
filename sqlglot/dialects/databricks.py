@@ -43,6 +43,7 @@ class Databricks(Spark):
     class Tokenizer(Spark.Tokenizer):
         KEYWORDS = {
             **Spark.Tokenizer.KEYWORDS,
+            "STREAM": TokenType.STREAM,
             "VOID": TokenType.VOID,
         }
 

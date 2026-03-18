@@ -5610,16 +5610,50 @@ class Parser:
         return this
 
     def _parse_disjunction(self) -> t.Optional[exp.Expr]:
-        return self._parse_tokens(self._parse_conjunction, self.DISJUNCTION)
+        this = self._parse_conjunction()
+        while self._match_set(self.DISJUNCTION):
+            comments = self._prev_comments
+            this = self.expression(
+                self.DISJUNCTION[self._prev.token_type](
+                    this=this, expression=self._parse_conjunction()
+                ),
+                comments=comments,
+            )
+        return this
 
     def _parse_conjunction(self) -> t.Optional[exp.Expr]:
-        return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+        this = self._parse_equality()
+        while self._match_set(self.CONJUNCTION):
+            comments = self._prev_comments
+            this = self.expression(
+                self.CONJUNCTION[self._prev.token_type](
+                    this=this, expression=self._parse_equality()
+                ),
+                comments=comments,
+            )
+        return this
 
     def _parse_equality(self) -> t.Optional[exp.Expr]:
-        return self._parse_tokens(self._parse_comparison, self.EQUALITY)
+        this = self._parse_comparison()
+        while self._match_set(self.EQUALITY):
+            comments = self._prev_comments
+            this = self.expression(
+                self.EQUALITY[self._prev.token_type](
+                    this=this, expression=self._parse_comparison()
+                ),
+                comments=comments,
+            )
+        return this
 
     def _parse_comparison(self) -> t.Optional[exp.Expr]:
-        return self._parse_tokens(self._parse_range, self.COMPARISON)
+        this = self._parse_range()
+        while self._match_set(self.COMPARISON):
+            comments = self._prev_comments
+            this = self.expression(
+                self.COMPARISON[self._prev.token_type](this=this, expression=self._parse_range()),
+                comments=comments,
+            )
+        return this
 
     def _parse_range(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
         this = this or self._parse_bitwise()
@@ -5901,7 +5935,14 @@ class Parser:
         return this
 
     def _parse_exponent(self) -> t.Optional[exp.Expr]:
-        return self._parse_tokens(self._parse_unary, self.EXPONENT)
+        this = self._parse_unary()
+        while self._match_set(self.EXPONENT):
+            comments = self._prev_comments
+            this = self.expression(
+                self.EXPONENT[self._prev.token_type](this=this, expression=self._parse_unary()),
+                comments=comments,
+            )
+        return this
 
     def _parse_unary(self) -> t.Optional[exp.Expr]:
         if self._match_set(self.UNARY_PARSERS):
@@ -8303,20 +8344,6 @@ class Parser:
                 items.append(parse_result)
 
         return items
-
-    def _parse_tokens(
-        self, parse_method: t.Callable[[], t.Optional[exp.Expr]], expressions: t.Dict
-    ) -> t.Optional[exp.Expr]:
-        this = parse_method()
-
-        while self._match_set(expressions):
-            comments = self._prev_comments
-            this = self.expression(
-                expressions[self._prev.token_type](this=this, expression=parse_method()),
-                comments=comments,
-            )
-
-        return this
 
     def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expr]:
         return self._parse_wrapped_csv(self._parse_id_var, optional=optional)

@@ -55,7 +55,13 @@ class PRQLParser(parser.Parser):
     }
 
     def _parse_equality(self) -> t.Optional[exp.Expr]:
-        eq = self._parse_tokens(self._parse_comparison, self.EQUALITY)
+        eq = self._parse_comparison()
+        while self._match_set(self.EQUALITY):
+            comments = self._prev_comments
+            eq = self.expression(
+                self.EQUALITY[self._prev.token_type](this=eq, expression=self._parse_comparison()),
+                comments=comments,
+            )
         if not isinstance(eq, (exp.EQ, exp.NEQ)):
             return eq
 

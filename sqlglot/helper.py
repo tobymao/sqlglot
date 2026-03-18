@@ -141,7 +141,7 @@ def csv(*args: str, sep: str = ", ") -> str:
 def subclasses(
     module_name: str,
     classes: t.Type | t.Tuple[t.Type, ...],
-    exclude: t.Set[t.Type] = set(),
+    exclude: t.Set[t.Type] = None,
 ) -> t.List[t.Type]:
     """
     Returns all subclasses for a collection of classes, possibly excluding some of them.
@@ -154,6 +154,8 @@ def subclasses(
     Returns:
         The target subclasses.
     """
+    if exclude is None:
+        exclude = set()
     return [
         obj
         for _, obj in inspect.getmembers(

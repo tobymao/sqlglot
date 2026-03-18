@@ -27,9 +27,8 @@ from sqlglot.helper import (
 
 from sqlglot.tokenizer_core import Token
 from builtins import type as typ
+
 if t.TYPE_CHECKING:
-    
-    
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select

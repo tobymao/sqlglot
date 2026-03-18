@@ -6508,14 +6508,14 @@ FROM SEMANTIC_VIEW(
             "SELECT CHARINDEX('sub', 'testsubstring', -1)",
             write={
                 "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', -1)",
-                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') + CASE WHEN -1 <= 0 THEN 1 ELSE -1 END - 1 END",
+                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', 1), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', 1), 'sub') + 1 - 1 END",
             },
         )
         self.validate_all(
-            "SELECT CHARINDEX('sub', 'testsubstring', 0)",
+            "SELECT CHARINDEX('sub', 'testsubstring', p)",
             write={
-                "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', 0)",
-                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN 0 <= 0 THEN 1 ELSE 0 END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN 0 <= 0 THEN 1 ELSE 0 END), 'sub') + CASE WHEN 0 <= 0 THEN 1 ELSE 0 END - 1 END",
+                "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', p)",
+                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN p <= 0 THEN 1 ELSE p END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN p <= 0 THEN 1 ELSE p END), 'sub') + CASE WHEN p <= 0 THEN 1 ELSE p END - 1 END",
             },
         )
 

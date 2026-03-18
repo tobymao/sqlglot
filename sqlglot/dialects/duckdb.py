@@ -2569,10 +2569,11 @@ class DuckDB(Dialect):
                 and position
                 and not (position.is_number and position.to_py() > 0)
             ):
-                expression = expression.copy()
-                expression.set(
+                (expression := expression.copy()).set(
                     "position",
-                    exp.If(
+                    exp.Literal.number(1)
+                    if position.is_number
+                    else exp.If(
                         this=exp.LTE(this=position, expression=exp.Literal.number(0)),
                         true=exp.Literal.number(1),
                         false=position.copy(),

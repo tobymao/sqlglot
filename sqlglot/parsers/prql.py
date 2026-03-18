@@ -7,6 +7,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from collections.abc import Collection
 
+
 def _select_all(table: exp.Expr) -> t.Optional[exp.Select]:
     return exp.select("*").from_(table, copy=False) if table else None
 

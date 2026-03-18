@@ -22,10 +22,11 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie
 from collections.abc import Sequence
+
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.dialects.dialect import Dialect, DialectType
-    
+
     from re import Pattern
 
     T = t.TypeVar("T")

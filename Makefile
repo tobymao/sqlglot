@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
 
 ifdef UV
     PIP := uv pip
@@ -87,3 +87,6 @@ docs-serve:
 
 resolve-integration-conflicts:
 	cd sqlglot-integration-tests && git pull --rebase --autostash
+
+update-fixtures:
+	python sqlglot-integration-tests/scripts/update_dbt_fixtures.py

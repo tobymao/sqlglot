@@ -1417,6 +1417,7 @@ class TestDialect(Validator):
                 "trino": "ARRAY_INTERSECT(x, y)",
                 "snowflake": "ARRAY_INTERSECTION(x, y)",
                 "starrocks": "ARRAY_INTERSECT(x, y)",
+                "duckdb": "ARRAY_INTERSECT(x, y)",
             },
             write={
                 "hive": "ARRAY_INTERSECT(x, y)",
@@ -1427,6 +1428,7 @@ class TestDialect(Validator):
                 "trino": "ARRAY_INTERSECT(x, y)",
                 "snowflake": "ARRAY_INTERSECTION(x, y)",
                 "starrocks": "ARRAY_INTERSECT(x, y)",
+                "duckdb": "ARRAY_INTERSECT(x, y)",
             },
         )
 

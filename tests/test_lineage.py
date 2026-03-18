@@ -507,6 +507,13 @@ class TestLineage(unittest.TestCase):
         with self.assertRaises(sqlglot.errors.SqlglotError):
             lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
 
+        with self.assertRaises(sqlglot.errors.SqlglotError):
+            lineage(
+                "b",
+                "SELECT a,b FROM table1 UNION ALL BY NAME SELECT a FROM table2",
+                dialect="duckdb",
+            )
+
     def test_ddl_lineage(self) -> None:
         sql = """
         INSERT /*+ HINT1 */

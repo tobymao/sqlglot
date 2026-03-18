@@ -157,14 +157,17 @@ def to_node(
     # Find the specific select clause that is the source of the column we want.
     # This can either be a specific, named select or a generic `*` clause.
     selectable = t.cast(exp.Selectable, scope.expression)
-    select = (
-        selectable.selects[column]
-        if isinstance(column, int)
-        else next(
+    if isinstance(column, int):
+        if column >= len(selectable.selects):
+            raise SqlglotError(
+                f"Cannot find column's source with index {column} in query: {selectable.sql(dialect=dialect)}"
+            )
+        select = selectable.selects[column]
+    else:
+        select = next(
             (select for select in selectable.selects if select.alias_or_name == column),
             exp.Star() if selectable.is_star else scope.expression,
         )
-    )
 
     if isinstance(scope.expression, exp.Subquery):
         for inner_scope in scope.subquery_scopes:

@@ -6,56 +6,81 @@ from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.sdist import sdist as _sdist
 from mypyc.build import mypycify
 
-here = os.path.dirname(os.path.abspath(__file__))
-sqlglot_src = os.path.join(here, "..", "sqlglot")
+SQLGLOT_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sqlglot")
 
 
-def _subpkg_files(subpkg, files=None):
+def _find_sqlglot_dir():
+    """Find the sqlglot source directory: repo source, or installed package.
+
+    When the installed package is in site-packages, copy it to a clean temp
+    directory so mypy doesn't discover unrelated modules (mypy_extensions,
+    typing_extensions) that cause shadowing errors.
+    """
+    if os.path.isdir(SQLGLOT_SRC):
+        return SQLGLOT_SRC
+
+    # Fall back to the installed sqlglot package (build dependency).
+    import sqlglot
+    import tempfile
+
+    installed = os.path.dirname(sqlglot.__file__)
+    tmp = tempfile.mkdtemp(prefix="sqlglotc_build_")
+    dst = os.path.join(tmp, "sqlglot")
+    shutil.copytree(installed, dst)
+    return dst
+
+
+def _subpkg_files(src_dir, subpkg, files=None):
     """List source files from a sqlglot subpackage. Compiles all .py files if `files` is None."""
     if files is None:
-        # Try repo source first, fall back to sdist-bundled copy.
-        subpkg_dir = os.path.join(sqlglot_src, subpkg)
-        if not os.path.isdir(subpkg_dir):
-            subpkg_dir = os.path.join(here, "sqlglot", subpkg)
         files = sorted(
-            f for f in os.listdir(subpkg_dir) if f.endswith(".py") and f != "__init__.py"
+            f
+            for f in os.listdir(os.path.join(src_dir, subpkg))
+            if f.endswith(".py") and f != "__init__.py"
         )
     return [os.path.join(subpkg, f) for f in files]
 
 
-SOURCE_FILES = [
-    "errors.py",
-    "helper.py",
-    "parser.py",
-    "schema.py",
-    "serde.py",
-    "time.py",
-    "tokenizer_core.py",
-    "trie.py",
-    *_subpkg_files("expressions"),
-    *_subpkg_files(
-        "optimizer",
-        [
-            "scope.py",
-            "resolver.py",
-            "isolate_table_selects.py",
-            "normalize_identifiers.py",
-            "qualify.py",
-            "qualify_tables.py",
-            "qualify_columns.py",
-        ],
-    ),
-    *_subpkg_files("parsers"),
-    *_subpkg_files("executor", ["table.py"]),
-]
+def _source_files(src_dir):
+    return [
+        "errors.py",
+        "helper.py",
+        "parser.py",
+        "schema.py",
+        "serde.py",
+        "time.py",
+        "tokenizer_core.py",
+        "trie.py",
+        *_subpkg_files(src_dir, "expressions"),
+        *_subpkg_files(
+            src_dir,
+            "optimizer",
+            [
+                "scope.py",
+                "resolver.py",
+                "isolate_table_selects.py",
+                "normalize_identifiers.py",
+                "qualify.py",
+                "qualify_tables.py",
+                "qualify_columns.py",
+            ],
+        ),
+        *_subpkg_files(src_dir, "parsers"),
+        *_subpkg_files(src_dir, "executor", ["table.py"]),
+    ]
+
+
+SRC_DIR = _find_sqlglot_dir()
+SOURCE_FILES = _source_files(SRC_DIR)
+
+# Set MYPYPATH to the parent of the sqlglot source so mypy resolves
+# `import sqlglot` from there — not from site-packages where
+# mypy_extensions.py / typing_extensions.py can cause shadowing errors.
+os.environ["MYPYPATH"] = os.path.dirname(SRC_DIR)
 
 
 def _source_paths():
-    if os.path.isdir(sqlglot_src):
-        # Building from the git repo: compile directly from sqlglot source, no copies.
-        return [os.path.join(sqlglot_src, f) for f in SOURCE_FILES]
-    # Building from an sdist: source files are bundled in ./sqlglot/.
-    return [os.path.join(here, "sqlglot", f) for f in SOURCE_FILES]
+    return [os.path.join(SRC_DIR, f) for f in SOURCE_FILES]
 
 
 class build_ext(_build_ext):
@@ -66,33 +91,31 @@ class build_ext(_build_ext):
             filename = self.get_ext_filename(fullname)
             src = os.path.join(self.build_lib, filename)
             parts = fullname.split(".")
-            if parts[0] == "sqlglot" and os.path.isdir(sqlglot_src):
+            if parts[0] == "sqlglot" and os.path.isdir(SQLGLOT_SRC):
                 # Place compiled sqlglot.* / sqlglot.sub.* modules in the sqlglot source tree.
                 sub_module = ".".join(parts[1:])
-                dst = os.path.join(sqlglot_src, self.get_ext_filename(sub_module))
+                dst = os.path.join(SQLGLOT_SRC, self.get_ext_filename(sub_module))
             else:
                 # Place the mypyc runtime helper (e.g., HASH__mypyc) inside sqlglot/.
                 # sqlglot/__init__.py bootstraps it into sys.modules for editable installs.
-                dst = os.path.join(sqlglot_src, os.path.basename(filename))
+                dst = os.path.join(SQLGLOT_SRC, os.path.basename(filename))
             self.copy_file(src, dst, level=self.verbose)
 
 
 class sdist(_sdist):
-    """Bundle sqlglot source files into the sdist so sqlglotc can compile on install."""
+    """Bundle sqlglot source files into the sdist as a fallback."""
 
     def run(self):
-        local_sqlglot = os.path.join(here, "sqlglot")
+        local_sqlglot = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sqlglot")
         os.makedirs(local_sqlglot, exist_ok=True)
-        open(os.path.join(local_sqlglot, "__init__.py"), "w").close()
         subpkgs = {os.path.dirname(f) for f in SOURCE_FILES if os.path.dirname(f)}
         for subpkg in subpkgs:
             pkg_dir = os.path.join(local_sqlglot, subpkg)
             os.makedirs(pkg_dir, exist_ok=True)
-            open(os.path.join(pkg_dir, "__init__.py"), "w").close()
         for fname in SOURCE_FILES:
             dst_path = os.path.join(local_sqlglot, fname)
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-            shutil.copy2(os.path.join(sqlglot_src, fname), dst_path)
+            shutil.copy2(os.path.join(SQLGLOT_SRC, fname), dst_path)
         try:
             super().run()
         finally:

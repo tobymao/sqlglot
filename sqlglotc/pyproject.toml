@@ -14,7 +14,7 @@ Homepage = "https://sqlglot.com/"
 Repository = "https://github.com/tobymao/sqlglot"
 
 [build-system]
-requires = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy>=1.19.1.post1", "types-python-dateutil"]
+requires = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy>=1.19.1.post1", "types-python-dateutil", "sqlglot"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -25,10 +25,6 @@ root = ".."
 fallback_version = "0.0.0"
 local_scheme = "no-local-version"
 
-[tool.mypy]
-# Allow mypyc to resolve sqlglot.* from the repo root (../sqlglot/) or sdist root (./sqlglot/).
-mypy_path = [".", ".."]
-
 [[tool.mypy.overrides]]
-module = "sqlglot._version"
+module = ["sqlglot._version", "sqlglotc"]
 ignore_missing_imports = true

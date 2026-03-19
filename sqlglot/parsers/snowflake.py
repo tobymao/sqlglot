@@ -374,6 +374,12 @@ class SnowflakeParser(parser.Parser):
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
+        "CHARINDEX": lambda args: exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2),
+            clamp_position=True,
+        ),
         "ADD_MONTHS": lambda args: exp.AddMonths(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),

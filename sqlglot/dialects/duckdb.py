@@ -1739,7 +1739,6 @@ class DuckDB(Dialect):
             exp.RegrValy: _regr_val_sql,
             exp.Return: lambda self, e: self.sql(e, "this"),
             exp.ReturnsProperty: lambda self, e: "TABLE" if isinstance(e.this, exp.Schema) else "",
-            exp.StrPosition: strposition_sql,
             exp.StrToUnix: lambda self, e: self.func(
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
@@ -2562,6 +2561,19 @@ class DuckDB(Dialect):
 
         def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
             return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+
+        def strposition_sql(self, expression: exp.StrPosition) -> str:
+            position = expression.args.get("position")
+            if expression.args.get("clamp_position") and position:
+                (expression := expression.copy()).set(
+                    "position",
+                    exp.If(
+                        this=exp.LTE(this=position, expression=exp.Literal.number(0)),
+                        true=exp.Literal.number(1),
+                        false=position.copy(),
+                    ),
+                )
+            return strposition_sql(self, expression)
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:
             # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)

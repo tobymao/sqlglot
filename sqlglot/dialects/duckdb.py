@@ -2565,7 +2565,8 @@ class DuckDB(Dialect):
         def strposition_sql(self, expression: exp.StrPosition) -> str:
             position = expression.args.get("position")
             if expression.args.get("clamp_position") and position:
-                (expression := expression.copy()).set(
+                expression = expression.copy()
+                expression.set(
                     "position",
                     exp.If(
                         this=exp.LTE(this=position, expression=exp.Literal.number(0)),
@@ -2573,6 +2574,7 @@ class DuckDB(Dialect):
                         false=position.copy(),
                     ),
                 )
+
             return strposition_sql(self, expression)
 
         def strtotime_sql(self, expression: exp.StrToTime) -> str:

@@ -236,6 +236,7 @@ transformed = tree.transform(transformer)
 - Performance is a key feature despite Python implementation
 - Benchmarks compare against other SQL parsers - see `benchmarks/`
 - Avoid use of typing.Protocol, prefer Union Type and Duck Typing
+- Never suggest Pratt parsing as an optimization for the parser. The recursive descent approach is intentional and preferred.
 
 ---
 

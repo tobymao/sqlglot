@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v30.0.3] - 2026-03-19
+### :zap: Performance Improvements
+- [`f87ebe0`](https://github.com/tobymao/sqlglot/commit/f87ebe02103b249ec5fa2c93e019e465f77630be) - use mypyc i64 for parser index fields (~1.6% faster) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`52bca33`](https://github.com/tobymao/sqlglot/commit/52bca33e9395c4f6f621649180f2576eb8591dba) - **lineage**: improve error message when column source index is out of range *(PR [#7336](https://github.com/tobymao/sqlglot/pull/7336) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *addresses issue [#7332](https://github.com/tobymao/sqlglot/issues/7332) opened by [@paultiq](https://github.com/paultiq)*
+
+
 ## [v30.0.2] - 2026-03-19
 ### :boom: BREAKING CHANGES
 - due to [`936617e`](https://github.com/tobymao/sqlglot/commit/936617e749f969b04da318ec02e1086a01212e92) - escape comment markers in sanitize_comment for all dialects *(PR [#7301](https://github.com/tobymao/sqlglot/pull/7301) by [@llimllib](https://github.com/llimllib))*:
@@ -13845,3 +13854,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.0.0]: https://github.com/tobymao/sqlglot/compare/v29.0.1...v30.0.0
 [v30.0.1]: https://github.com/tobymao/sqlglot/compare/v30.0.0...v30.0.1
 [v30.0.2]: https://github.com/tobymao/sqlglot/compare/v30.0.1...v30.0.2
+[v30.0.3]: https://github.com/tobymao/sqlglot/compare/v30.0.2...v30.0.3

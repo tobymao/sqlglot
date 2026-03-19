@@ -19,7 +19,7 @@ from sqlglot.dialects.dialect import (
     sha256_sql,
     strposition_sql,
     var_map_sql,
-    timestamptrunc_sql,
+    unit_to_str,
     unit_to_var,
     trim_sql,
     sha2_digest_sql,
@@ -466,7 +466,6 @@ class ClickHouse(Dialect):
                 "splitByRegexp", e.args.get("expression"), e.this, e.args.get("limit")
             ),
             exp.UnixToTime: _unix_to_time_sql,
-            exp.TimestampTrunc: timestamptrunc_sql(func="dateTrunc", zone=True),
             exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
             exp.Variance: rename_func("varSamp"),
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
@@ -759,3 +758,17 @@ class ClickHouse(Dialect):
                 values_as_table = True
 
             return super().values_sql(expression, values_as_table=values_as_table)
+
+        def _lowered_unit(self, unit: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
+            # https://github.com/ClickHouse/ClickHouse/pull/57624
+            if self.dialect.version < (23, 12) and unit and unit.is_string:
+                return exp.Literal.string(unit.name.lower())
+            return unit
+
+        def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+            unit = self._lowered_unit(expression.args.get("unit"))
+            return self.func("DATE_TRUNC", unit, expression.this, expression.args.get("zone"))
+
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            unit = self._lowered_unit(unit_to_str(expression))
+            return self.func("dateTrunc", unit, expression.this, expression.args.get("zone"))

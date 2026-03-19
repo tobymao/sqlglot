@@ -6346,24 +6346,27 @@ class Parser:
                     if not self._match(TokenType.R_BRACKET):
                         self.raise_error("Expected ]")
 
-                    if not bracket_expr:
-                        continue
+                    if bracket_expr:
+                        if bracket_expr.is_string:
+                            path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
+                            escape = True
+                        elif bracket_expr.is_star:
+                            path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
+                        elif bracket_expr.is_number:
+                            path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
+                        else:
+                            this, path_parts = self._build_json_extract(this, path_parts, escape)
+                            escape = None
 
-                    if bracket_expr.is_string:
-                        path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
-                        escape = True
-                    elif bracket_expr.is_star:
-                        path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
-                    elif bracket_expr.is_number:
-                        path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
-                    else:
-                        this, path_parts = self._build_json_extract(this, path_parts, escape)
-                        this = self.expression(
-                            exp.Bracket(this=this, expressions=[bracket_expr], json_access=True),
-                        )
+                            this = self.expression(
+                                exp.Bracket(
+                                    this=this, expressions=[bracket_expr], json_access=True
+                                ),
+                            )
 
                 elif self._match(TokenType.DCOLON):
                     this, path_parts = self._build_json_extract(this, path_parts, escape)
+                    escape = None
 
                     cast_type = self._parse_types()
                     if cast_type:

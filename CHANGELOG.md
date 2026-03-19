@@ -1,6 +1,49 @@
 Changelog
 =========
 
+## [v30.0.2] - 2026-03-19
+### :boom: BREAKING CHANGES
+- due to [`936617e`](https://github.com/tobymao/sqlglot/commit/936617e749f969b04da318ec02e1086a01212e92) - escape comment markers in sanitize_comment for all dialects *(PR [#7301](https://github.com/tobymao/sqlglot/pull/7301) by [@llimllib](https://github.com/llimllib))*:
+
+  escape comment markers in sanitize_comment for all dialects (#7301)
+
+- due to [`4f6bcd3`](https://github.com/tobymao/sqlglot/commit/4f6bcd3d21cf34346db4c7fc9936302d34a802e2) - Add transpilation support for ARRAY_TO_STRING function *(PR [#7289](https://github.com/tobymao/sqlglot/pull/7289) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add transpilation support for ARRAY_TO_STRING function (#7289)
+
+
+### :sparkles: New Features
+- [`4f6bcd3`](https://github.com/tobymao/sqlglot/commit/4f6bcd3d21cf34346db4c7fc9936302d34a802e2) - **duckdb**: Add transpilation support for ARRAY_TO_STRING function *(PR [#7289](https://github.com/tobymao/sqlglot/pull/7289) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`b41a99a`](https://github.com/tobymao/sqlglot/commit/b41a99a1405a5749a5876a64a559bd040ba618a5) - **duckdb**: FROM pipe syntax in subquery *(PR [#7311](https://github.com/tobymao/sqlglot/pull/7311) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7305](https://github.com/tobymao/sqlglot/issues/7305) opened by [@paultiq](https://github.com/paultiq)*
+- [`936617e`](https://github.com/tobymao/sqlglot/commit/936617e749f969b04da318ec02e1086a01212e92) - escape comment markers in sanitize_comment for all dialects *(PR [#7301](https://github.com/tobymao/sqlglot/pull/7301) by [@llimllib](https://github.com/llimllib))*
+- [`6ddaee3`](https://github.com/tobymao/sqlglot/commit/6ddaee3ccb92f660327501884acf103fad782e07) - **expressions**: restore Expression.alias behaviour for non-Identifier alias nodes *(PR [#7310](https://github.com/tobymao/sqlglot/pull/7310) by [@treff7es](https://github.com/treff7es))*
+- [`ce08047`](https://github.com/tobymao/sqlglot/commit/ce0804717876889c731f2ab64035c70a85f9b294) - **snowflake**: ILIKE/LIKE ANY/ALL with single element transpilation to duckdb *(PR [#7314](https://github.com/tobymao/sqlglot/pull/7314) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7306](https://github.com/tobymao/sqlglot/issues/7306) opened by [@ultrabear](https://github.com/ultrabear)*
+- [`8a52de6`](https://github.com/tobymao/sqlglot/commit/8a52de63fb908b55df0143e3ec63f3ae37aa4fd8) - **parser**: Add builder for ARRAY_INTERSECT *(PR [#7328](https://github.com/tobymao/sqlglot/pull/7328) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#7326](https://github.com/tobymao/sqlglot/issues/7326) opened by [@ADBond](https://github.com/ADBond)*
+- [`f8a7ab2`](https://github.com/tobymao/sqlglot/commit/f8a7ab2724cbb75d40355c79c8f68003ee2a5c7e) - **parser**: Do not consume constraints following UNIQUE *(PR [#7330](https://github.com/tobymao/sqlglot/pull/7330) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#7327](https://github.com/tobymao/sqlglot/issues/7327) opened by [@chunyangfeng](https://github.com/chunyangfeng)*
+- [`64509a2`](https://github.com/tobymao/sqlglot/commit/64509a2a3e7606eab57d714e63424f235c78a6b5) - sqlglotc sdist install fails when ../sqlglot dir doesn't exist *(PR [#7337](https://github.com/tobymao/sqlglot/pull/7337) by [@tobymao](https://github.com/tobymao))*
+  - :arrow_lower_right: *fixes issue [#7333](https://github.com/tobymao/sqlglot/issues/7333) opened by [@ZipBrandon](https://github.com/ZipBrandon)*
+
+### :zap: Performance Improvements
+- [`0ac52aa`](https://github.com/tobymao/sqlglot/commit/0ac52aa80241a8ed4049948f2ee0c19c8dc64279) - move instance variables to __init__ for perf *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c95ae50`](https://github.com/tobymao/sqlglot/commit/c95ae50fa122e01c914c92e9d847ff390516e1a4) - optimize parser for nested function calls (-41% on nested_funct… *(PR [#7307](https://github.com/tobymao/sqlglot/pull/7307) by [@tobymao](https://github.com/tobymao))*
+- [`1697bc3`](https://github.com/tobymao/sqlglot/commit/1697bc3a67c10314c5640ed7d52c40063db70f10) - optimize parser fast path for simple table references *(commit by [@tobymao](https://github.com/tobymao))*
+- [`18f15ca`](https://github.com/tobymao/sqlglot/commit/18f15ca96c7bdebe5798e407993495c0a9e9bd43) - inline token parsing for massive gains *(PR [#7335](https://github.com/tobymao/sqlglot/pull/7335) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`fe7874f`](https://github.com/tobymao/sqlglot/commit/fe7874f3cb5dd7899a438249f65b51b684a056f6) - update changelog with v30 release notes *(PR [#7309](https://github.com/tobymao/sqlglot/pull/7309) by [@georgesittas](https://github.com/georgesittas))*
+- [`8a914f0`](https://github.com/tobymao/sqlglot/commit/8a914f09ed3534ecc9998b6ce84f74e2f15909e4) - use ProcessPoolExecutor in test_executor *(PR [#7313](https://github.com/tobymao/sqlglot/pull/7313) by [@georgesittas](https://github.com/georgesittas))*
+- [`604fe3f`](https://github.com/tobymao/sqlglot/commit/604fe3f1770715baf8b461344cffa44eaf017fc2) - improve integration test submodule automations *(PR [#7320](https://github.com/tobymao/sqlglot/pull/7320) by [@georgesittas](https://github.com/georgesittas))*
+- [`c7b55c1`](https://github.com/tobymao/sqlglot/commit/c7b55c1998e7aaea7a4950e8ee347db7b0ec4af3) - Fix uv sync failing for sqlglotc *(PR [#7322](https://github.com/tobymao/sqlglot/pull/7322) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#7321](https://github.com/tobymao/sqlglot/issues/7321) opened by [@OutSquareCapital](https://github.com/OutSquareCapital)*
+- [`158424c`](https://github.com/tobymao/sqlglot/commit/158424cda0cc908c9f3687cc466194fa31cafb1b) - update readme *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v30.0.1] - 2026-03-16
 ### :bug: Bug Fixes
 - [`7bcad5c`](https://github.com/tobymao/sqlglot/commit/7bcad5c61673a8567e9c22d059ed4326e6698457) - auto pin sqlglotc version to sqlglot so there's no version mismatch closes [#7304](https://github.com/tobymao/sqlglot/pull/7304) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -13801,3 +13844,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v29.0.1]: https://github.com/tobymao/sqlglot/compare/v29.0.0...v29.0.1
 [v30.0.0]: https://github.com/tobymao/sqlglot/compare/v29.0.1...v30.0.0
 [v30.0.1]: https://github.com/tobymao/sqlglot/compare/v30.0.0...v30.0.1
+[v30.0.2]: https://github.com/tobymao/sqlglot/compare/v30.0.1...v30.0.2

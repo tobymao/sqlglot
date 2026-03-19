@@ -76,7 +76,7 @@ logger = logging.getLogger("sqlglot")
 
 
 try:
-    from sqlglot._version import __version__, __version_tuple__
+    from sqlglot._version import __version__, __version_tuple__  # type: ignore[import-not-found]
 except ImportError:
     logger.error(
         "Unable to set __version__, run `pip install -e .` or `python setup.py develop` first."

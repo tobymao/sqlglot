@@ -2564,16 +2564,10 @@ class DuckDB(Dialect):
 
         def strposition_sql(self, expression: exp.StrPosition) -> str:
             position = expression.args.get("position")
-            if (
-                expression.args.get("clamp_position")
-                and position
-                and not (position.is_number and position.to_py() > 0)
-            ):
+            if expression.args.get("clamp_position") and position:
                 (expression := expression.copy()).set(
                     "position",
-                    exp.Literal.number(1)
-                    if position.is_number
-                    else exp.If(
+                    exp.If(
                         this=exp.LTE(this=position, expression=exp.Literal.number(0)),
                         true=exp.Literal.number(1),
                         false=position.copy(),

@@ -6508,7 +6508,7 @@ FROM SEMANTIC_VIEW(
             "SELECT CHARINDEX('sub', 'testsubstring', -1)",
             write={
                 "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', -1)",
-                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', 1), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', 1), 'sub') + 1 - 1 END",
+                "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') + CASE WHEN -1 <= 0 THEN 1 ELSE -1 END - 1 END",
             },
         )
         self.validate_all(

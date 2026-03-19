@@ -1,91 +1,83 @@
 name: Benchmark pull requests
 
 on:
-  issue_comment:
-    types: [created, edited, deleted]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened]
+  issue_comment:
+    types: [created]
 
 jobs:
-  run-benchmark:
-    name: run benchmark
+  benchmark:
+    name: benchmark
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'issue_comment' && 
-       contains(github.event.comment.body, '/benchmark') &&
-       github.event.issue.pull_request) ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.body, '/benchmark'))
+    permissions:
+      pull-requests: write
+    if: >
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/benchmark'))
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # Needed to fetch main branch too
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || '' }}
+
+      - name: Checkout PR branch (comment trigger)
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.issue.number }}
+          PR_HEAD=$(gh pr view $PR_NUMBER --json headRefName -q .headRefName)
+          git fetch origin "$PR_HEAD"
+          git checkout "$PR_HEAD"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
-      - name: Create a virtual environment
+          python-version: "3.14"
+
+      - name: Install dependencies (PR)
         run: |
           python -m venv .venv
-          source ./.venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install pyperf
-      - name: Run benchmark on PR branch
+          source .venv/bin/activate
+          pip install -e ".[dev]"
+          make install-devc-release
+
+      - name: Benchmark PR branch
         run: |
-          source ./.venv/bin/activate
-          make install-dev
-          make install-dev-rs-release
-          python benchmarks/parse.py --quiet --output bench_parse_pr.json
-          python benchmarks/optimize.py --quiet --fast --output bench_optimize_pr.json
-      - name: Checkout main branch into subdir
+          source .venv/bin/activate
+          python benchmarks/parse.py --json bench_pr.json --quiet --sqlglot-only
+
+      - name: Checkout main branch
         run: |
           git fetch origin main
           git worktree add main-branch origin/main
-      - name: Reset virtual environment
+
+      - name: Install dependencies (main)
         run: |
           rm -rf .venv
           python -m venv .venv
-          source ./.venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install pyperf
-      - name: Run benchmark on main branch
-        run: |
-          source ./.venv/bin/activate
+          source .venv/bin/activate
           cd main-branch
-          make install-dev
-          make install-dev-rs-release
-          python benchmarks/parse.py --quiet --output ../bench_parse_main.json
-          python benchmarks/optimize.py --quiet --fast --output ../bench_optimize_main.json
-          cd ..
-      - name: Compare benchmarks and save results
-        run: |
-          source ./.venv/bin/activate
-          python -m pyperf compare_to bench_parse_main.json bench_parse_pr.json --table --table-format=md > bench_parse_comparison_raw.txt
-          python -m pyperf compare_to bench_optimize_main.json bench_optimize_pr.json --table --table-format=md > bench_optimize_comparison_raw.txt
+          pip install -e ".[dev]"
+          make install-devc-release
 
-          # Format with colors
-          python .github/scripts/format_benchmark.py bench_parse_comparison_raw.txt > bench_parse_comparison.txt
-          python .github/scripts/format_benchmark.py bench_optimize_comparison_raw.txt > bench_optimize_comparison.txt
-      - name: Combine benchmark outputs
+      - name: Benchmark main branch
         run: |
-          echo "## Benchmark Results" > combined_benchmarks.md
-          echo "" >> combined_benchmarks.md
-          echo "**Legend:**" >> combined_benchmarks.md
-          echo "- 🟢🟢 = 2x+ faster" >> combined_benchmarks.md
-          echo "- 🟢 = 1.1x - 2x faster" >> combined_benchmarks.md
-          echo "- ⚪ = No significant change (< 1.1x)" >> combined_benchmarks.md
-          echo "- 🔴 = 1.1x - 2x slower" >> combined_benchmarks.md
-          echo "- 🔴🔴 = 2x+ slower" >> combined_benchmarks.md
-          echo "" >> combined_benchmarks.md
-          echo "### Parsing Benchmark" >> combined_benchmarks.md
-          cat bench_parse_comparison.txt >> combined_benchmarks.md
-          echo -e "\n---\n" >> combined_benchmarks.md
-          echo "### Optimization Benchmark" >> combined_benchmarks.md
-          cat bench_optimize_comparison.txt >> combined_benchmarks.md
-      - name: Comment on PR for parse benchmark results
+          source .venv/bin/activate
+          cd main-branch
+          python benchmarks/parse.py --json ../bench_main.json --quiet --sqlglot-only
+
+      - name: Compare results
+        run: |
+          source .venv/bin/activate
+          python benchmarks/compare.py bench_main.json bench_pr.json > benchmark_comment.md
+
+      - name: Comment on PR
         uses: peter-evans/create-or-update-comment@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
-          body-file: combined_benchmarks.md
+          body-path: benchmark_comment.md

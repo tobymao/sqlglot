@@ -6349,7 +6349,6 @@ class Parser:
                     if bracket_expr:
                         if bracket_expr.is_string:
                             path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
-                            escape = True
                         elif bracket_expr.is_star:
                             path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
                         elif bracket_expr.is_number:

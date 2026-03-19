@@ -1759,13 +1759,6 @@ LIFETIME(MIN 0 MAX 0)""",
                     "spark": f"DATE_TRUNC('{unit}', x)",
                 },
             )
-            self.validate_all(
-                f"DATE_TRUNC('{unit}', x)",
-                write={
-                    "clickhouse, version=23.8": f"DATE_TRUNC('{unit.lower()}', x)",
-                    "clickhouse, version=24.1": f"DATE_TRUNC('{unit}', x)",
-                },
-            )
 
         self.validate_all(
             "toMonday(x)",

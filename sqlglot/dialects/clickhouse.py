@@ -759,16 +759,9 @@ class ClickHouse(Dialect):
 
             return super().values_sql(expression, values_as_table=values_as_table)
 
-        def _lowered_unit(self, unit: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
-            # https://github.com/ClickHouse/ClickHouse/pull/57624
-            if self.dialect.version < (23, 12) and unit and unit.is_string:
-                return exp.Literal.string(unit.name.lower())
-            return unit
-
-        def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
-            unit = self._lowered_unit(expression.args.get("unit"))
-            return self.func("DATE_TRUNC", unit, expression.this, expression.args.get("zone"))
-
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
-            unit = self._lowered_unit(unit_to_str(expression))
+            unit = unit_to_str(expression)
+            # https://clickhouse.com/docs/whats-new/changelog/2023#improvement
+            if self.dialect.version < (23, 12) and unit and unit.is_string:
+                unit = exp.Literal.string(unit.name.lower())
             return self.func("dateTrunc", unit, expression.this, expression.args.get("zone"))

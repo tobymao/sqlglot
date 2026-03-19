@@ -13,7 +13,7 @@ from enum import Enum
 from itertools import count
 
 try:
-    from mypy_extensions import mypyc_attr, trait
+    from mypy_extensions import mypyc_attr, trait, i64
 except ImportError:
 
     def mypyc_attr(*attrs: str, **kwattrs: object) -> t.Callable[[t.Any], t.Any]:  # type: ignore[misc]
@@ -21,6 +21,8 @@ except ImportError:
 
     def trait(f: t.Any) -> t.Any:  # type: ignore[misc]
         return f
+
+    i64 = int  # type: ignore[misc,assignment]
 
 
 T = t.TypeVar("T")

@@ -16,7 +16,7 @@ from sqlglot.errors import (
     merge_errors,
 )
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import ensure_list, i64, seq_get
 from sqlglot.trie import new_trie
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -302,6 +302,7 @@ class Parser:
         "_pipe_cte_counter",
         "_chunks",
         "_chunk_index",
+        "_tokens_size",
     )
 
     FUNCTIONS: t.ClassVar[t.Dict[str, t.Callable]] = {
@@ -1827,19 +1828,21 @@ class Parser:
         self.sql: str = ""
         self.errors: t.List[ParseError] = []
         self._tokens: t.List[Token] = []
-        self._index: int = 0
+        self._tokens_size: i64 = 0
+        self._index: i64 = 0
         self._curr: Token = SENTINEL_NONE
         self._next: Token = SENTINEL_NONE
         self._prev: Token = SENTINEL_NONE
         self._prev_comments: t.List[str] = []
         self._pipe_cte_counter: int = 0
         self._chunks: t.List[t.List[Token]] = []
-        self._chunk_index: int = 0
+        self._chunk_index: i64 = 0
 
     def reset(self) -> None:
         self.sql = ""
         self.errors = []
         self._tokens = []
+        self._tokens_size = 0
         self._index = 0
         self._curr = SENTINEL_NONE
         self._next = SENTINEL_NONE
@@ -1849,11 +1852,11 @@ class Parser:
         self._chunks = []
         self._chunk_index = 0
 
-    def _advance(self, times: int = 1) -> None:
+    def _advance(self, times: i64 = 1) -> None:
         index = self._index + times
         self._index = index
         tokens = self._tokens
-        size = len(tokens)
+        size = self._tokens_size
         self._curr = tokens[index] if index < size else SENTINEL_NONE
         self._next = tokens[index + 1] if index + 1 < size else SENTINEL_NONE
 
@@ -1868,10 +1871,11 @@ class Parser:
     def _advance_chunk(self) -> None:
         self._index = -1
         self._tokens = self._chunks[self._chunk_index]
+        self._tokens_size = i64(len(self._tokens))
         self._chunk_index += 1
         self._advance()
 
-    def _retreat(self, index: int) -> None:
+    def _retreat(self, index: i64) -> None:
         if index != self._index:
             self._advance(index - self._index)
 
@@ -2084,7 +2088,7 @@ class Parser:
 
             expressions.append(parse_method(self))
 
-            if self._index < len(self._tokens):
+            if self._index < self._tokens_size:
                 self.raise_error("Invalid expression / Unexpected token")
 
             self.check_errors()
@@ -2118,7 +2122,7 @@ class Parser:
         return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
 
     def _warn_unsupported(self) -> None:
-        if len(self._tokens) <= 1:
+        if self._tokens_size <= 1:
             return
 
         # We use _find_sql because self.sql may comprise multiple chunks, and we're only

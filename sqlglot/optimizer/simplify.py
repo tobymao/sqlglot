@@ -149,16 +149,21 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     ):
         return expression
 
+    if isinstance(this, exp.Predicate) and (
+        not (
+            parent_is_predicate
+            or isinstance(parent, exp.Neg)
+            or (isinstance(parent, exp.Binary) and not isinstance(parent, exp.Connector))
+        )
+    ):
+        return this
+
     if (
         not isinstance(parent, (exp.Condition, exp.Binary))
         or isinstance(parent, exp.Paren)
         or (
             not isinstance(this, exp.Binary)
             and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
-        )
-        or (
-            isinstance(this, exp.Predicate)
-            and not (parent_is_predicate or isinstance(parent, exp.Neg))
         )
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))

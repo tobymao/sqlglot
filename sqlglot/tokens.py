@@ -544,6 +544,9 @@ class Tokenizer(_TokenizerBase):
 
         self.dialect = Dialect.get_or_raise(dialect)
 
+        import time
+        time.sleep(0.1)
+
         self._core = _TokenizerCore(
             single_tokens=self.SINGLE_TOKENS,
             keywords=self.KEYWORDS,

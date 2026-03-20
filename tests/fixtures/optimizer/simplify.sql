@@ -409,6 +409,9 @@ SELECT -(x.a > x.b) FROM x;
 SELECT (-((x.a) IS NULL)) FROM x;
 SELECT -(x.a IS NULL) FROM x;
 
+SELECT * FROM A WHERE a - (b < c) < 0 AND a + (b > c) >= 0;
+SELECT * FROM A WHERE a + (b > c) >= 0 AND a - (b < c) < 0;
+
 
 --------------------------------------
 -- Literals

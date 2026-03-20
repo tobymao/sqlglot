@@ -13,14 +13,14 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import Token, TokenType
-
+from builtins import type as Type
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from collections.abc import Mapping, Sequence, Collection
 
 
 def _build_datetime_format(
-    expr_type: type[E],
+    expr_type: Type[E],
 ) -> t.Callable[[list], E]:
     def _builder(args: list) -> E:
         expr = build_formatted_time(expr_type, "clickhouse")(args)
@@ -65,7 +65,7 @@ def _build_split_by_char(args: t.List) -> exp.Split | exp.Anonymous:
     return exp.Anonymous(this="splitByChar", expressions=args)
 
 
-def _build_split(exp_class: t.Type[E]) -> t.Callable[[t.List], E]:
+def _build_split(exp_class: Type[E]) -> t.Callable[[t.List], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
     )
@@ -694,7 +694,7 @@ class ClickHouseParser(parser.Parser):
             params = self._parse_func_params(anon_func)
 
             if len(parts[1]) > 0:
-                exp_class: t.Type[exp.Expr] = (
+                exp_class: Type[exp.Expr] = (
                     exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
                 )
             else:

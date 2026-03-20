@@ -11,6 +11,7 @@ from copy import copy
 from difflib import get_close_matches
 from enum import Enum
 from itertools import count
+from builtins import type as Type
 
 try:
     from mypy_extensions import mypyc_attr, trait
@@ -140,9 +141,9 @@ def csv(*args: str, sep: str = ", ") -> str:
 
 def subclasses(
     module_name: str,
-    classes: type[T] | tuple[type[T], ...],
-    exclude: set[type[T]] = set(),
-) -> list[type[T]]:
+    classes: Type[T] | tuple[Type[T], ...],
+    exclude: set[Type[T]] = set(),
+) -> list[Type[T]]:
     """
     Returns all subclasses for a collection of classes, possibly excluding some of them.
 
@@ -256,7 +257,7 @@ def is_float(text: str) -> bool:
     return is_type(text, float)
 
 
-def is_type(text: str, target_type: t.Type) -> bool:
+def is_type(text: str, target_type: Type) -> bool:
     try:
         target_type(text)
         return True

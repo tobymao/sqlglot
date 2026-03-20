@@ -9,7 +9,7 @@ from enum import Enum, auto
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import find_new_name, mypyc_attr, seq_get
-
+from builtins import type as Type
 logger = logging.getLogger("sqlglot")
 
 if t.TYPE_CHECKING:
@@ -205,10 +205,10 @@ class Scope:
     def walk(self, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None) -> Iterator[exp.Expr]:
         return walk_in_scope(self.expression, prune=prune)
 
-    def find(self, *expression_types: type[E]) -> t.Optional[E]:
+    def find(self, *expression_types: Type[E]) -> t.Optional[E]:
         return find_in_scope(self.expression, *expression_types)
 
-    def find_all(self, *expression_types: type[E]) -> Iterator[E]:
+    def find_all(self, *expression_types: Type[E]) -> Iterator[E]:
         return find_all_in_scope(self.expression, *expression_types)
 
     def replace(self, old: exp.Expr, new: exp.Expr) -> None:
@@ -959,7 +959,7 @@ def walk_in_scope(
 
 def find_all_in_scope(
     expression: exp.Expr,
-    *expression_types: type[E],
+    *expression_types: Type[E],
 ) -> Iterator[E]:
     """
     Returns a generator object which visits all nodes in this scope and only yields those that
@@ -981,7 +981,7 @@ def find_all_in_scope(
 
 def find_in_scope(
     expression: exp.Expr,
-    *expression_types: t.Type[E],
+    *expression_types: Type[E],
 ) -> t.Optional[E]:
     """
     Returns the first node in this scope which matches at least one of the specified types.

@@ -46,6 +46,7 @@ from sqlglot.parsers.duckdb import DuckDBParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.duckdb import EXPRESSION_METADATA
 from builtins import type as Type
+
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")

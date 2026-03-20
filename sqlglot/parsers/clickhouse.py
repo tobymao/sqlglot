@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import Token, TokenType
 from builtins import type as Type
+
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from collections.abc import Mapping, Sequence, Collection

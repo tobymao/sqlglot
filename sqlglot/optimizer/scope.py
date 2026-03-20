@@ -10,6 +10,7 @@ from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import find_new_name, mypyc_attr, seq_get
 from builtins import type as Type
+
 logger = logging.getLogger("sqlglot")
 
 if t.TYPE_CHECKING:

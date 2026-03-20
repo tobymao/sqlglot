@@ -426,10 +426,11 @@ class Scope:
                 left, right = self.union_scopes
                 self._external_columns = left.external_columns + right.external_columns
             else:
+                local_source_names = {name for name, _ in self.references}
                 self._external_columns = [
                     c
                     for c in self.columns
-                    if c.text("table") not in self.sources
+                    if c.text("table") not in local_source_names
                     and c.text("table") not in self.semi_or_anti_join_tables
                 ]
 

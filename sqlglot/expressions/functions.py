@@ -94,7 +94,7 @@ class If(Expression, Func):
 class Case(Expression, Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
-    def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
+    def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts: t.Any) -> Case:
         instance = maybe_copy(self, copy)
         instance.append(
             "ifs",
@@ -105,7 +105,7 @@ class Case(Expression, Func):
         )
         return instance
 
-    def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
+    def else_(self, condition: ExpOrStr, copy: bool = True, **opts: t.Any) -> Case:
         instance = maybe_copy(self, copy)
         instance.set("default", maybe_parse(condition, copy=copy, **opts))
         return instance

@@ -52,24 +52,24 @@ class Athena(Dialect):
         self._hive = Hive(**kwargs)
         self._trino = Trino(**kwargs)
 
-    def tokenize(self, sql: str, **opts) -> t.List[Token]:
+    def tokenize(self, sql: str, **opts: object) -> list[Token]:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().tokenize(sql, **opts)
 
-    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expr]]:
+    def parse(self, sql: str, **opts: object) -> list[t.Optional[exp.Expr]]:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().parse(sql, **opts)
 
     def parse_into(
-        self, expression_type: exp.IntoType, sql: str, **opts
-    ) -> t.List[t.Optional[exp.Expr]]:
+        self, expression_type: exp.IntoType, sql: str, **opts: object
+    ) -> list[t.Optional[exp.Expr]]:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().parse_into(expression_type, sql, **opts)
 
-    def generate(self, expression: exp.Expr, copy: bool = True, **opts) -> str:
+    def generate(self, expression: exp.Expr, copy: bool = True, **opts: object) -> str:
         opts["hive"] = self._hive
         opts["trino"] = self._trino
         return super().generate(expression, copy=copy, **opts)

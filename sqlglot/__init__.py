@@ -12,6 +12,7 @@ from __future__ import annotations
 # this is only needed for editable builds
 import sys
 from pathlib import Path
+from builtins import type as Type
 
 for path in Path(__file__).parent.glob("*__mypyc*.so"):
     name = path.stem.split(".")[0]
@@ -103,8 +104,8 @@ def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) ->
 
 
 def parse(
-    sql: str, read: DialectType = None, dialect: DialectType = None, **opts
-) -> t.List[t.Optional[Expr]]:
+    sql: str, read: DialectType = None, dialect: DialectType = None, **opts: object
+) -> list[t.Optional[Expr]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -121,11 +122,11 @@ def parse(
 
 
 @t.overload
-def parse_one(sql: str, *, into: t.Type[E], **opts) -> E: ...
+def parse_one(sql: str, *, into: Type[E], **opts: t.Any) -> E: ...
 
 
 @t.overload
-def parse_one(sql: str, **opts) -> Expr: ...
+def parse_one(sql: str, **opts: t.Any) -> Expr: ...
 
 
 def parse_one(
@@ -133,7 +134,7 @@ def parse_one(
     read: DialectType = None,
     dialect: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
-    **opts,
+    **opts: t.Any,
 ) -> Expr:
     """
     Parses the given SQL string and returns a syntax tree.
@@ -168,7 +169,7 @@ def transpile(
     write: DialectType = None,
     identity: bool = True,
     error_level: t.Optional[ErrorLevel] = None,
-    **opts,
+    **opts: object,
 ) -> t.List[str]:
     """
     Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed

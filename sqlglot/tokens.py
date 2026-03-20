@@ -537,7 +537,7 @@ class Tokenizer(_TokenizerBase):
     def __init__(
         self,
         dialect: DialectType = None,
-        **opts: t.Any,
+        **opts: object,
     ) -> None:
         from sqlglot.dialects import Dialect
         from sqlglot.tokenizer_core import TokenizerCore as _TokenizerCore

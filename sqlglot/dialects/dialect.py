@@ -218,9 +218,7 @@ class _Dialect(type):
         return cls._classes[key]
 
     @classmethod
-    def get(
-        cls, key: str, default: t.Optional[Type[Dialect]] = None
-    ) -> t.Optional[Type[Dialect]]:
+    def get(cls, key: str, default: t.Optional[Type[Dialect]] = None) -> t.Optional[Type[Dialect]]:
         if key not in cls._classes:
             cls._try_load(key)
 

@@ -17,6 +17,7 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from collections.abc import Collection
 
 FULL_FORMAT_TIME_MAPPING = {
     "weekday": "%A",
@@ -648,7 +649,7 @@ class TSQLParser(parser.Parser):
     def _parse_id_var(
         self,
         any_token: bool = True,
-        tokens: t.Optional[t.Collection[TokenType]] = None,
+        tokens: t.Optional[Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expr]:
         is_temporary = self._match(TokenType.HASH)
         is_global = is_temporary and self._match(TokenType.HASH)

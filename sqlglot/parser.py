@@ -21,23 +21,26 @@ from sqlglot.trie import new_trie
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie
+from collections.abc import Sequence
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.dialects.dialect import Dialect, DialectType
+
+    from re import Pattern
 
     T = t.TypeVar("T")
     TCeilFloor = t.TypeVar("TCeilFloor", exp.Ceil, exp.Floor)
 
 logger = logging.getLogger("sqlglot")
 
-OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
+OPTIONS_TYPE = dict[str, Sequence[t.Union[Sequence[str], str]]]
 
 # Used to detect alphabetical characters and +/- in timestamp literals
-TIME_ZONE_RE: t.Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
+TIME_ZONE_RE: Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
 
 
-def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
+def build_var_map(args: list) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 

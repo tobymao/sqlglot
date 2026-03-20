@@ -9,11 +9,13 @@ from enum import Enum, auto
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import find_new_name, mypyc_attr, seq_get
+from builtins import type as Type
 
 logger = logging.getLogger("sqlglot")
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from collections.abc import Iterator
 
 TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
 
@@ -201,13 +203,13 @@ class Scope:
         if not self._collected:
             self._collect()
 
-    def walk(self, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None) -> t.Iterator[exp.Expr]:
+    def walk(self, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None) -> Iterator[exp.Expr]:
         return walk_in_scope(self.expression, prune=prune)
 
-    def find(self, *expression_types: t.Type[E]) -> t.Optional[E]:
+    def find(self, *expression_types: Type[E]) -> t.Optional[E]:
         return find_in_scope(self.expression, *expression_types)
 
-    def find_all(self, *expression_types: t.Type[E]) -> t.Iterator[E]:
+    def find_all(self, *expression_types: Type[E]) -> Iterator[E]:
         return find_all_in_scope(self.expression, *expression_types)
 
     def replace(self, old: exp.Expr, new: exp.Expr) -> None:
@@ -547,15 +549,15 @@ class Scope:
     def __repr__(self) -> str:
         return f"Scope<{self.expression.sql()}>"
 
-    def traverse(self) -> t.Iterator[Scope]:
+    def traverse(self) -> Iterator[Scope]:
         """
         Traverse the scope tree from this node.
 
         Yields:
             Scope: scope instances in depth-first-search post-order
         """
-        stack: t.List[Scope] = [self]
-        result: t.List[Scope] = []
+        stack: list[Scope] = [self]
+        result: list[Scope] = []
         while stack:
             scope = stack.pop()
             result.append(scope)
@@ -636,7 +638,7 @@ def build_scope(expression: exp.Expr) -> t.Optional[Scope]:
     return seq_get(traverse_scope(expression), -1)
 
 
-def _traverse_scope(scope: Scope) -> t.Iterator[Scope]:
+def _traverse_scope(scope: Scope) -> Iterator[Scope]:
     expression = scope.expression
 
     if isinstance(expression, exp.Select):
@@ -675,13 +677,13 @@ def _traverse_scope(scope: Scope) -> t.Iterator[Scope]:
     yield scope
 
 
-def _traverse_select(scope: Scope) -> t.Iterator[Scope]:
+def _traverse_select(scope: Scope) -> Iterator[Scope]:
     yield from _traverse_ctes(scope)
     yield from _traverse_tables(scope)
     yield from _traverse_subqueries(scope)
 
 
-def _traverse_union(scope: Scope) -> t.Iterator[Scope]:
+def _traverse_union(scope: Scope) -> Iterator[Scope]:
     prev_scope: t.Optional[Scope] = None
     union_scope_stack: t.List[Scope] = [scope]
 
@@ -719,8 +721,8 @@ def _traverse_union(scope: Scope) -> t.Iterator[Scope]:
             prev_scope = scope
 
 
-def _traverse_ctes(scope: Scope) -> t.Iterator[Scope]:
-    sources: t.Dict[str, exp.Table | Scope] = {}
+def _traverse_ctes(scope: Scope) -> Iterator[Scope]:
+    sources: dict[str, exp.Table | Scope] = {}
 
     for cte in scope.ctes:
         cte_name = cte.alias
@@ -779,11 +781,11 @@ def _is_from_or_join(expression: exp.Expr) -> bool:
     return type(parent) in (exp.From, exp.Join)
 
 
-def _traverse_tables(scope: Scope) -> t.Iterator[Scope]:
-    sources: t.Dict[str, exp.Table | Scope] = {}
+def _traverse_tables(scope: Scope) -> Iterator[Scope]:
+    sources: dict[str, exp.Table | Scope] = {}
 
     # Traverse FROMs, JOINs, and LATERALs in the order they are defined
-    expressions: t.List[exp.Expr] = []
+    expressions: list[exp.Expr] = []
     from_ = scope.expression.args.get("from_")
     if from_:
         expressions.append(from_.this)
@@ -869,7 +871,7 @@ def _traverse_tables(scope: Scope) -> t.Iterator[Scope]:
     scope.sources.update(sources)
 
 
-def _traverse_subqueries(scope: Scope) -> t.Iterator[Scope]:
+def _traverse_subqueries(scope: Scope) -> Iterator[Scope]:
     for subquery in scope.subqueries:
         top: t.Optional[Scope] = None
         for child_scope in _traverse_scope(scope.branch(subquery, scope_type=ScopeType.SUBQUERY)):
@@ -879,7 +881,7 @@ def _traverse_subqueries(scope: Scope) -> t.Iterator[Scope]:
             scope.subquery_scopes.append(top)
 
 
-def _traverse_udtfs(scope: Scope) -> t.Iterator[Scope]:
+def _traverse_udtfs(scope: Scope) -> Iterator[Scope]:
     if isinstance(scope.expression, exp.Unnest):
         udtf_expressions = scope.expression.expressions
     elif isinstance(scope.expression, exp.Lateral):
@@ -911,7 +913,7 @@ def _traverse_udtfs(scope: Scope) -> t.Iterator[Scope]:
 def walk_in_scope(
     expression: exp.Expr,
     prune: t.Optional[t.Callable[[exp.Expr], bool]] = None,
-) -> t.Iterator[exp.Expr]:
+) -> Iterator[exp.Expr]:
     """
     Returns a generator object which visits all nodes in the syntrax tree, stopping at
     nodes that start child scopes. This does a custom DFS traversal rather than using
@@ -958,8 +960,8 @@ def walk_in_scope(
 
 def find_all_in_scope(
     expression: exp.Expr,
-    *expression_types: t.Type[E],
-) -> t.Iterator[E]:
+    *expression_types: Type[E],
+) -> Iterator[E]:
     """
     Returns a generator object which visits all nodes in this scope and only yields those that
     match at least one of the specified expression types.
@@ -980,7 +982,7 @@ def find_all_in_scope(
 
 def find_in_scope(
     expression: exp.Expr,
-    *expression_types: t.Type[E],
+    *expression_types: Type[E],
 ) -> t.Optional[E]:
     """
     Returns the first node in this scope which matches at least one of the specified types.

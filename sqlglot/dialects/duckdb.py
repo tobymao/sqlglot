@@ -45,6 +45,7 @@ from sqlglot.helper import is_date_unit, seq_get
 from sqlglot.parsers.duckdb import DuckDBParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.duckdb import EXPRESSION_METADATA
+from builtins import type as Type
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
@@ -1201,7 +1202,7 @@ def _bitshift_sql(
 def _scale_rounding_sql(
     self: DuckDB.Generator,
     expression: exp.Expr,
-    rounding_func: type[exp.Expr],
+    rounding_func: Type[exp.Expr],
 ) -> str | None:
     """
     Handle scale parameter transformation for rounding functions.

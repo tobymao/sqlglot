@@ -11,6 +11,7 @@ from sqlglot.optimizer.scope import Scope
 
 if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
+    from collections.abc import Sequence, Mapping
 
 
 class Resolver:
@@ -24,11 +25,11 @@ class Resolver:
         self.scope = scope
         self.schema = schema
         self.dialect = schema.dialect or Dialect()
-        self._source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
-        self._unambiguous_columns: t.Optional[t.Mapping[str, str]] = None
-        self._all_columns: t.Optional[t.Set[str]] = None
+        self._source_columns: t.Optional[dict[str, Sequence[str]]] = None
+        self._unambiguous_columns: t.Optional[Mapping[str, str]] = None
+        self._all_columns: t.Optional[set[str]] = None
         self._infer_schema = infer_schema
-        self._get_source_columns_cache: t.Dict[t.Tuple[str, bool], t.Sequence[str]] = {}
+        self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
 
     def get_table(self, column: str | exp.Column) -> t.Optional[exp.Identifier]:
         """
@@ -129,7 +130,7 @@ class Resolver:
 
         return columns
 
-    def get_source_columns(self, name: str, only_visible: bool = False) -> t.Sequence[str]:
+    def get_source_columns(self, name: str, only_visible: bool = False) -> Sequence[str]:
         """Resolve the source columns for a given source `name`."""
         cache_key = (name, only_visible)
         if cache_key not in self._get_source_columns_cache:
@@ -201,7 +202,7 @@ class Resolver:
 
         return self._get_source_columns_cache[cache_key]
 
-    def _get_all_source_columns(self) -> t.Dict[str, t.Sequence[str]]:
+    def _get_all_source_columns(self) -> dict[str, Sequence[str]]:
         if self._source_columns is None:
             self._source_columns = {
                 source_name: self.get_source_columns(source_name)
@@ -212,7 +213,7 @@ class Resolver:
         return self._source_columns
 
     def _get_table_name_from_sources(
-        self, column_name: str, source_columns: t.Optional[t.Dict[str, t.Sequence[str]]] = None
+        self, column_name: str, source_columns: t.Optional[dict[str, Sequence[str]]] = None
     ) -> t.Optional[str]:
         if not source_columns:
             # If not supplied, get all sources to calculate unambiguous columns
@@ -251,9 +252,7 @@ class Resolver:
 
         return None
 
-    def _get_available_source_columns(
-        self, join_ancestor: exp.Join
-    ) -> t.Dict[str, t.Sequence[str]]:
+    def _get_available_source_columns(self, join_ancestor: exp.Join) -> dict[str, Sequence[str]]:
         """
         Get the source columns that are available at the point where a column is referenced.
 
@@ -283,8 +282,8 @@ class Resolver:
         return available_sources
 
     def _get_unambiguous_columns(
-        self, source_columns: t.Dict[str, t.Sequence[str]]
-    ) -> t.Mapping[str, str]:
+        self, source_columns: dict[str, Sequence[str]]
+    ) -> Mapping[str, str]:
         """
         Find all the unambiguous columns in sources.
 

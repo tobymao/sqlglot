@@ -2,8 +2,9 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import subclasses
+from builtins import type as Type
 
-ExprMetadataType = t.Dict[type[exp.Expr], t.Dict[str, t.Any]]
+ExprMetadataType = t.Dict[Type[exp.Expr], t.Dict[str, t.Any]]
 
 TIMESTAMP_EXPRESSIONS = {
     exp.CurrentTimestamp,

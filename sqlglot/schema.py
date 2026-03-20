@@ -14,8 +14,9 @@ from sqlglot.helper import trait
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+    from collections.abc import Sequence
 
-    ColumnMapping = t.Union[t.Dict, str, t.List]
+    ColumnMapping = t.Union[dict, str, list]
 
 
 @trait
@@ -58,7 +59,7 @@ class Schema(abc.ABC):
         only_visible: bool = False,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
-    ) -> t.Sequence[str]:
+    ) -> Sequence[str]:
         """
         Get the column names for a table.
 
@@ -270,7 +271,7 @@ class AbstractMappingSchema:
         )
 
     def nested_get(
-        self, parts: t.Sequence[str], d: t.Optional[t.Dict] = None, raise_on_missing=True
+        self, parts: Sequence[str], d: t.Optional[dict] = None, raise_on_missing=True
     ) -> t.Optional[t.Any]:
         return nested_get(
             d or self.mapping,
@@ -761,7 +762,7 @@ def nested_get(
     return result
 
 
-def nested_set(d: t.Dict, keys: t.Sequence[str], value: t.Any) -> t.Dict:
+def nested_set(d: dict, keys: Sequence[str], value: t.Any) -> dict:
     """
     In-place set a value for a nested dictionary
 

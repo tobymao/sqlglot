@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from enum import auto
-
+from collections.abc import Sequence
 from sqlglot.helper import AutoName
 
 
@@ -150,7 +150,7 @@ def highlight_sql(
     return formatted_sql, start_context, highlight, end_context
 
 
-def concat_messages(errors: t.Sequence[t.Any], maximum: int) -> str:
+def concat_messages(errors: Sequence[t.Any], maximum: int) -> str:
     msg = [str(e) for e in errors[:maximum]]
     remaining = len(errors) - maximum
     if remaining > 0:
@@ -158,5 +158,5 @@ def concat_messages(errors: t.Sequence[t.Any], maximum: int) -> str:
     return "\n\n".join(msg)
 
 
-def merge_errors(errors: t.Sequence[ParseError]) -> t.List[t.Dict[str, t.Any]]:
+def merge_errors(errors: Sequence[ParseError]) -> list[dict[str, t.Any]]:
     return [e_dict for error in errors for e_dict in error.errors]

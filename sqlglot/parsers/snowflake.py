@@ -21,6 +21,7 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
+    from collections.abc import Collection
 
 
 def _build_approx_top_k(args: t.List) -> exp.ApproxTopK:
@@ -1037,7 +1038,7 @@ class SnowflakeParser(parser.Parser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        alias_tokens: t.Optional[Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,
@@ -1064,7 +1065,7 @@ class SnowflakeParser(parser.Parser):
     def _parse_id_var(
         self,
         any_token: bool = True,
-        tokens: t.Optional[t.Collection[TokenType]] = None,
+        tokens: t.Optional[Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expr]:
         if self._match_text_seq("IDENTIFIER", "("):
             identifier = (

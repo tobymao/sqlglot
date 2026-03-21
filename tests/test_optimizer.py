@@ -610,6 +610,15 @@ class TestOptimizer(unittest.TestCase):
             'SELECT 1 AS "1" FROM "dbo"."a" AS "a" JOIN "dbo"."b" AS "b" ON "b"."id" = "a"."id" JOIN "dbo"."b" AS "x" ON "x"."id" = "a"."id"',
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("SELECT * FROM t"),
+                schema={"t": {"end": "text"}},
+                quote_identifiers=False,
+            ).sql(),
+            "SELECT t.end AS end FROM t AS t",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

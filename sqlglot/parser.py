@@ -2085,7 +2085,7 @@ class Parser:
             if self._match(TokenType.ELSE, advance=False):
                 return expressions
 
-            if not self._next and self._match(TokenType.END):
+            if expressions and not self._next and self._match(TokenType.END):
                 expressions.append(exp.EndStatement())
                 continue
 

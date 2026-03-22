@@ -221,7 +221,7 @@ class Insert(Expression, DDL, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: t.Optional[bool],
     ) -> Insert:
         """
         Append to or set the common table expressions.

@@ -489,6 +489,7 @@ class ClickHouse(Dialect):
             exp.OnCluster: exp.Properties.Location.POST_NAME,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.ToTableProperty: exp.Properties.Location.POST_NAME,
+            exp.UuidProperty: exp.Properties.Location.POST_NAME,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 

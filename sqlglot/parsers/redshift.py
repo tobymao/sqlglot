@@ -56,6 +56,7 @@ class RedshiftParser(PostgresParser):
             this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string(",")
         ),
         "STRTOL": exp.FromBase.from_arg_list,
+        "TEXTLEN": exp.Length.from_arg_list,
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

@@ -373,6 +373,13 @@ class SnowflakeParser(parser.Parser):
         TokenType.CURRENT_TIME: exp.Localtime,
     }
 
+    RANGE_PARSERS = {
+        **parser.Parser.RANGE_PARSERS,
+        TokenType.RLIKE: lambda self, this: self.expression(
+            exp.RegexpLike(this=this, expression=self._parse_bitwise(), full_match=True)
+        ),
+    }
+
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         "CHARINDEX": lambda args: exp.StrPosition(

@@ -3158,24 +3158,12 @@ class DuckDB(Dialect):
             pattern = expression.expression
             flag = expression.args.get("flag")
 
-            if not expression.args.get("full_match"):
-                return self.func("REGEXP_MATCHES", this, pattern, flag)
+            if expression.args.get("full_match"):
+                validated_flags = self._validate_regexp_flags(flag, supported_flags="cims")
+                flag = exp.Literal.string(validated_flags) if validated_flags else None
+                return self.func("REGEXP_FULL_MATCH", this, pattern, flag)
 
-            # DuckDB REGEXP_MATCHES supports: c, i, m, s (but not 'e')
-            validated_flags = self._validate_regexp_flags(flag, supported_flags="cims")
-
-            anchored_pattern = exp.Concat(
-                expressions=[
-                    exp.Literal.string("^("),
-                    exp.Paren(this=pattern),
-                    exp.Literal.string(")$"),
-                ]
-            )
-
-            if validated_flags:
-                flag = exp.Literal.string(validated_flags)
-
-            return self.func("REGEXP_MATCHES", this, anchored_pattern, flag)
+            return self.func("REGEXP_MATCHES", this, pattern, flag)
 
         @unsupported_args("ins_cost", "del_cost", "sub_cost")
         def levenshtein_sql(self, expression: exp.Levenshtein) -> str:

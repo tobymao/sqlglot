@@ -361,6 +361,8 @@ def to_table(
         table = table_(this, db=db, catalog=catalog)
 
     for k, v in kwargs.items():
+        if k == "alias" and isinstance(v, str):
+            v = TableAlias(this=to_identifier(v))
         table.set(k, v)
 
     return table

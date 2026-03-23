@@ -1037,6 +1037,12 @@ FROM foo""",
         table_only_unsafe_identifier = exp.to_table("3e")
         self.assertEqual(table_only_unsafe_identifier.sql(), '"3e"')
 
+        # Alias passed as kwarg should be wrapped in TableAlias
+        table_with_alias = exp.to_table("foo", alias="bar")
+        self.assertIsInstance(table_with_alias.args.get("alias"), exp.TableAlias)
+        self.assertEqual(table_with_alias.args["alias"].name, "bar")
+        self.assertEqual(table_with_alias.sql(), "foo AS bar")
+
     def test_to_column(self):
         column_only = exp.to_column("column_name")
         self.assertEqual(column_only.name, "column_name")

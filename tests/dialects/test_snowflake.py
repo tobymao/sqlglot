@@ -146,6 +146,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT NVL2(col1, col2, col3)")
         self.validate_identity("SELECT NVL(col1, col2)", "SELECT COALESCE(col1, col2)")
         self.validate_identity("SELECT CHR(8364)")
+        self.validate_all(
+            "SELECT CHECK_JSON(x)",
+            read={"snowflake": "SELECT CHECK_JSON(x)"},
+            write={
+                "snowflake": "SELECT CHECK_JSON(x)",
+                "duckdb": "SELECT CASE WHEN x IS NULL OR x = '' OR JSON_VALID(x) THEN NULL ELSE 'Invalid JSON' END",
+            },
+        )
         self.validate_identity('SELECT CHECK_JSON(\'{"key": "value"}\')')
         self.validate_identity(
             "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>')"

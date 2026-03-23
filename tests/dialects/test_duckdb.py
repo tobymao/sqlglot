@@ -2704,3 +2704,81 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+    def test_try_cast(self):
+        # VARCHAR
+        self.validate_all(
+            "SELECT TRY_CAST('hello' AS TEXT)",
+            read={
+                "snowflake": "SELECT TRY_CAST('hello' AS VARCHAR)",
+            },
+            write={
+                "duckdb": "SELECT TRY_CAST('hello' AS TEXT)",
+            },
+        )
+
+        # NUMBER
+        self.validate_all(
+            "SELECT TRY_CAST('123' AS DECIMAL(38, 0))",
+            read={
+                "snowflake": "SELECT TRY_CAST('123' AS NUMBER)",
+            },
+            write={
+                "duckdb": "SELECT TRY_CAST('123' AS DECIMAL(38, 0))",
+            },
+        )
+
+        # DOUBLE
+        self.validate_all(
+            "SELECT TRY_CAST('123.45' AS DOUBLE)",
+            read={
+                "snowflake": "SELECT TRY_CAST('123.45' AS DOUBLE)",
+            },
+            write={
+                "duckdb": "SELECT TRY_CAST('123.45' AS DOUBLE)",
+            },
+        )
+
+        # BOOLEAN
+        self.validate_all(
+            "SELECT TRY_CAST('true' AS BOOLEAN)",
+            read={
+                "snowflake": "SELECT TRY_CAST('true' AS BOOLEAN)",
+            },
+            write={
+                "duckdb": "SELECT TRY_CAST('true' AS BOOLEAN)",
+            },
+        )
+
+        # DATE with format detection
+        self.validate_all(
+            "SELECT TRY_STRPTIME('05-Mar-2016', '%d-%b-%Y')",
+            read={
+                "snowflake": "SELECT TRY_CAST('05-Mar-2016' AS DATE)",
+            },
+            write={
+                "duckdb": "SELECT TRY_STRPTIME('05-Mar-2016', '%d-%b-%Y')",
+            },
+        )
+
+        # TIME
+        self.validate_all(
+            "SELECT TRY_CAST('14:30:00' AS TIME)",
+            read={
+                "snowflake": "SELECT TRY_CAST('14:30:00' AS TIME)",
+            },
+            write={
+                "duckdb": "SELECT TRY_CAST('14:30:00' AS TIME)",
+            },
+        )
+
+        # TIMESTAMP with format detection
+        self.validate_all(
+            "SELECT TRY_STRPTIME('05-Mar-2016', '%d-%b-%Y')",
+            read={
+                "snowflake": "SELECT TRY_CAST('05-Mar-2016' AS TIMESTAMP)",
+            },
+            write={
+                "duckdb": "SELECT TRY_STRPTIME('05-Mar-2016', '%d-%b-%Y')",
+            },
+        )

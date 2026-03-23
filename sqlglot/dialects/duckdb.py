@@ -93,6 +93,15 @@ _SEQ_RESTRICTED = (exp.Where, exp.Having, exp.AggFunc, exp.Order, exp.Select)
 # Maps SEQ expression types to their byte width (suffix indicates bytes: SEQ1=1, SEQ2=2, etc.)
 _SEQ_BYTE_WIDTH = {exp.Seq1: 1, exp.Seq2: 2, exp.Seq4: 4, exp.Seq8: 8}
 
+# Common date format patterns for TRY_CAST transpilation to TRY_STRPTIME
+# Maps compiled regex patterns to DuckDB strptime format strings
+_DATE_FORMAT_PATTERNS = [
+    (re.compile(r"^\d{2}-[A-Za-z]{3}-\d{4}$"), "%d-%b-%Y"),  # DD-Mon-YYYY
+    (re.compile(r"^[A-Za-z]{3}-\d{2}-\d{4}$"), "%b-%d-%Y"),  # Mon-DD-YYYY
+    (re.compile(r"^\d{1,2}/\d{1,2}/\d{4}$"), "%m/%d/%Y"),  # MM/DD/YYYY
+    (re.compile(r"^[A-Za-z]+\s+\d{1,2},\s+\d{4}$"), "%B %d, %Y"),  # Month DD, YYYY
+]
+
 
 def _apply_base64_alphabet_replacements(
     result: exp.Expr,
@@ -4195,6 +4204,25 @@ class DuckDB(Dialect):
                 return self.sql(result)
 
             return self.function_fallback_sql(expression)
+
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            # Check if casting to a date/timestamp type from a string literal
+            if (
+                isinstance(expression.this, exp.Literal)
+                and expression.this.is_string
+                and expression.to
+                and expression.to.this in (exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP)
+            ):
+                # Try to match common date format patterns
+                for pattern, strptime_format in _DATE_FORMAT_PATTERNS:
+                    if pattern.match(expression.this.this):
+                        return self.func(
+                            "TRY_STRPTIME",
+                            expression.this,
+                            exp.Literal.string(strptime_format),
+                        )
+
+            return super().trycast_sql(expression)
 
         def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
             result = self.func("APPROX_QUANTILE", expression.this, expression.args.get("quantile"))

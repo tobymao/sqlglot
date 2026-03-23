@@ -1947,6 +1947,9 @@ class Generator(metaclass=_Generator):
 
         return f"{property_name}={self.sql(expression, 'this')}"
 
+    def uuidproperty_sql(self, expression: exp.UuidProperty) -> str:
+        return f"UUID {self.sql(expression, 'this')}"
+
     def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
         if self.SUPPORTS_CREATE_TABLE_LIKE:
             options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)

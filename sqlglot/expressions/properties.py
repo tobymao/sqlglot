@@ -129,6 +129,10 @@ class EngineProperty(Property):
     arg_types = {"this": True}
 
 
+class UuidProperty(Property):
+    arg_types = {"this": True}
+
+
 class HeapProperty(Property):
     arg_types = {}
 

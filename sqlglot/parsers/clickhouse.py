@@ -373,7 +373,7 @@ class ClickHouseParser(parser.Parser):
     PROPERTY_PARSERS = {
         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "DYNAMIC"},
         "ENGINE": lambda self: self._parse_engine_property(),
-        "UUID": lambda self: self._parse_property_assignment(exp.UuidProperty),
+        "UUID": lambda self: self.expression(exp.UuidProperty(this=self._parse_string())),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

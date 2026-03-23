@@ -457,26 +457,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if not alias_types:
             return
 
-        fixed = False
         for ordered in order.expressions:
-            for col in ordered.find_all(exp.Column):
-                if not col.table and col.name in alias_types:
-                    self._set_type(col, alias_types[col.name])
-                    fixed = True
+            alias_cols = [
+                c for c in ordered.find_all(exp.Column) if not c.table and c.name in alias_types
+            ]
+            for col in alias_cols:
+                self._set_type(col, alias_types[col.name])
 
-        if not fixed:
-            return
-
-        # Clear derived (non-leaf) types and _visited entries so _annotate_expression
-        # can re-infer them from the updated leaf types. Column and Literal types are
-        # preserved as ground truth. Subquery subtrees are skipped because they belong
-        # to inner scopes already annotated independently.
-        for node in order.walk(prune=lambda n: isinstance(n, exp.Subquery)):
-            if not isinstance(node, (exp.Column, exp.Literal)):
-                node.type = None
-                self._visited.discard(id(node))
-
-        self._annotate_expression(order, scope)
+            if alias_cols:
+                for node in ordered.walk(prune=lambda n: isinstance(n, exp.Subquery)):
+                    if not isinstance(node, (exp.Column, exp.Literal)):
+                        self._visited.discard(id(node))
+                self._annotate_expression(ordered, scope)
 
     def _maybe_coerce(
         self,

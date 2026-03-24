@@ -66,6 +66,7 @@ def _source_files(src_dir):
                 "qualify_columns.py",
             ],
         ),
+        *_subpkg_files(src_dir, "generators"),
         *_subpkg_files(src_dir, "parsers"),
         *_subpkg_files(src_dir, "executor", ["table.py"]),
     ]

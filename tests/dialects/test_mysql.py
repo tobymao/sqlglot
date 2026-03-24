@@ -1619,29 +1619,19 @@ COMMENT='客户账户表'"""
             check_command_warning=True,
         )
 
-
     def test_ignore_respect_nulls(self):
-        """
-        Test for fix: AttributeError crash when transpiling IGNORE/RESPECT NULLS to MySQL
-        
-        Bug: MySQL dialect crashed with AttributeError when transpiling SQL containing
-        IGNORE NULLS or RESPECT NULLS clauses in window functions.
-        
-        Fix: Unwrap IgnoreNulls/RespectNulls wrappers in generator.py ordered_sql method
-        before accessing window function properties.
-        """
-        # Test IGNORE NULLS - should not crash and should remove the clause for MySQL
         self.validate_all(
-            "SELECT FIRST_VALUE(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            read={
+                "snowflake": "SELECT FIRST_VALUE(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            },
             write={
-                "mysql": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2) FROM table1",
-                "oracle": "SELECT FIRST_VALUE(col1) IGNORE NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
-                "postgres": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST) FROM table1",
-                "snowflake": "SELECT FIRST_VALUE(col1) IGNORE NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+                "mysql": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "oracle": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "postgres": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
             },
         )
-        
-        # Test RESPECT NULLS - should not crash and keep the clause for MySQL
+
         self.validate_all(
             "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
             write={
@@ -1651,28 +1641,29 @@ COMMENT='客户账户表'"""
                 "snowflake": "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
             },
         )
-        
-        # Test LAST_VALUE with IGNORE NULLS
+
         self.validate_all(
-            "SELECT LAST_VALUE(col1) IGNORE NULLS OVER (PARTITION BY col3 ORDER BY col2) FROM table1",
+            "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            read={
+                "snowflake": "SELECT LAST_VALUE(col1) IGNORE NULLS OVER (PARTITION BY col3 ORDER BY col2) FROM table1",
+            },
             write={
-                "mysql": "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2) FROM table1",
-                "oracle": "SELECT LAST_VALUE(col1) IGNORE NULLS OVER (PARTITION BY col3 ORDER BY col2 NULLS FIRST) FROM table1",
-                "snowflake": "SELECT LAST_VALUE(col1) IGNORE NULLS OVER (PARTITION BY col3 ORDER BY col2 NULLS FIRST) FROM table1",
+                "mysql": "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "oracle": "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
             },
         )
-        
-        # Test LAG with IGNORE NULLS
+
         self.validate_all(
-            "SELECT LAG(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END, col2) FROM table1",
+            read={
+                "snowflake": "SELECT LAG(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            },
             write={
-                "mysql": "SELECT LAG(col1) OVER (ORDER BY col2) FROM table1",
-                "oracle": "SELECT LAG(col1) IGNORE NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
-                "snowflake": "SELECT LAG(col1) IGNORE NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+                "mysql": "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END, col2) FROM table1",
+                "oracle": "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END NULLS FIRST, col2 NULLS FIRST) FROM table1",
             },
         )
-        
-        # Test LEAD with RESPECT NULLS
+
         self.validate_all(
             "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
             write={

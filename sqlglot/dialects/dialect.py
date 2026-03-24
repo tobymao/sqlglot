@@ -45,6 +45,7 @@ JSON_EXTRACT_TYPE = t.Union[
 ]
 DATETIME_DELTA = t.Union[
     exp.DateAdd,
+    exp.DateSub,
     exp.DatetimeAdd,
     exp.DatetimeSub,
     exp.TimeAdd,

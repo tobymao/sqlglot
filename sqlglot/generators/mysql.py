@@ -262,7 +262,7 @@ class MySQLGenerator(generator.Generator):
 
     LIMIT_ONLY_LITERALS = True
 
-    CHAR_CAST_MAPPING = dict.fromkeys(
+    CHAR_CAST_MAPPING: t.ClassVar = dict.fromkeys(
         (
             exp.DType.LONGTEXT,
             exp.DType.LONGBLOB,
@@ -275,7 +275,7 @@ class MySQLGenerator(generator.Generator):
         ),
         "CHAR",
     )
-    SIGNED_CAST_MAPPING = dict.fromkeys(
+    SIGNED_CAST_MAPPING: t.ClassVar = dict.fromkeys(
         (
             exp.DType.BIGINT,
             exp.DType.BOOLEAN,

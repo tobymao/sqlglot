@@ -2253,6 +2253,10 @@ class Parser:
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
+        if isinstance(expression, exp.Subquery) and self._match(TokenType.PIPE_GT, advance=False):
+            expression = self._parse_pipe_syntax_query(expression)
+
         return self._parse_query_modifiers(expression)
 
     def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:

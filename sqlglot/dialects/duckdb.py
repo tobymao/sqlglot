@@ -2640,6 +2640,17 @@ class DuckDB(Dialect):
             )
             return self.sql(expr)
 
+        def checkjson_sql(self, expression: exp.CheckJson) -> str:
+            arg = expression.this
+            return self.sql(
+                exp.case()
+                .when(
+                    exp.or_(arg.is_(exp.Null()), arg.eq(""), exp.func("json_valid", arg)),
+                    exp.null(),
+                )
+                .else_(exp.Literal.string("Invalid JSON"))
+            )
+
         def parsejson_sql(self, expression: exp.ParseJSON) -> str:
             arg = expression.this
             if expression.args.get("safe"):

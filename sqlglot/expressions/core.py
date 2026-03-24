@@ -271,7 +271,7 @@ class Expr:
     def to_s(self) -> str:
         raise NotImplementedError
 
-    def sql(self, dialect: DialectType = None, **opts: t.Any) -> str:
+    def sql(self, dialect: DialectType = None, **opts: object) -> str:
         raise NotImplementedError
 
     def transform(
@@ -316,7 +316,7 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: t.Any,
+        **opts: object,
     ) -> Condition:
         raise NotImplementedError
 
@@ -326,7 +326,7 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: t.Any,
+        **opts: object,
     ) -> Condition:
         raise NotImplementedError
 
@@ -349,7 +349,7 @@ class Expr:
         quoted: t.Optional[bool] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: object,
     ) -> Expr:
         raise NotImplementedError
 
@@ -368,7 +368,7 @@ class Expr:
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
-        **opts,
+        **opts: object,
     ) -> In:
         raise NotImplementedError
 
@@ -378,7 +378,7 @@ class Expr:
         high: t.Any,
         copy: bool = True,
         symmetric: t.Optional[bool] = None,
-        **opts,
+        **opts: object,
     ) -> Between:
         raise NotImplementedError
 
@@ -1180,7 +1180,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: t.Any,
+        **opts: object,
     ) -> Condition:
         """
         AND this condition with one or multiple expressions.
@@ -1210,7 +1210,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: t.Any,
+        **opts: object,
     ) -> Condition:
         """
         OR this condition with one or multiple expressions.
@@ -1331,7 +1331,7 @@ class Expression(Expr):
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
-        **opts,
+        **opts: t.Any,
     ) -> In:
         subquery = maybe_parse(query, copy=copy, **opts) if query else None
         if subquery and not subquery.is_subquery:
@@ -1359,7 +1359,7 @@ class Expression(Expr):
         high: t.Any,
         copy: bool = True,
         symmetric: t.Optional[bool] = None,
-        **opts,
+        **opts: object,
     ) -> Between:
         between = Between(
             this=maybe_copy(self, copy),
@@ -2214,7 +2214,9 @@ class RegexpLike(Expression, Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 
-def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:
+def not_(
+    expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: object
+) -> Not:
     """
     Wrap a condition with a NOT operator.
 
@@ -2378,7 +2380,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts,
+    **opts: object,
 ) -> E: ...
 
 
@@ -2390,7 +2392,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts,
+    **opts: object,
 ) -> E: ...
 
 
@@ -2401,7 +2403,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts: t.Any,
+    **opts: object,
 ) -> Expr:
     """Gracefully handle a possible string or expression.
 
@@ -2507,7 +2509,7 @@ def _apply_builder(
     into=None,
     dialect=None,
     into_arg="this",
-    **opts,
+    **opts: t.Any,
 ):
     if _is_wrong_expression(expression, into):
         expression = into(**{into_arg: expression})
@@ -2533,7 +2535,7 @@ def _apply_child_list_builder(
     into=None,
     dialect=None,
     properties=None,
-    **opts,
+    **opts: t.Any,
 ):
     instance = maybe_copy(instance, copy)
     parsed = []
@@ -2578,7 +2580,7 @@ def _apply_list_builder(
     prefix=None,
     into=None,
     dialect=None,
-    **opts,
+    **opts: t.Any,
 ):
     inst = maybe_copy(instance, copy)
 
@@ -2610,7 +2612,7 @@ def _apply_conjunction_builder(
     append=True,
     copy=True,
     dialect=None,
-    **opts,
+    **opts: t.Any,
 ):
     filtered = [exp for exp in expressions if exp is not None and exp != ""]
     if not filtered:
@@ -2634,7 +2636,7 @@ def _combine(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts,
+    **opts: object,
 ) -> Expr:
     conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts)
@@ -2669,7 +2671,7 @@ def _apply_set_operation(
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts,
+    **opts: t.Any,
 ) -> t.Any:
     return reduce(
         lambda x, y: set_operation(this=x, expression=y, distinct=distinct, **opts),
@@ -2717,7 +2719,9 @@ def to_identifier(name, quoted=None, copy=True):
     return identifier
 
 
-def condition(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Expr:
+def condition(
+    expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: t.Any
+) -> Expr:
     """
     Initialize a logical condition expression.
 
@@ -2757,7 +2761,7 @@ def and_(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts,
+    **opts: object,
 ) -> Condition:
     """
     Combine multiple conditions with an AND logical operator.
@@ -2787,7 +2791,7 @@ def or_(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts,
+    **opts: object,
 ) -> Condition:
     """
     Combine multiple conditions with an OR logical operator.
@@ -2817,7 +2821,7 @@ def xor(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts,
+    **opts: object,
 ) -> Condition:
     """
     Combine multiple conditions with an XOR logical operator.
@@ -2868,7 +2872,7 @@ def alias_(
     quoted: t.Optional[bool] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts,
+    **opts: t.Any,
 ) -> Expr:
     """Create an Alias expression.
 

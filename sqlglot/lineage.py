@@ -38,7 +38,7 @@ class Node:
             yield node
             queue.extend(reversed(node.downstream))
 
-    def to_html(self, dialect: DialectType = None, **opts) -> GraphHTML:
+    def to_html(self, dialect: DialectType = None, **opts: t.Any) -> GraphHTML:
         nodes = {}
         edges = []
 
@@ -396,7 +396,11 @@ class GraphHTML:
     """
 
     def __init__(
-        self, nodes: t.Dict, edges: t.List, imports: bool = True, options: t.Optional[t.Dict] = None
+        self,
+        nodes: dict,
+        edges: list,
+        imports: bool = True,
+        options: t.Optional[Mapping[str, object]] = None,
     ):
         self.imports = imports
 

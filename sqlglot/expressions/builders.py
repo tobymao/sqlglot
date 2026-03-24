@@ -57,7 +57,7 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.query import Query
 
 
-def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Select:
+def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts: t.Any) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
 
@@ -79,7 +79,7 @@ def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Selec
     return Select().select(*expressions, dialect=dialect, **opts)
 
 
-def from_(expression: ExpOrStr, dialect: DialectType = None, **opts) -> Select:
+def from_(expression: ExpOrStr, dialect: DialectType = None, **opts: t.Any) -> Select:
     """
     Initializes a syntax tree from a FROM expression.
 
@@ -106,9 +106,9 @@ def update(
     properties: t.Optional[dict] = None,
     where: t.Optional[ExpOrStr] = None,
     from_: t.Optional[ExpOrStr] = None,
-    with_: t.Optional[t.Dict[str, ExpOrStr]] = None,
+    with_: t.Optional[dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
-    **opts,
+    **opts: t.Any,
 ) -> Update:
     """
     Creates an update statement.
@@ -167,7 +167,7 @@ def delete(
     where: t.Optional[ExpOrStr] = None,
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
-    **opts,
+    **opts: t.Any,
 ) -> Delete:
     """
     Builds a delete statement.
@@ -201,7 +201,7 @@ def insert(
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts,
+    **opts: t.Any,
 ) -> Insert:
     """
     Builds an INSERT statement.
@@ -245,7 +245,7 @@ def merge(
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts,
+    **opts: t.Any,
 ) -> Merge:
     """
     Builds a MERGE statement.
@@ -409,7 +409,7 @@ def subquery(
     expression: ExpOrStr,
     alias: t.Optional[Identifier | str] = None,
     dialect: DialectType = None,
-    **opts,
+    **opts: t.Any,
 ) -> Select:
     """
     Build a subquery expression that's selected from.
@@ -434,7 +434,11 @@ def subquery(
 
 
 def cast(
-    expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, dialect: DialectType = None, **opts
+    expression: ExpOrStr,
+    to: DATA_TYPE,
+    copy: bool = True,
+    dialect: DialectType = None,
+    **opts: t.Any,
 ) -> Cast:
     """Cast an expression to a data type.
 
@@ -963,7 +967,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
 
 def case(
     expression: t.Optional[ExpOrStr] = None,
-    **opts,
+    **opts: t.Any,
 ) -> Case:
     """
     Initialize a CASE statement.

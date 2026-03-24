@@ -7,6 +7,7 @@ import sys
 from collections.abc import Sequence
 from enum import Enum, auto
 from functools import reduce
+from builtins import type as Type
 
 from sqlglot import exp
 from sqlglot.dialects import DIALECT_MODULE_NAMES
@@ -133,7 +134,7 @@ class NormalizationStrategy(str, AutoName):
 
 
 class _Dialect(type):
-    _classes: t.Dict[str, t.Type[Dialect]] = {}
+    _classes: dict[str, Type[Dialect]] = {}
 
     def __eq__(cls, other: t.Any) -> bool:
         if cls is other:
@@ -211,16 +212,14 @@ class _Dialect(type):
             pass
 
     @classmethod
-    def __getitem__(cls, key: str) -> t.Type[Dialect]:
+    def __getitem__(cls, key: str) -> Type[Dialect]:
         if key not in cls._classes:
             cls._try_load(key)
 
         return cls._classes[key]
 
     @classmethod
-    def get(
-        cls, key: str, default: t.Optional[t.Type[Dialect]] = None
-    ) -> t.Optional[t.Type[Dialect]]:
+    def get(cls, key: str, default: t.Optional[Type[Dialect]] = None) -> t.Optional[Type[Dialect]]:
         if key not in cls._classes:
             cls._try_load(key)
 
@@ -688,7 +687,7 @@ class Dialect(metaclass=_Dialect):
     REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = True
     """Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length."""
 
-    SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expr], t.Optional[bool]] = {
+    SET_OP_DISTINCT_BY_DEFAULT: dict[Type[exp.Expr], t.Optional[bool]] = {
         exp.Except: True,
         exp.Intersect: True,
         exp.Union: True,
@@ -742,7 +741,7 @@ class Dialect(metaclass=_Dialect):
     Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
     """
 
-    DEFAULT_FUNCTIONS_COLUMN_NAMES: t.Dict[t.Type[exp.Func], t.Union[str, t.Tuple[str, ...]]] = {}
+    DEFAULT_FUNCTIONS_COLUMN_NAMES: dict[Type[exp.Func], t.Union[str, tuple[str, ...]]] = {}
     """
     Maps function expressions to their default output column name(s).
 
@@ -1131,36 +1130,36 @@ class Dialect(metaclass=_Dialect):
 
         return path
 
-    def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expr]]:
+    def parse(self, sql: str, **opts: object) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
 
     def parse_into(
-        self, expression_type: exp.IntoType, sql: str, **opts
-    ) -> t.List[t.Optional[exp.Expr]]:
+        self, expression_type: exp.IntoType, sql: str, **opts: object
+    ) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse_into(expression_type, self.tokenize(sql), sql)
 
-    def generate(self, expression: exp.Expr, copy: bool = True, **opts) -> str:
+    def generate(self, expression: exp.Expr, copy: bool = True, **opts: object) -> str:
         return self.generator(**opts).generate(expression, copy=copy)
 
-    def transpile(self, sql: str, **opts) -> t.List[str]:
+    def transpile(self, sql: str, **opts: object) -> list[str]:
         return [
             self.generate(expression, copy=False, **opts) if expression else ""
             for expression in self.parse(sql)
         ]
 
-    def tokenize(self, sql: str, **opts) -> t.List[Token]:
+    def tokenize(self, sql: str, **opts: object) -> list[Token]:
         return self.tokenizer(**opts).tokenize(sql)
 
-    def tokenizer(self, **opts) -> Tokenizer:
+    def tokenizer(self, **opts: t.Any) -> Tokenizer:
         return self.tokenizer_class(**{"dialect": self, **opts})
 
-    def jsonpath_tokenizer(self, **opts) -> JSONPathTokenizer:
+    def jsonpath_tokenizer(self, **opts: t.Any) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(**{"dialect": self, **opts})
 
-    def parser(self, **opts) -> Parser:
+    def parser(self, **opts: t.Any) -> Parser:
         return self.parser_class(**{"dialect": self, **opts})
 
-    def generator(self, **opts) -> Generator:
+    def generator(self, **opts: t.Any) -> Generator:
         return self.generator_class(**{"dialect": self, **opts})
 
     def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
@@ -1170,7 +1169,7 @@ class Dialect(metaclass=_Dialect):
         ]
 
 
-DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
+DialectType = t.Union[str, Dialect, Type[Dialect], None]
 
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expr], str]:
@@ -1550,8 +1549,8 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
 
 
 def build_formatted_time(
-    exp_class: t.Type[E], dialect: str, default: t.Optional[bool | str] = None
-) -> t.Callable[[t.List], E]:
+    exp_class: Type[E], dialect: str, default: t.Optional[bool | str] = None
+) -> t.Callable[[list], E]:
     """Helper used for time expressions.
 
     Args:
@@ -1590,12 +1589,12 @@ def time_format(
 
 
 def build_date_delta(
-    exp_class: t.Type[E],
-    unit_mapping: t.Optional[t.Dict[str, str]] = None,
+    exp_class: Type[E],
+    unit_mapping: t.Optional[dict[str, str]] = None,
     default_unit: t.Optional[str] = "DAY",
     supports_timezone: bool = False,
-) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+) -> t.Callable[[list], E]:
+    def _builder(args: list) -> E:
         unit_based = len(args) >= 3
         has_timezone = len(args) == 4
         this = args[2] if unit_based else seq_get(args, 0)
@@ -1612,9 +1611,9 @@ def build_date_delta(
 
 
 def build_date_delta_with_interval(
-    expression_class: t.Type[E],
-) -> t.Callable[[t.List], t.Optional[E]]:
-    def _builder(args: t.List) -> t.Optional[E]:
+    expression_class: Type[E],
+) -> t.Callable[[list], t.Optional[E]]:
+    def _builder(args: list) -> t.Optional[E]:
         if len(args) < 2:
             return None
 
@@ -1628,7 +1627,7 @@ def build_date_delta_with_interval(
     return _builder
 
 
-def date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
+def date_trunc_to_time(args: list) -> exp.DateTrunc | exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
@@ -1848,12 +1847,12 @@ def pivot_column_names(aggregations: t.List[exp.Expr], dialect: DialectType) -> 
     return names
 
 
-def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
+def binary_from_function(expr_type: Type[B]) -> t.Callable[[list], B]:
     return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
 
 
 # Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects
-def build_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
+def build_timestamp_trunc(args: list) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))
 
 
@@ -2081,7 +2080,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
 
 def build_json_extract_path(
-    expr_type: t.Type[F],
+    expr_type: Type[F],
     zero_based_indexing: bool = True,
     arrow_req_json_type: bool = False,
     json_type: t.Optional[str] = None,
@@ -2316,7 +2315,7 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_like(expr_type: t.Type[E], not_like: bool = False) -> t.Callable[[t.List], exp.Expr]:
+def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[list], exp.Expr]:
     def _builder(args: t.List) -> exp.Expr:
         like_expr: exp.Expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
 
@@ -2331,7 +2330,7 @@ def build_like(expr_type: t.Type[E], not_like: bool = False) -> t.Callable[[t.Li
     return _builder
 
 
-def build_regexp_extract(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[list, Dialect], E]:
     def _builder(args: t.List, dialect: Dialect) -> E:
         # The "position" argument specifies the index of the string character to start matching from.
         # `null_if_pos_overflow` reflects the dialect's behavior when position is greater than the string

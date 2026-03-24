@@ -1084,6 +1084,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         scope = build_scope(parse_one(sql, read="bigquery"))
         self.assertEqual(set(scope.selected_sources), {"t", "a1", "a2"})
 
+        # Correlated subquery must be detected even when the outer table name collides with a CTE name
+        sql = "WITH x AS (SELECT 1 AS id) SELECT x.id, (SELECT MAX(x2.id) FROM x AS x2 WHERE x2.id = x.id) AS mx FROM x"
+        scopes = traverse_scope(parse_one(sql))
+        subquery_scope = next(s for s in scopes if s.is_subquery)
+        self.assertTrue(subquery_scope.is_correlated_subquery)
+        self.assertIn("x.id", [c.sql() for c in subquery_scope.external_columns])
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

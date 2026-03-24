@@ -11,7 +11,7 @@ jobs:
     outputs:
       skip: ${{ steps.test-parameters.outputs.skip }}
       dialects: ${{ steps.test-parameters.outputs.dialects }}
-      integration_tests_ref: ${{ steps.test-parameters.outputs.integration_tests_ref }}
+      integration_tests_sha: ${{ steps.test-parameters.outputs.integration_tests_sha }}
 
     steps:
       - name: Print debugging info
@@ -54,15 +54,11 @@ jobs:
         run: |
           python .github/scripts/get_integration_test_params.py
 
-          # Read the submodule commit SHA to use as the ref for the remote workflow
-          INTEGRATION_REF=$(git ls-tree HEAD sqlglot-integration-tests | awk '{print $3}')
-          if [ -n "$INTEGRATION_REF" ]; then
-            echo "integration_tests_ref=$INTEGRATION_REF" >> $GITHUB_OUTPUT
-            echo "Integration tests ref: $INTEGRATION_REF"
-          else
-            echo "integration_tests_ref=main" >> $GITHUB_OUTPUT
-            echo "No submodule pointer found, using main"
-          fi
+          # Read the submodule commit SHA so the run-integration-tests job can
+          # resolve the correct ref in the remote repo
+          SUBMODULE_SHA=$(git ls-tree HEAD sqlglot-integration-tests | awk '{print $3}')
+          echo "integration_tests_sha=${SUBMODULE_SHA:-}" >> $GITHUB_OUTPUT
+          echo "Integration tests submodule SHA: ${SUBMODULE_SHA:-not found}"
 
   run-integration-tests:
     name: Run Integration Tests
@@ -91,7 +87,23 @@ jobs:
 
           echo "Triggering remote workflow"
 
-          INTEGRATION_REF="${{ needs.should-run.outputs.integration_tests_ref }}"
+          # Resolve the integration tests ref: use a matching branch if its tip
+          # matches the submodule SHA, otherwise fall back to main
+          INTEGRATION_REF="main"
+          SUBMODULE_SHA="${{ needs.should-run.outputs.integration_tests_sha }}"
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+
+          if [ -n "$SUBMODULE_SHA" ] && [ -n "$BRANCH_NAME" ] && [ "$BRANCH_NAME" != "main" ]; then
+            BRANCH_TIP=$(gh api "repos/$REMOTE_REPO/branches/$BRANCH_NAME" --jq '.commit.sha' 2>/dev/null || echo "")
+            if [ "$BRANCH_TIP" = "$SUBMODULE_SHA" ]; then
+              INTEGRATION_REF="$BRANCH_NAME"
+              echo "Branch '$BRANCH_NAME' tip matches submodule SHA ($SUBMODULE_SHA)"
+            elif [ -n "$BRANCH_TIP" ]; then
+              echo "Branch '$BRANCH_NAME' exists but tip ($BRANCH_TIP) doesn't match submodule SHA ($SUBMODULE_SHA), using main"
+            else
+              echo "No branch '$BRANCH_NAME' in $REMOTE_REPO, using main"
+            fi
+          fi
           echo "Using integration tests ref: $INTEGRATION_REF"
 
           gh workflow run run-tests.yml \

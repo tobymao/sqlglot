@@ -1834,6 +1834,7 @@ class Bracket(Expression, Condition):
         "offset": False,
         "safe": False,
         "returns_list_for_maps": False,
+        "json_access": False,
     }
 
     @property

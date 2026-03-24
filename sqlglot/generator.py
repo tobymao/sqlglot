@@ -3236,6 +3236,9 @@ class Generator:
     def bracket_offset_expressions(
         self, expression: exp.Bracket, index_offset: t.Optional[int] = None
     ) -> t.List[exp.Expr]:
+        if expression.args.get("json_access"):
+            return expression.expressions
+
         return apply_index_offset(
             expression.this,
             expression.expressions,

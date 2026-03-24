@@ -472,10 +472,10 @@ class Generator:
     COPY_HAS_INTO_KEYWORD = True
 
     # Whether the conditional TRY(expression) function is supported
-    TRY_SUPPORTED = True
+    TRY_SUPPORTED: t.ClassVar = True
 
     # Whether the UESCAPE syntax in unicode strings is supported
-    SUPPORTS_UESCAPE = True
+    SUPPORTS_UESCAPE: t.ClassVar = True
 
     # Function used to replace escaped unicode codes in unicode strings
     UNICODE_SUBSTITUTE: t.Optional[t.Callable[[re.Match[str]], str]] = None
@@ -534,7 +534,7 @@ class Generator:
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
-    SUPPORTS_DECODE_CASE = True
+    SUPPORTS_DECODE_CASE: t.ClassVar = True
 
     # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
     SUPPORTS_BETWEEN_FLAGS = False

@@ -66,7 +66,9 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
         elif e.is_number:
             e = exp.Literal.string(e.to_py())
         else:
-            self.unsupported("Cannot add non literal")
+            one = exp.Literal.number(1)
+            interval_times_value = exp.Interval(this=one, unit=unit) * e
+            return f"{this} {kind} {self.sql(interval_times_value)}"
 
         return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
 

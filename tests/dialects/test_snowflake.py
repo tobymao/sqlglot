@@ -1944,6 +1944,24 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT a RLIKE b",
+            write={
+                "duckdb": "SELECT REGEXP_FULL_MATCH(a, b)",
+                "hive": "SELECT a RLIKE b",
+                "snowflake": "SELECT REGEXP_LIKE(a, b)",
+                "spark": "SELECT a RLIKE b",
+            },
+        )
+        self.validate_all(
+            "SELECT a NOT RLIKE b",
+            write={
+                "duckdb": "SELECT NOT REGEXP_FULL_MATCH(a, b)",
+                "hive": "SELECT NOT a RLIKE b",
+                "snowflake": "SELECT NOT REGEXP_LIKE(a, b)",
+                "spark": "SELECT NOT a RLIKE b",
+            },
+        )
+        self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
                 "duckdb": "SELECT REGEXP_FULL_MATCH(a, b)",

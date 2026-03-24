@@ -53,6 +53,7 @@ def _source_files(src_dir):
         "tokenizer_core.py",
         "trie.py",
         *_subpkg_files(src_dir, "expressions"),
+        *_subpkg_files(src_dir, "generators"),
         *_subpkg_files(
             src_dir,
             "optimizer",

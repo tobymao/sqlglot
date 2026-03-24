@@ -11,6 +11,7 @@ jobs:
     outputs:
       skip: ${{ steps.test-parameters.outputs.skip }}
       dialects: ${{ steps.test-parameters.outputs.dialects }}
+      integration_tests_ref: ${{ steps.test-parameters.outputs.integration_tests_ref }}
 
     steps:
       - name: Print debugging info
@@ -53,6 +54,16 @@ jobs:
         run: |
           python .github/scripts/get_integration_test_params.py
 
+          # Read the submodule commit SHA to use as the ref for the remote workflow
+          INTEGRATION_REF=$(git ls-tree HEAD sqlglot-integration-tests | awk '{print $3}')
+          if [ -n "$INTEGRATION_REF" ]; then
+            echo "integration_tests_ref=$INTEGRATION_REF" >> $GITHUB_OUTPUT
+            echo "Integration tests ref: $INTEGRATION_REF"
+          else
+            echo "integration_tests_ref=main" >> $GITHUB_OUTPUT
+            echo "No submodule pointer found, using main"
+          fi
+
   run-integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
@@ -80,9 +91,12 @@ jobs:
 
           echo "Triggering remote workflow"
 
+          INTEGRATION_REF="${{ needs.should-run.outputs.integration_tests_ref }}"
+          echo "Using integration tests ref: $INTEGRATION_REF"
+
           gh workflow run run-tests.yml \
             --repo $REMOTE_REPO \
-            --ref main \
+            --ref "$INTEGRATION_REF" \
             -f sqlglot_ref=${{ github.sha }} \
             -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
             -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }} \
@@ -128,6 +142,7 @@ jobs:
           exit $?
 
       - name: Fetch outputs
+        if: ${{ !cancelled() && steps.run-remote.outputs.remote_run_id }}
         id: fetch-outputs
         uses: actions/download-artifact@v5
         with:
@@ -138,8 +153,7 @@ jobs:
 
       - name: Write summary as comment
         uses: actions/github-script@v8
-        # only do this when on PR branches, main builds dont have anywhere to write comments
-        if: github.event_name == 'pull_request' || github.event.issue.pull_request
+        if: ${{ !cancelled() && (github.event_name == 'pull_request' || github.event.issue.pull_request) }}
         with:
           script: |
             // summary.json is downloaded from the remote workflow in the previous step

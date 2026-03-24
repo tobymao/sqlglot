@@ -1091,6 +1091,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertTrue(subquery_scope.is_correlated_subquery)
         self.assertIn("x.id", [c.sql() for c in subquery_scope.external_columns])
 
+        # Correlated subquery referencing a CTE defined in the same WITH clause as another CTE used in the outer query
+        sql = "WITH x AS (SELECT 1 AS id), y AS (SELECT 2 AS id) SELECT (SELECT y.id FROM y WHERE y.id = x.id) FROM x"
+        scopes = traverse_scope(parse_one(sql))
+        subquery_scope = next(s for s in scopes if s.is_subquery)
+        self.assertTrue(subquery_scope.is_correlated_subquery)
+        self.assertIn("x.id", [c.sql() for c in subquery_scope.external_columns])
+
+        # Correlated subquery referencing outer CTE through a derived table
+        sql = "WITH x AS (SELECT 1 AS id) SELECT (SELECT x.id FROM (SELECT * FROM x) AS sub) FROM x"
+        scopes = traverse_scope(parse_one(sql))
+        subquery_scope = next(s for s in scopes if s.is_subquery)
+        self.assertTrue(subquery_scope.is_correlated_subquery)
+        self.assertIn("x.id", [c.sql() for c in subquery_scope.external_columns])
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

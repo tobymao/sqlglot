@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, tokens
 from sqlglot.dialects import Dialect, Hive, Trino
+from sqlglot.generators.hive import HiveGenerator
 from sqlglot.parsers.athena import AthenaParser
 from sqlglot.tokens import TokenType, Token
 
@@ -219,7 +220,7 @@ def _partitioned_by_property_sql(self: Athena.Generator, e: exp.PartitionedByPro
 
 
 # Athena extensions to Hive's generator
-class _HiveGenerator(Hive.Generator):
+class _HiveGenerator(HiveGenerator):
     def alter_sql(self, expression: exp.Alter) -> str:
         # Package any ALTER TABLE ADD actions into a Schema object, so it gets generated as
         # `ALTER TABLE .. ADD COLUMNS(...)`, instead of `ALTER TABLE ... ADD COLUMN`, which

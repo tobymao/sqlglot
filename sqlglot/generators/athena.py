@@ -3,7 +3,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator
-from sqlglot.generators.trino import TrinoGenerator, _POST_WITH
+from sqlglot.generators.hive import HiveGenerator
+from sqlglot.generators.trino import TrinoGenerator
 
 
 def _is_iceberg_table(properties: exp.Properties) -> bool:
@@ -98,10 +99,20 @@ def _generator_kwargs(
     return kwargs
 
 
+class _HiveGenerator(HiveGenerator):
+    def alter_sql(self, expression: exp.Alter) -> str:
+        if isinstance(expression, exp.Alter) and expression.kind == "TABLE":
+            if expression.actions and isinstance(expression.actions[0], exp.ColumnDef):
+                new_actions = exp.Schema(expressions=expression.actions)
+                expression.set("actions", [new_actions])
+
+        return super().alter_sql(expression)
+
+
 class AthenaTrinoGenerator(TrinoGenerator):
-    PROPERTIES_LOCATION: t.ClassVar[t.Dict[t.Any, t.Any]] = {
+    PROPERTIES_LOCATION = {
         **TrinoGenerator.PROPERTIES_LOCATION,
-        exp.LocationProperty: _POST_WITH,
+        exp.LocationProperty: exp.Properties.Location.POST_WITH,
     }
 
     TRANSFORMS = {
@@ -112,6 +123,11 @@ class AthenaTrinoGenerator(TrinoGenerator):
 
 
 class AthenaGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     __slots__ = ("_hive_generator", "_trino_generator")
 
     def __init__(
@@ -131,7 +147,6 @@ class AthenaGenerator(generator.Generator):
         hive: t.Any = None,
         trino: t.Any = None,
     ) -> None:
-        import sqlglot.dialects.athena as athena_mod
         import sqlglot.dialects.hive as hive_mod
         import sqlglot.dialects.trino as trino_mod
 
@@ -153,9 +168,7 @@ class AthenaGenerator(generator.Generator):
         )
 
         generator.Generator.__init__(self, dialect=dialect, **kwargs)
-        self._hive_generator: generator.Generator = athena_mod._HiveGenerator(
-            dialect=hive_dialect, **kwargs
-        )
+        self._hive_generator: generator.Generator = _HiveGenerator(dialect=hive_dialect, **kwargs)
         self._trino_generator: generator.Generator = AthenaTrinoGenerator(
             dialect=trino_dialect, **kwargs
         )

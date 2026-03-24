@@ -4,8 +4,6 @@ import re
 import typing as t
 from functools import partial
 
-from sqlglot.helper import mypyc_attr
-
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
@@ -184,8 +182,11 @@ def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
     return self.func("TO_DATE", expression.this)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class HiveGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
     LIMIT_FETCH = "LIMIT"
     TABLESAMPLE_WITH_METHOD = False
     JOIN_HINTS = False

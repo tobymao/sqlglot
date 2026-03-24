@@ -1470,16 +1470,10 @@ class DuckDBGenerator(generator.Generator):
     MULTI_ARG_DISTINCT = False
     CAN_IMPLEMENT_ARRAY_ANY = True
     SUPPORTS_TO_NUMBER = False
-    SELECT_KINDS: t.ClassVar[t.Tuple[str, ...]] = ()
+    SELECT_KINDS: t.Tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
-    AFTER_HAVING_MODIFIER_TRANSFORMS: t.ClassVar = {
-        "windows": lambda self, e: (
-            self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
-            if e.args.get("windows")
-            else ""
-        ),
-        "qualify": lambda self, e: self.sql(e, "qualify"),
-    }
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
     SUPPORTS_WINDOW_EXCLUDE = True
     COPY_HAS_INTO_KEYWORD = False
     STAR_EXCEPT = "EXCLUDE"

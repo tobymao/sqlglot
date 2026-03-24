@@ -266,6 +266,13 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
 
 
 class ExasolGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     # https://docs.exasol.com/db/latest/sql_references/data_types/datatypedetails.htm#StringDataType
     STRING_TYPE_MAPPING: t.ClassVar = {
         exp.DType.BLOB: "VARCHAR",

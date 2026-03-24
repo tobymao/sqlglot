@@ -9,7 +9,7 @@ from functools import reduce, wraps
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import csv, mypyc_attr, name_sequence, seq_get
+from sqlglot.helper import csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -61,7 +61,16 @@ def unsupported_args(
     return decorator
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+AFTER_HAVING_MODIFIER_TRANSFORMS: t.Dict[str, t.Any] = {
+    "windows": lambda self, e: (
+        self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
+        if e.args.get("windows")
+        else ""
+    ),
+    "qualify": lambda self, e: self.sql(e, "qualify"),
+}
+
+
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
@@ -350,7 +359,7 @@ class Generator:
     NVL2_SUPPORTED = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
-    SELECT_KINDS: t.ClassVar[t.Tuple[str, ...]] = ("STRUCT", "VALUE")
+    SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
     # Whether VALUES statements can be used as derived tables.
     # MySQL 5 and Redshift do not allow this, so when False, it will convert
@@ -472,10 +481,10 @@ class Generator:
     COPY_HAS_INTO_KEYWORD = True
 
     # Whether the conditional TRY(expression) function is supported
-    TRY_SUPPORTED: t.ClassVar = True
+    TRY_SUPPORTED = True
 
     # Whether the UESCAPE syntax in unicode strings is supported
-    SUPPORTS_UESCAPE: t.ClassVar = True
+    SUPPORTS_UESCAPE = True
 
     # Function used to replace escaped unicode codes in unicode strings
     UNICODE_SUBSTITUTE: t.ClassVar[t.Any] = None
@@ -534,7 +543,7 @@ class Generator:
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
-    SUPPORTS_DECODE_CASE: t.ClassVar = True
+    SUPPORTS_DECODE_CASE = True
 
     # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
     SUPPORTS_BETWEEN_FLAGS = False
@@ -593,12 +602,7 @@ class Generator:
         "cluster": lambda self, e: self.sql(e, "cluster"),
         "distribute": lambda self, e: self.sql(e, "distribute"),
         "sort": lambda self, e: self.sql(e, "sort"),
-        "windows": lambda self, e: (
-            self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
-            if e.args.get("windows")
-            else ""
-        ),
-        "qualify": lambda self, e: self.sql(e, "qualify"),
+        **AFTER_HAVING_MODIFIER_TRANSFORMS,
     }
 
     TOKEN_MAPPING: t.ClassVar[t.Dict[TokenType, str]] = {}

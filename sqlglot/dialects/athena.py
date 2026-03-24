@@ -141,20 +141,6 @@ def _tokenize_as_hive(tokens: t.List[Token]) -> bool:
     return False
 
 
-# Athena extensions to Hive's generator
-class _HiveGenerator(Hive.Generator):
-    def alter_sql(self, expression: exp.Alter) -> str:
-        # Package any ALTER TABLE ADD actions into a Schema object, so it gets generated as
-        # `ALTER TABLE .. ADD COLUMNS(...)`, instead of `ALTER TABLE ... ADD COLUMN`, which
-        # is invalid syntax on Athena
-        if isinstance(expression, exp.Alter) and expression.kind == "TABLE":
-            if expression.actions and isinstance(expression.actions[0], exp.ColumnDef):
-                new_actions = exp.Schema(expressions=expression.actions)
-                expression.set("actions", [new_actions])
-
-        return super().alter_sql(expression)
-
-
 # Athena extensions to Trino's tokenizer
 class _TrinoTokenizer(Trino.Tokenizer):
     KEYWORDS = {

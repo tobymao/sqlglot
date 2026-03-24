@@ -80,9 +80,19 @@ jobs:
 
           echo "Triggering remote workflow"
 
+          # Use a matching branch in the integration tests repo if one exists, otherwise fall back to main
+          INTEGRATION_REF="main"
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          if gh api "repos/$REMOTE_REPO/branches/$BRANCH_NAME" --silent 2>/dev/null; then
+            INTEGRATION_REF="$BRANCH_NAME"
+            echo "Found matching branch '$BRANCH_NAME' in $REMOTE_REPO"
+          else
+            echo "No matching branch '$BRANCH_NAME' in $REMOTE_REPO, using main"
+          fi
+
           gh workflow run run-tests.yml \
             --repo $REMOTE_REPO \
-            --ref main \
+            --ref "$INTEGRATION_REF" \
             -f sqlglot_ref=${{ github.sha }} \
             -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
             -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }} \
@@ -128,6 +138,7 @@ jobs:
           exit $?
 
       - name: Fetch outputs
+        if: ${{ !cancelled() && steps.run-remote.outputs.remote_run_id }}
         id: fetch-outputs
         uses: actions/download-artifact@v5
         with:
@@ -138,8 +149,7 @@ jobs:
 
       - name: Write summary as comment
         uses: actions/github-script@v8
-        # only do this when on PR branches, main builds dont have anywhere to write comments
-        if: github.event_name == 'pull_request' || github.event.issue.pull_request
+        if: ${{ !cancelled() && (github.event_name == 'pull_request' || github.event.issue.pull_request) }}
         with:
           script: |
             // summary.json is downloaded from the remote workflow in the previous step

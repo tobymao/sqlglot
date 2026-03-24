@@ -41,8 +41,7 @@ ensure_branch() {
 
 case "${1:-}" in
   checkout)
-    # No-op: branch creation is deferred to commit/post-commit to avoid
-    # creating empty branches when switching parent branches.
+    ensure_branch
     ;;
 
   commit)

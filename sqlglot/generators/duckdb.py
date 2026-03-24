@@ -1527,7 +1527,6 @@ class DuckDBGenerator(generator.Generator):
         exp.ArraySum: rename_func("LIST_SUM"),
         exp.ArrayMax: rename_func("LIST_MAX"),
         exp.ArrayMin: rename_func("LIST_MIN"),
-        exp.ArrayUniqueAgg: lambda self, e: self.func("LIST", exp.Distinct(expressions=[e.this])),
         exp.Base64DecodeBinary: lambda self, e: _base64_decode_sql(self, e, to_string=False),
         exp.Base64DecodeString: lambda self, e: _base64_decode_sql(self, e, to_string=True),
         exp.BitwiseAnd: lambda self, e: self._bitwise_op(e, "&"),
@@ -3125,6 +3124,14 @@ class DuckDBGenerator(generator.Generator):
         expr = expression.this
         result = exp.replace_placeholders(self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr)
         return f"({self.sql(result)})"
+
+    def arrayuniqueagg_sql(self, expression: exp.ArrayUniqueAgg) -> str:
+        return self.sql(
+            exp.Filter(
+                this=exp.func("LIST", exp.Distinct(expressions=[expression.this])),
+                expression=exp.Where(this=expression.this.copy().is_(exp.null()).not_()),
+            )
+        )
 
     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
         arr = expression.this

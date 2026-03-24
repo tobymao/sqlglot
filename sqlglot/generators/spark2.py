@@ -1,0 +1,256 @@
+from __future__ import annotations
+
+import typing as t
+
+from sqlglot import exp, transforms
+from sqlglot.dialects.dialect import (
+    bracket_to_element_at_sql,
+    is_parse_json,
+    rename_func,
+    unit_to_str,
+)
+from sqlglot.generators.hive import HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
+from sqlglot.transforms import (
+    preprocess,
+    remove_unique_constraints,
+    ctas_with_tmp_tables_to_create_tmp_view,
+    move_schema_columns_to_partitioned_by,
+)
+
+
+def _map_sql(self: Spark2Generator, expression: exp.Map) -> str:
+    keys = expression.args.get("keys")
+    values = expression.args.get("values")
+
+    if not keys or not values:
+        return self.func("MAP")
+
+    return self.func("MAP_FROM_ARRAYS", keys, values)
+
+
+def _str_to_date(self: Spark2Generator, expression: exp.StrToDate) -> str:
+    time_format = self.format_time(expression)
+
+    from sqlglot.dialects.hive import Hive
+
+    if time_format == Hive.DATE_FORMAT:
+        return self.func("TO_DATE", expression.this)
+    return self.func("TO_DATE", expression.this, time_format)
+
+
+def _unix_to_time_sql(self: Spark2Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = expression.this
+
+    if scale is None:
+        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), exp.DType.TIMESTAMP))
+    if scale == exp.UnixToTime.SECONDS:
+        return self.func("TIMESTAMP_SECONDS", timestamp)
+    if scale == exp.UnixToTime.MILLIS:
+        return self.func("TIMESTAMP_MILLIS", timestamp)
+    if scale == exp.UnixToTime.MICROS:
+        return self.func("TIMESTAMP_MICROS", timestamp)
+
+    unix_seconds = exp.Div(this=timestamp, expression=exp.func("POW", 10, scale))
+    return self.func("TIMESTAMP_SECONDS", unix_seconds)
+
+
+def _unalias_pivot(expression: exp.Expr) -> exp.Expr:
+    """
+    Spark doesn't allow PIVOT aliases, so we need to remove them and possibly wrap a
+    pivoted source in a subquery with the same alias to preserve the query's semantics.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT piv.x FROM tbl PIVOT (SUM(a) FOR b IN ('x')) piv")
+        >>> print(_unalias_pivot(expr).sql(dialect="spark"))
+        SELECT piv.x FROM (SELECT * FROM tbl PIVOT(SUM(a) FOR b IN ('x'))) AS piv
+    """
+    if isinstance(expression, exp.From) and expression.this.args.get("pivots"):
+        pivot = expression.this.args["pivots"][0]
+        if pivot.alias:
+            alias = pivot.args["alias"].pop()
+            return exp.From(
+                this=expression.this.replace(
+                    exp.select("*")
+                    .from_(expression.this.copy(), copy=False)
+                    .subquery(alias=alias, copy=False)
+                )
+            )
+
+    return expression
+
+
+def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
+    """
+    Spark doesn't allow the column referenced in the PIVOT's field to be qualified,
+    so we need to unqualify it.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT * FROM tbl PIVOT (SUM(tbl.sales) FOR tbl.quarter IN ('Q1', 'Q2'))")
+        >>> print(_unqualify_pivot_columns(expr).sql(dialect="spark"))
+        SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q2'))
+    """
+    if isinstance(expression, exp.Pivot):
+        expression.set(
+            "fields", [transforms.unqualify_columns(field) for field in expression.fields]
+        )
+
+    return expression
+
+
+def temporary_storage_provider(expression: exp.Expr) -> exp.Expr:
+    # spark2, spark, Databricks require a storage provider for temporary tables
+    provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))
+    expression.args["properties"].append("expressions", provider)
+    return expression
+
+
+class Spark2Generator(HiveGenerator):
+    QUERY_HINTS = True
+    NVL2_SUPPORTED = True
+    CAN_IMPLEMENT_ARRAY_ANY = True
+    ALTER_SET_TYPE = "TYPE"
+
+    PROPERTIES_LOCATION = {
+        **HiveGenerator.PROPERTIES_LOCATION,
+        exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
+    }
+
+    TS_OR_DS_EXPRESSIONS = (
+        *HIVE_TS_OR_DS_EXPRESSIONS,
+        exp.DayOfMonth,
+        exp.DayOfWeek,
+        exp.DayOfYear,
+        exp.WeekOfYear,
+    )
+
+    TRANSFORMS = {
+        k: v
+        for k, v in {
+            **HiveGenerator.TRANSFORMS,
+            exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
+            exp.ArraySum: lambda self, e: (
+                f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)"
+            ),
+            exp.ArrayToString: rename_func("ARRAY_JOIN"),
+            exp.ArraySlice: rename_func("SLICE"),
+            exp.AtTimeZone: lambda self, e: self.func(
+                "FROM_UTC_TIMESTAMP", e.this, e.args.get("zone")
+            ),
+            exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
+            exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
+            exp.Create: preprocess(
+                [
+                    remove_unique_constraints,
+                    lambda e: ctas_with_tmp_tables_to_create_tmp_view(
+                        e, temporary_storage_provider
+                    ),
+                    move_schema_columns_to_partitioned_by,
+                ]
+            ),
+            exp.DateFromParts: rename_func("MAKE_DATE"),
+            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
+            exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.Format: rename_func("FORMAT_STRING"),
+            exp.From: transforms.preprocess([_unalias_pivot]),
+            exp.FromTimeZone: lambda self, e: self.func(
+                "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")
+            ),
+            exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.LogicalOr: rename_func("BOOL_OR"),
+            exp.Map: _map_sql,
+            exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
+            exp.Reduce: rename_func("AGGREGATE"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args["replacement"],
+                e.args.get("position"),
+            ),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                    transforms.any_to_exists,
+                ]
+            ),
+            exp.SHA2Digest: lambda self, e: self.func(
+                "SHA2", e.this, e.args.get("length") or exp.Literal.number(256)
+            ),
+            exp.StrToDate: _str_to_date,
+            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
+            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+            exp.UnixToTime: _unix_to_time_sql,
+            exp.VariancePop: rename_func("VAR_POP"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.WithinGroup: transforms.preprocess(
+                [transforms.remove_within_group_for_percentiles]
+            ),
+            exp.ArraySort: None,
+            exp.ILike: None,
+            exp.Left: None,
+            exp.MonthsBetween: None,
+            exp.Right: None,
+        }.items()
+        if v is not None
+    }
+
+    WRAP_DERIVED_VALUES = False
+    CREATE_FUNCTION_RETURN_AS = False
+
+    def struct_sql(self, expression: exp.Struct) -> str:
+        from sqlglot.generator import Generator
+
+        return Generator.struct_sql(self, expression)
+
+    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+        arg = expression.this
+        is_json_extract = isinstance(
+            arg, (exp.JSONExtract, exp.JSONExtractScalar)
+        ) and not arg.args.get("variant_extract")
+
+        # We can't use a non-nested type (eg. STRING) as a schema
+        if expression.to.args.get("nested") and (is_parse_json(arg) or is_json_extract):
+            schema = f"'{self.sql(expression, 'to')}'"
+            return self.func("FROM_JSON", arg if is_json_extract else arg.this, schema)
+
+        if is_parse_json(expression):
+            return self.func("TO_JSON", arg)
+
+        return super(HiveGenerator, self).cast_sql(expression, safe_prefix=safe_prefix)
+
+    def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
+        if expression.args.get("hive_format"):
+            return super().fileformatproperty_sql(expression)
+
+        return f"USING {expression.name.upper()}"
+
+    def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+        this = self.sql(expression, "this")
+        new_name = self.sql(expression, "rename_to") or this
+        comment = self.sql(expression, "comment")
+        if new_name == this:
+            if comment:
+                return f"ALTER COLUMN {this} COMMENT {comment}"
+            return super(HiveGenerator, self).altercolumn_sql(expression)
+        return f"RENAME COLUMN {this} TO {new_name}"
+
+    def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
+        return super(HiveGenerator, self).renamecolumn_sql(expression)
+
+    def bracket_sql(self, expression: exp.Bracket) -> str:
+        if expression.args.get("safe") is False:
+            return bracket_to_element_at_sql(self, expression)
+
+        return super().bracket_sql(expression)

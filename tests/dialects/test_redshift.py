@@ -331,6 +331,7 @@ class TestRedshift(Validator):
         )
 
         self.validate_identity("SELECT VERSION()")
+        self.validate_identity("SELECT TEXTLEN('hello world')", "SELECT LENGTH('hello world')")
 
     def test_identity(self):
         self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")

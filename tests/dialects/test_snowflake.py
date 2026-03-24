@@ -146,6 +146,14 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT NVL2(col1, col2, col3)")
         self.validate_identity("SELECT NVL(col1, col2)", "SELECT COALESCE(col1, col2)")
         self.validate_identity("SELECT CHR(8364)")
+        self.validate_all(
+            "SELECT CHECK_JSON(x)",
+            read={"snowflake": "SELECT CHECK_JSON(x)"},
+            write={
+                "snowflake": "SELECT CHECK_JSON(x)",
+                "duckdb": "SELECT CASE WHEN x IS NULL OR x = '' OR JSON_VALID(x) THEN NULL ELSE 'Invalid JSON' END",
+            },
+        )
         self.validate_identity('SELECT CHECK_JSON(\'{"key": "value"}\')')
         self.validate_identity(
             "SELECT CHECK_XML('<root><key attribute=\"attr\">value</key></root>')"
@@ -588,6 +596,16 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
+        self.validate_all(
+            "SELECT ARRAY_UNIQUE_AGG(col) FROM t",
+            write={"duckdb": "SELECT LIST(DISTINCT col) FILTER(WHERE NOT col IS NULL) FROM t"},
+        )
+        self.validate_all(
+            "SELECT ARRAY_UNIQUE_AGG(col) OVER (PARTITION BY grp) FROM t",
+            write={
+                "duckdb": "SELECT LIST(DISTINCT col) FILTER(WHERE NOT col IS NULL) OVER (PARTITION BY grp) FROM t"
+            },
+        )
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
@@ -1936,9 +1954,27 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT a RLIKE b",
+            write={
+                "duckdb": "SELECT REGEXP_FULL_MATCH(a, b)",
+                "hive": "SELECT a RLIKE b",
+                "snowflake": "SELECT REGEXP_LIKE(a, b)",
+                "spark": "SELECT a RLIKE b",
+            },
+        )
+        self.validate_all(
+            "SELECT a NOT RLIKE b",
+            write={
+                "duckdb": "SELECT NOT REGEXP_FULL_MATCH(a, b)",
+                "hive": "SELECT NOT a RLIKE b",
+                "snowflake": "SELECT NOT REGEXP_LIKE(a, b)",
+                "spark": "SELECT NOT a RLIKE b",
+            },
+        )
+        self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
-                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$')",
+                "duckdb": "SELECT REGEXP_FULL_MATCH(a, b)",
                 "hive": "SELECT a RLIKE b",
                 "snowflake": "SELECT REGEXP_LIKE(a, b)",
                 "spark": "SELECT a RLIKE b",
@@ -1947,13 +1983,14 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT RLIKE(a, b, 'i')",
             write={
-                "duckdb": "SELECT REGEXP_MATCHES(a, '^(' || (b) || ')$', 'i')",
+                "duckdb": "SELECT REGEXP_FULL_MATCH(a, b, 'i')",
                 "snowflake": "SELECT REGEXP_LIKE(a, b, 'i')",
             },
         )
         self.validate_all(
             "'foo' REGEXP 'bar'",
             write={
+                "duckdb": "REGEXP_FULL_MATCH('foo', 'bar')",
                 "snowflake": "REGEXP_LIKE('foo', 'bar')",
                 "postgres": "'foo' ~ 'bar'",
                 "mysql": "REGEXP_LIKE('foo', 'bar')",
@@ -1963,6 +2000,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "'foo' NOT REGEXP 'bar'",
             write={
+                "duckdb": "NOT REGEXP_FULL_MATCH('foo', 'bar')",
                 "snowflake": "NOT REGEXP_LIKE('foo', 'bar')",
                 "postgres": "NOT 'foo' ~ 'bar'",
                 "mysql": "NOT REGEXP_LIKE('foo', 'bar')",

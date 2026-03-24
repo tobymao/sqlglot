@@ -23,7 +23,7 @@ from sqlglot.helper import (
     to_bool,
     ensure_list,
 )
-from sqlglot.jsonpath import JSONPathTokenizer, parse as parse_json_path
+from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -46,6 +46,7 @@ JSON_EXTRACT_TYPE = t.Union[
 ]
 DATETIME_DELTA = t.Union[
     exp.DateAdd,
+    exp.DateSub,
     exp.DatetimeAdd,
     exp.DatetimeSub,
     exp.TimeAdd,
@@ -265,6 +266,13 @@ class _Dialect(type):
             "Generator", type("Generator", base_generator, {})
         )
 
+        # Remove transforms that correspond to unsupported JSONPathPart expressions
+        gen_cls = klass.generator_class
+        supported = getattr(gen_cls, "SUPPORTED_JSON_PATH_PARTS", None)
+        if isinstance(supported, set):
+            for part in ALL_JSON_PATH_PARTS - supported:
+                gen_cls.TRANSFORMS.pop(part, None)
+
         klass.QUOTE_START, klass.QUOTE_END = list(klass.tokenizer_class._QUOTES.items())[0]
         klass.IDENTIFIER_START, klass.IDENTIFIER_END = list(
             klass.tokenizer_class._IDENTIFIERS.items()
@@ -311,7 +319,12 @@ class _Dialect(type):
             klass.generator_class.SUPPORTS_UESCAPE = False
 
         if enum not in ("", "databricks", "hive", "spark", "spark2"):
-            modifier_transforms = klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS.copy()
+            base = klass.generator_class.__dict__.get("AFTER_HAVING_MODIFIER_TRANSFORMS")
+            if not isinstance(base, dict):
+                from sqlglot.generator import Generator as _BaseGenerator
+
+                base = _BaseGenerator.AFTER_HAVING_MODIFIER_TRANSFORMS
+            modifier_transforms = base.copy()
             for modifier in ("cluster", "distribute", "sort"):
                 modifier_transforms.pop(modifier, None)
 
@@ -427,6 +440,15 @@ class Dialect(metaclass=_Dialect):
 
     UNESCAPED_SEQUENCES: t.Dict[str, str] = {}
     """Mapping of an escaped sequence (`\\n`) to its unescaped version (`\n`)."""
+
+    STRINGS_SUPPORT_ESCAPED_SEQUENCES: bool = False
+    """Whether string literals support escape sequences (e.g. `\\n`). Set by the metaclass based on the tokenizer's STRING_ESCAPES."""
+
+    BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES: bool = False
+    """Whether byte string literals support escape sequences. Set by the metaclass based on the tokenizer's BYTE_STRING_ESCAPES."""
+
+    INVERSE_VECTOR_TYPE_ALIASES: t.Dict[str, str] = {}
+    """Mapping of vector type aliases back to their canonical names. Overridden by dialects like SingleStore."""
 
     PSEUDOCOLUMNS: t.Set[str] = set()
     """

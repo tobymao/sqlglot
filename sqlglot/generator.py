@@ -478,7 +478,7 @@ class Generator:
     SUPPORTS_UESCAPE: t.ClassVar = True
 
     # Function used to replace escaped unicode codes in unicode strings
-    UNICODE_SUBSTITUTE: t.Optional[t.Callable[[re.Match[str]], str]] = None
+    UNICODE_SUBSTITUTE: t.ClassVar[t.Any] = None
 
     # The keyword to use when generating a star projection with excluded columns
     STAR_EXCEPT = "EXCEPT"

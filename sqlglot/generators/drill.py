@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
 )
-from sqlglot.dialects.mysql import date_add_sql
+from sqlglot.generators.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
 from sqlglot.generator import unsupported_args
 

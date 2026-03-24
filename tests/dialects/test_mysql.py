@@ -1626,3 +1626,57 @@ COMMENT='客户账户表'"""
             "CREATE TRIGGER track_deletes BEFORE DELETE ON orders FOR EACH ROW BEGIN UPDATE statistics SET delete_count = delete_count + 1 WHERE table_name = 'orders' END",
             check_command_warning=True,
         )
+
+    def test_ignore_respect_nulls(self):
+        self.validate_all(
+            "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            read={
+                "snowflake": "SELECT FIRST_VALUE(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            },
+            write={
+                "mysql": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "oracle": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "postgres": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
+            write={
+                "mysql": "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
+                "oracle": "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+                "postgres": "SELECT FIRST_VALUE(col1) OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+                "snowflake": "SELECT FIRST_VALUE(col1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            read={
+                "snowflake": "SELECT LAST_VALUE(col1) IGNORE NULLS OVER (PARTITION BY col3 ORDER BY col2) FROM table1",
+            },
+            write={
+                "mysql": "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+                "oracle": "SELECT LAST_VALUE(col1) OVER (PARTITION BY col3 ORDER BY col2 NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM table1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END, col2) FROM table1",
+            read={
+                "snowflake": "SELECT LAG(col1) IGNORE NULLS OVER (ORDER BY col2) FROM table1",
+            },
+            write={
+                "mysql": "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END, col2) FROM table1",
+                "oracle": "SELECT LAG(col1) OVER (ORDER BY CASE WHEN col2 IS NULL THEN 1 ELSE 0 END NULLS FIRST, col2 NULLS FIRST) FROM table1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
+            write={
+                "mysql": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2) FROM table1",
+                "oracle": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+                "snowflake": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
+            },
+        )

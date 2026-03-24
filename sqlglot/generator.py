@@ -2851,6 +2851,8 @@ class Generator:
 
             if isinstance(window, exp.Window):
                 window_this = window.this
+                if isinstance(window_this, (exp.IgnoreNulls, exp.RespectNulls)):
+                    window_this = window_this.this
                 spec = window.args.get("spec")
             else:
                 window_this = None

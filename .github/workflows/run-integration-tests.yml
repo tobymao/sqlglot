@@ -11,6 +11,7 @@ jobs:
     outputs:
       skip: ${{ steps.test-parameters.outputs.skip }}
       dialects: ${{ steps.test-parameters.outputs.dialects }}
+      integration_tests_ref: ${{ steps.test-parameters.outputs.integration_tests_ref }}
 
     steps:
       - name: Print debugging info
@@ -53,6 +54,16 @@ jobs:
         run: |
           python .github/scripts/get_integration_test_params.py
 
+          # Read the submodule commit SHA to use as the ref for the remote workflow
+          INTEGRATION_REF=$(git ls-tree HEAD sqlglot-integration-tests | awk '{print $3}')
+          if [ -n "$INTEGRATION_REF" ]; then
+            echo "integration_tests_ref=$INTEGRATION_REF" >> $GITHUB_OUTPUT
+            echo "Integration tests ref: $INTEGRATION_REF"
+          else
+            echo "integration_tests_ref=main" >> $GITHUB_OUTPUT
+            echo "No submodule pointer found, using main"
+          fi
+
   run-integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
@@ -80,15 +91,8 @@ jobs:
 
           echo "Triggering remote workflow"
 
-          # Use a matching branch in the integration tests repo if one exists, otherwise fall back to main
-          INTEGRATION_REF="main"
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          if gh api "repos/$REMOTE_REPO/branches/$BRANCH_NAME" --silent 2>/dev/null; then
-            INTEGRATION_REF="$BRANCH_NAME"
-            echo "Found matching branch '$BRANCH_NAME' in $REMOTE_REPO"
-          else
-            echo "No matching branch '$BRANCH_NAME' in $REMOTE_REPO, using main"
-          fi
+          INTEGRATION_REF="${{ needs.should-run.outputs.integration_tests_ref }}"
+          echo "Using integration tests ref: $INTEGRATION_REF"
 
           gh workflow run run-tests.yml \
             --repo $REMOTE_REPO \

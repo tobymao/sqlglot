@@ -1,8 +1,6 @@
 name: Benchmark pull requests
 
 on:
-  pull_request:
-    types: [opened]
   issue_comment:
     types: [created]
 
@@ -13,19 +11,15 @@ jobs:
     permissions:
       pull-requests: write
     if: >
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '/benchmark'))
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/benchmark')
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || '' }}
 
-      - name: Checkout PR branch (comment trigger)
-        if: github.event_name == 'issue_comment'
+      - name: Checkout PR branch (resolve head)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -79,5 +73,5 @@ jobs:
       - name: Comment on PR
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
+          issue-number: ${{ github.event.issue.number }}
           body-path: benchmark_comment.md

@@ -1,52 +1,11 @@
 from __future__ import annotations
 
 
-from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
+from sqlglot.generators.fabric import FabricGenerator
 from sqlglot.parsers.fabric import FabricParser
 from sqlglot.tokens import TokenType
-
-
-def _cap_data_type_precision(expression: exp.DataType, max_precision: int = 6) -> exp.DataType:
-    """
-    Cap the precision of to a maximum of `max_precision` digits.
-    If no precision is specified, default to `max_precision`.
-    """
-
-    precision_param = expression.find(exp.DataTypeParam)
-
-    if precision_param and precision_param.this.is_int:
-        current_precision = precision_param.this.to_py()
-        target_precision = min(current_precision, max_precision)
-    else:
-        target_precision = max_precision
-
-    return exp.DataType(
-        this=expression.this,
-        expressions=[exp.DataTypeParam(this=exp.Literal.number(target_precision))],
-    )
-
-
-def _add_default_precision_to_varchar(expression: exp.Expr) -> exp.Expr:
-    """Transform function to add VARCHAR(MAX) or CHAR(MAX) for cross-dialect conversion."""
-    if (
-        isinstance(expression, exp.Create)
-        and expression.kind == "TABLE"
-        and isinstance(expression.this, exp.Schema)
-    ):
-        for column in expression.this.expressions:
-            if isinstance(column, exp.ColumnDef):
-                column_type = column.kind
-                if (
-                    isinstance(column_type, exp.DataType)
-                    and column_type.this in (exp.DType.VARCHAR, exp.DType.CHAR)
-                    and not column_type.expressions
-                ):
-                    # For transpilation, VARCHAR/CHAR without precision becomes VARCHAR(MAX)/CHAR(MAX)
-                    column_type.set("expressions", [exp.var("MAX")])
-
-    return expression
 
 
 class Fabric(TSQL):
@@ -84,110 +43,4 @@ class Fabric(TSQL):
 
     Parser = FabricParser
 
-    class Generator(TSQL.Generator):
-        # Fabric-specific type mappings - override T-SQL types that aren't supported
-        # Reference: https://learn.microsoft.com/en-us/fabric/data-warehouse/data-types
-        TYPE_MAPPING = {
-            **TSQL.Generator.TYPE_MAPPING,
-            exp.DType.DATETIME: "DATETIME2",
-            exp.DType.DECIMAL: "DECIMAL",
-            exp.DType.IMAGE: "VARBINARY",
-            exp.DType.INT: "INT",
-            exp.DType.JSON: "VARCHAR",
-            exp.DType.MONEY: "DECIMAL",
-            exp.DType.NCHAR: "CHAR",
-            exp.DType.NVARCHAR: "VARCHAR",
-            exp.DType.ROWVERSION: "ROWVERSION",
-            exp.DType.SMALLDATETIME: "DATETIME2",
-            exp.DType.SMALLMONEY: "DECIMAL",
-            exp.DType.TIMESTAMP: "DATETIME2",
-            exp.DType.TIMESTAMPNTZ: "DATETIME2",
-            exp.DType.TIMESTAMPTZ: "DATETIME2",
-            exp.DType.TINYINT: "SMALLINT",
-            exp.DType.UTINYINT: "SMALLINT",
-            exp.DType.UUID: "UNIQUEIDENTIFIER",
-            exp.DType.XML: "VARCHAR",
-        }
-
-        TRANSFORMS = {
-            **TSQL.Generator.TRANSFORMS,
-            exp.Create: transforms.preprocess([_add_default_precision_to_varchar]),
-        }
-
-        def datatype_sql(self, expression: exp.DataType) -> str:
-            # Check if this is a temporal type that needs precision handling. Fabric limits temporal
-            # types to max 6 digits precision. When no precision is specified, we default to 6 digits.
-            if (
-                expression.is_type(*exp.DataType.TEMPORAL_TYPES)
-                and expression.this != exp.DType.DATE
-            ):
-                # Create a new expression with the capped precision
-                expression = _cap_data_type_precision(expression)
-
-            return super().datatype_sql(expression)
-
-        def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
-            # Cast to DATETIMEOFFSET if inside an AT TIME ZONE expression
-            # https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
-            if expression.is_type(exp.DType.TIMESTAMPTZ):
-                at_time_zone = expression.find_ancestor(exp.AtTimeZone, exp.Select)
-
-                # Return normal cast, if the expression is not in an AT TIME ZONE context
-                if not isinstance(at_time_zone, exp.AtTimeZone):
-                    return super().cast_sql(expression, safe_prefix)
-
-                # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
-                capped_data_type = _cap_data_type_precision(expression.to, max_precision=6)
-                precision = capped_data_type.find(exp.DataTypeParam)
-                precision_value = (
-                    precision.this.to_py() if precision and precision.this.is_int else 6
-                )
-
-                # Do the cast explicitly to bypass sqlglot's default handling
-                datetimeoffset = f"CAST({expression.this} AS DATETIMEOFFSET({precision_value}))"
-
-                return self.sql(datetimeoffset)
-
-            return super().cast_sql(expression, safe_prefix)
-
-        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
-            # Wrap the AT TIME ZONE expression in a cast to DATETIME2 if it contains a TIMESTAMPTZ
-            ## https://learn.microsoft.com/en-us/sql/t-sql/data-types/datetimeoffset-transact-sql#microsoft-fabric-support
-            timestamptz_cast = expression.find(exp.Cast)
-            if timestamptz_cast and timestamptz_cast.to.is_type(exp.DType.TIMESTAMPTZ):
-                # Get the precision from the original TIMESTAMPTZ cast and cap it to 6
-                data_type = timestamptz_cast.to
-                capped_data_type = _cap_data_type_precision(data_type, max_precision=6)
-                precision_param = capped_data_type.find(exp.DataTypeParam)
-                precision = precision_param.this.to_py() if precision_param else 6
-
-                # Generate the AT TIME ZONE expression (which will handle the inner cast conversion)
-                at_time_zone_sql = super().attimezone_sql(expression)
-
-                # Wrap it in an outer cast to DATETIME2
-                return f"CAST({at_time_zone_sql} AS DATETIME2({precision}))"
-
-            return super().attimezone_sql(expression)
-
-        def unixtotime_sql(self, expression: exp.UnixToTime) -> str:
-            scale = expression.args.get("scale")
-            timestamp = expression.this
-
-            if scale not in (None, exp.UnixToTime.SECONDS):
-                self.unsupported(f"UnixToTime scale {scale} is not supported by Fabric")
-                return ""
-
-            # Convert unix timestamp (seconds) to microseconds and round to avoid decimals
-            microseconds = timestamp * exp.Literal.number("1e6")
-            rounded = exp.func("round", microseconds, 0)
-            rounded_ms_as_bigint = exp.cast(rounded, exp.DType.BIGINT)
-
-            # Create the base datetime as '1970-01-01' cast to DATETIME2(6)
-            epoch_start = exp.cast("'1970-01-01'", "datetime2(6)", dialect="fabric")
-
-            dateadd = exp.DateAdd(
-                this=epoch_start,
-                expression=rounded_ms_as_bigint,
-                unit=exp.Literal.string("MICROSECONDS"),
-            )
-            return self.sql(dateadd)
+    Generator = FabricGenerator

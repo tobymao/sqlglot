@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
+from sqlglot.generators.hive import HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
 from sqlglot.parsers.spark2 import Spark2Parser
 from sqlglot.tokens import TokenType
 from sqlglot.transforms import (
@@ -127,14 +128,14 @@ class Spark2(Hive):
 
     Parser = Spark2Parser
 
-    class Generator(Hive.Generator):
+    class Generator(HiveGenerator):
         QUERY_HINTS = True
         NVL2_SUPPORTED = True
         CAN_IMPLEMENT_ARRAY_ANY = True
         ALTER_SET_TYPE = "TYPE"
 
         PROPERTIES_LOCATION = {
-            **Hive.Generator.PROPERTIES_LOCATION,
+            **HiveGenerator.PROPERTIES_LOCATION,
             exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
             exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
             exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
@@ -142,7 +143,7 @@ class Spark2(Hive):
         }
 
         TS_OR_DS_EXPRESSIONS = (
-            *Hive.Generator.TS_OR_DS_EXPRESSIONS,
+            *HIVE_TS_OR_DS_EXPRESSIONS,
             exp.DayOfMonth,
             exp.DayOfWeek,
             exp.DayOfYear,
@@ -150,7 +151,7 @@ class Spark2(Hive):
         )
 
         TRANSFORMS = {
-            **Hive.Generator.TRANSFORMS,
+            **HiveGenerator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self, e: (
                 f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)"
@@ -244,7 +245,7 @@ class Spark2(Hive):
             if is_parse_json(expression):
                 return self.func("TO_JSON", arg)
 
-            return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
+            return super(HiveGenerator, self).cast_sql(expression, safe_prefix=safe_prefix)
 
         def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
             if expression.args.get("hive_format"):
@@ -259,11 +260,11 @@ class Spark2(Hive):
             if new_name == this:
                 if comment:
                     return f"ALTER COLUMN {this} COMMENT {comment}"
-                return super(Hive.Generator, self).altercolumn_sql(expression)
+                return super(HiveGenerator, self).altercolumn_sql(expression)
             return f"RENAME COLUMN {this} TO {new_name}"
 
         def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
-            return super(Hive.Generator, self).renamecolumn_sql(expression)
+            return super(HiveGenerator, self).renamecolumn_sql(expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe") is False:

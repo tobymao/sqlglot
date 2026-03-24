@@ -642,11 +642,8 @@ class TestDuckDB(Validator):
         self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
-            "SELECT LIST(DISTINCT sample_col) FROM sample_table",
-            read={
-                "duckdb": "SELECT LIST(DISTINCT sample_col) FROM sample_table",
-                "spark": "SELECT COLLECT_SET(sample_col) FROM sample_table",
-            },
+            "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+            read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
         )
         self.validate_all(
             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",

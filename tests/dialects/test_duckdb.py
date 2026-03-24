@@ -726,6 +726,27 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "HASH(10)",
+            write={
+                "duckdb": "HASH(10)",
+                "snowflake": "HASH(10)",
+            },
+        )
+        self.validate_all(
+            "HASH(a, b, c)",
+            write={
+                "duckdb": "HASH(a, b, c)",
+                "snowflake": "HASH(a, b, c)",
+            },
+        )
+        self.validate_all(
+            "SELECT HASH(*) FROM (SELECT 1 AS a, 2 AS b) t",
+            write={
+                "duckdb": "SELECT HASH(UNPACK(COLUMNS(t.*))) FROM (SELECT 1 AS a, 2 AS b) AS t",
+                "snowflake": "SELECT HASH(*) FROM (SELECT 1 AS a, 2 AS b) AS t",
+            },
+        )
+        self.validate_all(
             "COUNT_IF(x)",
             write={
                 "duckdb": "COUNT_IF(x)",

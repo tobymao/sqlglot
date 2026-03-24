@@ -404,6 +404,11 @@ class RegDomain(Expression, Func):
 # Misc utility
 
 
+class Hash(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class Columns(Expression, Func):
     arg_types = {"this": True, "unpack": False}
 

@@ -4153,6 +4153,25 @@ class DuckDBGenerator(generator.Generator):
 
         return super().filter_sql(expression)
 
+    def hash_sql(self, expression: exp.Hash) -> str:
+        if any(isinstance(arg, exp.Star) for arg in expression.expressions):
+            select = expression.find_ancestor(exp.Select)
+            if not select:
+                self.unsupported("HASH(*) requires a SELECT context")
+                return self.func("HASH", *expression.expressions)
+
+            from_clause = select.args.get("from_")
+            if not from_clause:
+                self.unsupported("HASH(*) requires a FROM clause")
+                return self.func("HASH", *expression.expressions)
+
+            table = from_clause.this
+            table_alias = table.alias_or_name
+
+            return f"HASH(UNPACK(COLUMNS({table_alias}.*)))"
+
+        return self.func("HASH", *expression.expressions)
+
     def _corr_sql(
         self,
         expression: t.Union[exp.Filter, exp.Window, exp.Corr],

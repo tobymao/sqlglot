@@ -1345,7 +1345,7 @@ class Expression(Expr):
     ) -> In:
         subquery = maybe_parse(query, copy=copy, **opts) if query else None
         if subquery and not subquery.is_subquery:
-            subquery = subquery.subquery(copy=False) #type: ignore[attr-defined]
+            subquery = subquery.subquery(copy=False)  # type: ignore[attr-defined]
 
         return In(
             this=maybe_copy(self, copy),

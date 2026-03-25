@@ -34,7 +34,6 @@ from sqlglot.expressions.core import (
 )
 
 if t.TYPE_CHECKING:
-    from collections.abc import Collection
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DataType
     from sqlglot.expressions.constraints import ColumnConstraint

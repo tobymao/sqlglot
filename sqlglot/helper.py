@@ -73,11 +73,11 @@ def seq_get(seq: Sequence[T], index: int) -> t.Optional[T]:
 
 
 @t.overload
-def ensure_list(value: Collection[T]) -> list[T]: ...
-
-
+def ensure_list(value: tuple[T, ...]) -> list[T]: ...
 @t.overload
-def ensure_list(value: None) -> t.List: ...
+def ensure_list(value: list[T]) -> list[T]: ...
+@t.overload
+def ensure_list(value: None) -> list[t.Any]: ...
 
 
 @t.overload
@@ -96,7 +96,9 @@ def ensure_list(value):
     """
     if value is None:
         return []
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
         return list(value)
 
     return [value]

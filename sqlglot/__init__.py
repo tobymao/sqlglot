@@ -136,6 +136,7 @@ def parse_one(
     **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> E: ...
 
+
 @t.overload
 def parse_one(
     sql: str,
@@ -145,7 +146,6 @@ def parse_one(
     into: Collection[Type[exp.Expr]],
     **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> exp.Expr: ...
-
 
 
 @t.overload

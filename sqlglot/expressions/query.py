@@ -1359,7 +1359,7 @@ class Select(Expression, Query):
         self,
         expression: ExpOrStr,
         on: t.Optional[ExpOrStr | list[ExpOrStr]] = None,
-        using: t.Optional[ExpOrStr | Collection[ExpOrStr]] = None,
+        using: t.Optional[ExpOrStr | list[ExpOrStr] | tuple[ExpOrStr, ...]] = None,
         append: bool = True,
         join_type: t.Optional[str] = None,
         join_alias: t.Optional[Identifier | str] = None,

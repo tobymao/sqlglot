@@ -356,7 +356,8 @@ class Expr:
         quoted: t.Optional[bool] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: Unpack[ParserNoDialectArgs],
+        table: bool | Sequence[str | Identifier] = False,
+        **opts: Unpack[ParserNoDialectNoTableArgs],
     ) -> Expr:
         raise NotImplementedError
 
@@ -1305,7 +1306,8 @@ class Expression(Expr):
         quoted: t.Optional[bool] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: Unpack[ParserNoDialectArgs],
+        table: bool | Sequence[str | Identifier] = False,
+        **opts: Unpack[ParserNoDialectNoTableArgs],
     ) -> Expr:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
 

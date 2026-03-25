@@ -70,7 +70,7 @@ from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
 from sqlglot.tokens import Token as Token, Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, GeneratorDialectNoCopyArgs, ParserNoDialectArgs
+    from sqlglot._typing import E, GeneratorDialectNoCopyArgs, ParserNoDialectNoTableArgs
     from typing_extensions import Unpack
     from sqlglot.dialects.dialect import DialectType as DialectType
 
@@ -108,7 +108,7 @@ def parse(
     sql: str,
     read: DialectType = None,
     dialect: DialectType = None,
-    **opts: Unpack[ParserNoDialectArgs],
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> list[t.Optional[Expr]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
@@ -132,7 +132,7 @@ def parse_one(
     read: DialectType = None,
     dialect: DialectType = None,
     into: Type[E],
-    **opts: Unpack[ParserNoDialectArgs],
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> E: ...
 
 
@@ -141,7 +141,7 @@ def parse_one(
     sql: str,
     read: DialectType = None,
     dialect: DialectType = None,
-    **opts: Unpack[ParserNoDialectArgs],
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> Expr: ...
 
 
@@ -150,7 +150,7 @@ def parse_one(
     read: DialectType = None,
     dialect: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
-    **opts: Unpack[ParserNoDialectArgs],
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> Expr:
     """
     Parses the given SQL string and returns a syntax tree.

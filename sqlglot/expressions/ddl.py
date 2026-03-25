@@ -334,11 +334,13 @@ class Drop(Expression):
         "temporary": False,
         "materialized": False,
         "cascade": False,
+        "restrict": False,
         "constraints": False,
         "purge": False,
         "cluster": False,
         "concurrently": False,
         "sync": False,
+        "iceberg": False,
     }
 
     @property

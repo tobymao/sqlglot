@@ -2263,9 +2263,10 @@ class Parser:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match_text_seq("MATERIALIZED")
+        iceberg = self._match_text_seq("ICEBERG")
 
         kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
-        if not kind:
+        if not kind or (iceberg and kind and kind != "TABLE"):
             return self._parse_as_command(start)
 
         concurrently = self._match_text_seq("CONCURRENTLY")
@@ -2283,6 +2284,8 @@ class Parser:
         else:
             expressions = None
 
+        cascade_or_restrict = self._match_texts(("CASCADE", "RESTRICT")) and self._prev.text.upper()
+
         return self.expression(
             exp.Drop(
                 exists=if_exists,
@@ -2291,12 +2294,14 @@ class Parser:
                 kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
                 temporary=temporary,
                 materialized=materialized,
-                cascade=self._match_text_seq("CASCADE"),
+                cascade=cascade_or_restrict == "CASCADE",
+                restrict=cascade_or_restrict == "RESTRICT",
                 constraints=self._match_text_seq("CONSTRAINTS"),
                 purge=self._match_text_seq("PURGE"),
                 cluster=cluster,
                 concurrently=concurrently,
                 sync=self._match_text_seq("SYNC"),
+                iceberg=iceberg,
             )
         )
 

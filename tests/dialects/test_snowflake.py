@@ -5184,6 +5184,14 @@ MATCH_RECOGNIZE (
         ast = parse_one("SHOW TABLES IN db1.schema1", read="snowflake")
         self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
 
+    def test_drop_iceberg_table(self):
+        ast = self.validate_identity("DROP ICEBERG TABLE t")
+        self.assertTrue(ast.args["iceberg"])
+        self.validate_identity("DROP ICEBERG TABLE IF EXISTS t")
+        ast = self.validate_identity("DROP ICEBERG TABLE t RESTRICT")
+        self.assertTrue(ast.args["restrict"])
+        self.validate_identity("DROP ICEBERG TABLE IF EXISTS t RESTRICT")
+
     def test_show_primary_keys(self):
         self.validate_identity("SHOW PRIMARY KEYS")
         self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")

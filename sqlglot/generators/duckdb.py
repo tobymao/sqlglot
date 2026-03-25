@@ -4176,3 +4176,35 @@ class DuckDBGenerator(generator.Generator):
             corr_expr = expression  # make mypy happy
 
         return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))
+
+    def escape_sql(self, expression: exp.Escape) -> str:
+        this = expression.this
+        if isinstance(this, (exp.Like, exp.ILike)) and isinstance(
+            this.expression, (exp.All, exp.Any)
+        ):
+            exp_class: t.Type[exp.Like | exp.ILike] = type(this)
+            quantifier = this.expression
+            escape_char = expression.expression
+
+            unnested = quantifier.this.unnest()
+            exprs = unnested.expressions if isinstance(unnested, exp.Tuple) else [unnested]
+
+            all_expanded = [
+                exp.Escape(
+                    this=exp_class(this=this.this, expression=e), expression=escape_char.copy()
+                )
+                for e in exprs
+            ]
+            expanded = (
+                exp.or_(*all_expanded)
+                if isinstance(quantifier, exp.Any)
+                else exp.and_(*all_expanded)
+            )
+
+            parent = expression.parent
+            if not isinstance(parent, type(expanded)) and isinstance(parent, exp.Condition):
+                expanded = exp.paren(expanded, copy=False)
+
+            return self.sql(expanded)
+
+        return self.binary(expression, "ESCAPE")

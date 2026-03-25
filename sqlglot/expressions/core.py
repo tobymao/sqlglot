@@ -2512,7 +2512,7 @@ def _is_wrong_expression(expression, into):
 
 def _apply_builder(
     expression: ExpOrStr,
-    instance: Expr,
+    instance: E,
     arg: str,
     copy: bool = True,
     prefix: t.Optional[str] = None,
@@ -2520,7 +2520,7 @@ def _apply_builder(
     dialect: DialectType = None,
     into_arg="this",
     **opts: Unpack[ParserNoDialectArgs],
-):
+) -> E:
     if _is_wrong_expression(expression, into) and into is not None:
         expression = into(**{into_arg: expression})
     instance = maybe_copy(instance, copy)
@@ -2537,7 +2537,7 @@ def _apply_builder(
 
 def _apply_child_list_builder(
     *expressions: t.Optional[ExpOrStr],
-    instance: Expr,
+    instance: E,
     arg: str,
     append: bool = True,
     copy: bool = True,
@@ -2546,7 +2546,7 @@ def _apply_child_list_builder(
     dialect: DialectType = None,
     properties: t.Optional[MutableMapping[str, object]] = None,
     **opts: Unpack[ParserNoDialectArgs],
-):
+) -> E:
     instance = maybe_copy(instance, copy)
     parsed = []
     properties = {} if properties is None else properties
@@ -2583,7 +2583,7 @@ def _apply_child_list_builder(
 
 def _apply_list_builder(
     *expressions: t.Optional[t.Union[ExpOrStr, Sequence[ExpOrStr]]],
-    instance: Expr,
+    instance: E,
     arg: str,
     append: bool = True,
     copy: bool = True,
@@ -2591,7 +2591,7 @@ def _apply_list_builder(
     into: t.Optional[Type] = None,
     dialect: DialectType = None,
     **opts: Unpack[ParserNoDialectArgs],
-):
+) -> E:
     inst = maybe_copy(instance, copy)
 
     parsed = [
@@ -2616,14 +2616,14 @@ def _apply_list_builder(
 
 def _apply_conjunction_builder(
     *expressions: t.Optional[ExpOrStr],
-    instance: Expr,
+    instance: E,
     arg: str,
     into: t.Optional[Type] = None,
     append: bool = True,
     copy: bool = True,
     dialect: DialectType = None,
     **opts: Unpack[ParserNoDialectArgs],
-):
+) -> E:
     filtered = [exp for exp in expressions if exp is not None and exp != ""]
     if not filtered:
         return instance

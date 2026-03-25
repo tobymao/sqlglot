@@ -2143,6 +2143,17 @@ class DuckDBGenerator(generator.Generator):
         """
     )
 
+    def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
+        if not any(isinstance(prop, exp.IcebergProperty) for prop in properties.expressions):
+            return super().locate_properties(properties)
+
+        filtered = properties.copy()
+        filtered.set(
+            "expressions",
+            [prop for prop in filtered.expressions if not isinstance(prop, exp.IcebergProperty)],
+        )
+        return super().locate_properties(filtered)
+
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
         return self.sql(

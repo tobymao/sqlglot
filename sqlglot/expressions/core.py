@@ -2594,7 +2594,7 @@ def _apply_list_builder(
 ) -> E:
     inst = maybe_copy(instance, copy)
 
-    parsed = [
+    parsed: list[Expr] = [
         maybe_parse(
             sql_or_expression=expression,
             into=into,
@@ -2993,7 +2993,7 @@ def column(
     if not isinstance(col, Star):
         col = to_identifier(col, quoted=quoted, copy=copy)
 
-    this = Column(
+    this: Column | Dot = Column(
         this=col,
         table=to_identifier(table, quoted=quoted, copy=copy),
         db=to_identifier(db, quoted=quoted, copy=copy),

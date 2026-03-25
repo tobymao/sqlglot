@@ -10,6 +10,7 @@ from __future__ import annotations
 # bootstrap mypyc runtime: compiled .so modules do a top-level `import HASH__mypyc`,
 # but the runtime .so lives inside sqlglot/. Pre-load it into sys.modules.
 # this is only needed for editable builds
+from collections.abc import Collection
 import sys
 from pathlib import Path
 from builtins import type as Type
@@ -134,6 +135,17 @@ def parse_one(
     into: Type[E],
     **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> E: ...
+
+@t.overload
+def parse_one(
+    sql: str,
+    *,
+    read: DialectType = None,
+    dialect: DialectType = None,
+    into: Collection[Type[exp.Expr]],
+    **opts: Unpack[ParserNoDialectNoTableArgs],
+) -> exp.Expr: ...
+
 
 
 @t.overload

@@ -2599,7 +2599,7 @@ def _apply_child_list_builder(
 
 
 def _apply_list_builder(
-    *expressions: t.Optional[t.Union[ExpOrStr, Sequence[ExpOrStr]]],
+    *expressions: t.Optional[ExpOrStr],
     instance: E,
     arg: str,
     append: bool = True,
@@ -2611,7 +2611,7 @@ def _apply_list_builder(
 ) -> E:
     inst = maybe_copy(instance, copy)
 
-    parsed: list[Expr] = [
+    parsed = [
         maybe_parse(
             sql_or_expression=expression,
             into=into,

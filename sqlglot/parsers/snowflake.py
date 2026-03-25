@@ -784,31 +784,34 @@ class SnowflakeParser(parser.Parser):
 
     SHOW_PARSERS = {
         "DATABASES": _show_parser("DATABASES"),
-        "TERSE DATABASES": _show_parser("DATABASES"),
         "SCHEMAS": _show_parser("SCHEMAS"),
-        "TERSE SCHEMAS": _show_parser("SCHEMAS"),
         "OBJECTS": _show_parser("OBJECTS"),
-        "TERSE OBJECTS": _show_parser("OBJECTS"),
         "TABLES": _show_parser("TABLES"),
-        "TERSE TABLES": _show_parser("TABLES"),
         "VIEWS": _show_parser("VIEWS"),
-        "TERSE VIEWS": _show_parser("VIEWS"),
         "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
-        "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
         "IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
-        "TERSE IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
         "UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
-        "TERSE UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
         "SEQUENCES": _show_parser("SEQUENCES"),
-        "TERSE SEQUENCES": _show_parser("SEQUENCES"),
         "STAGES": _show_parser("STAGES"),
         "COLUMNS": _show_parser("COLUMNS"),
         "USERS": _show_parser("USERS"),
-        "TERSE USERS": _show_parser("USERS"),
         "FILE FORMATS": _show_parser("FILE FORMATS"),
         "FUNCTIONS": _show_parser("FUNCTIONS"),
         "PROCEDURES": _show_parser("PROCEDURES"),
         "WAREHOUSES": _show_parser("WAREHOUSES"),
+        "ICEBERG TABLES": _show_parser("TABLES", iceberg=True),
+        "TERSE ICEBERG TABLES": _show_parser("TABLES", terse=True, iceberg=True),
+        "TERSE DATABASES": _show_parser("DATABASES", terse=True),
+        "TERSE SCHEMAS": _show_parser("SCHEMAS", terse=True),
+        "TERSE OBJECTS": _show_parser("OBJECTS", terse=True),
+        "TERSE TABLES": _show_parser("TABLES", terse=True),
+        "TERSE VIEWS": _show_parser("VIEWS", terse=True),
+        "TERSE SEQUENCES": _show_parser("SEQUENCES", terse=True),
+        "TERSE USERS": _show_parser("USERS", terse=True),
+        # TERSE has no semantic effect for KEYS, so we do not set the terse AST arg
+        "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+        "TERSE IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
+        "TERSE UNIQUE KEYS": _show_parser("UNIQUE KEYS"),
     }
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
@@ -1083,13 +1086,11 @@ class SnowflakeParser(parser.Parser):
 
         return super()._parse_id_var(any_token=any_token, tokens=tokens)
 
-    def _parse_show_snowflake(self, this: str) -> exp.Show:
+    def _parse_show_snowflake(
+        self, this: str, terse: bool = False, iceberg: bool = False
+    ) -> exp.Show:
         scope = None
         scope_kind = None
-
-        # will identity SHOW TERSE SCHEMAS but not SHOW TERSE PRIMARY KEYS
-        # which is syntactically valid but has no effect on the output
-        terse = self._tokens[self._index - 2].text.upper() == "TERSE"
 
         history = self._match_text_seq("HISTORY")
 
@@ -1117,6 +1118,7 @@ class SnowflakeParser(parser.Parser):
         return self.expression(
             exp.Show(
                 terse=terse,
+                iceberg=iceberg,
                 this=this,
                 history=history,
                 like=like,

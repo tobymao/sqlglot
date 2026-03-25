@@ -5180,9 +5180,27 @@ MATCH_RECOGNIZE (
             "show terse tables in db1.schema1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE TABLES IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
+        self.validate_identity(
+            "SHOW ICEBERG TABLES IN db1.schema1",
+            "SHOW ICEBERG TABLES IN SCHEMA db1.schema1",
+        )
+        self.validate_identity(
+            "SHOW TERSE ICEBERG TABLES IN db1.schema1",
+            "SHOW TERSE ICEBERG TABLES IN SCHEMA db1.schema1",
+        )
 
         ast = parse_one("SHOW TABLES IN db1.schema1", read="snowflake")
         self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertFalse(ast.args["iceberg"])
+
+        ast = parse_one("SHOW ICEBERG TABLES IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertTrue(ast.args["iceberg"])
+
+        ast = parse_one("SHOW TERSE ICEBERG TABLES IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertTrue(ast.args["terse"])
+        self.assertTrue(ast.args["iceberg"])
 
     def test_show_primary_keys(self):
         self.validate_identity("SHOW PRIMARY KEYS")

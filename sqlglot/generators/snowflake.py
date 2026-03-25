@@ -819,6 +819,7 @@ class SnowflakeGenerator(generator.Generator):
 
     def show_sql(self, expression: exp.Show) -> str:
         terse = "TERSE " if expression.args.get("terse") else ""
+        iceberg = "ICEBERG " if expression.args.get("iceberg") else ""
         history = " HISTORY" if expression.args.get("history") else ""
         like = self.sql(expression, "like")
         like = f" LIKE {like}" if like else ""
@@ -843,7 +844,7 @@ class SnowflakeGenerator(generator.Generator):
         privileges = self.expressions(expression, key="privileges", flat=True)
         privileges = f" WITH PRIVILEGES {privileges}" if privileges else ""
 
-        return f"SHOW {terse}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
+        return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"

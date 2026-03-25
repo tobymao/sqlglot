@@ -72,19 +72,7 @@ def seq_get(seq: Sequence[T], index: int) -> t.Optional[T]:
         return None
 
 
-@t.overload
-def ensure_list(value: tuple[T, ...]) -> list[T]: ...
-@t.overload
-def ensure_list(value: list[T]) -> list[T]: ...
-@t.overload
-def ensure_list(value: None) -> list[t.Any]: ...
-
-
-@t.overload
-def ensure_list(value: T) -> list[T]: ...
-
-
-def ensure_list(value):
+def ensure_list(value: T | list[T] | tuple[T, ...] | None) -> list[T]:
     """
     Ensures that a value is a list, otherwise casts or wraps it into one.
 

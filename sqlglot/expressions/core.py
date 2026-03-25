@@ -364,7 +364,7 @@ class Expr:
     def _binop(self, klass: Type[E], other: t.Any, reverse: bool = False) -> E:
         raise NotImplementedError
 
-    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr, ...]) -> Bracket:
+    def __getitem__(self, other: ExpOrStr | tuple[ExpOrStr, ...]) -> Bracket:
         raise NotImplementedError
 
     def __iter__(self) -> Iterator:
@@ -374,7 +374,7 @@ class Expr:
         self,
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
@@ -1338,7 +1338,7 @@ class Expression(Expr):
         self,
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:

@@ -3366,7 +3366,7 @@ class Parser:
         )
 
     def _parse_insert(self) -> t.Union[exp.Insert, exp.MultitableInserts]:
-        comments = []
+        comments: list[str] = []
         hint = self._parse_hint()
         overwrite = self._match(TokenType.OVERWRITE)
         ignore = self._match(TokenType.IGNORE)

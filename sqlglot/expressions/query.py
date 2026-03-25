@@ -893,7 +893,7 @@ class Tuple(Expression):
         self,
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         copy: bool = True,
         **opts: Unpack[ParserDialectNoCopyArgs],
     ) -> In:
@@ -902,12 +902,7 @@ class Tuple(Expression):
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
             unnest=(
-                Unnest(
-                    expressions=[
-                        maybe_parse(t.cast(ExpOrStr, e), copy=copy, **opts)
-                        for e in ensure_list(unnest)
-                    ]
-                )
+                Unnest(expressions=[maybe_parse(e, copy=copy, **opts) for e in ensure_list(unnest)])
                 if unnest
                 else None
             ),
@@ -1358,7 +1353,7 @@ class Select(Expression, Query):
     def join(
         self,
         expression: ExpOrStr,
-        on: t.Optional[ExpOrStr | list[ExpOrStr]] = None,
+        on: t.Optional[ExpOrStr | list[ExpOrStr] | tuple[ExpOrStr, ...]] = None,
         using: t.Optional[ExpOrStr | list[ExpOrStr] | tuple[ExpOrStr, ...]] = None,
         append: bool = True,
         join_type: t.Optional[str] = None,
@@ -1426,14 +1421,14 @@ class Select(Expression, Query):
                 join.set("kind", kind)
 
         if on:
-            on = and_(
-                *t.cast(list[ExpOrStr], ensure_list(on)), dialect=dialect, copy=copy, **opts
-            )
+            on_exprs: list[ExpOrStr] = ensure_list(on)
+            on = and_(*on_exprs, dialect=dialect, copy=copy, **opts)
             join.set("on", on)
 
         if using:
+            using_exprs: list[ExpOrStr] = ensure_list(using)
             join = _apply_list_builder(
-                *t.cast(list[ExpOrStr], ensure_list(using)),
+                *using_exprs,
                 instance=join,
                 arg="using",
                 append=append,

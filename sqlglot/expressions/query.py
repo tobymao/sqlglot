@@ -1427,13 +1427,13 @@ class Select(Expression, Query):
 
         if on:
             on = and_(
-                *t.cast(t.List[ExpOrStr], ensure_list(on)), dialect=dialect, copy=copy, **opts
+                *t.cast(list[ExpOrStr], ensure_list(on)), dialect=dialect, copy=copy, **opts
             )
             join.set("on", on)
 
         if using:
             join = _apply_list_builder(
-                *ensure_list(using),
+                *t.cast(list[ExpOrStr], ensure_list(using)),
                 instance=join,
                 arg="using",
                 append=append,

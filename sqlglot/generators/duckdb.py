@@ -2352,6 +2352,25 @@ class DuckDBGenerator(generator.Generator):
                 result = self.func("TO_BINARY", value)
         return f"TRY({result})" if is_safe else result
 
+    def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        """
+        Snowflake's TO_NUMBER without precision/scale defaults to NUMBER(38, 0),
+        which truncates decimals. The parser sets these defaults at parse time.
+        Always cast to DECIMAL(precision, scale) using the values from the AST.
+        """
+        precision = expression.args.get("precision")
+        scale = expression.args.get("scale")
+
+        # Build DECIMAL type with precision and scale from AST
+        # Parser ensures defaults (38, 0) are set when not specified
+        if precision and scale:
+            decimal_type = exp.DataType.build(f"DECIMAL({precision.name}, {scale.name})")
+        else:
+            # Fallback if somehow precision/scale are missing (shouldn't happen)
+            decimal_type = exp.DataType.build("DECIMAL(38, 0)")
+
+        return self.sql(exp.cast(expression.this, decimal_type))
+
     def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
         """
         Handle GREATEST/LEAST functions with dialect-aware NULL behavior.

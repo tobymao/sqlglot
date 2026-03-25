@@ -775,6 +775,38 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT IFF(_u.pos = _u_2.pos_2, _u_2.col, NULL) AS col FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE([1, 2, 3])) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => [1, 2, 3])) AS _u_2(seq, key, path, pos_2, col, this) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > (ARRAY_SIZE([1, 2, 3]) - 1) AND _u_2.pos_2 = (ARRAY_SIZE([1, 2, 3]) - 1))",
             },
         )
+
+        # TO_NUMBER transpilation from Snowflake to DuckDB
+        self.validate_all(
+            "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
+            read={
+                "snowflake": "SELECT TO_NUMBER('12.3456')",
+            },
+            write={
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
+                "snowflake": "SELECT TO_NUMBER('12.3456')",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('12.3456' AS DECIMAL(10, 1))",
+            read={
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 1)",
+            },
+            write={
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 1))",
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('3,741.72' AS DECIMAL(6, 2))",
+            read={
+                "snowflake": "SELECT TO_DECIMAL('3,741.72', '9,999.99', 6, 2)",
+            },
+            write={
+                "duckdb": "SELECT CAST('3,741.72' AS DECIMAL(6, 2))",
+                "snowflake": "SELECT TO_DECIMAL('3,741.72', '9,999.99', 6, 2)",
+            },
+        )
         self.validate_all(
             "VAR_POP(x)",
             read={

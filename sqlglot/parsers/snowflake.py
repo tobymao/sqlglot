@@ -305,6 +305,54 @@ def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
     )
 
 
+def _build_to_number(args: t.List[exp.Expr]) -> exp.ToNumber:
+    """
+    Build TO_NUMBER with Snowflake default precision/scale of (38, 0).
+
+    TO_NUMBER signature: (expr, [format], [precision], [scale])
+    - If 1 arg: expr only → defaults precision=38, scale=0
+    - If 2 args: expr, precision (no format) → scale defaults to 0
+    - If 3 args: expr, precision, scale (no format)
+    - If 4 args: expr, format, precision, scale
+
+    Format is a string pattern (e.g., '999.99'), precision/scale are integers.
+    """
+    expr = seq_get(args, 0)
+    arg1 = seq_get(args, 1)
+    arg2 = seq_get(args, 2)
+    arg3 = seq_get(args, 3)
+
+    # Determine if arg1 is format (string) or precision (number)
+    # Format is typically a string literal like '999.99'
+    has_format = arg1 and arg1.is_string
+
+    if has_format:
+        # args = [expr, format, precision, scale]
+        format_arg = arg1
+        precision = arg2
+        scale = arg3
+    else:
+        # args = [expr, precision, scale] (no format)
+        format_arg = None
+        precision = arg1
+        scale = arg2
+
+    # Set Snowflake defaults when precision/scale are not specified
+    if precision is None and scale is None:
+        precision = exp.Literal.number(38)
+        scale = exp.Literal.number(0)
+    elif precision and scale is None:
+        # If only precision provided, scale defaults to 0
+        scale = exp.Literal.number(0)
+
+    return exp.ToNumber(
+        this=expr,
+        format=format_arg,
+        precision=precision,
+        scale=scale,
+    )
+
+
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser], exp.Show]:
     def _parse(self: SnowflakeParser) -> exp.Show:
         return self._parse_show_snowflake(*args, **kwargs)
@@ -659,15 +707,7 @@ class SnowflakeParser(parser.Parser):
         ),
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_DATE": _build_datetime("TO_DATE", exp.DType.DATE),
-        **dict.fromkeys(
-            ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
-            lambda args: exp.ToNumber(
-                this=seq_get(args, 0),
-                format=seq_get(args, 1),
-                precision=seq_get(args, 2),
-                scale=seq_get(args, 3),
-            ),
-        ),
+        **dict.fromkeys(("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"), _build_to_number),
         "TO_TIME": _build_datetime("TO_TIME", exp.DType.TIME),
         "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DType.TIMESTAMP),
         "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),

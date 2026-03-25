@@ -712,12 +712,32 @@ class SnowflakeGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        """
+        Generate TO_NUMBER SQL, omitting default precision/scale for roundtrips.
+
+        When precision=38 and scale=0 (Snowflake defaults set by parser),
+        omit them from output to preserve original SQL format.
+        """
+        precision = expression.args.get("precision")
+        scale = expression.args.get("scale")
+
+        # Check if these are the default values (38, 0) set by parser
+        is_default = (
+            precision
+            and scale
+            and isinstance(precision, exp.Literal)
+            and isinstance(scale, exp.Literal)
+            and precision.name == "38"
+            and scale.name == "0"
+        )
+
+        # Omit defaults for roundtrip preservation
         return self.func(
             "TO_NUMBER",
             expression.this,
             expression.args.get("format"),
-            expression.args.get("precision"),
-            expression.args.get("scale"),
+            None if is_default else precision,
+            None if is_default else scale,
         )
 
     def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:

@@ -902,7 +902,12 @@ class Tuple(Expression):
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
             unnest=(
-                Unnest(expressions=[maybe_parse(e, copy=copy, **opts) for e in ensure_list(unnest)])
+                Unnest(
+                    expressions=[
+                        maybe_parse(e, copy=copy, **opts)
+                        for e in t.cast(list[ExpOrStr], ensure_list(unnest))
+                    ]
+                )
                 if unnest
                 else None
             ),

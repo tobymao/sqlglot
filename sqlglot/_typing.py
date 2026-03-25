@@ -35,6 +35,10 @@ class ParserDialectNoTableArgs(ParserNoDialectNoTableArgs, _DialectArg, total=Fa
 
 
 class ParserNoDialectArgs(ParserNoDialectNoTableArgs, total=False):
+    pass
+
+
+class ParserTableArgs(ParserNoDialectNoTableArgs, total=False):
     table: t.Optional[t.Union[Sequence[ExpOrStr], bool, Sequence[t.Union[str, Identifier]]]]
 
 

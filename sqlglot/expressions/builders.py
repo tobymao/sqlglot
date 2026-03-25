@@ -206,7 +206,7 @@ def delete(
 
 def insert(
     expression: ExpOrStr,
-    into: ExpOrStr,
+    into: str | Table,
     columns: t.Optional[Sequence[str | Identifier]] = None,
     overwrite: t.Optional[bool] = None,
     returning: t.Optional[ExpOrStr] = None,

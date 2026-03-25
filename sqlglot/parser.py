@@ -9237,12 +9237,12 @@ class Parser:
 
         return self.expression(exp.WithOperator(this=this, op=op))
 
-    def _parse_wrapped_options(self) -> t.List[t.Optional[exp.Expr]]:
+    def _parse_wrapped_options(self) -> list[exp.Expr]:
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
 
-        opts: t.List[t.Optional[exp.Expr]] = []
-        option: exp.Expr | t.List[exp.Expr] | None
+        opts: list[exp.Expr] = []
+        option: t.Optional[t.Union[exp.Expr, list[exp.Expr]]]
         while self._curr and not self._match(TokenType.R_PAREN):
             if self._match_text_seq("FORMAT_NAME", "="):
                 # The FORMAT_NAME can be set to an identifier for Snowflake and T-SQL

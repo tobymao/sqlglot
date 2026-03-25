@@ -2386,7 +2386,19 @@ TIMESTAMP_PARTS = {
 
 @t.overload
 def maybe_parse(
-    sql_or_expression: ExpOrStr,
+    sql_or_expression: E,
+    *,
+    into: t.Optional[IntoType] = None,
+    dialect: DialectType = None,
+    prefix: t.Optional[str] = None,
+    copy: bool = False,
+    **opts: Unpack[ParserNoDialectArgs],
+) -> E: ...
+
+
+@t.overload
+def maybe_parse(
+    sql_or_expression: int | str,
     *,
     into: Type[E],
     dialect: DialectType = None,
@@ -2398,14 +2410,14 @@ def maybe_parse(
 
 @t.overload
 def maybe_parse(
-    sql_or_expression: int | str | E,
+    sql_or_expression: int | str,
     *,
-    into: t.Optional[IntoType] = None,
+    into: t.Union[Collection[Type[Expr]], t.Optional[Type[Expr]]] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
-) -> E: ...
+) -> Expr: ...
 
 
 def maybe_parse(

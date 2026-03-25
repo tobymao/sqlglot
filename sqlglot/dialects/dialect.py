@@ -1152,11 +1152,11 @@ class Dialect(metaclass=_Dialect):
             for expression in self.parse(sql)
         ]
 
-    def tokenize(self, sql: str, dialect: DialectType = None) -> list[Token]:
-        return self.tokenizer(dialect=dialect).tokenize(sql)
+    def tokenize(self, sql: str, dialect: DialectType = None, **opts: object) -> list[Token]:
+        return self.tokenizer(dialect=dialect, **opts).tokenize(sql)
 
-    def tokenizer(self, dialect: DialectType = None) -> Tokenizer:
-        return self.tokenizer_class(dialect=dialect or self)
+    def tokenizer(self, dialect: DialectType = None, **opts: object) -> Tokenizer:
+        return self.tokenizer_class(dialect=dialect or self, **opts)
 
     def jsonpath_tokenizer(self, dialect: DialectType = None) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(dialect=dialect or self)

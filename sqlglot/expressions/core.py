@@ -26,17 +26,18 @@ from sqlglot.helper import (
 
 from sqlglot.tokenizer_core import Token
 from builtins import type as Type
+from sqlglot._typing import (
+    GeneratorNoDialectArgs,
+    ParserNoDialectArgs,
+    E,
+    ParserNoDialectNoTableArgs,
+)
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
-    from sqlglot.expressions.query import Select, Query
-    from sqlglot._typing import (
-        GeneratorNoDialectArgs,
-        ParserNoDialectArgs,
-        E,
-        ParserNoDialectNoTableArgs,
-    )
+    from sqlglot.expressions.query import Select
+
     from collections.abc import MutableMapping
     from typing_extensions import Unpack
 
@@ -1309,7 +1310,7 @@ class Expression(Expr):
         table: bool | Sequence[str | Identifier] = False,
         **opts: Unpack[ParserNoDialectNoTableArgs],
     ) -> Expr:
-        return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
+        return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, table=table, **opts)
 
     def _binop(self, klass: Type[E], other: t.Any, reverse: bool = False) -> E:
         this = self.copy()
@@ -1344,7 +1345,7 @@ class Expression(Expr):
     ) -> In:
         subquery = maybe_parse(query, copy=copy, **opts) if query else None
         if subquery and not subquery.is_subquery:
-            subquery = t.cast(Query, subquery).subquery(copy=False)
+            subquery = subquery.subquery(copy=False) #type: ignore[attr-defined]
 
         return In(
             this=maybe_copy(self, copy),

@@ -48,12 +48,13 @@ from sqlglot.expressions.dml import Delete, Insert, Merge, Update, When, Whens
 from sqlglot.expressions.functions import Case, Cast
 from sqlglot.expressions.array import Array
 
+from sqlglot.expressions.query import Query
+
 if t.TYPE_CHECKING:
     from collections.abc import Sequence, Iterable
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
-    from sqlglot.expressions.query import Query
     from sqlglot._typing import (
         ParserArgs,
         ParserNoDialectArgs,

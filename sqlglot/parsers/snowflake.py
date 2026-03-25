@@ -306,51 +306,20 @@ def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
 
 
 def _build_to_number(args: t.List[exp.Expr]) -> exp.ToNumber:
-    """
-    Build TO_NUMBER with Snowflake default precision/scale of (38, 0).
-
-    TO_NUMBER signature: (expr, [format], [precision], [scale])
-    - If 1 arg: expr only → defaults precision=38, scale=0
-    - If 2 args: expr, precision (no format) → scale defaults to 0
-    - If 3 args: expr, precision, scale (no format)
-    - If 4 args: expr, format, precision, scale
-
-    Format is a string pattern (e.g., '999.99'), precision/scale are integers.
-    """
-    expr = seq_get(args, 0)
-    arg1 = seq_get(args, 1)
-    arg2 = seq_get(args, 2)
-    arg3 = seq_get(args, 3)
+    """Build TO_NUMBER with Snowflake default precision/scale of (38, 0)."""
+    expr, arg1, arg2, arg3 = (seq_get(args, i) for i in range(4))
 
     # Determine if arg1 is format (string) or precision (number)
-    # Format is typically a string literal like '999.99'
     has_format = arg1 and arg1.is_string
+    format_arg, precision, scale = (arg1, arg2, arg3) if has_format else (None, arg1, arg2)
 
-    if has_format:
-        # args = [expr, format, precision, scale]
-        format_arg = arg1
-        precision = arg2
-        scale = arg3
-    else:
-        # args = [expr, precision, scale] (no format)
-        format_arg = None
-        precision = arg1
-        scale = arg2
-
-    # Set Snowflake defaults when precision/scale are not specified
+    # Set Snowflake defaults when not specified
     if precision is None and scale is None:
-        precision = exp.Literal.number(38)
-        scale = exp.Literal.number(0)
+        precision, scale = exp.Literal.number(38), exp.Literal.number(0)
     elif precision and scale is None:
-        # If only precision provided, scale defaults to 0
         scale = exp.Literal.number(0)
 
-    return exp.ToNumber(
-        this=expr,
-        format=format_arg,
-        precision=precision,
-        scale=scale,
-    )
+    return exp.ToNumber(this=expr, format=format_arg, precision=precision, scale=scale)
 
 
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser], exp.Show]:

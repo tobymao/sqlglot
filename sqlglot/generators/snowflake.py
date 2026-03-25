@@ -529,13 +529,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.ToFile: lambda self, e: self.func(
             f"{'TRY_' if e.args.get('safe') else ''}TO_FILE", e.this, e.args.get("path")
         ),
-        exp.ToNumber: lambda self, e: self.func(
-            f"{'TRY_' if e.args.get('safe') else ''}TO_NUMBER",
-            e.this,
-            e.args.get("format"),
-            e.args.get("precision"),
-            e.args.get("scale"),
-        ),
         exp.JSONFormat: rename_func("TO_JSON"),
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
@@ -712,26 +705,18 @@ class SnowflakeGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
-        """
-        Generate TO_NUMBER SQL, omitting default precision/scale for roundtrips.
-
-        When precision=38 and scale=0 (Snowflake defaults set by parser),
-        omit them from output to preserve original SQL format.
-        """
+        """Generate TO_NUMBER SQL, omitting default precision/scale for roundtrips."""
         precision = expression.args.get("precision")
         scale = expression.args.get("scale")
 
-        # Check if these are the default values (38, 0) set by parser
+        # Omit default (38, 0) for roundtrip preservation
         is_default = (
-            precision
-            and scale
-            and isinstance(precision, exp.Literal)
-            and isinstance(scale, exp.Literal)
+            isinstance(precision, exp.Literal)
             and precision.name == "38"
+            and isinstance(scale, exp.Literal)
             and scale.name == "0"
         )
 
-        # Omit defaults for roundtrip preservation
         return self.func(
             "TO_NUMBER",
             expression.this,
@@ -753,6 +738,21 @@ class SnowflakeGenerator(generator.Generator):
             return self.func("TO_GEOGRAPHY", expression.this)
         if expression.is_type(exp.DType.GEOMETRY):
             return self.func("TO_GEOMETRY", expression.this)
+
+        # Convert CAST to DECIMAL/NUMERIC to TO_NUMBER
+        if expression.is_type(exp.DType.DECIMAL):
+            # Extract precision and scale from DECIMAL(p, s)
+            params = expression.to.expressions or []
+            precision = params[0].this if len(params) >= 1 and isinstance(params[0], exp.DataTypeParam) else None
+            scale = params[1].this if len(params) >= 2 and isinstance(params[1], exp.DataTypeParam) else None
+
+            to_number = exp.ToNumber(
+                this=expression.this,
+                precision=precision,
+                scale=scale,
+                safe=isinstance(expression, exp.TryCast),
+            )
+            return self.tonumber_sql(to_number)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)
 

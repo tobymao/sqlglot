@@ -15,7 +15,6 @@ from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
 from collections.abc import Iterator, Sequence, Collection
-from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
@@ -31,7 +30,15 @@ from builtins import type as Type
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
-    from sqlglot.expressions.query import Select
+    from sqlglot.expressions.query import Select, Query
+    from sqlglot._typing import (
+        GeneratorNoDialectArgs,
+        ParserNoDialectArgs,
+        E,
+        ParserNoDialectNoTableArgs,
+    )
+    from collections.abc import MutableMapping
+    from typing_extensions import Unpack
 
 logger = logging.getLogger("sqlglot")
 
@@ -271,7 +278,7 @@ class Expr:
     def to_s(self) -> str:
         raise NotImplementedError
 
-    def sql(self, dialect: DialectType = None, **opts: object) -> str:
+    def sql(self, dialect: DialectType = None, **opts: Unpack[GeneratorNoDialectArgs]) -> str:
         raise NotImplementedError
 
     def transform(
@@ -316,7 +323,7 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
         raise NotImplementedError
 
@@ -326,7 +333,7 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
         raise NotImplementedError
 
@@ -349,7 +356,7 @@ class Expr:
         quoted: t.Optional[bool] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Expr:
         raise NotImplementedError
 
@@ -368,7 +375,7 @@ class Expr:
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
         raise NotImplementedError
 
@@ -1014,7 +1021,7 @@ class Expression(Expr):
         """
         return _to_s(self, verbose=True)
 
-    def sql(self, dialect: DialectType = None, **opts: t.Any) -> str:
+    def sql(self, dialect: DialectType = None, **opts: Unpack[GeneratorNoDialectArgs]) -> str:
         """
         Returns SQL string representation of this tree.
 
@@ -1180,7 +1187,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
         """
         AND this condition with one or multiple expressions.
@@ -1210,7 +1217,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
         """
         OR this condition with one or multiple expressions.
@@ -1298,7 +1305,7 @@ class Expression(Expr):
         quoted: t.Optional[bool] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Expr:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
 
@@ -1331,11 +1338,11 @@ class Expression(Expr):
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
         subquery = maybe_parse(query, copy=copy, **opts) if query else None
         if subquery and not subquery.is_subquery:
-            subquery = subquery.subquery(copy=False)
+            subquery = t.cast(Query, subquery).subquery(copy=False)
 
         return In(
             this=maybe_copy(self, copy),
@@ -2215,7 +2222,10 @@ class RegexpLike(Expression, Binary, Func):
 
 
 def not_(
-    expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: object
+    expression: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Not:
     """
     Wrap a condition with a NOT operator.
@@ -2380,7 +2390,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
 
@@ -2392,7 +2402,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
 
@@ -2403,7 +2413,7 @@ def maybe_parse(
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
     copy: bool = False,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """Gracefully handle a possible string or expression.
 
@@ -2501,17 +2511,17 @@ def _is_wrong_expression(expression, into):
 
 
 def _apply_builder(
-    expression,
-    instance,
-    arg,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
+    expression: ExpOrStr,
+    instance: Expr,
+    arg: str,
+    copy: bool = True,
+    prefix: t.Optional[str] = None,
+    into: t.Optional[Type] = None,
+    dialect: DialectType = None,
     into_arg="this",
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ):
-    if _is_wrong_expression(expression, into):
+    if _is_wrong_expression(expression, into) and into is not None:
         expression = into(**{into_arg: expression})
     instance = maybe_copy(instance, copy)
     expression = maybe_parse(
@@ -2526,16 +2536,16 @@ def _apply_builder(
 
 
 def _apply_child_list_builder(
-    *expressions,
-    instance,
-    arg,
-    append=True,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
-    properties=None,
-    **opts: t.Any,
+    *expressions: t.Optional[ExpOrStr],
+    instance: Expr,
+    arg: str,
+    append: bool = True,
+    copy: bool = True,
+    prefix: t.Optional[str] = None,
+    into: t.Optional[Type] = None,
+    dialect: DialectType = None,
+    properties: t.Optional[MutableMapping[str, object]] = None,
+    **opts: Unpack[ParserNoDialectArgs],
 ):
     instance = maybe_copy(instance, copy)
     parsed = []
@@ -2543,7 +2553,7 @@ def _apply_child_list_builder(
 
     for expression in expressions:
         if expression is not None:
-            if _is_wrong_expression(expression, into):
+            if _is_wrong_expression(expression, into) and into is not None:
                 expression = into(expressions=[expression])
 
             expression = maybe_parse(
@@ -2562,7 +2572,7 @@ def _apply_child_list_builder(
     existing = instance.args.get(arg)
     if append and existing:
         parsed = existing.expressions + parsed
-
+    assert into is not None, "into is required to use _apply_child_list_builder"
     child = into(expressions=parsed)
     for k, v in properties.items():
         child.set(k, v)
@@ -2572,15 +2582,15 @@ def _apply_child_list_builder(
 
 
 def _apply_list_builder(
-    *expressions,
-    instance,
-    arg,
-    append=True,
-    copy=True,
-    prefix=None,
-    into=None,
-    dialect=None,
-    **opts: t.Any,
+    *expressions: t.Optional[t.Union[ExpOrStr, Sequence[ExpOrStr]]],
+    instance: Expr,
+    arg: str,
+    append: bool = True,
+    copy: bool = True,
+    prefix: t.Optional[str] = None,
+    into: t.Optional[Type] = None,
+    dialect: DialectType = None,
+    **opts: Unpack[ParserNoDialectArgs],
 ):
     inst = maybe_copy(instance, copy)
 
@@ -2605,14 +2615,14 @@ def _apply_list_builder(
 
 
 def _apply_conjunction_builder(
-    *expressions,
-    instance,
-    arg,
-    into=None,
-    append=True,
-    copy=True,
-    dialect=None,
-    **opts: t.Any,
+    *expressions: t.Optional[ExpOrStr],
+    instance: Expr,
+    arg: str,
+    into: t.Optional[Type] = None,
+    append: bool = True,
+    copy: bool = True,
+    dialect: DialectType = None,
+    **opts: Unpack[ParserNoDialectArgs],
 ):
     filtered = [exp for exp in expressions if exp is not None and exp != ""]
     if not filtered:
@@ -2636,7 +2646,7 @@ def _combine(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts)
@@ -2671,7 +2681,7 @@ def _apply_set_operation(
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> t.Any:
     return reduce(
         lambda x, y: set_operation(this=x, expression=y, distinct=distinct, **opts),
@@ -2720,7 +2730,10 @@ def to_identifier(name, quoted=None, copy=True):
 
 
 def condition(
-    expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: t.Any
+    expression: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """
     Initialize a logical condition expression.
@@ -2761,7 +2774,7 @@ def and_(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Condition:
     """
     Combine multiple conditions with an AND logical operator.
@@ -2791,7 +2804,7 @@ def or_(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Condition:
     """
     Combine multiple conditions with an OR logical operator.
@@ -2821,7 +2834,7 @@ def xor(
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Condition:
     """
     Combine multiple conditions with an XOR logical operator.
@@ -2872,7 +2885,7 @@ def alias_(
     quoted: t.Optional[bool] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> Expr:
     """Create an Alias expression.
 
@@ -2960,7 +2973,7 @@ def column(
     *,
     fields=None,
     quoted=None,
-    copy=True,
+    copy: bool = True,
 ):
     """
     Build a Column.

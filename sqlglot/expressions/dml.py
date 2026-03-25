@@ -22,9 +22,10 @@ from sqlglot.expressions.query import (
 )
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing_extensions import Self, Unpack
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr
+    from sqlglot._typing import ParserNoDialectArgs, ParserNoDialectNoTableArgs
 
 
 @trait
@@ -36,7 +37,7 @@ class DML(Expr):
         expression: ExpOrStr,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> "Self":
         """
         Set the RETURNING expression. Not supported by all dialects.
@@ -85,7 +86,7 @@ class Delete(Expression, DML):
         table: ExpOrStr,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectNoTableArgs],
     ) -> Delete:
         """
         Create a DELETE expression or replace the table on an existing DELETE expression.
@@ -119,7 +120,7 @@ class Delete(Expression, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Delete:
         """
         Append to or set the WHERE expressions.
@@ -221,7 +222,7 @@ class Insert(Expression, DDL, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Optional[bool],
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Insert:
         """
         Append to or set the common table expressions.
@@ -302,7 +303,11 @@ class Update(Expression, DML):
     }
 
     def table(
-        self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: object
+        self,
+        expression: ExpOrStr,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Update:
         """
         Set the table to update.
@@ -339,7 +344,7 @@ class Update(Expression, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Update:
         """
         Append to or set the SET expressions.
@@ -376,7 +381,7 @@ class Update(Expression, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Update:
         """
         Append to or set the WHERE expressions.
@@ -414,7 +419,7 @@ class Update(Expression, DML):
         expression: t.Optional[ExpOrStr] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Update:
         """
         Set the FROM expression.
@@ -458,7 +463,7 @@ class Update(Expression, DML):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Update:
         """
         Append to or set the common table expressions.

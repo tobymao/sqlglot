@@ -70,7 +70,8 @@ from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
 from sqlglot.tokens import Token as Token, Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    from sqlglot._typing import E, GeneratorDialectNoCopyArgs, ParserNoDialectArgs
+    from typing_extensions import Unpack
     from sqlglot.dialects.dialect import DialectType as DialectType
 
 logger = logging.getLogger("sqlglot")
@@ -88,7 +89,7 @@ pretty = False
 """Whether to format generated SQL by default."""
 
 
-def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> t.List[Token]:
+def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) -> list[Token]:
     """
     Tokenizes the given SQL string.
 
@@ -104,7 +105,10 @@ def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) ->
 
 
 def parse(
-    sql: str, read: DialectType = None, dialect: DialectType = None, **opts: object
+    sql: str,
+    read: DialectType = None,
+    dialect: DialectType = None,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> list[t.Optional[Expr]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
@@ -122,11 +126,23 @@ def parse(
 
 
 @t.overload
-def parse_one(sql: str, *, into: Type[E], **opts: t.Any) -> E: ...
+def parse_one(
+    sql: str,
+    *,
+    read: DialectType = None,
+    dialect: DialectType = None,
+    into: Type[E],
+    **opts: Unpack[ParserNoDialectArgs],
+) -> E: ...
 
 
 @t.overload
-def parse_one(sql: str, **opts: t.Any) -> Expr: ...
+def parse_one(
+    sql: str,
+    read: DialectType = None,
+    dialect: DialectType = None,
+    **opts: Unpack[ParserNoDialectArgs],
+) -> Expr: ...
 
 
 def parse_one(
@@ -134,7 +150,7 @@ def parse_one(
     read: DialectType = None,
     dialect: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """
     Parses the given SQL string and returns a syntax tree.
@@ -169,8 +185,8 @@ def transpile(
     write: DialectType = None,
     identity: bool = True,
     error_level: t.Optional[ErrorLevel] = None,
-    **opts: object,
-) -> t.List[str]:
+    **opts: Unpack[GeneratorDialectNoCopyArgs],
+) -> list[str]:
     """
     Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed
     to conform to the target dialect. Each string in the returned list represents a single transformed SQL statement.

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
 from sqlglot.expressions.core import (
@@ -41,6 +40,14 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.constraints import ColumnConstraint
     from sqlglot.expressions.ddl import Create
     from sqlglot.expressions.array import Unnest
+    from sqlglot._typing import (
+        E,
+        ParserCopyArgs,
+        ParserDialectNoCopyArgs,
+        ParserNoDialectArgs,
+        ParserNoDialectNoTableArgs,
+    )
+    from typing_extensions import Unpack
 
     S = t.TypeVar("S", bound="SetOperation")
     Q = t.TypeVar("Q", bound="Query")
@@ -56,7 +63,7 @@ def _apply_cte_builder(
     dialect: DialectType = None,
     copy: bool = True,
     scalar: t.Optional[bool] = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> E:
     alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
     as_expression = maybe_parse(as_, dialect=dialect, copy=copy, **opts)
@@ -122,7 +129,7 @@ class Query(Selectable):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         raise NotImplementedError("Query objects must implement `select`")
 
@@ -150,7 +157,7 @@ class Query(Selectable):
         expression: ExpOrStr | int,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         """
         Adds a LIMIT clause to this query.
@@ -188,7 +195,7 @@ class Query(Selectable):
         expression: ExpOrStr | int,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         """
         Set the OFFSET expression.
@@ -227,7 +234,7 @@ class Query(Selectable):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         """
         Set the ORDER BY expression.
@@ -267,7 +274,7 @@ class Query(Selectable):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         """
         Append to or set the WHERE expressions.
@@ -310,7 +317,7 @@ class Query(Selectable):
         dialect: DialectType = None,
         copy: bool = True,
         scalar: t.Optional[bool] = None,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Q:
         """
         Append to or set the common table expressions.
@@ -354,7 +361,7 @@ class Query(Selectable):
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: t.Any,
+        **opts: Unpack[ParserCopyArgs],
     ) -> Union:
         """
         Builds a UNION expression.
@@ -381,7 +388,7 @@ class Query(Selectable):
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: t.Any,
+        **opts: Unpack[ParserCopyArgs],
     ) -> Intersect:
         """
         Builds an INTERSECT expression.
@@ -408,7 +415,7 @@ class Query(Selectable):
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: t.Any,
+        **opts: Unpack[ParserCopyArgs],
     ) -> Except:
         """
         Builds an EXCEPT expression.
@@ -707,7 +714,7 @@ class Join(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Join:
         """
         Append to or set the ON expressions.
@@ -751,7 +758,7 @@ class Join(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Join:
         """
         Append to or set the USING expressions.
@@ -888,7 +895,7 @@ class Tuple(Expression):
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | Collection[ExpOrStr] = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserDialectNoCopyArgs],
     ) -> In:
         return In(
             this=maybe_copy(self, copy),
@@ -1028,7 +1035,7 @@ class SetOperation(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> S:
         this = maybe_copy(self, copy)
         this.this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
@@ -1131,7 +1138,11 @@ class Select(Expression, Query):
     }
 
     def from_(
-        self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts: object
+        self,
+        expression: ExpOrStr,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Set the FROM expression.
@@ -1168,7 +1179,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Set the GROUP BY expression.
@@ -1212,7 +1223,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Set the SORT BY expression.
@@ -1252,7 +1263,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Set the CLUSTER BY expression.
@@ -1292,7 +1303,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         return _apply_list_builder(
             *expressions,
@@ -1311,7 +1322,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Append to or set the LATERAL expressions.
@@ -1354,7 +1365,7 @@ class Select(Expression, Query):
         join_alias: t.Optional[Identifier | str] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Append to or set the JOIN expressions.
@@ -1389,7 +1400,7 @@ class Select(Expression, Query):
         Returns:
             Select: the modified expression.
         """
-        parse_args: t.Dict[str, t.Any] = {"dialect": dialect, **opts}
+        parse_args: dict[str, t.Any] = {"dialect": dialect, **opts}
 
         try:
             expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
@@ -1449,7 +1460,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         """
         Append to or set the HAVING expressions.
@@ -1488,7 +1499,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         return _apply_list_builder(
             *expressions,
@@ -1507,7 +1518,7 @@ class Select(Expression, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Select:
         return _apply_conjunction_builder(
             *expressions,
@@ -1549,7 +1560,7 @@ class Select(Expression, Query):
         properties: t.Optional[dict] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: t.Any,
+        **opts: Unpack[ParserNoDialectNoTableArgs],
     ) -> Create:
         """
         Convert this expression to a CREATE TABLE AS statement.
@@ -1682,7 +1693,7 @@ class Subquery(Expression, DerivedTable, Query):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: object,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Subquery:
         this = maybe_copy(self, copy)
         inner = this.unnest()
@@ -2043,7 +2054,7 @@ def union(
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Union:
     """
     Initializes a syntax tree for the `UNION` operation.
@@ -2074,7 +2085,7 @@ def intersect(
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Intersect:
     """
     Initializes a syntax tree for the `INTERSECT` operation.
@@ -2105,7 +2116,7 @@ def except_(
     distinct: bool = True,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: object,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Except:
     """
     Initializes a syntax tree for the `EXCEPT` operation.

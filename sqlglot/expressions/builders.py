@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing as t
 
-from sqlglot._typing import E
 from sqlglot.helper import seq_get, ensure_collection, split_num_words
 from sqlglot.errors import ParseError, TokenError
 from sqlglot.expressions.core import (
@@ -55,9 +54,19 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
     from sqlglot.expressions.query import Query
+    from sqlglot._typing import (
+        ParserArgs,
+        ParserNoDialectArgs,
+        ParserCopyArgs,
+        E,
+        ParserNoDialectNoTableArgs,
+    )
+    from typing_extensions import Unpack
 
 
-def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts: t.Any) -> Select:
+def select(
+    *expressions: ExpOrStr, dialect: DialectType = None, **opts: Unpack[ParserCopyArgs]
+) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
 
@@ -79,7 +88,9 @@ def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts: t.Any) -
     return Select().select(*expressions, dialect=dialect, **opts)
 
 
-def from_(expression: ExpOrStr, dialect: DialectType = None, **opts: t.Any) -> Select:
+def from_(
+    expression: ExpOrStr, dialect: DialectType = None, **opts: Unpack[ParserNoDialectArgs]
+) -> Select:
     """
     Initializes a syntax tree from a FROM expression.
 
@@ -108,7 +119,7 @@ def update(
     from_: t.Optional[ExpOrStr] = None,
     with_: t.Optional[dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> Update:
     """
     Creates an update statement.
@@ -167,7 +178,7 @@ def delete(
     where: t.Optional[ExpOrStr] = None,
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectNoTableArgs],
 ) -> Delete:
     """
     Builds a delete statement.
@@ -201,7 +212,7 @@ def insert(
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Insert:
     """
     Builds an INSERT statement.
@@ -245,7 +256,7 @@ def merge(
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Merge:
     """
     Builds a MERGE statement.
@@ -271,7 +282,7 @@ def merge(
     Returns:
         Merge: The syntax tree for the MERGE statement.
     """
-    expressions: t.List[Expr] = []
+    expressions: list[Expr] = []
     for when_expr in when_exprs:
         expression = maybe_parse(when_expr, dialect=dialect, copy=copy, into=Whens, **opts)
         expressions.extend([expression] if isinstance(expression, When) else expression.expressions)
@@ -409,7 +420,7 @@ def subquery(
     expression: ExpOrStr,
     alias: t.Optional[Identifier | str] = None,
     dialect: DialectType = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserCopyArgs],
 ) -> Select:
     """
     Build a subquery expression that's selected from.
@@ -428,8 +439,8 @@ def subquery(
     Returns:
         A new Select instance with the subquery expression included.
     """
-
-    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias, **opts)
+    subqry = t.cast(Query, maybe_parse(expression, dialect=dialect, **opts))
+    expression = subqry.subquery(alias, copy=opts.get("copy", True))
     return Select().from_(expression, dialect=dialect, **opts)
 
 
@@ -438,7 +449,7 @@ def cast(
     to: DATA_TYPE,
     copy: bool = True,
     dialect: DialectType = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Cast:
     """Cast an expression to a data type.
 
@@ -967,7 +978,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
 
 def case(
     expression: t.Optional[ExpOrStr] = None,
-    **opts: t.Any,
+    **opts: Unpack[ParserArgs],
 ) -> Case:
     """
     Initialize a CASE statement.

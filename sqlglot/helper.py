@@ -386,6 +386,18 @@ def first(it: Iterable[T]) -> T:
     return next(i for i in it)
 
 
+@t.overload
+def to_bool(value: None) -> None: ...
+
+
+@t.overload
+def to_bool(value: bool) -> bool: ...
+
+
+@t.overload
+def to_bool(value: str) -> str | bool: ...
+
+
 def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:
     if isinstance(value, bool) or value is None:
         return value

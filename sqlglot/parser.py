@@ -7587,11 +7587,7 @@ class Parser:
             self._match_text_seq("ON", "CONVERSION", "ERROR")
 
         if self._match_set((TokenType.FORMAT, TokenType.COMMA)):
-            # Handle optional parentheses around format string (BigQuery allows this)
-            has_parens = self._match(TokenType.L_PAREN)
-            fmt_string = self._parse_string()
-            if has_parens:
-                self._match_r_paren()
+            fmt_string = self._parse_wrapped(self._parse_string, optional=True)
             fmt = self._parse_at_time_zone(fmt_string)
 
             if not to:

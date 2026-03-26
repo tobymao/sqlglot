@@ -4052,6 +4052,13 @@ class Generator:
         return self.binary(expression, ":=")
 
     def escape_sql(self, expression: exp.Escape) -> str:
+        this = expression.this
+        if (
+            isinstance(this, (exp.Like, exp.ILike))
+            and isinstance(this.expression, (exp.All, exp.Any))
+            and not self.SUPPORTS_LIKE_QUANTIFIERS
+        ):
+            return self._like_sql(this, escape=expression)
         return self.binary(expression, "ESCAPE")
 
     def glob_sql(self, expression: exp.Glob) -> str:
@@ -4070,7 +4077,11 @@ class Generator:
             )
         return self.binary(expression, "IS")
 
-    def _like_sql(self, expression: exp.Like | exp.ILike) -> str:
+    def _like_sql(
+        self,
+        expression: exp.Like | exp.ILike,
+        escape: t.Optional[exp.Escape] = None,
+    ) -> str:
         this = expression.this
         rhs = expression.expression
 
@@ -4091,12 +4102,20 @@ class Generator:
 
             connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
 
-            like_expr: exp.Expr = exp_class(this=this, expression=exprs[0])
-            for expr in exprs[1:]:
-                like_expr = connective(like_expr, exp_class(this=this, expression=expr))
+            def _make_like(expr: exp.Expression) -> exp.Expression:
+                like: exp.Expression = exp_class(this=this, expression=expr)
+                if escape:
+                    like = exp.Escape(this=like, expression=escape.expression.copy())
+                return like
 
-            parent = expression.parent
-            if not isinstance(parent, type(like_expr)) and isinstance(parent, exp.Condition):
+            like_expr: exp.Expr = _make_like(exprs[0])
+            for expr in exprs[1:]:
+                like_expr = connective(like_expr, _make_like(expr), copy=False)
+
+            parent = escape.parent if escape else expression.parent
+            if not isinstance(parent, (type(like_expr), exp.Paren)) and isinstance(
+                parent, exp.Condition
+            ):
                 like_expr = exp.paren(like_expr, copy=False)
 
             return self.sql(like_expr)

@@ -95,6 +95,7 @@ class Dialects(str, Enum):
     HIVE = "hive"
     MATERIALIZE = "materialize"
     MYSQL = "mysql"
+    NETEZZA = "netezza"
     ORACLE = "oracle"
     POSTGRES = "postgres"
     PRESTO = "presto"

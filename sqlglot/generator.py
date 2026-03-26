@@ -628,6 +628,7 @@ class Generator:
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistributedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DistributeOnProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DatabaseProperty: exp.Properties.Location.POST_CREATE,
@@ -671,6 +672,7 @@ class Generator:
         exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.OnProperty: exp.Properties.Location.POST_SCHEMA,
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.OrganizeOnProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
@@ -1941,6 +1943,10 @@ class Generator:
     def uuidproperty_sql(self, expression: exp.UuidProperty) -> str:
         return f"UUID {self.sql(expression, 'this')}"
 
+    def distributeonproperty_sql(self, expression: exp.DistributeOnProperty) -> str:
+        self.unsupported("DISTRIBUTE ON is not supported in this dialect")
+        return ""
+
     def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
         if self.SUPPORTS_CREATE_TABLE_LIKE:
             options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
@@ -1957,6 +1963,10 @@ class Generator:
 
         select = exp.select("*").from_(expression.this).limit(0)
         return f"AS {self.sql(select)}"
+
+    def organizeonproperty_sql(self, expression: exp.OrganizeOnProperty) -> str:
+        self.unsupported("ORGANIZE ON is not supported in this dialect")
+        return ""
 
     def fallbackproperty_sql(self, expression: exp.FallbackProperty) -> str:
         no = "NO " if expression.args.get("no") else ""

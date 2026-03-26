@@ -80,6 +80,7 @@ DIALECTS = [
     "Hive",
     "Materialize",
     "MySQL",
+    "Netezza",
     "Oracle",
     "Postgres",
     "Presto",

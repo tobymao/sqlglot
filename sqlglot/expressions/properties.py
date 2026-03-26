@@ -117,6 +117,10 @@ class DistributedByProperty(Property):
     arg_types = {"expressions": False, "kind": True, "buckets": False, "order": False}
 
 
+class DistributeOnProperty(Property):
+    arg_types = {"this": False, "expressions": False}
+
+
 class DistStyleProperty(Property):
     arg_types = {"this": True}
 
@@ -299,6 +303,10 @@ class OnProperty(Property):
 
 class OnCommitProperty(Property):
     arg_types = {"delete": False}
+
+
+class OrganizeOnProperty(Property):
+    arg_types = {"expressions": False, "none": False}
 
 
 class PartitionedByProperty(Property):
@@ -579,6 +587,7 @@ class Properties(Expression):
         "CREDENTIALS": CredentialsProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
+        "DISTRIBUTE ON": DistributeOnProperty,
         "DISTRIBUTED_BY": DistributedByProperty,
         "DISTSTYLE": DistStyleProperty,
         "ENGINE": EngineProperty,
@@ -587,6 +596,7 @@ class Properties(Expression):
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
         "LOCK": LockProperty,
+        "ORGANIZE ON": OrganizeOnProperty,
         "PARTITIONED_BY": PartitionedByProperty,
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,

@@ -1591,6 +1591,7 @@ class DuckDBGenerator(generator.Generator):
         exp.Getbit: getbit_sql,
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
         exp.Explode: rename_func("UNNEST"),
+        exp.IcebergProperty: lambda *_: "",
         exp.IntDiv: lambda self, e: self.binary(e, "//"),
         exp.IsInf: rename_func("ISINF"),
         exp.IsNan: rename_func("ISNAN"),
@@ -1836,6 +1837,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ReturnsProperty: exp.Properties.Location.POST_ALIAS,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
     }
 
     IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS: t.ClassVar = _IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS
@@ -2142,17 +2144,6 @@ class DuckDBGenerator(generator.Generator):
         END
         """
     )
-
-    def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
-        if not any(isinstance(prop, exp.IcebergProperty) for prop in properties.expressions):
-            return super().locate_properties(properties)
-
-        filtered = properties.copy()
-        filtered.set(
-            "expressions",
-            [prop for prop in filtered.expressions if not isinstance(prop, exp.IcebergProperty)],
-        )
-        return super().locate_properties(filtered)
 
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))

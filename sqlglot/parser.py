@@ -6001,7 +6001,7 @@ class Parser:
                     and data_type.is_type(exp.DType.TIMESTAMP)
                     and TIME_ZONE_RE.search(literal)
                 ):
-                    data_type = exp.DataType.build("TIMESTAMPTZ")
+                    data_type = exp.DataType.build(exp.DType.TIMESTAMPTZ)
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 

@@ -440,7 +440,9 @@ class ClickHouseGenerator(generator.Generator):
     def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
         this = expression.this
 
-        if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+        if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build(
+            exp.DType.DATETIME
+        ):
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)

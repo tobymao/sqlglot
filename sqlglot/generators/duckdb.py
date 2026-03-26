@@ -261,10 +261,12 @@ def _to_boolean_sql(self: DuckDBGenerator, expression: exp.ToBoolean) -> str:
 
     if is_safe:
         # TRY_TO_BOOLEAN: handle 'on'/'off' and use TRY_CAST for everything else
-        case_expr = base_case_expr.else_(exp.func("TRY_CAST", arg, exp.DataType.build("BOOLEAN")))
+        case_expr = base_case_expr.else_(
+            exp.func("TRY_CAST", arg, exp.DataType.build(exp.DType.BOOLEAN))
+        )
     else:
         # TO_BOOLEAN: handle NaN/INF errors, 'on'/'off', and use regular CAST
-        cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build("REAL"))
+        cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build(exp.DType.FLOAT))
 
         # Check for NaN and INF values
         nan_inf_check = exp.Or(
@@ -1295,7 +1297,7 @@ def _regr_val_sql(
 
     # Default to DOUBLE for regression functions if type still unknown
     if not result_type or result_type.this == exp.DType.UNKNOWN:
-        result_type = exp.DataType.build("DOUBLE")
+        result_type = exp.DataType.build(exp.DType.DOUBLE)
 
     # Cast NULL to the same type as return_value to avoid DuckDB type inference issues
     typed_null = exp.Cast(this=exp.Null(), to=result_type)
@@ -2619,7 +2621,7 @@ class DuckDBGenerator(generator.Generator):
         if is_int_result:
             result = exp.Cast(
                 this=exp.Floor(this=result),
-                to=exp.DataType.build("BIGINT"),
+                to=exp.DataType.build(exp.DType.BIGINT),
             )
 
         return self.sql(result)
@@ -2654,7 +2656,7 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(
                 exp.Add(
                     this=exp.Cast(
-                        this=exp.Literal.string("00:00:00"), to=exp.DataType.build("TIME")
+                        this=exp.Literal.string("00:00:00"), to=exp.DataType.build(exp.DType.TIME)
                     ),
                     expression=exp.Interval(this=total_seconds, unit=exp.var("SECOND")),
                 )
@@ -4131,7 +4133,7 @@ class DuckDBGenerator(generator.Generator):
         this = expression.this
 
         if _is_binary(this):
-            expression.type = exp.DataType.build("BINARY")
+            expression.type = exp.DataType.build(exp.DType.BINARY)
 
         arg = _cast_to_bit(this)
 

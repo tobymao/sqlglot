@@ -206,7 +206,7 @@ class DuckDBParser(parser.Parser):
         # https://duckdb.org/docs/sql/data_types/numeric
         exp.DType.DECIMAL: build_default_decimal_type(precision=18, scale=3),
         # https://duckdb.org/docs/sql/data_types/text
-        exp.DType.TEXT: lambda dtype: exp.DataType.build("TEXT"),
+        exp.DType.TEXT: lambda dtype: exp.DataType.build(exp.DType.TEXT),
     }
 
     STATEMENT_PARSERS = {

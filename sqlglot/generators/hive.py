@@ -434,7 +434,7 @@ class HiveGenerator(generator.Generator):
         if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
             not expression.expressions or expression.expressions[0].name == "MAX"
         ):
-            expression = exp.DataType.build("text")
+            expression = exp.DataType.build(exp.DType.TEXT)
         elif expression.is_type(exp.DType.TEXT) and expression.expressions:
             expression.set("this", exp.DType.VARCHAR)
         elif expression.this in exp.DataType.TEMPORAL_TYPES:
@@ -444,7 +444,9 @@ class HiveGenerator(generator.Generator):
             if size_expression:
                 size = int(size_expression.name)
                 expression = (
-                    exp.DataType.build("float") if size <= 32 else exp.DataType.build("double")
+                    exp.DataType.build(exp.DType.FLOAT)
+                    if size <= 32
+                    else exp.DataType.build(exp.DType.DOUBLE)
                 )
 
         return super().datatype_sql(expression)

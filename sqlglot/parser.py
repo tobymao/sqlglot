@@ -8645,8 +8645,12 @@ class Parser:
     def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
 
+        iceberg = self._match_text_seq("ICEBERG")
+
         alter_token = self._match_set(self.ALTERABLES) and self._prev
         if not alter_token:
+            return self._parse_as_command(start)
+        if iceberg and alter_token.token_type != TokenType.TABLE:
             return self._parse_as_command(start)
 
         exists = self._parse_exists()
@@ -8684,6 +8688,7 @@ class Parser:
                         not_valid=not_valid,
                         check=check,
                         cascade=cascade,
+                        iceberg=iceberg,
                     )
                 )
 

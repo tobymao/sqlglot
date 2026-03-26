@@ -1,6 +1,7 @@
 from unittest import mock
 
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot.parser import logger as parser_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
@@ -5201,6 +5202,22 @@ MATCH_RECOGNIZE (
         self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
         self.assertTrue(ast.args["terse"])
         self.assertTrue(ast.args["iceberg"])
+
+    def test_alter_iceberg_table(self):
+        ast = self.validate_identity("ALTER ICEBERG TABLE t RENAME TO x")
+        self.assertTrue(ast.args["iceberg"])
+
+        with mock.patch.object(parser_logger, "warning"):
+            ast = parse_one("ALTER ICEBERG VIEW v RENAME TO x", read="snowflake")
+        self.assertIsInstance(ast, exp.Command)
+
+        self.validate_all(
+            "ALTER ICEBERG TABLE t RENAME TO x",
+            write={
+                "snowflake": "ALTER ICEBERG TABLE t RENAME TO x",
+                "duckdb": "ALTER TABLE t RENAME TO x",
+            },
+        )
 
     def test_show_primary_keys(self):
         self.validate_identity("SHOW PRIMARY KEYS")

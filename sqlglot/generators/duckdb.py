@@ -1591,6 +1591,7 @@ class DuckDBGenerator(generator.Generator):
         exp.Getbit: getbit_sql,
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
         exp.Explode: rename_func("UNNEST"),
+        exp.IcebergProperty: lambda *_: "",
         exp.IntDiv: lambda self, e: self.binary(e, "//"),
         exp.IsInf: rename_func("ISINF"),
         exp.IsNan: rename_func("ISNAN"),
@@ -1836,6 +1837,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ReturnsProperty: exp.Properties.Location.POST_ALIAS,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
     }
 
     IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS: t.ClassVar = _IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS

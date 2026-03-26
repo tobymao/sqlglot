@@ -350,7 +350,8 @@ class DuckDBParser(parser.Parser):
         )
 
     def _parse_show_duckdb(self, this: str) -> exp.Show:
-        return self.expression(exp.Show(this=this))
+        from_ = self._parse_table(schema=True) if self._match(TokenType.FROM) else None
+        return self.expression(exp.Show(this=this, from_=from_))
 
     def _parse_force(self) -> exp.Install | exp.Command:
         # FORCE can only be followed by INSTALL or CHECKPOINT

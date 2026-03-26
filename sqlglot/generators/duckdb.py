@@ -2403,7 +2403,9 @@ class DuckDBGenerator(generator.Generator):
         return f"{prefix}{lambda_sql}"
 
     def show_sql(self, expression: exp.Show) -> str:
-        return f"SHOW {expression.name}"
+        from_ = self.sql(expression, "from_")
+        from_ = f" FROM {from_}" if from_ else ""
+        return f"SHOW {expression.name}{from_}"
 
     def sortarray_sql(self, expression: exp.SortArray) -> str:
         arr = expression.this

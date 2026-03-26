@@ -2374,6 +2374,9 @@ class TestDuckDB(Validator):
 
     def test_show_tables(self):
         self.validate_identity("SHOW TABLES").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_schema").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_database").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_database.my_schema").assert_is(exp.Show)
         self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
 
     def test_extract_date_parts(self):

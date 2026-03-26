@@ -2987,6 +2987,32 @@ OPTIONS (
             },
         )
 
+    def test_cast_format_with_parentheses(self):
+        self.validate_identity(
+            "SELECT CAST('2026-03-24' AS STRING FORMAT ('YYYY'))",
+            "SELECT CAST('2026-03-24' AS STRING FORMAT 'YYYY')",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(date AS STRING FORMAT ('YYYY')) FROM (SELECT DATE('2026-03-24') AS date)",
+            "SELECT CAST(date AS STRING FORMAT 'YYYY') FROM (SELECT DATE('2026-03-24') AS date)",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(date AS STRING FORMAT ('YYYY-MM-DD'))",
+            "SELECT CAST(date AS STRING FORMAT 'YYYY-MM-DD')",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(timestamp AS STRING FORMAT ('YYYY-MM-DD') AT TIME ZONE 'UTC')",
+            "SELECT CAST(timestamp AS STRING FORMAT 'YYYY-MM-DD' AT TIME ZONE 'UTC')",
+        )
+
+        self.validate_identity(
+            "SELECT CAST(date AS TIMESTAMP FORMAT ('YYYY-MM-DD HH24:MI:SS'))",
+            "SELECT PARSE_TIMESTAMP('%F %T', date)",
+        )
+
     def test_string_agg(self):
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")

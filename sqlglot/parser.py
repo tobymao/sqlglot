@@ -7587,7 +7587,7 @@ class Parser:
             self._match_text_seq("ON", "CONVERSION", "ERROR")
 
         if self._match_set((TokenType.FORMAT, TokenType.COMMA)):
-            fmt_string = self._parse_string()
+            fmt_string = self._parse_wrapped(self._parse_string, optional=True)
             fmt = self._parse_at_time_zone(fmt_string)
 
             if not to:

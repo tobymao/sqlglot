@@ -218,6 +218,7 @@ class Show(Expression):
         "for_role": False,
         "into_outfile": False,
         "json": False,
+        "iceberg": False,
     }
 
 

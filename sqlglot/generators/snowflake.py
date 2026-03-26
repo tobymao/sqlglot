@@ -403,7 +403,6 @@ class SnowflakeGenerator(generator.Generator):
     DIRECTED_JOINS = True
     SUPPORTS_UESCAPE = False
     TRY_SUPPORTED = False
-    SUPPORTS_DDL_ICEBERG_PROPERTY = True
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,

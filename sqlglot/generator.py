@@ -568,10 +568,10 @@ class Generator:
     # Whether SELECT *, ... EXCLUDE requires wrapping in a subquery for transpilation.
     STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
 
-    # Whether DDL statements against Iceberg tables include 'ICEBERG', e.g.:
+    # Whether DROP and ALTER statements against Iceberg tables include 'ICEBERG', e.g.:
     # - Snowflake: DROP ICEBERG TABLE a.b;
     # - DuckDB:    DROP TABLE a.b;
-    SUPPORTS_DDL_ICEBERG_PROPERTY = False
+    SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = True
 
     TYPE_MAPPING: t.ClassVar = {
         exp.DType.DATETIME2: "TIMESTAMP",
@@ -1679,7 +1679,7 @@ class Generator:
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
         iceberg = (
             " ICEBERG"
-            if expression.args.get("iceberg") and self.SUPPORTS_DDL_ICEBERG_PROPERTY
+            if expression.args.get("iceberg") and self.SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY
             else ""
         )
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "

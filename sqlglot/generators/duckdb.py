@@ -4196,9 +4196,9 @@ class DuckDBGenerator(generator.Generator):
                 for e in exprs
             ]
             expanded = (
-                exp.or_(*all_expanded)
+                exp.or_(*all_expanded, copy=False)
                 if isinstance(quantifier, exp.Any)
-                else exp.and_(*all_expanded)
+                else exp.and_(*all_expanded, copy=False)
             )
 
             parent = expression.parent

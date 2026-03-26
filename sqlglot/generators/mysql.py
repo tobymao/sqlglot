@@ -106,6 +106,13 @@ def _remove_ts_or_ds_to_date(
 
 
 class MySQLGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     INTERVAL_ALLOWS_PLURAL_FORM = False
     LOCKING_READS_SUPPORTED = True
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = None

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
+import sqlglot.generator as _generator_module
 from sqlglot import exp, find_tables, parse_one, transpile
 from sqlglot.errors import ExecuteError
 from sqlglot.executor import execute
@@ -24,6 +25,8 @@ from tests.helpers import (
     TPCDS_SCHEMA,
     load_sql_fixture_pairs,
 )
+
+_GENERATOR_IS_COMPILED = getattr(_generator_module, "__file__", "").endswith(".so")
 
 DIR_TPCH = FIXTURES_DIR + "/optimizer/tpc-h/"
 DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
@@ -66,6 +69,7 @@ def mp_execute(expression, meta):
 
 
 @unittest.skipIf(SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
+@unittest.skipIf(_GENERATOR_IS_COMPILED, "executor requires interpreted Generator subclass")
 class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

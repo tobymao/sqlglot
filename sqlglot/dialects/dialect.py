@@ -263,7 +263,7 @@ class _Dialect(type):
             "Parser", klass.__dict__.get("parser_class", base_parser[0])
         )
         klass.generator_class = klass.__dict__.get(
-            "Generator", type("Generator", base_generator, {})
+            "Generator", klass.__dict__.get("generator_class", base_generator[0])
         )
 
         # Remove transforms that correspond to unsupported JSONPathPart expressions
@@ -310,28 +310,6 @@ class _Dialect(type):
 
         if enum not in ("", "bigquery", "snowflake"):
             klass.INITCAP_SUPPORTS_CUSTOM_DELIMITERS = False
-
-        if enum not in ("", "bigquery"):
-            klass.generator_class.SELECT_KINDS = ()
-
-        if enum not in ("", "athena", "presto", "trino", "duckdb"):
-            klass.generator_class.TRY_SUPPORTED = False
-            klass.generator_class.SUPPORTS_UESCAPE = False
-
-        if enum not in ("", "databricks", "hive", "spark", "spark2"):
-            base = klass.generator_class.__dict__.get("AFTER_HAVING_MODIFIER_TRANSFORMS")
-            if not isinstance(base, dict):
-                from sqlglot.generator import Generator as _BaseGenerator
-
-                base = _BaseGenerator.AFTER_HAVING_MODIFIER_TRANSFORMS
-            modifier_transforms = base.copy()
-            for modifier in ("cluster", "distribute", "sort"):
-                modifier_transforms.pop(modifier, None)
-
-            klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
-
-        if enum not in ("", "databricks", "oracle", "redshift", "snowflake", "spark"):
-            klass.generator_class.SUPPORTS_DECODE_CASE = False
 
         klass.VALID_INTERVAL_UNITS = {
             *klass.VALID_INTERVAL_UNITS,

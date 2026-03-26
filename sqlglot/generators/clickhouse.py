@@ -164,6 +164,13 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
 
 
 class ClickHouseGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     QUERY_HINTS = False
     STRUCT_DELIMITER = ("(", ")")
     NVL2_SUPPORTED = False

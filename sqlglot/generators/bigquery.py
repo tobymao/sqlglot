@@ -218,6 +218,9 @@ def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) ->
 
 
 class BigQueryGenerator(generator.Generator):
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
     QUERY_HINTS = False
@@ -437,9 +440,10 @@ class BigQueryGenerator(generator.Generator):
 
     # WINDOW comes after QUALIFY
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#window_clause
+    # BigQuery requires QUALIFY before WINDOW
     AFTER_HAVING_MODIFIER_TRANSFORMS = {
-        "qualify": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["qualify"],
-        "windows": generator.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS["windows"],
+        "qualify": generator.AFTER_HAVING_MODIFIER_TRANSFORMS["qualify"],
+        "windows": generator.AFTER_HAVING_MODIFIER_TRANSFORMS["windows"],
     }
 
     # from: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords

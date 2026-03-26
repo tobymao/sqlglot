@@ -3936,6 +3936,11 @@ class Generator:
 
             actions_sql = self.format_args(*actions_list).lstrip("\n")
 
+        iceberg = (
+            "ICEBERG "
+            if expression.args.get("iceberg") and self.SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY
+            else ""
+        )
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
@@ -3953,7 +3958,7 @@ class Generator:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
+        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)

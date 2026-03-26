@@ -378,6 +378,7 @@ class Alter(Expression):
         "not_valid": False,
         "check": False,
         "cascade": False,
+        "iceberg": False,
     }
 
     @property

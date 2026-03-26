@@ -568,7 +568,7 @@ class Generator:
     # Whether SELECT *, ... EXCLUDE requires wrapping in a subquery for transpilation.
     STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
 
-    # Whether DDL statements against Iceberg tables include 'ICEBERG', e.g.:
+    # Whether DROP and ALTER statements against Iceberg tables include 'ICEBERG', e.g.:
     # - Snowflake: DROP ICEBERG TABLE a.b;
     # - DuckDB:    DROP TABLE a.b;
     SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = True
@@ -1677,6 +1677,11 @@ class Generator:
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+        iceberg = (
+            " ICEBERG"
+            if expression.args.get("iceberg") and self.SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY
+            else ""
+        )
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         concurrently_sql = " CONCURRENTLY" if expression.args.get("concurrently") else ""
         on_cluster = self.sql(expression, "cluster")
@@ -1684,10 +1689,11 @@ class Generator:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         cascade = " CASCADE" if expression.args.get("cascade") else ""
+        restrict = " RESTRICT" if expression.args.get("restrict") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DROP{temporary}{materialized} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}{sync}"
+        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)

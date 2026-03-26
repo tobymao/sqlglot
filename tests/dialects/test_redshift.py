@@ -349,6 +349,7 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")
         self.validate_identity("'abc' SIMILAR TO '(b|c)%'")
+        self.validate_identity("'%' SIMILAR TO '^%' ESCAPE '^'")
         self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")

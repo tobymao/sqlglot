@@ -328,16 +328,14 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "STRIP_NULL_VALUE(x)",
-            write={
-                "duckdb": "CASE WHEN JSON_TYPE(x) = 'NULL' THEN NULL ELSE x END",
+            "CASE WHEN JSON_TYPE(x) = 'NULL' THEN NULL ELSE x END",
+            read={
                 "snowflake": "STRIP_NULL_VALUE(x)",
             },
         )
         self.validate_all(
-            """SELECT STRIP_NULL_VALUE(JSON('{"a": null}') -> 'a')""",
-            write={
-                "duckdb": """SELECT CASE WHEN JSON_TYPE(JSON('{"a": null}') -> '$.a') = 'NULL' THEN NULL ELSE JSON('{"a": null}') -> '$.a' END""",
+            """SELECT CASE WHEN JSON_TYPE(JSON('{"a": null}') -> '$.a') = 'NULL' THEN NULL ELSE JSON('{"a": null}') -> '$.a' END""",
+            read={
                 "snowflake": """SELECT STRIP_NULL_VALUE(GET_PATH(PARSE_JSON('{"a": null}'), 'a'))""",
             },
         )

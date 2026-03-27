@@ -26,12 +26,7 @@ from sqlglot.helper import (
 
 from sqlglot.tokenizer_core import Token
 from builtins import type as Type
-from sqlglot._typing import (
-    GeneratorNoDialectArgs,
-    ParserNoDialectArgs,
-    E,
-    ParserNoDialectNoTableArgs,
-)
+from sqlglot._typing import GeneratorNoDialectArgs, E, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -358,7 +353,7 @@ class Expr:
         dialect: DialectType = None,
         copy: bool = True,
         table: bool | Sequence[str | Identifier] = False,
-        **opts: Unpack[ParserNoDialectNoTableArgs],
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Expr:
         raise NotImplementedError
 
@@ -1308,7 +1303,7 @@ class Expression(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         table: bool | Sequence[str | Identifier] = False,
-        **opts: Unpack[ParserNoDialectNoTableArgs],
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Expr:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, table=table, **opts)
 
@@ -2903,7 +2898,7 @@ def alias_(
     quoted: t.Optional[bool] = None,
     dialect: DialectType = None,
     copy: bool = True,
-    **opts: Unpack[ParserNoDialectNoTableArgs],
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """Create an Alias expression.
 

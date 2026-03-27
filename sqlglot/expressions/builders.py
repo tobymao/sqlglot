@@ -55,13 +55,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
-    from sqlglot._typing import (
-        ParserArgs,
-        ParserNoDialectArgs,
-        ParserCopyArgs,
-        E,
-        ParserNoDialectNoTableArgs,
-    )
+    from sqlglot._typing import ParserArgs, ParserCopyArgs, E, ParserNoDialectArgs
     from typing_extensions import Unpack
 
 
@@ -120,7 +114,7 @@ def update(
     from_: t.Optional[ExpOrStr] = None,
     with_: t.Optional[dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
-    **opts: Unpack[ParserNoDialectNoTableArgs],
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Update:
     """
     Creates an update statement.
@@ -179,7 +173,7 @@ def delete(
     where: t.Optional[ExpOrStr] = None,
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
-    **opts: Unpack[ParserNoDialectNoTableArgs],
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Delete:
     """
     Builds a delete statement.

@@ -5,10 +5,8 @@ import typing as t
 if t.TYPE_CHECKING:
     from collections.abc import Mapping
     import sqlglot
-    from collections.abc import Sequence
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel
-    from sqlglot.expressions.core import ExpOrStr, Identifier
 
 B = t.TypeVar("B", bound="sqlglot.exp.Binary")
 E = t.TypeVar("E", bound="sqlglot.exp.Expr")
@@ -24,29 +22,17 @@ class _CopyArg(t.TypedDict, total=False):
     copy: bool
 
 
-class ParserNoDialectNoTableArgs(t.TypedDict, total=False):
+class ParserNoDialectArgs(t.TypedDict, total=False):
     error_level: t.Optional[ErrorLevel]
     error_message_context: int
     max_errors: int
 
 
-class ParserDialectNoTableArgs(ParserNoDialectNoTableArgs, _DialectArg, total=False):
+class ParserDialectArgs(ParserNoDialectArgs, _DialectArg, total=False):
     pass
-
-
-class ParserNoDialectArgs(ParserNoDialectNoTableArgs, total=False):
-    pass
-
-
-class ParserTableArgs(ParserNoDialectNoTableArgs, total=False):
-    table: t.Optional[t.Union[Sequence[ExpOrStr], bool, Sequence[t.Union[str, Identifier]]]]
 
 
 class ParserCopyArgs(ParserNoDialectArgs, _CopyArg, total=False):
-    pass
-
-
-class ParserCopyNoErrorLevelArgs(ParserNoDialectArgs, _CopyArg, total=False):
     pass
 
 

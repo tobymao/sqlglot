@@ -25,7 +25,7 @@ if t.TYPE_CHECKING:
     from typing_extensions import Self, Unpack
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr
-    from sqlglot._typing import ParserNoDialectArgs, ParserNoDialectNoTableArgs
+    from sqlglot._typing import ParserNoDialectArgs
 
 
 @trait
@@ -86,7 +86,7 @@ class Delete(Expression, DML):
         table: ExpOrStr,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: Unpack[ParserNoDialectNoTableArgs],
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Delete:
         """
         Create a DELETE expression or replace the table on an existing DELETE expression.

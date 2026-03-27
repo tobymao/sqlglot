@@ -58,7 +58,7 @@ DATETIME_DELTA = t.Union[
 DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd)
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import B, E, F, GeneratorDialectNoCopyArgs, ParserDialectNoTableArgs
+    from sqlglot._typing import B, E, F, GeneratorDialectNoCopyArgs, ParserDialectArgs
     from typing_extensions import Unpack
 
 logger = logging.getLogger("sqlglot")
@@ -1109,13 +1109,11 @@ class Dialect(metaclass=_Dialect):
 
         return path
 
-    def parse(
-        self, sql: str, **opts: Unpack[ParserDialectNoTableArgs]
-    ) -> list[t.Optional[exp.Expr]]:
+    def parse(self, sql: str, **opts: Unpack[ParserDialectArgs]) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
 
     def parse_into(
-        self, expression_type: exp.IntoType, sql: str, **opts: Unpack[ParserDialectNoTableArgs]
+        self, expression_type: exp.IntoType, sql: str, **opts: Unpack[ParserDialectArgs]
     ) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse_into(expression_type, self.tokenize(sql), sql)
 
@@ -1139,8 +1137,8 @@ class Dialect(metaclass=_Dialect):
     def jsonpath_tokenizer(self, dialect: DialectType = None) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(dialect=dialect or self)
 
-    def parser(self, **opts: Unpack[ParserDialectNoTableArgs]) -> Parser:
-        args: ParserDialectNoTableArgs = {"dialect": self, **opts}
+    def parser(self, **opts: Unpack[ParserDialectArgs]) -> Parser:
+        args: ParserDialectArgs = {"dialect": self, **opts}
         return self.parser_class(**args)
 
     def generator(self, **opts: Unpack[GeneratorDialectNoCopyArgs]) -> Generator:

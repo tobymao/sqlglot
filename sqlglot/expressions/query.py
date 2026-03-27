@@ -39,13 +39,7 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.constraints import ColumnConstraint
     from sqlglot.expressions.ddl import Create
     from sqlglot.expressions.array import Unnest
-    from sqlglot._typing import (
-        E,
-        ParserCopyArgs,
-        ParserDialectNoCopyArgs,
-        ParserNoDialectArgs,
-        ParserNoDialectNoTableArgs,
-    )
+    from sqlglot._typing import E, ParserCopyArgs, ParserDialectNoCopyArgs, ParserNoDialectArgs
     from typing_extensions import Unpack
 
     S = t.TypeVar("S", bound="SetOperation")
@@ -1559,7 +1553,7 @@ class Select(Expression, Query):
         properties: t.Optional[dict] = None,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts: Unpack[ParserNoDialectNoTableArgs],
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Create:
         """
         Convert this expression to a CREATE TABLE AS statement.

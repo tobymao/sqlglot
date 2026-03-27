@@ -34,9 +34,6 @@ from sqlglot.transforms import unqualify_columns
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
-_UNSUPPORTED: t.Any = getattr(exp.Properties.Location, "UNSUPPORTED")
-_DType: t.Any = exp.DType
-
 
 def _initcap_sql(self: PrestoGenerator, expression: exp.Initcap) -> str:
     delimiters = expression.expression
@@ -211,6 +208,11 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
 
 class PrestoGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
     TABLE_HINTS = False
@@ -231,26 +233,26 @@ class PrestoGenerator(generator.Generator):
     SUPPORTS_MEDIAN = False
     ARRAY_SIZE_NAME = "CARDINALITY"
 
-    PROPERTIES_LOCATION: t.ClassVar[t.Dict[t.Any, t.Any]] = {
+    PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
-        exp.LocationProperty: _UNSUPPORTED,
-        exp.VolatileProperty: _UNSUPPORTED,
+        exp.LocationProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
-        _DType.BINARY: "VARBINARY",
-        _DType.BIT: "BOOLEAN",
-        _DType.DATETIME: "TIMESTAMP",
-        _DType.DATETIME64: "TIMESTAMP",
-        _DType.FLOAT: "REAL",
-        _DType.HLLSKETCH: "HYPERLOGLOG",
-        _DType.INT: "INTEGER",
-        _DType.STRUCT: "ROW",
-        _DType.TEXT: "VARCHAR",
-        _DType.TIMESTAMPTZ: "TIMESTAMP",
-        _DType.TIMESTAMPNTZ: "TIMESTAMP",
-        _DType.TIMETZ: "TIME",
+        exp.DType.BINARY: "VARBINARY",
+        exp.DType.BIT: "BOOLEAN",
+        exp.DType.DATETIME: "TIMESTAMP",
+        exp.DType.DATETIME64: "TIMESTAMP",
+        exp.DType.FLOAT: "REAL",
+        exp.DType.HLLSKETCH: "HYPERLOGLOG",
+        exp.DType.INT: "INTEGER",
+        exp.DType.STRUCT: "ROW",
+        exp.DType.TEXT: "VARCHAR",
+        exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+        exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
+        exp.DType.TIMETZ: "TIME",
     }
 
     TRANSFORMS = {
@@ -467,7 +469,7 @@ class PrestoGenerator(generator.Generator):
 
         value = expression.expression
 
-        ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
+        ts = exp.cast(value, to=exp.DataType.build(exp.DType.TIMESTAMP))
         to_unix: exp.Expr = exp.TimeToUnix(this=ts)
 
         if scale:

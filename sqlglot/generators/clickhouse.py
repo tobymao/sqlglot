@@ -164,6 +164,13 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
 
 
 class ClickHouseGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     QUERY_HINTS = False
     STRUCT_DELIMITER = ("(", ")")
     NVL2_SUPPORTED = False
@@ -433,7 +440,9 @@ class ClickHouseGenerator(generator.Generator):
     def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
         this = expression.this
 
-        if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+        if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build(
+            exp.DType.DATETIME
+        ):
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)

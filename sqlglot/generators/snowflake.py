@@ -30,6 +30,7 @@ from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
     TIMESTAMP_TYPES,
+    SnowflakeParser,
     build_object_construct,
 )
 from sqlglot.tokens import TokenType
@@ -114,8 +115,6 @@ def _flatten_structured_types_unless_iceberg(expression: exp.Expr) -> exp.Expr:
 
 
 def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
-    from sqlglot.parsers.snowflake import SnowflakeParser
-
     generate_date_array = unnest.expressions[0]
     start = generate_date_array.args.get("start")
     end = generate_date_array.args.get("end")
@@ -373,6 +372,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
     SINGLE_STRING_INTERVAL = True
@@ -396,6 +396,9 @@ class SnowflakeGenerator(generator.Generator):
     SUPPORTS_MEDIAN = True
     ARRAY_SIZE_NAME = "ARRAY_SIZE"
     SUPPORTS_DECODE_CASE = True
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     IS_BOOL_ALLOWED = False
     DIRECTED_JOINS = True
     SUPPORTS_UESCAPE = False
@@ -819,6 +822,7 @@ class SnowflakeGenerator(generator.Generator):
 
     def show_sql(self, expression: exp.Show) -> str:
         terse = "TERSE " if expression.args.get("terse") else ""
+        iceberg = "ICEBERG " if expression.args.get("iceberg") else ""
         history = " HISTORY" if expression.args.get("history") else ""
         like = self.sql(expression, "like")
         like = f" LIKE {like}" if like else ""
@@ -843,7 +847,7 @@ class SnowflakeGenerator(generator.Generator):
         privileges = self.expressions(expression, key="privileges", flat=True)
         privileges = f" WITH PRIVILEGES {privileges}" if privileges else ""
 
-        return f"SHOW {terse}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
+        return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"

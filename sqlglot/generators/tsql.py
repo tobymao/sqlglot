@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
 from sqlglot.time import format_time
 
 DATE_PART_UNMAPPING = {
@@ -115,6 +116,13 @@ def _timestrtotime_sql(self: TSQLGenerator, expression: exp.TimeStrToTime):
 
 
 class TSQLGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     LIMIT_IS_TOP = True
     QUERY_HINTS = False
     RETURNING_END = False
@@ -277,8 +285,6 @@ class TSQLGenerator(generator.Generator):
         return self.func(name, expression.this, expression.expression, expression.args.get("style"))
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
-        from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
-
         option = self.sql(expression, "this")
         value = self.sql(expression, "expression")
         if value:

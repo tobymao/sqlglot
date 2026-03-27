@@ -4,8 +4,6 @@ import re
 import typing as t
 from functools import partial
 
-from sqlglot.helper import mypyc_attr
-
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
@@ -184,8 +182,11 @@ def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
     return self.func("TO_DATE", expression.this)
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class HiveGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
     LIMIT_FETCH = "LIMIT"
     TABLESAMPLE_WITH_METHOD = False
     JOIN_HINTS = False
@@ -433,7 +434,7 @@ class HiveGenerator(generator.Generator):
         if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
             not expression.expressions or expression.expressions[0].name == "MAX"
         ):
-            expression = exp.DataType.build("text")
+            expression = exp.DataType.build(exp.DType.TEXT)
         elif expression.is_type(exp.DType.TEXT) and expression.expressions:
             expression.set("this", exp.DType.VARCHAR)
         elif expression.this in exp.DataType.TEMPORAL_TYPES:
@@ -443,7 +444,9 @@ class HiveGenerator(generator.Generator):
             if size_expression:
                 size = int(size_expression.name)
                 expression = (
-                    exp.DataType.build("float") if size <= 32 else exp.DataType.build("double")
+                    exp.DataType.build(exp.DType.FLOAT)
+                    if size <= 32
+                    else exp.DataType.build(exp.DType.DOUBLE)
                 )
 
         return super().datatype_sql(expression)

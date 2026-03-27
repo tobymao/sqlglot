@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     merge_without_target_sql,
@@ -12,14 +10,12 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_table
 
-_POST_WITH: t.Any = getattr(exp.Properties.Location, "POST_WITH")
-
 
 class TrinoGenerator(PrestoGenerator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
-    PROPERTIES_LOCATION: t.ClassVar[t.Dict[t.Any, t.Any]] = {
+    PROPERTIES_LOCATION = {
         **PrestoGenerator.PROPERTIES_LOCATION,
-        exp.LocationProperty: _POST_WITH,
+        exp.LocationProperty: exp.Properties.Location.POST_WITH,
     }
 
     TRANSFORMS = {

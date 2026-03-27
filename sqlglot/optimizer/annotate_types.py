@@ -337,7 +337,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     isinstance(source, Scope)
                     and isinstance(source.expression, exp.Query)
                     and (
-                        source.expression.meta.get("query_type") or exp.DataType.build("UNKNOWN")
+                        source.expression.meta.get("query_type")
+                        or exp.DataType.build(exp.DType.UNKNOWN)
                     ).is_type(exp.DType.STRUCT)
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
@@ -857,7 +858,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             for coldef in arg.type.expressions:
                 kind = coldef.kind
                 if kind != exp.DType.UNKNOWN:
-                    map_type.set("expressions", [exp.DataType.build("varchar"), kind])
+                    map_type.set("expressions", [exp.DataType.build(exp.DType.VARCHAR), kind])
                     map_type.set("nested", True)
                     break
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     no_ilike_sql,
@@ -20,6 +22,9 @@ def _trim_sql(self: OracleGenerator, expression: exp.Trim) -> str:
 
 
 class OracleGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True
     JOIN_HINTS = False
     TABLE_HINTS = False
@@ -33,6 +38,8 @@ class OracleGenerator(generator.Generator):
     SUPPORTS_WINDOW_EXCLUDE = True
     QUERY_HINT_SEP = " "
     SUPPORTS_DECODE_CASE = True
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,

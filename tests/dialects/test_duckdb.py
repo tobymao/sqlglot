@@ -1,3 +1,5 @@
+from unittest import mock
+
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -2155,6 +2157,23 @@ class TestDuckDB(Validator):
             write={"bigquery": "SELECT @foo", "duckdb": "SELECT $foo"},
         )
 
+    def test_iceberg_property_no_warning(self):
+        expression = parse_one("CREATE ICEBERG TABLE t (a INT)", dialect="snowflake")
+
+        with mock.patch("sqlglot.generator.logger.warning") as warning:
+            self.assertEqual(expression.sql(dialect="duckdb"), "CREATE TABLE t (a INT)")
+            warning.assert_not_called()
+
+    def test_non_iceberg_property_still_warns(self):
+        expression = parse_one("CREATE TRANSIENT TABLE t (a INT)", dialect="snowflake")
+
+        with self.assertLogs(generator_logger) as cm:
+            self.assertEqual(expression.sql(dialect="duckdb"), "CREATE TABLE t (a INT)")
+
+        self.assertEqual(
+            str(cm.output[0]), "WARNING:sqlglot:Unsupported property transientproperty"
+        )
+
     def test_ignore_nulls(self):
         # Note that DuckDB differentiates window functions (e.g. LEAD, LAG) from aggregate functions (e.g. SUM)
         from sqlglot.dialects.duckdb import DuckDB
@@ -2355,6 +2374,9 @@ class TestDuckDB(Validator):
 
     def test_show_tables(self):
         self.validate_identity("SHOW TABLES").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_schema").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_database").assert_is(exp.Show)
+        self.validate_identity("SHOW TABLES FROM my_database.my_schema").assert_is(exp.Show)
         self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
 
     def test_extract_date_parts(self):

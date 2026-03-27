@@ -22,7 +22,7 @@ def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
             unit=map_date_part(seq_get(args, 0)),
         )
         if expr_type is exp.TsOrDsAdd:
-            expr.set("return_type", exp.DataType.build("TIMESTAMP"))
+            expr.set("return_type", exp.DataType.build(exp.DType.TIMESTAMP))
 
         return expr
 
@@ -36,7 +36,7 @@ class RedshiftParser(PostgresParser):
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             unit=exp.var("month"),
-            return_type=exp.DataType.build("TIMESTAMP"),
+            return_type=exp.DataType.build(exp.DType.TIMESTAMP),
         ),
         "CONVERT_TIMEZONE": lambda args: build_convert_timezone(args, "UTC"),
         "DATEADD": _build_date_delta(exp.TsOrDsAdd),

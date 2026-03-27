@@ -5402,6 +5402,15 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                     expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS VARCHAR) FROM t"
                 )
 
+    def test_try_parse_json(self):
+        self.validate_all(
+            "SELECT TRY_PARSE_JSON(x)",
+            write={
+                "snowflake": "SELECT TRY_PARSE_JSON(x)",
+                "duckdb": "SELECT CASE WHEN JSON_VALID(x) THEN CAST(x AS JSON) ELSE NULL END",
+            },
+        )
+
     def test_decfloat(self):
         self.validate_all(
             "SELECT CAST(1.5 AS DECFLOAT)",

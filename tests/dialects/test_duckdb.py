@@ -100,9 +100,9 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+            """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN CAST('{"x: 1}' AS JSON) ELSE NULL END""",
             read={
-                "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN '{"x: 1}' ELSE NULL END""",
+                "duckdb": """SELECT CASE WHEN JSON_VALID('{"x: 1}') THEN CAST('{"x: 1}' AS JSON) ELSE NULL END""",
                 "snowflake": """SELECT TRY_PARSE_JSON('{"x: 1}')""",
             },
         )
@@ -325,6 +325,18 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> '$.fruit' -> '$.foo'""",
                 "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"fruit": {"foo": "banana"}}'), 'fruit'), 'foo')""",
+            },
+        )
+        self.validate_all(
+            "CASE WHEN JSON_TYPE(x) = 'NULL' THEN NULL ELSE x END",
+            read={
+                "snowflake": "STRIP_NULL_VALUE(x)",
+            },
+        )
+        self.validate_all(
+            """SELECT CASE WHEN JSON_TYPE(JSON('{"a": null}') -> '$.a') = 'NULL' THEN NULL ELSE JSON('{"a": null}') -> '$.a' END""",
+            read={
+                "snowflake": """SELECT STRIP_NULL_VALUE(GET_PATH(PARSE_JSON('{"a": null}'), 'a'))""",
             },
         )
         self.validate_all(

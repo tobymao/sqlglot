@@ -6644,6 +6644,15 @@ FROM SEMANTIC_VIEW(
             },
         )
 
+    def test_contains(self):
+        self.validate_all(
+            "SELECT CONTAINS(col1, col2)",
+            write={
+                "snowflake": "SELECT CONTAINS(col1, col2)",
+                "duckdb": "SELECT CONTAINS(col1, col2)",
+            },
+        )
+
     def test_directed_joins(self):
         self.validate_identity("SELECT * FROM a CROSS DIRECTED JOIN b USING (id)")
         self.validate_identity("SELECT * FROM a INNER DIRECTED JOIN b USING (id)")

@@ -3082,6 +3082,14 @@ class DuckDBGenerator(generator.Generator):
         levenshtein = exp.Levenshtein(this=this, expression=expr)
         return self.sql(exp.Least(this=levenshtein, expressions=[max_dist]))
 
+    def contains_sql(self, expression: exp.Contains) -> str:
+        expr = expression.expression
+        return self.func(
+            "CONTAINS",
+            expression.this,
+            exp.cast(expr.copy(), "VARCHAR") if isinstance(expr, exp.Null) else expr,
+        )
+
     def pad_sql(self, expression: exp.Pad) -> str:
         """
         Handle RPAD/LPAD for VARCHAR and BINARY types.

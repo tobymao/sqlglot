@@ -2547,6 +2547,13 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(exp.case().when(exp.func("json_valid", arg), arg).else_(exp.null()))
         return self.func("JSON", arg)
 
+    def stripnullvalue_sql(self, expression: exp.StripNullValue) -> str:
+        return self.sql(
+            exp.case()
+            .when(exp.func("json_type", expression.this).eq("NULL"), exp.null())
+            .else_(expression.this)
+        )
+
     @unsupported_args("decimals")
     def trunc_sql(self, expression: exp.Trunc) -> str:
         return self.func("TRUNC", expression.this)

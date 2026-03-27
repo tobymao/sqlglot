@@ -708,12 +708,14 @@ class SnowflakeGenerator(generator.Generator):
         precision = expression.args.get("precision")
         scale = expression.args.get("scale")
 
-        is_default = (
-            isinstance(precision, exp.Literal)
-            and precision.name == "38"
-            and isinstance(scale, exp.Literal)
-            and scale.name == "0"
-        )
+        default_precision = isinstance(precision, exp.Literal) and precision.name == "38"
+        default_scale = isinstance(scale, exp.Literal) and scale.name == "0"
+
+        if default_precision and default_scale:
+            precision = None
+            scale = None
+        elif default_scale:
+            scale = None
 
         func_name = "TRY_TO_NUMBER" if expression.args.get("safe") else "TO_NUMBER"
 
@@ -721,8 +723,8 @@ class SnowflakeGenerator(generator.Generator):
             func_name,
             expression.this,
             expression.args.get("format"),
-            None if is_default else precision,
-            None if is_default else scale,
+            precision,
+            scale,
         )
 
     def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:

@@ -705,11 +705,9 @@ class SnowflakeGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
-        """Generate TO_NUMBER SQL, omitting default precision/scale for roundtrips."""
         precision = expression.args.get("precision")
         scale = expression.args.get("scale")
 
-        # Omit default (38, 0) for roundtrip preservation
         is_default = (
             isinstance(precision, exp.Literal)
             and precision.name == "38"

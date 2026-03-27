@@ -2360,9 +2360,7 @@ class DuckDBGenerator(generator.Generator):
         if not fmt and precision and scale:
             return self.sql(
                 exp.cast(
-                    expression.this,
-                    f"DECIMAL({self.sql(precision)}, {self.sql(scale)})",
-                    dialect="duckdb",
+                    expression.this, f"DECIMAL({precision.name}, {scale.name})", dialect="duckdb"
                 )
             )
 

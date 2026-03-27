@@ -2352,17 +2352,21 @@ class DuckDBGenerator(generator.Generator):
                 result = self.func("TO_BINARY", value)
         return f"TRY({result})" if is_safe else result
 
-    @unsupported_args("format")
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        fmt = expression.args.get("format")
         precision = expression.args.get("precision")
         scale = expression.args.get("scale")
 
-        if precision and scale:
-            decimal_type = exp.DataType.build(f"DECIMAL({precision.name}, {scale.name})")
-        else:
-            decimal_type = exp.DataType.build("DOUBLE")
+        if not fmt and precision and scale:
+            return self.sql(
+                exp.cast(
+                    expression.this,
+                    f"DECIMAL({self.sql(precision)}, {self.sql(scale)})",
+                    dialect="duckdb",
+                )
+            )
 
-        return self.sql(exp.cast(expression.this, decimal_type))
+        return super().tonumber_sql(expression)
 
     def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
         """

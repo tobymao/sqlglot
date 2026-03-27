@@ -39,7 +39,7 @@ if t.TYPE_CHECKING:
     from sqlglot.expressions.constraints import ColumnConstraint
     from sqlglot.expressions.ddl import Create
     from sqlglot.expressions.array import Unnest
-    from sqlglot._typing import E, ParserCopyArgs, ParserDialectNoCopyArgs, ParserNoDialectArgs
+    from sqlglot._typing import E, ParserArgs, ParserNoDialectArgs
     from typing_extensions import Unpack
 
     S = t.TypeVar("S", bound="SetOperation")
@@ -354,7 +354,8 @@ class Query(Selectable):
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: Unpack[ParserCopyArgs],
+        copy: bool = True,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Union:
         """
         Builds a UNION expression.
@@ -374,14 +375,15 @@ class Query(Selectable):
         Returns:
             The new Union expression.
         """
-        return union(self, *expressions, distinct=distinct, dialect=dialect, **opts)
+        return union(self, *expressions, distinct=distinct, dialect=dialect, copy=copy, **opts)
 
     def intersect(
         self,
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: Unpack[ParserCopyArgs],
+        copy: bool = True,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Intersect:
         """
         Builds an INTERSECT expression.
@@ -401,14 +403,15 @@ class Query(Selectable):
         Returns:
             The new Intersect expression.
         """
-        return intersect(self, *expressions, distinct=distinct, dialect=dialect, **opts)
+        return intersect(self, *expressions, distinct=distinct, dialect=dialect, copy=copy, **opts)
 
     def except_(
         self,
         *expressions: ExpOrStr,
         distinct: bool = True,
         dialect: DialectType = None,
-        **opts: Unpack[ParserCopyArgs],
+        copy: bool = True,
+        **opts: Unpack[ParserNoDialectArgs],
     ) -> Except:
         """
         Builds an EXCEPT expression.
@@ -428,7 +431,7 @@ class Query(Selectable):
         Returns:
             The new Except expression.
         """
-        return except_(self, *expressions, distinct=distinct, dialect=dialect, **opts)
+        return except_(self, *expressions, distinct=distinct, dialect=dialect, copy=copy, **opts)
 
 
 class QueryBand(Expression):
@@ -888,7 +891,7 @@ class Tuple(Expression):
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         copy: bool = True,
-        **opts: Unpack[ParserDialectNoCopyArgs],
+        **opts: Unpack[ParserArgs],
     ) -> In:
         return In(
             this=maybe_copy(self, copy),

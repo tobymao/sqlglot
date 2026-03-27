@@ -18,33 +18,17 @@ class _DialectArg(t.TypedDict, total=False):
     dialect: DialectType
 
 
-class _CopyArg(t.TypedDict, total=False):
-    copy: bool
-
-
 class ParserNoDialectArgs(t.TypedDict, total=False):
     error_level: t.Optional[ErrorLevel]
     error_message_context: int
     max_errors: int
 
 
-class ParserDialectArgs(ParserNoDialectArgs, _DialectArg, total=False):
+class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
     pass
 
 
-class ParserCopyArgs(ParserNoDialectArgs, _CopyArg, total=False):
-    pass
-
-
-class ParserDialectNoCopyArgs(ParserNoDialectArgs, _DialectArg, total=False):
-    pass
-
-
-class ParserArgs(ParserDialectNoCopyArgs, _CopyArg, total=False):
-    pass
-
-
-class GeneratorNoDialectNoCopyArgs(t.TypedDict, total=False):
+class GeneratorNoDialectArgs(t.TypedDict, total=False):
     pretty: t.Optional[t.Union[bool, int]]
     identify: t.Union[str, bool]
     normalize: bool
@@ -56,14 +40,6 @@ class GeneratorNoDialectNoCopyArgs(t.TypedDict, total=False):
     leading_comma: bool
     max_text_width: int
     comments: bool
-
-
-class GeneratorNoDialectArgs(GeneratorNoDialectNoCopyArgs, _CopyArg, total=False):
-    pass
-
-
-class GeneratorDialectNoCopyArgs(GeneratorNoDialectNoCopyArgs, _DialectArg, total=False):
-    pass
 
 
 class GeneratorArgs(GeneratorNoDialectArgs, _DialectArg, total=False):

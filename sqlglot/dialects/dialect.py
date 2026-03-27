@@ -58,7 +58,7 @@ DATETIME_DELTA = t.Union[
 DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd)
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import B, E, F, GeneratorDialectNoCopyArgs, ParserDialectArgs
+    from sqlglot._typing import B, E, F, GeneratorArgs, ParserArgs
     from typing_extensions import Unpack
 
 logger = logging.getLogger("sqlglot")
@@ -1109,20 +1109,20 @@ class Dialect(metaclass=_Dialect):
 
         return path
 
-    def parse(self, sql: str, **opts: Unpack[ParserDialectArgs]) -> list[t.Optional[exp.Expr]]:
+    def parse(self, sql: str, **opts: Unpack[ParserArgs]) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
 
     def parse_into(
-        self, expression_type: exp.IntoType, sql: str, **opts: Unpack[ParserDialectArgs]
+        self, expression_type: exp.IntoType, sql: str, **opts: Unpack[ParserArgs]
     ) -> list[t.Optional[exp.Expr]]:
         return self.parser(**opts).parse_into(expression_type, self.tokenize(sql), sql)
 
     def generate(
-        self, expression: exp.Expr, copy: bool = True, **opts: Unpack[GeneratorDialectNoCopyArgs]
+        self, expression: exp.Expr, copy: bool = True, **opts: Unpack[GeneratorArgs]
     ) -> str:
         return self.generator(**opts).generate(expression, copy=copy)
 
-    def transpile(self, sql: str, **opts: Unpack[GeneratorDialectNoCopyArgs]) -> list[str]:
+    def transpile(self, sql: str, **opts: Unpack[GeneratorArgs]) -> list[str]:
         return [
             self.generate(expression, copy=False, **opts) if expression else ""
             for expression in self.parse(sql)
@@ -1137,12 +1137,12 @@ class Dialect(metaclass=_Dialect):
     def jsonpath_tokenizer(self, dialect: DialectType = None) -> JSONPathTokenizer:
         return self.jsonpath_tokenizer_class(dialect=dialect or self)
 
-    def parser(self, **opts: Unpack[ParserDialectArgs]) -> Parser:
-        args: ParserDialectArgs = {"dialect": self, **opts}
+    def parser(self, **opts: Unpack[ParserArgs]) -> Parser:
+        args: ParserArgs = {"dialect": self, **opts}
         return self.parser_class(**args)
 
-    def generator(self, **opts: Unpack[GeneratorDialectNoCopyArgs]) -> Generator:
-        args: GeneratorDialectNoCopyArgs = {"dialect": self, **opts}
+    def generator(self, **opts: Unpack[GeneratorArgs]) -> Generator:
+        args: GeneratorArgs = {"dialect": self, **opts}
         return self.generator_class(**args)
 
     def generate_values_aliases(self, expression: exp.Values) -> list[exp.Identifier]:

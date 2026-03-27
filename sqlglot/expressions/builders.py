@@ -55,12 +55,15 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
-    from sqlglot._typing import ParserArgs, ParserCopyArgs, E, ParserNoDialectArgs
+    from sqlglot._typing import ParserArgs, ParserNoDialectArgs, E
     from typing_extensions import Unpack
 
 
 def select(
-    *expressions: ExpOrStr, dialect: DialectType = None, **opts: Unpack[ParserCopyArgs]
+    *expressions: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Select:
     """
     Initializes a syntax tree from one or multiple SELECT expressions.
@@ -80,11 +83,14 @@ def select(
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().select(*expressions, dialect=dialect, **opts)
+    return Select().select(*expressions, dialect=dialect, copy=copy, **opts)
 
 
 def from_(
-    expression: ExpOrStr, dialect: DialectType = None, **opts: Unpack[ParserNoDialectArgs]
+    expression: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Select:
     """
     Initializes a syntax tree from a FROM expression.
@@ -104,7 +110,7 @@ def from_(
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().from_(expression, dialect=dialect, **opts)
+    return Select().from_(expression, dialect=dialect, copy=copy, **opts)
 
 
 def update(
@@ -415,7 +421,8 @@ def subquery(
     expression: ExpOrStr,
     alias: t.Optional[Identifier | str] = None,
     dialect: DialectType = None,
-    **opts: Unpack[ParserCopyArgs],
+    copy: bool = True,
+    **opts: Unpack[ParserNoDialectArgs],
 ) -> Select:
     """
     Build a subquery expression that's selected from.
@@ -435,7 +442,7 @@ def subquery(
         A new Select instance with the subquery expression included.
     """
     subqry = t.cast(Query, maybe_parse(expression, dialect=dialect, **opts))
-    expression = subqry.subquery(alias, copy=opts.get("copy", True))
+    expression = subqry.subquery(alias, copy=copy)
     return Select().from_(expression, dialect=dialect, **opts)
 
 

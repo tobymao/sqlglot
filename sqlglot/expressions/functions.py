@@ -25,7 +25,7 @@ from sqlglot.expressions.json import *  # noqa: F401,F403
 if t.TYPE_CHECKING:
     from sqlglot.expressions.datatypes import DataType, DATA_TYPE
     from typing_extensions import Unpack
-    from sqlglot._typing import ParserDialectNoCopyArgs
+    from sqlglot._typing import ParserArgs
 
 
 # Cast / type conversion
@@ -101,7 +101,7 @@ class Case(Expression, Func):
         condition: ExpOrStr,
         then: ExpOrStr,
         copy: bool = True,
-        **opts: Unpack[ParserDialectNoCopyArgs],
+        **opts: Unpack[ParserArgs],
     ) -> Case:
         instance = maybe_copy(self, copy)
         instance.append(
@@ -113,9 +113,7 @@ class Case(Expression, Func):
         )
         return instance
 
-    def else_(
-        self, condition: ExpOrStr, copy: bool = True, **opts: Unpack[ParserDialectNoCopyArgs]
-    ) -> Case:
+    def else_(self, condition: ExpOrStr, copy: bool = True, **opts: Unpack[ParserArgs]) -> Case:
         instance = maybe_copy(self, copy)
         instance.set("default", maybe_parse(condition, copy=copy, **opts))
         return instance

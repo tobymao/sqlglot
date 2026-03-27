@@ -274,7 +274,9 @@ class Expr:
     def to_s(self) -> str:
         raise NotImplementedError
 
-    def sql(self, dialect: DialectType = None, **opts: Unpack[GeneratorNoDialectArgs]) -> str:
+    def sql(
+        self, dialect: DialectType = None, copy: bool = True, **opts: Unpack[GeneratorNoDialectArgs]
+    ) -> str:
         raise NotImplementedError
 
     def transform(
@@ -1018,7 +1020,9 @@ class Expression(Expr):
         """
         return _to_s(self, verbose=True)
 
-    def sql(self, dialect: DialectType = None, **opts: Unpack[GeneratorNoDialectArgs]) -> str:
+    def sql(
+        self, dialect: DialectType = None, copy: bool = True, **opts: Unpack[GeneratorNoDialectArgs]
+    ) -> str:
         """
         Returns SQL string representation of this tree.
 
@@ -1031,7 +1035,7 @@ class Expression(Expr):
         """
         from sqlglot.dialects.dialect import Dialect
 
-        return Dialect.get_or_raise(dialect).generate(self, **opts)
+        return Dialect.get_or_raise(dialect).generate(self, copy=copy, **opts)
 
     def transform(
         self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object

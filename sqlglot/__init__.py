@@ -71,7 +71,7 @@ from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
 from sqlglot.tokens import Token as Token, Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, GeneratorDialectNoCopyArgs, ParserNoDialectArgs
+    from sqlglot._typing import E, GeneratorArgs, ParserNoDialectArgs
     from typing_extensions import Unpack
     from sqlglot.dialects.dialect import DialectType as DialectType
 
@@ -197,7 +197,7 @@ def transpile(
     write: DialectType = None,
     identity: bool = True,
     error_level: t.Optional[ErrorLevel] = None,
-    **opts: Unpack[GeneratorDialectNoCopyArgs],
+    **opts: Unpack[GeneratorArgs],
 ) -> list[str]:
     """
     Parses the given SQL string in accordance with the source dialect and returns a list of SQL strings transformed

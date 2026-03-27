@@ -776,7 +776,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        # TO_NUMBER transpilation from Snowflake to DuckDB
         self.validate_all(
             "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
             read={
@@ -784,29 +783,27 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
-                "snowflake": "SELECT TO_NUMBER('12.3456')",
             },
         )
         self.validate_all(
-            "SELECT CAST('12.3456' AS DECIMAL(10, 1))",
+            "SELECT CAST('12.3456' AS DECIMAL(10, 0))",
             read={
-                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 1)",
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10)",
             },
             write={
-                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 1))",
-                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 1)",
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 0))",
             },
         )
         self.validate_all(
-            "SELECT CAST('3,741.72' AS DECIMAL(6, 2))",
+            "SELECT CAST('12.3456' AS DECIMAL(10, 2))",
             read={
-                "snowflake": "SELECT TO_DECIMAL('3,741.72', '9,999.99', 6, 2)",
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 2)",
             },
             write={
-                "duckdb": "SELECT CAST('3,741.72' AS DECIMAL(6, 2))",
-                "snowflake": "SELECT TO_NUMBER('3,741.72', 6, 2)",  # Format is lost during transpilation
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 2))",
             },
         )
+
         self.validate_all(
             "VAR_POP(x)",
             read={

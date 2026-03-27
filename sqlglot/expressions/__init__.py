@@ -62,3 +62,13 @@ def _init_subclasses(cls: t.Type[Expr]) -> None:
 
 
 _init_subclasses(Expr)
+
+
+def _build_expr_classes(cls: t.Type[Expr], result: t.Dict[str, t.Type[Expr]]) -> None:
+    result[cls.key] = cls
+    for sub in cls.__subclasses__():
+        _build_expr_classes(sub, result)
+
+
+EXPR_CLASSES: t.Dict[str, t.Type[Expr]] = {}
+_build_expr_classes(Expr, EXPR_CLASSES)

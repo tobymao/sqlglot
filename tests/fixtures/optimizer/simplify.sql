@@ -887,6 +887,18 @@ CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 x > CAST('2023-01-01' AS DATE) AND x < CAST('2023-01-01' AS DATETIME);
 FALSE;
 
+CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
+CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
+
+CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
+CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
+
+CAST(x AS INT) < -500 AND CAST(x AS INT) >= -1;
+FALSE;
+
+x < 0 AND x >= -500;
+x < 0 AND x >= -500;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

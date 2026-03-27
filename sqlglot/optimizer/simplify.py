@@ -226,7 +226,8 @@ def _is_nonnull_constant(expression: exp.Expr) -> bool:
 
 
 def _is_constant(expression: exp.Expr) -> bool:
-    return isinstance(expression, exp.CONSTANTS) or _is_date_literal(expression)
+    expr = expression.this if isinstance(expression, exp.Neg) else expression
+    return isinstance(expr, exp.CONSTANTS) or _is_date_literal(expr)
 
 
 def _datetrunc_range(date: datetime.date, unit: str, dialect: Dialect) -> t.Optional[DateRange]:

@@ -71,6 +71,27 @@ AFTER_HAVING_MODIFIER_TRANSFORMS: t.Dict[str, t.Any] = {
 }
 
 
+_DISPATCH_CACHE: t.Dict[t.Type["Generator"], t.Dict[t.Type[exp.Expr], t.Callable[..., str]]] = {}
+
+
+def _build_dispatch(
+    cls: t.Type["Generator"],
+) -> t.Dict[t.Type[exp.Expr], t.Callable[..., str]]:
+    dispatch: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = dict(cls.TRANSFORMS)
+
+    for attr_name in dir(cls):
+        if not attr_name.endswith("_sql") or attr_name.startswith("_"):
+            continue
+
+        expr_key = attr_name[:-4]
+        expr_cls = exp.EXPR_CLASSES.get(expr_key)
+
+        if expr_cls and expr_cls not in dispatch:
+            dispatch[expr_cls] = getattr(cls, attr_name)
+
+    return dispatch
+
+
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
@@ -806,6 +827,7 @@ class Generator:
         "_identifier_start",
         "_identifier_end",
         "_quote_json_path_key_using_brackets",
+        "_dispatch",
     )
 
     def __init__(
@@ -860,6 +882,13 @@ class Generator:
         self._identifier_end = self.dialect.IDENTIFIER_END
 
         self._quote_json_path_key_using_brackets = True
+
+        cls = type(self)
+        dispatch = _DISPATCH_CACHE.get(cls)
+        if dispatch is None:
+            dispatch = _build_dispatch(cls)
+            _DISPATCH_CACHE[cls] = dispatch
+        self._dispatch = dispatch
 
     def generate(self, expression: exp.Expr, copy: bool = True) -> str:
         """
@@ -1040,21 +1069,16 @@ class Generator:
                 return self.sql(value)
             return ""
 
-        transform = self.TRANSFORMS.get(expression.__class__)
+        handler = self._dispatch.get(expression.__class__)
 
-        if transform:
-            sql = transform(self, expression)
+        if handler:
+            sql = handler(self, expression)
+        elif isinstance(expression, exp.Func):
+            sql = self.function_fallback_sql(expression)
+        elif isinstance(expression, exp.Property):
+            sql = self.property_sql(expression)
         else:
-            exp_handler_name = expression.key + "_sql"
-
-            if handler := getattr(self, exp_handler_name, None):
-                sql = handler(expression)
-            elif isinstance(expression, exp.Func):
-                sql = self.function_fallback_sql(expression)
-            elif isinstance(expression, exp.Property):
-                sql = self.property_sql(expression)
-            else:
-                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+            raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 

@@ -896,6 +896,12 @@ CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
 CAST(x AS INT) < -500 AND CAST(x AS INT) >= -1;
 FALSE;
 
+0 > CAST(x AS INT) AND -500 <= CAST(x AS INT);
+CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
+
+-1 > CAST(x AS INT) AND -500 <= CAST(x AS INT);
+CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

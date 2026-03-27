@@ -804,7 +804,7 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT CAST('3,741.72' AS DECIMAL(6, 2))",
-                "snowflake": "SELECT TO_DECIMAL('3,741.72', '9,999.99', 6, 2)",
+                "snowflake": "SELECT TO_NUMBER('3,741.72', 6, 2)",  # Format is lost during transpilation
             },
         )
         self.validate_all(

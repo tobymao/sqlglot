@@ -295,33 +295,6 @@ def _build_generator(args: t.List) -> exp.Generator:
     return exp.Generator(**gen_args)
 
 
-def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
-    return exp.ToNumber(
-        this=seq_get(args, 0),
-        format=seq_get(args, 1),
-        precision=seq_get(args, 2),
-        scale=seq_get(args, 3),
-        safe=True,
-    )
-
-
-def _build_to_number(args: t.List[exp.Expr]) -> exp.ToNumber:
-    """Build TO_NUMBER with Snowflake default precision/scale of (38, 0)."""
-    expr, arg1, arg2, arg3 = (seq_get(args, i) for i in range(4))
-
-    # Determine if arg1 is format (string) or precision (number)
-    has_format = arg1 and arg1.is_string
-    format_arg, precision, scale = (arg1, arg2, arg3) if has_format else (None, arg1, arg2)
-
-    # Set Snowflake defaults when not specified
-    if precision is None and scale is None:
-        precision, scale = exp.Literal.number(38), exp.Literal.number(0)
-    elif precision and scale is None:
-        scale = exp.Literal.number(0)
-
-    return exp.ToNumber(this=expr, format=format_arg, precision=precision, scale=scale)
-
-
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser], exp.Show]:
     def _parse(self: SnowflakeParser) -> exp.Show:
         return self._parse_show_snowflake(*args, **kwargs)
@@ -655,7 +628,16 @@ class SnowflakeParser(parser.Parser):
         "TRY_TO_BOOLEAN": lambda args: exp.ToBoolean(this=seq_get(args, 0), safe=True),
         "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DType.DATE, safe=True),
         **dict.fromkeys(
-            ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"), _build_try_to_number
+            ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"),
+            lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1) if len(args) in (2, 4) else None,
+                precision=(seq_get(args, 2) if len(args) in (2, 4) else seq_get(args, 1))
+                or exp.Literal.number(38),
+                scale=(seq_get(args, 3) if len(args) in (2, 4) else seq_get(args, 2))
+                or exp.Literal.number(0),
+                safe=True,
+            ),
         ),
         "TRY_TO_DOUBLE": lambda args: exp.ToDouble(
             this=seq_get(args, 0), format=seq_get(args, 1), safe=True
@@ -676,7 +658,17 @@ class SnowflakeParser(parser.Parser):
         ),
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_DATE": _build_datetime("TO_DATE", exp.DType.DATE),
-        **dict.fromkeys(("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"), _build_to_number),
+        **dict.fromkeys(
+            ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
+            lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1) if len(args) in (2, 4) else None,
+                precision=(seq_get(args, 2) if len(args) in (2, 4) else seq_get(args, 1))
+                or exp.Literal.number(38),
+                scale=(seq_get(args, 3) if len(args) in (2, 4) else seq_get(args, 2))
+                or exp.Literal.number(0),
+            ),
+        ),
         "TO_TIME": _build_datetime("TO_TIME", exp.DType.TIME),
         "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DType.TIMESTAMP),
         "TO_TIMESTAMP_LTZ": _build_datetime("TO_TIMESTAMP_LTZ", exp.DType.TIMESTAMPLTZ),

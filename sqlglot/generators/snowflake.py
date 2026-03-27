@@ -717,8 +717,10 @@ class SnowflakeGenerator(generator.Generator):
             and scale.name == "0"
         )
 
+        func_name = "TRY_TO_NUMBER" if expression.args.get("safe") else "TO_NUMBER"
+
         return self.func(
-            "TO_NUMBER",
+            func_name,
             expression.this,
             expression.args.get("format"),
             None if is_default else precision,
@@ -739,20 +741,38 @@ class SnowflakeGenerator(generator.Generator):
         if expression.is_type(exp.DType.GEOMETRY):
             return self.func("TO_GEOMETRY", expression.this)
 
-        # Convert CAST to DECIMAL/NUMERIC to TO_NUMBER
-        if expression.is_type(exp.DType.DECIMAL):
-            # Extract precision and scale from DECIMAL(p, s)
-            params = expression.to.expressions or []
-            precision = params[0].this if len(params) >= 1 and isinstance(params[0], exp.DataTypeParam) else None
-            scale = params[1].this if len(params) >= 2 and isinstance(params[1], exp.DataTypeParam) else None
+        # Convert CAST to DECIMAL/NUMERIC to TO_NUMBER only for string inputs
+        # Don't convert TryCast - it's handled by trycast_sql
+        if expression.is_type(exp.DType.DECIMAL) and not isinstance(expression, exp.TryCast):
+            value = expression.this
 
-            to_number = exp.ToNumber(
-                this=expression.this,
-                precision=precision,
-                scale=scale,
-                safe=isinstance(expression, exp.TryCast),
-            )
-            return self.tonumber_sql(to_number)
+            # Annotate types if not already done
+            if value.type is None:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                value = annotate_types(value, dialect=self.dialect)
+
+            # Only convert to TO_NUMBER for string inputs
+            if value.is_string or value.is_type(*exp.DataType.TEXT_TYPES):
+                # Extract precision and scale from DECIMAL(p, s)
+                params = expression.to.expressions or []
+                precision = (
+                    params[0].this
+                    if len(params) >= 1 and isinstance(params[0], exp.DataTypeParam)
+                    else None
+                )
+                scale = (
+                    params[1].this
+                    if len(params) >= 2 and isinstance(params[1], exp.DataTypeParam)
+                    else None
+                )
+
+                to_number = exp.ToNumber(
+                    this=value,
+                    precision=precision,
+                    scale=scale,
+                )
+                return self.tonumber_sql(to_number)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)
 

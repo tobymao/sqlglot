@@ -527,6 +527,12 @@ class TestSnowflake(Validator):
         self.assertEqual(ast.args.get("precision").name, "10")
         self.assertEqual(ast.args.get("scale").name, "1")
 
+        ast = self.validate_identity("TO_NUMBER('12.3456', 3, 0)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "3")
+        self.assertEqual(ast.args.get("scale").name, "0")
+
         self.validate_identity("TO_DECFLOAT('123.456')")
         self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_DECFLOAT('123.456')")
@@ -597,6 +603,13 @@ class TestSnowflake(Validator):
         self.assertEqual(ast.args.get("format").name, "99.99")
         self.assertEqual(ast.args.get("precision").name, "10")
         self.assertEqual(ast.args.get("scale").name, "1")
+        self.assertTrue(ast.args.get("safe"))
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456', 3, 0)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "3")
+        self.assertEqual(ast.args.get("scale").name, "0")
         self.assertTrue(ast.args.get("safe"))
 
         self.validate_identity("TO_NUMERIC('123.45')", "TO_NUMBER('123.45')")

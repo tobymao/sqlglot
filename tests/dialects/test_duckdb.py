@@ -1516,6 +1516,31 @@ class TestDuckDB(Validator):
             "SELECT LAST_VALUE(x ORDER BY x RESPECT NULLS) OVER (ORDER BY x) FROM t"
         )
 
+        self.validate_all(
+            "CASE WHEN '*' = '' THEN 0 ELSE UNICODE('*') END",
+            read={
+                "snowflake": "UNICODE('*')",
+            },
+        )
+        self.validate_all(
+            "CASE WHEN 'a' = '' THEN 0 ELSE UNICODE('a') END",
+            read={
+                "snowflake": "UNICODE('a')",
+            },
+        )
+        self.validate_all(
+            "CASE WHEN '' = '' THEN 0 ELSE UNICODE('') END",
+            read={
+                "snowflake": "UNICODE('')",
+            },
+        )
+        self.validate_all(
+            "CASE WHEN column1 = '' THEN 0 ELSE UNICODE(column1) END",
+            read={
+                "snowflake": "UNICODE(column1)",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

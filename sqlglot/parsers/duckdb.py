@@ -226,6 +226,18 @@ class DuckDBParser(parser.Parser):
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
+    def _parse_function_properties(self) -> t.Optional[exp.Properties]:
+        if self._match(TokenType.TABLE):
+            return exp.Properties(
+                expressions=[
+                    exp.ReturnsProperty(
+                        this=exp.Schema(this=exp.var("TABLE")),
+                        is_table=True,
+                    ),
+                ]
+            )
+        return super()._parse_function_properties()
+
     def _parse_lambda(self, alias: bool = False) -> t.Optional[exp.Expr]:
         index = self._index
         if not self._match_text_seq("LAMBDA"):

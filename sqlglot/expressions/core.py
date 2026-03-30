@@ -373,6 +373,7 @@ class Expr:
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
+        dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
@@ -1339,10 +1340,11 @@ class Expression(Expr):
         *expressions: t.Any,
         query: t.Optional[ExpOrStr] = None,
         unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
+        dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
-        subquery = maybe_parse(query, copy=copy, **opts) if query else None
+        subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts) if query else None
         if subquery and not subquery.is_subquery:
             subquery = subquery.subquery(copy=False)  # type: ignore[attr-defined]
 
@@ -1353,7 +1355,7 @@ class Expression(Expr):
             unnest=(
                 _lazy_unnest(
                     expressions=[
-                        maybe_parse(t.cast(ExpOrStr, e), copy=copy, **opts)
+                        maybe_parse(t.cast(ExpOrStr, e), dialect=dialect, copy=copy, **opts)
                         for e in ensure_list(unnest)
                     ]
                 )
@@ -2589,7 +2591,9 @@ def _apply_child_list_builder(
     existing = instance.args.get(arg)
     if append and existing:
         parsed = existing.expressions + parsed
-    assert into is not None, "into is required to use _apply_child_list_builder"
+    if into is None:
+        msg = "`into` is required to use `_apply_child_list_builder`"
+        raise ValueError(msg)
     child = into(expressions=parsed)
     for k, v in properties.items():
         child.set(k, v)

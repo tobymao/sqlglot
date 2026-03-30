@@ -42,13 +42,13 @@ from sqlglot.expressions.query import (
     Values,
     Where,
     With,
+    Query,
 )
 from sqlglot.expressions.ddl import Alter, AlterRename, RenameColumn
 from sqlglot.expressions.dml import Delete, Insert, Merge, Update, When, Whens
 from sqlglot.expressions.functions import Case, Cast
 from sqlglot.expressions.array import Array
 
-from sqlglot.expressions.query import Query
 
 if t.TYPE_CHECKING:
     from collections.abc import Sequence, Iterable
@@ -120,6 +120,7 @@ def update(
     from_: t.Optional[ExpOrStr] = None,
     with_: t.Optional[dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
+    copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Update:
     """
@@ -136,35 +137,38 @@ def update(
         from_: sql statement parsed into a FROM statement
         with_: dictionary of CTE aliases / select statements to include in a WITH clause.
         dialect: the dialect used to parse the input expressions.
+        copy: whether to copy the input expressions.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Update: the syntax tree for the UPDATE statement.
     """
-    update_expr = Update(this=maybe_parse(table, into=Table, dialect=dialect))
+    update_expr = Update(this=maybe_parse(table, into=Table, dialect=dialect, copy=copy))
     if properties:
         update_expr.set(
             "expressions",
             [
-                EQ(this=maybe_parse(k, dialect=dialect, **opts), expression=convert(v))
+                EQ(this=maybe_parse(k, dialect=dialect, copy=copy, **opts), expression=convert(v))
                 for k, v in properties.items()
             ],
         )
     if from_:
         update_expr.set(
             "from_",
-            maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", **opts),
+            maybe_parse(from_, into=From, dialect=dialect, prefix="FROM", copy=copy, **opts),
         )
     if isinstance(where, Condition):
         where = Where(this=where)
     if where:
         update_expr.set(
             "where",
-            maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", **opts),
+            maybe_parse(where, into=Where, dialect=dialect, prefix="WHERE", copy=copy, **opts),
         )
     if with_:
         cte_list = [
-            alias_(CTE(this=maybe_parse(qry, dialect=dialect, **opts)), alias, table=True)
+            alias_(
+                CTE(this=maybe_parse(qry, dialect=dialect, copy=copy, **opts)), alias, table=True
+            )
             for alias, qry in with_.items()
         ]
         update_expr.set(
@@ -441,9 +445,10 @@ def subquery(
     Returns:
         A new Select instance with the subquery expression included.
     """
-    subqry = t.cast(Query, maybe_parse(expression, dialect=dialect, **opts))
-    expression = subqry.subquery(alias, copy=copy)
-    return Select().from_(expression, dialect=dialect, **opts)
+    expr = (
+        maybe_parse(expression, dialect=dialect, **opts).assert_is(Query).subquery(alias, copy=copy)
+    )
+    return Select().from_(expr, dialect=dialect, **opts)
 
 
 def cast(
@@ -980,6 +985,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
 
 def case(
     expression: t.Optional[ExpOrStr] = None,
+    copy: bool = True,
     **opts: Unpack[ParserArgs],
 ) -> Case:
     """
@@ -990,10 +996,11 @@ def case(
 
     Args:
         expression: Optionally, the input expression (not all dialects support this)
+        copy: whether to copy the argument expressions.
         **opts: Extra keyword arguments for parsing `expression`
     """
     if expression is not None:
-        this = maybe_parse(expression, **opts)
+        this = maybe_parse(expression, copy=copy, **opts)
     else:
         this = None
     return Case(this=this, ifs=[])

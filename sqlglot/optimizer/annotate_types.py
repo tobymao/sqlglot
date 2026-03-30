@@ -19,7 +19,12 @@ from sqlglot.schema import MappingSchema, Schema, ensure_schema
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
 
-    BinaryCoercionFunc = t.Callable[[exp.Expr, exp.Expr], exp.DType]
+    # TODO (mypyc): should be -> exp.DType but some coercion lambdas return DataType
+    # (e.g. l.type). The original code used t.cast(exp.DType, ...) to satisfy mypy, but
+    # mypyc enforces t.cast at runtime, rejecting DataType values. Widened to accept both.
+    BinaryCoercionFunc = t.Callable[
+        [exp.Expr, exp.Expr], t.Optional[t.Union[exp.DataType, exp.DType]]
+    ]
     BinaryCoercions = t.Dict[
         t.Tuple[exp.DType, exp.DType],
         BinaryCoercionFunc,
@@ -102,7 +107,7 @@ def _coerce_date(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
 
 def swap_args(func: BinaryCoercionFunc) -> BinaryCoercionFunc:
     @functools.wraps(func)
-    def _swapped(l: exp.Expr, r: exp.Expr) -> exp.DType:
+    def _swapped(l: exp.Expr, r: exp.Expr) -> t.Optional[t.Union[exp.DataType, exp.DType]]:
         return func(r, l)
 
     return _swapped
@@ -112,57 +117,58 @@ def swap_all(coercions: BinaryCoercions) -> BinaryCoercions:
     return {**coercions, **{(b, a): swap_args(func) for (a, b), func in coercions.items()}}
 
 
-class _TypeAnnotator(type):
-    def __new__(cls, clsname, bases, attrs):
-        klass = super().__new__(cls, clsname, bases, attrs)
+def _build_coerces_to() -> t.Dict[exp.DType, t.Set[exp.DType]]:
+    # Highest-to-lowest type precedence, as specified in Spark's docs (ANSI):
+    # https://spark.apache.org/docs/3.2.0/sql-ref-ansi-compliance.html
+    text_precedence = (
+        exp.DType.TEXT,
+        exp.DType.NVARCHAR,
+        exp.DType.VARCHAR,
+        exp.DType.NCHAR,
+        exp.DType.CHAR,
+    )
+    numeric_precedence = (
+        exp.DType.DECFLOAT,
+        exp.DType.DOUBLE,
+        exp.DType.FLOAT,
+        exp.DType.BIGDECIMAL,
+        exp.DType.DECIMAL,
+        exp.DType.BIGINT,
+        exp.DType.INT,
+        exp.DType.SMALLINT,
+        exp.DType.TINYINT,
+    )
+    timelike_precedence = (
+        exp.DType.TIMESTAMPLTZ,
+        exp.DType.TIMESTAMPTZ,
+        exp.DType.TIMESTAMP,
+        exp.DType.DATETIME,
+        exp.DType.DATE,
+    )
 
-        # Highest-to-lowest type precedence, as specified in Spark's docs (ANSI):
-        # https://spark.apache.org/docs/3.2.0/sql-ref-ansi-compliance.html
-        text_precedence = (
-            exp.DType.TEXT,
-            exp.DType.NVARCHAR,
-            exp.DType.VARCHAR,
-            exp.DType.NCHAR,
-            exp.DType.CHAR,
-        )
-        numeric_precedence = (
-            exp.DType.DECFLOAT,
-            exp.DType.DOUBLE,
-            exp.DType.FLOAT,
-            exp.DType.BIGDECIMAL,
-            exp.DType.DECIMAL,
-            exp.DType.BIGINT,
-            exp.DType.INT,
-            exp.DType.SMALLINT,
-            exp.DType.TINYINT,
-        )
-        timelike_precedence = (
-            exp.DType.TIMESTAMPLTZ,
-            exp.DType.TIMESTAMPTZ,
-            exp.DType.TIMESTAMP,
-            exp.DType.DATETIME,
-            exp.DType.DATE,
-        )
-
-        for type_precedence in (text_precedence, numeric_precedence, timelike_precedence):
-            coerces_to = set()
-            for data_type in type_precedence:
-                klass.COERCES_TO[data_type] = coerces_to.copy()
-                coerces_to |= {data_type}
-        return klass
+    result: t.Dict[exp.DType, t.Set[exp.DType]] = {}
+    for type_precedence in (text_precedence, numeric_precedence, timelike_precedence):
+        coerces_to: t.Set[exp.DType] = set()
+        for data_type in type_precedence:
+            result[data_type] = coerces_to.copy()
+            coerces_to |= {data_type}
+    return result
 
 
-class TypeAnnotator(metaclass=_TypeAnnotator):
-    NESTED_TYPES = {
+_COERCES_TO = _build_coerces_to()
+
+
+class TypeAnnotator:
+    NESTED_TYPES: t.ClassVar = {
         exp.DType.ARRAY,
     }
 
-    # Specifies what types a given type can be coerced into (autofilled)
-    COERCES_TO: t.Dict[exp.DType, t.Set[exp.DType]] = {}
+    # Specifies what types a given type can be coerced into
+    COERCES_TO: t.ClassVar[t.Dict[exp.DType, t.Set[exp.DType]]] = _COERCES_TO
 
     # Coercion functions for binary operations.
     # Map of type pairs to a callable that takes both sides of the binary operation and returns the resulting type.
-    BINARY_COERCIONS: BinaryCoercions = {
+    BINARY_COERCIONS: t.ClassVar = {
         **swap_all(
             {
                 (t, exp.DType.INTERVAL): lambda l, r: _coerce_date_literal(l, r.args.get("unit"))
@@ -172,8 +178,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         **swap_all(
             {
                 # text + numeric will yield the numeric type to match most dialects' semantics
-                (text, numeric): lambda l, r: t.cast(
-                    exp.DType, l.type if l.type in exp.DataType.NUMERIC_TYPES else r.type
+                (text, numeric): lambda l, r: (
+                    l.type if l.type in exp.DataType.NUMERIC_TYPES else r.type
                 )
                 for text in exp.DataType.TEXT_TYPES
                 for numeric in exp.DataType.NUMERIC_TYPES
@@ -229,11 +235,19 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._setop_column_types.clear()
         self._scope_selects.clear()
 
-    def _set_type(self, expression: E, target_type: t.Optional[exp.DataType | exp.DType]) -> E:
+    # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
+    # to the isinstance-narrowed type, causing runtime type check failures.
+    def _set_type(
+        self, expression: exp.Expr, target_type: t.Optional[exp.DataType | exp.DType]
+    ) -> exp.Expr:
         prev_type = expression.type
         expression_id = id(expression)
 
-        expression.type = target_type or exp.DType.UNKNOWN  # type: ignore
+        # TODO (mypyc): expression.type = ... should work but mypyc compiles the property
+        # setter to enforce the getter's return type (Optional[DataType]), rejecting DType.
+        # Bypass by converting and assigning to _type directly.
+        dtype = target_type or exp.DType.UNKNOWN
+        expression._type = dtype if isinstance(dtype, exp.DataType) else exp.DataType.build(dtype)
         self._visited.add(expression_id)
 
         if (
@@ -258,8 +272,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
-        for expr in self._null_expressions.values():
-            expr.type = self.dialect.DEFAULT_NULL_TYPE
+        # TODO (mypyc): uses list() + _set_type instead of direct expr.type = ... because
+        # mypyc's property setter bypass rejects DType, and _set_type modifies the dict.
+        for expr in list(self._null_expressions.values()):
+            self._set_type(expr, self.dialect.DEFAULT_NULL_TYPE)
 
         return expression
 
@@ -327,7 +343,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     struct_type = exp.DataType(
                         this=exp.DType.STRUCT,
                         expressions=[
-                            exp.ColumnDef(this=exp.to_identifier(c), kind=kind)
+                            exp.ColumnDef(this=exp.to_identifier(str(c)), kind=kind)
                             for c, kind in schema.items()
                         ],
                         nested=True,
@@ -431,7 +447,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             if spec and (annotator := spec.get("annotator")):
                 annotator(self, expr)
             elif spec and (returns := spec.get("returns")):
-                self._set_type(expr, t.cast(exp.DType, returns))
+                self._set_type(expr, returns)
             else:
                 self._set_type(expr, exp.DType.UNKNOWN)
 
@@ -580,7 +596,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         left_type, right_type = left.type.this, right.type.this  # type: ignore
 
-        if isinstance(expression, (exp.Connector, exp.Predicate)):
+        # TODO (mypyc): should be isinstance(expression, (exp.Connector, exp.Predicate)) but
+        # mypyc narrows the variable to the first type in a tuple/or isinstance check when
+        # the types are sibling @trait classes, rejecting instances of the second type.
+        if issubclass(type(expression), (exp.Connector, exp.Predicate)):
             self._set_type(expression, exp.DType.BOOLEAN)
         elif (left_type, right_type) in self.binary_coercions:
             self._set_type(expression, self.binary_coercions[(left_type, right_type)](left, right))
@@ -617,7 +636,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    @t.no_type_check
     def _annotate_by_args(
         self,
         expression: E,
@@ -677,13 +695,14 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             result_type = literal_type or non_literal_type or exp.DType.UNKNOWN
 
         self._set_type(
-            expression, result_type or self._maybe_coerce(non_literal_type, literal_type)
+            expression,
+            result_type or self._maybe_coerce(non_literal_type, literal_type),  # type: ignore
         )
 
         if promote:
-            if expression.type.this in exp.DataType.INTEGER_TYPES:
+            if expression.type.this in exp.DataType.INTEGER_TYPES:  # type: ignore
                 self._set_type(expression, exp.DType.BIGINT)
-            elif expression.type.this in exp.DataType.FLOAT_TYPES:
+            elif expression.type.this in exp.DataType.FLOAT_TYPES:  # type: ignore
                 self._set_type(expression, exp.DType.DOUBLE)
 
         if array:

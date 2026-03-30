@@ -138,7 +138,8 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
                 expressions=[element_type],
                 nested=True,
             )
-            return self._set_type(expression, array_type)
+            self._set_type(expression, array_type)
+            return expression
 
     return self._annotate_by_args(expression, "expressions", array=True)
 

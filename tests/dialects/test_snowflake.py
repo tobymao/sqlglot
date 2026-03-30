@@ -3946,6 +3946,7 @@ class TestSnowflake(Validator):
             },
         )
 
+        # Single-argument numeric TRUNC transpilation
         self.validate_all(
             "TRUNC(3.14159)",
             write={
@@ -3970,7 +3971,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        # Decimal scale arg is cast to INT for DuckDB
         self.validate_all(
             "TRUNC(4.603, 2)",
             write={

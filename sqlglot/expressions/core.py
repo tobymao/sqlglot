@@ -27,7 +27,7 @@ from sqlglot.helper import (
 
 from sqlglot.tokenizer_core import Token
 from builtins import type as Type
-from sqlglot._typing import GeneratorNoDialectArgs, E, ParserNoDialectArgs
+from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self

@@ -2551,10 +2551,17 @@ class DuckDBGenerator(generator.Generator):
             )
         return self.func("JSON", arg)
 
+    def unicode_sql(self, expression: exp.Unicode) -> str:
+        return self.sql(
+            exp.case()
+            .when(expression.this.eq(exp.Literal.string("")), exp.Literal.number(0))
+            .else_(exp.Anonymous(this="UNICODE", expressions=[expression.this]))
+        )
+
     def stripnullvalue_sql(self, expression: exp.StripNullValue) -> str:
         return self.sql(
             exp.case()
-            .when(exp.func("json_type", expression.this).eq("NULL"), exp.null())
+            .when(exp.func("json_type", expression.this).eq(exp.Literal.string("NULL")), exp.null())
             .else_(expression.this)
         )
 

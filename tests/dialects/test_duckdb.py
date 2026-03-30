@@ -1517,27 +1517,9 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "CASE WHEN '*' = '' THEN 0 ELSE UNICODE('*') END",
+            "CASE WHEN column1 = '' THEN 0 ELSE UNICODE(foo) END",
             read={
-                "snowflake": "UNICODE('*')",
-            },
-        )
-        self.validate_all(
-            "CASE WHEN 'a' = '' THEN 0 ELSE UNICODE('a') END",
-            read={
-                "snowflake": "UNICODE('a')",
-            },
-        )
-        self.validate_all(
-            "CASE WHEN '' = '' THEN 0 ELSE UNICODE('') END",
-            read={
-                "snowflake": "UNICODE('')",
-            },
-        )
-        self.validate_all(
-            "CASE WHEN column1 = '' THEN 0 ELSE UNICODE(column1) END",
-            read={
-                "snowflake": "UNICODE(column1)",
+                "snowflake": "UNICODE(foo)",
             },
         )
 

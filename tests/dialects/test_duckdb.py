@@ -1516,6 +1516,7 @@ class TestDuckDB(Validator):
             "SELECT LAST_VALUE(x ORDER BY x RESPECT NULLS) OVER (ORDER BY x) FROM t"
         )
 
+        self.validate_identity("UNICODE(foo)")
         self.validate_all(
             "CASE WHEN foo = '' THEN 0 ELSE UNICODE(foo) END",
             read={

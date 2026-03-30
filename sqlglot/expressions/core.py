@@ -14,7 +14,8 @@ from collections import deque
 from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
-from collections.abc import Iterator, Sequence, Collection
+from collections.abc import Iterator, Sequence, Collection, Mapping
+from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
@@ -29,6 +30,7 @@ from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, E, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Self
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
@@ -830,6 +832,19 @@ class Expression(Expr):
                     v.parent = self
                     v.arg_key = arg_key
                     v.index = i
+
+    def set_kwargs(self, kwargs: Mapping[str, object]) -> Self:
+        """Set multiples keyword arguments at once, using `.set()` method.
+
+        Args:
+            kwargs (Mapping[str, object]): a `Mapping` of arg keys to values to set.
+        Returns:
+            Self: The same `Expression` with the updated arguments.
+        """
+        if kwargs:
+            for k, v in kwargs.items():
+                self.set(k, v)
+        return self
 
     @property
     def depth(self) -> int:

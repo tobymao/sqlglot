@@ -3939,7 +3939,7 @@ class TestSnowflake(Validator):
                 "mysql": "TRUNCATE(3.14159, 2)",
                 "tsql": "ROUND(3.14159, 2, 1)",
                 "bigquery": "TRUNC(3.14159, 2)",
-                "duckdb": "TRUNC(3.14159)",
+                "duckdb": "TRUNC(3.14159, 2)",
                 "presto": "TRUNCATE(3.14159, 2)",
                 "clickhouse": "trunc(3.14159, 2)",
                 "spark": "CAST(3.14159 AS BIGINT)",
@@ -3968,6 +3968,21 @@ class TestSnowflake(Validator):
             },
             write={
                 "snowflake": "TRUNC(price, 2)",
+            },
+        )
+
+        self.validate_all(
+            "TRUNC(4.603, 2)",
+            write={
+                "snowflake": "TRUNC(4.603, 2)",
+                "duckdb": "TRUNC(4.603, 2)",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST(4.603 AS DECIMAL(38, 0)), CAST(2 AS DECIMAL(38, 0)))",
+            write={
+                "snowflake": "TRUNC(CAST(4.603 AS DECIMAL(38, 0)), CAST(2 AS DECIMAL(38, 0)))",
+                "duckdb": "TRUNC(CAST(4.603 AS DECIMAL(38, 0)), CAST(CAST(2 AS DECIMAL(38, 0)) AS INT))",
             },
         )
 

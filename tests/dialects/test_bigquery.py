@@ -1841,6 +1841,7 @@ WHERE
             },
         )
 
+        self.validate_identity("EXPORT DATA OPTIONS (URI='gs://bucket/folder/*.csv') AS (SELECT 1)")
         self.validate_identity(
             "EXPORT DATA OPTIONS (URI='gs://path*.csv.gz', FORMAT='CSV') AS SELECT * FROM all_rows"
         )

@@ -1702,9 +1702,8 @@ def timestrtotime_sql(
     expression: exp.TimeStrToTime,
     include_precision: bool = False,
 ) -> str:
-    datatype = exp.DataType.build(
-        exp.DType.TIMESTAMPTZ if expression.args.get("zone") else exp.DType.TIMESTAMP
-    )
+    builder = exp.DType.TIMESTAMPTZ if expression.args.get("zone") else exp.DType.TIMESTAMP
+    datatype = builder.into_expr()
 
     if isinstance(expression.this, exp.Literal) and include_precision:
         precision = subsecond_precision(expression.this.name)
@@ -1845,6 +1844,7 @@ def build_trunc(
     date_trunc_unabbreviate: bool = True,
     default_date_trunc_unit: t.Optional[str] = None,
     date_trunc_requires_part: bool = True,
+    fractions_supported: bool = False,
 ) -> exp.DateTrunc | exp.Trunc | exp.Anonymous:
     """
     Builder for dialects with overloaded TRUNC (Oracle, Snowflake, etc).
@@ -1874,7 +1874,7 @@ def build_trunc(
         or (second and second.is_type(*exp.DataType.NUMERIC_TYPES))
         or (not date_trunc_requires_part and not second)
     ):
-        return exp.Trunc(this=this, decimals=second)
+        return exp.Trunc(this=this, decimals=second, fractions_supported=fractions_supported)
 
     return exp.Anonymous(this="TRUNC", expressions=args)
 

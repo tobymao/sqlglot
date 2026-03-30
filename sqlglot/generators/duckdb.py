@@ -261,9 +261,7 @@ def _to_boolean_sql(self: DuckDBGenerator, expression: exp.ToBoolean) -> str:
 
     if is_safe:
         # TRY_TO_BOOLEAN: handle 'on'/'off' and use TRY_CAST for everything else
-        case_expr = base_case_expr.else_(
-            exp.func("TRY_CAST", arg, exp.DataType.build(exp.DType.BOOLEAN))
-        )
+        case_expr = base_case_expr.else_(exp.func("TRY_CAST", arg, exp.DType.BOOLEAN.into_expr()))
     else:
         # TO_BOOLEAN: handle NaN/INF errors, 'on'/'off', and use regular CAST
         cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build(exp.DType.FLOAT))
@@ -1297,7 +1295,7 @@ def _regr_val_sql(
 
     # Default to DOUBLE for regression functions if type still unknown
     if not result_type or result_type.this == exp.DType.UNKNOWN:
-        result_type = exp.DataType.build(exp.DType.DOUBLE)
+        result_type = exp.DType.DOUBLE.into_expr()
 
     # Cast NULL to the same type as return_value to avoid DuckDB type inference issues
     typed_null = exp.Cast(this=exp.Null(), to=result_type)
@@ -2551,6 +2549,16 @@ class DuckDBGenerator(generator.Generator):
             )
         return self.func("JSON", arg)
 
+    def unicode_sql(self, expression: exp.Unicode) -> str:
+        if expression.args.get("empty_is_zero"):
+            return self.sql(
+                exp.case()
+                .when(expression.this.eq(exp.Literal.string("")), exp.Literal.number(0))
+                .else_(exp.Anonymous(this="UNICODE", expressions=[expression.this]))
+            )
+
+        return self.func("UNICODE", expression.this)
+
     def stripnullvalue_sql(self, expression: exp.StripNullValue) -> str:
         return self.sql(
             exp.case()
@@ -2558,9 +2566,16 @@ class DuckDBGenerator(generator.Generator):
             .else_(expression.this)
         )
 
-    @unsupported_args("decimals")
     def trunc_sql(self, expression: exp.Trunc) -> str:
-        return self.func("TRUNC", expression.this)
+        decimals = expression.args.get("decimals")
+        if (
+            expression.args.get("fractions_supported")
+            and decimals
+            and not decimals.is_type(exp.DType.INT)
+        ):
+            decimals = exp.cast(decimals, exp.DType.INT, dialect="duckdb")
+
+        return self.func("TRUNC", expression.this, decimals)
 
     def normal_sql(self, expression: exp.Normal) -> str:
         """
@@ -2630,10 +2645,7 @@ class DuckDBGenerator(generator.Generator):
         )
 
         if is_int_result:
-            result = exp.Cast(
-                this=exp.Floor(this=result),
-                to=exp.DataType.build(exp.DType.BIGINT),
-            )
+            result = exp.Cast(this=exp.Floor(this=result), to=exp.DType.BIGINT.into_expr())
 
         return self.sql(result)
 
@@ -2667,7 +2679,7 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(
                 exp.Add(
                     this=exp.Cast(
-                        this=exp.Literal.string("00:00:00"), to=exp.DataType.build(exp.DType.TIME)
+                        this=exp.Literal.string("00:00:00"), to=exp.DType.TIME.into_expr()
                     ),
                     expression=exp.Interval(this=total_seconds, unit=exp.var("SECOND")),
                 )
@@ -4144,7 +4156,7 @@ class DuckDBGenerator(generator.Generator):
         this = expression.this
 
         if _is_binary(this):
-            expression.type = exp.DataType.build(exp.DType.BINARY)
+            expression.type = exp.DType.BINARY.into_expr()
 
         arg = _cast_to_bit(this)
 

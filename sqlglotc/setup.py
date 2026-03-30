@@ -65,6 +65,8 @@ def _source_files(src_dir):
                 "qualify.py",
                 "qualify_tables.py",
                 "qualify_columns.py",
+                "simplify.py",
+                "annotate_types.py",
             ],
         ),
         *_subpkg_files(src_dir, "parsers"),

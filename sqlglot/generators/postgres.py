@@ -214,7 +214,7 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
     # ROUND(double precision, integer) is not permitted in Postgres
     # so it's necessary to cast to decimal before rounding.
     if expression.this.is_type(exp.DType.DOUBLE):
-        decimal_type = exp.DataType.build(exp.DType.DECIMAL, expressions=expression.expressions)
+        decimal_type = exp.DType.DECIMAL.into_expr(expressions=expression.expressions)
         this = self.sql(exp.Cast(this=this, to=decimal_type))
 
     return self.func("ROUND", this, decimals)
@@ -489,7 +489,7 @@ class PostgresGenerator(generator.Generator):
         this = expression.this
 
         # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
-        if isinstance(this, exp.IntDiv) and expression.to == exp.DataType.build(exp.DType.DECIMAL):
+        if isinstance(this, exp.IntDiv) and expression.to == exp.DType.DECIMAL.into_expr():
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)

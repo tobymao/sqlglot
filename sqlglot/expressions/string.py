@@ -248,7 +248,7 @@ class Trim(Expression, Func):
 
 
 class Unicode(Expression, Func):
-    pass
+    arg_types = {"this": True, "empty_is_zero": False}
 
 
 class Upper(Expression, Func):

@@ -57,10 +57,8 @@ TIMESTAMP_TYPES = {
 }
 
 
-def _build_datetime(
-    name: str, kind: exp.DType, safe: bool = False
-) -> t.Callable[[t.List], exp.Func]:
-    def _builder(args: t.List) -> exp.Func:
+def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callable[[list], exp.Func]:
+    def _builder(args: list) -> exp.Func:
         value = seq_get(args, 0)
         scale_or_fmt = seq_get(args, 1)
 
@@ -71,7 +69,7 @@ def _build_datetime(
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
-                    exp.TryCast(this=value, to=exp.DataType.build(kind), requires_string=True)
+                    exp.TryCast(this=value, to=kind.into_expr(), requires_string=True)
                     if safe
                     else exp.cast(value, kind)
                 )
@@ -605,9 +603,11 @@ class SnowflakeParser(parser.Parser):
         "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
         "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
         "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-        "TRUNC": lambda args, dialect: build_trunc(args, dialect, date_trunc_requires_part=False),
+        "TRUNC": lambda args, dialect: build_trunc(
+            args, dialect, date_trunc_requires_part=False, fractions_supported=True
+        ),
         "TRUNCATE": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_requires_part=False
+            args, dialect, date_trunc_requires_part=False, fractions_supported=True
         ),
         "TRY_DECRYPT": lambda args: exp.Decrypt(
             this=seq_get(args, 0),
@@ -701,6 +701,7 @@ class SnowflakeParser(parser.Parser):
             part_index=seq_get(args, 2) or exp.Literal.number("1"),
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
+        "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,
     }

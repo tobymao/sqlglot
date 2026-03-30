@@ -654,7 +654,7 @@ class BigQueryParser(parser.Parser):
             exp.Export(
                 connection=self._match_text_seq("WITH", "CONNECTION") and self._parse_table_parts(),
                 options=self._parse_properties(),
-                this=self._match_text_seq("AS") and self._parse_select(),
+                this=self._match_text_seq("AS") and self._parse_select(nested=True),
             )
         )
 

@@ -11,11 +11,13 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        # Numeric TRUNC - DuckDB only supports TRUNC(x), no decimals parameter
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(
-            "TRUNC(3.14159)",
-            read={"postgres": "TRUNC(3.14159, 2)"},
+            "TRUNC(3.14159, 2)",
+            read={
+                "postgres": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159, 2)",
+            },
         )
 
         self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-1:-1]")
@@ -1512,6 +1514,14 @@ class TestDuckDB(Validator):
         )
         self.validate_identity(
             "SELECT LAST_VALUE(x ORDER BY x RESPECT NULLS) OVER (ORDER BY x) FROM t"
+        )
+
+        self.validate_identity("UNICODE(foo)")
+        self.validate_all(
+            "CASE WHEN foo = '' THEN 0 ELSE UNICODE(foo) END",
+            read={
+                "snowflake": "UNICODE(foo)",
+            },
         )
 
     def test_array_index(self):

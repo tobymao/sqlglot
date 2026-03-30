@@ -605,9 +605,11 @@ class SnowflakeParser(parser.Parser):
         "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
         "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
         "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-        "TRUNC": lambda args, dialect: build_trunc(args, dialect, date_trunc_requires_part=False),
+        "TRUNC": lambda args, dialect: build_trunc(
+            args, dialect, date_trunc_requires_part=False, decimal_scale_supported=True
+        ),
         "TRUNCATE": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_requires_part=False
+            args, dialect, date_trunc_requires_part=False, decimal_scale_supported=True
         ),
         "TRY_DECRYPT": lambda args: exp.Decrypt(
             this=seq_get(args, 0),

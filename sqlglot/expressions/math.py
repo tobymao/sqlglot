@@ -181,7 +181,7 @@ class Sqrt(Expression, Func):
 
 
 class Trunc(Expression, Func):
-    arg_types = {"this": True, "decimals": False}
+    arg_types = {"this": True, "decimals": False, "decimal_scale_supported": False}
     _sql_names = ["TRUNC", "TRUNCATE"]
 
 

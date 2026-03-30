@@ -2561,7 +2561,7 @@ class DuckDBGenerator(generator.Generator):
     def trunc_sql(self, expression: exp.Trunc) -> str:
         decimals = expression.args.get("decimals")
         if (
-            expression.args.get("decimal_scale_supported")
+            expression.args.get("fractions_supported")
             and decimals
             and not decimals.is_type(exp.DType.INT)
         ):

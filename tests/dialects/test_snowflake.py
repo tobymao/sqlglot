@@ -3946,7 +3946,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        # Single-argument numeric TRUNC transpilation
         self.validate_all(
             "TRUNC(3.14159)",
             write={

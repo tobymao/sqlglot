@@ -133,7 +133,7 @@ class Schema(abc.ABC):
         Returns:
             The return type as a DataType, or UNKNOWN if not found.
         """
-        return exp.DataType.build(exp.DType.UNKNOWN)
+        return exp.DType.UNKNOWN.into_expr()
 
     @property
     @abc.abstractmethod
@@ -445,7 +445,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             elif isinstance(column_type, str):
                 return self._to_data_type(column_type, dialect=dialect)
 
-        return exp.DataType.build(exp.DType.UNKNOWN)
+        return exp.DType.UNKNOWN.into_expr()
 
     def get_udf_type(
         self,
@@ -468,7 +468,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         resolved_parts = self._find_in_trie(parts, self.udf_trie, raise_on_missing=False)
 
         if resolved_parts is None:
-            return exp.DataType.build(exp.DType.UNKNOWN)
+            return exp.DType.UNKNOWN.into_expr()
 
         udf_type = nested_get(
             self.udf_mapping,
@@ -481,7 +481,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         elif isinstance(udf_type, str):
             return self._to_data_type(udf_type, dialect=dialect)
 
-        return exp.DataType.build(exp.DType.UNKNOWN)
+        return exp.DType.UNKNOWN.into_expr()
 
     def has_column(
         self,

@@ -369,7 +369,7 @@ def extract_date(cast: exp.Expr) -> t.Optional[t.Union[datetime.date, datetime.d
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
-        to = exp.DataType.build(exp.DType.DATE)
+        to = exp.DType.DATE.into_expr()
     else:
         return None
 

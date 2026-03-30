@@ -207,7 +207,7 @@ class HiveParser(parser.Parser):
         if this and not schema:
             return this.transform(
                 lambda node: (
-                    node.replace(exp.DataType.build(exp.DType.TEXT))
+                    node.replace(exp.DType.TEXT.into_expr())
                     if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
                     else node
                 ),

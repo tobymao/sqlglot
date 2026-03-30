@@ -1697,9 +1697,8 @@ def timestrtotime_sql(
     expression: exp.TimeStrToTime,
     include_precision: bool = False,
 ) -> str:
-    datatype = exp.DataType.build(
-        exp.DType.TIMESTAMPTZ if expression.args.get("zone") else exp.DType.TIMESTAMP
-    )
+    builder = exp.DType.TIMESTAMPTZ if expression.args.get("zone") else exp.DType.TIMESTAMP
+    datatype = builder.into_expr()
 
     if isinstance(expression.this, exp.Literal) and include_precision:
         precision = subsecond_precision(expression.this.name)

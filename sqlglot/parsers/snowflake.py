@@ -57,10 +57,8 @@ TIMESTAMP_TYPES = {
 }
 
 
-def _build_datetime(
-    name: str, kind: exp.DType, safe: bool = False
-) -> t.Callable[[t.List], exp.Func]:
-    def _builder(args: t.List) -> exp.Func:
+def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callable[[list], exp.Func]:
+    def _builder(args: list) -> exp.Func:
         value = seq_get(args, 0)
         scale_or_fmt = seq_get(args, 1)
 
@@ -71,7 +69,7 @@ def _build_datetime(
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return (
-                    exp.TryCast(this=value, to=exp.DataType.build(kind), requires_string=True)
+                    exp.TryCast(this=value, to=kind.into_expr(), requires_string=True)
                     if safe
                     else exp.cast(value, kind)
                 )

@@ -2568,6 +2568,17 @@ class DuckDBGenerator(generator.Generator):
             .else_(expression.this)
         )
 
+    def trunc_sql(self, expression: exp.Trunc) -> str:
+        decimals = expression.args.get("decimals")
+        if (
+            expression.args.get("fractions_supported")
+            and decimals
+            and not decimals.is_type(exp.DType.INT)
+        ):
+            decimals = exp.cast(decimals, exp.DType.INT, dialect="duckdb")
+
+        return self.func("TRUNC", expression.this, decimals)
+
     def normal_sql(self, expression: exp.Normal) -> str:
         """
         Transpile Snowflake's NORMAL(mean, stddev, gen) to DuckDB.

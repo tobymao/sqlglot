@@ -221,6 +221,13 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
 
 
 class PostgresGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     SINGLE_STRING_INTERVAL = True
     RENAME_TABLE_WITH_DB = False
     LOCKING_READS_SUPPORTED = True

@@ -1,6 +1,165 @@
 Changelog
 =========
 
+## [v30.1.0] - 2026-03-26
+### :boom: BREAKING CHANGES
+- due to [`0921899`](https://github.com/tobymao/sqlglot/commit/0921899cb663b99b888b180dcb7f54750232f209) - support for TEXTLEN function *(PR [#7346](https://github.com/tobymao/sqlglot/pull/7346) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  support for TEXTLEN function (#7346)
+
+- due to [`83e7851`](https://github.com/tobymao/sqlglot/commit/83e785140b75faa87bc375a85dc72b9b9d710563) - Compile base Generator with mypyc *(PR [#7351](https://github.com/tobymao/sqlglot/pull/7351) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Compile base Generator with mypyc (#7351)
+
+- due to [`a424037`](https://github.com/tobymao/sqlglot/commit/a4240370d28c47ac7e2ef62ac5dda60720ba9870) - Extract and compile generator *(PR [#7362](https://github.com/tobymao/sqlglot/pull/7362) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7362)
+
+- due to [`a482dc5`](https://github.com/tobymao/sqlglot/commit/a482dc57359b8dc992395048f34b67e6a1355aa4) - Extract and compile generator *(PR [#7363](https://github.com/tobymao/sqlglot/pull/7363) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7363)
+
+- due to [`cb78bc3`](https://github.com/tobymao/sqlglot/commit/cb78bc3d5da6686e2608de5133cf1da416de9c67) - Extract and compile generator *(PR [#7365](https://github.com/tobymao/sqlglot/pull/7365) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7365)
+
+- due to [`adf0032`](https://github.com/tobymao/sqlglot/commit/adf00320d38a9904c8928bd33498fe4f79947150) - Extract and compile generator *(PR [#7366](https://github.com/tobymao/sqlglot/pull/7366) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7366)
+
+- due to [`7d26eed`](https://github.com/tobymao/sqlglot/commit/7d26eedbe3976be1b70d8b7b35173e1e65e40749) - Extract and compile generator *(PR [#7367](https://github.com/tobymao/sqlglot/pull/7367) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7367)
+
+- due to [`56e7a88`](https://github.com/tobymao/sqlglot/commit/56e7a886163e0281e231502dbe25ba253bd7c67e) - Extract and compile generator *(PR [#7370](https://github.com/tobymao/sqlglot/pull/7370) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7370)
+
+- due to [`2e8d3dd`](https://github.com/tobymao/sqlglot/commit/2e8d3dd3b94b38199516b66bc6809492767338c2) - Extract and compile generator *(PR [#7374](https://github.com/tobymao/sqlglot/pull/7374) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7374)
+
+- due to [`b1d5a06`](https://github.com/tobymao/sqlglot/commit/b1d5a06e274fcdd1f2cda00777c18bc659936b88) - Extract and compile generator *(PR [#7364](https://github.com/tobymao/sqlglot/pull/7364) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7364)
+
+- due to [`3ab4cf2`](https://github.com/tobymao/sqlglot/commit/3ab4cf270624ae13723b7cdcc2b92bf1fdcdb2ac) - Extract and compile generator *(PR [#7371](https://github.com/tobymao/sqlglot/pull/7371) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7371)
+
+- due to [`0a13068`](https://github.com/tobymao/sqlglot/commit/0a13068fc7f630785ec3516ebc8855955749d19e) - Extract and compile generator *(PR [#7376](https://github.com/tobymao/sqlglot/pull/7376) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7376)
+
+- due to [`09cc35d`](https://github.com/tobymao/sqlglot/commit/09cc35dcb7392865f60532c9ba389c64dcd3177a) - Extract and compile generator *(PR [#7373](https://github.com/tobymao/sqlglot/pull/7373) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7373)
+
+- due to [`d301233`](https://github.com/tobymao/sqlglot/commit/d3012336461b9b45953f5c7e04e07fa503e99cd2) - Extract and compile generator *(PR [#7372](https://github.com/tobymao/sqlglot/pull/7372) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7372)
+
+- due to [`d1b0d8f`](https://github.com/tobymao/sqlglot/commit/d1b0d8f5ab07116cbc0983ea94945a5b305577cd) - Fix [NOT] REGEXP / REGEXP_LIKE transpilation from Snowflake to DuckDB *(PR [#7354](https://github.com/tobymao/sqlglot/pull/7354) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Fix [NOT] REGEXP / REGEXP_LIKE transpilation from Snowflake to DuckDB (#7354)
+
+- due to [`53d56d4`](https://github.com/tobymao/sqlglot/commit/53d56d42e1dd3294cbf9f26c40e9c56991fba2f4) - Extract and compile generator *(PR [#7369](https://github.com/tobymao/sqlglot/pull/7369) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7369)
+
+- due to [`586e28e`](https://github.com/tobymao/sqlglot/commit/586e28ebdf020ab5f6ccaf6cb0202860f06ab48e) - Extract and compile generator *(PR [#7377](https://github.com/tobymao/sqlglot/pull/7377) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7377)
+
+- due to [`dcf01c1`](https://github.com/tobymao/sqlglot/commit/dcf01c17adb1c8231fee929c588eded0e71e3a5e) - Extract and compile generator *(PR [#7379](https://github.com/tobymao/sqlglot/pull/7379) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7379)
+
+- due to [`f7668a7`](https://github.com/tobymao/sqlglot/commit/f7668a77836d9af6a635b5f87b1ea43566d38978) - Extract and compile generator *(PR [#7368](https://github.com/tobymao/sqlglot/pull/7368) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7368)
+
+- due to [`21693d7`](https://github.com/tobymao/sqlglot/commit/21693d7476e3ddbcf73080d9885bcacb5383d52a) - refactor JSON extract *(PR [#7302](https://github.com/tobymao/sqlglot/pull/7302) by [@geooo109](https://github.com/geooo109))*:
+
+  refactor JSON extract (#7302)
+
+- due to [`850bf1e`](https://github.com/tobymao/sqlglot/commit/850bf1e49a59c5950c0385772641fd0e89a3a4b8) - Extract and compile generator *(PR [#7375](https://github.com/tobymao/sqlglot/pull/7375) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7375)
+
+- due to [`1b14a79`](https://github.com/tobymao/sqlglot/commit/1b14a7971c63a44ec1e52e4356316a2db20dde43) - Extract and compile generator *(PR [#7381](https://github.com/tobymao/sqlglot/pull/7381) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Extract and compile generator (#7381)
+
+- due to [`fcc09dd`](https://github.com/tobymao/sqlglot/commit/fcc09ddcff0f1b1c785f826039fc6a0f2357589b) - Add transpilation support for ARRAY_UNIQUE_AGG function *(PR [#7386](https://github.com/tobymao/sqlglot/pull/7386) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Add transpilation support for ARRAY_UNIQUE_AGG function (#7386)
+
+
+### :sparkles: New Features
+- [`4a077ca`](https://github.com/tobymao/sqlglot/commit/4a077ca4df1da0913928a7d635d21ea7a9b50ff0) - **duckdb**: Add transpilation support for neg position args for CHARINDEX *(PR [#7334](https://github.com/tobymao/sqlglot/pull/7334) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`0921899`](https://github.com/tobymao/sqlglot/commit/0921899cb663b99b888b180dcb7f54750232f209) - **redshift**: support for TEXTLEN function *(PR [#7346](https://github.com/tobymao/sqlglot/pull/7346) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`64f7e6c`](https://github.com/tobymao/sqlglot/commit/64f7e6c850fa850778fe033700eac9c31233a587) - **duckdb**: Add transpilation support for check_json function *(PR [#7353](https://github.com/tobymao/sqlglot/pull/7353) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`4743e76`](https://github.com/tobymao/sqlglot/commit/4743e769eeb34db22a6734d01e8bc2f92b661cb3) - **optimizer**: annotate types for ORDER BY alias references *(PR [#7281](https://github.com/tobymao/sqlglot/pull/7281) by [@doripo](https://github.com/doripo))*
+- [`d1b0d8f`](https://github.com/tobymao/sqlglot/commit/d1b0d8f5ab07116cbc0983ea94945a5b305577cd) - **duckdb**: Fix [NOT] REGEXP / REGEXP_LIKE transpilation from Snowflake to DuckDB *(PR [#7354](https://github.com/tobymao/sqlglot/pull/7354) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`d5f74a6`](https://github.com/tobymao/sqlglot/commit/d5f74a6cb14c91687e8b2fbf26d3e792b7ea5d46) - **duckdb**: Add tests for NOT RLIKE to check the full match semantics *(PR [#7384](https://github.com/tobymao/sqlglot/pull/7384) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`3a52141`](https://github.com/tobymao/sqlglot/commit/3a52141aaf9950bf1077e3757e868d3d5acd6f75) - **postgres**: handle non-literal interval values in datetime addition *(PR [#7360](https://github.com/tobymao/sqlglot/pull/7360) by [@georgesittas](https://github.com/georgesittas))*
+- [`fcc09dd`](https://github.com/tobymao/sqlglot/commit/fcc09ddcff0f1b1c785f826039fc6a0f2357589b) - **duckdb**: Add transpilation support for ARRAY_UNIQUE_AGG function *(PR [#7386](https://github.com/tobymao/sqlglot/pull/7386) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`263bb7f`](https://github.com/tobymao/sqlglot/commit/263bb7f1cd39b828ad91b85441e197c1625cda7e) - **duckdb**: do not issue CREATE unsupported iceberg property warning *(PR [#7396](https://github.com/tobymao/sqlglot/pull/7396) by [@treysp](https://github.com/treysp))*
+- [`438f031`](https://github.com/tobymao/sqlglot/commit/438f03177ea37ed8765428767a6044110a100a62) - **duckdb**: support the full `SHOW TABLES` syntax spec *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`7216cf9`](https://github.com/tobymao/sqlglot/commit/7216cf94c47ad0a71c5e840a4298748a1e2a4d95) - **snowflake**: support DROP ICEBERG TABLE *(PR [#7398](https://github.com/tobymao/sqlglot/pull/7398) by [@treysp](https://github.com/treysp))*
+- [`b6ada45`](https://github.com/tobymao/sqlglot/commit/b6ada45b762943fce00e6744037ced1955961e4b) - **snowflake**: support ALTER ICEBERG TABLE *(PR [#7401](https://github.com/tobymao/sqlglot/pull/7401) by [@treysp](https://github.com/treysp))*
+- [`877e184`](https://github.com/tobymao/sqlglot/commit/877e1842ba60740bf5053e03c48b4600d2e077b8) - **duckdb**: Add transpilation support for ILIKE ANY, LIKE ANY/ALL functions for ESCAPE pattern *(PR [#7394](https://github.com/tobymao/sqlglot/pull/7394) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`d257e76`](https://github.com/tobymao/sqlglot/commit/d257e76286c8b623c0f50b8d423c66261c23b267) - **clickhouse**: lowercase dateTrunc units for versions before 23.12 *(PR [#7331](https://github.com/tobymao/sqlglot/pull/7331) by [@markcheney1](https://github.com/markcheney1))*
+- [`2cb9772`](https://github.com/tobymao/sqlglot/commit/2cb9772c420f8446a783ef95d5fdb2b94410fae7) - **optimizer**: enhance simplify_parens to handle additional parent types *(PR [#7339](https://github.com/tobymao/sqlglot/pull/7339) by [@MuSilk](https://github.com/MuSilk))*
+  - :arrow_lower_right: *fixes issue [#7338](https://github.com/tobymao/sqlglot/issues/7338) opened by [@MuSilk](https://github.com/MuSilk)*
+- [`9973623`](https://github.com/tobymao/sqlglot/commit/9973623d0c0d824493611bd509c4dbf673cc7bd7) - **optimizer**: qualify column named END *(PR [#7345](https://github.com/tobymao/sqlglot/pull/7345) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7344](https://github.com/tobymao/sqlglot/issues/7344) opened by [@michaelst](https://github.com/michaelst)*
+- [`13e971d`](https://github.com/tobymao/sqlglot/commit/13e971d05e19ef06e931c4cf631181ed5e8effa0) - **clickhouse**: UUID property *(PR [#7349](https://github.com/tobymao/sqlglot/pull/7349) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7348](https://github.com/tobymao/sqlglot/issues/7348) opened by [@ultram4rine](https://github.com/ultram4rine)*
+- [`2a248f1`](https://github.com/tobymao/sqlglot/commit/2a248f1672a01c57917ccd383e1f26d9083ca1c6) - **optimizer**: fix correlated subquery *(PR [#7343](https://github.com/tobymao/sqlglot/pull/7343) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+  - :arrow_lower_right: *fixes issue [#7308](https://github.com/tobymao/sqlglot/issues/7308) opened by [@adam-richardson-openai](https://github.com/adam-richardson-openai)*
+- [`0624bbf`](https://github.com/tobymao/sqlglot/commit/0624bbfde3670956089a2e192e2462e31db54fa8) - **mysql**: Fix AttributeError crash when transpiling IGNORE/RESPECT NULLS *(PR [#7361](https://github.com/tobymao/sqlglot/pull/7361) by [@ShubhamKapoor992](https://github.com/ShubhamKapoor992))*
+  - :arrow_lower_right: *fixes issue [#7359](https://github.com/tobymao/sqlglot/issues/7359) opened by [@ShubhamKapoor992](https://github.com/ShubhamKapoor992)*
+- [`0344937`](https://github.com/tobymao/sqlglot/commit/03449378d8e79017a88d92ffbbfd45c2924d115a) - handle pipe operator after subquery closes [#7388](https://github.com/tobymao/sqlglot/pull/7388) *(PR [#7391](https://github.com/tobymao/sqlglot/pull/7391) by [@georgesittas](https://github.com/georgesittas))*
+- [`2b19bdc`](https://github.com/tobymao/sqlglot/commit/2b19bdca3e56d8046c7ce435dedfd943167c25fa) - **bigquery**: support parentheses for CAST FORMAT syntax *(PR [#7395](https://github.com/tobymao/sqlglot/pull/7395) by [@ShubhamKapoor992](https://github.com/ShubhamKapoor992))*
+  - :arrow_lower_right: *fixes issue [#7390](https://github.com/tobymao/sqlglot/issues/7390) opened by [@roykoand](https://github.com/roykoand)*
+
+### :recycle: Refactors
+- [`83e7851`](https://github.com/tobymao/sqlglot/commit/83e785140b75faa87bc375a85dc72b9b9d710563) - **generator**: Compile base Generator with mypyc *(PR [#7351](https://github.com/tobymao/sqlglot/pull/7351) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`a424037`](https://github.com/tobymao/sqlglot/commit/a4240370d28c47ac7e2ef62ac5dda60720ba9870) - **tableau**: Extract and compile generator *(PR [#7362](https://github.com/tobymao/sqlglot/pull/7362) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`a482dc5`](https://github.com/tobymao/sqlglot/commit/a482dc57359b8dc992395048f34b67e6a1355aa4) - **teradata**: Extract and compile generator *(PR [#7363](https://github.com/tobymao/sqlglot/pull/7363) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`cb78bc3`](https://github.com/tobymao/sqlglot/commit/cb78bc3d5da6686e2608de5133cf1da416de9c67) - **druid**: Extract and compile generator *(PR [#7365](https://github.com/tobymao/sqlglot/pull/7365) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`adf0032`](https://github.com/tobymao/sqlglot/commit/adf00320d38a9904c8928bd33498fe4f79947150) - **sqlite**: Extract and compile generator *(PR [#7366](https://github.com/tobymao/sqlglot/pull/7366) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`7d26eed`](https://github.com/tobymao/sqlglot/commit/7d26eedbe3976be1b70d8b7b35173e1e65e40749) - **dremio**: Extract and compile generator *(PR [#7367](https://github.com/tobymao/sqlglot/pull/7367) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`56e7a88`](https://github.com/tobymao/sqlglot/commit/56e7a886163e0281e231502dbe25ba253bd7c67e) - **snowflake**: Extract and compile generator *(PR [#7370](https://github.com/tobymao/sqlglot/pull/7370) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2e8d3dd`](https://github.com/tobymao/sqlglot/commit/2e8d3dd3b94b38199516b66bc6809492767338c2) - **hive**: Extract and compile generator *(PR [#7374](https://github.com/tobymao/sqlglot/pull/7374) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`b1d5a06`](https://github.com/tobymao/sqlglot/commit/b1d5a06e274fcdd1f2cda00777c18bc659936b88) - **drill**: Extract and compile generator *(PR [#7364](https://github.com/tobymao/sqlglot/pull/7364) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3ab4cf2`](https://github.com/tobymao/sqlglot/commit/3ab4cf270624ae13723b7cdcc2b92bf1fdcdb2ac) - **oracle**: Extract and compile generator *(PR [#7371](https://github.com/tobymao/sqlglot/pull/7371) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`0a13068`](https://github.com/tobymao/sqlglot/commit/0a13068fc7f630785ec3516ebc8855955749d19e) - **postgres**: Extract and compile generator *(PR [#7376](https://github.com/tobymao/sqlglot/pull/7376) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`09cc35d`](https://github.com/tobymao/sqlglot/commit/09cc35dcb7392865f60532c9ba389c64dcd3177a) - **tsql**: Extract and compile generator *(PR [#7373](https://github.com/tobymao/sqlglot/pull/7373) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`d301233`](https://github.com/tobymao/sqlglot/commit/d3012336461b9b45953f5c7e04e07fa503e99cd2) - **bigquery**: Extract and compile generator *(PR [#7372](https://github.com/tobymao/sqlglot/pull/7372) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`53d56d4`](https://github.com/tobymao/sqlglot/commit/53d56d42e1dd3294cbf9f26c40e9c56991fba2f4) - **exasol**: Extract and compile generator *(PR [#7369](https://github.com/tobymao/sqlglot/pull/7369) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`586e28e`](https://github.com/tobymao/sqlglot/commit/586e28ebdf020ab5f6ccaf6cb0202860f06ab48e) - **spark**: Extract and compile generator *(PR [#7377](https://github.com/tobymao/sqlglot/pull/7377) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`dcf01c1`](https://github.com/tobymao/sqlglot/commit/dcf01c17adb1c8231fee929c588eded0e71e3a5e) - **presto**: Extract and compile generator *(PR [#7379](https://github.com/tobymao/sqlglot/pull/7379) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`f7668a7`](https://github.com/tobymao/sqlglot/commit/f7668a77836d9af6a635b5f87b1ea43566d38978) - **clickhouse**: Extract and compile generator *(PR [#7368](https://github.com/tobymao/sqlglot/pull/7368) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`850bf1e`](https://github.com/tobymao/sqlglot/commit/850bf1e49a59c5950c0385772641fd0e89a3a4b8) - **duckdb**: Extract and compile generator *(PR [#7375](https://github.com/tobymao/sqlglot/pull/7375) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`1b14a79`](https://github.com/tobymao/sqlglot/commit/1b14a7971c63a44ec1e52e4356316a2db20dde43) - **mysql**: Extract and compile generator *(PR [#7381](https://github.com/tobymao/sqlglot/pull/7381) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`3582aa5`](https://github.com/tobymao/sqlglot/commit/3582aa54226e20b6b6187e1f30ae183bba91f79d) - **generators**: Cleanup and fully compile all generators *(PR [#7389](https://github.com/tobymao/sqlglot/pull/7389) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :wrench: Chores
+- [`4e9ed57`](https://github.com/tobymao/sqlglot/commit/4e9ed57cb59db648dace5d7e464899fa117eb273) - benchworkflow *(PR [#7340](https://github.com/tobymao/sqlglot/pull/7340) by [@tobymao](https://github.com/tobymao))*
+- [`0fce391`](https://github.com/tobymao/sqlglot/commit/0fce3910a363a6006f9799c272865d17cc0275e1) - refactor duckdb strposition_sql *(commit by [@geooo109](https://github.com/geooo109))*
+- [`f7bb6be`](https://github.com/tobymao/sqlglot/commit/f7bb6bea86c1629d03bf2807378d36de004cd4a7) - use collections.abc and built-in types for typing to avoid deprecation *(PR [#7329](https://github.com/tobymao/sqlglot/pull/7329) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`f5e0a8a`](https://github.com/tobymao/sqlglot/commit/f5e0a8a450cdde59929209bdb74c9664dc6b3188) - always run sqlglot integration tests *(PR [#7350](https://github.com/tobymao/sqlglot/pull/7350) by [@georgesittas](https://github.com/georgesittas))*
+- [`f0f04d9`](https://github.com/tobymao/sqlglot/commit/f0f04d92812e516b7074497e5bf4146cf7cd91e4) - Fix mypyc setup *(PR [#7382](https://github.com/tobymao/sqlglot/pull/7382) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`47325ce`](https://github.com/tobymao/sqlglot/commit/47325ce7a5f31dc5c7173a6c91ad93666caa1b1b) - only trigger the benchmark job manually *(PR [#7383](https://github.com/tobymao/sqlglot/pull/7383) by [@georgesittas](https://github.com/georgesittas))*
+- [`21693d7`](https://github.com/tobymao/sqlglot/commit/21693d7476e3ddbcf73080d9885bcacb5383d52a) - **parser**: refactor JSON extract *(PR [#7302](https://github.com/tobymao/sqlglot/pull/7302) by [@geooo109](https://github.com/geooo109))*
+- [`c1842b2`](https://github.com/tobymao/sqlglot/commit/c1842b2388134782545e3d8c448b953b09abc553) - added annotations to all `**opts` arguments *(PR [#7342](https://github.com/tobymao/sqlglot/pull/7342) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+
+
 ## [v30.0.3] - 2026-03-19
 ### :zap: Performance Improvements
 - [`f87ebe0`](https://github.com/tobymao/sqlglot/commit/f87ebe02103b249ec5fa2c93e019e465f77630be) - use mypyc i64 for parser index fields (~1.6% faster) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -13855,3 +14014,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.0.1]: https://github.com/tobymao/sqlglot/compare/v30.0.0...v30.0.1
 [v30.0.2]: https://github.com/tobymao/sqlglot/compare/v30.0.1...v30.0.2
 [v30.0.3]: https://github.com/tobymao/sqlglot/compare/v30.0.2...v30.0.3
+[v30.1.0]: https://github.com/tobymao/sqlglot/compare/v30.0.3...v30.1.0

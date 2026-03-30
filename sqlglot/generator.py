@@ -9,7 +9,7 @@ from functools import reduce, wraps
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import csv, mypyc_attr, name_sequence, seq_get
+from sqlglot.helper import csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -61,7 +61,37 @@ def unsupported_args(
     return decorator
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+AFTER_HAVING_MODIFIER_TRANSFORMS: t.Dict[str, t.Any] = {
+    "windows": lambda self, e: (
+        self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
+        if e.args.get("windows")
+        else ""
+    ),
+    "qualify": lambda self, e: self.sql(e, "qualify"),
+}
+
+
+_DISPATCH_CACHE: t.Dict[t.Type["Generator"], t.Dict[t.Type[exp.Expr], t.Callable[..., str]]] = {}
+
+
+def _build_dispatch(
+    cls: t.Type["Generator"],
+) -> t.Dict[t.Type[exp.Expr], t.Callable[..., str]]:
+    dispatch: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = dict(cls.TRANSFORMS)
+
+    for attr_name in dir(cls):
+        if not attr_name.endswith("_sql") or attr_name.startswith("_"):
+            continue
+
+        expr_key = attr_name[:-4]
+        expr_cls = exp.EXPR_CLASSES.get(expr_key)
+
+        if expr_cls and expr_cls not in dispatch:
+            dispatch[expr_cls] = getattr(cls, attr_name)
+
+    return dispatch
+
+
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
@@ -350,7 +380,7 @@ class Generator:
     NVL2_SUPPORTED = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
-    SELECT_KINDS: t.ClassVar[t.Tuple[str, ...]] = ("STRUCT", "VALUE")
+    SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
     # Whether VALUES statements can be used as derived tables.
     # MySQL 5 and Redshift do not allow this, so when False, it will convert
@@ -472,10 +502,10 @@ class Generator:
     COPY_HAS_INTO_KEYWORD = True
 
     # Whether the conditional TRY(expression) function is supported
-    TRY_SUPPORTED: t.ClassVar = True
+    TRY_SUPPORTED = True
 
     # Whether the UESCAPE syntax in unicode strings is supported
-    SUPPORTS_UESCAPE: t.ClassVar = True
+    SUPPORTS_UESCAPE = True
 
     # Function used to replace escaped unicode codes in unicode strings
     UNICODE_SUBSTITUTE: t.ClassVar[t.Any] = None
@@ -534,7 +564,7 @@ class Generator:
     ARRAY_SIZE_DIM_REQUIRED: t.Optional[bool] = None
 
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
-    SUPPORTS_DECODE_CASE: t.ClassVar = True
+    SUPPORTS_DECODE_CASE = True
 
     # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
     SUPPORTS_BETWEEN_FLAGS = False
@@ -558,6 +588,11 @@ class Generator:
 
     # Whether SELECT *, ... EXCLUDE requires wrapping in a subquery for transpilation.
     STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
+
+    # Whether DROP and ALTER statements against Iceberg tables include 'ICEBERG', e.g.:
+    # - Snowflake: DROP ICEBERG TABLE a.b;
+    # - DuckDB:    DROP TABLE a.b;
+    SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = True
 
     TYPE_MAPPING: t.ClassVar = {
         exp.DType.DATETIME2: "TIMESTAMP",
@@ -593,12 +628,7 @@ class Generator:
         "cluster": lambda self, e: self.sql(e, "cluster"),
         "distribute": lambda self, e: self.sql(e, "distribute"),
         "sort": lambda self, e: self.sql(e, "sort"),
-        "windows": lambda self, e: (
-            self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
-            if e.args.get("windows")
-            else ""
-        ),
-        "qualify": lambda self, e: self.sql(e, "qualify"),
+        **AFTER_HAVING_MODIFIER_TRANSFORMS,
     }
 
     TOKEN_MAPPING: t.ClassVar[t.Dict[TokenType, str]] = {}
@@ -797,6 +827,7 @@ class Generator:
         "_identifier_start",
         "_identifier_end",
         "_quote_json_path_key_using_brackets",
+        "_dispatch",
     )
 
     def __init__(
@@ -851,6 +882,13 @@ class Generator:
         self._identifier_end = self.dialect.IDENTIFIER_END
 
         self._quote_json_path_key_using_brackets = True
+
+        cls = type(self)
+        dispatch = _DISPATCH_CACHE.get(cls)
+        if dispatch is None:
+            dispatch = _build_dispatch(cls)
+            _DISPATCH_CACHE[cls] = dispatch
+        self._dispatch = dispatch
 
     def generate(self, expression: exp.Expr, copy: bool = True) -> str:
         """
@@ -1031,21 +1069,16 @@ class Generator:
                 return self.sql(value)
             return ""
 
-        transform = self.TRANSFORMS.get(expression.__class__)
+        handler = self._dispatch.get(expression.__class__)
 
-        if transform:
-            sql = transform(self, expression)
+        if handler:
+            sql = handler(self, expression)
+        elif isinstance(expression, exp.Func):
+            sql = self.function_fallback_sql(expression)
+        elif isinstance(expression, exp.Property):
+            sql = self.property_sql(expression)
         else:
-            exp_handler_name = expression.key + "_sql"
-
-            if handler := getattr(self, exp_handler_name, None):
-                sql = handler(expression)
-            elif isinstance(expression, exp.Func):
-                sql = self.function_fallback_sql(expression)
-            elif isinstance(expression, exp.Property):
-                sql = self.property_sql(expression)
-            else:
-                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+            raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
@@ -1668,6 +1701,11 @@ class Generator:
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
         kind = self.dialect.INVERSE_CREATABLE_KIND_MAPPING.get(kind) or kind
+        iceberg = (
+            " ICEBERG"
+            if expression.args.get("iceberg") and self.SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY
+            else ""
+        )
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         concurrently_sql = " CONCURRENTLY" if expression.args.get("concurrently") else ""
         on_cluster = self.sql(expression, "cluster")
@@ -1675,10 +1713,11 @@ class Generator:
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         cascade = " CASCADE" if expression.args.get("cascade") else ""
+        restrict = " RESTRICT" if expression.args.get("restrict") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DROP{temporary}{materialized} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}{sync}"
+        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)
@@ -3921,6 +3960,11 @@ class Generator:
 
             actions_sql = self.format_args(*actions_list).lstrip("\n")
 
+        iceberg = (
+            "ICEBERG "
+            if expression.args.get("iceberg") and self.SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY
+            else ""
+        )
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
@@ -3938,7 +3982,7 @@ class Generator:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        return f"ALTER {kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
+        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)
@@ -4052,6 +4096,13 @@ class Generator:
         return self.binary(expression, ":=")
 
     def escape_sql(self, expression: exp.Escape) -> str:
+        this = expression.this
+        if (
+            isinstance(this, (exp.Like, exp.ILike))
+            and isinstance(this.expression, (exp.All, exp.Any))
+            and not self.SUPPORTS_LIKE_QUANTIFIERS
+        ):
+            return self._like_sql(this, escape=expression)
         return self.binary(expression, "ESCAPE")
 
     def glob_sql(self, expression: exp.Glob) -> str:
@@ -4070,7 +4121,11 @@ class Generator:
             )
         return self.binary(expression, "IS")
 
-    def _like_sql(self, expression: exp.Like | exp.ILike) -> str:
+    def _like_sql(
+        self,
+        expression: exp.Like | exp.ILike,
+        escape: t.Optional[exp.Escape] = None,
+    ) -> str:
         this = expression.this
         rhs = expression.expression
 
@@ -4091,12 +4146,20 @@ class Generator:
 
             connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
 
-            like_expr: exp.Expr = exp_class(this=this, expression=exprs[0])
-            for expr in exprs[1:]:
-                like_expr = connective(like_expr, exp_class(this=this, expression=expr))
+            def _make_like(expr: exp.Expression) -> exp.Expression:
+                like: exp.Expression = exp_class(this=this, expression=expr)
+                if escape:
+                    like = exp.Escape(this=like, expression=escape.expression.copy())
+                return like
 
-            parent = expression.parent
-            if not isinstance(parent, type(like_expr)) and isinstance(parent, exp.Condition):
+            like_expr: exp.Expr = _make_like(exprs[0])
+            for expr in exprs[1:]:
+                like_expr = connective(like_expr, _make_like(expr), copy=False)
+
+            parent = escape.parent if escape else expression.parent
+            if not isinstance(parent, (type(like_expr), exp.Paren)) and isinstance(
+                parent, exp.Condition
+            ):
                 like_expr = exp.paren(like_expr, copy=False)
 
             return self.sql(like_expr)

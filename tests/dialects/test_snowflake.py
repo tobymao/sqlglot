@@ -1,6 +1,7 @@
 from unittest import mock
 
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot.parser import logger as parser_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
@@ -3257,6 +3258,41 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT 1 WHERE 'abc' LIKE '%a%'",
             },
         )
+        self.validate_all(
+            "SELECT 'he%lo' LIKE ANY ('he#%lo', 'hello') ESCAPE '#'",
+            write={
+                "snowflake": "SELECT 'he%lo' LIKE ANY ('he#%lo', 'hello') ESCAPE '#'",
+                "duckdb": "SELECT 'he%lo' LIKE 'he#%lo' ESCAPE '#' OR 'he%lo' LIKE 'hello' ESCAPE '#'",
+            },
+        )
+        self.validate_all(
+            "SELECT 'he%lo' LIKE ALL ('he#%lo', 'he#%lo2') ESCAPE '#'",
+            write={
+                "snowflake": "SELECT 'he%lo' LIKE ALL ('he#%lo', 'he#%lo2') ESCAPE '#'",
+                "duckdb": "SELECT 'he%lo' LIKE 'he#%lo' ESCAPE '#' AND 'he%lo' LIKE 'he#%lo2' ESCAPE '#'",
+            },
+        )
+        self.validate_all(
+            "SELECT 'he%lo' ILIKE ANY ('he#%lo', 'hello') ESCAPE '#'",
+            write={
+                "snowflake": "SELECT 'he%lo' ILIKE ANY ('he#%lo', 'hello') ESCAPE '#'",
+                "duckdb": "SELECT 'he%lo' ILIKE 'he#%lo' ESCAPE '#' OR 'he%lo' ILIKE 'hello' ESCAPE '#'",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 WHERE 'he%lo' LIKE ANY ('he#%lo', 'hello') ESCAPE '#' AND x = 1",
+            write={
+                "snowflake": "SELECT 1 WHERE 'he%lo' LIKE ANY ('he#%lo', 'hello') ESCAPE '#' AND x = 1",
+                "duckdb": "SELECT 1 WHERE ('he%lo' LIKE 'he#%lo' ESCAPE '#' OR 'he%lo' LIKE 'hello' ESCAPE '#') AND x = 1",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 WHERE 'he%lo' LIKE ALL ('he#%lo', 'he#%lo2') ESCAPE '#' OR x = 1",
+            write={
+                "snowflake": "SELECT 1 WHERE 'he%lo' LIKE ALL ('he#%lo', 'he#%lo2') ESCAPE '#' OR x = 1",
+                "duckdb": "SELECT 1 WHERE ('he%lo' LIKE 'he#%lo' ESCAPE '#' AND 'he%lo' LIKE 'he#%lo2' ESCAPE '#') OR x = 1",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(
@@ -5180,9 +5216,51 @@ MATCH_RECOGNIZE (
             "show terse tables in db1.schema1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE TABLES IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
+        self.validate_identity(
+            "SHOW ICEBERG TABLES IN db1.schema1",
+            "SHOW ICEBERG TABLES IN SCHEMA db1.schema1",
+        )
+        self.validate_identity(
+            "SHOW TERSE ICEBERG TABLES IN db1.schema1",
+            "SHOW TERSE ICEBERG TABLES IN SCHEMA db1.schema1",
+        )
 
         ast = parse_one("SHOW TABLES IN db1.schema1", read="snowflake")
         self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertFalse(ast.args["iceberg"])
+
+        ast = parse_one("SHOW ICEBERG TABLES IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertTrue(ast.args["iceberg"])
+
+        ast = parse_one("SHOW TERSE ICEBERG TABLES IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+        self.assertTrue(ast.args["terse"])
+        self.assertTrue(ast.args["iceberg"])
+
+    def test_alter_iceberg_table(self):
+        ast = self.validate_identity("ALTER ICEBERG TABLE t RENAME TO x")
+        self.assertTrue(ast.args["iceberg"])
+
+        with mock.patch.object(parser_logger, "warning"):
+            ast = parse_one("ALTER ICEBERG VIEW v RENAME TO x", read="snowflake")
+        self.assertIsInstance(ast, exp.Command)
+
+        self.validate_all(
+            "ALTER ICEBERG TABLE t RENAME TO x",
+            write={
+                "snowflake": "ALTER ICEBERG TABLE t RENAME TO x",
+                "duckdb": "ALTER TABLE t RENAME TO x",
+            },
+        )
+
+    def test_drop_iceberg_table(self):
+        ast = self.validate_identity("DROP ICEBERG TABLE t")
+        self.assertTrue(ast.args["iceberg"])
+        self.validate_identity("DROP ICEBERG TABLE IF EXISTS t")
+        ast = self.validate_identity("DROP ICEBERG TABLE t RESTRICT")
+        self.assertTrue(ast.args["restrict"])
+        self.validate_identity("DROP ICEBERG TABLE IF EXISTS t RESTRICT")
 
     def test_show_primary_keys(self):
         self.validate_identity("SHOW PRIMARY KEYS")
@@ -5323,6 +5401,15 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
                 self.assertEqual(
                     expression.sql(dialect="snowflake"), f"SELECT {func}(t.x AS VARCHAR) FROM t"
                 )
+
+    def test_try_parse_json(self):
+        self.validate_all(
+            "SELECT TRY_PARSE_JSON(x)",
+            write={
+                "snowflake": "SELECT TRY_PARSE_JSON(x)",
+                "duckdb": "SELECT CASE WHEN JSON_VALID(x) THEN CAST(x AS JSON) ELSE NULL END",
+            },
+        )
 
     def test_decfloat(self):
         self.validate_all(

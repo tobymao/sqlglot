@@ -9,7 +9,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     unit_to_str,
 )
-from sqlglot.generators.hive import HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
+from sqlglot.generators.hive import HIVE_DATE_FORMAT, HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
 from sqlglot.transforms import (
     preprocess,
     remove_unique_constraints,
@@ -30,10 +30,7 @@ def _map_sql(self: Spark2Generator, expression: exp.Map) -> str:
 
 def _str_to_date(self: Spark2Generator, expression: exp.StrToDate) -> str:
     time_format = self.format_time(expression)
-
-    from sqlglot.dialects.hive import Hive
-
-    if time_format == Hive.DATE_FORMAT:
+    if time_format == HIVE_DATE_FORMAT:
         return self.func("TO_DATE", expression.this)
     return self.func("TO_DATE", expression.this, time_format)
 

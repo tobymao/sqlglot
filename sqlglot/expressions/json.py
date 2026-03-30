@@ -194,6 +194,10 @@ class JSONStripNulls(Expression, Func):
     _sql_names = ["JSON_STRIP_NULLS"]
 
 
+class StripNullValue(Expression, Func):
+    pass
+
+
 class JSONTable(Expression, Func):
     arg_types = {
         "this": True,

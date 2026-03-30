@@ -2253,15 +2253,20 @@ class Parser:
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
+
+        if isinstance(expression, exp.Subquery) and self._match(TokenType.PIPE_GT, advance=False):
+            expression = self._parse_pipe_syntax_query(expression)
+
         return self._parse_query_modifiers(expression)
 
     def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match_text_seq("MATERIALIZED")
+        iceberg = self._match_text_seq("ICEBERG")
 
         kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
-        if not kind:
+        if not kind or (iceberg and kind and kind != "TABLE"):
             return self._parse_as_command(start)
 
         concurrently = self._match_text_seq("CONCURRENTLY")
@@ -2279,6 +2284,8 @@ class Parser:
         else:
             expressions = None
 
+        cascade_or_restrict = self._match_texts(("CASCADE", "RESTRICT")) and self._prev.text.upper()
+
         return self.expression(
             exp.Drop(
                 exists=if_exists,
@@ -2287,12 +2294,14 @@ class Parser:
                 kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
                 temporary=temporary,
                 materialized=materialized,
-                cascade=self._match_text_seq("CASCADE"),
+                cascade=cascade_or_restrict == "CASCADE",
+                restrict=cascade_or_restrict == "RESTRICT",
                 constraints=self._match_text_seq("CONSTRAINTS"),
                 purge=self._match_text_seq("PURGE"),
                 cluster=cluster,
                 concurrently=concurrently,
                 sync=self._match_text_seq("SYNC"),
+                iceberg=iceberg,
             )
         )
 
@@ -7583,7 +7592,7 @@ class Parser:
             self._match_text_seq("ON", "CONVERSION", "ERROR")
 
         if self._match_set((TokenType.FORMAT, TokenType.COMMA)):
-            fmt_string = self._parse_string()
+            fmt_string = self._parse_wrapped(self._parse_string, optional=True)
             fmt = self._parse_at_time_zone(fmt_string)
 
             if not to:
@@ -8640,8 +8649,12 @@ class Parser:
     def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
 
+        iceberg = self._match_text_seq("ICEBERG")
+
         alter_token = self._match_set(self.ALTERABLES) and self._prev
         if not alter_token:
+            return self._parse_as_command(start)
+        if iceberg and alter_token.token_type != TokenType.TABLE:
             return self._parse_as_command(start)
 
         exists = self._parse_exists()
@@ -8679,6 +8692,7 @@ class Parser:
                         not_valid=not_valid,
                         check=check,
                         cascade=cascade,
+                        iceberg=iceberg,
                     )
                 )
 

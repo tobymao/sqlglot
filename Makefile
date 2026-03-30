@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
 
 ifdef UV
     PIP := uv pip
@@ -51,10 +51,13 @@ install-pre-commit:
 	@printf '#!/bin/bash\n.github/scripts/integration_tests_sync.sh post-commit\n' > .git/hooks/post-commit
 	@chmod +x .git/hooks/post-commit
 
-bench: bench-parse bench-optimize
+bench: bench-parse bench-transpile bench-optimize
 
 bench-parse:
 	python -m benchmarks.parse
+
+bench-transpile:
+	python -m benchmarks.parse --mode transpile
 
 bench-optimize:
 	python -m benchmarks.optimize

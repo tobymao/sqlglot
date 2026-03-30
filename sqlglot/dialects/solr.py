@@ -1,5 +1,6 @@
 from sqlglot import tokens
 from sqlglot.dialects.dialect import Dialect, NormalizationStrategy
+from sqlglot.generators.solr import SolrGenerator
 from sqlglot.parsers.solr import SolrParser
 
 
@@ -9,6 +10,8 @@ from sqlglot.parsers.solr import SolrParser
 class Solr(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     DPIPE_IS_STRING_CONCAT = False
+
+    Generator = SolrGenerator
 
     Parser = SolrParser
 

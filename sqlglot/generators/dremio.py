@@ -30,6 +30,13 @@ def _date_delta_sql(name: str) -> t.Callable[[DremioGenerator, DATE_DELTA], str]
 
 
 class DremioGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     NVL2_SUPPORTED = False
     SUPPORTS_CONVERT_TIMEZONE = True
     INTERVAL_ALLOWS_PLURAL_FORM = False

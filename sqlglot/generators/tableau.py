@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import rename_func, strposition_sql as _strposition_sql
 
 
 class TableauGenerator(generator.Generator):
+    SELECT_KINDS: t.Tuple[str, ...] = ()
+    TRY_SUPPORTED = False
+    SUPPORTS_UESCAPE = False
+    SUPPORTS_DECODE_CASE = False
+
+    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+
     JOIN_HINTS = False
     TABLE_HINTS = False
     QUERY_HINTS = False

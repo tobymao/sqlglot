@@ -247,7 +247,6 @@ class Trim(Expression, Func):
     }
 
 
-# Snowflake UNICODE('') -> 0
 class Unicode(Expression, Func):
     arg_types = {"this": True, "empty_is_zero": False}
 

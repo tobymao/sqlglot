@@ -2564,7 +2564,7 @@ class DuckDBGenerator(generator.Generator):
     def stripnullvalue_sql(self, expression: exp.StripNullValue) -> str:
         return self.sql(
             exp.case()
-            .when(exp.func("json_type", expression.this).eq(exp.Literal.string("NULL")), exp.null())
+            .when(exp.func("json_type", expression.this).eq("NULL"), exp.null())
             .else_(expression.this)
         )
 

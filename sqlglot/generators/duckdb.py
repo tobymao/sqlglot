@@ -3299,6 +3299,25 @@ class DuckDBGenerator(generator.Generator):
         result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
         return _gen_with_cast_to_blob(self, expression, result_sql)
 
+    def left_sql(self, expression: exp.Left) -> str:
+        arg = expression.this
+        length = expression.expression
+
+        # For BINARY/BLOB: DuckDB doesn't support LEFT on BLOB
+        # Convert to HEX string, use LEFT, then convert back to BLOB
+        if _is_binary(arg):
+            # LEFT(blob, n) becomes UNHEX(LEFT(HEX(blob), n * 2))
+            # Each byte becomes 2 hex chars, so multiply length by 2
+            hex_arg = exp.Hex(this=arg)
+            hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
+            # since this exp.Left is not annotated, it won't enter this _is_binary branch during the recursive call
+            hex_left = self.func("LEFT", hex_arg, hex_length)
+            result = exp.Unhex(this=hex_left)
+            return self.sql(result)
+
+        # For VARCHAR: Use native LEFT function
+        return self.func("LEFT", arg, length)
+
     def right_sql(self, expression: exp.Right) -> str:
         arg = expression.this
         length = expression.expression

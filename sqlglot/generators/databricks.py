@@ -82,7 +82,7 @@ class DatabricksGenerator(SparkGenerator):
             and kind.this in exp.DataType.INTEGER_TYPES
         ):
             # only BIGINT generated identity constraints are supported
-            expression.set("kind", exp.DataType.build("bigint"))
+            expression.set("kind", exp.DType.BIGINT.into_expr())
 
         return super().columndef_sql(expression, sep)
 

@@ -5992,7 +5992,7 @@ class Parser:
                     and data_type.is_type(exp.DType.TIMESTAMP)
                     and TIME_ZONE_RE.search(literal)
                 ):
-                    data_type = exp.DataType.build("TIMESTAMPTZ")
+                    data_type = exp.DType.TIMESTAMPTZ.into_expr()
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 
@@ -7587,7 +7587,7 @@ class Parser:
             fmt = self._parse_at_time_zone(fmt_string)
 
             if not to:
-                to = exp.DataType.build(exp.DType.UNKNOWN)
+                to = exp.DType.UNKNOWN.into_expr()
             if to.this in exp.DataType.TEMPORAL_TYPES:
                 this = self.expression(
                     (exp.StrToDate if to.this == exp.DType.DATE else exp.StrToTime)(
@@ -7611,7 +7611,7 @@ class Parser:
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
         elif to.this == exp.DType.CHAR and self._match(TokenType.CHARACTER_SET):
-            to = exp.DataType.build(exp.DType.CHARACTER_SET, kind=self._parse_var_or_string())
+            to = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_var_or_string())
 
         return self.build_cast(
             strict=strict,
@@ -7681,9 +7681,8 @@ class Parser:
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to: t.Optional[exp.Expr] = exp.DataType.build(
-                exp.DType.CHARACTER_SET,
-                kind=self._parse_var(tokens={TokenType.BINARY}),
+            to: t.Optional[exp.Expr] = exp.DType.CHARACTER_SET.into_expr(
+                kind=self._parse_var(tokens={TokenType.BINARY})
             )
         elif self._match(TokenType.COMMA):
             to = self._parse_types()

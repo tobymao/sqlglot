@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import typing as t
 from enum import auto
 
@@ -14,9 +15,11 @@ from sqlglot.expressions.core import (
     Dot,
     maybe_copy,
 )
+from builtins import type as Type
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+    from typing_extensions import Self
 
 
 class DataTypeParam(Expression):
@@ -157,6 +160,15 @@ class DType(AutoName):
     YEAR = auto()
     TDIGEST = auto()
 
+    def into_expr(self, **kwargs: object) -> DataType:
+        """Converts this `DType` into a `DataType` instance.
+        Args:
+            **kwargs (object): additional arguments to pass in the constructor of DataType.
+        Returns:
+            DataType: the resulting `DataType` instance.
+        """
+        return DataType(this=self)._set_kwargs(kwargs)
+
 
 class DataType(Expression):
     arg_types = {
@@ -168,9 +180,9 @@ class DataType(Expression):
         "nullable": False,
     }
 
-    Type: t.ClassVar[t.Type[DType]] = DType
+    Type: t.ClassVar[Type[DType]] = DType
 
-    STRUCT_TYPES: t.ClassVar[t.Set[DType]] = {
+    STRUCT_TYPES: t.ClassVar[set[DType]] = {
         DType.FILE,
         DType.NESTED,
         DType.OBJECT,
@@ -178,12 +190,12 @@ class DataType(Expression):
         DType.UNION,
     }
 
-    ARRAY_TYPES: t.ClassVar[t.Set[DType]] = {
+    ARRAY_TYPES: t.ClassVar[set[DType]] = {
         DType.ARRAY,
         DType.LIST,
     }
 
-    NESTED_TYPES: t.ClassVar[t.Set[DType]] = {
+    NESTED_TYPES: t.ClassVar[set[DType]] = {
         DType.FILE,
         DType.NESTED,
         DType.OBJECT,
@@ -194,7 +206,7 @@ class DataType(Expression):
         DType.MAP,
     }
 
-    TEXT_TYPES: t.ClassVar[t.Set[DType]] = {
+    TEXT_TYPES: t.ClassVar[set[DType]] = {
         DType.CHAR,
         DType.NCHAR,
         DType.NVARCHAR,
@@ -203,7 +215,7 @@ class DataType(Expression):
         DType.NAME,
     }
 
-    SIGNED_INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
+    SIGNED_INTEGER_TYPES: t.ClassVar[set[DType]] = {
         DType.BIGINT,
         DType.INT,
         DType.INT128,
@@ -213,7 +225,7 @@ class DataType(Expression):
         DType.TINYINT,
     }
 
-    UNSIGNED_INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
+    UNSIGNED_INTEGER_TYPES: t.ClassVar[set[DType]] = {
         DType.UBIGINT,
         DType.UINT,
         DType.UINT128,
@@ -223,46 +235,7 @@ class DataType(Expression):
         DType.UTINYINT,
     }
 
-    INTEGER_TYPES: t.ClassVar[t.Set[DType]] = {
-        DType.BIGINT,
-        DType.INT,
-        DType.INT128,
-        DType.INT256,
-        DType.MEDIUMINT,
-        DType.SMALLINT,
-        DType.TINYINT,
-        DType.UBIGINT,
-        DType.UINT,
-        DType.UINT128,
-        DType.UINT256,
-        DType.UMEDIUMINT,
-        DType.USMALLINT,
-        DType.UTINYINT,
-        DType.BIT,
-    }
-
-    FLOAT_TYPES: t.ClassVar[t.Set[DType]] = {
-        DType.DOUBLE,
-        DType.FLOAT,
-    }
-
-    REAL_TYPES: t.ClassVar[t.Set[DType]] = {
-        DType.DOUBLE,
-        DType.FLOAT,
-        DType.BIGDECIMAL,
-        DType.DECIMAL,
-        DType.DECIMAL32,
-        DType.DECIMAL64,
-        DType.DECIMAL128,
-        DType.DECIMAL256,
-        DType.DECFLOAT,
-        DType.MONEY,
-        DType.SMALLMONEY,
-        DType.UDECIMAL,
-        DType.UDOUBLE,
-    }
-
-    NUMERIC_TYPES: t.ClassVar[t.Set[DType]] = {
+    INTEGER_TYPES: t.ClassVar[set[DType]] = {
         DType.BIGINT,
         DType.INT,
         DType.INT128,
@@ -278,6 +251,14 @@ class DataType(Expression):
         DType.USMALLINT,
         DType.UTINYINT,
         DType.BIT,
+    }
+
+    FLOAT_TYPES: t.ClassVar[set[DType]] = {
+        DType.DOUBLE,
+        DType.FLOAT,
+    }
+
+    REAL_TYPES: t.ClassVar[set[DType]] = {
         DType.DOUBLE,
         DType.FLOAT,
         DType.BIGDECIMAL,
@@ -293,7 +274,38 @@ class DataType(Expression):
         DType.UDOUBLE,
     }
 
-    TEMPORAL_TYPES: t.ClassVar[t.Set[DType]] = {
+    NUMERIC_TYPES: t.ClassVar[set[DType]] = {
+        DType.BIGINT,
+        DType.INT,
+        DType.INT128,
+        DType.INT256,
+        DType.MEDIUMINT,
+        DType.SMALLINT,
+        DType.TINYINT,
+        DType.UBIGINT,
+        DType.UINT,
+        DType.UINT128,
+        DType.UINT256,
+        DType.UMEDIUMINT,
+        DType.USMALLINT,
+        DType.UTINYINT,
+        DType.BIT,
+        DType.DOUBLE,
+        DType.FLOAT,
+        DType.BIGDECIMAL,
+        DType.DECIMAL,
+        DType.DECIMAL32,
+        DType.DECIMAL64,
+        DType.DECIMAL128,
+        DType.DECIMAL256,
+        DType.DECFLOAT,
+        DType.MONEY,
+        DType.SMALLMONEY,
+        DType.UDECIMAL,
+        DType.UDOUBLE,
+    }
+
+    TEMPORAL_TYPES: t.ClassVar[set[DType]] = {
         DType.DATE,
         DType.DATE32,
         DType.DATETIME,
@@ -318,7 +330,7 @@ class DataType(Expression):
         dialect: DialectType = None,
         udt: bool = False,
         copy: bool = True,
-        **kwargs,
+        **kwargs: object,
     ) -> DataType:
         """
         Constructs a DataType object.
@@ -338,29 +350,28 @@ class DataType(Expression):
 
         if isinstance(dtype, str):
             if dtype.upper() == "UNKNOWN":
-                return DataType(this=DType.UNKNOWN, **kwargs)
+                return DType.UNKNOWN.into_expr(**kwargs)
 
             try:
-                data_type_exp = parse_one(
-                    dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE
-                )
+                return parse_one(dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE)
             except ParseError:
                 if udt:
-                    return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
+                    return DType.USERDEFINED.into_expr(kind=dtype)._set_kwargs(kwargs)
                 raise
         elif isinstance(dtype, (Identifier, Dot)) and udt:
-            return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
+            return DType.USERDEFINED.into_expr(kind=dtype)._set_kwargs(kwargs)
         elif isinstance(dtype, DType):
-            data_type_exp = DataType(this=dtype)
+            return dtype.into_expr(**kwargs)
         elif isinstance(dtype, DataType):
             return maybe_copy(dtype, copy)
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
 
+    def _set_kwargs(self, kwargs: Mapping[str, object]) -> Self:
         if kwargs:
             for k, v in kwargs.items():
-                data_type_exp.set(k, v)
-        return data_type_exp
+                self.set(k, v)
+        return self
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """

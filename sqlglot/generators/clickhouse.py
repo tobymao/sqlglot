@@ -123,8 +123,7 @@ def _timestrtotime_sql(self: ClickHouseGenerator, expression: exp.TimeStrToTime)
 
     # Non-nullable DateTime64 with microsecond precision
     expressions = [exp.DataTypeParam(this=tz)] if tz else []
-    datatype = exp.DataType.build(
-        exp.DType.DATETIME64,
+    datatype = exp.DType.DATETIME64.into_expr(
         expressions=[exp.DataTypeParam(this=exp.Literal.number(6)), *expressions],
         nullable=False,
     )
@@ -433,7 +432,7 @@ class ClickHouseGenerator(generator.Generator):
     def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
         this = expression.this
 
-        if isinstance(this, exp.StrToDate) and expression.to == exp.DataType.build("datetime"):
+        if isinstance(this, exp.StrToDate) and expression.to == exp.DType.DATETIME.into_expr():
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)

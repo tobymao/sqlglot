@@ -78,7 +78,7 @@ def datetype_handler(args: t.List[exp.Expr], dialect: DialectType) -> exp.Expr:
             ],
             coalesce=dialect.CONCAT_COALESCE,
         ),
-        to=exp.DataType.build("DATE"),
+        to=exp.DType.DATE.into_expr(),
     )
 
 
@@ -120,5 +120,5 @@ class DremioParser(parser.Parser):
                 this=exp.CurrentTimestamp(),
                 zone=exp.Literal.string("UTC"),
             ),
-            to=exp.DataType.build("DATE"),
+            to=exp.DType.DATE.into_expr(),
         )

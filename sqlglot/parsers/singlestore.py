@@ -19,10 +19,7 @@ def cast_to_time6(
 ) -> exp.Cast:
     return exp.Cast(
         this=expression,
-        to=exp.DataType.build(
-            time_type,
-            expressions=[exp.DataTypeParam(this=exp.Literal.number(6))],
-        ),
+        to=time_type.into_expr(expressions=[exp.DataTypeParam(this=exp.Literal.number(6))]),
     )
 
 

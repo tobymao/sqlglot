@@ -5313,7 +5313,7 @@ class Generator:
     @unsupported_args("format")
     def todouble_sql(self, expression: exp.ToDouble) -> str:
         cast = exp.TryCast if expression.args.get("safe") else exp.Cast
-        return self.sql(cast(this=expression.this, to=exp.DataType.build(exp.DType.DOUBLE)))
+        return self.sql(cast(this=expression.this, to=exp.DType.DOUBLE.into_expr()))
 
     def string_sql(self, expression: exp.String) -> str:
         this = expression.this

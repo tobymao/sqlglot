@@ -467,7 +467,7 @@ class PrestoGenerator(generator.Generator):
 
         value = expression.expression
 
-        ts = exp.cast(value, to=exp.DataType.build("TIMESTAMP"))
+        ts = exp.cast(value, to=exp.DType.TIMESTAMP.into_expr())
         to_unix: exp.Expr = exp.TimeToUnix(this=ts)
 
         if scale:

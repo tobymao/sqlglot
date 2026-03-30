@@ -35,28 +35,28 @@ def _build_datetime_format(
     return _builder
 
 
-def _build_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
+def _build_count_if(args: list) -> exp.CountIf | exp.CombinedAggFunc:
     if len(args) == 1:
         return exp.CountIf(this=seq_get(args, 0))
 
     return exp.CombinedAggFunc(this="countIf", expressions=args)
 
 
-def _build_str_to_date(args: t.List) -> exp.Cast | exp.Anonymous:
+def _build_str_to_date(args: list) -> exp.Cast | exp.Anonymous:
     if len(args) == 3:
         return exp.Anonymous(this="STR_TO_DATE", expressions=args)
 
     strtodate = exp.StrToDate.from_arg_list(args)
-    return exp.cast(strtodate, exp.DataType.build(exp.DType.DATETIME))
+    return exp.cast(strtodate, exp.DType.DATETIME.into_expr())
 
 
-def _build_timestamp_trunc(unit: str) -> t.Callable[[t.List], exp.TimestampTrunc]:
+def _build_timestamp_trunc(unit: str) -> t.Callable[[list], exp.TimestampTrunc]:
     return lambda args: exp.TimestampTrunc(
         this=seq_get(args, 0), unit=exp.var(unit), zone=seq_get(args, 1)
     )
 
 
-def _build_split_by_char(args: t.List) -> exp.Split | exp.Anonymous:
+def _build_split_by_char(args: list) -> exp.Split | exp.Anonymous:
     sep = seq_get(args, 0)
     if isinstance(sep, exp.Literal):
         sep_value = sep.to_py()
@@ -564,9 +564,7 @@ class ClickHouseParser(parser.Parser):
                     this=exp.DType.ARRAY,
                     expressions=[
                         bracket_json_type
-                        or exp.DataType.build(
-                            dtype=exp.DType.JSON, dialect=self.dialect, nullable=False
-                        )
+                        or exp.DType.JSON.into_expr(dialect=self.dialect, nullable=False)
                     ],
                     nested=True,
                 )

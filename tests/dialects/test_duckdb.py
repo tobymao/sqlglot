@@ -11,11 +11,13 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        # Numeric TRUNC - DuckDB only supports TRUNC(x), no decimals parameter
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(
-            "TRUNC(3.14159)",
-            read={"postgres": "TRUNC(3.14159, 2)"},
+            "TRUNC(3.14159, 2)",
+            read={
+                "postgres": "TRUNC(3.14159, 2)",
+                "duckdb": "TRUNC(3.14159, 2)",
+            },
         )
 
         self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-1:-1]")

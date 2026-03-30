@@ -1517,7 +1517,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "CASE WHEN column1 = '' THEN 0 ELSE UNICODE(foo) END",
+            "CASE WHEN foo = '' THEN 0 ELSE UNICODE(foo) END",
             read={
                 "snowflake": "UNICODE(foo)",
             },

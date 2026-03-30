@@ -349,22 +349,28 @@ class DataType(Expression):
 
         if isinstance(dtype, str):
             if dtype.upper() == "UNKNOWN":
-                return DType.UNKNOWN.into_expr(**kwargs)
+                return DataType(this=DType.UNKNOWN, **kwargs)
 
             try:
-                return parse_one(dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE)
+                data_type_exp = parse_one(
+                    dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE
+                )
             except ParseError:
                 if udt:
-                    return DType.USERDEFINED.into_expr(kind=dtype).set_kwargs(kwargs)
+                    return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
                 raise
-        elif isinstance(dtype, (Identifier, Dot)) and udt:
-            return DType.USERDEFINED.into_expr(kind=dtype).set_kwargs(kwargs)
         elif isinstance(dtype, DType):
-            return dtype.into_expr(**kwargs)
+            data_type_exp = DataType(this=dtype)
+        elif isinstance(dtype, (Identifier, Dot)) and udt:
+            return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
         elif isinstance(dtype, DataType):
             return maybe_copy(dtype, copy)
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
+        if kwargs:
+            for k, v in kwargs.items():
+                data_type_exp.set(k, v)
+        return data_type_exp
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import typing as t
 from enum import auto
 
@@ -19,7 +18,6 @@ from builtins import type as Type
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
-    from typing_extensions import Self
 
 
 class DataTypeParam(Expression):
@@ -162,12 +160,13 @@ class DType(AutoName):
 
     def into_expr(self, **kwargs: object) -> DataType:
         """Converts this `DType` into a `DataType` instance.
+
         Args:
             **kwargs (object): additional arguments to pass in the constructor of DataType.
         Returns:
             DataType: the resulting `DataType` instance.
         """
-        return DataType(this=self)._set_kwargs(kwargs)
+        return DataType(this=self).set_kwargs(kwargs)
 
 
 class DataType(Expression):
@@ -356,22 +355,16 @@ class DataType(Expression):
                 return parse_one(dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE)
             except ParseError:
                 if udt:
-                    return DType.USERDEFINED.into_expr(kind=dtype)._set_kwargs(kwargs)
+                    return DType.USERDEFINED.into_expr(kind=dtype).set_kwargs(kwargs)
                 raise
         elif isinstance(dtype, (Identifier, Dot)) and udt:
-            return DType.USERDEFINED.into_expr(kind=dtype)._set_kwargs(kwargs)
+            return DType.USERDEFINED.into_expr(kind=dtype).set_kwargs(kwargs)
         elif isinstance(dtype, DType):
             return dtype.into_expr(**kwargs)
         elif isinstance(dtype, DataType):
             return maybe_copy(dtype, copy)
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
-
-    def _set_kwargs(self, kwargs: Mapping[str, object]) -> Self:
-        if kwargs:
-            for k, v in kwargs.items():
-                self.set(k, v)
-        return self
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """

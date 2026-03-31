@@ -191,7 +191,7 @@ class TestDatabricks(Validator):
             "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS TABLE (a INT) RETURN SELECT a",
             write={
                 "databricks": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS TABLE (a INT) RETURN SELECT a",
-                "duckdb": "CREATE OR REPLACE FUNCTION func(a, b) AS TABLE SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) AS TABLE SELECT a",
             },
         )
 
@@ -199,7 +199,7 @@ class TestDatabricks(Validator):
             "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS BIGINT RETURN a",
             write={
                 "databricks": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) RETURNS BIGINT RETURN a",
-                "duckdb": "CREATE OR REPLACE FUNCTION func(a, b) AS a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a BIGINT, b BIGINT) AS a",
             },
         )
 

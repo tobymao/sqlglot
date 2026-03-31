@@ -2834,11 +2834,6 @@ class DuckDBGenerator(generator.Generator):
 
         return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
-    def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-        if isinstance(expression.parent, exp.UserDefinedFunction):
-            return self.sql(expression, "this")
-        return super().columndef_sql(expression, sep)
-
     def join_sql(self, expression: exp.Join) -> str:
         if (
             not expression.args.get("using")

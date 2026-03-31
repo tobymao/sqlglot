@@ -172,7 +172,7 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "CREATE TEMPORARY FUNCTION f1(a, b) AS (a + b)",
+            "CREATE TEMPORARY FUNCTION f1(a BIGINT, b BIGINT) AS (a + b)",
             read={
                 "bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)",
             },
@@ -2500,7 +2500,7 @@ class TestDuckDB(Validator):
             "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
             write={
                 "databricks": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) RETURNS TABLE RETURN SELECT a",
-                "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b REAL) AS TABLE SELECT a",
             },
         )
 

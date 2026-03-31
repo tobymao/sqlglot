@@ -2952,19 +2952,11 @@ class DuckDBGenerator(generator.Generator):
     def bitlength_sql(self, expression: exp.BitLength) -> str:
         arg = expression.this
 
-        if arg.is_string:
+        if not arg.is_type(exp.DataType.Type.BINARY, exp.DataType.Type.VARBINARY):
             return self.func("BIT_LENGTH", arg)
 
-        if not arg.type:
-            from sqlglot.optimizer.annotate_types import annotate_types
-
-            arg = annotate_types(arg, dialect=self.dialect)
-
-        if arg.is_type(*exp.DataType.TEXT_TYPES):
-            return self.func("BIT_LENGTH", arg)
-
-        blob = exp.cast(arg, exp.DType.VARBINARY)
-        varchar = exp.cast(arg, exp.DType.VARCHAR)
+        blob = exp.cast(arg.copy(), exp.DataType.Type.VARBINARY)
+        varchar = exp.cast(arg.copy(), exp.DataType.Type.VARCHAR)
 
         case = (
             exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))

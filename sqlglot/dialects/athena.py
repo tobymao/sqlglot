@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, tokens
-from sqlglot.dialects import Dialect, Hive, Trino
+from sqlglot import tokens
+from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.generators.athena import AthenaGenerator
 from sqlglot.parsers.athena import AthenaParser
 from sqlglot.tokens import TokenType, Token
+from sqlglot.dialects.trino import Trino
+from sqlglot.dialects.hive import Hive
 
 
 class Athena(Dialect):
@@ -47,34 +49,6 @@ class Athena(Dialect):
     - https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self._hive = Hive(**kwargs)
-        self._trino = Trino(**kwargs)
-
-    def tokenize(self, sql: str, **opts: object) -> list[Token]:
-        opts["hive"] = self._hive
-        opts["trino"] = self._trino
-        return super().tokenize(sql, **opts)
-
-    def parse(self, sql: str, **opts: object) -> list[t.Optional[exp.Expr]]:
-        opts["hive"] = self._hive
-        opts["trino"] = self._trino
-        return super().parse(sql, **opts)
-
-    def parse_into(
-        self, expression_type: exp.IntoType, sql: str, **opts: object
-    ) -> list[t.Optional[exp.Expr]]:
-        opts["hive"] = self._hive
-        opts["trino"] = self._trino
-        return super().parse_into(expression_type, sql, **opts)
-
-    def generate(self, expression: exp.Expr, copy: bool = True, **opts: object) -> str:
-        opts["hive"] = self._hive
-        opts["trino"] = self._trino
-        return super().generate(expression, copy=copy, **opts)
-
     # This Tokenizer consumes a combination of HiveQL and Trino SQL and then processes the tokens
     # to disambiguate which dialect needs to be actually used in order to tokenize correctly.
     class Tokenizer(tokens.Tokenizer):
@@ -94,16 +68,13 @@ class Athena(Dialect):
             "UNLOAD": TokenType.COMMAND,
         }
 
-        def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-            hive = kwargs.pop("hive", None) or Hive()
-            trino = kwargs.pop("trino", None) or Trino()
+        def __init__(self, dialect: DialectType = None) -> None:
+            super().__init__(dialect=dialect)
 
-            super().__init__(*args, **kwargs)
+            self._hive_tokenizer = Hive().tokenizer()
+            self._trino_tokenizer = _TrinoTokenizer(Trino())
 
-            self._hive_tokenizer = hive.tokenizer(*args, **{**kwargs, "dialect": hive})
-            self._trino_tokenizer = _TrinoTokenizer(*args, **{**kwargs, "dialect": trino})
-
-        def tokenize(self, sql: str) -> t.List[Token]:
+        def tokenize(self, sql: str) -> list[Token]:
             tokens = super().tokenize(sql)
 
             if _tokenize_as_hive(tokens):
@@ -116,7 +87,7 @@ class Athena(Dialect):
     Generator = AthenaGenerator
 
 
-def _tokenize_as_hive(tokens: t.List[Token]) -> bool:
+def _tokenize_as_hive(tokens: list[Token]) -> bool:
     if len(tokens) < 2:
         return False
 

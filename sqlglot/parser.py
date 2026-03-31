@@ -2373,7 +2373,7 @@ class Parser:
             extend_props(self._parse_properties())
 
             expression = self._parse_heredoc() if self._match(TokenType.ALIAS) else None
-            extend_props(self._parse_properties())
+            extend_props(self._parse_function_properties())
 
             if not expression:
                 if self._match(TokenType.COMMAND):
@@ -6882,6 +6882,9 @@ class Parser:
             transformed.append(e)
 
         return transformed
+
+    def _parse_function_properties(self) -> t.Optional[exp.Properties]:
+        return self._parse_properties()
 
     def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expr]:
         return self._parse_statement()

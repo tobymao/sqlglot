@@ -2402,7 +2402,7 @@ TIMESTAMP_PARTS = {
 
 @t.overload
 def maybe_parse(
-    sql_or_expression: ExpOrStr,
+    sql_or_expression: int | str,
     *,
     into: Type[E],
     dialect: DialectType = None,

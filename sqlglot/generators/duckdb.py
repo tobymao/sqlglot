@@ -3315,17 +3315,16 @@ class DuckDBGenerator(generator.Generator):
             # Each byte becomes 2 hex chars, so multiply length by 2
             hex_arg = exp.Hex(this=arg)
             hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
-            # Generate the function call as SQL string directly
-            hex_func_sql = self.func(func_name, hex_arg, hex_length)
-            result_sql = f"UNHEX({hex_func_sql})"
+            result = exp.Unhex(this=self.func(func_name, hex_arg, hex_length))
 
             # Handle negative length: return empty blob
             if needs_case:
-                empty_blob_sql = "UNHEX('')"
-                return (
-                    f"CASE WHEN {self.sql(length)} < 0 THEN {empty_blob_sql} ELSE {result_sql} END"
+                empty_blob = exp.Unhex(this=exp.Literal.string(""))
+                case_expr = (
+                    exp.case().when(length < exp.Literal.number(0), empty_blob).else_(result)
                 )
-            return result_sql
+                return self.sql(case_expr)
+            return self.sql(result)
 
         # For VARCHAR: Use native LEFT/RIGHT function
         func_sql = self.func(func_name, arg, length)

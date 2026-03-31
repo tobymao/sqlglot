@@ -2774,7 +2774,7 @@ OPTIONS (
             """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
             write={
                 "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
-                "duckdb": """SELECT SON_VALUE(JSON('{"a-1":"b"}'), '$."a-1"') ->> '$'""",
+                "duckdb": """SELECT JSON_VALUE(JSON('{"a-1":"b"}'), '$."a-1"') ->> '$'""",
             },
         )
 

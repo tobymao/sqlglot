@@ -130,8 +130,8 @@ def parse(
 def parse_one(
     sql: str,
     *,
-    read: DialectType = None,
-    dialect: DialectType = None,
+    read: DialectType = ...,
+    dialect: DialectType = ...,
     into: Type[E],
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
@@ -140,19 +140,9 @@ def parse_one(
 @t.overload
 def parse_one(
     sql: str,
-    *,
-    read: DialectType = None,
-    dialect: DialectType = None,
-    into: Collection[Type[exp.Expr]],
-    **opts: Unpack[ParserNoDialectArgs],
-) -> exp.Expr: ...
-
-
-@t.overload
-def parse_one(
-    sql: str,
-    read: DialectType = None,
-    dialect: DialectType = None,
+    read: DialectType = ...,
+    dialect: DialectType = ...,
+    into: t.Optional[exp.IntoType] = ...,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr: ...
 

@@ -2469,9 +2469,6 @@ def maybe_parse(
     if prefix:
         sql = f"{prefix} {sql}"
 
-    if into is None:
-        return sqlglot.parse_one(sql, read=dialect, **opts)
-
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 

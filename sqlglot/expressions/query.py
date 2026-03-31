@@ -1407,8 +1407,7 @@ class Select(Expression, Query):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            qry = f"FROM _ {join_type} JOIN _"
-            new_join: Join = maybe_parse(qry, dialect=dialect, **opts).find(Join)
+            new_join: Join = maybe_parse(f"FROM _ {join_type} JOIN _", **opts).find(Join)
             method = new_join.method
             side = new_join.side
             kind = new_join.kind

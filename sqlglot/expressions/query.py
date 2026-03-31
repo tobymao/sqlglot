@@ -1396,12 +1396,10 @@ class Select(Expression, Query):
         Returns:
             Select: the modified expression.
         """
-        parse_args: dict[str, t.Any] = {"dialect": dialect, **opts}
-
         try:
-            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
+            expression = maybe_parse(expression, into=Join, prefix="JOIN", dialect=dialect, **opts)
         except ParseError:
-            expression = maybe_parse(expression, into=(Join, Expr), **parse_args)
+            expression = maybe_parse(expression, into=(Join, Expr), dialect=dialect, **opts)
 
         join = expression if isinstance(expression, Join) else Join(this=expression)
 
@@ -1409,7 +1407,8 @@ class Select(Expression, Query):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            new_join = maybe_parse(f"FROM _ {join_type} JOIN _", **parse_args).find(Join)
+            qry = f"FROM _ {join_type} JOIN _"
+            new_join: Join = maybe_parse(qry, dialect=dialect, **opts).find(Join)
             method = new_join.method
             side = new_join.side
             kind = new_join.kind

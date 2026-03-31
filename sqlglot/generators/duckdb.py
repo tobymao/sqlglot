@@ -3299,43 +3299,47 @@ class DuckDBGenerator(generator.Generator):
         result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
         return _gen_with_cast_to_blob(self, expression, result_sql)
 
-    def left_sql(self, expression: exp.Left) -> str:
+    def _left_right_sql(self, expression: exp.Left | exp.Right, func_name: str) -> str:
         arg = expression.this
         length = expression.expression
 
-        # For BINARY/BLOB: DuckDB doesn't support LEFT on BLOB
-        # Convert to HEX string, use LEFT, then convert back to BLOB
+        # Check if length is a literal number and get its value
+        is_literal = isinstance(length, exp.Literal) and length.is_number
+        length_value = int(length.to_py()) if is_literal else None
+        needs_case = not is_literal or (length_value is not None and length_value < 0)
+
+        # For BINARY/BLOB: DuckDB doesn't support LEFT/RIGHT on BLOB
+        # Convert to HEX string, use LEFT/RIGHT, then convert back to BLOB
         if _is_binary(arg):
-            # LEFT(blob, n) becomes UNHEX(LEFT(HEX(blob), n * 2))
+            # LEFT/RIGHT(blob, n) becomes UNHEX(LEFT/RIGHT(HEX(blob), n * 2))
             # Each byte becomes 2 hex chars, so multiply length by 2
             hex_arg = exp.Hex(this=arg)
             hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
-            # since this exp.Left is not annotated, it won't enter this _is_binary branch during the recursive call
-            hex_left = self.func("LEFT", hex_arg, hex_length)
-            result = exp.Unhex(this=hex_left)
-            return self.sql(result)
+            # Generate the function call as SQL string directly
+            hex_func_sql = self.func(func_name, hex_arg, hex_length)
+            result_sql = f"UNHEX({hex_func_sql})"
 
-        # For VARCHAR: Use native LEFT function
-        return self.func("LEFT", arg, length)
+            # Handle negative length: return empty blob
+            if needs_case:
+                empty_blob_sql = "UNHEX('')"
+                return (
+                    f"CASE WHEN {self.sql(length)} < 0 THEN {empty_blob_sql} ELSE {result_sql} END"
+                )
+            return result_sql
+
+        # For VARCHAR: Use native LEFT/RIGHT function
+        func_sql = self.func(func_name, arg, length)
+
+        # Handle negative length: return empty string
+        if needs_case:
+            return f"CASE WHEN {self.sql(length)} < 0 THEN '' ELSE {func_sql} END"
+        return func_sql
+
+    def left_sql(self, expression: exp.Left) -> str:
+        return self._left_right_sql(expression, "LEFT")
 
     def right_sql(self, expression: exp.Right) -> str:
-        arg = expression.this
-        length = expression.expression
-
-        # For BINARY/BLOB: DuckDB doesn't support RIGHT on BLOB
-        # Convert to HEX string, use RIGHT, then convert back to BLOB
-        if _is_binary(arg):
-            # RIGHT(blob, n) becomes UNHEX(RIGHT(HEX(blob), n * 2))
-            # Each byte becomes 2 hex chars, so multiply length by 2
-            hex_arg = exp.Hex(this=arg)
-            hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
-            # since this exp.Right is not annotated, it won't enter this _is_binary branch during the recursive call
-            hex_right = self.func("RIGHT", hex_arg, hex_length)
-            result = exp.Unhex(this=hex_right)
-            return self.sql(result)
-
-        # For VARCHAR: Use native RIGHT function
-        return self.func("RIGHT", arg, length)
+        return self._left_right_sql(expression, "RIGHT")
 
     def rand_sql(self, expression: exp.Rand) -> str:
         seed = expression.this

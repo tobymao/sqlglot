@@ -412,7 +412,8 @@ class TestSnowflake(Validator):
         expr = self.validate_identity("RIGHT(TO_BINARY('SNOWIKOPN', 'utf-8'), ABS(-3))")
         annotated = annotate_types(expr, dialect="snowflake")
         self.assertEqual(
-            annotated.sql("duckdb"), "UNHEX(RIGHT(HEX(ENCODE('SNOWIKOPN')), ABS(-3) * 2))"
+            annotated.sql("duckdb"),
+            "CASE WHEN ABS(-3) < 0 THEN UNHEX('') ELSE UNHEX(RIGHT(HEX(ENCODE('SNOWIKOPN')), ABS(-3) * 2)) END",
         )
 
         self.validate_all(

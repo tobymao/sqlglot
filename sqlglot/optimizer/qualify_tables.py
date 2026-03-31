@@ -10,6 +10,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from collections.abc import Sequence
 
 
 def qualify_tables(
@@ -75,11 +76,11 @@ def qualify_tables(
 
     def _set_alias(
         expression: exp.Expr,
-        canonical_aliases: t.Dict[str, str],
+        canonical_aliases: dict[str, str],
         target_alias: t.Optional[str] = None,
         scope: t.Optional[Scope] = None,
         normalize: bool = False,
-        columns: t.Optional[t.List[t.Union[str, exp.Identifier]]] = None,
+        columns: t.Optional[Sequence[t.Union[str, exp.Identifier]]] = None,
     ) -> None:
         alias = expression.args.get("alias") or exp.TableAlias()
 
@@ -136,7 +137,7 @@ def qualify_tables(
 
                 table_this = source.this
                 table_alias = source.args.get("alias")
-                function_columns: t.List[t.Union[str, exp.Identifier]] = []
+                function_columns: t.Optional[Sequence[t.Union[str, exp.Identifier]]] = None
                 if isinstance(table_this, exp.Func):
                     if not table_alias:
                         function_columns = ensure_list(

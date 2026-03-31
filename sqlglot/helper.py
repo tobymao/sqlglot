@@ -72,19 +72,7 @@ def seq_get(seq: Sequence[T], index: int) -> t.Optional[T]:
         return None
 
 
-@t.overload
-def ensure_list(value: Collection[T]) -> list[T]: ...
-
-
-@t.overload
-def ensure_list(value: None) -> t.List: ...
-
-
-@t.overload
-def ensure_list(value: T) -> list[T]: ...
-
-
-def ensure_list(value):
+def ensure_list(value: T | list[T] | tuple[T, ...] | None) -> list[T]:
     """
     Ensures that a value is a list, otherwise casts or wraps it into one.
 
@@ -96,7 +84,9 @@ def ensure_list(value):
     """
     if value is None:
         return []
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
         return list(value)
 
     return [value]
@@ -384,6 +374,18 @@ def dict_depth(d: t.Any) -> int:
 def first(it: Iterable[T]) -> T:
     """Returns the first element from an iterable (useful for sets)."""
     return next(i for i in it)
+
+
+@t.overload
+def to_bool(value: None) -> None: ...
+
+
+@t.overload
+def to_bool(value: bool) -> bool: ...
+
+
+@t.overload
+def to_bool(value: str) -> str | bool: ...
 
 
 def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:

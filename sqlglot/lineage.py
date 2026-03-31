@@ -13,6 +13,8 @@ from sqlglot.optimizer.scope import ScopeType
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from collections.abc import Iterator, Mapping, Sequence
+    from sqlglot._typing import GraphHTMLArgs
+    from typing_extensions import Unpack
 
 logger = logging.getLogger("sqlglot")
 
@@ -38,7 +40,7 @@ class Node:
             yield node
             queue.extend(reversed(node.downstream))
 
-    def to_html(self, dialect: DialectType = None, **opts: t.Any) -> GraphHTML:
+    def to_html(self, dialect: DialectType = None, **opts: Unpack[GraphHTMLArgs]) -> GraphHTML:
         nodes = {}
         edges = []
 

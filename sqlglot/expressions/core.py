@@ -15,7 +15,7 @@ from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
 from collections.abc import Iterator, Sequence, Collection, Mapping, MutableMapping
-from sqlglot._typing import E
+from sqlglot._typing import E, T
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
@@ -284,7 +284,7 @@ class Expr:
     ) -> t.Any:
         raise NotImplementedError
 
-    def replace(self, expression: t.Any) -> t.Any:
+    def replace(self, expression: T) -> T:
         raise NotImplementedError
 
     def pop(self: E) -> E:
@@ -305,7 +305,7 @@ class Expr:
         return dump(self)
 
     @classmethod
-    def load(cls, obj: t.Any) -> Expr:
+    def load(cls, obj: t.Optional[list[dict[str, Any]]]) -> Expr:
         """
         Load a dict (as returned by `Expr.dump`) into an Expr instance.
         """
@@ -1083,7 +1083,7 @@ class Expression(Expr):
         assert root
         return root
 
-    def replace(self, expression: t.Any) -> t.Any:
+    def replace(self, expression: T) -> T:
         """
         Swap out this expression with a new expression.
 
@@ -1098,10 +1098,10 @@ class Expression(Expr):
             'SELECT y FROM tbl'
 
         Args:
-            expression: new node
+            expression (T): new node
 
         Returns:
-            The new expression or expressions.
+            T: The new expression or expressions.
         """
         parent = self.parent
 
@@ -1586,12 +1586,12 @@ class Func(Condition):
     """
 
     is_var_len_args: t.ClassVar[bool] = False
-    _sql_names: t.ClassVar[t.List[str]] = []
+    _sql_names: t.ClassVar[list[str]] = []
 
     @classmethod
-    def from_arg_list(cls, args):
+    def from_arg_list(cls, args: Sequence[object]) -> Self:
         if cls.is_var_len_args:
-            all_arg_keys = list(cls.arg_types)
+            all_arg_keys = tuple(cls.arg_types)
             # If this function supports variable length argument treat the last argument as such.
             non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
             num_non_var = len(non_var_len_arg_keys)
@@ -1604,7 +1604,7 @@ class Func(Condition):
         return cls(**args_dict)
 
     @classmethod
-    def sql_names(cls):
+    def sql_names(cls) -> list[str]:
         if cls is Func:
             raise NotImplementedError(
                 "SQL name is only supported by concrete function implementations"
@@ -1614,13 +1614,13 @@ class Func(Condition):
         return cls._sql_names
 
     @classmethod
-    def sql_name(cls):
+    def sql_name(cls) -> str:
         sql_names = cls.sql_names()
         assert sql_names, f"Expected non-empty 'sql_names' for Func: {cls.__name__}."
         return sql_names[0]
 
     @classmethod
-    def default_parser_mappings(cls):
+    def default_parser_mappings(cls) -> dict[str, t.Callable[[Sequence[object]], Self]]:
         return {name: cls.from_arg_list for name in cls.sql_names()}
 
 
@@ -1800,7 +1800,7 @@ class Dot(Expression, Binary):
         return self.name
 
     @classmethod
-    def build(self, expressions: Sequence[Expr]) -> Dot:
+    def build(cls, expressions: Sequence[Expr]) -> Dot:
         """Build a Dot object with a sequence of expressions."""
         if len(expressions) < 2:
             raise ValueError("Dot requires >= 2 expressions.")
@@ -2688,7 +2688,7 @@ def _apply_conjunction_builder(
 
 def _combine(
     expressions: Sequence[t.Optional[ExpOrStr]],
-    operator: t.Any,
+    operator: Type[Expr],
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,

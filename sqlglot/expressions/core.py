@@ -2592,8 +2592,7 @@ def _apply_child_list_builder(
     if append and existing:
         parsed = existing.expressions + parsed
     if into is None:
-        msg = "`into` is required to use `_apply_child_list_builder`"
-        raise ValueError(msg)
+        raise ValueError("`into` is required to use `_apply_child_list_builder`")
     child = into(expressions=parsed)
     for k, v in properties.items():
         child.set(k, v)

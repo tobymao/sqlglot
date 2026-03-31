@@ -2770,6 +2770,14 @@ OPTIONS (
                 f"{func}(doc, '$. a b c .d')", f"""{func}(doc, '$." a b c ".d')"""
             )
 
+        self.validate_all(
+            """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
+                "duckdb": """SELECT SON_VALUE(JSON('{"a-1":"b"}'), '$."a-1"') ->> '$'""",
+            },
+        )
+
         # Test single quote & bracket escaping
         for func in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR", "JSON_EXTRACT_ARRAY"):
             self.validate_identity(

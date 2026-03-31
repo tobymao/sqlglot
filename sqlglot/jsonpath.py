@@ -36,6 +36,8 @@ class JSONPathTokenizer(Tokenizer):
     IDENTIFIER_ESCAPES = ["\\"]
     STRING_ESCAPES = ["\\"]
 
+    VAR_SINGLE_TOKENS = {"-"}
+
     VAR_TOKENS = {
         TokenType.VAR,
     }

@@ -2497,9 +2497,10 @@ class TestDuckDB(Validator):
                 ).assert_is(exp.Create)
 
         self.validate_all(
-            "CREATE OR REPLACE FUNCTION func(a, b) AS TABLE SELECT a",
+            "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
             write={
-                "databricks": "CREATE OR REPLACE FUNCTION func(a, b) RETURNS TABLE RETURN SELECT a",
+                "databricks": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) RETURNS TABLE RETURN SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
             },
         )
 

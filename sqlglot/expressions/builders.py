@@ -120,7 +120,7 @@ def update(
     from_: t.Optional[ExpOrStr] = None,
     with_: t.Optional[dict[str, ExpOrStr]] = None,
     dialect: DialectType = None,
-    copy: bool = False,
+    copy: bool = True,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Update:
     """

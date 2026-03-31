@@ -2275,7 +2275,7 @@ def _lazy_unnest(**kwargs: object) -> "Expr":
     return Unnest(**kwargs)
 
 
-def convert(value: t.Any, copy: bool = False) -> Expr:
+def convert(value: t.Any, copy: bool = True) -> Expr:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
@@ -2405,7 +2405,7 @@ def maybe_parse(
     into: Type[E],
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = False,
+    copy: bool = True,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
@@ -2417,7 +2417,7 @@ def maybe_parse(
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = False,
+    copy: bool = True,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
@@ -2428,7 +2428,7 @@ def maybe_parse(
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = False,
+    copy: bool = True,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """Gracefully handle a possible string or expression.

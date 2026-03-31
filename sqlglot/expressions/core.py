@@ -28,9 +28,9 @@ from sqlglot.helper import (
 from sqlglot.tokenizer_core import Token
 from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
+from functools import partial
 
 if t.TYPE_CHECKING:
-    from sqlglot import exp
     from typing_extensions import Self, Unpack
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
@@ -1359,23 +1359,19 @@ class Expression(Expr):
     ) -> In:
         from sqlglot.expressions.query import Query
 
-        subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts) if query else None
-        if subquery and isinstance(subquery, Query):
-            subquery = subquery.subquery(copy=False)
-
+        subquery: t.Optional[Expr] = None
+        if query:
+            subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts)
+            if isinstance(subquery, Query):
+                subquery = subquery.subquery(copy=False)
+        unnest_list: list[ExpOrStr] = ensure_list(unnest)
+        parse_fn: partial[Expr] = partial(maybe_parse, dialect=dialect, copy=copy, **opts)
         return In(
             this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=subquery,
             unnest=(
-                _lazy_unnest(
-                    expressions=[
-                        maybe_parse(t.cast(ExpOrStr, e), dialect=dialect, copy=copy, **opts)
-                        for e in ensure_list(unnest)
-                    ]
-                )
-                if unnest
-                else None
+                _lazy_unnest(expressions=[parse_fn(e) for e in unnest_list]) if unnest else None
             ),
         )
 
@@ -2278,32 +2274,6 @@ def _lazy_unnest(**kwargs: object) -> "Expr":
     return Unnest(**kwargs)
 
 
-@t.overload
-def convert(value: str, copy: bool = ...) -> Literal: ...
-@t.overload
-def convert(value: bool, copy: bool = ...) -> Boolean: ...
-@t.overload
-def convert(value: None, copy: bool = ...) -> Null: ...
-@t.overload
-def convert(value: numbers.Number, copy: bool = ...) -> Literal: ...
-@t.overload
-def convert(value: bytes, copy: bool = ...) -> exp.HexString: ...
-@t.overload
-def convert(
-    value: datetime.date, copy: bool = ...
-) -> Literal | exp.TimeStrToTime | exp.DateStrToDate: ...
-@t.overload
-def convert(value: datetime.time, copy: bool = ...) -> exp.TsOrDsToTime: ...
-@t.overload
-def convert(value: tuple[t.Any, ...], copy: bool = ...) -> exp.Tuple | exp.Struct: ...
-@t.overload
-def convert(value: list[t.Any], copy: bool = ...) -> exp.Array: ...
-@t.overload
-def convert(value: dict[str, t.Any], copy: bool = ...) -> exp.Map: ...
-@t.overload
-def convert(value: E, copy: bool = ...) -> E: ...
-@t.overload
-def convert(value: object, copy: bool = ...) -> Expr: ...
 def convert(value: object, copy: bool = False) -> Expr:
     """Convert a python value into an expression object.
 

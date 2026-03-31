@@ -14,7 +14,7 @@ from collections import deque
 from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
-from collections.abc import Iterator, Sequence, Collection, Mapping
+from collections.abc import Iterator, Sequence, Collection, Mapping, MutableMapping
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
@@ -30,13 +30,10 @@ from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing_extensions import Self, Unpack
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
-
-    from collections.abc import MutableMapping
-    from typing_extensions import Unpack
 
 logger = logging.getLogger("sqlglot")
 

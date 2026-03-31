@@ -1356,9 +1356,11 @@ class Expression(Expr):
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
+        from sqlglot.expressions.query import Query
+
         subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts) if query else None
-        if subquery and not subquery.is_subquery:
-            subquery = subquery.subquery(copy=False)  # type: ignore[attr-defined]
+        if subquery and isinstance(subquery, Query):
+            subquery = subquery.subquery(copy=False)
 
         return In(
             this=maybe_copy(self, copy),
@@ -2275,7 +2277,7 @@ def _lazy_unnest(**kwargs: object) -> "Expr":
     return Unnest(**kwargs)
 
 
-def convert(value: t.Any, copy: bool = True) -> Expr:
+def convert(value: t.Any, copy: bool = False) -> Expr:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
@@ -2405,7 +2407,7 @@ def maybe_parse(
     into: Type[E],
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = True,
+    copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
@@ -2417,7 +2419,7 @@ def maybe_parse(
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = True,
+    copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
 
@@ -2428,7 +2430,7 @@ def maybe_parse(
     into: t.Optional[IntoType] = None,
     dialect: DialectType = None,
     prefix: t.Optional[str] = None,
-    copy: bool = True,
+    copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """Gracefully handle a possible string or expression.

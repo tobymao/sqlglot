@@ -1408,7 +1408,7 @@ class Select(Expression, Query):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            new_join: t.Union[Join, Select] = maybe_parse(f"FROM _ {join_type} JOIN _", **parse_args).find(Join)
+            new_join: t.Any = maybe_parse(f"FROM _ {join_type} JOIN _", **parse_args).find(Join)
             method = new_join.method
             side = new_join.side
             kind = new_join.kind

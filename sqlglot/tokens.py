@@ -72,7 +72,7 @@ class _TokenizerBase:
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]]
     _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]]
     _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]]
-    _KEYWORD_TRIE: t.ClassVar[t.Dict]
+    _KEYWORD_TRIE: t.ClassVar[dict[str, object]]
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -160,7 +160,7 @@ class Tokenizer(_TokenizerBase):
     UNICODE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
     IDENTIFIERS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = ['"']
     QUOTES: t.ClassVar[t.List[t.Tuple[str, str] | str]] = ["'"]
-    STRING_ESCAPES = ["'"]
+    STRING_ESCAPES: t.ClassVar[list[str]] = ["'"]
     BYTE_STRING_ESCAPES: t.ClassVar[t.List[str]] = []
     VAR_SINGLE_TOKENS: t.ClassVar[t.Set[str]] = set()
     ESCAPE_FOLLOW_CHARS: t.ClassVar[t.List[str]] = []
@@ -193,7 +193,7 @@ class Tokenizer(_TokenizerBase):
     _QUOTES: t.ClassVar[t.Dict[str, str]] = {}
     _STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
     _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
-    _KEYWORD_TRIE: t.ClassVar[t.Dict] = {}
+    _KEYWORD_TRIE: t.ClassVar[dict[str, object]] = {}
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]] = set()
 
     KEYWORDS: t.ClassVar[t.Dict[str, TokenType]] = {
@@ -534,12 +534,8 @@ class Tokenizer(_TokenizerBase):
         "_core",
     )
 
-    def __init__(
-        self,
-        dialect: DialectType = None,
-        **opts: object,
-    ) -> None:
-        from sqlglot.dialects import Dialect
+    def __init__(self, dialect: DialectType = None) -> None:
+        from sqlglot.dialects.dialect import Dialect
         from sqlglot.tokenizer_core import TokenizerCore as _TokenizerCore
 
         self.dialect = Dialect.get_or_raise(dialect)
@@ -560,8 +556,8 @@ class Tokenizer(_TokenizerBase):
             nested_comments=self.NESTED_COMMENTS,
             hint_start=self.HINT_START,
             tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
-            bit_strings=list(self.BIT_STRINGS),
-            hex_strings=list(self.HEX_STRINGS),
+            bit_strings=list[t.Union[str, tuple[str, str]]](self.BIT_STRINGS),
+            hex_strings=list[t.Union[str, tuple[str, str]]](self.HEX_STRINGS),
             numeric_literals=self.NUMERIC_LITERALS,
             var_single_tokens=self.VAR_SINGLE_TOKENS,
             string_escapes_allowed_in_raw_strings=self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
@@ -573,7 +569,7 @@ class Tokenizer(_TokenizerBase):
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
         )
 
-    def tokenize(self, sql: str) -> t.List[Token]:
+    def tokenize(self, sql: str) -> list[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
         return self._core.tokenize(sql)  # type: ignore
 
@@ -588,6 +584,6 @@ class Tokenizer(_TokenizerBase):
         return self._core.size
 
     @property
-    def tokens(self) -> t.List[Token]:
+    def tokens(self) -> list[Token]:
         """The list of tokens produced by tokenization."""
         return self._core.tokens

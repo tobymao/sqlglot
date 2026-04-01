@@ -343,6 +343,24 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "PARSE_DATETIME(x, '%Y-%m-%d %H:%i:%S')",
+            write={
+                "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
+                "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
+                "hive": "CAST(x AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "PARSE_DATETIME(x, '%Y-%m-%d')",
+            write={
+                "duckdb": "STRPTIME(x, '%Y-%m-%d')",
+                "presto": "DATE_PARSE(x, '%Y-%m-%d')",
+                "hive": "CAST(x AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd')",
+            },
+        )
+        self.validate_all(
             "FROM_UNIXTIME(x)",
             write={
                 "duckdb": "TO_TIMESTAMP(x)",

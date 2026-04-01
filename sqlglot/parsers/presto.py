@@ -88,6 +88,7 @@ class PrestoParser(parser.Parser):
         "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
         "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
         "DATE_TRUNC": date_trunc_to_time,
+        "PARSE_DATETIME": build_formatted_time(exp.StrToTime, "presto"),
         "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
         "DOW": exp.DayOfWeekIso.from_arg_list,
         "DOY": exp.DayOfYear.from_arg_list,

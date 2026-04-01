@@ -2957,8 +2957,8 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(exp.ByteLength(this=blob) * exp.Literal.number(8))
 
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
-        arg = seq_get(expression.expressions, 0)
-        if arg and arg.is_type(*exp.DataType.REAL_TYPES):
+        arg = expression.expressions[0]
+        if arg.is_type(*exp.DataType.REAL_TYPES):
             arg = exp.cast(arg, exp.DType.INT)
         return self.func("CHR", arg)
 

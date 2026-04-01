@@ -2956,6 +2956,12 @@ class DuckDBGenerator(generator.Generator):
         blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
         return self.sql(exp.ByteLength(this=blob) * exp.Literal.number(8))
 
+    def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
+        arg = seq_get(expression.expressions, 0)
+        if arg and arg.is_type(*exp.DataType.REAL_TYPES):
+            arg = exp.cast(arg, exp.DType.INT)
+        return self.func("CHR", arg)
+
     def _validate_regexp_flags(
         self, flags: t.Optional[exp.Expr], supported_flags: str
     ) -> t.Optional[str]:

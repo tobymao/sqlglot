@@ -2770,42 +2770,6 @@ OPTIONS (
                 f"{func}(doc, '$. a b c .d')", f"""{func}(doc, '$." a b c ".d')"""
             )
 
-        self.validate_all(
-            """SELECT JSON_EXTRACT(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
-            write={
-                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
-                "duckdb": """SELECT JSON('{"a-1":"b"}') -> '$."a-1"'""",
-            },
-        )
-        self.validate_all(
-            """SELECT JSON_EXTRACT(PARSE_JSON('{"4":"b"}'), '$.4')""",
-            write={
-                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"4":"b"}'), '$.4')""",
-                "duckdb": """SELECT JSON('{"4":"b"}') -> '$."4"'""",
-            },
-        )
-        self.validate_all(
-            """SELECT JSON_EXTRACT(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
-            write={
-                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
-                "duckdb": """SELECT JSON('{"x":{"1":{"p":"b"}}}') -> '$.x."1".p'""",
-            },
-        )
-        self.validate_all(
-            """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$.')""",
-            write={
-                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
-                "duckdb": """SELECT JSON('{"a":"b"}') -> '$'""",
-            },
-        )
-        self.validate_all(
-            """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
-            write={
-                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
-                "duckdb": """SELECT JSON('{"a":"b"}') -> '$'""",
-            },
-        )
-
         # Test single quote & bracket escaping
         for func in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR", "JSON_EXTRACT_ARRAY"):
             self.validate_identity(

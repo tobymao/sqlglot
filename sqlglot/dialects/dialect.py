@@ -634,6 +634,9 @@ class Dialect(metaclass=_Dialect):
     STRICT_JSON_PATH_SYNTAX = True
     """Whether failing to parse a JSON path expression using the JSONPath dialect will log a warning."""
 
+    JSON_PATH_SINGLE_DOT_IS_WILDCARD = False
+    """Whether a single DOT in a JSON path (e.g. $.) is treated as a valid wildcard key."""
+
     ON_CONDITION_EMPTY_BEFORE_ERROR = True
     """Whether "X ON EMPTY" should come before "X ON ERROR" (for dialects like T-SQL, MySQL, Oracle)."""
 

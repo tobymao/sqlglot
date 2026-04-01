@@ -295,7 +295,7 @@ class Expr:
     def error_messages(self, args: t.Optional[Sequence[object]] = None) -> list[str]:
         raise NotImplementedError
 
-    def dump(self) -> t.Any:
+    def dump(self) -> list[dict[str, t.Any]]:
         """
         Dump this Expr to a JSON-serializable dict.
         """
@@ -379,11 +379,7 @@ class Expr:
         raise NotImplementedError
 
     def between(
-        self,
-        low: t.Any,
-        high: t.Any,
-        copy: bool = True,
-        symmetric: t.Optional[bool] = None
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
     ) -> Between:
         raise NotImplementedError
 
@@ -543,7 +539,12 @@ class Expression(Expr):
         assert self._hash
         return self._hash
 
-    def __reduce__(self) -> t.Tuple[t.Callable, t.Tuple[t.List[t.Dict[str, t.Any]]]]:
+    def __reduce__(
+        self,
+    ) -> tuple[
+        t.Callable[[t.Optional[list[dict[str, t.Any]]]], t.Optional[t.Union[Expr, DType]]],
+        tuple[list[dict[str, t.Any]]],
+    ]:
         from sqlglot.serde import dump, load
 
         return (load, (dump(self),))
@@ -1379,11 +1380,7 @@ class Expression(Expr):
         )
 
     def between(
-        self,
-        low: t.Any,
-        high: t.Any,
-        copy: bool = True,
-        symmetric: t.Optional[bool] = None
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
     ) -> Between:
         between = Between(
             this=maybe_copy(self, copy),

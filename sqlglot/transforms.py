@@ -427,7 +427,7 @@ def explode_projection_to_unnest(
 
                     if isinstance(select, exp.Alias):
                         explode_alias = select.args["alias"]
-                        alias: exp.Expr = select
+                        alias = select
                     elif isinstance(select, exp.Aliases):
                         pos_alias = select.aliases[0]
                         explode_alias = select.aliases[1]

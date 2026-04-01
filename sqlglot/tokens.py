@@ -527,6 +527,7 @@ class Tokenizer(_TokenizerBase):
     # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]] = {}
 
+    # In tokenizers like JSONPath, dots are always key separators, never decimal points
     NUMBERS_CAN_HAVE_DECIMALS: t.ClassVar[bool] = True
 
     COMMENTS = ["--", ("/*", "*/")]

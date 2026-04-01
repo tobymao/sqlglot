@@ -1669,7 +1669,7 @@ class Literal(Expression, Condition):
     is_primitive = True
 
     @classmethod
-    def number(cls, number) -> Literal | Neg:
+    def number(cls, number: object) -> Literal | Neg:
         lit = cls(this=str(number), is_string=False)
         try:
             to_py = lit.to_py()
@@ -1681,7 +1681,7 @@ class Literal(Expression, Condition):
         return lit
 
     @classmethod
-    def string(cls, string) -> Literal:
+    def string(cls, string: object) -> Literal:
         return cls(this=str(string), is_string=True)
 
     @property

@@ -15,7 +15,7 @@ from copy import deepcopy
 from decimal import Decimal
 from functools import reduce
 from collections.abc import Iterator, Sequence, Collection, Mapping, MutableMapping
-from sqlglot._typing import E
+from sqlglot._typing import E, T
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     camel_to_snake_case,
@@ -283,7 +283,7 @@ class Expr:
     ) -> t.Any:
         raise NotImplementedError
 
-    def replace(self, expression: t.Any) -> t.Any:
+    def replace(self, expression: T) -> T:
         raise NotImplementedError
 
     def pop(self: E) -> E:
@@ -295,7 +295,7 @@ class Expr:
     def error_messages(self, args: t.Optional[Sequence[object]] = None) -> list[str]:
         raise NotImplementedError
 
-    def dump(self) -> t.Any:
+    def dump(self) -> list[dict[str, t.Any]]:
         """
         Dump this Expr to a JSON-serializable dict.
         """
@@ -304,7 +304,7 @@ class Expr:
         return dump(self)
 
     @classmethod
-    def load(cls, obj: t.Any) -> Expr:
+    def load(cls, obj: t.Optional[list[dict[str, Any]]]) -> Expr:
         """
         Load a dict (as returned by `Expr.dump`) into an Expr instance.
         """
@@ -379,12 +379,7 @@ class Expr:
         raise NotImplementedError
 
     def between(
-        self,
-        low: t.Any,
-        high: t.Any,
-        copy: bool = True,
-        symmetric: t.Optional[bool] = None,
-        **opts: object,
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
     ) -> Between:
         raise NotImplementedError
 
@@ -544,7 +539,12 @@ class Expression(Expr):
         assert self._hash
         return self._hash
 
-    def __reduce__(self) -> t.Tuple[t.Callable, t.Tuple[t.List[t.Dict[str, t.Any]]]]:
+    def __reduce__(
+        self,
+    ) -> tuple[
+        t.Callable[[t.Optional[list[dict[str, t.Any]]]], t.Optional[t.Union[Expr, DType]]],
+        tuple[list[dict[str, t.Any]]],
+    ]:
         from sqlglot.serde import dump, load
 
         return (load, (dump(self),))
@@ -1082,7 +1082,7 @@ class Expression(Expr):
         assert root
         return root
 
-    def replace(self, expression: t.Any) -> t.Any:
+    def replace(self, expression: T) -> T:
         """
         Swap out this expression with a new expression.
 
@@ -1097,10 +1097,10 @@ class Expression(Expr):
             'SELECT y FROM tbl'
 
         Args:
-            expression: new node
+            expression (T): new node
 
         Returns:
-            The new expression or expressions.
+            T: The new expression or expressions.
         """
         parent = self.parent
 
@@ -1358,10 +1358,12 @@ class Expression(Expr):
     ) -> In:
         from sqlglot.expressions.query import Query
 
-        subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts) if query else None
-        if subquery and isinstance(subquery, Query):
-            subquery = subquery.subquery(copy=False)
-
+        subquery: t.Optional[Expr] = None
+        if query:
+            subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts)
+            if isinstance(subquery, Query):
+                subquery = subquery.subquery(copy=False)
+        unnest_list: list[ExpOrStr] = ensure_list(unnest)
         return In(
             this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
@@ -1369,8 +1371,7 @@ class Expression(Expr):
             unnest=(
                 _lazy_unnest(
                     expressions=[
-                        maybe_parse(t.cast(ExpOrStr, e), dialect=dialect, copy=copy, **opts)
-                        for e in ensure_list(unnest)
+                        maybe_parse(e, dialect=dialect, copy=copy, **opts) for e in unnest_list
                     ]
                 )
                 if unnest
@@ -1379,17 +1380,12 @@ class Expression(Expr):
         )
 
     def between(
-        self,
-        low: t.Any,
-        high: t.Any,
-        copy: bool = True,
-        symmetric: t.Optional[bool] = None,
-        **opts: object,
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
     ) -> Between:
         between = Between(
             this=maybe_copy(self, copy),
-            low=convert(low, copy=copy, **opts),
-            high=convert(high, copy=copy, **opts),
+            low=convert(low, copy=copy),
+            high=convert(high, copy=copy),
         )
         if symmetric is not None:
             between.set("symmetric", symmetric)
@@ -1585,12 +1581,12 @@ class Func(Condition):
     """
 
     is_var_len_args: t.ClassVar[bool] = False
-    _sql_names: t.ClassVar[t.List[str]] = []
+    _sql_names: t.ClassVar[list[str]] = []
 
     @classmethod
-    def from_arg_list(cls, args):
+    def from_arg_list(cls, args: Sequence[object]) -> Self:
         if cls.is_var_len_args:
-            all_arg_keys = list(cls.arg_types)
+            all_arg_keys = tuple(cls.arg_types)
             # If this function supports variable length argument treat the last argument as such.
             non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
             num_non_var = len(non_var_len_arg_keys)
@@ -1603,7 +1599,7 @@ class Func(Condition):
         return cls(**args_dict)
 
     @classmethod
-    def sql_names(cls):
+    def sql_names(cls) -> list[str]:
         if cls is Func:
             raise NotImplementedError(
                 "SQL name is only supported by concrete function implementations"
@@ -1613,13 +1609,13 @@ class Func(Condition):
         return cls._sql_names
 
     @classmethod
-    def sql_name(cls):
+    def sql_name(cls) -> str:
         sql_names = cls.sql_names()
         assert sql_names, f"Expected non-empty 'sql_names' for Func: {cls.__name__}."
         return sql_names[0]
 
     @classmethod
-    def default_parser_mappings(cls):
+    def default_parser_mappings(cls) -> dict[str, t.Callable[[Sequence[object]], Self]]:
         return {name: cls.from_arg_list for name in cls.sql_names()}
 
 
@@ -1673,7 +1669,7 @@ class Literal(Expression, Condition):
     is_primitive = True
 
     @classmethod
-    def number(cls, number) -> Literal | Neg:
+    def number(cls, number: object) -> Literal | Neg:
         lit = cls(this=str(number), is_string=False)
         try:
             to_py = lit.to_py()
@@ -1685,7 +1681,7 @@ class Literal(Expression, Condition):
         return lit
 
     @classmethod
-    def string(cls, string) -> Literal:
+    def string(cls, string: object) -> Literal:
         return cls(this=str(string), is_string=True)
 
     @property
@@ -1799,7 +1795,7 @@ class Dot(Expression, Binary):
         return self.name
 
     @classmethod
-    def build(self, expressions: Sequence[Expr]) -> Dot:
+    def build(cls, expressions: Sequence[Expr]) -> Dot:
         """Build a Dot object with a sequence of expressions."""
         if len(expressions) < 2:
             raise ValueError("Dot requires >= 2 expressions.")
@@ -2661,7 +2657,7 @@ def _apply_conjunction_builder(
 
 def _combine(
     expressions: Sequence[t.Optional[ExpOrStr]],
-    operator: t.Any,
+    operator: Type[Expr],
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,

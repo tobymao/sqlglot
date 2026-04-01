@@ -1,6 +1,61 @@
 Changelog
 =========
 
+## [v30.2.0] - 2026-04-01
+### :boom: BREAKING CHANGES
+- due to [`4bc6857`](https://github.com/tobymao/sqlglot/commit/4bc685708cbff4fc8590353908cd58905ee98440) - Transpilation support for STRIP_NULL_VALUE transpilation *(PR [#7403](https://github.com/tobymao/sqlglot/pull/7403) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for STRIP_NULL_VALUE transpilation (#7403)
+
+- due to [`e27477f`](https://github.com/tobymao/sqlglot/commit/e27477f3aa5f555abfab046bc9c9de8062578dfc) - Compile annotate_types.py with mypyc *(PR [#7407](https://github.com/tobymao/sqlglot/pull/7407) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Compile annotate_types.py with mypyc (#7407)
+
+- due to [`31595ba`](https://github.com/tobymao/sqlglot/commit/31595ba4c5a8192db1ce681149becc152fa208c4) - Compile simplify.py with mypyc *(PR [#7415](https://github.com/tobymao/sqlglot/pull/7415) by [@VaggelisD](https://github.com/VaggelisD))*:
+
+  Compile simplify.py with mypyc (#7415)
+
+- due to [`395ada8`](https://github.com/tobymao/sqlglot/commit/395ada860c88407ac1dfbe6c49942192e5623409) - Transpilation support for UNICODE transpilation. *(PR [#7408](https://github.com/tobymao/sqlglot/pull/7408) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for UNICODE transpilation. (#7408)
+
+- due to [`7a91128`](https://github.com/tobymao/sqlglot/commit/7a911286c03fe075b99d2af5c671b9b0c12ef0be) - give precises types to all **opts argument, optimize `ensure_list()` *(PR [#7393](https://github.com/tobymao/sqlglot/pull/7393) by [@OutSquareCapital](https://github.com/OutSquareCapital))*:
+
+  give precises types to all **opts argument, optimize `ensure_list()` (#7393)
+
+
+### :sparkles: New Features
+- [`3f4e92e`](https://github.com/tobymao/sqlglot/commit/3f4e92e6536ed7b14d832b220be64dfe475454d4) - **duckdb**: Add transpilation support to TRY_PARSE_JSON *(PR [#7406](https://github.com/tobymao/sqlglot/pull/7406) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`4bc6857`](https://github.com/tobymao/sqlglot/commit/4bc685708cbff4fc8590353908cd58905ee98440) - **snowflake**: Transpilation support for STRIP_NULL_VALUE transpilation *(PR [#7403](https://github.com/tobymao/sqlglot/pull/7403) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`395ada8`](https://github.com/tobymao/sqlglot/commit/395ada860c88407ac1dfbe6c49942192e5623409) - **snowflake**: Transpilation support for UNICODE transpilation. *(PR [#7408](https://github.com/tobymao/sqlglot/pull/7408) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`8bebadf`](https://github.com/tobymao/sqlglot/commit/8bebadf653d01b62570cb2936b1f3df81776316c) - **duckdb**: Support DuckDB table functions *(PR [#7410](https://github.com/tobymao/sqlglot/pull/7410) by [@pittst3r](https://github.com/pittst3r))*
+- [`62d7176`](https://github.com/tobymao/sqlglot/commit/62d7176f6d4446f3f9ac7b8cbf1b44c2ae9a8551) - **duckdb**: Add transpilation support for BIT_LENGTH *(PR [#7421](https://github.com/tobymao/sqlglot/pull/7421) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`c2b69d4`](https://github.com/tobymao/sqlglot/commit/c2b69d4dca0ac4154542e851be11ec7298577c5f) - **sqlite**: support virtual table ddl closes [#7425](https://github.com/tobymao/sqlglot/pull/7425) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`3f31ffe`](https://github.com/tobymao/sqlglot/commit/3f31ffeacaa5b3b4b0ffd8ac8b874eb7f44ae5cb) - **duckdb**: Add transpilation support for CHR function. *(PR [#7430](https://github.com/tobymao/sqlglot/pull/7430) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`22a5bc2`](https://github.com/tobymao/sqlglot/commit/22a5bc28bee0d8bd9fb62d22e98306d65c992b20) - **optimizer**: simplify ranges with negative constants *(PR [#7405](https://github.com/tobymao/sqlglot/pull/7405) by [@geooo109](https://github.com/geooo109))*
+- [`24738e4`](https://github.com/tobymao/sqlglot/commit/24738e470d0c1b000f820b9920ed728f39aff5b1) - **bigquery**: nested queries in EXPORT statement fixes [#7409](https://github.com/tobymao/sqlglot/pull/7409) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`2ac9a20`](https://github.com/tobymao/sqlglot/commit/2ac9a203db099d3e99c50c7fbfc5ad27a1ae9e28) - **duckdb**: support TRUNC with decimal arg *(PR [#7414](https://github.com/tobymao/sqlglot/pull/7414) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7413](https://github.com/tobymao/sqlglot/issues/7413) opened by [@OutSquareCapital](https://github.com/OutSquareCapital)*
+- [`64c4438`](https://github.com/tobymao/sqlglot/commit/64c4438d6c93439cadfcf9de1b9ed42ff72eb9ff) - **duckdb**: transpilation for snowflake TRUNC with non integer scale *(PR [#7417](https://github.com/tobymao/sqlglot/pull/7417) by [@geooo109](https://github.com/geooo109))*
+- [`9068242`](https://github.com/tobymao/sqlglot/commit/9068242bfa93356941d3e53654a7c6c3e8885a8d) - **bigquery**: support hyphen, numbers, single dot as JSON keys *(PR [#7420](https://github.com/tobymao/sqlglot/pull/7420) by [@geooo109](https://github.com/geooo109))*
+- [`8e0b9f5`](https://github.com/tobymao/sqlglot/commit/8e0b9f56f960922bc5b3d6df63734279c7b558ab) - **snowflake**: Fix annotate_types crashes for FLATTEN over STRUCT and WithinGroup *(PR [#7434](https://github.com/tobymao/sqlglot/pull/7434) by [@georgesittas](https://github.com/georgesittas))*
+
+### :zap: Performance Improvements
+- [`38957cc`](https://github.com/tobymao/sqlglot/commit/38957ccd6f442da81b0ad2230f246892b283ec6d) - cache generator dispatch table for faster sql() [CLAUDE] *(PR [#7404](https://github.com/tobymao/sqlglot/pull/7404) by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`e27477f`](https://github.com/tobymao/sqlglot/commit/e27477f3aa5f555abfab046bc9c9de8062578dfc) - **optimizer**: Compile annotate_types.py with mypyc *(PR [#7407](https://github.com/tobymao/sqlglot/pull/7407) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`31595ba`](https://github.com/tobymao/sqlglot/commit/31595ba4c5a8192db1ce681149becc152fa208c4) - **optimizer**: Compile simplify.py with mypyc *(PR [#7415](https://github.com/tobymao/sqlglot/pull/7415) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`247548f`](https://github.com/tobymao/sqlglot/commit/247548f5913ebfd8666432ff1f089df0fb16f69a) - **Expressions**: add into_expr method to DType enum *(PR [#7411](https://github.com/tobymao/sqlglot/pull/7411) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`7a91128`](https://github.com/tobymao/sqlglot/commit/7a911286c03fe075b99d2af5c671b9b0c12ef0be) - give precises types to all **opts argument, optimize `ensure_list()` *(PR [#7393](https://github.com/tobymao/sqlglot/pull/7393) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`ab8f808`](https://github.com/tobymao/sqlglot/commit/ab8f808b2e24543b9056f022bbbae7b479154a91) - **expressions**: Remove mypyc __init_subclass__ workaround and simplify EXPR_CLASSES *(PR [#7426](https://github.com/tobymao/sqlglot/pull/7426) by [@VaggelisD](https://github.com/VaggelisD))*
+
+### :wrench: Chores
+- [`ce16997`](https://github.com/tobymao/sqlglot/commit/ce16997f7fd81bfebc65a80b70112069f98b8d63) - clean tokenizer/dialect code from **opts, and minor typing improvements *(PR [#7422](https://github.com/tobymao/sqlglot/pull/7422) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+
+
 ## [v30.1.0] - 2026-03-26
 ### :boom: BREAKING CHANGES
 - due to [`0921899`](https://github.com/tobymao/sqlglot/commit/0921899cb663b99b888b180dcb7f54750232f209) - support for TEXTLEN function *(PR [#7346](https://github.com/tobymao/sqlglot/pull/7346) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
@@ -14015,3 +14070,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.0.2]: https://github.com/tobymao/sqlglot/compare/v30.0.1...v30.0.2
 [v30.0.3]: https://github.com/tobymao/sqlglot/compare/v30.0.2...v30.0.3
 [v30.1.0]: https://github.com/tobymao/sqlglot/compare/v30.0.3...v30.1.0
+[v30.2.0]: https://github.com/tobymao/sqlglot/compare/v30.1.0...v30.2.0

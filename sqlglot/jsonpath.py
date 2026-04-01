@@ -35,8 +35,7 @@ class JSONPathTokenizer(Tokenizer):
 
     IDENTIFIER_ESCAPES = ["\\"]
     STRING_ESCAPES = ["\\"]
-
-    VAR_SINGLE_TOKENS = {"-"}
+    NUMBERS_CAN_HAVE_DECIMALS = False
 
     VAR_TOKENS = {
         TokenType.VAR,
@@ -190,7 +189,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
 
             if _match_set(jsonpath_tokenizer.VAR_TOKENS):
                 value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
-            elif _match(TokenType.IDENTIFIER):
+            elif _match_set((TokenType.IDENTIFIER, TokenType.NUMBER)):
                 value = _prev().text
             elif _match(TokenType.STAR):
                 value = exp.JSONPathWildcard()
@@ -201,7 +200,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 expressions.append(exp.JSONPathRecursive(this=value))
             elif value:
                 expressions.append(exp.JSONPathKey(this=value))
-            else:
+            elif _curr():
                 raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())

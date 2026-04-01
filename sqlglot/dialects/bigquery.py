@@ -148,9 +148,9 @@ class BigQuery(Dialect):
         return super().normalize_identifier(expression)
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
-        VAR_TOKENS = {
-            *jsonpath.JSONPathTokenizer.VAR_TOKENS,
-            TokenType.DASH,
+        VAR_SINGLE_TOKENS = {
+            *jsonpath.JSONPathTokenizer.VAR_SINGLE_TOKENS,
+            "-",
         }
 
     class Tokenizer(tokens.Tokenizer):

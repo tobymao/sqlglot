@@ -33,7 +33,6 @@ class TestJsonpath(unittest.TestCase):
     def test_identity(self):
         for selector, expected in (
             ("$.select", "$.select"),
-            ("$.a-2", '$["a-2"]'),
             ("$[(@.length-1)]", "$[(@.length-1)]"),
             ("$[((@.length-1))]", "$[((@.length-1))]"),
         ):

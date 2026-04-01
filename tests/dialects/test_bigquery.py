@@ -2777,6 +2777,27 @@ OPTIONS (
                 "duckdb": """SELECT JSON_VALUE(JSON('{"a-1":"b"}'), '$."a-1"') ->> '$'""",
             },
         )
+        self.validate_all(
+            """SELECT JSON_VALUE(PARSE_JSON('{"4":"b"}'), '$.4')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"4":"b"}'), '$.4')""",
+                "duckdb": """SELECT JSON_VALUE(JSON('{"4":"b"}'), '$."4"') ->> '$'""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_VALUE(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
+                "duckdb": """SELECT JSON_VALUE(JSON('{"x":{"1":{"p":"b"}}}'), '$.x."1".p') ->> '$'""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_VALUE(PARSE_JSON('{"":"b"}'), '$.')""",
+            write={
+                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"":"b"}'), '$')""",
+                "duckdb": """SELECT JSON_VALUE(JSON('{"":"b"}'), '$') ->> '$'""",
+            },
+        )
 
         # Test single quote & bracket escaping
         for func in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR", "JSON_EXTRACT_ARRAY"):

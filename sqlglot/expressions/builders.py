@@ -379,10 +379,7 @@ def to_table(
 
         table = table_(this, db=db, catalog=catalog)
 
-    for k, v in kwargs.items():
-        table.set(k, v)
-
-    return table
+    return table.set_kwargs(kwargs)
 
 
 def to_column(

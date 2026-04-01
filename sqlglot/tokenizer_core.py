@@ -567,6 +567,7 @@ class TokenizerCore:
         "heredoc_string_alternative",
         "keyword_trie",
         "numbers_can_be_underscore_separated",
+        "numbers_can_have_decimals",
         "identifiers_can_start_with_digit",
         "unescaped_sequences",
     )
@@ -597,6 +598,7 @@ class TokenizerCore:
         heredoc_string_alternative: TokenType,
         keyword_trie: t.Dict,
         numbers_can_be_underscore_separated: bool,
+        numbers_can_have_decimals: bool,
         identifiers_can_start_with_digit: bool,
         unescaped_sequences: t.Dict[str, str],
     ) -> None:
@@ -624,6 +626,7 @@ class TokenizerCore:
         self.heredoc_string_alternative = heredoc_string_alternative
         self.keyword_trie = keyword_trie
         self.numbers_can_be_underscore_separated = numbers_can_be_underscore_separated
+        self.numbers_can_have_decimals = numbers_can_have_decimals
         self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
         self.unescaped_sequences = unescaped_sequences
         self.sql = ""
@@ -941,7 +944,9 @@ class TokenizerCore:
                     end += 1
                 self._advance(end - self._current)
             elif self._peek == "." and not decimal:
-                if self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER:
+                if (
+                    self.tokens and self.tokens[-1].token_type == TokenType.PARAMETER
+                ) or not self.numbers_can_have_decimals:
                     break
                 decimal = True
                 self._advance()

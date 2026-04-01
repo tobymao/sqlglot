@@ -2273,7 +2273,7 @@ def _lazy_unnest(**kwargs: object) -> "Expr":
     return Unnest(**kwargs)
 
 
-def convert(value: object, copy: bool = False) -> Expr:
+def convert(value: t.Any, copy: bool = False) -> Expr:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.

@@ -189,7 +189,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
 
             if _match_set(jsonpath_tokenizer.VAR_TOKENS):
                 value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
-            elif _match_set((TokenType.IDENTIFIER, TokenType.NUMBER)):
+            elif _match(TokenType.IDENTIFIER):
                 value = _prev().text
             elif _match(TokenType.STAR):
                 value = exp.JSONPathWildcard()

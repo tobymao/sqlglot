@@ -3325,12 +3325,15 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(result)
 
         # For VARCHAR: Use native LEFT/RIGHT function
-        func_sql = self.func(func_name, arg, length)
-
         # Handle negative length: return empty string
         if needs_case:
-            return f"CASE WHEN {self.sql(length)} < 0 THEN '' ELSE {func_sql} END"
-        return func_sql
+            func_expr = exp.func(func_name, arg, length)
+            empty_string = exp.Literal.string("")
+            case_expr = (
+                exp.case().when(length < exp.Literal.number(0), empty_string).else_(func_expr)
+            )
+            return self.sql(case_expr)
+        return self.func(func_name, arg, length)
 
     def left_sql(self, expression: exp.Left) -> str:
         return self._left_right_sql(expression, "LEFT")

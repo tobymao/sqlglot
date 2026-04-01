@@ -2949,6 +2949,13 @@ class DuckDBGenerator(generator.Generator):
         )
         return self.sql(case)
 
+    def bitlength_sql(self, expression: exp.BitLength) -> str:
+        if not _is_binary(arg := expression.this):
+            return self.func("BIT_LENGTH", arg)
+
+        blob = exp.cast(arg, exp.DataType.Type.VARBINARY)
+        return self.sql(exp.ByteLength(this=blob) * exp.Literal.number(8))
+
     def _validate_regexp_flags(
         self, flags: t.Optional[exp.Expr], supported_flags: str
     ) -> t.Optional[str]:

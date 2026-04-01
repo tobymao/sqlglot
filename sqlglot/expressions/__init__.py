@@ -50,25 +50,4 @@ from sqlglot.helper import subclasses
 
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
-
-
-def _init_subclasses(cls: t.Type[Expr]) -> None:
-    # mypyc fires __init_subclass__ before setting compiled ClassVar attributes,
-    # so required_args may have been computed from the inherited arg_types rather
-    # than the class-specific one. Recompute now that all modules are fully loaded.
-    for sub in cls.__subclasses__():
-        sub.required_args = {k for k, v in sub.arg_types.items() if v}
-        _init_subclasses(sub)
-
-
-_init_subclasses(Expr)
-
-
-def _build_expr_classes(cls: t.Type[Expr], result: t.Dict[str, t.Type[Expr]]) -> None:
-    result[cls.key] = cls
-    for sub in cls.__subclasses__():
-        _build_expr_classes(sub, result)
-
-
-EXPR_CLASSES: t.Dict[str, t.Type[Expr]] = {}
-_build_expr_classes(Expr, EXPR_CLASSES)
+EXPR_CLASSES: t.Dict[str, t.Type[Expr]] = {cls.key: cls for cls in subclasses(__name__, Expr)}

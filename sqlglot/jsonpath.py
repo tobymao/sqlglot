@@ -35,6 +35,7 @@ class JSONPathTokenizer(Tokenizer):
 
     IDENTIFIER_ESCAPES = ["\\"]
     STRING_ESCAPES = ["\\"]
+    NUMBERS_CAN_HAVE_DECIMALS = False
 
     VAR_TOKENS = {
         TokenType.VAR,
@@ -45,7 +46,8 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     """Takes in a JSON path string and parses it into a JSONPath expression."""
     from sqlglot.dialects import Dialect
 
-    jsonpath_tokenizer = Dialect.get_or_raise(dialect).jsonpath_tokenizer()
+    dialect_inst = Dialect.get_or_raise(dialect)
+    jsonpath_tokenizer = dialect_inst.jsonpath_tokenizer()
     tokens = jsonpath_tokenizer.tokenize(path)
     size = len(tokens)
 
@@ -199,7 +201,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 expressions.append(exp.JSONPathRecursive(this=value))
             elif value:
                 expressions.append(exp.JSONPathKey(this=value))
-            else:
+            elif not dialect_inst.JSON_PATH_SINGLE_DOT_IS_WILDCARD:
                 raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())

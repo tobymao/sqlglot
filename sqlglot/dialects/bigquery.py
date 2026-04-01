@@ -39,6 +39,7 @@ class BigQuery(Dialect):
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = True
     QUERY_RESULTS_ARE_STRUCTS = True
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True
+    JSON_PATH_SINGLE_DOT_IS_WILDCARD = True
     LEAST_GREATEST_IGNORES_NULLS = False
     DEFAULT_NULL_TYPE = exp.DType.BIGINT
     PRIORITIZE_NON_LITERAL_TYPES = True
@@ -151,6 +152,7 @@ class BigQuery(Dialect):
         VAR_TOKENS = {
             *jsonpath.JSONPathTokenizer.VAR_TOKENS,
             TokenType.DASH,
+            TokenType.NUMBER,
         }
 
     class Tokenizer(tokens.Tokenizer):

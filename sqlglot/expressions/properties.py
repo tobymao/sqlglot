@@ -285,6 +285,10 @@ class MergeBlockRatioProperty(Property):
     arg_types = {"this": False, "no": False, "default": False, "percent": False}
 
 
+class ModuleProperty(Property):
+    arg_types = {"this": True, "expressions": False}
+
+
 class NetworkProperty(Property):
     arg_types = {}
 
@@ -479,6 +483,10 @@ class StorageHandlerProperty(Property):
 
 class TemporaryProperty(Property):
     arg_types = {"this": False}
+
+
+class VirtualProperty(Property):
+    arg_types = {}
 
 
 class SecureProperty(Property):

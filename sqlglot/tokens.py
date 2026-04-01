@@ -527,6 +527,9 @@ class Tokenizer(_TokenizerBase):
     # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]] = {}
 
+    # In tokenizers like JSONPath, dots are always key separators, never decimal points
+    NUMBERS_CAN_HAVE_DECIMALS: t.ClassVar[bool] = True
+
     COMMENTS = ["--", ("/*", "*/")]
 
     __slots__ = (
@@ -565,6 +568,7 @@ class Tokenizer(_TokenizerBase):
             heredoc_string_alternative=self.HEREDOC_STRING_ALTERNATIVE,
             keyword_trie=self._KEYWORD_TRIE,
             numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,
+            numbers_can_have_decimals=self.NUMBERS_CAN_HAVE_DECIMALS,
             identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
         )

@@ -37,6 +37,12 @@ class SQLiteParser(parser.Parser):
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
     }
 
+    PROPERTY_PARSERS = {
+        **parser.Parser.PROPERTY_PARSERS,
+        "USING": lambda self, **kwargs: self._parse_module_property(),
+        "VIRTUAL": lambda self: self.expression(exp.VirtualProperty()),
+    }
+
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.ATTACH: lambda self: self._parse_attach_detach(),
@@ -56,6 +62,15 @@ class SQLiteParser(parser.Parser):
             return self.expression(exp.UniqueColumnConstraint())
 
         return super()._parse_unique()
+
+    def _parse_module_property(self, **kwargs: t.Any) -> exp.ModuleProperty:
+        name = self._parse_id_var()
+        expressions = (
+            self._parse_wrapped_csv(self._parse_id_var)
+            if self._match(TokenType.L_PAREN, advance=False)
+            else None
+        )
+        return self.expression(exp.ModuleProperty(this=name, expressions=expressions))
 
     def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
         self._match(TokenType.DATABASE)

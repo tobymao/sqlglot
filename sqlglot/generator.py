@@ -266,6 +266,7 @@ class Generator:
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
+        exp.VirtualProperty: lambda *_: "VIRTUAL",
         exp.TriggerExecute: lambda self, e: f"EXECUTE FUNCTION {self.sql(e, 'this')}",
         exp.Union: lambda self, e: self.set_operations(e),
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
@@ -697,6 +698,7 @@ class Generator:
         exp.MaskingProperty: exp.Properties.Location.POST_CREATE,
         exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,
         exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
+        exp.ModuleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.NetworkProperty: exp.Properties.Location.POST_CREATE,
         exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.OnProperty: exp.Properties.Location.POST_SCHEMA,
@@ -743,6 +745,7 @@ class Generator:
         exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
         exp.UsingTemplateProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ViewAttributeProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.VirtualProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -2033,6 +2036,11 @@ class Generator:
 
         percent = " PERCENT" if expression.args.get("percent") else ""
         return f"MERGEBLOCKRATIO={self.sql(expression, 'this')}{percent}"
+
+    def moduleproperty_sql(self, expression: exp.ModuleProperty) -> str:
+        expressions = self.expressions(expression, flat=True)
+        expressions = f"({expressions})" if expressions else ""
+        return f"USING {self.sql(expression, 'this')}{expressions}"
 
     def datablocksizeproperty_sql(self, expression: exp.DataBlocksizeProperty) -> str:
         default = expression.args.get("default")

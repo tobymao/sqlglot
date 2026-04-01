@@ -102,6 +102,8 @@ def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> 
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
     ):
         self._set_type(expression, ordered_expr.this.type)
+    else:
+        self._set_type(expression, expression.this.type)
 
     return expression
 

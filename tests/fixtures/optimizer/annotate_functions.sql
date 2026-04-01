@@ -5288,6 +5288,14 @@ PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col) OVER (PARTITION BY 
 BIGINT;
 
 # dialect: snowflake
+ARRAY_AGG(tbl.int_col) WITHIN GROUP (ORDER BY tbl.int_col);
+ARRAY;
+
+# dialect: snowflake
+ARRAY_AGG(tbl.int_col) WITHIN GROUP (ORDER BY tbl.int_col) OVER (PARTITION BY tbl.text_col);
+ARRAY;
+
+# dialect: snowflake
 PARSE_IP('192.168.1.1', 'INET');
 OBJECT;
 

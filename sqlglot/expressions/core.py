@@ -28,7 +28,6 @@ from sqlglot.helper import (
 from sqlglot.tokenizer_core import Token
 from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
-from functools import partial
 
 if t.TYPE_CHECKING:
     from typing_extensions import Self, Unpack
@@ -384,8 +383,7 @@ class Expr:
         low: t.Any,
         high: t.Any,
         copy: bool = True,
-        symmetric: t.Optional[bool] = None,
-        **opts: object,
+        symmetric: t.Optional[bool] = None
     ) -> Between:
         raise NotImplementedError
 
@@ -1365,13 +1363,18 @@ class Expression(Expr):
             if isinstance(subquery, Query):
                 subquery = subquery.subquery(copy=False)
         unnest_list: list[ExpOrStr] = ensure_list(unnest)
-        parse_fn: partial[Expr] = partial(maybe_parse, dialect=dialect, copy=copy, **opts)
         return In(
             this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=subquery,
             unnest=(
-                _lazy_unnest(expressions=[parse_fn(e) for e in unnest_list]) if unnest else None
+                _lazy_unnest(
+                    expressions=[
+                        maybe_parse(e, dialect=dialect, copy=copy, **opts) for e in unnest_list
+                    ]
+                )
+                if unnest
+                else None
             ),
         )
 
@@ -1380,13 +1383,12 @@ class Expression(Expr):
         low: t.Any,
         high: t.Any,
         copy: bool = True,
-        symmetric: t.Optional[bool] = None,
-        **opts: object,
+        symmetric: t.Optional[bool] = None
     ) -> Between:
         between = Between(
             this=maybe_copy(self, copy),
-            low=convert(low, copy=copy, **opts),
-            high=convert(high, copy=copy, **opts),
+            low=convert(low, copy=copy),
+            high=convert(high, copy=copy),
         )
         if symmetric is not None:
             between.set("symmetric", symmetric)

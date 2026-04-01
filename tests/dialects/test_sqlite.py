@@ -288,6 +288,13 @@ class TestSQLite(Validator):
         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
         self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
+        self.validate_identity("CREATE VIRTUAL TABLE docs USING fts5(title, content)")
+        self.validate_identity("CREATE VIRTUAL TABLE IF NOT EXISTS docs USING fts5(title, content)")
+        self.validate_identity("CREATE VIRTUAL TABLE main.docs USING fts5(title, content)")
+        self.validate_identity(
+            "CREATE VIRTUAL TABLE demo_index USING rtree(id, minX, maxX, minY, maxY)"
+        )
+        self.validate_identity("CREATE VIRTUAL TABLE t USING module_name")
 
         self.validate_all(
             """

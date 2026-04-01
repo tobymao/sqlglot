@@ -175,7 +175,9 @@ class SQLiteGenerator(generator.Generator):
         # There are a few exceptions (e.g. temporary tables) which are supported or
         # can be transpiled to SQLite, so we explicitly override them accordingly
         exp.LikeProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ModuleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
+        exp.VirtualProperty: exp.Properties.Location.POST_CREATE,
     }
 
     LIMIT_FETCH = "LIMIT"

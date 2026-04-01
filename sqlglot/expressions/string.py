@@ -63,7 +63,7 @@ class IsAscii(Expression, Func):
 
 
 class Left(Expression, Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "negative_length_returns_empty": False}
 
 
 class Length(Expression, Func):
@@ -119,7 +119,7 @@ class Reverse(Expression, Func):
 
 
 class Right(Expression, Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "negative_length_returns_empty": False}
 
 
 class RtrimmedLength(Expression, Func):

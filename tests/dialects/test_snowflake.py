@@ -407,7 +407,9 @@ class TestSnowflake(Validator):
 
         expr = self.validate_identity("RIGHT('GAJGSKD', 2)")
         annotated = annotate_types(expr, dialect="snowflake")
-        self.assertEqual(annotated.sql("duckdb"), "RIGHT('GAJGSKD', 2)")
+        self.assertEqual(
+            annotated.sql("duckdb"), "CASE WHEN 2 < 0 THEN '' ELSE RIGHT('GAJGSKD', 2) END"
+        )
 
         expr = self.validate_identity("RIGHT(TO_BINARY('SNOWIKOPN', 'utf-8'), ABS(-3))")
         annotated = annotate_types(expr, dialect="snowflake")

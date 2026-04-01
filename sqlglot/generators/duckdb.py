@@ -3303,10 +3303,8 @@ class DuckDBGenerator(generator.Generator):
         arg = expression.this
         length = expression.expression
 
-        # Check if length is a literal number and get its value
-        is_literal = isinstance(length, exp.Literal) and length.is_number
-        length_value = int(length.to_py()) if is_literal else None
-        needs_case = not is_literal or (length_value is not None and length_value < 0)
+        # Only add negative length handling for Snowflake-originated queries
+        needs_case = expression.args.get("negative_length_returns_empty")
 
         # For BINARY/BLOB: DuckDB doesn't support LEFT/RIGHT on BLOB
         # Convert to HEX string, use LEFT/RIGHT, then convert back to BLOB

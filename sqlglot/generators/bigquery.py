@@ -247,7 +247,7 @@ class BigQueryGenerator(generator.Generator):
     SUPPORTS_UNIX_SECONDS = True
     DECLARE_DEFAULT_ASSIGNMENT = "DEFAULT"
 
-    SAFE_JSON_PATH_KEY_RE = re.compile(r"^[\w\-][\-\w]*$")
+    SAFE_JSON_PATH_KEY_RE = re.compile(r"^[\-\w]*$")
 
     WINDOW_FUNCS_WITH_NULL_ORDERING = (
         exp.CumeDist,

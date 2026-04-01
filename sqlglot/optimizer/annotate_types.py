@@ -655,18 +655,20 @@ class TypeAnnotator:
             for expr in ensure_list(expressions):
                 expr_type = expr.type
 
-                # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
+                if expr_type.is_type(exp.DType.UNKNOWN):
+                    self._set_type(expression, exp.DType.UNKNOWN)
+                    return expression
+
+                if nested_type:
+                    continue
+
+                # Stop coercing at the first nested data type found
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
-                    break
-
-                if isinstance(expr, exp.Literal):
+                elif isinstance(expr, exp.Literal):
                     literal_type = self._maybe_coerce(literal_type or expr_type, expr_type)
                 else:
                     non_literal_type = self._maybe_coerce(non_literal_type or expr_type, expr_type)
-
-            if nested_type:
-                break
 
         result_type = None
 

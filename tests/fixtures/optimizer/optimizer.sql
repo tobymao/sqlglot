@@ -1567,3 +1567,26 @@ RIGHT JOIN GENERATE_SERIES((
 ), 10, 1) AS "t1"("c1")
   ON "t1"."c1" > "z"."c"
 ;
+
+# title: flatten over object_construct
+# dialect: snowflake
+# execute: false
+WITH obj AS (SELECT object_construct('a', '1', 'b', '2') AS data), flattened AS (SELECT f.key, f.value FROM obj, lateral flatten(input => obj.data) AS f) SELECT key::varchar, value::varchar FROM flattened;
+WITH "OBJ" AS (
+  SELECT
+    OBJECT_CONSTRUCT('a', '1', 'b', '2') AS "DATA"
+)
+SELECT
+  CAST("F"."KEY" AS VARCHAR) AS "KEY",
+  CAST("F"."VALUE" AS VARCHAR) AS "VALUE"
+FROM "OBJ" AS "OBJ"
+CROSS JOIN LATERAL FLATTEN(input => "OBJ"."DATA") AS "F"("SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS");
+
+# title: array_agg within group over
+# dialect: snowflake
+# execute: false
+SELECT array_agg(id) WITHIN GROUP (ORDER BY id) OVER (PARTITION BY grp) FROM t;
+SELECT
+  ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY
+    "T"."ID") OVER (PARTITION BY "T"."GRP") AS "_col_0"
+FROM "T" AS "T";

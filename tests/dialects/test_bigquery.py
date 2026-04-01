@@ -2771,31 +2771,38 @@ OPTIONS (
             )
 
         self.validate_all(
-            """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
+            """SELECT JSON_EXTRACT(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
             write={
-                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
-                "duckdb": """SELECT JSON_VALUE(JSON('{"a-1":"b"}'), '$."a-1"') ->> '$'""",
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a-1":"b"}'), '$.a-1')""",
+                "duckdb": """SELECT JSON('{"a-1":"b"}') -> '$."a-1"'""",
             },
         )
         self.validate_all(
-            """SELECT JSON_VALUE(PARSE_JSON('{"4":"b"}'), '$.4')""",
+            """SELECT JSON_EXTRACT(PARSE_JSON('{"4":"b"}'), '$.4')""",
             write={
-                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"4":"b"}'), '$.4')""",
-                "duckdb": """SELECT JSON_VALUE(JSON('{"4":"b"}'), '$."4"') ->> '$'""",
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"4":"b"}'), '$.4')""",
+                "duckdb": """SELECT JSON('{"4":"b"}') -> '$."4"'""",
             },
         )
         self.validate_all(
-            """SELECT JSON_VALUE(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
+            """SELECT JSON_EXTRACT(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
             write={
-                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
-                "duckdb": """SELECT JSON_VALUE(JSON('{"x":{"1":{"p":"b"}}}'), '$.x."1".p') ->> '$'""",
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"x":{"1":{"p":"b"}}}'), '$.x.1.p')""",
+                "duckdb": """SELECT JSON('{"x":{"1":{"p":"b"}}}') -> '$.x."1".p'""",
             },
         )
         self.validate_all(
-            """SELECT JSON_VALUE(PARSE_JSON('{"":"b"}'), '$.')""",
+            """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$.')""",
             write={
-                "bigquery": """SELECT JSON_VALUE(PARSE_JSON('{"":"b"}'), '$')""",
-                "duckdb": """SELECT JSON_VALUE(JSON('{"":"b"}'), '$') ->> '$'""",
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
+                "duckdb": """SELECT JSON('{"a":"b"}') -> '$'""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
+            write={
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"a":"b"}'), '$')""",
+                "duckdb": """SELECT JSON('{"a":"b"}') -> '$'""",
             },
         )
 

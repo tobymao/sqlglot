@@ -200,8 +200,6 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 expressions.append(exp.JSONPathRecursive(this=value))
             elif value:
                 expressions.append(exp.JSONPathKey(this=value))
-            elif _curr():
-                raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
         elif _match_set(jsonpath_tokenizer.VAR_TOKENS):

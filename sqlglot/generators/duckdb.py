@@ -3302,38 +3302,26 @@ class DuckDBGenerator(generator.Generator):
     def _left_right_sql(self, expression: exp.Left | exp.Right, func_name: str) -> str:
         arg = expression.this
         length = expression.expression
+        is_binary = _is_binary(arg)
 
-        # Only add negative length handling for Snowflake-originated queries
-        needs_case = expression.args.get("negative_length_returns_empty")
-
-        # For BINARY/BLOB: DuckDB doesn't support LEFT/RIGHT on BLOB
-        # Convert to HEX string, use LEFT/RIGHT, then convert back to BLOB
-        if _is_binary(arg):
+        if is_binary:
             # LEFT/RIGHT(blob, n) becomes UNHEX(LEFT/RIGHT(HEX(blob), n * 2))
             # Each byte becomes 2 hex chars, so multiply length by 2
             hex_arg = exp.Hex(this=arg)
             hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
-            result = exp.Unhex(this=self.func(func_name, hex_arg, hex_length))
-
-            # Handle negative length: return empty blob
-            if needs_case:
-                empty_blob = exp.Unhex(this=exp.Literal.string(""))
-                case_expr = (
-                    exp.case().when(length < exp.Literal.number(0), empty_blob).else_(result)
-                )
-                return self.sql(case_expr)
-            return self.sql(result)
-
-        # For VARCHAR: Use native LEFT/RIGHT function
-        # Handle negative length: return empty string
-        if needs_case:
-            func_expr = exp.func(func_name, arg, length)
-            empty_string = exp.Literal.string("")
-            case_expr = (
-                exp.case().when(length < exp.Literal.number(0), empty_string).else_(func_expr)
+            result: exp.Expression = exp.Unhex(
+                this=exp.Anonymous(this=func_name, expressions=[hex_arg, hex_length])
             )
-            return self.sql(case_expr)
-        return self.func(func_name, arg, length)
+        else:
+            result = exp.Anonymous(this=func_name, expressions=[arg, length])
+
+        if expression.args.get("negative_length_returns_empty"):
+            empty: exp.Expression = exp.Literal.string("")
+            if is_binary:
+                empty = exp.Unhex(this=empty)
+            result = exp.case().when(length < exp.Literal.number(0), empty).else_(result)
+
+        return self.sql(result)
 
     def left_sql(self, expression: exp.Left) -> str:
         return self._left_right_sql(expression, "LEFT")

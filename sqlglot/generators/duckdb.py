@@ -2452,7 +2452,33 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
 
     def strposition_sql(self, expression: exp.StrPosition) -> str:
+        this = expression.this
+        substr = expression.args.get("substr")
         position = expression.args.get("position")
+
+        # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
+        # Convert to HEX strings, use STRPOS, then convert hex position to byte position
+        if _is_binary(this):
+            # Build expression: STRPOS(HEX(haystack), HEX(needle))
+            hex_strpos = exp.StrPosition(
+                this=exp.Hex(this=this),
+                substr=exp.Hex(this=substr),
+            )
+
+            # Convert hex position to byte position: (hex_pos + 1) / 2
+            # Wrap (hex_strpos + 1) in Paren to ensure correct precedence
+            byte_pos = (hex_strpos.copy() + exp.Literal.number(1)) / exp.Literal.number(2)
+
+            # CASE WHEN hex_strpos = 0 THEN 0 ELSE (hex_strpos + 1) / 2 END
+            result = (
+                exp.case()
+                .when(hex_strpos.eq(exp.Literal.number(0)), exp.Literal.number(0))
+                .else_(byte_pos)
+            )
+
+            return self.sql(result)
+
+        # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:
             expression = expression.copy()
             expression.set(

@@ -386,6 +386,12 @@ class SnowflakeParser(parser.Parser):
             position=seq_get(args, 2),
             clamp_position=True,
         ),
+        "POSITION": lambda args: exp.StrPosition(
+            this=seq_get(args, 1),
+            substr=seq_get(args, 0),
+            position=seq_get(args, 2),
+            clamp_position=True,
+        ),
         "ADD_MONTHS": lambda args: exp.AddMonths(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
@@ -1253,6 +1259,13 @@ class SnowflakeParser(parser.Parser):
                 if isinstance(expr, exp.SetItem):
                     expr.set("kind", "VARIABLE")
         return set
+
+    def _parse_position(self, haystack_first: bool = False) -> exp.StrPosition:
+        # Call parent to get the base StrPosition expression
+        result = super()._parse_position(haystack_first)
+        # Add clamp_position=True for Snowflake's behavior
+        result.set("clamp_position", True)
+        return result
 
     def _parse_window(
         self, this: t.Optional[exp.Expr], alias: bool = False

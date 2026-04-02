@@ -295,6 +295,15 @@ class TestSQLite(Validator):
             "CREATE VIRTUAL TABLE demo_index USING rtree(id, minX, maxX, minY, maxY)"
         )
         self.validate_identity("CREATE VIRTUAL TABLE t USING module_name")
+        self.validate_identity("PRAGMA table_info")
+        self.validate_identity("PRAGMA schema")
+        self.validate_identity("PRAGMA full_column_names = on")
+        self.validate_identity("PRAGMA full_column_names = off")
+        self.validate_identity("PRAGMA cache_size = 2000")
+        self.validate_identity("PRAGMA main.cache_size")
+        self.validate_identity("PRAGMA main.cache_size = 2000")
+        self.validate_identity("PRAGMA cache_size(2000)", "PRAGMA cache_size = 2000")
+        self.validate_identity("PRAGMA main.cache_size(2000)", "PRAGMA main.cache_size = 2000")
 
         self.validate_all(
             """

@@ -81,7 +81,9 @@ class SQLiteParser(parser.Parser):
 
         self._match(TokenType.EQ)
 
-        value = self._parse_wrapped(self._parse_primary_or_var, optional=True)
+        value = self._parse_wrapped(
+            lambda: self._parse_unary() or self._parse_var(any_token=True), optional=True
+        )
 
         if value:
             return self.expression(exp.Pragma(this=exp.EQ(this=name, expression=value)))

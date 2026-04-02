@@ -30,10 +30,13 @@ from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Self, Unpack
+    from typing_extensions import Self, Unpack, Concatenate
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
+    from sqlglot._typing import P
+
+    R = t.TypeVar("R")
 
 logger = logging.getLogger("sqlglot")
 
@@ -41,7 +44,7 @@ SQLGLOT_META: str = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
-POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
+POSITION_META_KEYS: tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
@@ -481,6 +484,49 @@ class Expr:
 
     def __invert__(self) -> Not:
         raise NotImplementedError
+
+    def pipe(
+        self, func: t.Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        """Apply a function to `Self` (the current instance) and return the result.
+
+        Doing `expr.pipe(func, *args, **kwargs)` is equivalent to `func(expr, *args, **kwargs)`.
+
+        It allows you to chain operations in a fluent way on any given function that takes `Self` as its first argument.
+
+        Tip:
+            If `func` don't take `Self` as it's first argument, you can use a lambda to work around it.
+
+        Args:
+            func (Callable[Concatenate[Self, P], R]): The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
+            *args (P.args): Additional positional arguments to pass to `func` after `Self`.
+            **kwargs (P.kwargs): Additional keyword arguments to pass to `func`.
+
+        Returns:
+            R: The result of applying `func` to `Self` with the given arguments.
+        """
+        return func(self, *args, **kwargs)
+
+    def inspect(
+        self, func: t.Callable[Concatenate[Self, P], t.Any], *args: P.args, **kwargs: P.kwargs
+    ) -> Self:
+        """Apply a function to `Self` (the current instance) for side effects, and return `Self`.
+
+        Useful for inspecting intermediate expressions in a method chain by simply adding/removing `inspect` calls, especially when combined with `pipe`.
+
+        Tip:
+            If `func` don't take `Self` as it's first argument, you can use a lambda to work around it.
+
+        Args:
+            func (Callable[Concatenate[Self, P], R]): The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
+            *args (P.args): Additional positional arguments to pass to `func` after `Self`.
+            **kwargs (P.kwargs): Additional keyword arguments to pass to `func`.
+
+        Returns:
+            R: The result of applying `func` to `Self` with the given arguments.
+        """
+        func(self, *args, **kwargs)
+        return self
 
 
 class Expression(Expr):

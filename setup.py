@@ -22,7 +22,7 @@ setup(
             "pyperf",
         ],
         # Compiles from source on the user's machine.
-        "c": [f"sqlglotc=={version}"],
+        "c": [f"sqlglotc=={version}; python_version >= '3.10'"],
         # Deprecated: the Rust tokenizer has been replaced by sqlglotc.
         "rs": ["sqlglotrs==0.13.0", f"sqlglotc=={version}"],
     },

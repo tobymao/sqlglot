@@ -2301,7 +2301,9 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[Sequence[object]], exp.Expr]:
+def build_like(
+    expr_type: Type[E], not_like: bool = False
+) -> t.Callable[[Sequence[object]], exp.Expr]:
     def _builder(args: Sequence[object]) -> exp.Expr:
         like_expr: exp.Expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
 

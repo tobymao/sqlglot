@@ -4,7 +4,7 @@ import importlib
 import logging
 import typing as t
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterable, MutableSequence, Sequence
 from enum import Enum, auto
 from functools import reduce
 from builtins import type as Type
@@ -1576,11 +1576,11 @@ def time_format(
 
 def build_date_delta(
     exp_class: Type[E],
-    unit_mapping: t.Optional[dict[str, str]] = None,
-    default_unit: t.Optional[str] = "DAY",
+    unit_mapping: dict[str, str] | None = None,
+    default_unit: str | None = "DAY",
     supports_timezone: bool = False,
-) -> t.Callable[[list[t.Any]], E]:
-    def _builder(args: list[t.Any]) -> E:
+) -> t.Callable[[Sequence[t.Any]], E]:
+    def _builder(args: Sequence[t.Any]) -> E:
         unit_based = len(args) >= 3
         has_timezone = len(args) == 4
         this = args[2] if unit_based else seq_get(args, 0)
@@ -1598,8 +1598,8 @@ def build_date_delta(
 
 def build_date_delta_with_interval(
     expression_class: Type[E],
-) -> t.Callable[[list[str | exp.Expr | None]], t.Optional[E]]:
-    def _builder(args: list[str | exp.Expr | None]) -> t.Optional[E]:
+) -> t.Callable[[Sequence[str | exp.Expr | None]], t.Optional[E]]:
+    def _builder(args: Sequence[str | exp.Expr | None]) -> t.Optional[E]:
         if len(args) < 2:
             return None
 
@@ -1613,7 +1613,7 @@ def build_date_delta_with_interval(
     return _builder
 
 
-def date_trunc_to_time(args: list[object]) -> exp.DateTrunc | exp.TimestampTrunc:
+def date_trunc_to_time(args: Sequence[object]) -> exp.DateTrunc | exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
@@ -1808,7 +1808,7 @@ def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
     )
 
 
-def pivot_column_names(aggregations: list[exp.Expr], dialect: DialectType) -> list[str]:
+def pivot_column_names(aggregations: Iterable[exp.Expr], dialect: DialectType) -> list[str]:
     names: list[str] = []
     for agg in aggregations:
         if isinstance(agg, exp.Alias):
@@ -1832,17 +1832,17 @@ def pivot_column_names(aggregations: list[exp.Expr], dialect: DialectType) -> li
     return names
 
 
-def binary_from_function(expr_type: Type[B]) -> t.Callable[[list[object]], B]:
+def binary_from_function(expr_type: Type[B]) -> t.Callable[[Sequence[object]], B]:
     return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
 
 
 # Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects
-def build_timestamp_trunc(args: list[object]) -> exp.TimestampTrunc:
+def build_timestamp_trunc(args: Sequence[object]) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))
 
 
 def build_trunc(
-    args: list[exp.Expr],
+    args: Sequence[exp.Expr],
     dialect: DialectType,
     date_trunc_unabbreviate: bool = True,
     default_date_trunc_unit: t.Optional[str] = None,
@@ -1898,7 +1898,7 @@ def is_parse_json(expression: exp.Expr) -> bool:
     )
 
 
-def isnull_to_is_null(args: list[object]) -> exp.Expr:
+def isnull_to_is_null(args: Sequence[object]) -> exp.Expr:
     return exp.Paren(this=exp.Is(this=seq_get(args, 0), expression=exp.null()))
 
 
@@ -2070,8 +2070,8 @@ def build_json_extract_path(
     zero_based_indexing: bool = True,
     arrow_req_json_type: bool = False,
     json_type: t.Optional[str] = None,
-) -> t.Callable[[list[object]], F]:
-    def _builder(args: list[object]) -> F:
+) -> t.Callable[[MutableSequence[object]], F]:
+    def _builder(args: MutableSequence[object]) -> F:
         segments: list[exp.JSONPathPart] = [exp.JSONPathRoot()]
         for arg in args[1:]:
             if not isinstance(arg, exp.Literal):
@@ -2301,8 +2301,8 @@ def sequence_sql(self: Generator, expression: exp.GenerateSeries | exp.GenerateD
     return self.func("SEQUENCE", start, end, step)
 
 
-def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[list[object]], exp.Expr]:
-    def _builder(args: list[object]) -> exp.Expr:
+def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[Sequence[object]], exp.Expr]:
+    def _builder(args: Sequence[object]) -> exp.Expr:
         like_expr: exp.Expr = expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
 
         if escape := seq_get(args, 2):
@@ -2316,8 +2316,8 @@ def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[list[o
     return _builder
 
 
-def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[list[object], Dialect], E]:
-    def _builder(args: list[object], dialect: Dialect) -> E:
+def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[Sequence[object], Dialect], E]:
+    def _builder(args: Sequence[object], dialect: Dialect) -> E:
         # The "position" argument specifies the index of the string character to start matching from.
         # `null_if_pos_overflow` reflects the dialect's behavior when position is greater than the string
         # length. If true, returns NULL. If false, returns an empty string. `null_if_pos_overflow` is
@@ -2400,7 +2400,7 @@ def groupconcat_sql(
     self: Generator,
     expression: exp.GroupConcat,
     func_name: str = "LISTAGG",
-    sep: t.Optional[str] = ",",
+    sep: str | None = ",",
     within_group: bool = True,
     on_overflow: bool = False,
 ) -> str:
@@ -2460,7 +2460,7 @@ def build_timetostr_or_tochar(
     return exp.ToChar.from_arg_list(args)
 
 
-def build_replace_with_optional_replacement(args: list[object]) -> exp.Replace:
+def build_replace_with_optional_replacement(args: Sequence[object]) -> exp.Replace:
     return exp.Replace(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),

@@ -47,6 +47,7 @@ class SQLiteParser(parser.Parser):
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.ATTACH: lambda self: self._parse_attach_detach(),
         TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        TokenType.PRAGMA: lambda self: self._parse_pragma(),
     }
 
     RANGE_PARSERS = {
@@ -71,6 +72,23 @@ class SQLiteParser(parser.Parser):
             else None
         )
         return self.expression(exp.ModuleProperty(this=name, expressions=expressions))
+
+    def _parse_pragma(self) -> exp.Pragma:
+        name = self._parse_var(any_token=True)
+
+        if self._match(TokenType.DOT):
+            name = exp.Dot(this=name, expression=self._parse_var(any_token=True))
+
+        self._match(TokenType.EQ)
+
+        value = self._parse_wrapped(
+            lambda: self._parse_unary() or self._parse_var(any_token=True), optional=True
+        )
+
+        if value:
+            return self.expression(exp.Pragma(this=exp.EQ(this=name, expression=value)))
+
+        return self.expression(exp.Pragma(this=name))
 
     def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
         self._match(TokenType.DATABASE)

@@ -1536,7 +1536,7 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
 
 def build_formatted_time(
     exp_class: Type[E], dialect: str, default: t.Optional[bool | str] = None
-) -> t.Callable[[list[str | exp.Expr | None]], E]:
+) -> t.Callable[[Sequence[str | exp.Expr | None]], E]:
     """Helper used for time expressions.
 
     Args:
@@ -1548,7 +1548,7 @@ def build_formatted_time(
         A callable that can be used to return the appropriately formatted time expression.
     """
 
-    def _builder(args: list[str | exp.Expr | None]) -> E:
+    def _builder(args: Sequence[str | exp.Expr | None]) -> E:
         return exp_class(
             this=seq_get(args, 0),
             format=Dialect[dialect].format_time(
@@ -2444,7 +2444,7 @@ def groupconcat_sql(
 
 
 def build_timetostr_or_tochar(
-    args: list[t.Any], dialect: DialectType
+    args: Sequence[exp.Expr], dialect: DialectType
 ) -> exp.TimeToStr | exp.ToChar:
     if len(args) == 2:
         this = args[0]

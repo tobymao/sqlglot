@@ -7958,7 +7958,11 @@ class Parser:
 
         if self._match(TokenType.IN):
             return self.expression(
-                exp.StrPosition(this=self._parse_bitwise(), substr=seq_get(args, 0))
+                exp.StrPosition(
+                    this=self._parse_bitwise(),
+                    substr=seq_get(args, 0),
+                    use_position_syntax=True,
+                )
             )
 
         if haystack_first:

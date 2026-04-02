@@ -197,6 +197,7 @@ class StrPosition(Expression, Func):
         "position": False,
         "occurrence": False,
         "clamp_position": False,
+        "use_position_syntax": False,
     }
 
 

@@ -169,6 +169,10 @@ class TestPostgres(Validator):
             "ORDER BY 2, 3"
         )
         self.validate_identity(
+            "SELECT date_add(current_date, interval '7' day)",
+            "SELECT CURRENT_DATE + INTERVAL '7 DAY'",
+        )
+        self.validate_identity(
             "SELECT e'foo \\' bar'",
             "SELECT e'foo '' bar'",
         )

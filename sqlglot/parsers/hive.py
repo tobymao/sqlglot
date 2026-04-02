@@ -120,6 +120,7 @@ class HiveParser(parser.Parser):
         "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
             expressions=self._parse_wrapped_csv(self._parse_property)
         ),
+        "USING": lambda self: self._parse_using_property(),
     }
 
     ALTER_PARSERS = {
@@ -236,6 +237,13 @@ class HiveParser(parser.Parser):
         return self.expression(
             exp.AlterColumn(this=this, rename_to=column_new, dtype=dtype, comment=comment)
         )
+
+    def _parse_using_property(self) -> exp.Property:
+        if self._match_texts(("JAR", "FILE", "ARCHIVE")):
+            kind = self._prev.text.upper()
+            return exp.UsingProperty(this=self._parse_string(), kind=kind)
+
+        return self._parse_property_assignment(exp.FileFormatProperty)
 
     def _parse_partition_and_order(
         self,

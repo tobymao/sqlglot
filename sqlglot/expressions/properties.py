@@ -481,6 +481,11 @@ class StorageHandlerProperty(Property):
     arg_types = {"this": True}
 
 
+class UsingProperty(Property):
+    # kind: JAR, FILE, or ARCHIVE; this: the resource path (string literal)
+    arg_types = {"this": True, "kind": True}
+
+
 class TemporaryProperty(Property):
     arg_types = {"this": False}
 

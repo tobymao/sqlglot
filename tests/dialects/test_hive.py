@@ -1108,3 +1108,63 @@ class TestHive(Validator):
         quantile_expr.assert_is(exp.Quantile)
         quantile_expr.this.assert_is(exp.Column)
         quantile_expr.args.get("quantile").assert_is(exp.Literal)
+
+    def test_create_function_using(self):
+        # USING JAR
+        self.validate_identity(
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 'hdfs://path/to/my.jar'"
+        )
+
+        # OR REPLACE TEMPORARY with USING JAR
+        self.validate_identity(
+            "CREATE OR REPLACE TEMPORARY FUNCTION some_func AS 'my_jar.SomeFunctionUDF' USING JAR 's3://bucket/my.jar'"
+        )
+
+        # USING FILE
+        self.validate_identity(
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING FILE 'hdfs://path/to/file.py'"
+        )
+
+        # USING ARCHIVE
+        self.validate_identity(
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING ARCHIVE 'hdfs://path/to/archive.zip'"
+        )
+
+        # Verify the AST node is a Create with UsingProperty
+        expr = self.parse_one(
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 'hdfs://path/to/my.jar'"
+        )
+        self.assertIsInstance(expr, exp.Create)
+        using_prop = expr.find(exp.UsingProperty)
+        self.assertIsNotNone(using_prop)
+        self.assertEqual(using_prop.args["kind"], "JAR")
+        self.assertEqual(using_prop.this.this, "hdfs://path/to/my.jar")
+
+        # Verify programmatic construction
+        create = exp.Create(
+            this=exp.Table(this=exp.to_identifier("my_func")),
+            kind="FUNCTION",
+            expression=exp.Literal.string("com.example.MyFunc"),
+            properties=exp.Properties(
+                expressions=[
+                    exp.UsingProperty(
+                        this=exp.Literal.string("s3://bucket/new.jar"), kind="JAR"
+                    )
+                ]
+            ),
+        )
+        self.assertEqual(
+            create.sql(dialect="hive"),
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 's3://bucket/new.jar'",
+        )
+
+        # Verify programmatic modification of the JAR path
+        expr = self.parse_one(
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 'hdfs://old/path.jar'"
+        )
+        using_prop = expr.find(exp.UsingProperty)
+        using_prop.set("this", exp.Literal.string("hdfs://new/path.jar"))
+        self.assertEqual(
+            expr.sql(dialect="hive"),
+            "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 'hdfs://new/path.jar'",
+        )

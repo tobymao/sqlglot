@@ -518,12 +518,12 @@ class Expr:
             If `func` don't take `Self` as it's first argument, you can use a lambda to work around it.
 
         Args:
-            func (Callable[Concatenate[Self, P], R]): The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
+            func (Callable[Concatenate[Self, P], t.Any]): The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
             *args (P.args): Additional positional arguments to pass to `func` after `Self`.
             **kwargs (P.kwargs): Additional keyword arguments to pass to `func`.
 
         Returns:
-            R: The result of applying `func` to `Self` with the given arguments.
+            Self: The same instance.
         """
         func(self, *args, **kwargs)
         return self

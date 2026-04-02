@@ -2465,13 +2465,7 @@ class DuckDBGenerator(generator.Generator):
                 substr=exp.Hex(this=substr),
             )
 
-            # Convert hex position to byte position: CAST((hex_pos + 1) / 2 AS INT)
-            # When hex_strpos = 0, (0 + 1) / 2 = 0.5 which CAST to INT gives 0
-            return self.sql(
-                exp.cast(
-                    (hex_strpos + exp.Literal.number(1)) / exp.Literal.number(2), exp.DType.INT
-                )
-            )
+            return self.sql(exp.cast((hex_strpos + 1) / 2, exp.DType.INT))
 
         # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:

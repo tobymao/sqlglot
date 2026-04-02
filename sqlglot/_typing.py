@@ -3,10 +3,13 @@ from __future__ import annotations
 import typing as t
 
 if t.TYPE_CHECKING:
+    from typing_extensions import ParamSpec
     from collections.abc import Mapping
     import sqlglot
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel
+
+    P = ParamSpec("P")
 
 B = t.TypeVar("B", bound="sqlglot.exp.Binary")
 E = t.TypeVar("E", bound="sqlglot.exp.Expr")

@@ -3299,24 +3299,35 @@ class DuckDBGenerator(generator.Generator):
         result_sql = self.func("REVERSE", _cast_to_varchar(expression.this))
         return _gen_with_cast_to_blob(self, expression, result_sql)
 
-    def right_sql(self, expression: exp.Right) -> str:
+    def _left_right_sql(self, expression: exp.Left | exp.Right, func_name: str) -> str:
         arg = expression.this
         length = expression.expression
+        is_binary = _is_binary(arg)
 
-        # For BINARY/BLOB: DuckDB doesn't support RIGHT on BLOB
-        # Convert to HEX string, use RIGHT, then convert back to BLOB
-        if _is_binary(arg):
-            # RIGHT(blob, n) becomes UNHEX(RIGHT(HEX(blob), n * 2))
+        if is_binary:
+            # LEFT/RIGHT(blob, n) becomes UNHEX(LEFT/RIGHT(HEX(blob), n * 2))
             # Each byte becomes 2 hex chars, so multiply length by 2
             hex_arg = exp.Hex(this=arg)
             hex_length = exp.Mul(this=length, expression=exp.Literal.number(2))
-            # since this exp.Right is not annotated, it won't enter this _is_binary branch during the recursive call
-            hex_right = self.func("RIGHT", hex_arg, hex_length)
-            result = exp.Unhex(this=hex_right)
-            return self.sql(result)
+            result: exp.Expression = exp.Unhex(
+                this=exp.Anonymous(this=func_name, expressions=[hex_arg, hex_length])
+            )
+        else:
+            result = exp.Anonymous(this=func_name, expressions=[arg, length])
 
-        # For VARCHAR: Use native RIGHT function
-        return self.func("RIGHT", arg, length)
+        if expression.args.get("negative_length_returns_empty"):
+            empty: exp.Expression = exp.Literal.string("")
+            if is_binary:
+                empty = exp.Unhex(this=empty)
+            result = exp.case().when(length < exp.Literal.number(0), empty).else_(result)
+
+        return self.sql(result)
+
+    def left_sql(self, expression: exp.Left) -> str:
+        return self._left_right_sql(expression, "LEFT")
+
+    def right_sql(self, expression: exp.Right) -> str:
+        return self._left_right_sql(expression, "RIGHT")
 
     def rand_sql(self, expression: exp.Rand) -> str:
         seed = expression.this

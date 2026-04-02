@@ -520,6 +520,9 @@ class SnowflakeParser(parser.Parser):
         "LEAST_IGNORE_NULLS": lambda args: exp.Least(
             this=seq_get(args, 0), expressions=args[1:], ignore_nulls=True
         ),
+        "LEFT": lambda args: exp.Left(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
+        ),
         "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
         "IFF": exp.If.from_arg_list,
         "JAROWINKLER_SIMILARITY": lambda args: exp.JarowinklerSimilarity(
@@ -554,6 +557,9 @@ class SnowflakeParser(parser.Parser):
             upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
         ),
         "REPLACE": build_replace_with_optional_replacement,
+        "RIGHT": lambda args: exp.Right(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
+        ),
         "RLIKE": _build_regexp_like,
         "ROUND": _build_round,
         "SHA1_BINARY": exp.SHA1Digest.from_arg_list,

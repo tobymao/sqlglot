@@ -1255,9 +1255,7 @@ class SnowflakeParser(parser.Parser):
         return set
 
     def _parse_position(self, haystack_first: bool = False) -> exp.StrPosition:
-        # Call parent to get the base StrPosition expression
         result = super()._parse_position(haystack_first)
-        # Add clamp_position=True for Snowflake's behavior
         result.set("clamp_position", True)
         return result
 

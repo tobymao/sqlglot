@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v30.2.1] - 2026-04-02
+### :bug: Bug Fixes
+- [`6983aed`](https://github.com/tobymao/sqlglot/commit/6983aedacc47b4adc127fb7e6ce9e0230f9b94f4) - **postgres**: `_date_add_sql` bug w/ interval inputs *(PR [#7440](https://github.com/tobymao/sqlglot/pull/7440) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.2.0] - 2026-04-01
 ### :boom: BREAKING CHANGES
 - due to [`4bc6857`](https://github.com/tobymao/sqlglot/commit/4bc685708cbff4fc8590353908cd58905ee98440) - Transpilation support for STRIP_NULL_VALUE transpilation *(PR [#7403](https://github.com/tobymao/sqlglot/pull/7403) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
@@ -14071,3 +14076,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.0.3]: https://github.com/tobymao/sqlglot/compare/v30.0.2...v30.0.3
 [v30.1.0]: https://github.com/tobymao/sqlglot/compare/v30.0.3...v30.1.0
 [v30.2.0]: https://github.com/tobymao/sqlglot/compare/v30.1.0...v30.2.0
+[v30.2.1]: https://github.com/tobymao/sqlglot/compare/v30.2.0...v30.2.1

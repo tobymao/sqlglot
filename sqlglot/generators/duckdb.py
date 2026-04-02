@@ -2466,19 +2466,12 @@ class DuckDBGenerator(generator.Generator):
             )
 
             # Convert hex position to byte position: CAST((hex_pos + 1) / 2 AS INT)
-            byte_pos = exp.cast(
-                (hex_strpos.copy() + exp.Literal.number(1)) / exp.Literal.number(2),
-                exp.DataType.Type.INT,
+            # When hex_strpos = 0, (0 + 1) / 2 = 0.5 which CAST to INT gives 0
+            return self.sql(
+                exp.cast(
+                    (hex_strpos + exp.Literal.number(1)) / exp.Literal.number(2), exp.DType.INT
+                )
             )
-
-            # CASE WHEN hex_strpos = 0 THEN 0 ELSE CAST((hex_strpos + 1) / 2 AS INT) END
-            result = (
-                exp.case()
-                .when(hex_strpos.eq(exp.Literal.number(0)), exp.Literal.number(0))
-                .else_(byte_pos)
-            )
-
-            return self.sql(result)
 
         # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:
@@ -2491,9 +2484,6 @@ class DuckDBGenerator(generator.Generator):
                     false=position.copy(),
                 ),
             )
-
-        if expression.args.get("use_position_syntax"):
-            return strposition_sql(self, expression, func_name="POSITION", use_ansi_position=True)
 
         return strposition_sql(self, expression)
 

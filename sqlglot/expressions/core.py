@@ -507,12 +507,12 @@ class Expr:
         """
         return func(self, *args, **kwargs)
 
-    def inspect(
+    def apply(
         self, func: t.Callable[Concatenate[Self, P], t.Any], *args: P.args, **kwargs: P.kwargs
     ) -> Self:
         """Apply a function to `Self` (the current instance) for side effects, and return `Self`.
 
-        Useful for inspecting intermediate expressions in a method chain by simply adding/removing `inspect` calls, especially when combined with `pipe`.
+        Useful for inspecting intermediate expressions in a method chain by simply adding/removing `apply` calls, especially when combined with `pipe`.
 
         Tip:
             If `func` doesn't take `Self` as it's first argument, you can use a lambda to work around it.

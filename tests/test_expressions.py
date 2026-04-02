@@ -1341,7 +1341,7 @@ FROM foo""",
         expr1.update_positions(expr2)
         assert expr1.meta == {}
 
-    def test_pipe_and_inspect(self) -> None:
+    def test_pipe_and_apply(self) -> None:
 
         def add_val(expr: exp.Expr, val: int, *, squared: bool) -> exp.Expr:
             nb = val**2 if squared else val
@@ -1353,7 +1353,7 @@ FROM foo""",
         col = exp.column("age")
         added = add_val(col, 5, squared=True)
 
-        self.assertEqual(col, col.inspect(lambda x: x))
-        self.assertEqual(col.pipe(add_val, 5, squared=True), added)
+        self.assertEqual(col, col.apply(lambda x: x))
 
+        self.assertEqual(col.pipe(add_val, 5, squared=True), added)
         self.assertEqual(col.pipe(lambda e: add_val_alt(5, True, e)), added)

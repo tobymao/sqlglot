@@ -796,7 +796,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def simplify_connectors(self, expression: exp.Expr, root: bool = True):
+    def simplify_connectors(self, expression: exp.Expr, root: bool = True) -> exp.Expr:
         def _simplify_connectors(expression: exp.Expr, left: exp.Expr, right: exp.Expr):
             if isinstance(expression, exp.And):
                 if is_false(left) or is_false(right):

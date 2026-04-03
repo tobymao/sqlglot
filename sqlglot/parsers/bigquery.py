@@ -522,13 +522,15 @@ class BigQueryParser(parser.Parser):
             for expression in bracket.expressions:
                 name = expression.name.upper()
 
-                if name not in self.BRACKET_OFFSETS:
+                expressions = expression.expressions
+
+                if name not in self.BRACKET_OFFSETS or not expressions:
                     break
 
                 offset, safe = self.BRACKET_OFFSETS[name]
                 bracket.set("offset", offset)
                 bracket.set("safe", safe)
-                expression.replace(expression.expressions[0])
+                expression.replace(expressions[0])
 
         return bracket
 

@@ -606,7 +606,7 @@ def epoch_cast_to_ts(expression: exp.Expr) -> exp.Expr:
 def eliminate_semi_and_anti_joins(expression: exp.Expr) -> exp.Expr:
     """Convert SEMI and ANTI joins into equivalent forms that use EXIST instead."""
     if isinstance(expression, exp.Select):
-        for join in expression.args.get("joins") or []:
+        for join in list(expression.args.get("joins") or []):
             on = join.args.get("on")
             if on and join.kind in ("SEMI", "ANTI"):
                 subquery = exp.select("1").from_(join.this).where(on)

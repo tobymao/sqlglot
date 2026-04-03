@@ -1254,6 +1254,11 @@ class SnowflakeParser(parser.Parser):
                     expr.set("kind", "VARIABLE")
         return set
 
+    def _parse_position(self, haystack_first: bool = False) -> exp.StrPosition:
+        result = super()._parse_position(haystack_first)
+        result.set("clamp_position", True)
+        return result
+
     def _parse_window(
         self, this: t.Optional[exp.Expr], alias: bool = False
     ) -> t.Optional[exp.Expr]:

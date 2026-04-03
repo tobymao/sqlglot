@@ -317,8 +317,15 @@ def is_false(a: exp.Expr) -> bool:
 def is_null(a: exp.Expr) -> bool:
     return type(a) is exp.Null
 
+class SupportsComparison(t.Protocol):
+    """Protocol for expressions or values that can be compared using <, <=, >, >=."""
+    def __lt__(self, other: t.Any) -> bool: ...
+    def __le__(self, other: t.Any) -> bool: ...
+    def __gt__(self, other: t.Any) -> bool: ...
+    def __ge__(self, other: t.Any) -> bool: ...
 
-def eval_boolean(expression: object, a: exp.Expr, b: exp.Expr) -> exp.Boolean | None:
+
+def eval_boolean(expression: object, a: SupportsComparison, b: SupportsComparison) -> exp.Boolean | None:
     if isinstance(expression, (exp.EQ, exp.Is)):
         return boolean_literal(a == b)
     if isinstance(expression, exp.NEQ):

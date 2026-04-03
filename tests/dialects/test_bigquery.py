@@ -2229,6 +2229,9 @@ WHERE
                     "presto": "a[1]",
                 },
             )
+            self.validate_identity(
+                "WITH foo AS (SELECT [1, 2, 3] AS array_col) SELECT array_col[offset] FROM foo CROSS JOIN UNNEST(array_col) WITH OFFSET AS offset",
+            )
 
         with self.assertLogs(parser_logger) as cm:
             for_in_stmts = parse(

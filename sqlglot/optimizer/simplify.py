@@ -1101,7 +1101,7 @@ class Simplifier:
         return type(expression) in self.INVERSE_DATE_OPS
 
     @annotate_types_on_change
-    def simplify_literals(self, expression: exp.Expr, root: bool = True)  -> exp.Expr:
+    def simplify_literals(self, expression: exp.Expr, root: bool = True) -> exp.Expr:
         if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
             return self._flat_simplify(expression, self._simplify_binary, root)
 

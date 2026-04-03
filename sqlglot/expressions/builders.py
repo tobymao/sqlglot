@@ -55,11 +55,9 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.core import ExpOrStr, Func
     from sqlglot.expressions.datatypes import DATA_TYPE
-    from sqlglot._typing import ParserArgs, ParserNoDialectArgs, E
-    from typing_extensions import Unpack, ParamSpec, Concatenate
+    from sqlglot._typing import ParserArgs, ParserNoDialectArgs, E, P
+    from typing_extensions import Unpack, Concatenate
     from sqlglot.expressions.core import Dot
-
-    P = ParamSpec("P")
 
 
 def select(

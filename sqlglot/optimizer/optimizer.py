@@ -23,7 +23,16 @@ from sqlglot.schema import ensure_schema
 
 
 class OptimizerFn(t.Protocol):
-    """Protocol for optimizer functions."""
+    """Protocol for optimizer rules functions.
+    
+    An optimizer rule: 
+
+        - **Must** accept an `Expr` as the first argument
+        - Can take undefined `*args` and `**kwargs` afterwards
+        - **Must** return an `Expr`.
+    Note:
+        We use `typing.Protocol` here because this is not doable with `collections.abc.Callable`.
+    """
 
     def __call__(self, expression: exp.Expr, *args: t.Any, **kwargs: t.Any) -> exp.Expr: ...
 

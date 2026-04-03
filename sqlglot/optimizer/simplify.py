@@ -24,9 +24,8 @@ if t.TYPE_CHECKING:
     DateTruncBinaryTransform = t.Callable[
         [exp.Expr, date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
     ]
-    S = t.TypeVar("S", str, exp.Expr)
 
-
+S = t.TypeVar("S", str, exp.Expr)
 logger = logging.getLogger("sqlglot")
 
 

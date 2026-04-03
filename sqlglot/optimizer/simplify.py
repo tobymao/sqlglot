@@ -1101,32 +1101,26 @@ class Simplifier:
 
         return expression
 
-    @t.overload
-    def _simplify_integer_cast(self, expr: exp.Expr) -> exp.Expr: ...
-    @t.overload
-    def _simplify_integer_cast(self, expr: str) -> str: ...
+    def _simplify_integer_cast(self, expr: t.Any) -> t.Any:
+        if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
+            this = self._simplify_integer_cast(expr.this)
+        else:
+            this = expr.this
 
-    def _simplify_integer_cast(self, expr: exp.Expr | str) -> exp.Expr | str:
-        if isinstance(expr, exp.Cast):
-            if isinstance(expr.this, exp.Cast):
-                this = self._simplify_integer_cast(expr.this)
-            else:
-                this = expr.this
+        if isinstance(expr, exp.Cast) and this.is_int:
+            num = this.to_py()
 
-            if this.is_int:
-                num = this.to_py()
-
-                # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
-                # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
-                # engine-dependent
-                if (
-                    self.TINYINT_MIN <= num <= self.TINYINT_MAX
-                    and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
-                ) or (
-                    self.UTINYINT_MIN <= num <= self.UTINYINT_MAX
-                    and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
-                ):
-                    return this
+            # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
+            # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
+            # engine-dependent
+            if (
+                self.TINYINT_MIN <= num <= self.TINYINT_MAX
+                and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
+            ) or (
+                self.UTINYINT_MIN <= num <= self.UTINYINT_MAX
+                and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
+            ):
+                return this
 
         return expr
 

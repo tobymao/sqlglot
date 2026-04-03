@@ -1147,9 +1147,7 @@ class TestHive(Validator):
             expression=exp.Literal.string("com.example.MyFunc"),
             properties=exp.Properties(
                 expressions=[
-                    exp.UsingProperty(
-                        this=exp.Literal.string("s3://bucket/new.jar"), kind="JAR"
-                    )
+                    exp.UsingProperty(this=exp.Literal.string("s3://bucket/new.jar"), kind="JAR")
                 ]
             ),
         )

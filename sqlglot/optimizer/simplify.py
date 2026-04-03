@@ -24,6 +24,7 @@ if t.TYPE_CHECKING:
     DateTruncBinaryTransform = t.Callable[
         [exp.Expr, date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
     ]
+    S = t.TypeVar("S", str, exp.Expr)
 
 
 logger = logging.getLogger("sqlglot")
@@ -1102,26 +1103,27 @@ class Simplifier:
 
         return expression
 
-    def _simplify_integer_cast(self, expr: exp.Expr) -> exp.Expr:
-        if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
-            this = self._simplify_integer_cast(expr.this)
-        else:
-            this = expr.this
+    def _simplify_integer_cast(self, expr: S) -> S:
+        if isinstance(expr, exp.Cast):
+            if isinstance(expr.this, exp.Cast):
+                this = self._simplify_integer_cast(expr.this)
+            else:
+                this = expr.this
 
-        if isinstance(expr, exp.Cast) and this.is_int:
-            num = this.to_py()
+            if this.is_int:
+                num = this.to_py()
 
-            # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
-            # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
-            # engine-dependent
-            if (
-                self.TINYINT_MIN <= num <= self.TINYINT_MAX
-                and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
-            ) or (
-                self.UTINYINT_MIN <= num <= self.UTINYINT_MAX
-                and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
-            ):
-                return this
+                # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
+                # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
+                # engine-dependent
+                if (
+                    self.TINYINT_MIN <= num <= self.TINYINT_MAX
+                    and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
+                ) or (
+                    self.UTINYINT_MIN <= num <= self.UTINYINT_MAX
+                    and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
+                ):
+                    return this
 
         return expr
 

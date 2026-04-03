@@ -21,7 +21,14 @@ from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 from sqlglot.schema import ensure_schema
 
-RULES = (
+
+class OptimizerFn(t.Protocol):
+    """Protocol for optimizer functions."""
+
+    def __call__(self, expression: exp.Expr, *args: t.Any, **kwargs: t.Any) -> exp.Expr: ...
+
+
+RULES: tuple[OptimizerFn, ...] = (
     qualify,
     pushdown_projections,
     normalize,
@@ -41,13 +48,13 @@ RULES = (
 
 def optimize(
     expression: str | exp.Expr,
-    schema: t.Optional[dict | Schema] = None,
-    db: t.Optional[str | exp.Identifier] = None,
-    catalog: t.Optional[str | exp.Identifier] = None,
+    schema: dict[str, object] | Schema | None = None,
+    db: str | exp.Identifier | None = None,
+    catalog: str | exp.Identifier | None = None,
     dialect: DialectType = None,
-    rules: Sequence[t.Callable] = RULES,
+    rules: Sequence[OptimizerFn] = RULES,
     sql: t.Optional[str] = None,
-    **kwargs,
+    **kwargs: object,
 ) -> exp.Expr:
     """
     Rewrite a sqlglot AST into an optimized form.

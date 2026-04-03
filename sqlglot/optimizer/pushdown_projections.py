@@ -26,7 +26,7 @@ def default_selection(is_agg: bool) -> exp.Alias:
 
 def pushdown_projections(
     expression: E,
-    schema: t.Optional[t.Dict | Schema] = None,
+    schema: dict[str, object] | Schema | None = None,
     remove_unused_selections: bool = True,
     dialect: DialectType = None,
 ) -> E:

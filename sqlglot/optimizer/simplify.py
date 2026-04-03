@@ -115,7 +115,7 @@ def annotate_types_on_change(func):
     return _func
 
 
-def flatten(expression):
+def flatten(expression: exp.Expr) -> exp.Expr:
     """
     A AND (B AND C) -> A AND B AND C
     A OR (B OR C) -> A OR B OR C
@@ -291,21 +291,21 @@ def _datetrunc_neq(
     )
 
 
-def always_true(expression):
+def always_true(expression: object) -> bool:
     return (isinstance(expression, exp.Boolean) and expression.this) or (
         isinstance(expression, exp.Literal) and expression.is_number and not is_zero(expression)
     )
 
 
-def always_false(expression):
+def always_false(expression: exp.Expr) -> bool:
     return is_false(expression) or is_null(expression) or is_zero(expression)
 
 
-def is_zero(expression):
+def is_zero(expression: object) -> bool:
     return isinstance(expression, exp.Literal) and expression.to_py() == 0
 
 
-def is_complement(a, b):
+def is_complement(a: object, b: object) -> bool:
     return isinstance(b, exp.Not) and b.this == a
 
 
@@ -317,7 +317,7 @@ def is_null(a: exp.Expr) -> bool:
     return type(a) is exp.Null
 
 
-def eval_boolean(expression, a, b):
+def eval_boolean(expression, a, b) -> exp.Boolean | None:
     if isinstance(expression, (exp.EQ, exp.Is)):
         return boolean_literal(a == b)
     if isinstance(expression, exp.NEQ):
@@ -467,7 +467,7 @@ def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
     return floor + interval(unit)
 
 
-def boolean_literal(condition):
+def boolean_literal(condition: bool) -> exp.Boolean:
     return exp.true() if condition else exp.false()
 
 

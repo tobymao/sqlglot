@@ -858,7 +858,7 @@ class Simplifier:
     @annotate_types_on_change
     def _simplify_comparison(
         self, expression: exp.Expr, left: exp.Expr, right: exp.Expr, or_: bool = False
-    ):
+    ) -> exp.Expr | None:
         if isinstance(left, self.COMPARISONS) and isinstance(right, self.COMPARISONS):
             ll, lr = left.args.values()
             rl, rr = right.args.values()
@@ -922,7 +922,7 @@ class Simplifier:
         return None
 
     @annotate_types_on_change
-    def remove_complements(self, expression: object, root: bool = True):
+    def remove_complements(self, expression: object, root: bool = True) -> object:
         """
         Removing complements.
 
@@ -939,7 +939,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def uniq_sort(self, expression: object, root: bool = True):
+    def uniq_sort(self, expression: object, root: bool = True)  -> object:
         """
         Uniq and sort a connector.
 
@@ -976,7 +976,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def absorb_and_eliminate(self, expression: object, root: bool = True):
+    def absorb_and_eliminate(self, expression: object, root: bool = True) -> object:
         """
         absorption:
             A AND (A OR B) -> A

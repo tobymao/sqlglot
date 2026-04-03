@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import typing as t
+from collections.abc import Mapping, Sequence
 
 if t.TYPE_CHECKING:
     from typing_extensions import ParamSpec
-    from collections.abc import Mapping, Sequence
+
     import sqlglot
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel

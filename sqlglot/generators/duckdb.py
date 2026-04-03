@@ -2252,7 +2252,7 @@ class DuckDBGenerator(generator.Generator):
 
     def compress_sql(self, expression: exp.Compress) -> str:
         self.unsupported("DuckDB does not support the COMPRESS() function")
-        return self.func("COMPRESS", expression.this, expression.args.get("method"))
+        return self.function_fallback_sql(expression)
 
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)

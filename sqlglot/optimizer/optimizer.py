@@ -24,8 +24,8 @@ from sqlglot.schema import ensure_schema
 
 class OptimizerFn(t.Protocol):
     """Protocol for optimizer rules functions.
-    
-    An optimizer rule: 
+
+    An optimizer rule:
 
         - **Must** accept an `Expr` as the first argument
         - Can take undefined `*args` and `**kwargs` afterwards

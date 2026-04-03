@@ -8,12 +8,13 @@ import typing as t
 from collections import deque, defaultdict
 from functools import reduce, wraps
 
+import sqlglot
 from sqlglot import Dialect, exp
 from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 from sqlglot.schema import ensure_schema
-from sqlglot.optimizer.normalize import normalized
+
 
 if t.TYPE_CHECKING:
     from dateutil.relativedelta import relativedelta
@@ -188,7 +189,7 @@ def propagate_constants(expression, root=True):
     if (
         isinstance(expression, exp.And)
         and (root or not expression.same_parent)
-        and normalized(expression, dnf=True)
+        and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
     ):
         constant_mapping = {}
         for expr in walk_in_scope(expression, prune=lambda node: isinstance(node, exp.If)):

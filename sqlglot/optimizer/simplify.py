@@ -19,6 +19,7 @@ from sqlglot.schema import ensure_schema
 if t.TYPE_CHECKING:
     from dateutil.relativedelta import relativedelta
     from sqlglot.dialects.dialect import DialectType
+    from typing_extensions import TypeIs
 
     DateRange = tuple[date, date]
     DateTruncBinaryTransform = t.Callable[
@@ -1096,15 +1097,18 @@ class Simplifier:
             )
         return expression
 
+    def _is_inverse_date_op(self, expression: exp.Expr) -> TypeIs[exp.IntervalOp]:
+        return type(expression) in self.INVERSE_DATE_OPS
+
     @annotate_types_on_change
-    def simplify_literals(self, expression, root: bool = True):
+    def simplify_literals(self, expression: exp.Expr, root: bool = True)  -> exp.Expr:
         if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
             return self._flat_simplify(expression, self._simplify_binary, root)
 
         if isinstance(expression, exp.Neg) and isinstance(expression.this, exp.Neg):
             return expression.this.this
 
-        if type(expression) in self.INVERSE_DATE_OPS:
+        if self._is_inverse_date_op(expression):
             return (
                 self._simplify_binary(expression, expression.this, expression.interval())
                 or expression

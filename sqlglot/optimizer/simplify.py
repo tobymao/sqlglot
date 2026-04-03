@@ -298,7 +298,7 @@ def always_true(expression: object) -> bool:
     )
 
 
-def always_false(expression: exp.Expr) -> bool:
+def always_false(expression: object) -> bool:
     return is_false(expression) or is_null(expression) or is_zero(expression)
 
 
@@ -310,11 +310,11 @@ def is_complement(a: object, b: object) -> bool:
     return isinstance(b, exp.Not) and b.this == a
 
 
-def is_false(a: exp.Expr) -> bool:
+def is_false(a: object) -> bool:
     return type(a) is exp.Boolean and not a.this
 
 
-def is_null(a: exp.Expr) -> bool:
+def is_null(a: object) -> bool:
     return type(a) is exp.Null
 
 

@@ -2250,6 +2250,10 @@ class DuckDBGenerator(generator.Generator):
             f"({self.sql(exp.replace_placeholders(self.BITMAP_CONSTRUCT_AGG_TEMPLATE, arg=arg))})"
         )
 
+    def compress_sql(self, expression: exp.Compress) -> str:
+        self.unsupported("DuckDB does not support the COMPRESS() function")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

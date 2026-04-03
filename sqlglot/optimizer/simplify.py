@@ -939,7 +939,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def uniq_sort(self, expression: object, root: bool = True)  -> object:
+    def uniq_sort(self, expression: object, root: bool = True) -> object:
         """
         Uniq and sort a connector.
 

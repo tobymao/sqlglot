@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+from datetime import date, datetime, timedelta
 import logging
 import functools
 import itertools
@@ -8,19 +8,20 @@ import typing as t
 from collections import deque, defaultdict
 from functools import reduce, wraps
 
-import sqlglot
 from sqlglot import Dialect, exp
 from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 from sqlglot.schema import ensure_schema
+from sqlglot.optimizer.normalize import normalized
 
 if t.TYPE_CHECKING:
+    from dateutil.relativedelta import relativedelta
     from sqlglot.dialects.dialect import DialectType
 
-    DateRange = t.Tuple[datetime.date, datetime.date]
+    DateRange = tuple[date, date]
     DateTruncBinaryTransform = t.Callable[
-        [exp.Expr, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
+        [exp.Expr, date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
     ]
 
 
@@ -187,7 +188,7 @@ def propagate_constants(expression, root=True):
     if (
         isinstance(expression, exp.And)
         and (root or not expression.same_parent)
-        and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
+        and normalized(expression, dnf=True)
     ):
         constant_mapping = {}
         for expr in walk_in_scope(expression, prune=lambda node: isinstance(node, exp.If)):
@@ -230,7 +231,7 @@ def _is_constant(expression: exp.Expr) -> bool:
     return isinstance(expr, exp.CONSTANTS) or _is_date_literal(expr)
 
 
-def _datetrunc_range(date: datetime.date, unit: str, dialect: Dialect) -> t.Optional[DateRange]:
+def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> t.Optional[DateRange]:
     """
     Get the date range for a DATE_TRUNC equality comparison:
 
@@ -261,7 +262,7 @@ def _datetrunc_eq_expression(
 
 def _datetrunc_eq(
     left: exp.Expr,
-    date: datetime.date,
+    date: date,
     unit: str,
     dialect: Dialect,
     target_type: t.Optional[exp.DataType],
@@ -275,7 +276,7 @@ def _datetrunc_eq(
 
 def _datetrunc_neq(
     left: exp.Expr,
-    date: datetime.date,
+    date: date,
     unit: str,
     dialect: Dialect,
     target_type: t.Optional[exp.DataType],
@@ -317,7 +318,7 @@ def is_null(a: exp.Expr) -> bool:
     return type(a) is exp.Null
 
 
-def eval_boolean(expression, a, b) -> exp.Boolean | None:
+def eval_boolean(expression: object, a: exp.Expr, b: exp.Expr) -> exp.Boolean | None:
     if isinstance(expression, (exp.EQ, exp.Is)):
         return boolean_literal(a == b)
     if isinstance(expression, exp.NEQ):
@@ -333,29 +334,31 @@ def eval_boolean(expression, a, b) -> exp.Boolean | None:
     return None
 
 
-def cast_as_date(value: t.Any) -> t.Optional[datetime.date]:
-    if isinstance(value, datetime.datetime):
+def cast_as_date(value: datetime | date | str) -> date | None:
+    if isinstance(value, datetime):
         return value.date()
-    if isinstance(value, datetime.date):
+    if isinstance(value, date):
         return value
     try:
-        return datetime.datetime.fromisoformat(value).date()
+        return datetime.fromisoformat(value).date()
     except ValueError:
         return None
 
 
-def cast_as_datetime(value: t.Any) -> t.Optional[datetime.datetime]:
-    if isinstance(value, datetime.datetime):
+def cast_as_datetime(
+    value: datetime | date | str,
+) -> t.Optional[datetime]:
+    if isinstance(value, datetime):
         return value
-    if isinstance(value, datetime.date):
-        return datetime.datetime(year=value.year, month=value.month, day=value.day)
+    if isinstance(value, date):
+        return datetime(year=value.year, month=value.month, day=value.day)
     try:
-        return datetime.datetime.fromisoformat(value)
+        return datetime.fromisoformat(value)
     except ValueError:
         return None
 
 
-def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+def cast_value(value: datetime | date | str, to: exp.DataType) -> date | date | None:
     if not value:
         return None
     if to.is_type(exp.DType.DATE):
@@ -365,7 +368,7 @@ def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.da
     return None
 
 
-def extract_date(cast: exp.Expr) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+def extract_date(cast: exp.Expr) -> date | date | None:
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
@@ -386,7 +389,7 @@ def _is_date_literal(expression: exp.Expr) -> bool:
     return extract_date(expression) is not None
 
 
-def extract_interval(expression):
+def extract_interval(expression: exp.Expr) -> relativedelta | None:
     try:
         n = int(expression.this.to_py())
         unit = expression.text("unit").lower()
@@ -407,12 +410,12 @@ def extract_type(*expressions):
 
 def date_literal(date, target_type=None):
     if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
-        target_type = exp.DType.DATETIME if isinstance(date, datetime.datetime) else exp.DType.DATE
+        target_type = exp.DType.DATETIME if isinstance(date, datetime) else exp.DType.DATE
 
     return exp.cast(exp.Literal.string(date), target_type)
 
 
-def interval(unit: str, n: int = 1):
+def interval(unit: str, n: int = 1) -> relativedelta:
     from dateutil.relativedelta import relativedelta
 
     if unit == "year":
@@ -435,7 +438,7 @@ def interval(unit: str, n: int = 1):
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def date_floor(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
+def date_floor(d: date, unit: str, dialect: Dialect) -> date:
     if unit == "year":
         return d.replace(month=1, day=1)
     if unit == "quarter":
@@ -451,14 +454,14 @@ def date_floor(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
         return d.replace(month=d.month, day=1)
     if unit == "week":
         # Assuming week starts on Monday (0) and ends on Sunday (6)
-        return d - datetime.timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
+        return d - timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
     if unit == "day":
         return d
 
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
+def date_ceil(d: date, unit: str, dialect: Dialect) -> date:
     floor = date_floor(d, unit, dialect)
 
     if floor == d:
@@ -467,7 +470,7 @@ def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
     return floor + interval(unit)
 
 
-def boolean_literal(condition: bool) -> exp.Boolean:
+def boolean_literal(condition: bool | exp.Predicate) -> exp.Boolean:
     return exp.true() if condition else exp.false()
 
 
@@ -572,9 +575,9 @@ class Simplifier:
         expression: exp.Expr,
         constant_propagation: bool = False,
         coalesce_simplification: bool = False,
-    ):
-        wheres = []
-        joins = []
+    ) -> exp.Expr:
+        wheres: list[exp.Where] = []
+        joins: list[exp.Join] = []
 
         for node in expression.walk(
             prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta.get(FINAL))
@@ -781,8 +784,8 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def simplify_connectors(self, expression, root=True):
-        def _simplify_connectors(expression, left, right):
+    def simplify_connectors(self, expression: exp.Expr, root: bool = True):
+        def _simplify_connectors(expression: exp.Expr, left: exp.Expr, right: exp.Expr):
             if isinstance(expression, exp.And):
                 if is_false(left) or is_false(right):
                     return exp.false()
@@ -841,7 +844,9 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def _simplify_comparison(self, expression, left, right, or_=False):
+    def _simplify_comparison(
+        self, expression: exp.Expr, left: exp.Expr, right: exp.Expr, or_: bool = False
+    ):
         if isinstance(left, self.COMPARISONS) and isinstance(right, self.COMPARISONS):
             ll, lr = left.args.values()
             rl, rr = right.args.values()
@@ -905,7 +910,7 @@ class Simplifier:
         return None
 
     @annotate_types_on_change
-    def remove_complements(self, expression, root=True):
+    def remove_complements(self, expression: object, root: bool = True):
         """
         Removing complements.
 
@@ -922,7 +927,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def uniq_sort(self, expression, root=True):
+    def uniq_sort(self, expression: object, root: bool = True):
         """
         Uniq and sort a connector.
 
@@ -959,7 +964,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def absorb_and_eliminate(self, expression, root=True):
+    def absorb_and_eliminate(self, expression: object, root: bool = True):
         """
         absorption:
             A AND (A OR B) -> A
@@ -1081,7 +1086,7 @@ class Simplifier:
         return expression
 
     @annotate_types_on_change
-    def simplify_literals(self, expression, root=True):
+    def simplify_literals(self, expression, root: bool = True):
         if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
             return self._flat_simplify(expression, self._simplify_binary, root)
 
@@ -1096,7 +1101,7 @@ class Simplifier:
 
         return expression
 
-    def _simplify_integer_cast(self, expr: t.Any) -> t.Any:
+    def _simplify_integer_cast(self, expr: exp.Expr) -> exp.Expr:
         if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
             this = self._simplify_integer_cast(expr.this)
         else:
@@ -1436,7 +1441,12 @@ class Simplifier:
                 )
         return expression
 
-    def _flat_simplify(self, expression, simplifier, root=True):
+    def _flat_simplify(
+        self,
+        expression: exp.Expr,
+        simplifier: t.Callable[[exp.Expr, exp.Expr, exp.Expr], exp.Expr | None],
+        root: bool = True,
+    ) -> exp.Expr:
         if root or not expression.same_parent:
             operands = []
             queue = deque(expression.flatten(unnest=False))
@@ -1462,7 +1472,7 @@ class Simplifier:
         return expression
 
 
-def gen(expression: t.Any, comments: bool = False) -> str:
+def gen(expression: exp.Expr, comments: bool = False) -> str:
     """Simple pseudo sql generator for quickly generating sortable and uniq strings.
 
     Sorting and deduping sql is a necessary step for optimization. Calling the actual

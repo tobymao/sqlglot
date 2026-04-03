@@ -7,7 +7,7 @@ setup(
     extras_require={
         "dev": [
             "duckdb>=0.6",
-            "sqlglot-mypy>=1.19.1.post1",
+            "mypy",
             "setuptools_scm",
             "pandas",
             "pandas-stubs",
@@ -22,7 +22,7 @@ setup(
             "pyperf",
         ],
         # Compiles from source on the user's machine.
-        "c": [f"sqlglotc=={version}"],
+        "c": [f"sqlglotc=={version}; python_version >= '3.10'"],
         # Deprecated: the Rust tokenizer has been replaced by sqlglotc.
         "rs": ["sqlglotrs==0.13.0", f"sqlglotc=={version}"],
     },

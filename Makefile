@@ -25,6 +25,9 @@ install:
 install-dev:
 	$(PIP) install -e ".[dev]"
 	git submodule update --init 2>/dev/null || true
+	@if [ -f sqlglot-integration-tests/Makefile ]; then \
+		$(MAKE) -C sqlglot-integration-tests install-typing UV=$(UV); \
+	fi
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo ""; \
 		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
@@ -79,7 +82,7 @@ unitc: install-devc
 
 style:
 	pre-commit run --all-files
-	@if [ -f sqlglot-integration-tests/Makefile ]; then $(MAKE) -C sqlglot-integration-tests check; fi
+	@if [ -f sqlglot-integration-tests/Makefile ]; then $(MAKE) -C sqlglot-integration-tests check-submodule; fi
 
 check: style test testc
 

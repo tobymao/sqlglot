@@ -25,7 +25,6 @@ if t.TYPE_CHECKING:
         [exp.Expr, date, str, Dialect, exp.DataType], t.Optional[exp.Expr]
     ]
 
-S = t.TypeVar("S", str, exp.Expr)
 logger = logging.getLogger("sqlglot")
 
 
@@ -1102,7 +1101,12 @@ class Simplifier:
 
         return expression
 
-    def _simplify_integer_cast(self, expr: S) -> S:
+    @t.overload
+    def _simplify_integer_cast(self, expr: exp.Expr) -> exp.Expr: ...
+    @t.overload
+    def _simplify_integer_cast(self, expr: str) -> str: ...
+
+    def _simplify_integer_cast(self, expr: exp.Expr | str) -> exp.Expr | str:
         if isinstance(expr, exp.Cast):
             if isinstance(expr.this, exp.Cast):
                 this = self._simplify_integer_cast(expr.this)

@@ -531,6 +531,10 @@ class HiveGenerator(generator.Generator):
 
         return self.func("DATE_FORMAT", this, self.format_time(expression))
 
+    def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
+        kind = expression.args.get("kind")
+        return f"USING {kind} {self.sql(expression, 'this')}"
+
     def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
         if isinstance(expression.this, exp.InputOutputFormat):
             this = self.sql(expression, "this")

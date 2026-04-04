@@ -410,7 +410,7 @@ def extract_interval(expression: exp.Expr) -> relativedelta | None:
         return None
 
 
-def extract_type(*expressions):
+def extract_type(*expressions: exp.Expr):
     target_type = None
     for expression in expressions:
         target_type = expression.to if isinstance(expression, exp.Cast) else expression.type
@@ -420,7 +420,7 @@ def extract_type(*expressions):
     return target_type
 
 
-def date_literal(date, target_type=None):
+def date_literal(date: object, target_type=None) -> exp.Cast:
     if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
         target_type = exp.DType.DATETIME if isinstance(date, datetime) else exp.DType.DATE
 

@@ -420,7 +420,7 @@ def extract_type(*expressions: exp.Expr):
     return target_type
 
 
-def date_literal(date: object, target_type=None) -> exp.Cast:
+def date_literal(date: object, target_type=None) -> exp.Expr:
     if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
         target_type = exp.DType.DATETIME if isinstance(date, datetime) else exp.DType.DATE
 

@@ -79,7 +79,7 @@ unitc: install-devc
 
 style:
 	pre-commit run --all-files
-	@if [ -f sqlglot-integration-tests/Makefile ]; then $(MAKE) -C sqlglot-integration-tests check; fi
+	@if [ -f sqlglot-integration-tests/Makefile ]; then $(MAKE) -C sqlglot-integration-tests check-submodule; fi
 
 check: style test testc
 

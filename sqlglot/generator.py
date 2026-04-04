@@ -743,6 +743,7 @@ class Generator:
         exp.TransformModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
         exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
+        exp.UsingProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.UsingTemplateProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ViewAttributeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.VirtualProperty: exp.Properties.Location.POST_CREATE,
@@ -5849,3 +5850,7 @@ class Generator:
     def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
         props = self.expressions(expression, sep=" ")
         return f"MODIFY {props}"
+
+    def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
+        kind = expression.args.get("kind")
+        return f"USING {kind} {self.sql(expression, 'this')}"

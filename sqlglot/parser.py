@@ -1189,6 +1189,7 @@ class Parser:
         "AS": lambda self, query: self._build_pipe_cte(
             query, [exp.Star()], self._parse_table_alias()
         ),
+        "DISTINCT": lambda self, query: self._advance() or query.distinct(copy=False),
         "EXTEND": lambda self, query: self._parse_pipe_syntax_extend(query),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(

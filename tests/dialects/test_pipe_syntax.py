@@ -418,6 +418,24 @@ WHERE
             "WITH a AS (SELECT * FROM x JOIN y ON x.x1 = y.y1) SELECT * FROM a WHERE a.x2 > 1",
         )
 
+    def test_distinct(self):
+        self.validate_identity(
+            "SELECT 1 AS col1 UNION ALL SELECT 1 AS col1 |> DISTINCT",
+            "SELECT DISTINCT * FROM (SELECT 1 AS col1 UNION ALL SELECT 1 AS col1)",
+        )
+        self.validate_identity(
+            "FROM x |> DISTINCT",
+            "SELECT DISTINCT * FROM x",
+        )
+        self.validate_identity(
+            "FROM x |> DISTINCT |> WHERE x1 > 1",
+            "SELECT DISTINCT * FROM x WHERE x1 > 1",
+        )
+        self.validate_identity(
+            "FROM x |> SELECT x1, x2 |> DISTINCT",
+            "WITH __tmp1 AS (SELECT x1, x2 FROM x) SELECT DISTINCT * FROM __tmp1",
+        )
+
     def test_extend(self):
         self.validate_identity(
             "FROM x |> EXTEND id IN (1, 2) AS is_1_2, id + 1 as a_id",

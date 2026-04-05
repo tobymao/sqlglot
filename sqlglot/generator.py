@@ -4668,6 +4668,25 @@ class Generator:
     def mlforecast_sql(self, expression: exp.MLForecast) -> str:
         return self._ml_sql(expression, "FORECAST")
 
+    def aiforecast_sql(self, expression: exp.AIForecast) -> str:
+        this_sql = self.sql(expression, "this")
+        if isinstance(expression.this, exp.Table):
+            this_sql = f"TABLE {this_sql}"
+
+        return self.func(
+            "FORECAST",
+            this_sql,
+            expression.args.get("data_col"),
+            expression.args.get("timestamp_col"),
+            expression.args.get("model"),
+            expression.args.get("id_cols"),
+            expression.args.get("horizon"),
+            expression.args.get("forecast_end_timestamp"),
+            expression.args.get("confidence_level"),
+            expression.args.get("output_historical_time_series"),
+            expression.args.get("context_window"),
+        )
+
     def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
         this_sql = self.sql(expression, "this")
         if isinstance(expression.this, exp.Table):

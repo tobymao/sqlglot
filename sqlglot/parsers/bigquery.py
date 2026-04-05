@@ -285,7 +285,7 @@ class BigQueryParser(parser.Parser):
         "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
         "GENERATE_TEXT_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding, is_text=True),
         "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
-        "FORECAST": lambda self: self._parse_ml(exp.MLForecast),
+        "FORECAST": lambda self: self._parse_forecast(),
     }
 
     NO_PAREN_FUNCTIONS: t.ClassVar = {
@@ -602,6 +602,31 @@ class BigQueryParser(parser.Parser):
             return self._parse_ml(exp.MLTranslate)
 
         return exp.Translate.from_arg_list(self._parse_function_args())
+
+    def _parse_forecast(self) -> exp.AIForecast | exp.MLForecast:
+        # Check if this is ML.FORECAST by looking at previous tokens.
+        token = seq_get(self._tokens, self._index - 4)
+        if token and token.text.upper() == "ML":
+            return self._parse_ml(exp.MLForecast)
+
+        # AI.FORECAST is a TVF, where the first argument is either TABLE <table>
+        # or a parenthesized query statement, followed by named arguments.
+        self._match(TokenType.TABLE)
+        this = self._parse_table()
+        if not this:
+            self.raise_error("Expected table or query statement")
+
+        expr = self.expression(exp.AIForecast(this=this))
+        if self._match(TokenType.COMMA):
+            while True:
+                arg = self._parse_lambda()
+                if arg:
+                    expr.set(arg.this.name, arg)
+
+                if not self._match(TokenType.COMMA):
+                    break
+
+        return expr
 
     def _parse_features_at_time(self) -> exp.FeaturesAtTime:
         self._match(TokenType.TABLE)

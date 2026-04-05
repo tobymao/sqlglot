@@ -2414,6 +2414,13 @@ OPTIONS (
             "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, (SELECT * FROM mydataset.query_table), STRUCT())"
         )
 
+        self.validate_identity(
+            "SELECT * FROM AI.FORECAST(TABLE citibike_trips, data_col => 'num_trips', timestamp_col => 'date', horizon => 30)"
+        )
+        self.validate_identity(
+            "SELECT * FROM AI.FORECAST((SELECT * FROM citibike_trips), data_col => 'num_trips', timestamp_col => 'date', horizon => 30)"
+        )
+
         for name in ("GENERATE_EMBEDDING", "GENERATE_TEXT_EMBEDDING"):
             with self.subTest(f"Testing BigQuery's ML function {name}"):
                 ast = self.validate_identity(

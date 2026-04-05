@@ -333,6 +333,21 @@ class MLForecast(Expression, Func):
     arg_types = {"this": True, "expression": False, "params_struct": False}
 
 
+class AIForecast(Expression, Func):
+    arg_types = {
+        "this": True,
+        "data_col": False,
+        "timestamp_col": False,
+        "model": False,
+        "id_cols": False,
+        "horizon": False,
+        "forecast_end_timestamp": False,
+        "confidence_level": False,
+        "output_historical_time_series": False,
+        "context_window": False,
+    }
+
+
 class MLTranslate(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": True}
 

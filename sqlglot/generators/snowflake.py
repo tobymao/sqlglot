@@ -529,13 +529,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.ToFile: lambda self, e: self.func(
             f"{'TRY_' if e.args.get('safe') else ''}TO_FILE", e.this, e.args.get("path")
         ),
-        exp.ToNumber: lambda self, e: self.func(
-            f"{'TRY_' if e.args.get('safe') else ''}TO_NUMBER",
-            e.this,
-            e.args.get("format"),
-            e.args.get("precision"),
-            e.args.get("scale"),
-        ),
         exp.JSONFormat: rename_func("TO_JSON"),
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
@@ -712,12 +705,26 @@ class SnowflakeGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        precision = expression.args.get("precision")
+        scale = expression.args.get("scale")
+
+        default_precision = isinstance(precision, exp.Literal) and precision.name == "38"
+        default_scale = isinstance(scale, exp.Literal) and scale.name == "0"
+
+        if default_precision and default_scale:
+            precision = None
+            scale = None
+        elif default_scale:
+            scale = None
+
+        func_name = "TRY_TO_NUMBER" if expression.args.get("safe") else "TO_NUMBER"
+
         return self.func(
-            "TO_NUMBER",
+            func_name,
             expression.this,
             expression.args.get("format"),
-            expression.args.get("precision"),
-            expression.args.get("scale"),
+            precision,
+            scale,
         )
 
     def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:

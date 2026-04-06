@@ -39,6 +39,26 @@ def _build_approx_top_k(args: t.List) -> exp.ApproxTopK:
     return exp.ApproxTopK.from_arg_list(args)
 
 
+def _build_to_number(args: t.List, safe: bool = False) -> exp.ToNumber:
+    second_arg = seq_get(args, 1)
+    if second_arg and second_arg.is_number:
+        fmt = None
+        precision = second_arg
+        scale = seq_get(args, 2) or exp.Literal.number(0)
+    else:
+        fmt = second_arg
+        precision = seq_get(args, 2) or exp.Literal.number(38)
+        scale = seq_get(args, 3) or exp.Literal.number(0)
+
+    return exp.ToNumber(
+        this=seq_get(args, 0),
+        format=fmt,
+        precision=precision,
+        scale=scale,
+        safe=safe,
+    )
+
+
 def _build_date_from_parts(args: t.List) -> exp.DateFromParts:
     return exp.DateFromParts(
         year=seq_get(args, 0),
@@ -293,16 +313,6 @@ def _build_generator(args: t.List) -> exp.Generator:
             gen_args[positional_keys[i]] = arg
 
     return exp.Generator(**gen_args)
-
-
-def _build_try_to_number(args: t.List[exp.Expr]) -> exp.Expr:
-    return exp.ToNumber(
-        this=seq_get(args, 0),
-        format=seq_get(args, 1),
-        precision=seq_get(args, 2),
-        scale=seq_get(args, 3),
-        safe=True,
-    )
 
 
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[SnowflakeParser], exp.Show]:
@@ -638,7 +648,8 @@ class SnowflakeParser(parser.Parser):
         "TRY_TO_BOOLEAN": lambda args: exp.ToBoolean(this=seq_get(args, 0), safe=True),
         "TRY_TO_DATE": _build_datetime("TRY_TO_DATE", exp.DType.DATE, safe=True),
         **dict.fromkeys(
-            ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"), _build_try_to_number
+            ("TRY_TO_DECIMAL", "TRY_TO_NUMBER", "TRY_TO_NUMERIC"),
+            lambda args: _build_to_number(args, safe=True),
         ),
         "TRY_TO_DOUBLE": lambda args: exp.ToDouble(
             this=seq_get(args, 0), format=seq_get(args, 1), safe=True
@@ -661,12 +672,7 @@ class SnowflakeParser(parser.Parser):
         "TO_DATE": _build_datetime("TO_DATE", exp.DType.DATE),
         **dict.fromkeys(
             ("TO_DECIMAL", "TO_NUMBER", "TO_NUMERIC"),
-            lambda args: exp.ToNumber(
-                this=seq_get(args, 0),
-                format=seq_get(args, 1),
-                precision=seq_get(args, 2),
-                scale=seq_get(args, 3),
-            ),
+            lambda args: _build_to_number(args),
         ),
         "TO_TIME": _build_datetime("TO_TIME", exp.DType.TIME),
         "TO_TIMESTAMP": _build_datetime("TO_TIMESTAMP", exp.DType.TIMESTAMP),

@@ -2352,6 +2352,20 @@ class DuckDBGenerator(generator.Generator):
                 result = self.func("TO_BINARY", value)
         return f"TRY({result})" if is_safe else result
 
+    def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        fmt = expression.args.get("format")
+        precision = expression.args.get("precision")
+        scale = expression.args.get("scale")
+
+        if not fmt and precision and scale:
+            return self.sql(
+                exp.cast(
+                    expression.this, f"DECIMAL({precision.name}, {scale.name})", dialect="duckdb"
+                )
+            )
+
+        return super().tonumber_sql(expression)
+
     def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
         """
         Handle GREATEST/LEAST functions with dialect-aware NULL behavior.

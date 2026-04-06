@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import typing as t
+from collections.abc import Mapping, Sequence
 
 if t.TYPE_CHECKING:
     from typing_extensions import ParamSpec
-    from collections.abc import Mapping
+
     import sqlglot
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel
@@ -15,6 +16,9 @@ B = t.TypeVar("B", bound="sqlglot.exp.Binary")
 E = t.TypeVar("E", bound="sqlglot.exp.Expr")
 F = t.TypeVar("F", bound="sqlglot.exp.Func")
 T = t.TypeVar("T")
+
+BuilderArgs = Sequence[t.Any]
+"""Sequence of arguments passed to builder functions."""
 
 
 class _DialectArg(t.TypedDict, total=False):

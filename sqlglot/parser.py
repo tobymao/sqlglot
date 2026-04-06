@@ -22,9 +22,11 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie
 from collections.abc import Sequence
+from builtins import type as Type
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    from sqlglot.expressions import ExpOrStr
+    from sqlglot._typing import E, BuilderArgs
     from sqlglot.dialects.dialect import Dialect, DialectType
 
     from re import Pattern
@@ -40,12 +42,12 @@ OPTIONS_TYPE = dict[str, Sequence[t.Union[Sequence[str], str]]]
 TIME_ZONE_RE: Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
 
 
-def build_var_map(args: list) -> exp.StarMap | exp.VarMap:
+def build_var_map(args: BuilderArgs) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 
-    keys = []
-    values = []
+    keys: list[ExpOrStr] = []
+    values: list[ExpOrStr] = []
     for i in range(0, len(args), 2):
         keys.append(args[i])
         values.append(args[i + 1])
@@ -53,13 +55,13 @@ def build_var_map(args: list) -> exp.StarMap | exp.VarMap:
     return exp.VarMap(keys=exp.array(*keys, copy=False), values=exp.array(*values, copy=False))
 
 
-def build_like(args: t.List) -> exp.Escape | exp.Like:
+def build_like(args: BuilderArgs) -> exp.Escape | exp.Like:
     like = exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0))
     return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
 
 def binary_range_parser(
-    expr_type: t.Type[exp.Expr], reverse_args: bool = False
+    expr_type: Type[exp.Expr], reverse_args: bool = False
 ) -> t.Callable[[Parser, t.Optional[exp.Expr]], t.Optional[exp.Expr]]:
     def _parse_binary_range(self: Parser, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
         expression = self._parse_bitwise()
@@ -70,7 +72,7 @@ def binary_range_parser(
     return _parse_binary_range
 
 
-def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
+def build_logarithm(args: BuilderArgs, dialect: Dialect) -> exp.Func:
     # Default argument order is base, expression
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
@@ -83,25 +85,27 @@ def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
-def build_hex(args: t.List, dialect: Dialect) -> exp.Hex | exp.LowerHex:
+def build_hex(args: BuilderArgs, dialect: Dialect) -> exp.Hex | exp.LowerHex:
     arg = seq_get(args, 0)
     return exp.LowerHex(this=arg) if dialect.HEX_LOWERCASE else exp.Hex(this=arg)
 
 
-def build_lower(args: t.List) -> exp.Lower | exp.Hex:
+def build_lower(args: BuilderArgs) -> exp.Lower | exp.Hex:
     # LOWER(HEX(..)) can be simplified to LowerHex to simplify its transpilation
     arg = seq_get(args, 0)
     return exp.LowerHex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Lower(this=arg)
 
 
-def build_upper(args: t.List) -> exp.Upper | exp.Hex:
+def build_upper(args: BuilderArgs) -> exp.Upper | exp.Hex:
     # UPPER(HEX(..)) can be simplified to Hex to simplify its transpilation
     arg = seq_get(args, 0)
     return exp.Hex(this=arg.this) if isinstance(arg, exp.Hex) else exp.Upper(this=arg)
 
 
-def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
-    def _builder(args: t.List, dialect: Dialect) -> E:
+def build_extract_json_with_path(
+    expr_type: Type[E],
+) -> t.Callable[[BuilderArgs, Dialect], E]:
+    def _builder(args: BuilderArgs, dialect: Dialect) -> E:
         expression = expr_type(
             this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         )
@@ -115,7 +119,7 @@ def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
     return _builder
 
 
-def build_mod(args: t.List) -> exp.Mod:
+def build_mod(args: BuilderArgs) -> exp.Mod:
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
 
@@ -126,7 +130,7 @@ def build_mod(args: t.List) -> exp.Mod:
     return exp.Mod(this=this, expression=expression)
 
 
-def build_pad(args: t.List, is_left: bool = True):
+def build_pad(args: BuilderArgs, is_left: bool = True):
     return exp.Pad(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
@@ -136,7 +140,7 @@ def build_pad(args: t.List, is_left: bool = True):
 
 
 def build_array_constructor(
-    exp_class: t.Type[E], args: t.List, bracket_kind: TokenType, dialect: Dialect
+    exp_class: Type[E], args: list[t.Any], bracket_kind: TokenType, dialect: Dialect
 ) -> exp.Expr:
     array_exp = exp_class(expressions=args)
 
@@ -147,7 +151,7 @@ def build_array_constructor(
 
 
 def build_convert_timezone(
-    args: t.List, default_source_tz: t.Optional[str] = None
+    args: BuilderArgs, default_source_tz: t.Optional[str] = None
 ) -> t.Union[exp.ConvertTimezone, exp.Anonymous]:
     if len(args) == 2:
         source_tz = exp.Literal.string(default_source_tz) if default_source_tz else None
@@ -158,7 +162,7 @@ def build_convert_timezone(
     return exp.ConvertTimezone.from_arg_list(args)
 
 
-def build_trim(args: t.List, is_left: bool = True, reverse_args: bool = False):
+def build_trim(args: BuilderArgs, is_left: bool = True, reverse_args: bool = False) -> exp.Trim:
     this, expression = seq_get(args, 0), seq_get(args, 1)
 
     if expression and reverse_args:
@@ -168,12 +172,12 @@ def build_trim(args: t.List, is_left: bool = True, reverse_args: bool = False):
 
 
 def build_coalesce(
-    args: t.List, is_nvl: t.Optional[bool] = None, is_null: t.Optional[bool] = None
+    args: BuilderArgs, is_nvl: t.Optional[bool] = None, is_null: t.Optional[bool] = None
 ) -> exp.Coalesce:
     return exp.Coalesce(this=seq_get(args, 0), expressions=args[1:], is_nvl=is_nvl, is_null=is_null)
 
 
-def build_locate_strposition(args: t.List):
+def build_locate_strposition(args: BuilderArgs) -> exp.StrPosition:
     return exp.StrPosition(
         this=seq_get(args, 1),
         substr=seq_get(args, 0),
@@ -181,7 +185,7 @@ def build_locate_strposition(args: t.List):
     )
 
 
-def build_array_append(args: t.List, dialect: Dialect) -> exp.ArrayAppend:
+def build_array_append(args: BuilderArgs, dialect: Dialect) -> exp.ArrayAppend:
     """
     Builds ArrayAppend with NULL propagation semantics based on the dialect configuration.
 
@@ -202,7 +206,7 @@ def build_array_append(args: t.List, dialect: Dialect) -> exp.ArrayAppend:
     )
 
 
-def build_array_prepend(args: t.List, dialect: Dialect) -> exp.ArrayPrepend:
+def build_array_prepend(args: BuilderArgs, dialect: Dialect) -> exp.ArrayPrepend:
     """
     Builds ArrayPrepend with NULL propagation semantics based on the dialect configuration.
 
@@ -223,7 +227,7 @@ def build_array_prepend(args: t.List, dialect: Dialect) -> exp.ArrayPrepend:
     )
 
 
-def build_array_concat(args: t.List, dialect: Dialect) -> exp.ArrayConcat:
+def build_array_concat(args: BuilderArgs, dialect: Dialect) -> exp.ArrayConcat:
     """
     Builds ArrayConcat with NULL propagation semantics based on the dialect configuration.
 
@@ -244,7 +248,7 @@ def build_array_concat(args: t.List, dialect: Dialect) -> exp.ArrayConcat:
     )
 
 
-def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
+def build_array_remove(args: BuilderArgs, dialect: Dialect) -> exp.ArrayRemove:
     """
     Builds ArrayRemove with NULL propagation semantics based on the dialect configuration.
 
@@ -265,7 +269,7 @@ def build_array_remove(args: t.List, dialect: Dialect) -> exp.ArrayRemove:
     )
 
 
-def _resolve_dialect(dialect: t.Any) -> t.Any:
+def _resolve_dialect(dialect: DialectType) -> Dialect:
     from sqlglot.dialects.dialect import Dialect
 
     return Dialect.get_or_raise(dialect)

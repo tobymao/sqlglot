@@ -16,7 +16,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
     from collections.abc import Sequence
 
-    ColumnMapping = t.Union[dict, str, list]
+    ColumnMapping = t.Union[dict[str, str], str, list[str]]
 
 
 @trait
@@ -151,8 +151,8 @@ class Schema(abc.ABC):
 class AbstractMappingSchema:
     def __init__(
         self,
-        mapping: t.Optional[t.Dict] = None,
-        udf_mapping: t.Optional[t.Dict] = None,
+        mapping: dict[str, object] | None = None,
+        udf_mapping: dict[str, object] | None = None,
     ) -> None:
         self.mapping = mapping or {}
         self.mapping_trie = new_trie(
@@ -201,10 +201,10 @@ class AbstractMappingSchema:
 
     def _find_in_trie(
         self,
-        parts: t.List[str],
-        trie: t.Dict,
+        parts: list[str],
+        trie: dict[str, object],
         raise_on_missing: bool,
-    ) -> t.Optional[t.List[str]]:
+    ) -> list[str] | None:
         value, trie = in_trie(trie, parts)
 
         if value == TrieResult.FAILED:
@@ -271,7 +271,10 @@ class AbstractMappingSchema:
         )
 
     def nested_get(
-        self, parts: Sequence[str], d: t.Optional[dict] = None, raise_on_missing=True
+        self,
+        parts: Sequence[str],
+        d: dict[str, object] | None = None,
+        raise_on_missing: bool = True,
     ) -> t.Optional[t.Any]:
         return nested_get(
             d or self.mapping,
@@ -301,11 +304,11 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
     def __init__(
         self,
-        schema: t.Optional[t.Dict] = None,
-        visible: t.Optional[t.Dict] = None,
+        schema: dict[str, object] | None = None,
+        visible: dict[str, object] | None = None,
         dialect: DialectType = None,
         normalize: bool = True,
-        udf_mapping: t.Optional[t.Dict] = None,
+        udf_mapping: dict[str, object] | None = None,
     ) -> None:
         self.visible = {} if visible is None else visible
         self.normalize = normalize
@@ -499,7 +502,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         table_schema = self.find(normalized_table, raise_on_missing=False)
         return normalized_column_name in table_schema if table_schema else False
 
-    def _normalize(self, schema: t.Dict) -> t.Dict:
+    def _normalize(self, schema: dict[str, object]) -> dict[str, object]:
         """
         Normalizes all identifiers in the schema.
 
@@ -509,7 +512,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         Returns:
             The normalized schema mapping.
         """
-        normalized_mapping: t.Dict = {}
+        normalized_mapping: dict[str, object] = {}
         flattened_schema = flatten_schema(schema)
         error_msg = "Table {} must match the schema's nesting level: {}."
 
@@ -537,7 +540,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         return normalized_mapping
 
-    def _normalize_udfs(self, udfs: t.Dict) -> t.Dict:
+    def _normalize_udfs(self, udfs: dict[str, object]) -> dict[str, object]:
         """
         Normalizes all identifiers in the UDF mapping.
 
@@ -547,7 +550,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         Returns:
             The normalized UDF mapping.
         """
-        normalized_mapping: t.Dict = {}
+        normalized_mapping: dict[str, object] = {}
 
         for keys in flatten_schema(udfs, depth=dict_depth(udfs)):
             udf_type = nested_get(udfs, *zip(keys, keys))
@@ -695,14 +698,20 @@ def normalize_name(
     return Dialect.get_or_raise(dialect).normalize_identifier(identifier)
 
 
-def ensure_schema(schema: Schema | t.Optional[t.Dict], **kwargs: t.Any) -> Schema:
+def ensure_schema(schema: Schema | dict[str, object] | None, **kwargs: t.Any) -> Schema:
     if isinstance(schema, Schema):
         return schema
 
     return MappingSchema(schema, **kwargs)
 
 
-def ensure_column_mapping(mapping: t.Optional[ColumnMapping]) -> t.Dict:
+@t.overload
+def ensure_column_mapping(mapping: list[str] | None) -> dict[str, None]: ...
+@t.overload
+def ensure_column_mapping(mapping: dict[str, str]) -> dict[str, str]: ...
+@t.overload
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, None] | dict[str, str]: ...
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, None] | dict[str, str]:
     if mapping is None:
         return {}
     elif isinstance(mapping, dict):
@@ -720,8 +729,8 @@ def ensure_column_mapping(mapping: t.Optional[ColumnMapping]) -> t.Dict:
 
 
 def flatten_schema(
-    schema: t.Dict, depth: t.Optional[int] = None, keys: t.Optional[t.List[str]] = None
-) -> t.List[t.List[str]]:
+    schema: dict[str, object], depth: int | None = None, keys: list[str] | None = None
+) -> list[list[str]]:
     tables = []
     keys = keys or []
     depth = dict_depth(schema) - 1 if depth is None else depth
@@ -736,7 +745,7 @@ def flatten_schema(
 
 
 def nested_get(
-    d: t.Dict, *path: t.Tuple[str, str], raise_on_missing: bool = True
+    d: dict[str, object], *path: tuple[str, str], raise_on_missing: bool = True
 ) -> t.Optional[t.Any]:
     """
     Get a value for a nested dictionary.
@@ -762,7 +771,7 @@ def nested_get(
     return result
 
 
-def nested_set(d: dict, keys: Sequence[str], value: t.Any) -> dict:
+def nested_set(d: dict[str, t.Any], keys: Sequence[str], value: t.Any) -> dict[str, t.Any]:
     """
     In-place set a value for a nested dictionary
 

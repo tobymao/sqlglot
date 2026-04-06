@@ -2996,11 +2996,8 @@ class DuckDBGenerator(generator.Generator):
         return self.func("CHR", arg)
 
     def collation_sql(self, expression: exp.Collation) -> str:
-        this = expression.this
-        if isinstance(this, exp.Collate) and this.expression.name:
-            return self.sql(this.expression)
         self.unsupported("COLLATION function is not supported by DuckDB")
-        return self.sql(exp.null())
+        return self.function_fallback_sql(expression)
 
     def _validate_regexp_flags(
         self, flags: t.Optional[exp.Expr], supported_flags: str

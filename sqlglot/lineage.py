@@ -77,10 +77,10 @@ class Node:
 def lineage(
     column: str | exp.Column,
     sql: str | exp.Expr,
-    schema: t.Optional[dict | Schema] = None,
-    sources: t.Optional[Mapping[str, str | exp.Query]] = None,
+    schema: dict | Schema | None = None,
+    sources: Mapping[str, str | exp.Query] | None = None,
     dialect: DialectType = None,
-    scope: t.Optional[Scope] = None,
+    scope: Scope | None = None,
     trim_selects: bool = True,
     copy: bool = True,
     **kwargs,
@@ -142,12 +142,12 @@ def to_node(
     column: str | int,
     scope: Scope,
     dialect: DialectType,
-    scope_name: t.Optional[str] = None,
-    upstream: t.Optional[Node] = None,
-    source_name: t.Optional[str] = None,
-    reference_node_name: t.Optional[str] = None,
+    scope_name: str | None = None,
+    upstream: Node | None = None,
+    source_name: str | None = None,
+    reference_node_name: str | None = None,
     trim_selects: bool = True,
-    _cache: t.Optional[t.Dict[t.Tuple, Node]] = None,
+    _cache: dict[tuple, Node] | None = None,
 ) -> Node:
     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
 
@@ -249,7 +249,7 @@ def to_node(
     }
 
     for subquery in find_all_in_scope(select, *exp.UNWRAPPED_QUERIES):
-        subquery_scope: t.Optional[Scope] = subquery_scopes.get(id(subquery))
+        subquery_scope: Scope | None = subquery_scopes.get(id(subquery))
         if not subquery_scope:
             logger.warning(f"Unknown subquery scope: {subquery.sql(dialect=dialect)}")
             continue
@@ -315,7 +315,7 @@ def to_node(
 
     for c in source_columns:
         table = c.table
-        col_source: t.Optional[exp.Table | Scope] = scope.sources.get(table)
+        col_source: exp.Table | Scope | None = scope.sources.get(table)
 
         if isinstance(col_source, Scope):
             reference_node_name = None
@@ -402,7 +402,7 @@ class GraphHTML:
         nodes: dict,
         edges: list,
         imports: bool = True,
-        options: t.Optional[Mapping[str, object]] = None,
+        options: Mapping[str, object] | None = None,
     ):
         self.imports = imports
 

@@ -234,7 +234,7 @@ class BigQueryGenerator(generator.Generator):
     SUPPORTS_TABLE_ALIAS_COLUMNS = False
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
     JSON_KEY_VALUE_PAIR_SEP = ","
-    NULL_ORDERING_SUPPORTED: t.Optional[bool] = False
+    NULL_ORDERING_SUPPORTED: bool | None = False
     IGNORE_NULLS_IN_FUNC = True
     JSON_PATH_SINGLE_QUOTE_ESCAPE = True
     CAN_IMPLEMENT_ARRAY_ANY = True
@@ -672,7 +672,7 @@ class BigQueryGenerator(generator.Generator):
 
         return self.func("CONTAINS_SUBSTR", this, expr, expression.args.get("json_scope"))
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         this = expression.this
 
         # This ensures that inline type-annotated ARRAY literals like ARRAY<INT64>[1, 2, 3]

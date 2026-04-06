@@ -7,7 +7,7 @@ from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
-def _build_strftime(args: t.List) -> exp.Anonymous | exp.TimeToStr:
+def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
         args.append(exp.CurrentTimestamp())
     if len(args) == 2:

@@ -12,7 +12,7 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _build_to_timestamp(args: t.List) -> exp.StrToTime | exp.Anonymous:
+def _build_to_timestamp(args: list) -> exp.StrToTime | exp.Anonymous:
     if len(args) == 1:
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 
@@ -96,7 +96,7 @@ class OracleParser(parser.Parser):
         ),
     }
 
-    def _parse_dbms_random(self) -> t.Optional[exp.Expr]:
+    def _parse_dbms_random(self) -> exp.Expr | None:
         if self._match_text_seq(".", "VALUE"):
             lower, upper = None, None
             if self._match(TokenType.L_PAREN, advance=False):
@@ -122,7 +122,7 @@ class OracleParser(parser.Parser):
             order=self._parse_order(),
         )
 
-    def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
+    def _parse_json_array(self, expr_type: type[E], **kwargs) -> E:
         return self.expression(
             expr_type(
                 null_handling=self._parse_on_handling("NULL", "NULL", "ABSENT"),
@@ -132,7 +132,7 @@ class OracleParser(parser.Parser):
             )
         )
 
-    def _parse_hint_function_call(self) -> t.Optional[exp.Expr]:
+    def _parse_hint_function_call(self) -> exp.Expr | None:
         if not self._curr or not self._next or self._next.token_type != TokenType.L_PAREN:
             return None
 
@@ -154,7 +154,7 @@ class OracleParser(parser.Parser):
 
         return args
 
-    def _parse_query_restrictions(self) -> t.Optional[exp.Expr]:
+    def _parse_query_restrictions(self) -> exp.Expr | None:
         kind = self._parse_var_from_options(self.QUERY_RESTRICTIONS, raise_unmatched=False)
 
         if not kind:
@@ -179,7 +179,7 @@ class OracleParser(parser.Parser):
             )
         )
 
-    def _parse_into(self) -> t.Optional[exp.Into]:
+    def _parse_into(self) -> exp.Into | None:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/SELECT-INTO-statement.html
         bulk_collect = self._match(TokenType.BULK_COLLECT_INTO)
         if not bulk_collect and not self._match(TokenType.INTO):
@@ -200,7 +200,7 @@ class OracleParser(parser.Parser):
     def _parse_connect_with_prior(self):
         return self._parse_assignment()
 
-    def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
+    def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
 
         if not this:
@@ -216,7 +216,7 @@ class OracleParser(parser.Parser):
         self._retreat(index)
         return this
 
-    def _parse_insert_table(self) -> t.Optional[exp.Expr]:
+    def _parse_insert_table(self) -> exp.Expr | None:
         # Oracle does not use AS for INSERT INTO alias
         # https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/INSERT.html
         # Parse table parts without schema to avoid parsing the alias with its columns

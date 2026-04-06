@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     to_number_with_nls_param,
 )
+from collections import defaultdict
 
 
 def _date_add_sql(
@@ -36,7 +37,7 @@ def _date_add_sql(
 
 
 class TeradataGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
@@ -96,7 +97,7 @@ class TeradataGenerator(generator.Generator):
         prefix, suffix = ("(", ")") if expression.this else ("", "")
         return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):
             # We don't actually want to print the unknown type in CAST(<value> AS FORMAT <format>)
             expression.to.pop()
@@ -109,7 +110,7 @@ class TeradataGenerator(generator.Generator):
     def tablesample_sql(
         self,
         expression: exp.TableSample,
-        tablesample_keyword: t.Optional[str] = None,
+        tablesample_keyword: str | None = None,
     ) -> str:
         return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
 
@@ -144,7 +145,7 @@ class TeradataGenerator(generator.Generator):
 
         return f"{locking_clause} {query_sql}"
 
-    def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+    def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         kind = self.sql(expression, "kind").upper()
         if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):
             this_name = self.sql(expression.this, "this")

@@ -1,5 +1,3 @@
-import typing as t
-
 from sqlglot import TokenType
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.singlestore import SingleStoreGenerator
@@ -13,7 +11,7 @@ class SingleStore(MySQL):
     MYSQL_INVERSE_TIME_TRIE = MySQL.INVERSE_TIME_TRIE
     CAST_TO_TIME6 = staticmethod(cast_to_time6)
 
-    TIME_MAPPING: t.Dict[str, str] = {
+    TIME_MAPPING: dict[str, str] = {
         "D": "%u",  # Day of week (1-7)
         "DD": "%d",  # day of month (01-31)
         "DY": "%a",  # abbreviated name of day

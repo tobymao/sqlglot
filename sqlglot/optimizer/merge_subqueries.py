@@ -263,7 +263,7 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
 def _merge_from(
     outer_scope: Scope,
     inner_scope: Scope,
-    node_to_replace: t.Union[exp.Subquery, exp.Table],
+    node_to_replace: exp.Subquery | exp.Table,
     alias: str,
 ) -> None:
     """

@@ -142,7 +142,7 @@ class TeradataParser(parser.Parser):
 
         # Handle both string literals and NONE keyword
         if self._match_text_seq("NONE"):
-            query_band_string: t.Optional[exp.Expr] = exp.Var(this="NONE")
+            query_band_string: exp.Expr | None = exp.Var(this="NONE")
         else:
             query_band_string = self._parse_string()
 
@@ -169,11 +169,11 @@ class TeradataParser(parser.Parser):
 
     def _parse_function(
         self,
-        functions: t.Optional[t.Dict[str, t.Callable]] = None,
+        functions: dict[str, t.Callable] | None = None,
         anonymous: bool = False,
         optional_parens: bool = True,
         any_token: bool = False,
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         # Teradata uses a `(FORMAT <format_string>)` clause after column references to
         # override the output format. When we see this pattern we do not
         # parse it as a function call.  The syntax is documented at
@@ -193,7 +193,7 @@ class TeradataParser(parser.Parser):
             any_token=any_token,
         )
 
-    def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
+    def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
 
         if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):

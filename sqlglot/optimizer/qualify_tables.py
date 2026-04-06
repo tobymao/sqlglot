@@ -15,9 +15,9 @@ if t.TYPE_CHECKING:
 
 def qualify_tables(
     expression: E,
-    db: t.Optional[str | exp.Identifier] = None,
-    catalog: t.Optional[str | exp.Identifier] = None,
-    on_qualify: t.Optional[t.Callable[[exp.Table], None]] = None,
+    db: str | exp.Identifier | None = None,
+    catalog: str | exp.Identifier | None = None,
+    on_qualify: t.Callable[[exp.Table], None] | None = None,
     dialect: DialectType = None,
     canonicalize_table_aliases: bool = False,
 ) -> E:
@@ -77,10 +77,10 @@ def qualify_tables(
     def _set_alias(
         expression: exp.Expr,
         canonical_aliases: dict[str, str],
-        target_alias: t.Optional[str] = None,
-        scope: t.Optional[Scope] = None,
+        target_alias: str | None = None,
+        scope: Scope | None = None,
         normalize: bool = False,
-        columns: t.Optional[Sequence[t.Union[str, exp.Identifier]]] = None,
+        columns: Sequence[str | exp.Identifier] | None = None,
     ) -> None:
         alias = expression.args.get("alias") or exp.TableAlias()
 
@@ -106,7 +106,7 @@ def qualify_tables(
 
     for scope in traverse_scope(expression):
         local_columns = scope.local_columns
-        canonical_aliases: t.Dict[str, str] = {}
+        canonical_aliases: dict[str, str] = {}
 
         for query in scope.subqueries:
             subquery = query.parent
@@ -137,7 +137,7 @@ def qualify_tables(
 
                 table_this = source.this
                 table_alias = source.args.get("alias")
-                function_columns: t.Optional[Sequence[t.Union[str, exp.Identifier]]] = None
+                function_columns: Sequence[str | exp.Identifier] | None = None
                 if isinstance(table_this, exp.Func):
                     if not table_alias:
                         function_columns = ensure_list(

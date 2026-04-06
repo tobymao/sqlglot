@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
 DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
 
 
-def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
+def to_char_is_numeric_handler(args: list, dialect: DialectType) -> exp.TimeToStr | exp.ToChar:
     expression = build_timetostr_or_tochar(args, dialect)
     fmt = seq_get(args, 1)
 
@@ -30,8 +30,8 @@ def to_char_is_numeric_handler(args: t.List, dialect: DialectType) -> exp.TimeTo
 
 
 def build_date_delta_with_cast_interval(
-    expression_class: t.Type[DATE_DELTA],
-) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
+    expression_class: type[DATE_DELTA],
+) -> t.Callable[[list[exp.Expr]], exp.Expr]:
     fallback_builder = build_date_delta(expression_class)
 
     def _builder(args):
@@ -56,7 +56,7 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
-def datetype_handler(args: t.List[exp.Expr], dialect: DialectType) -> exp.Expr:
+def datetype_handler(args: list[exp.Expr], dialect: DialectType) -> exp.Expr:
     from sqlglot.dialects.dialect import Dialect
 
     year, month, day = args

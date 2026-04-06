@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
@@ -22,7 +21,7 @@ def _trim_sql(self: OracleGenerator, expression: exp.Trim) -> str:
 
 
 class OracleGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True

@@ -15,7 +15,7 @@ from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
-def _build_generate_series(args: t.List) -> exp.ExplodingGenerateSeries:
+def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
     # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
     step = seq_get(args, 2)
@@ -28,7 +28,7 @@ def _build_generate_series(args: t.List) -> exp.ExplodingGenerateSeries:
     return exp.ExplodingGenerateSeries.from_arg_list(args)
 
 
-def _build_to_timestamp(args: t.List) -> exp.UnixToTime | exp.StrToTime:
+def _build_to_timestamp(args: list) -> exp.UnixToTime | exp.StrToTime:
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
@@ -38,7 +38,7 @@ def _build_to_timestamp(args: t.List) -> exp.UnixToTime | exp.StrToTime:
     return build_formatted_time(exp.StrToTime, "postgres")(args)
 
 
-def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.RegexpReplace:
+def _build_regexp_replace(args: list, dialect: DialectType = None) -> exp.RegexpReplace:
     # The signature of REGEXP_REPLACE is:
     # regexp_replace(source, pattern, replacement [, start [, N ]] [, flags ])
     #
@@ -63,7 +63,7 @@ def _build_regexp_replace(args: t.List, dialect: DialectType = None) -> exp.Rege
     return regexp_replace
 
 
-def _build_levenshtein_less_equal(args: t.List) -> exp.Levenshtein:
+def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
     # Postgres has two signatures for levenshtein_less_equal function, but in both cases
     # max_dist is the last argument
     # levenshtein_less_equal(source, target, ins_cost, del_cost, sub_cost, max_d)
@@ -202,7 +202,7 @@ class PostgresParser(parser.Parser):
 
     ARG_MODE_TOKENS: t.ClassVar = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
 
-    def _parse_parameter_mode(self) -> t.Optional[TokenType]:
+    def _parse_parameter_mode(self) -> TokenType | None:
         """
         Parse PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).
 
@@ -268,7 +268,7 @@ class PostgresParser(parser.Parser):
             )
         )
 
-    def _parse_function_parameter(self) -> t.Optional[exp.Expr]:
+    def _parse_function_parameter(self) -> exp.Expr | None:
         param_mode = self._parse_parameter_mode()
 
         if param_mode:
@@ -287,7 +287,7 @@ class PostgresParser(parser.Parser):
 
         return column_def
 
-    def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
+    def _parse_query_parameter(self) -> exp.Expr | None:
         this = (
             self._parse_wrapped(self._parse_id_var)
             if self._match(TokenType.L_PAREN, advance=False)
@@ -306,7 +306,7 @@ class PostgresParser(parser.Parser):
 
         return self.expression(exp.Extract(this=part, expression=value))
 
-    def _parse_unique_key(self) -> t.Optional[exp.Expr]:
+    def _parse_unique_key(self) -> exp.Expr | None:
         return None
 
     def _parse_jsonb_exists(self) -> exp.JSONBExists:
@@ -332,7 +332,7 @@ class PostgresParser(parser.Parser):
 
         return this
 
-    def _parse_user_defined_type(self, identifier: exp.Identifier) -> t.Optional[exp.Expr]:
+    def _parse_user_defined_type(self, identifier: exp.Identifier) -> exp.Expr | None:
         udt_type: exp.Identifier | exp.Dot = identifier
 
         while self._match(TokenType.DOT):

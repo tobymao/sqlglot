@@ -62,7 +62,7 @@ def optimize(
     catalog: str | exp.Identifier | None = None,
     dialect: DialectType = None,
     rules: Sequence[OptimizerFn] = RULES,
-    sql: t.Optional[str] = None,
+    sql: str | None = None,
     **kwargs: object,
 ) -> exp.Expr:
     """

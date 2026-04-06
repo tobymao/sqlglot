@@ -93,8 +93,8 @@ def catch(*exceptions):
 
 def annotate_types_on_change(func):
     @wraps(func)
-    def _func(self, expression: exp.Expr, *args, **kwargs) -> t.Optional[exp.Expr]:
-        new_expression: t.Optional[exp.Expr] = func(self, expression, *args, **kwargs)
+    def _func(self, expression: exp.Expr, *args, **kwargs) -> exp.Expr | None:
+        new_expression: exp.Expr | None = func(self, expression, *args, **kwargs)
 
         if new_expression is None:
             return new_expression
@@ -232,7 +232,7 @@ def _is_constant(expression: exp.Expr) -> bool:
     return isinstance(expr, exp.CONSTANTS) or _is_date_literal(expr)
 
 
-def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> t.Optional[DateRange]:
+def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> DateRange | None:
     """
     Get the date range for a DATE_TRUNC equality comparison:
 
@@ -251,7 +251,7 @@ def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> t.Optional[Date
 
 
 def _datetrunc_eq_expression(
-    left: exp.Expr, drange: DateRange, target_type: t.Optional[exp.DataType]
+    left: exp.Expr, drange: DateRange, target_type: exp.DataType | None
 ) -> exp.Expr:
     """Get the logical expression for a date range"""
     return exp.and_(
@@ -266,8 +266,8 @@ def _datetrunc_eq(
     date: date,
     unit: str,
     dialect: Dialect,
-    target_type: t.Optional[exp.DataType],
-) -> t.Optional[exp.Expr]:
+    target_type: exp.DataType | None,
+) -> exp.Expr | None:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
@@ -280,8 +280,8 @@ def _datetrunc_neq(
     date: date,
     unit: str,
     dialect: Dialect,
-    target_type: t.Optional[exp.DataType],
-) -> t.Optional[exp.Expr]:
+    target_type: exp.DataType | None,
+) -> exp.Expr | None:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
@@ -359,7 +359,7 @@ def cast_as_date(value: datetime | date | str) -> date | None:
 
 def cast_as_datetime(
     value: datetime | date | str,
-) -> t.Optional[datetime]:
+) -> datetime | None:
     if isinstance(value, datetime):
         return value
     if isinstance(value, date):
@@ -526,7 +526,7 @@ class Simplifier:
         exp.Is,
     )
 
-    INVERSE_COMPARISONS: t.ClassVar[t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]]] = {
+    INVERSE_COMPARISONS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {
         exp.LT: exp.GT,
         exp.GT: exp.LT,
         exp.LTE: exp.GTE,
@@ -536,14 +536,14 @@ class Simplifier:
     NONDETERMINISTIC: t.ClassVar = (exp.Rand, exp.Randn)
     AND_OR: t.ClassVar = (exp.And, exp.Or)
 
-    INVERSE_DATE_OPS: t.ClassVar[t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]]] = {
+    INVERSE_DATE_OPS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {
         exp.DateAdd: exp.Sub,
         exp.DateSub: exp.Add,
         exp.DatetimeAdd: exp.Sub,
         exp.DatetimeSub: exp.Add,
     }
 
-    INVERSE_OPS: t.ClassVar[t.Dict[t.Type[exp.Expr], t.Type[exp.Expr]]] = {
+    INVERSE_OPS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {
         **INVERSE_DATE_OPS,
         exp.Add: exp.Sub,
         exp.Sub: exp.Add,
@@ -553,7 +553,7 @@ class Simplifier:
 
     CONCATS: t.ClassVar = (exp.Concat, exp.DPipe)
 
-    DATETRUNC_BINARY_COMPARISONS: t.ClassVar[t.Dict[t.Type[exp.Expr], DateTruncBinaryTransform]] = {
+    DATETRUNC_BINARY_COMPARISONS: t.ClassVar[dict[type[exp.Expr], DateTruncBinaryTransform]] = {
         exp.LT: lambda l, dt, u, d, t: (
             l
             < date_literal(

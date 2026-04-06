@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.parsers.postgres import PostgresParser
@@ -32,14 +31,14 @@ class RisingWaveParser(PostgresParser):
         "WATERMARK",
     }
 
-    def _parse_table_hints(self) -> t.Optional[t.List[exp.Expr]]:
+    def _parse_table_hints(self) -> list[exp.Expr] | None:
         # There is no hint in risingwave.
         # Do nothing here to avoid WITH keywords conflict in CREATE SINK statement.
         return None
 
-    def _parse_include_property(self) -> t.Optional[exp.Expr]:
-        header: t.Optional[exp.Expr] = None
-        coldef: t.Optional[exp.Expr] = None
+    def _parse_include_property(self) -> exp.Expr | None:
+        header: exp.Expr | None = None
+        coldef: exp.Expr | None = None
 
         this = self._parse_var_or_string()
 
@@ -53,7 +52,7 @@ class RisingWaveParser(PostgresParser):
 
         return self.expression(exp.IncludeProperty(this=this, alias=alias, column_def=coldef))
 
-    def _parse_encode_property(self, key: t.Optional[bool] = None) -> exp.EncodeProperty:
+    def _parse_encode_property(self, key: bool | None = None) -> exp.EncodeProperty:
         self._match_text_seq("ENCODE")
         this = self._parse_var_or_string()
 

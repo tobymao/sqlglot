@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -56,7 +55,7 @@ class StarRocksGenerator(MySQLGenerator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
     VARCHAR_REQUIRES_SIZE = False
-    PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
+    PARSE_JSON_NAME: str | None = "PARSE_JSON"
     WITH_PROPERTIES_PREFIX = "PROPERTIES"
     UPDATE_STATEMENT_SUPPORTS_FROM = True
     INSERT_OVERWRITE = " OVERWRITE"

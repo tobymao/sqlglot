@@ -48,8 +48,8 @@ def pushdown_projections(
     """
     # Map of Scope to all columns being selected by outer queries.
     schema = ensure_schema(schema, dialect=dialect)
-    source_column_alias_count: t.Dict[exp.Expr | Scope, int] = {}
-    referenced_columns: t.DefaultDict[Scope, t.Set[str | object]] = defaultdict(set)
+    source_column_alias_count: dict[exp.Expr | Scope, int] = {}
+    referenced_columns: defaultdict[Scope, set[str | object]] = defaultdict(set)
 
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
@@ -103,7 +103,7 @@ def pushdown_projections(
                 continue
 
             # Group columns by source name
-            selects: t.Dict[str, t.Set[object]] = defaultdict(set)
+            selects: dict[str, set[object]] = defaultdict(set)
             for col in scope.columns:
                 table_name = col.table
                 col_name = col.name
@@ -115,7 +115,7 @@ def pushdown_projections(
                     select = seq_get(source.expression.selects, 0)
 
                     if scope.pivots or isinstance(select, exp.QueryTransform):
-                        columns: t.Set[object] = {SELECT_ALL}
+                        columns: set[object] = {SELECT_ALL}
                     else:
                         columns = selects.get(name) or set()
 

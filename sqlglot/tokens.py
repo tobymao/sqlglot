@@ -28,50 +28,50 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
 
-def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
+def _convert_quotes(arr: list[str | tuple[str, str]]) -> dict[str, str]:
     return dict((item, item) if isinstance(item, str) else (item[0], item[1]) for item in arr)
 
 
 def _quotes_to_format(
-    token_type: TokenType, arr: t.List[str | t.Tuple[str, str]]
-) -> t.Dict[str, t.Tuple[str, TokenType]]:
+    token_type: TokenType, arr: list[str | tuple[str, str]]
+) -> dict[str, tuple[str, TokenType]]:
     return {k: (v, token_type) for k, v in _convert_quotes(arr).items()}
 
 
 class _TokenizerBase:
-    QUOTES: t.ClassVar[t.List[t.Tuple[str, str] | str]]
-    IDENTIFIERS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    BIT_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    BYTE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    HEX_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    RAW_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    HEREDOC_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    UNICODE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    STRING_ESCAPES: t.ClassVar[t.List[str]]
-    BYTE_STRING_ESCAPES: t.ClassVar[t.List[str]]
-    ESCAPE_FOLLOW_CHARS: t.ClassVar[t.List[str]]
-    IDENTIFIER_ESCAPES: t.ClassVar[t.List[str]]
+    QUOTES: t.ClassVar[list[tuple[str, str] | str]]
+    IDENTIFIERS: t.ClassVar[list[str | tuple[str, str]]]
+    BIT_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    BYTE_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    HEX_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    STRING_ESCAPES: t.ClassVar[list[str]]
+    BYTE_STRING_ESCAPES: t.ClassVar[list[str]]
+    ESCAPE_FOLLOW_CHARS: t.ClassVar[list[str]]
+    IDENTIFIER_ESCAPES: t.ClassVar[list[str]]
     HINT_START: t.ClassVar[str]
-    KEYWORDS: t.ClassVar[t.Dict[str, TokenType]]
-    SINGLE_TOKENS: t.ClassVar[t.Dict[str, TokenType]]
-    NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]]
-    VAR_SINGLE_TOKENS: t.ClassVar[t.Set[str]]
-    COMMANDS: t.ClassVar[t.Set[TokenType]]
-    COMMAND_PREFIX_TOKENS: t.ClassVar[t.Set[TokenType]]
+    KEYWORDS: t.ClassVar[dict[str, TokenType]]
+    SINGLE_TOKENS: t.ClassVar[dict[str, TokenType]]
+    NUMERIC_LITERALS: t.ClassVar[dict[str, str]]
+    VAR_SINGLE_TOKENS: t.ClassVar[set[str]]
+    COMMANDS: t.ClassVar[set[TokenType]]
+    COMMAND_PREFIX_TOKENS: t.ClassVar[set[TokenType]]
     HEREDOC_TAG_IS_IDENTIFIER: t.ClassVar[bool]
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
     NESTED_COMMENTS: t.ClassVar[bool]
-    TOKENS_PRECEDING_HINT: t.ClassVar[t.Set[TokenType]]
+    TOKENS_PRECEDING_HINT: t.ClassVar[set[TokenType]]
     HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
-    COMMENTS: t.ClassVar[t.List[str | t.Tuple[str, str]]]
-    _QUOTES: t.ClassVar[t.Dict[str, str]]
-    _IDENTIFIERS: t.ClassVar[t.Dict[str, str]]
-    _FORMAT_STRINGS: t.ClassVar[t.Dict[str, t.Tuple[str, TokenType]]]
-    _STRING_ESCAPES: t.ClassVar[t.Set[str]]
-    _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]]
-    _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]]
-    _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]]
-    _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]]
+    COMMENTS: t.ClassVar[list[str | tuple[str, str]]]
+    _QUOTES: t.ClassVar[dict[str, str]]
+    _IDENTIFIERS: t.ClassVar[dict[str, str]]
+    _FORMAT_STRINGS: t.ClassVar[dict[str, tuple[str, TokenType]]]
+    _STRING_ESCAPES: t.ClassVar[set[str]]
+    _BYTE_STRING_ESCAPES: t.ClassVar[set[str]]
+    _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]]
+    _IDENTIFIER_ESCAPES: t.ClassVar[set[str]]
+    _COMMENTS: t.ClassVar[dict[str, str | None]]
     _KEYWORD_TRIE: t.ClassVar[dict[str, object]]
 
     @classmethod
@@ -152,23 +152,23 @@ class Tokenizer(_TokenizerBase):
         '"': TokenType.UNKNOWN,
     }
 
-    BIT_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    BYTE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    HEX_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    RAW_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    HEREDOC_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    UNICODE_STRINGS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = []
-    IDENTIFIERS: t.ClassVar[t.List[str | t.Tuple[str, str]]] = ['"']
-    QUOTES: t.ClassVar[t.List[t.Tuple[str, str] | str]] = ["'"]
+    BIT_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    BYTE_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    HEX_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    IDENTIFIERS: t.ClassVar[list[str | tuple[str, str]]] = ['"']
+    QUOTES: t.ClassVar[list[tuple[str, str] | str]] = ["'"]
     STRING_ESCAPES: t.ClassVar[list[str]] = ["'"]
-    BYTE_STRING_ESCAPES: t.ClassVar[t.List[str]] = []
-    VAR_SINGLE_TOKENS: t.ClassVar[t.Set[str]] = set()
-    ESCAPE_FOLLOW_CHARS: t.ClassVar[t.List[str]] = []
+    BYTE_STRING_ESCAPES: t.ClassVar[list[str]] = []
+    VAR_SINGLE_TOKENS: t.ClassVar[set[str]] = set()
+    ESCAPE_FOLLOW_CHARS: t.ClassVar[list[str]] = []
 
     # The strings in this list can always be used as escapes, regardless of the surrounding
     # identifier delimiters. By default, the closing delimiter is assumed to also act as an
     # identifier escape, e.g. if we use double-quotes, then they also act as escapes: "x"""
-    IDENTIFIER_ESCAPES: t.ClassVar[t.List[str]] = []
+    IDENTIFIER_ESCAPES: t.ClassVar[list[str]] = []
 
     # Whether the heredoc tags follow the same lexical rules as unquoted identifiers
     HEREDOC_TAG_IS_IDENTIFIER = False
@@ -186,17 +186,17 @@ class Tokenizer(_TokenizerBase):
     TOKENS_PRECEDING_HINT = {TokenType.SELECT, TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE}
 
     # Autofilled
-    _COMMENTS: t.ClassVar[t.Dict[str, t.Optional[str]]] = {}
-    _FORMAT_STRINGS: t.ClassVar[t.Dict[str, t.Tuple[str, TokenType]]] = {}
-    _IDENTIFIERS: t.ClassVar[t.Dict[str, str]] = {}
-    _IDENTIFIER_ESCAPES: t.ClassVar[t.Set[str]] = set()
-    _QUOTES: t.ClassVar[t.Dict[str, str]] = {}
-    _STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
-    _BYTE_STRING_ESCAPES: t.ClassVar[t.Set[str]] = set()
+    _COMMENTS: t.ClassVar[dict[str, str | None]] = {}
+    _FORMAT_STRINGS: t.ClassVar[dict[str, tuple[str, TokenType]]] = {}
+    _IDENTIFIERS: t.ClassVar[dict[str, str]] = {}
+    _IDENTIFIER_ESCAPES: t.ClassVar[set[str]] = set()
+    _QUOTES: t.ClassVar[dict[str, str]] = {}
+    _STRING_ESCAPES: t.ClassVar[set[str]] = set()
+    _BYTE_STRING_ESCAPES: t.ClassVar[set[str]] = set()
     _KEYWORD_TRIE: t.ClassVar[dict[str, object]] = {}
-    _ESCAPE_FOLLOW_CHARS: t.ClassVar[t.Set[str]] = set()
+    _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]] = set()
 
-    KEYWORDS: t.ClassVar[t.Dict[str, TokenType]] = {
+    KEYWORDS: t.ClassVar[dict[str, TokenType]] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
@@ -525,7 +525,7 @@ class Tokenizer(_TokenizerBase):
     COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
 
     # Handle numeric literals like in hive (3L = BIGINT)
-    NUMERIC_LITERALS: t.ClassVar[t.Dict[str, str]] = {}
+    NUMERIC_LITERALS: t.ClassVar[dict[str, str]] = {}
 
     # In tokenizers like JSONPath, dots are always key separators, never decimal points
     NUMBERS_CAN_HAVE_DECIMALS: t.ClassVar[bool] = True

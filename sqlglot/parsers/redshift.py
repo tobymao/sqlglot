@@ -72,12 +72,12 @@ class RedshiftParser(PostgresParser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[Collection[TokenType]] = None,
+        alias_tokens: Collection[TokenType] | None = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,
         consume_pipe: bool = False,
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
         unpivot = self._match(TokenType.UNPIVOT)
         table = super()._parse_table(
@@ -90,13 +90,13 @@ class RedshiftParser(PostgresParser):
 
         return self.expression(exp.Pivot(this=table, unpivot=True)) if unpivot else table
 
-    def _parse_convert(self, strict: bool, safe: t.Optional[bool] = None) -> t.Optional[exp.Expr]:
+    def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:
         to = self._parse_types()
         self._match(TokenType.COMMA)
         this = self._parse_bitwise()
         return self.expression(exp.TryCast(this=this, to=to, safe=safe))
 
-    def _parse_approximate_count(self) -> t.Optional[exp.ApproxDistinct]:
+    def _parse_approximate_count(self) -> exp.ApproxDistinct | None:
         index = self._index - 1
         func = self._parse_function()
 
@@ -105,7 +105,7 @@ class RedshiftParser(PostgresParser):
         self._retreat(index)
         return None
 
-    def _parse_projections(self) -> t.Tuple[t.List[exp.Expr], t.Optional[t.List[exp.Expr]]]:
+    def _parse_projections(self) -> tuple[list[exp.Expr], list[exp.Expr] | None]:
         projections, _ = super()._parse_projections()
         if self._prev.text.upper() == "EXCLUDE" and self._curr:
             self._retreat(self._index - 1)

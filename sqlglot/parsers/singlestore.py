@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.trie import new_trie
@@ -14,9 +13,7 @@ from sqlglot.parsers.mysql import MySQLParser, _show_parser
 from sqlglot.tokens import TokenType
 
 
-def cast_to_time6(
-    expression: t.Optional[exp.Expr], time_type: exp.DType = exp.DType.TIME
-) -> exp.Cast:
+def cast_to_time6(expression: exp.Expr | None, time_type: exp.DType = exp.DType.TIME) -> exp.Cast:
     return exp.Cast(
         this=expression,
         to=time_type.into_expr(expressions=[exp.DataTypeParam(this=exp.Literal.number(6))]),
@@ -243,7 +240,7 @@ class SingleStoreParser(MySQLParser):
         ),
     }
 
-    def _parse_vector_expressions(self, expressions: t.List[exp.Expr]) -> t.List[exp.Expr]:
+    def _parse_vector_expressions(self, expressions: list[exp.Expr]) -> list[exp.Expr]:
         type_name = expressions[1].name.upper()
         if type_name in self.dialect.VECTOR_TYPE_ALIASES:
             type_name = self.dialect.VECTOR_TYPE_ALIASES[type_name]

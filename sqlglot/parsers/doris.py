@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import seq_get
@@ -9,7 +8,7 @@ from sqlglot.tokens import TokenType
 
 
 # Accept both DATE_TRUNC(datetime, unit) and DATE_TRUNC(unit, datetime)
-def _build_date_trunc(args: t.List[exp.Expr]) -> exp.Expr:
+def _build_date_trunc(args: list[exp.Expr]) -> exp.Expr:
     a0, a1 = seq_get(args, 0), seq_get(args, 1)
 
     def _is_unit_like(e: exp.Expr | None) -> bool:
@@ -55,7 +54,7 @@ class DorisParser(MySQLParser):
 
     def _parse_partition_property(
         self,
-    ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
+    ) -> exp.Expr | None | list[exp.Expr]:
         expr = super()._parse_partition_property()
 
         if not expr:
@@ -92,7 +91,7 @@ class DorisParser(MySQLParser):
             exp.PartitionByRangePropertyDynamic(start=start, end=end, every=every)
         )
 
-    def _parse_partition_range_value(self) -> t.Optional[exp.Expr]:
+    def _parse_partition_range_value(self) -> exp.Expr | None:
         expr = super()._parse_partition_range_value()
 
         if isinstance(expr, exp.Partition):

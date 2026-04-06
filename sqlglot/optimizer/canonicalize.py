@@ -215,7 +215,7 @@ def _coerce_date(
         _replace_cast(b, target_type)
 
 
-def _coerce_timeunit_arg(arg: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.Expr:
+def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
     if not arg.type:
         return arg
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -29,7 +28,7 @@ class RedshiftGenerator(PostgresGenerator):
     MULTI_ARG_DISTINCT = True
     COPY_PARAMS_ARE_WRAPPED = False
     HEX_FUNC = "TO_HEX"
-    PARSE_JSON_NAME: t.Optional[str] = "JSON_PARSE"
+    PARSE_JSON_NAME: str | None = "JSON_PARSE"
     ARRAY_CONCAT_IS_VAR_LEN = False
     SUPPORTS_CONVERT_TIMEZONE = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -288,7 +287,7 @@ class RedshiftGenerator(PostgresGenerator):
         alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
         return f"{arg} AS {alias}" if alias else arg
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type(exp.DType.JSON):
             # Redshift doesn't support a JSON type, so casting to it is treated as a noop
             return self.sql(expression, "this")

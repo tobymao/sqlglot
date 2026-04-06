@@ -96,7 +96,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
     if len(array_args) == 1:
         unnested = array_args[0].unnest()
-        projection_type: t.Optional[exp.DataType | exp.DType] = None
+        projection_type: exp.DataType | exp.DType | None = None
 
         # Handle ARRAY(SELECT ...) - single SELECT query
         if isinstance(unnested, exp.Select):

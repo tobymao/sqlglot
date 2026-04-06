@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -26,7 +25,7 @@ class DatabricksGenerator(SparkGenerator):
     JSON_PATH_SINGLE_QUOTE_ESCAPE = False
     SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
     QUOTE_JSON_PATH = False
-    PARSE_JSON_NAME: t.Optional[str] = "PARSE_JSON"
+    PARSE_JSON_NAME: str | None = "PARSE_JSON"
 
     TRANSFORMS = {
         k: v

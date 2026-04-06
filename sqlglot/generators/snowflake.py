@@ -34,12 +34,13 @@ from sqlglot.parsers.snowflake import (
     build_object_construct,
 )
 from sqlglot.tokens import TokenType
+from collections import defaultdict
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _build_datediff(args: t.List) -> exp.DateDiff:
+def _build_datediff(args: list) -> exp.DateDiff:
     return exp.DateDiff(
         this=seq_get(args, 2),
         expression=seq_get(args, 1),
@@ -48,8 +49,8 @@ def _build_datediff(args: t.List) -> exp.DateDiff:
     )
 
 
-def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+def _build_date_time_add(expr_type: type[E]) -> t.Callable[[list], E]:
+    def _builder(args: list) -> E:
         return expr_type(
             this=seq_get(args, 2),
             expression=seq_get(args, 1),
@@ -253,10 +254,10 @@ def _qualify_unnested_columns(expression: exp.Expr) -> exp.Expr:
             return expression
 
         taken_source_names = set(scope.sources)
-        column_source: t.Dict[str, exp.Identifier] = {}
-        unnest_to_identifier: t.Dict[exp.Unnest, exp.Identifier] = {}
+        column_source: dict[str, exp.Identifier] = {}
+        unnest_to_identifier: dict[exp.Unnest, exp.Identifier] = {}
 
-        unnest_identifier: t.Optional[exp.Identifier] = None
+        unnest_identifier: exp.Identifier | None = None
         orig_expression = expression.copy()
 
         for unnest in unnests:
@@ -265,7 +266,7 @@ def _qualify_unnested_columns(expression: exp.Expr) -> exp.Expr:
 
             # Try to infer column names produced by an unnest operator. This is only possible
             # when we can peek into the (statically known) contents of the unnested value.
-            unnest_columns: t.Set[str] = set()
+            unnest_columns: set[str] = set()
             for unnest_expr in unnest.expressions:
                 if not isinstance(unnest_expr, exp.Array):
                     continue
@@ -372,7 +373,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
     SINGLE_STRING_INTERVAL = True
@@ -735,7 +736,7 @@ class SnowflakeGenerator(generator.Generator):
 
         return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type(exp.DType.GEOGRAPHY):
             return self.func("TO_GEOGRAPHY", expression.this)
         if expression.is_type(exp.DType.GEOMETRY):
@@ -996,7 +997,7 @@ class SnowflakeGenerator(generator.Generator):
             expression.limit(exp.Null(), copy=False)
         return super().select_sql(expression)
 
-    def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+    def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         is_materialized = expression.find(exp.MaterializedProperty)
         copy_grants_property = expression.find(exp.CopyGrantsProperty)
 

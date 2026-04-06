@@ -33,7 +33,7 @@ def _has_time_specifier(date_format: str) -> bool:
     return False
 
 
-def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
+def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
     mysql_date_format = seq_get(args, 1)
     date_format = Dialect["mysql"].format_time(mysql_date_format)
     this = seq_get(args, 0)
@@ -321,7 +321,7 @@ class MySQLParser(parser.Parser):
 
         return this
 
-    def _parse_primary_key_part(self) -> t.Optional[exp.Expr]:
+    def _parse_primary_key_part(self) -> exp.Expr | None:
         this = self._parse_id_var()
         if not self._match(TokenType.L_PAREN):
             return this
@@ -330,7 +330,7 @@ class MySQLParser(parser.Parser):
         self._match_r_paren()
         return self.expression(exp.ColumnPrefix(this=this, expression=expression))
 
-    def _parse_index_constraint(self, kind: t.Optional[str] = None) -> exp.IndexColumnConstraint:
+    def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         if kind:
             self._match_texts(("INDEX", "KEY"))
 
@@ -381,8 +381,8 @@ class MySQLParser(parser.Parser):
         self,
         this: str,
         target: bool | str = False,
-        full: t.Optional[bool] = None,
-        global_: t.Optional[bool] = None,
+        full: bool | None = None,
+        global_: bool | None = None,
     ) -> exp.Show:
         json = self._match_text_seq("JSON")
 
@@ -459,7 +459,7 @@ class MySQLParser(parser.Parser):
 
     def _parse_oldstyle_limit(
         self,
-    ) -> t.Tuple[t.Optional[exp.Expr], t.Optional[exp.Expr]]:
+    ) -> tuple[exp.Expr | None, exp.Expr | None]:
         limit = None
         offset = None
         if self._match_text_seq("LIMIT"):
@@ -487,7 +487,7 @@ class MySQLParser(parser.Parser):
 
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         # mysql binary is special and can work anywhere, even in order by operations
         # it operates like a no paren func
         if self._match(TokenType.BINARY, advance=False):
@@ -514,8 +514,8 @@ class MySQLParser(parser.Parser):
 
     def _parse_partition_property(
         self,
-    ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
-        partition_cls: t.Optional[t.Type[exp.Expr]] = None
+    ) -> exp.Expr | None | list[exp.Expr]:
+        partition_cls: type[exp.Expr] | None = None
         value_parser = None
 
         if self._match_text_seq("RANGE"):
@@ -542,7 +542,7 @@ class MySQLParser(parser.Parser):
             )
         )
 
-    def _parse_partition_range_value(self) -> t.Optional[exp.Expr]:
+    def _parse_partition_range_value(self) -> exp.Expr | None:
         self._match_text_seq("PARTITION")
         name = self._parse_id_var()
 

@@ -21,7 +21,7 @@ class Presto(Dialect):
     STRICT_STRING_CONCAT = True
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
-    LOG_BASE_FIRST: t.Optional[bool] = None
+    LOG_BASE_FIRST: bool | None = None
     SUPPORTS_VALUES_DEFAULT = False
     LEAST_GREATEST_IGNORES_NULLS = False
 
@@ -43,7 +43,7 @@ class Presto(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         UNICODE_STRINGS = [
             (prefix + q, q)
-            for q in t.cast(t.List[str], tokens.Tokenizer.QUOTES)
+            for q in t.cast(list[str], tokens.Tokenizer.QUOTES)
             for prefix in ("U&", "u&")
         ]
 

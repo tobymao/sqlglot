@@ -26,8 +26,8 @@ def _unicode_substitute(m: re.Match[str]) -> str:
 
 class SingleStoreGenerator(MySQLGenerator):
     SUPPORTS_UESCAPE = False
-    NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
-    MATCH_AGAINST_TABLE_PREFIX: t.Optional[str] = "TABLE "
+    NULL_ORDERING_SUPPORTED: bool | None = True
+    MATCH_AGAINST_TABLE_PREFIX: str | None = "TABLE "
     STRUCT_DELIMITER = ("(", ")")
 
     UNICODE_SUBSTITUTE: t.ClassVar[t.Any] = staticmethod(_unicode_substitute)

@@ -70,19 +70,19 @@ def _generate_as_hive(expression: exp.Expr) -> bool:
 
 
 def _generator_kwargs(
-    pretty: t.Optional[bool | int],
+    pretty: bool | int | None,
     identify: str | bool,
     normalize: bool,
     pad: int,
     indent: int,
-    normalize_functions: t.Optional[str | bool],
+    normalize_functions: str | bool | None,
     unsupported_level: t.Any,
     max_unsupported: int,
     leading_comma: bool,
     max_text_width: int,
     comments: bool,
-) -> t.Dict[str, t.Any]:
-    kwargs: t.Dict[str, t.Any] = {
+) -> dict[str, t.Any]:
+    kwargs: dict[str, t.Any] = {
         "pretty": pretty,
         "identify": identify,
         "normalize": normalize,
@@ -123,7 +123,7 @@ class AthenaTrinoGenerator(TrinoGenerator):
 
 
 class AthenaGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
@@ -132,12 +132,12 @@ class AthenaGenerator(generator.Generator):
 
     def __init__(
         self,
-        pretty: t.Optional[bool | int] = None,
+        pretty: bool | int | None = None,
         identify: str | bool = False,
         normalize: bool = False,
         pad: int = 2,
         indent: int = 2,
-        normalize_functions: t.Optional[str | bool] = None,
+        normalize_functions: str | bool | None = None,
         unsupported_level: t.Any = None,
         max_unsupported: int = 3,
         leading_comma: bool = False,

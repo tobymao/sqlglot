@@ -5,6 +5,7 @@ from sqlglot.transforms import (
     eliminate_distinct_on,
     eliminate_join_marks,
     eliminate_qualify,
+    eliminate_semi_and_anti_joins,
     eliminate_window_clause,
     inherit_struct_field_names,
     remove_precision_parameterized_types,
@@ -278,6 +279,33 @@ class TestTransforms(unittest.TestCase):
             self.assertRaises(
                 AssertionError, eliminate_join_marks, parse_one(script, dialect=dialect)
             )
+
+    def test_eliminate_semi_and_anti_joins(self):
+        self.validate(
+            eliminate_semi_and_anti_joins,
+            "SELECT t1.id FROM t1 JOIN t2 ON t1.id = t2.id ANTI JOIN t3 ON t1.id = t3.id",
+            "SELECT t1.id FROM t1 JOIN t2 ON t1.id = t2.id WHERE NOT EXISTS(SELECT 1 FROM t3 WHERE t1.id = t3.id)",
+        )
+        self.validate(
+            eliminate_semi_and_anti_joins,
+            "SELECT t1.id FROM t1 JOIN t2 ON t1.id = t2.id SEMI JOIN t3 ON t1.id = t3.id",
+            "SELECT t1.id FROM t1 JOIN t2 ON t1.id = t2.id WHERE EXISTS(SELECT 1 FROM t3 WHERE t1.id = t3.id)",
+        )
+        self.validate(
+            eliminate_semi_and_anti_joins,
+            "SELECT t1.id FROM t1 ANTI JOIN t2 ON t1.id = t2.id ANTI JOIN t3 ON t1.id = t3.id",
+            "SELECT t1.id FROM t1 WHERE NOT EXISTS(SELECT 1 FROM t2 WHERE t1.id = t2.id) AND NOT EXISTS(SELECT 1 FROM t3 WHERE t1.id = t3.id)",
+        )
+        self.validate(
+            eliminate_semi_and_anti_joins,
+            "SELECT t1.id FROM t1 ANTI JOIN t2 ON t1.id = t2.id ANTI JOIN t3 ON t1.id = t3.id ANTI JOIN t4 ON t1.id = t4.id",
+            "SELECT t1.id FROM t1 WHERE (NOT EXISTS(SELECT 1 FROM t2 WHERE t1.id = t2.id) AND NOT EXISTS(SELECT 1 FROM t3 WHERE t1.id = t3.id)) AND NOT EXISTS(SELECT 1 FROM t4 WHERE t1.id = t4.id)",
+        )
+        self.validate(
+            eliminate_semi_and_anti_joins,
+            "SELECT t1.id FROM t1 SEMI JOIN t2 ON t1.id = t2.id SEMI JOIN t3 ON t1.id = t3.id",
+            "SELECT t1.id FROM t1 WHERE EXISTS(SELECT 1 FROM t2 WHERE t1.id = t2.id) AND EXISTS(SELECT 1 FROM t3 WHERE t1.id = t3.id)",
+        )
 
     def test_eliminate_window_clause(self):
         self.validate(

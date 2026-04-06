@@ -4647,7 +4647,7 @@ class Generator:
         expr = expression.expression
         if expr:
             expr_sql = self.sql(expression, "expression")
-            expr_sql = f"TABLE {expr_sql}" if not isinstance(expr, exp.Subquery) else expr_sql
+            expr_sql = f"TABLE {expr_sql}" if isinstance(expr, exp.Table) else expr_sql
         else:
             expr_sql = None
 
@@ -4661,6 +4661,21 @@ class Generator:
     def generateembedding_sql(self, expression: exp.GenerateEmbedding) -> str:
         name = "GENERATE_TEXT_EMBEDDING" if expression.args.get("is_text") else "GENERATE_EMBEDDING"
         return self._ml_sql(expression, name)
+
+    def generatetext_sql(self, expression: exp.GenerateText) -> str:
+        return self._ml_sql(expression, "GENERATE_TEXT")
+
+    def generatetable_sql(self, expression: exp.GenerateTable) -> str:
+        return self._ml_sql(expression, "GENERATE_TABLE")
+
+    def generatebool_sql(self, expression: exp.GenerateBool) -> str:
+        return self._ml_sql(expression, "GENERATE_BOOL")
+
+    def generateint_sql(self, expression: exp.GenerateInt) -> str:
+        return self._ml_sql(expression, "GENERATE_INT")
+
+    def generatedouble_sql(self, expression: exp.GenerateDouble) -> str:
+        return self._ml_sql(expression, "GENERATE_DOUBLE")
 
     def mltranslate_sql(self, expression: exp.MLTranslate) -> str:
         return self._ml_sql(expression, "TRANSLATE")

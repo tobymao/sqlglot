@@ -329,6 +329,26 @@ class GenerateEmbedding(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": False, "is_text": False}
 
 
+class GenerateText(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateTable(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateBool(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateInt(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateDouble(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
 class MLForecast(Expression, Func):
     arg_types = {"this": True, "expression": False, "params_struct": False}
 

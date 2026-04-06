@@ -617,14 +617,13 @@ class BigQueryParser(parser.Parser):
             self.raise_error("Expected table or query statement")
 
         expr = self.expression(exp.AIForecast(this=this))
-        if self._match(TokenType.COMMA):
-            while True:
-                arg = self._parse_lambda()
-                if arg:
-                    expr.set(arg.this.name, arg)
-
-                if not self._match(TokenType.COMMA):
-                    break
+        while self._match(TokenType.COMMA):
+            arg = self._parse_lambda()
+            if isinstance(arg, exp.Kwarg):
+                expr.set(arg.this.name, arg)
+            else:
+                self.raise_error(f"Expected key => value syntax for AI.FORECAST, got {arg}")
+                break
 
         return expr
 

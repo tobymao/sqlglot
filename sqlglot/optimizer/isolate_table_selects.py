@@ -15,7 +15,7 @@ if t.TYPE_CHECKING:
 
 def isolate_table_selects(
     expression: E,
-    schema: t.Optional[t.Dict | Schema] = None,
+    schema: dict[str, object] | Schema | None = None,
     dialect: DialectType = None,
 ) -> E:
     schema = ensure_schema(schema, dialect=dialect)

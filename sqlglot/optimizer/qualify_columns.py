@@ -20,7 +20,7 @@ if t.TYPE_CHECKING:
 
 def qualify_columns(
     expression: exp.Expr,
-    schema: dict | Schema,
+    schema: dict[str, object] | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,

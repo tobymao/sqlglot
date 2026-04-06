@@ -3,7 +3,7 @@ from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 
 
-def unnest_subqueries(expression):
+def unnest_subqueries(expression: exp.Expr) -> exp.Expr:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
 

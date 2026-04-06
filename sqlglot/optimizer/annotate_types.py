@@ -25,10 +25,7 @@ if t.TYPE_CHECKING:
     BinaryCoercionFunc = t.Callable[
         [exp.Expr, exp.Expr], t.Optional[t.Union[exp.DataType, exp.DType]]
     ]
-    BinaryCoercions = t.Dict[
-        t.Tuple[exp.DType, exp.DType],
-        BinaryCoercionFunc,
-    ]
+    BinaryCoercions = dict[tuple[exp.DType, exp.DType], BinaryCoercionFunc]
 
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.typing import ExprMetadataType
@@ -47,9 +44,9 @@ BIGINT_EXTRACT_DATE_PARTS = {
 
 def annotate_types(
     expression: E,
-    schema: t.Optional[t.Dict | Schema] = None,
+    schema: dict[str, object] | Schema | None = None,
     expression_metadata: t.Optional[ExprMetadataType] = None,
-    coerces_to: t.Optional[t.Dict[exp.DType, t.Set[exp.DType]]] = None,
+    coerces_to: dict[exp.DType, set[exp.DType]] | None = None,
     dialect: DialectType = None,
     overwrite_types: bool = True,
 ) -> E:

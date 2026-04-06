@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import typing as t
 
 from sqlglot import exp
@@ -80,7 +81,13 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
     return expression
 
 
-def pushdown(condition, sources, scope_ref_count, dialect, join_index=None):
+def pushdown(
+    condition: exp.Expr | None,
+    sources,
+    scope_ref_count,
+    dialect: DialectType,
+    join_index: Mapping[object, int] | None = None,
+):
     if not condition:
         return
 
@@ -99,7 +106,9 @@ def pushdown(condition, sources, scope_ref_count, dialect, join_index=None):
         pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
 
 
-def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
+def pushdown_cnf(
+    predicates, sources, scope_ref_count, join_index: Mapping[object, int] | None = None
+):
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
     """
@@ -219,8 +228,8 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
     return nodes
 
 
-def replace_aliases(source, predicate):
-    aliases = {}
+def replace_aliases(source: exp.Select, predicate: exp.Expr):
+    aliases: dict[str, exp.Expr] = {}
 
     for select in source.selects:
         if isinstance(select, exp.Alias):
@@ -228,7 +237,7 @@ def replace_aliases(source, predicate):
         else:
             aliases[select.name] = select
 
-    def _replace_alias(column):
+    def _replace_alias(column: object):
         if isinstance(column, exp.Column) and column.name in aliases:
             return aliases[column.name].copy()
         return column

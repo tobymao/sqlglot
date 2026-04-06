@@ -53,7 +53,7 @@ def eliminate_joins(expression: E) -> E:
     return expression
 
 
-def _should_eliminate_join(scope, join, alias):
+def _should_eliminate_join(scope: Scope, join: exp.Join, alias: str) -> bool:
     inner_source = scope.sources.get(alias)
     return (
         isinstance(inner_source, Scope)
@@ -65,7 +65,7 @@ def _should_eliminate_join(scope, join, alias):
     )
 
 
-def _join_is_used(scope, join, alias):
+def _join_is_used(scope: Scope, join: exp.Join, alias: str) -> bool:
     # We need to find all columns that reference this join.
     # But columns in the ON clause shouldn't count.
     on = join.args.get("on")
@@ -78,7 +78,7 @@ def _join_is_used(scope, join, alias):
     )
 
 
-def _is_joined_on_all_unique_outputs(scope, join):
+def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
     unique_outputs = _unique_outputs(scope)
     if not unique_outputs:
         return False
@@ -88,7 +88,7 @@ def _is_joined_on_all_unique_outputs(scope, join):
     return not remaining_unique_outputs
 
 
-def _unique_outputs(scope):
+def _unique_outputs(scope) -> set[str]:
     """Determine output columns of `scope` that must have a unique combination per row"""
     if scope.expression.args.get("distinct"):
         return set(scope.expression.named_selects)
@@ -117,7 +117,7 @@ def _unique_outputs(scope):
     return set()
 
 
-def _has_single_output_row(scope):
+def _has_single_output_row(scope: Scope) -> bool:
     return isinstance(scope.expression, exp.Select) and (
         all(isinstance(e.unalias(), exp.AggFunc) for e in scope.expression.selects)
         or _is_limit_1(scope)
@@ -125,7 +125,7 @@ def _has_single_output_row(scope):
     )
 
 
-def _is_limit_1(scope):
+def _is_limit_1(scope) -> bool:
     limit = scope.expression.args.get("limit")
     return limit and limit.expression.this == "1"
 

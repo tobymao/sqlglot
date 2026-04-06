@@ -8,8 +8,8 @@ from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, build_scope
 
 if t.TYPE_CHECKING:
-    ExistingCTEsMapping = t.Dict[exp.Expr, str]
-    TakenNameMapping = t.Dict[str, t.Union[Scope, exp.Expr]]
+    ExistingCTEsMapping = dict[exp.Expr, str]
+    TakenNameMapping = dict[str, t.Union[Scope, exp.Expr]]
 
 
 def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
@@ -108,7 +108,7 @@ def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
 
 def _eliminate(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expr]:
+) -> exp.Expr | None:
     if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
@@ -120,7 +120,7 @@ def _eliminate(
 
 def _eliminate_derived_table(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expr]:
+) -> exp.Expr | None:
     # This makes sure that we don't:
     # - drop the "pivot" arg from a pivoted subquery
     # - eliminate a lateral correlated subquery
@@ -145,7 +145,7 @@ def _eliminate_derived_table(
 
 def _eliminate_cte(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Optional[exp.Expr]:
+) -> exp.Expr | None:
     parent = scope.expression.parent
     if not parent:
         return None
@@ -170,7 +170,7 @@ def _eliminate_cte(
 
 def _new_cte(
     scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
-) -> t.Tuple[str, t.Optional[exp.Expr]]:
+) -> tuple[str, exp.Expr | None]:
     """
     Returns:
         tuple of (name, cte)

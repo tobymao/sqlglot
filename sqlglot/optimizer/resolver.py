@@ -25,13 +25,13 @@ class Resolver:
         self.scope = scope
         self.schema = schema
         self.dialect = schema.dialect or Dialect()
-        self._source_columns: t.Optional[dict[str, Sequence[str]]] = None
-        self._unambiguous_columns: t.Optional[Mapping[str, str]] = None
-        self._all_columns: t.Optional[set[str]] = None
+        self._source_columns: dict[str, Sequence[str]] | None = None
+        self._unambiguous_columns: Mapping[str, str] | None = None
+        self._all_columns: set[str] | None = None
         self._infer_schema = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
 
-    def get_table(self, column: str | exp.Column) -> t.Optional[exp.Identifier]:
+    def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
         Get the table for a column name.
 
@@ -84,7 +84,7 @@ class Resolver:
         return exp.to_identifier(table_name)
 
     @property
-    def all_columns(self) -> t.Set[str]:
+    def all_columns(self) -> set[str]:
         """All available columns of all sources in this scope"""
         if self._all_columns is None:
             self._all_columns = {
@@ -92,7 +92,7 @@ class Resolver:
             }
         return self._all_columns
 
-    def get_source_columns_from_set_op(self, expression: exp.Expr) -> t.List[str]:
+    def get_source_columns_from_set_op(self, expression: exp.Expr) -> list[str]:
         if isinstance(expression, exp.Select):
             return expression.named_selects
         if isinstance(expression, exp.Subquery) and isinstance(expression.this, exp.SetOperation):
@@ -213,8 +213,8 @@ class Resolver:
         return self._source_columns
 
     def _get_table_name_from_sources(
-        self, column_name: str, source_columns: t.Optional[dict[str, Sequence[str]]] = None
-    ) -> t.Optional[str]:
+        self, column_name: str, source_columns: dict[str, Sequence[str]] | None = None
+    ) -> str | None:
         if not source_columns:
             # If not supplied, get all sources to calculate unambiguous columns
             if self._unambiguous_columns is None:
@@ -228,7 +228,7 @@ class Resolver:
 
         return unambiguous_columns.get(column_name)
 
-    def _get_column_join_context(self, column: exp.Column) -> t.Optional[exp.Join]:
+    def _get_column_join_context(self, column: exp.Column) -> exp.Join | None:
         """
         Check if a column participating in a join can be qualified based on the source order.
         """
@@ -307,7 +307,7 @@ class Resolver:
         # For BigQuery UNNEST_COLUMN_ONLY, build a mapping of original UNNEST aliases
         # from alias.columns[0] to their source names. This is used to resolve shadowing
         # where an UNNEST alias shadows a column name from another table.
-        unnest_original_aliases: t.Dict[str, str] = {}
+        unnest_original_aliases: dict[str, str] = {}
         if self.dialect.UNNEST_COLUMN_ONLY:
             unnest_original_aliases = {
                 alias_arg.columns[0].name: source_name
@@ -338,7 +338,7 @@ class Resolver:
 
         return unambiguous_columns
 
-    def _get_unnest_column_type(self, column: exp.Column) -> t.Optional[exp.DataType]:
+    def _get_unnest_column_type(self, column: exp.Column) -> exp.DataType | None:
         """
         Get the type of a column being unnested, tracing through CTEs/subqueries to find the base table.
 
@@ -366,8 +366,8 @@ class Resolver:
         return self._get_column_type_from_scope(source, column) if source else None
 
     def _get_column_type_from_scope(
-        self, source: t.Union[Scope, exp.Table], column: exp.Column
-    ) -> t.Optional[exp.DataType]:
+        self, source: Scope | exp.Table, column: exp.Column
+    ) -> exp.DataType | None:
         """
         Get a column's type by tracing through scopes/tables to find the base table.
 
@@ -380,7 +380,7 @@ class Resolver:
         """
         if isinstance(source, exp.Table):
             # base table - get the column type from schema
-            col_type: t.Optional[exp.DataType] = self.schema.get_column_type(source, column)
+            col_type: exp.DataType | None = self.schema.get_column_type(source, column)
             if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 return col_type
         elif isinstance(source, Scope):

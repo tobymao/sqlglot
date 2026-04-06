@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, generator
 from sqlglot.dialects.dialect import rename_func
 
 
 class DruidGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

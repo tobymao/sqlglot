@@ -24,12 +24,12 @@ class AthenaTrinoParser(TrinoParser):
 class AthenaParser(Parser):
     def __init__(
         self,
-        error_level: t.Optional[ErrorLevel] = None,
+        error_level: ErrorLevel | None = None,
         error_message_context: int = 100,
         max_errors: int = 3,
         dialect: DialectType = None,
-        hive: t.Optional[Hive] = None,
-        trino: t.Optional[Trino] = None,
+        hive: Hive | None = None,
+        trino: Trino | None = None,
     ) -> None:
         from sqlglot.dialects.hive import Hive
         from sqlglot.dialects.trino import Trino
@@ -56,7 +56,7 @@ class AthenaParser(Parser):
             dialect=trino,
         )
 
-    def parse(self, raw_tokens: list[Token], sql: str) -> list[t.Optional[exp.Expr]]:
+    def parse(self, raw_tokens: list[Token], sql: str) -> list[exp.Expr | None]:
         if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
             return self._hive_parser.parse(raw_tokens[1:], sql)
 
@@ -66,8 +66,8 @@ class AthenaParser(Parser):
         self,
         expression_types: exp.IntoType,
         raw_tokens: list[Token],
-        sql: t.Optional[str] = None,
-    ) -> list[t.Optional[exp.Expr]]:
+        sql: str | None = None,
+    ) -> list[exp.Expr | None]:
         if raw_tokens and raw_tokens[0].token_type == TokenType.HIVE_TOKEN_STREAM:
             return self._hive_parser.parse_into(expression_types, raw_tokens[1:], sql)
 

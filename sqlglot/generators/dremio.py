@@ -30,7 +30,7 @@ def _date_delta_sql(name: str) -> t.Callable[[DremioGenerator, DATE_DELTA], str]
 
 
 class DremioGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

@@ -110,7 +110,7 @@ def parse(
     read: DialectType = None,
     dialect: DialectType = None,
     **opts: Unpack[ParserNoDialectArgs],
-) -> list[t.Optional[Expr]]:
+) -> list[Expr | None]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
@@ -142,7 +142,7 @@ def parse_one(
     sql: str,
     read: DialectType = ...,
     dialect: DialectType = ...,
-    into: t.Optional[exp.IntoType] = ...,
+    into: exp.IntoType | None = ...,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr: ...
 
@@ -151,7 +151,7 @@ def parse_one(
     sql: str,
     read: DialectType = None,
     dialect: DialectType = None,
-    into: t.Optional[exp.IntoType] = None,
+    into: exp.IntoType | None = None,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
     """
@@ -186,7 +186,7 @@ def transpile(
     read: DialectType = None,
     write: DialectType = None,
     identity: bool = True,
-    error_level: t.Optional[ErrorLevel] = None,
+    error_level: ErrorLevel | None = None,
     **opts: Unpack[GeneratorArgs],
 ) -> list[str]:
     """

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import build_timestamp_trunc
@@ -64,7 +63,7 @@ class StarRocksParser(MySQLParser):
 
         return create
 
-    def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
+    def _parse_unnest(self, with_alias: bool = True) -> exp.Unnest | None:
         unnest = super()._parse_unnest(with_alias=with_alias)
 
         if unnest:
@@ -94,7 +93,7 @@ class StarRocksParser(MySQLParser):
 
     def _parse_partition_property(
         self,
-    ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
+    ) -> exp.Expr | None | list[exp.Expr]:
         expr = super()._parse_partition_property()
 
         if not expr:

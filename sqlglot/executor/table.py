@@ -12,7 +12,7 @@ class Table:
         self,
         columns: t.Any = None,
         rows: t.Any = None,
-        column_range: t.Optional[range] = None,
+        column_range: range | None = None,
     ) -> None:
         self.columns: t.Any = tuple(columns) if columns is not None else ()
         self.column_range = column_range
@@ -37,7 +37,7 @@ class Table:
     def pop(self) -> None:
         self.rows.pop()
 
-    def to_pylist(self) -> t.List:
+    def to_pylist(self) -> list:
         return [dict(zip(self.columns, row)) for row in self.rows]
 
     @property
@@ -119,11 +119,11 @@ class Tables(AbstractMappingSchema):
     pass
 
 
-def ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> Tables:
+def ensure_tables(d: dict | None, dialect: DialectType = None) -> Tables:
     return Tables(_ensure_tables(d, dialect=dialect))
 
 
-def _ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> t.Dict:
+def _ensure_tables(d: dict | None, dialect: DialectType = None) -> dict:
     if not d:
         return {}
 

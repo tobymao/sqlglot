@@ -26,7 +26,7 @@ class _DialectArg(t.TypedDict, total=False):
 
 
 class ParserNoDialectArgs(t.TypedDict, total=False):
-    error_level: t.Optional[ErrorLevel]
+    error_level: ErrorLevel | None
     error_message_context: int
     max_errors: int
 
@@ -36,12 +36,12 @@ class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
 
 
 class GeneratorNoDialectArgs(t.TypedDict, total=False):
-    pretty: t.Optional[t.Union[bool, int]]
-    identify: t.Union[str, bool]
+    pretty: bool | int | None
+    identify: str | bool
     normalize: bool
     pad: int
     indent: int
-    normalize_functions: t.Optional[t.Union[str, bool]]
+    normalize_functions: str | bool | None
     unsupported_level: ErrorLevel
     max_unsupported: int
     leading_comma: bool
@@ -55,4 +55,4 @@ class GeneratorArgs(GeneratorNoDialectArgs, _DialectArg, total=False):
 
 class GraphHTMLArgs(t.TypedDict, total=False):
     imports: bool
-    options: t.Optional[Mapping[str, object]]
+    options: Mapping[str, object] | None

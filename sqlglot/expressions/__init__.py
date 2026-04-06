@@ -11,8 +11,6 @@ SQL expressions, such as `sqlglot.expressions.select`.
 ----
 """
 
-import typing as t
-
 from sqlglot.expressions.core import *  # noqa: F401,F403
 from sqlglot.expressions.datatypes import *  # noqa: F401,F403
 from sqlglot.expressions.constraints import *  # noqa: F401,F403
@@ -50,4 +48,4 @@ from sqlglot.helper import subclasses
 
 ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
-EXPR_CLASSES: t.Dict[str, t.Type[Expr]] = {cls.key: cls for cls in subclasses(__name__, Expr)}
+EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name__, Expr)}

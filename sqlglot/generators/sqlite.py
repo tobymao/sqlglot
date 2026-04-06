@@ -74,7 +74,7 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
 
 
 class SQLiteGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
@@ -93,7 +93,7 @@ class SQLiteGenerator(generator.Generator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     SUPPORTS_MEDIAN = False
     JSON_KEY_VALUE_PAIR_SEP = ","
-    PARSE_JSON_NAME: t.Optional[str] = None
+    PARSE_JSON_NAME: str | None = None
 
     SUPPORTED_JSON_PATH_PARTS = {
         exp.JSONPathKey,
@@ -206,7 +206,7 @@ class SQLiteGenerator(generator.Generator):
         modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
         return self.func("DATE", expression.this, modifier)
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):
             return self.func("DATE", expression.this)
 

@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int
+from collections import defaultdict
 
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
@@ -163,7 +164,7 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
 
 
 class ClickHouseGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
@@ -436,7 +437,7 @@ class ClickHouseGenerator(generator.Generator):
 
         return strtodate_sql
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         this = expression.this
 
         if isinstance(this, exp.StrToDate) and expression.to == exp.DType.DATETIME.into_expr():
@@ -527,7 +528,7 @@ class ClickHouseGenerator(generator.Generator):
 
         return super().cte_sql(expression)
 
-    def after_limit_modifiers(self, expression: exp.Expr) -> t.List[str]:
+    def after_limit_modifiers(self, expression: exp.Expr) -> list[str]:
         return super().after_limit_modifiers(expression) + [
             (
                 self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
@@ -547,7 +548,7 @@ class ClickHouseGenerator(generator.Generator):
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return f"ON CLUSTER {self.sql(expression, 'this')}"
 
-    def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+    def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         if expression.kind in self.ON_CLUSTER_TARGETS and locations.get(
             exp.Properties.Location.POST_NAME
         ):

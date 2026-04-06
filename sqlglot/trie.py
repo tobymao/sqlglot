@@ -41,7 +41,7 @@ def new_trie(keywords: Iterable[key], trie: t.Optional[dict] = None) -> dict:
     return trie
 
 
-def in_trie(trie: t.Dict, key: key) -> t.Tuple[TrieResult, t.Dict]:
+def in_trie(trie: dict, key: key) -> tuple[TrieResult, dict]:
     """
     Checks whether a key is in a trie.
 

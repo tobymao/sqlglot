@@ -35,7 +35,7 @@ TRIGGER = "/integration-test"
 SUPPORTED_DIALECTS = ["duckdb", "bigquery", "snowflake"]
 
 
-def get_dialects_from_manual_trigger(trigger: str) -> t.Set[str]:
+def get_dialects_from_manual_trigger(trigger: str) -> set[str]:
     """
     Takes a trigger string and parses out the supported dialects
 
@@ -53,7 +53,7 @@ def get_dialects_from_manual_trigger(trigger: str) -> t.Set[str]:
 
     print(f"Parsing trigger args: {trigger_parts}")
 
-    dialects: t.List[str] = []
+    dialects: list[str] = []
     for part in trigger_parts:
         # try to parse key=value pairs
         maybe_kv = part.split("=", maxsplit=1)
@@ -65,7 +65,7 @@ def get_dialects_from_manual_trigger(trigger: str) -> t.Set[str]:
     return {d for d in dialects if d in SUPPORTED_DIALECTS}
 
 
-def get_dialects_from_git(base_ref: str, current_ref: str) -> t.Set[str]:
+def get_dialects_from_git(base_ref: str, current_ref: str) -> set[str]:
     """
     Takes two git refs and runs `git diff --name-only <base_ref> <current_ref>`
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     github_output = Path(github_output)
 
     with github_event_path.open("r") as f:
-        event: t.Dict[str, t.Any] = json.load(f)
+        event: dict[str, t.Any] = json.load(f)
 
     print("Handling event: \n" + json.dumps(event, indent=2))
 

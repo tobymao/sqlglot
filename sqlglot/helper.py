@@ -64,7 +64,7 @@ def suggest_closest_match_and_fail(
     raise ValueError(f"Unknown {kind} '{word}'.{similar}")
 
 
-def seq_get(seq: Sequence[T], index: int) -> t.Optional[T]:
+def seq_get(seq: Sequence[T], index: int) -> T | None:
     """Returns the value in `seq` at position `index`, or `None` if `index` is out of bounds."""
     try:
         return seq[index]
@@ -184,7 +184,7 @@ def while_changing(expression: E, func: t.Callable[[E], E]) -> E:
     return expression
 
 
-def tsort(dag: t.Dict[T, t.Set[T]]) -> t.List[T]:
+def tsort(dag: dict[T, set[T]]) -> list[T]:
     """
     Sorts a given directed acyclic graph in topological order.
 
@@ -263,7 +263,7 @@ def name_sequence(prefix: str) -> t.Callable[[], str]:
     return lambda: f"{prefix}{next(sequence)}"
 
 
-def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:
+def object_to_dict(obj: t.Any, **kwargs) -> dict:
     """Returns a dictionary created from an object's attributes."""
     return {
         **{k: v.copy() if hasattr(v, "copy") else copy(v) for k, v in vars(obj).items()},
@@ -273,7 +273,7 @@ def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:
 
 def split_num_words(
     value: str, sep: str, min_num_words: int, fill_from_start: bool = True
-) -> t.List[t.Optional[str]]:
+) -> list[str | None]:
     """
     Perform a split on a value and return N words as a result with `None` used for words that don't exist.
 
@@ -388,7 +388,7 @@ def to_bool(value: bool) -> bool: ...
 def to_bool(value: str) -> str | bool: ...
 
 
-def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:
+def to_bool(value: str | bool | None) -> str | bool | None:
     if isinstance(value, bool) or value is None:
         return value
 
@@ -402,7 +402,7 @@ def to_bool(value: t.Optional[str | bool]) -> t.Optional[str | bool]:
     return value
 
 
-def merge_ranges(ranges: t.List[t.Tuple[t.Any, t.Any]]) -> t.List[t.Tuple[t.Any, t.Any]]:
+def merge_ranges(ranges: list[tuple[t.Any, t.Any]]) -> list[tuple[t.Any, t.Any]]:
     """
     Merges a sequence of ranges, represented as tuples (low, high) whose values
     belong to some totally-ordered set.
@@ -449,7 +449,7 @@ def is_iso_datetime(text: str) -> bool:
 DATE_UNITS = {"day", "week", "month", "quarter", "year", "year_month"}
 
 
-def is_date_unit(expression: t.Optional[Expr]) -> bool:
+def is_date_unit(expression: Expr | None) -> bool:
     return expression is not None and expression.name.lower() in DATE_UNITS
 
 

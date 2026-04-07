@@ -13,8 +13,10 @@ from sqlglot.helper import trait
 
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import SchemaArgs
     from sqlglot.dialects.dialect import DialectType
     from collections.abc import Sequence
+    from typing_extensions import Unpack
 
     ColumnMapping = t.Union[dict[str, str], str, list[str]]
 
@@ -154,13 +156,12 @@ class AbstractMappingSchema:
         mapping: dict[str, object] | None = None,
         udf_mapping: dict[str, object] | None = None,
     ) -> None:
-        self.mapping = mapping or {}
-        self.mapping_trie = new_trie(
+        self.mapping: dict[str, object] = mapping or {}
+        self.mapping_trie: dict[str, object] = new_trie(
             tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self.depth())
         )
-
-        self.udf_mapping = udf_mapping or {}
-        self.udf_trie = new_trie(
+        self.udf_mapping: dict[str, object] = udf_mapping or {}
+        self.udf_trie: dict[str, object] = new_trie(
             tuple(reversed(t)) for t in flatten_schema(self.udf_mapping, depth=self.udf_depth())
         )
 
@@ -310,13 +311,13 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalize: bool = True,
         udf_mapping: dict[str, object] | None = None,
     ) -> None:
-        self.visible = {} if visible is None else visible
-        self.normalize = normalize
-        self._dialect = Dialect.get_or_raise(dialect)
+        self.visible: dict[str, object] = {} if visible is None else visible
+        self.normalize: bool = normalize
+        self._dialect: Dialect = Dialect.get_or_raise(dialect)
         self._type_mapping_cache: dict[str, exp.DataType] = {}
         self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
-        self._depth = 0
+        self._depth: int = 0
         schema = {} if schema is None else schema
         udf_mapping = {} if udf_mapping is None else udf_mapping
 
@@ -354,17 +355,17 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         return schema
 
-    def copy(self, **kwargs) -> MappingSchema:
-        return MappingSchema(
-            **{  # type: ignore
-                "schema": self.mapping.copy(),
-                "visible": self.visible.copy(),
-                "dialect": self.dialect,
-                "normalize": self.normalize,
-                "udf_mapping": self.udf_mapping.copy(),
-                **kwargs,
-            }
-        )
+    def copy(
+        self, schema: dict[str, object] | None = None, **kwargs: Unpack[SchemaArgs]
+    ) -> MappingSchema:
+        mapping_kwargs: SchemaArgs = {
+            "visible": self.visible.copy(),
+            "dialect": self.dialect,
+            "normalize": self.normalize,
+            "udf_mapping": self.udf_mapping.copy(),
+            **kwargs,
+        }
+        return MappingSchema(self.mapping.copy() if schema is None else schema, **mapping_kwargs)
 
     def add_table(
         self,
@@ -698,7 +699,9 @@ def normalize_name(
     return Dialect.get_or_raise(dialect).normalize_identifier(identifier)
 
 
-def ensure_schema(schema: Schema | dict[str, object] | None, **kwargs: t.Any) -> Schema:
+def ensure_schema(
+    schema: Schema | dict[str, object] | None, **kwargs: Unpack[SchemaArgs]
+) -> Schema:
     if isinstance(schema, Schema):
         return schema
 
@@ -731,7 +734,7 @@ def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, None] | di
 def flatten_schema(
     schema: dict[str, object], depth: int | None = None, keys: list[str] | None = None
 ) -> list[list[str]]:
-    tables = []
+    tables: list[list[str]] = []
     keys = keys or []
     depth = dict_depth(schema) - 1 if depth is None else depth
 

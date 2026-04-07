@@ -206,11 +206,11 @@ def _distribute(
                 copy=False,
             ),
         )
-    return exp.replace_children(
-        a,
-        lambda c: to_func(
-            simplifier.uniq_sort(flatten(from_func(c, b.left))),
-            simplifier.uniq_sort(flatten(from_func(c, b.right))),
+    else:
+        a = to_func(
+            simplifier.uniq_sort(flatten(from_func(a, b.left))),
+            simplifier.uniq_sort(flatten(from_func(a, b.right))),
             copy=False,
-        ),
-    )
+        )
+
+    return a

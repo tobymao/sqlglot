@@ -242,7 +242,12 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: (
             "RETURNS NULL ON NULL INPUT" if e.args.get("null") else self.naked_property(e)
         ),
-        exp.RowAccessProperty: lambda *_: "ROW ACCESS",
+        exp.RowAccessProperty: lambda self, e: (
+            f"WITH ROW ACCESS POLICY {self.sql(e, 'this')}"
+            + (f" ON ({self.expressions(e, flat=True)})" if e.expressions else "")
+            if e.this
+            else "ROW ACCESS"
+        ),
         exp.SafeFunc: lambda self, e: f"SAFE.{self.sql(e, 'this')}",
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SecureProperty: lambda *_: "SECURE",

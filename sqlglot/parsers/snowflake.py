@@ -967,7 +967,20 @@ class SnowflakeParser(parser.Parser):
         if self._match(TokenType.TAG):
             return self._parse_tag()
 
+        if self._match_text_seq("ROW", "ACCESS", "POLICY"):
+            return self._parse_row_access_policy()
+
         return super()._parse_with_property()
+
+    def _parse_row_access_policy(self) -> exp.RowAccessProperty:
+        policy = self._parse_column()
+        return self.expression(
+            exp.RowAccessProperty(
+                this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                expressions=self._match(TokenType.ON)
+                and self._parse_wrapped_csv(self._parse_id_var),
+            )
+        )
 
     def _parse_create(self) -> exp.Create | exp.Command:
         expression = super()._parse_create()

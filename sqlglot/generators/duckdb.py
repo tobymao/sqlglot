@@ -2997,6 +2997,12 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("COLLATION function is not supported by DuckDB")
         return self.function_fallback_sql(expression)
 
+    def collate_sql(self, expression: exp.Collate) -> str:
+        return self.binary(
+            exp.Collate(this=expression.this, expression=exp.Var(this=expression.expression.name)),
+            "COLLATE",
+        )
+
     def _validate_regexp_flags(self, flags: exp.Expr | None, supported_flags: str) -> str | None:
         """
         Validate and filter regexp flags for DuckDB compatibility.

@@ -3416,6 +3416,16 @@ class Generator:
         return self.func("CONCAT", *expressions)
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
+        if self.dialect.CONCAT_COALESCE and not expression.args.get("coalesce"):
+            # Dialect's CONCAT_WS function coalesces NULLs to empty strings, but the expression does not.
+            # Wrap the entire call in a CASE expression that returns NULL if any input IS NULL.
+            all_args = expression.expressions
+            return self.sql(
+                exp.case()
+                .when(exp.or_(*(arg.is_(exp.null()) for arg in all_args)), exp.null())
+                .else_(exp.ConcatWs(expressions=all_args, coalesce=True))
+            )
+
         return self.func(
             "CONCAT_WS", seq_get(expression.expressions, 0), *self.convert_concat_args(expression)
         )

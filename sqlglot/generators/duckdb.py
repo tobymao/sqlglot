@@ -3765,52 +3765,17 @@ class DuckDBGenerator(generator.Generator):
         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
+        # DuckDB-specific: handle binary types using DPipe (||) operator
         separator = seq_get(expression.expressions, 0)
-        if not separator:
-            return super().concatws_sql(expression)
-
         args = expression.expressions[1:]
-        all_args = [separator, *args]
-        has_binary = any(_is_binary(arg) for arg in all_args)
 
-        def has_null(arg: exp.Expr) -> bool:
-            return isinstance(arg, (exp.Null, exp.Nullif)) or (
-                isinstance(arg, exp.Case)
-                and any(
-                    isinstance(e, exp.Null)
-                    for e in [arg.args.get("default"), *arg.find_all(exp.If)]
-                )
-            )
-
-        needs_wrap = not expression.args.get("coalesce") and (
-            has_binary or any(has_null(arg) for arg in all_args)
-        )
-
-        if has_binary:
-            if not args:
-                return self.sql(exp.Literal.string(""))
-
+        if any(_is_binary(arg) for arg in [separator, *args]):
             result = args[0]
             for arg in args[1:]:
                 result = exp.DPipe(
                     this=exp.DPipe(this=result, expression=separator), expression=arg
                 )
-
-            if needs_wrap:
-                return self.sql(
-                    exp.case()
-                    .when(exp.or_(*(arg.is_(exp.null()) for arg in all_args)), exp.null())
-                    .else_(result)
-                )
-
             return self.sql(result)
-
-        if needs_wrap:
-            return self.sql(
-                exp.case()
-                .when(exp.or_(*(arg.is_(exp.null()) for arg in all_args)), exp.null())
-                .else_(exp.ConcatWs(expressions=expression.expressions, coalesce=True))
-            )
 
         return super().concatws_sql(expression)
 

@@ -242,12 +242,7 @@ class Generator:
         exp.ReturnsProperty: lambda self, e: (
             "RETURNS NULL ON NULL INPUT" if e.args.get("null") else self.naked_property(e)
         ),
-        exp.RowAccessProperty: lambda self, e: (
-            f"WITH ROW ACCESS POLICY {self.sql(e, 'this')}"
-            + (f" ON ({self.expressions(e, flat=True)})" if e.expressions else "")
-            if e.this
-            else "ROW ACCESS"
-        ),
+        exp.RowAccessProperty: lambda *_: "ROW ACCESS",
         exp.SafeFunc: lambda self, e: f"SAFE.{self.sql(e, 'this')}",
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SecureProperty: lambda *_: "SECURE",
@@ -718,7 +713,7 @@ class Generator:
         exp.RemoteWithConnectionModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RollupProperty: exp.Properties.Location.UNSUPPORTED,
-        exp.RowAccessProperty: exp.Properties.Location.POST_CREATE,
+        exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatDelimitedProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA,

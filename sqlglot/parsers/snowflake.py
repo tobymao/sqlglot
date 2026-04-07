@@ -756,6 +756,11 @@ class SnowflakeParser(parser.Parser):
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
         "LOCATION": lambda self: self._parse_location_property(),
+        "ROW": lambda self: (
+            self._parse_row_access_policy()
+            if self._match_text_seq("ACCESS", "POLICY")
+            else self._parse_row()
+        ),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: (
             self._match_text_seq("TEMPLATE")
@@ -967,7 +972,21 @@ class SnowflakeParser(parser.Parser):
         if self._match(TokenType.TAG):
             return self._parse_tag()
 
+        if self._match_text_seq("ROW", "ACCESS", "POLICY"):
+            return self._parse_row_access_policy()
+
         return super()._parse_with_property()
+
+    def _parse_row_access_policy(self) -> exp.RowAccessProperty:
+        policy = self._parse_column()
+        if not self._match(TokenType.ON):
+            self.raise_error("Expected ON after ROW ACCESS POLICY name")
+        return self.expression(
+            exp.RowAccessProperty(
+                this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
+                expressions=self._parse_wrapped_csv(self._parse_id_var),
+            )
+        )
 
     def _parse_create(self) -> exp.Create | exp.Command:
         expression = super()._parse_create()

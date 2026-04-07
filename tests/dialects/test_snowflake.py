@@ -5945,6 +5945,31 @@ SINGLE = TRUE""",
             "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
         )
 
+    def test_create_view_row_access_policy(self):
+        self.validate_identity(
+            "CREATE VIEW v WITH ROW ACCESS POLICY mypolicy ON (col1) AS SELECT col1 FROM t1"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE VIEW v WITH ROW ACCESS POLICY db.schema.mypolicy ON (col1, col2) AS SELECT col1, col2 FROM t1"
+        )
+        self.validate_identity(
+            "CREATE VIEW v (COL1 COMMENT 'description') WITH ROW ACCESS POLICY db.schema.policy ON (COL1) COMMENT='some comment' AS (SELECT a FROM t1 LEFT JOIN t2 ON t1.id = t2.id)"
+        )
+        self.validate_identity(
+            "CREATE VIEW v ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+            "CREATE VIEW v WITH ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c INT) ROW ACCESS POLICY p ON (c)",
+            "CREATE TABLE t (c INT) WITH ROW ACCESS POLICY p ON (c)",
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one(
+                "CREATE VIEW v WITH ROW ACCESS POLICY p AS SELECT 1",
+                dialect="snowflake",
+            )
+
     def test_semantic_view(self):
         for dimensions, metrics, where, facts in [
             (None, None, None, None),

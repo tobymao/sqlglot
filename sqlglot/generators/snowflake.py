@@ -538,6 +538,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.RegexpExtract: _regexpextract_sql,
         exp.RegexpExtractAll: _regexpextract_sql,
         exp.RegexpILike: _regexpilike_sql,
+        exp.RowAccessProperty: lambda self, e: self.rowaccessproperty_sql(e),
         exp.Select: transforms.preprocess(
             [
                 transforms.eliminate_window_clause,
@@ -652,6 +653,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
@@ -856,6 +858,12 @@ class SnowflakeGenerator(generator.Generator):
         privileges = f" WITH PRIVILEGES {privileges}" if privileges else ""
 
         return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
+
+    def rowaccessproperty_sql(self, expression: exp.RowAccessProperty) -> str:
+        if not expression.this:
+            return "ROW ACCESS"
+        on = f" ON ({self.expressions(expression, flat=True)})"
+        return f"WITH ROW ACCESS POLICY {self.sql(expression, 'this')}{on}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"

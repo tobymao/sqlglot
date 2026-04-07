@@ -303,11 +303,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     )
 
 
-def _replace(expression, condition):
+def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
     return expression.replace(exp.condition(condition))
 
 
-def _other_operand(expression):
+def _other_operand(expression: object) -> exp.Expr | None:
     if isinstance(expression, exp.In):
         return expression.this
 

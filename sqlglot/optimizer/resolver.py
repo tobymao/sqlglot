@@ -21,14 +21,14 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True):
-        self.scope = scope
-        self.schema = schema
-        self.dialect = schema.dialect or Dialect()
+    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
+        self.scope: Scope = scope
+        self.schema: Schema = schema
+        self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
-        self._infer_schema = infer_schema
+        self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:

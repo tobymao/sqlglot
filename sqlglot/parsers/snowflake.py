@@ -756,6 +756,11 @@ class SnowflakeParser(parser.Parser):
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
         "LOCATION": lambda self: self._parse_location_property(),
+        "ROW": lambda self: (
+            self._parse_row_access_policy()
+            if self._match_text_seq("ACCESS", "POLICY")
+            else self._parse_row()
+        ),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: (
             self._match_text_seq("TEMPLATE")

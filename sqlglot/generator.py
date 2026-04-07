@@ -713,7 +713,7 @@ class Generator:
         exp.RemoteWithConnectionModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RollupProperty: exp.Properties.Location.UNSUPPORTED,
-        exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.RowAccessProperty: exp.Properties.Location.UNSUPPORTED,
         exp.RowFormatProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatDelimitedProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA,

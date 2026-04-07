@@ -5953,7 +5953,15 @@ SINGLE = TRUE""",
             "CREATE OR REPLACE VIEW v WITH ROW ACCESS POLICY db.schema.mypolicy ON (col1, col2) AS SELECT col1, col2 FROM t1"
         )
         self.validate_identity(
-            "CREATE VIEW v (COL1 COMMENT 'description') WITH ROW ACCESS POLICY db.schema.policy ON (BUSINESS_ID) COMMENT='some comment' AS (SELECT a FROM t1 LEFT JOIN t2 ON t1.id = t2.id)"
+            "CREATE VIEW v (COL1 COMMENT 'description') WITH ROW ACCESS POLICY db.schema.policy ON (COL1) COMMENT='some comment' AS (SELECT a FROM t1 LEFT JOIN t2 ON t1.id = t2.id)"
+        )
+        self.validate_identity(
+            "CREATE VIEW v ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+            "CREATE VIEW v WITH ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c INT) ROW ACCESS POLICY p ON (c)",
+            "CREATE TABLE t (c INT) WITH ROW ACCESS POLICY p ON (c)",
         )
 
     def test_semantic_view(self):

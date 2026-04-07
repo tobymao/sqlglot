@@ -724,7 +724,7 @@ class BigQueryParser(parser.Parser):
                 # which is parsed by the base column ops parser due to anonymous_func=true
                 self._retreat(func_index)
                 this = func(this=self._parse_function(any_token=True))
-            elif prefix in {"AI", "ML"}:
+            elif prefix in ("AI", "ML"):
                 # AI.* and ML.* function calls can use custom BigQuery signatures that rely on
                 # function parsers, so re-parse the function in non-anonymous mode.
                 self._retreat(func_index)

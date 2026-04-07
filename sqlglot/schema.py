@@ -672,7 +672,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             udt = dialect.SUPPORTS_USER_DEFINED_TYPES
 
             try:
-                expression = exp.DataType.build(schema_type, dialect=dialect, udt=udt)
+                expression = exp.DataType.from_str(schema_type, dialect=dialect, udt=udt)
                 expression.transform(dialect.normalize_identifier, copy=False)
                 self._type_mapping_cache[schema_type] = expression
             except AttributeError:

@@ -2229,7 +2229,7 @@ def build_default_decimal_type(
             return dtype
 
         params = f"{precision}{f', {scale}' if scale is not None else ''}"
-        return exp.DataType.build(f"DECIMAL({params})")
+        return exp.DataType.from_str(f"DECIMAL({params})")
 
     return _builder
 

@@ -62,5 +62,5 @@ EXPRESSION_METADATA = {
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
     exp.Quantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
-    exp.RegexpSplit: {"returns": exp.DataType.build("ARRAY<STRING>")},
+    exp.RegexpSplit: {"returns": exp.DataType.from_str("ARRAY<STRING>")},
 }

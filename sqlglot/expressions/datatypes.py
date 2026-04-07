@@ -361,23 +361,22 @@ class DataType(Expression):
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
 
-
     @classmethod
     def from_str(
         cls, dtype: str, dialect: DialectType = None, udt: bool = False, **kwargs: object
     ) -> Self:
         """
-        Constructs a DataType object from a `str` representation.
+        Constructs a `DataType` object from a `str` representation.
 
         Args:
             dtype: the data type of interest.
             dialect: the dialect to use for parsing `dtype`.
             udt: when set to True, `dtype` will be used as-is if it can't be parsed into a
-                DataType, thus creating a user-defined type.
-            kwargs: additional arguments to pass in the constructor of DataType.
+                `DataType`, thus creating a user-defined type.
+            kwargs: additional arguments to pass in the constructor of `DataType`.
 
         Returns:
-            The constructed DataType object.
+            The constructed `DataType` object.
         """
         from sqlglot import parse_one
 

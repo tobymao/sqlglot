@@ -244,7 +244,7 @@ class TypeAnnotator:
         # setter to enforce the getter's return type (Optional[DataType]), rejecting DType.
         # Bypass by converting and assigning to _type directly.
         dtype = target_type or exp.DType.UNKNOWN
-        expression._type = dtype if isinstance(dtype, exp.DataType) else exp.DataType.build(dtype)
+        expression._type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
         self._visited.add(expression_id)
 
         if (

@@ -138,7 +138,9 @@ def _annotate_median(self: TypeAnnotator, expression: exp.Median) -> exp.Median:
         new_scale = min(scale + 3, MAX_SCALE)
 
         # Build the new NUMBER type
-        new_type = exp.DataType.build(f"NUMBER({new_precision}, {new_scale})", dialect="snowflake")
+        new_type = exp.DataType.from_str(
+            f"NUMBER({new_precision}, {new_scale})", dialect="snowflake"
+        )
         self._set_type(expression, new_type)
 
     return expression
@@ -161,7 +163,7 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
 
     # Special case: DECFLOAT -> DECFLOAT(38)
     if input_type.is_type(exp.DType.DECFLOAT):
-        self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
+        self._set_type(expression, exp.DataType.from_str("DECFLOAT", dialect="snowflake"))
     # Special case: FLOAT/DOUBLE -> DOUBLE
     elif input_type.is_type(exp.DType.FLOAT, exp.DType.DOUBLE):
         self._set_type(expression, exp.DType.DOUBLE)
@@ -176,7 +178,9 @@ def _annotate_variance(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
         new_scale = 6 if scale == 0 else max(12, scale)
 
         # Build the new NUMBER type
-        new_type = exp.DataType.build(f"NUMBER({MAX_PRECISION}, {new_scale})", dialect="snowflake")
+        new_type = exp.DataType.from_str(
+            f"NUMBER({MAX_PRECISION}, {new_scale})", dialect="snowflake"
+        )
         self._set_type(expression, new_type)
 
     return expression
@@ -194,12 +198,12 @@ def _annotate_kurtosis(self: TypeAnnotator, expression: exp.Kurtosis) -> exp.Kur
     input_type = expression.this.type
 
     if input_type.is_type(exp.DType.DECFLOAT):
-        self._set_type(expression, exp.DataType.build("DECFLOAT", dialect="snowflake"))
+        self._set_type(expression, exp.DataType.from_str("DECFLOAT", dialect="snowflake"))
     elif input_type.is_type(exp.DType.FLOAT, exp.DType.DOUBLE):
         self._set_type(expression, exp.DType.DOUBLE)
     else:
         self._set_type(
-            expression, exp.DataType.build(f"NUMBER({MAX_PRECISION}, 12)", dialect="snowflake")
+            expression, exp.DataType.from_str(f"NUMBER({MAX_PRECISION}, 12)", dialect="snowflake")
         )
 
     return expression
@@ -339,7 +343,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {
             "annotator": lambda self, e: self._set_type(
-                e, exp.DataType.build("NUMBER", dialect="snowflake")
+                e, exp.DataType.from_str("NUMBER", dialect="snowflake")
             )
         }
         for expr_type in (
@@ -547,7 +551,7 @@ EXPRESSION_METADATA = {
     exp.DecodeCase: {"annotator": _annotate_decode_case},
     exp.HashAgg: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("NUMBER(19, 0)", dialect="snowflake")
+            e, exp.DataType.from_str("NUMBER(19, 0)", dialect="snowflake")
         )
     },
     exp.Median: {"annotator": _annotate_median},

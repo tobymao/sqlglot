@@ -6050,7 +6050,7 @@ class Parser:
         while self._match(TokenType.DOT):
             type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
-        return exp.DataType.build(type_name, dialect=self.dialect, udt=True)
+        return exp.DataType.from_str(type_name, dialect=self.dialect, udt=True)
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
@@ -6073,7 +6073,7 @@ class Parser:
 
                 if tokens and (type_token := tokens[0].token_type) in self.TYPE_TOKENS:
                     if len(tokens) > 1:
-                        return exp.DataType.build(identifier.name, dialect=self.dialect)
+                        return exp.DataType.from_str(identifier.name, dialect=self.dialect)
                 elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
                     this = self._parse_user_defined_type(identifier)
                 else:
@@ -6324,7 +6324,7 @@ class Parser:
         return self.expression(exp.ColumnDef(this=col, kind=kind))
 
     def _parse_vector_expressions(self, expressions: list[exp.Expr]) -> list[exp.Expr]:
-        return [exp.DataType.build(expressions[0].name, dialect=self.dialect), *expressions[1:]]
+        return [exp.DataType.from_str(expressions[0].name, dialect=self.dialect), *expressions[1:]]
 
     def _parse_struct_types(self, type_required: bool = False) -> exp.Expr | None:
         index = self._index
@@ -7622,7 +7622,7 @@ class Parser:
         elif not to:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
-            to = exp.DataType.build(to.name, dialect=self.dialect, udt=True)
+            to = exp.DataType.from_str(to.name, dialect=self.dialect, udt=True)
         elif to.this == exp.DType.CHAR and self._match(TokenType.CHARACTER_SET):
             to = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_var_or_string())
 

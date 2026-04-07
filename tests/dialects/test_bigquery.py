@@ -2432,6 +2432,19 @@ OPTIONS (
 
                 assert ast.find(exp.GenerateEmbedding)
 
+        self.validate_identity(
+            "SELECT * FROM ML.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
+        )
+        self.validate_identity(
+            "SELECT * FROM AI.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
+        )
+        self.validate_identity(
+            "SELECT * FROM AI.GENERATE_TABLE(MODEL `mydataset.gemini_model`, (SELECT 'Q' AS prompt), STRUCT('name STRING' AS output_schema))"
+        )
+        self.validate_identity(
+            "SELECT AI.GENERATE_BOOL(MODEL `mydataset.gemini_model`, 'Is sky blue?')"
+        )
+
     def test_merge(self):
         self.validate_all(
             """

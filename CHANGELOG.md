@@ -1,6 +1,53 @@
 Changelog
 =========
 
+## [v30.3.0] - 2026-04-07
+### :boom: BREAKING CHANGES
+- due to [`d044414`](https://github.com/tobymao/sqlglot/commit/d0444141c2d5888bddfb8301d5c643f87ab1a054) - support transpilation of function LEFT from Snowflake … *(PR [#7419](https://github.com/tobymao/sqlglot/pull/7419) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  support transpilation of function LEFT from Snowflake … (#7419)
+
+- due to [`61bb18c`](https://github.com/tobymao/sqlglot/commit/61bb18cc00a1749f8945e56ff4e83e4c809bd6df) - Transpilation support for TO_DECIMAL, TO_NUMBER,NUMERIC *(PR [#7315](https://github.com/tobymao/sqlglot/pull/7315) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
+
+  Transpilation support for TO_DECIMAL, TO_NUMBER,NUMERIC (#7315)
+
+
+### :sparkles: New Features
+- [`d044414`](https://github.com/tobymao/sqlglot/commit/d0444141c2d5888bddfb8301d5c643f87ab1a054) - **duckdb**: support transpilation of function LEFT from Snowflake … *(PR [#7419](https://github.com/tobymao/sqlglot/pull/7419) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`11e0dab`](https://github.com/tobymao/sqlglot/commit/11e0dabb47a6d761f3166bd98999f461ac3e7146) - add `Expr.pipe` and `Expr.apply` methods *(PR [#7442](https://github.com/tobymao/sqlglot/pull/7442) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`21f4ecc`](https://github.com/tobymao/sqlglot/commit/21f4ecc7f319ad50cdfb59f7fd7cc29eebc58d42) - **duckdb**: transpilation support for position with binary arguments *(PR [#7433](https://github.com/tobymao/sqlglot/pull/7433) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`d57221a`](https://github.com/tobymao/sqlglot/commit/d57221a7d3ee75772d45d6c03acd8e511b4eda09) - **hive**: add native AST support for USING JAR/FILE/ARCHIVE in CREATE FUNCTION *(PR [#7436](https://github.com/tobymao/sqlglot/pull/7436) by [@hashwnath](https://github.com/hashwnath))*
+  - :arrow_lower_right: *addresses issue [#7435](https://github.com/tobymao/sqlglot/issues/7435) opened by [@catlynkong](https://github.com/catlynkong)*
+- [`8a070fd`](https://github.com/tobymao/sqlglot/commit/8a070fd3f9d17c06cf458a9a96ddeb1dba059b31) - **duckdb**: Add transpilation unsupported for COMPRESS function *(PR [#7445](https://github.com/tobymao/sqlglot/pull/7445) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`eb9dbac`](https://github.com/tobymao/sqlglot/commit/eb9dbac22e361a86fc13fbd49023135e66e2c53e) - **bigquery**: support AI.FORECAST function *(PR [#7457](https://github.com/tobymao/sqlglot/pull/7457) by [@RedZapdos123](https://github.com/RedZapdos123))*
+  - :arrow_lower_right: *addresses issue [#7456](https://github.com/tobymao/sqlglot/issues/7456) opened by [@RedZapdos123](https://github.com/RedZapdos123)*
+- [`61bb18c`](https://github.com/tobymao/sqlglot/commit/61bb18cc00a1749f8945e56ff4e83e4c809bd6df) - **snowflake**: Transpilation support for TO_DECIMAL, TO_NUMBER,NUMERIC *(PR [#7315](https://github.com/tobymao/sqlglot/pull/7315) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`4c29711`](https://github.com/tobymao/sqlglot/commit/4c29711d3a6c8e08307e0249ec9dab7486d343db) - **duckdb**: Add transpilation support for COLLATION function *(PR [#7443](https://github.com/tobymao/sqlglot/pull/7443) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`9cf3485`](https://github.com/tobymao/sqlglot/commit/9cf3485eaab80d5e715d9ef9de3c140e9d6c491a) - **snowflake**: parse and generate ROW ACCESS POLICY on views [CLAUDE] *(PR [#7467](https://github.com/tobymao/sqlglot/pull/7467) by [@eakmanrq](https://github.com/eakmanrq))*
+
+### :bug: Bug Fixes
+- [`09b5912`](https://github.com/tobymao/sqlglot/commit/09b59124c960dcf3415ef445faaabe5023e9f61c) - **sqlite**: support PRAGMA full syntax *(PR [#7441](https://github.com/tobymao/sqlglot/pull/7441) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7437](https://github.com/tobymao/sqlglot/issues/7437) opened by [@ppacac](https://github.com/ppacac)*
+- [`b61a85f`](https://github.com/tobymao/sqlglot/commit/b61a85f00b763df819c260e186a1e0b66c0086a9) - **bigquery**: column offset *(PR [#7451](https://github.com/tobymao/sqlglot/pull/7451) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7447](https://github.com/tobymao/sqlglot/issues/7447) opened by [@roykoand](https://github.com/roykoand)*
+- [`b7c057d`](https://github.com/tobymao/sqlglot/commit/b7c057dad7720e62243da57df2d024266d4fd64d) - **bigquery**: pipe syntax DISTINCT *(PR [#7450](https://github.com/tobymao/sqlglot/pull/7450) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7449](https://github.com/tobymao/sqlglot/issues/7449) opened by [@roykoand](https://github.com/roykoand)*
+- [`2b3dba1`](https://github.com/tobymao/sqlglot/commit/2b3dba155aa0159e8afabbc86af4283955ac92bb) - **presto**: iterate over copy in eliminate_semi_and_anti_joins *(PR [#7455](https://github.com/tobymao/sqlglot/pull/7455) by [@Evgeniy-Sinyak](https://github.com/Evgeniy-Sinyak))*
+- [`2fc0c25`](https://github.com/tobymao/sqlglot/commit/2fc0c257d7762b8cef156619451d0c4233f6ea7e) - **bigquery**: parse MODEL-first AI/ML GENERATE signatures *(PR [#7463](https://github.com/tobymao/sqlglot/pull/7463) by [@RedZapdos123](https://github.com/RedZapdos123))*
+  - :arrow_lower_right: *fixes issue [#7462](https://github.com/tobymao/sqlglot/issues/7462) opened by [@RedZapdos123](https://github.com/RedZapdos123)*
+
+### :recycle: Refactors
+- [`4deba62`](https://github.com/tobymao/sqlglot/commit/4deba626c6ee94693a7079c085b80d7eaa619487) - **typing**: add annotations in dialect/parser/schema modules *(PR [#7444](https://github.com/tobymao/sqlglot/pull/7444) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`c31e2e3`](https://github.com/tobymao/sqlglot/commit/c31e2e3a6994c0c5eeda7d4374d94fc3048c84e0) - **Optimizer**: improve typing coverage of optimizer modules *(PR [#7446](https://github.com/tobymao/sqlglot/pull/7446) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`08b51e8`](https://github.com/tobymao/sqlglot/commit/08b51e81e0092c63a565f46ec0ccad178006d5df) - use ruff UP rule to modernize coding style *(PR [#7459](https://github.com/tobymao/sqlglot/pull/7459) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`2e7dec0`](https://github.com/tobymao/sqlglot/commit/2e7dec0c1129e8af28e2ec9b8e0c12282701abc6) - Bump sqlglot-mypy to 1.20 *(PR [#7439](https://github.com/tobymao/sqlglot/pull/7439) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`500e0ce`](https://github.com/tobymao/sqlglot/commit/500e0ce1785a90eb29f7d4e0bf0511db08843219) - Fix uv sync picking up sqlglotc in python 3.9 *(PR [#7452](https://github.com/tobymao/sqlglot/pull/7452) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`0445c24`](https://github.com/tobymao/sqlglot/commit/0445c24577b093154105efaf57b8cd1a147abc7e) - Revert setup.py for sqlglot-mypy *(PR [#7458](https://github.com/tobymao/sqlglot/pull/7458) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`576b5a8`](https://github.com/tobymao/sqlglot/commit/576b5a8ae47e7108c69bdded53729c1e4cb3df1d) - add MaxCompute plugin to dialects list *(PR [#7466](https://github.com/tobymao/sqlglot/pull/7466) by [@azurechen97](https://github.com/azurechen97))*
+
+
 ## [v30.2.1] - 2026-04-02
 ### :bug: Bug Fixes
 - [`6983aed`](https://github.com/tobymao/sqlglot/commit/6983aedacc47b4adc127fb7e6ce9e0230f9b94f4) - **postgres**: `_date_add_sql` bug w/ interval inputs *(PR [#7440](https://github.com/tobymao/sqlglot/pull/7440) by [@georgesittas](https://github.com/georgesittas))*
@@ -14077,3 +14124,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.1.0]: https://github.com/tobymao/sqlglot/compare/v30.0.3...v30.1.0
 [v30.2.0]: https://github.com/tobymao/sqlglot/compare/v30.1.0...v30.2.0
 [v30.2.1]: https://github.com/tobymao/sqlglot/compare/v30.2.0...v30.2.1
+[v30.3.0]: https://github.com/tobymao/sqlglot/compare/v30.2.1...v30.3.0

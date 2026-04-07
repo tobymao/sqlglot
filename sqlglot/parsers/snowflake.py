@@ -979,11 +979,12 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_row_access_policy(self) -> exp.RowAccessProperty:
         policy = self._parse_column()
+        if not self._match(TokenType.ON):
+            self.raise_error("Expected ON after ROW ACCESS POLICY name")
         return self.expression(
             exp.RowAccessProperty(
                 this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
-                expressions=self._match(TokenType.ON)
-                and self._parse_wrapped_csv(self._parse_id_var),
+                expressions=self._parse_wrapped_csv(self._parse_id_var),
             )
         )
 

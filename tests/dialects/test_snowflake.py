@@ -5964,6 +5964,12 @@ SINGLE = TRUE""",
             "CREATE TABLE t (c INT) WITH ROW ACCESS POLICY p ON (c)",
         )
 
+        with self.assertRaises(ParseError):
+            parse_one(
+                "CREATE VIEW v WITH ROW ACCESS POLICY p AS SELECT 1",
+                dialect="snowflake",
+            )
+
     def test_semantic_view(self):
         for dimensions, metrics, where, facts in [
             (None, None, None, None),

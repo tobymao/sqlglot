@@ -82,20 +82,12 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
-# Mapping of Snowflake collation specifiers to DuckDB equivalents.
-# None = silent drop (Snowflake default — DuckDB already behaves the same way).
-_SNOWFLAKE_COLLATION_MAP: dict[str, str | None] = {
-    "ci": "NOCASE",
-    "ai": "NOACCENT",
-    "utf8": "BINARY",
-    "bin": "BINARY",
-    "upper": "NOCASE",
-    "lower": "NOCASE",
-    "cs": None,
-    "as": None,
-    "ps": None,
-}
-_SNOWFLAKE_COLLATION_UNSUPPORTED = frozenset({"pi", "fl", "fu", "trim", "ltrim", "rtrim"})
+# cs/as/ps are Snowflake defaults; DuckDB already behaves the same way, so they are safe to drop.
+# Note: "as" is also a reserved keyword in DuckDB, making it impossible to pass through.
+_SNOWFLAKE_COLLATION_DEFAULTS = frozenset({"cs", "as", "ps"})
+_SNOWFLAKE_COLLATION_UNSUPPORTED = frozenset(
+    {"ci", "ai", "upper", "lower", "utf8", "bin", "pi", "fl", "fu", "trim", "ltrim", "rtrim"}
+)
 
 # Window functions that support IGNORE/RESPECT NULLS in DuckDB
 _IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
@@ -3020,37 +3012,20 @@ class DuckDBGenerator(generator.Generator):
         if not raw:
             return self.sql(expression.this)
 
-        duckdb_parts = []
+        parts = []
         for part in raw.split("-"):
             lower = part.lower()
-            if lower in _SNOWFLAKE_COLLATION_MAP:
-                mapped = _SNOWFLAKE_COLLATION_MAP[lower]
-                if mapped:
-                    if lower == "ci":
-                        self.unsupported(
-                            "Snowflake 'ci' uses the Unicode Collation Algorithm; "
-                            "DuckDB NOCASE uses simple case folding - edge cases with "
-                            "character widths, space types, and NFC/NFD normalization may differ"
-                        )
-                    elif lower in ("upper", "lower"):
-                        self.unsupported(
-                            f"Snowflake '{lower}' controls sort order (uppercase-first vs "
-                            "lowercase-first); DuckDB NOCASE only affects equality, not ordering direction"
-                        )
-                    duckdb_parts.append(mapped)
-            elif lower in _SNOWFLAKE_COLLATION_UNSUPPORTED:
-                self.unsupported(f"Snowflake collation specifier '{part}' has no DuckDB equivalent")
-            else:
-                self.unsupported(
-                    f"Snowflake locale collation '{part}' requires the ICU extension in DuckDB"
-                )
-                duckdb_parts.append(lower)
+            if lower not in _SNOWFLAKE_COLLATION_DEFAULTS:
+                if lower in _SNOWFLAKE_COLLATION_UNSUPPORTED:
+                    self.unsupported(
+                        f"Snowflake collation specifier '{part}' has no DuckDB equivalent"
+                    )
+                parts.append(lower)
 
-        if not duckdb_parts:
+        if not parts:
             return self.sql(expression.this)
-
         return super().collate_sql(
-            exp.Collate(this=expression.this, expression=exp.var(".".join(duckdb_parts)))
+            exp.Collate(this=expression.this, expression=exp.var(".".join(parts)))
         )
 
     def _validate_regexp_flags(self, flags: exp.Expr | None, supported_flags: str) -> str | None:

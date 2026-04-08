@@ -3393,6 +3393,9 @@ class DuckDBGenerator(generator.Generator):
     def right_sql(self, expression: exp.Right) -> str:
         return self._left_right_sql(expression, "RIGHT")
 
+    def rtrimmedlength_sql(self, expression: exp.RtrimmedLength) -> str:
+        return self.func("LENGTH", exp.Trim(this=expression.this, position="TRAILING"))
+
     def rand_sql(self, expression: exp.Rand) -> str:
         seed = expression.this
         if seed is not None:

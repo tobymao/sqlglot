@@ -3420,6 +3420,7 @@ class Generator:
             # Dialect's CONCAT_WS function coalesces NULLs to empty strings, but the expression does not.
             # Wrap the entire call in a CASE expression that returns NULL if any input IS NULL.
             all_args = expression.expressions
+            expression.set("coalesce", True)
             return self.sql(
                 exp.case()
                 .when(exp.or_(*(arg.is_(exp.null()) for arg in all_args)), exp.null())

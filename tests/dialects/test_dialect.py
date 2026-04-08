@@ -2449,7 +2449,7 @@ class TestDialect(Validator):
             "CONCAT_WS('-', 'a', 'b')",
             write={
                 "clickhouse": "CONCAT_WS('-', 'a', 'b')",
-                "duckdb": "CONCAT_WS('-', 'a', 'b')",
+                "duckdb": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
                 "presto": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
                 "hive": "CONCAT_WS('-', 'a', 'b')",
                 "spark": "CONCAT_WS('-', 'a', 'b')",
@@ -2461,7 +2461,7 @@ class TestDialect(Validator):
             "CONCAT_WS('-', x)",
             write={
                 "clickhouse": "CONCAT_WS('-', x)",
-                "duckdb": "CONCAT_WS('-', x)",
+                "duckdb": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
                 "hive": "CONCAT_WS('-', x)",
                 "presto": "CONCAT_WS('-', CAST(x AS VARCHAR))",
                 "spark": "CONCAT_WS('-', x)",

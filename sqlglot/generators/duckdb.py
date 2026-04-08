@@ -3764,6 +3764,21 @@ class DuckDBGenerator(generator.Generator):
 
         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
 
+    def concatws_sql(self, expression: exp.ConcatWs) -> str:
+        # DuckDB-specific: handle binary types using DPipe (||) operator
+        separator = seq_get(expression.expressions, 0)
+        args = expression.expressions[1:]
+
+        if any(_is_binary(arg) for arg in [separator, *args]):
+            result = args[0]
+            for arg in args[1:]:
+                result = exp.DPipe(
+                    this=exp.DPipe(this=result, expression=separator), expression=arg
+                )
+            return self.sql(result)
+
+        return super().concatws_sql(expression)
+
     def _regexp_extract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:
         this = expression.this
         group = expression.args.get("group")

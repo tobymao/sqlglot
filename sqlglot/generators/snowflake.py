@@ -481,6 +481,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
         exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
+        exp.HandlerProperty: lambda self, e: f"HANDLER = {self.sql(e, 'this')}",
         exp.FileFormatProperty: lambda self, e: (
             f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})"
         ),

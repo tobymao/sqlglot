@@ -2268,6 +2268,11 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported(f"{func_name} is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def decryptraw_sql(self, expression: exp.DecryptRaw) -> str:
+        func_name = "TRY_DECRYPT_RAW" if expression.args.get("safe") else "DECRYPT_RAW"
+        self.unsupported(f"{func_name} is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

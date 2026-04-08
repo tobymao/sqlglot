@@ -2263,6 +2263,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("ENCRYPT is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def decrypt_sql(self, expression: exp.Decrypt) -> str:
+        self.unsupported("DECRYPT is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

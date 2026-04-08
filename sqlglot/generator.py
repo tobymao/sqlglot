@@ -3424,7 +3424,7 @@ class Generator:
             return self.sql(
                 exp.case()
                 .when(exp.or_(*(arg.is_(exp.null()) for arg in all_args)), exp.null())
-                .else_(exp.ConcatWs(expressions=all_args, coalesce=True))
+                .else_(expression)
             )
 
         return self.func(

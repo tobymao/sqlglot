@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v30.4.2] - 2026-04-08
+### :bug: Bug Fixes
+- [`d04595e`](https://github.com/tobymao/sqlglot/commit/d04595e1ba91a778e4b76f3f84dcb41649594e32) - incomplete `ColumnMapping` type hint *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.4.0] - 2026-04-08
 ### :sparkles: New Features
 - [`24ff8bb`](https://github.com/tobymao/sqlglot/commit/24ff8bb6c1d94a03f6611d4353e210108c25a6a6) - **duckdb**: Add transpilation support for COLLATE function *(PR [#7461](https://github.com/tobymao/sqlglot/pull/7461) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
@@ -14137,3 +14142,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.2.1]: https://github.com/tobymao/sqlglot/compare/v30.2.0...v30.2.1
 [v30.3.0]: https://github.com/tobymao/sqlglot/compare/v30.2.1...v30.3.0
 [v30.4.0]: https://github.com/tobymao/sqlglot/compare/v30.3.0...v30.4.0
+[v30.4.2]: https://github.com/tobymao/sqlglot/compare/v30.4.1...v30.4.2

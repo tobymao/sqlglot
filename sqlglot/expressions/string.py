@@ -220,7 +220,7 @@ class Stuff(Expression, Func):
 
 class Substring(Expression, Func):
     _sql_names = ["SUBSTRING", "SUBSTR"]
-    arg_types = {"this": True, "start": False, "length": False}
+    arg_types = {"this": True, "start": False, "length": False, "zero_start": False}
 
 
 class SubstringIndex(Expression, Func):

@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v30.4.0] - 2026-04-08
+### :sparkles: New Features
+- [`24ff8bb`](https://github.com/tobymao/sqlglot/commit/24ff8bb6c1d94a03f6611d4353e210108c25a6a6) - **duckdb**: Add transpilation support for COLLATE function *(PR [#7461](https://github.com/tobymao/sqlglot/pull/7461) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`6717634`](https://github.com/tobymao/sqlglot/commit/67176343b150dd0121c7537e1b828bfde5a7a176) - **snowflake**: transpilation support for CONCAT_WS NULL semantics when transpiling to DuckDB *(PR [#7464](https://github.com/tobymao/sqlglot/pull/7464) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*
+- [`00970d8`](https://github.com/tobymao/sqlglot/commit/00970d85aaac2ca40c967c6fd4ad03dbc5f0367d) - **duckdb**: Add transpilation support for RTRIMMED_LENGTH function *(PR [#7468](https://github.com/tobymao/sqlglot/pull/7468) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`d3c2eeb`](https://github.com/tobymao/sqlglot/commit/d3c2eeb724c548913352369743ddefb78494417f) - **tsql**: improve `SELECT TOP` parsing *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`800c0c4`](https://github.com/tobymao/sqlglot/commit/800c0c44bb3a2f209be9118ba71b993a99d63e3a) - **snowflake**: emit proper `HANDLER` property syntax *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.3.0] - 2026-04-07
 ### :boom: BREAKING CHANGES
 - due to [`d044414`](https://github.com/tobymao/sqlglot/commit/d0444141c2d5888bddfb8301d5c643f87ab1a054) - support transpilation of function LEFT from Snowflake … *(PR [#7419](https://github.com/tobymao/sqlglot/pull/7419) by [@fivetran-ashashankar](https://github.com/fivetran-ashashankar))*:
@@ -14125,3 +14136,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.2.0]: https://github.com/tobymao/sqlglot/compare/v30.1.0...v30.2.0
 [v30.2.1]: https://github.com/tobymao/sqlglot/compare/v30.2.0...v30.2.1
 [v30.3.0]: https://github.com/tobymao/sqlglot/compare/v30.2.1...v30.3.0
+[v30.4.0]: https://github.com/tobymao/sqlglot/compare/v30.3.0...v30.4.0

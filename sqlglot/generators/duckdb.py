@@ -1496,6 +1496,18 @@ class DuckDBGenerator(generator.Generator):
         exp.Boolnot: _boolnot_sql,
         exp.Booland: _booland_sql,
         exp.Boolor: _boolor_sql,
+        exp.Decrypt: lambda self, e: (
+            self.unsupported(
+                f"{'TRY_' if e.args.get('safe') else ''}DECRYPT is not supported in DuckDB"
+            ),
+            self.func(
+                f"{'TRY_' if e.args.get('safe') else ''}DECRYPT",
+                e.this,
+                e.args.get("passphrase"),
+                e.args.get("aad"),
+                e.args.get("encryption_method"),
+            ),
+        )[1],
         exp.Array: transforms.preprocess(
             [transforms.inherit_struct_field_names],
             generator=inline_array_unless_query,

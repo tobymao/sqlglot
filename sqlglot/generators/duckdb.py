@@ -82,6 +82,13 @@ WEEK_START_DAY_TO_DOW = {
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
 
+# cs/as/ps are Snowflake defaults; DuckDB already behaves the same way, so they are safe to drop.
+# Note: "as" is also a reserved keyword in DuckDB, making it impossible to pass through.
+_SNOWFLAKE_COLLATION_DEFAULTS = frozenset({"cs", "as", "ps"})
+_SNOWFLAKE_COLLATION_UNSUPPORTED = frozenset(
+    {"ci", "ai", "upper", "lower", "utf8", "bin", "pi", "fl", "fu", "trim", "ltrim", "rtrim"}
+)
+
 # Window functions that support IGNORE/RESPECT NULLS in DuckDB
 _IGNORE_RESPECT_NULLS_WINDOW_FUNCTIONS = (
     exp.FirstValue,
@@ -2996,6 +3003,30 @@ class DuckDBGenerator(generator.Generator):
     def collation_sql(self, expression: exp.Collation) -> str:
         self.unsupported("COLLATION function is not supported by DuckDB")
         return self.function_fallback_sql(expression)
+
+    def collate_sql(self, expression: exp.Collate) -> str:
+        if not expression.expression.is_string:
+            return super().collate_sql(expression)
+
+        raw = expression.expression.name
+        if not raw:
+            return self.sql(expression.this)
+
+        parts = []
+        for part in raw.split("-"):
+            lower = part.lower()
+            if lower not in _SNOWFLAKE_COLLATION_DEFAULTS:
+                if lower in _SNOWFLAKE_COLLATION_UNSUPPORTED:
+                    self.unsupported(
+                        f"Snowflake collation specifier '{part}' has no DuckDB equivalent"
+                    )
+                parts.append(lower)
+
+        if not parts:
+            return self.sql(expression.this)
+        return super().collate_sql(
+            exp.Collate(this=expression.this, expression=exp.var(".".join(parts)))
+        )
 
     def _validate_regexp_flags(self, flags: exp.Expr | None, supported_flags: str) -> str | None:
         """

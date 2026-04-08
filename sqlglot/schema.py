@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
     from typing_extensions import Unpack
 
-    ColumnMapping = dict[str, object]
+    ColumnMapping = dict | str | list
 
 
 @trait
@@ -708,7 +708,7 @@ def ensure_schema(
     return MappingSchema(schema, **kwargs)
 
 
-def ensure_column_mapping(mapping: ColumnMapping | None) -> ColumnMapping:
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict:
     if mapping is None:
         return {}
     elif isinstance(mapping, dict):

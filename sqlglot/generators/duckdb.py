@@ -3422,6 +3422,21 @@ class DuckDBGenerator(generator.Generator):
     def rtrimmedlength_sql(self, expression: exp.RtrimmedLength) -> str:
         return self.func("LENGTH", exp.Trim(this=expression.this, position="TRAILING"))
 
+    def stuff_sql(self, expression: exp.Stuff) -> str:
+        base = expression.this
+        start = expression.args["start"]
+        length = expression.args["length"]
+        insertion = expression.expression
+        left = exp.Substring(
+            this=base.copy(),
+            start=exp.Literal.number(1),
+            length=start.copy() - exp.Literal.number(1),
+        )
+        right = exp.Substring(this=base.copy(), start=start.copy() + length.copy())
+        return self.sql(
+            exp.DPipe(this=exp.DPipe(this=left, expression=insertion), expression=right)
+        )
+
     def rand_sql(self, expression: exp.Rand) -> str:
         seed = expression.this
         if seed is not None:

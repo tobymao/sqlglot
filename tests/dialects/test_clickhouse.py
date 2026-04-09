@@ -1719,6 +1719,45 @@ LIFETIME(MIN 0 MAX 0)""",
             "SELECT row_number() OVER (PARTITION BY column2 ORDER BY column3) FROM table"
         )
 
+    def test_groupconcat(self):
+        # groupConcat(sep)(col) - parametric form with separator
+        parsed = self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts")
+        gc = parsed.selects[0]
+        self.assertIsInstance(gc, exp.GroupConcat)
+        self.assertEqual(gc.this.name, "part_name")
+        self.assertEqual(gc.args["separator"].name, ", ")
+
+        # groupConcat(col) - no separator
+        parsed2 = self.validate_identity("SELECT groupConcat(part_name) FROM t")
+        gc2 = parsed2.selects[0]
+        self.assertIsInstance(gc2, exp.GroupConcat)
+        self.assertEqual(gc2.this.name, "part_name")
+        self.assertIsNone(gc2.args.get("separator"))
+
+        # groupConcat(sep, limit)(col) - not converted to GroupConcat; limit must be preserved
+        parsed3 = self.validate_identity("SELECT groupConcat(', ', 2)(part_name) FROM t")
+        self.assertIsInstance(parsed3.selects[0], exp.ParameterizedAgg)
+        self.assertEqual(parsed3.selects[0].name, "groupConcat")
+
+        # Combinators are preserved as CombinedAggFunc / CombinedParameterizedAgg
+        self.validate_identity("SELECT groupConcatIf(x, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT groupConcatIf(', ')(x, cond) FROM t").selects[0].assert_is(
+            exp.CombinedParameterizedAgg
+        )
+
+        # Cross-dialect transpilation
+        self.validate_all(
+            "SELECT groupConcat(', ')(part_name) FROM t",
+            read={"mysql": "SELECT GROUP_CONCAT(part_name SEPARATOR ', ') FROM t"},
+            write={
+                "clickhouse": "SELECT groupConcat(', ')(part_name) FROM t",
+                "mysql": "SELECT GROUP_CONCAT(part_name SEPARATOR ', ') FROM t",
+                "duckdb": "SELECT LISTAGG(part_name, ', ') FROM t",
+            },
+        )
+
     def test_functions(self):
         self.validate_identity("SELECT TRANSFORM(foo, [1, 2], ['first', 'second']) FROM table")
         self.validate_identity(

@@ -416,6 +416,18 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
+    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+        separator = expression.args.get("separator")
+        if separator:
+            return self.sql(
+                exp.ParameterizedAgg(
+                    this="groupConcat",
+                    params=[expression.this],
+                    expressions=[separator],
+                )
+            )
+        return self.func("groupConcat", expression.this)
+
     def offset_sql(self, expression: exp.Offset) -> str:
         offset = super().offset_sql(expression)
 

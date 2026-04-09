@@ -8,14 +8,18 @@ from sqlglot.tokens import TokenType
 from collections.abc import Collection
 
 
-def _select_all(table: exp.Expr) -> exp.Select | None:
-    return exp.select("*").from_(table, copy=False) if table else None
+def _select_all(table: exp.Expr) -> exp.Select:
+    return exp.select("*").from_(table, copy=False)
 
 
 def _resolve_projection(s: exp.Expr, projections: dict[str, exp.Expr]) -> exp.Expr:
     if isinstance(s, exp.Column) and s.name in projections:
         return projections[s.name].copy()
     return s
+
+
+def _sum_with_zero(args: list[exp.Expr]) -> exp.Expr:
+    return exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0)
 
 
 class PRQLParser(parser.Parser):
@@ -30,30 +34,52 @@ class PRQLParser(parser.Parser):
     }
 
     TRANSFORM_PARSERS = {
-        "DERIVE": lambda self, query: self._parse_selection(query),
-        "SELECT": lambda self, query: self._parse_selection(query, append=False),
-        "TAKE": lambda self, query: self._parse_take(query),
-        "FILTER": lambda self, query: query.where(self._parse_disjunction()),
-        "APPEND": lambda self, query: query.union(
-            _select_all(self._parse_table()), distinct=False, copy=False
-        ),
-        "REMOVE": lambda self, query: query.except_(
-            _select_all(self._parse_table()), distinct=False, copy=False
-        ),
-        "INTERSECT": lambda self, query: query.intersect(
-            _select_all(self._parse_table()), distinct=False, copy=False
-        ),
-        "SORT": lambda self, query: self._parse_order_by(query),
-        "AGGREGATE": lambda self, query: self._parse_selection(
-            query, parse_method=self._parse_aggregate, append=False
-        ),
+        "DERIVE": "_parse_transform_derive",
+        "SELECT": "_parse_transform_select",
+        "TAKE": "_parse_transform_take",
+        "FILTER": "_parse_transform_filter",
+        "APPEND": "_parse_transform_append",
+        "REMOVE": "_parse_transform_remove",
+        "INTERSECT": "_parse_transform_intersect",
+        "SORT": "_parse_transform_sort",
+        "AGGREGATE": "_parse_transform_aggregate",
     }
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         "AVERAGE": exp.Avg.from_arg_list,
-        "SUM": lambda args: exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0),
+        "SUM": _sum_with_zero,
     }
+
+    def _parse_transform_derive(self, query: exp.Query) -> exp.Query:
+        return self._parse_selection(query)
+
+    def _parse_transform_select(self, query: exp.Query) -> exp.Query:
+        return self._parse_selection(query, append=False)
+
+    def _parse_transform_take(self, query: exp.Query) -> exp.Query | None:
+        return self._parse_take(query)
+
+    def _parse_transform_filter(self, query: exp.Query) -> exp.Query:
+        return query.where(self._parse_disjunction())
+
+    def _parse_transform_append(self, query: exp.Query) -> exp.Query:
+        table = t.cast(exp.Expr, self._parse_table())
+        return query.union(_select_all(table), distinct=False, copy=False)
+
+    def _parse_transform_remove(self, query: exp.Query) -> exp.Query:
+        table = t.cast(exp.Expr, self._parse_table())
+        return query.except_(_select_all(table), distinct=False, copy=False)
+
+    def _parse_transform_intersect(self, query: exp.Query) -> exp.Query:
+        table = t.cast(exp.Expr, self._parse_table())
+        return query.intersect(_select_all(table), distinct=False, copy=False)
+
+    def _parse_transform_sort(self, query: exp.Query) -> exp.Query | None:
+        return self._parse_order_by(t.cast(exp.Select, query))
+
+    def _parse_transform_aggregate(self, query: exp.Query) -> exp.Query:
+        return self._parse_selection(query, parse_method=self._parse_aggregate, append=False)
 
     def _parse_equality(self) -> exp.Expr | None:
         eq = self._parse_comparison()
@@ -89,7 +115,8 @@ class PRQLParser(parser.Parser):
         query: exp.Query = exp.select("*").from_(from_, copy=False)
 
         while self._match_texts(self.TRANSFORM_PARSERS):
-            query = self.TRANSFORM_PARSERS[self._prev.text.upper()](self, query)
+            transform = self.TRANSFORM_PARSERS[self._prev.text.upper()]
+            query = getattr(self, transform)(query)
 
         return query
 

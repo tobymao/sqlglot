@@ -2262,6 +2262,19 @@ WHERE
             self.assertIn("EXECUTE IMMEDIATE", cm.output[1])
             self.assertIn("END FOR", cm.output[2])
 
+        with self.assertLogs(parser_logger) as cm:
+            expression = parse_one(
+                'FOR tn IN (SELECT "101" AS number) DO EXECUTE IMMEDIATE FORMAT("SELECT %s", tn.number); END FOR',
+                read="bigquery",
+            )
+            self.assertEqual(
+                expression.sql(dialect="bigquery"),
+                'FOR tn IN (SELECT \'101\' AS number) DO EXECUTE IMMEDIATE FORMAT("SELECT %s", tn.number); END FOR',
+            )
+            self.assertNotIn("FOR tn IN", "\n".join(cm.output))
+            self.assertEqual(len(cm.output), 1)
+            self.assertIn("'END FOR'", cm.output[0])
+
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"

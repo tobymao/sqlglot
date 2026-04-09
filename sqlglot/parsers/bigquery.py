@@ -328,6 +328,7 @@ class BigQueryParser(parser.Parser):
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
         TokenType.END: lambda self: self._parse_as_command(self._prev),
+        TokenType.EXECUTE: lambda self: self._parse_execute_immediate(),
         TokenType.FOR: lambda self: self._parse_for_in(),
         TokenType.EXPORT: lambda self: self._parse_export_data(),
         TokenType.DECLARE: lambda self: self._parse_declare(),
@@ -348,6 +349,36 @@ class BigQueryParser(parser.Parser):
             self._retreat(index)
             return self._parse_as_command(self._prev)
         return self.expression(exp.ForIn(this=this, expression=self._parse_statement()))
+
+    def _parse_execute_immediate(self) -> exp.Command:
+        start = self._prev
+
+        if not self._match_text_seq("IMMEDIATE"):
+            return self._parse_as_command(start)
+
+        if not self._parse_expression():
+            return self._parse_as_command(start)
+
+        if self._match_text_seq("INTO"):
+            self._parse_csv(lambda: self._parse_id_var(any_token=True) or self._parse_expression())
+
+        if self._match_text_seq("USING"):
+            self._parse_csv(self._parse_execute_immediate_using)
+
+        text = self._find_sql(start, self._prev)
+        size = len(start.text)
+        return exp.Command(this=text[:size], expression=text[size:])
+
+    def _parse_execute_immediate_using(self) -> exp.Expr | None:
+        this = self._parse_expression()
+
+        if not this:
+            return None
+
+        if self._match(TokenType.ALIAS):
+            self._parse_id_var(any_token=True)
+
+        return this
 
     def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
         this = super()._parse_table_part(schema=schema) or self._parse_number()

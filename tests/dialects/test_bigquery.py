@@ -2269,7 +2269,7 @@ WHERE
             )
             self.assertEqual(
                 expression.sql(dialect="bigquery"),
-                'FOR tn IN (SELECT \'101\' AS number) DO EXECUTE IMMEDIATE FORMAT("SELECT %s", tn.number); END FOR',
+                "FOR tn IN (SELECT '101' AS number) DO EXECUTE IMMEDIATE FORMAT(\"SELECT %s\", tn.number); END FOR",
             )
             self.assertNotIn("FOR tn IN", "\n".join(cm.output))
             self.assertEqual(len(cm.output), 1)

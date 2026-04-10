@@ -1382,3 +1382,18 @@ TBLPROPERTIES (
                 "databricks": "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
             },
         )
+
+    def test_try_divide(self):
+        self.validate_all(
+            "SELECT TRY_DIVIDE(a, b)",
+            read={
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+            },
+            write={
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+                "snowflake": "SELECT IFF(b <> 0, a / b, NULL)",
+                "duckdb": "SELECT CASE WHEN b <> 0 THEN a / b ELSE NULL END",
+            },
+        )

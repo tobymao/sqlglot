@@ -5973,6 +5973,16 @@ SINGLE = TRUE""",
                 "CREATE VIEW v WITH ROW ACCESS POLICY p AS SELECT 1",
                 dialect="snowflake",
             )
+        self.validate_identity(
+            "CREATE VIEW v WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1",
+        )
+        self.assertEqual(
+            parse_one(
+                "CREATE VIEW v WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1",
+                dialect="snowflake",
+            ).sql(dialect="snowflake", identify=True),
+            'CREATE VIEW "v" WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1',
+        )
 
     def test_semantic_view(self):
         for dimensions, metrics, where, facts in [

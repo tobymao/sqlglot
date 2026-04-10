@@ -863,8 +863,11 @@ class SnowflakeGenerator(generator.Generator):
     def rowaccessproperty_sql(self, expression: exp.RowAccessProperty) -> str:
         if not expression.this:
             return "ROW ACCESS"
-        on = f" ON ({self.expressions(expression, flat=True)})"
-        return f"WITH ROW ACCESS POLICY {self.sql(expression, 'this')}{on}"
+        policy = expression.this
+        # GET_DDL outputs #unknown_policy when privileges are insufficient; never quote it
+        policy_sql = policy.name if isinstance(policy, exp.Identifier) and policy.name.startswith("#") else self.sql(policy)
+        on = f" ON ({self.expressions(expression, flat=True)})" if expression.expressions else ""
+        return f"WITH ROW ACCESS POLICY {policy_sql}{on}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"

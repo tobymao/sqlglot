@@ -3229,6 +3229,9 @@ class DuckDBGenerator(generator.Generator):
             )
         )
 
+    def arrayunionagg_sql(self, expression: exp.ArrayUnionAgg) -> str:
+        return self.sql(exp.ArrayDistinct(this=exp.Flatten(this=exp.func("LIST", expression.this))))
+
     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
         arr = expression.this
         func = self.func("LIST_DISTINCT", arr)
@@ -4272,6 +4275,10 @@ class DuckDBGenerator(generator.Generator):
 
     def window_sql(self, expression: exp.Window) -> str:
         this = expression.this
+        if isinstance(this, exp.ArrayUnionAgg):
+            new_window = expression.copy()
+            new_window.set("this", exp.func("LIST", this.this))
+            return self.sql(exp.ArrayDistinct(this=exp.Flatten(this=new_window)))
         if isinstance(this, exp.Corr) or (
             isinstance(this, exp.Filter) and isinstance(this.this, exp.Corr)
         ):

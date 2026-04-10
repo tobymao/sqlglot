@@ -491,6 +491,17 @@ class TestDatabricks(Validator):
             "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
         )
 
+    def test_iff(self):
+        # IFF is a synonym for IF in Databricks; it normalizes to IF on output
+        self.validate_all(
+            "SELECT IF(x > 0, 'positive', 'non-positive')",
+            read={"databricks": "SELECT IFF(x > 0, 'positive', 'non-positive')"},
+            write={
+                "databricks": "SELECT IF(x > 0, 'positive', 'non-positive')",
+                "snowflake": "SELECT IFF(x > 0, 'positive', 'non-positive')",
+            },
+        )
+
     def test_declare(self):
         self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
         self.validate_identity("DECLARE x INT")

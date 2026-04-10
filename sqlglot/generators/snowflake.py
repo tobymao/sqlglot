@@ -865,7 +865,11 @@ class SnowflakeGenerator(generator.Generator):
             return "ROW ACCESS"
         policy = expression.this
         # GET_DDL outputs #unknown_policy when privileges are insufficient; never quote it
-        policy_sql = policy.name if isinstance(policy, exp.Identifier) and policy.name.startswith("#") else self.sql(policy)
+        policy_sql = (
+            policy.name
+            if isinstance(policy, exp.Identifier) and policy.name.startswith("#")
+            else self.sql(policy)
+        )
         on = f" ON ({self.expressions(expression, flat=True)})" if expression.expressions else ""
         return f"WITH ROW ACCESS POLICY {policy_sql}{on}"
 

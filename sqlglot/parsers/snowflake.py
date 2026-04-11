@@ -980,8 +980,9 @@ class SnowflakeParser(parser.Parser):
     def _parse_row_access_policy(self) -> exp.RowAccessProperty:
         # GET_DDL outputs #unknown_policy when the user lacks privileges to see the policy name
         if self._match(TokenType.HASH):
-            id_var = self._parse_var(any_token=True)
-            policy: exp.Expr | None = exp.Var(this=f"#{id_var.name}" if id_var else "#")
+            policy: exp.Expr | None = self._parse_var(any_token=True)
+            if policy:
+                policy = exp.Var(this=f"#{policy.name}")
             expressions = None
         else:
             policy = self._parse_column()

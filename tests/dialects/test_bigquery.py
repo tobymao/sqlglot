@@ -134,6 +134,10 @@ class TestBigQuery(Validator):
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+        self.validate_identity(
+            "SELECT * FROM tbl FOR SYSTEM TIME AS OF z",
+            "SELECT * FROM tbl FOR SYSTEM_TIME AS OF z",
+        )
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")

@@ -183,6 +183,7 @@ class BigQuery(Dialect):
             "EXCEPTION": TokenType.COMMAND,
             "EXPORT": TokenType.EXPORT,
             "FLOAT64": TokenType.DOUBLE,
+            "FOR SYSTEM TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "LOOP": TokenType.COMMAND,
             "MODEL": TokenType.MODEL,

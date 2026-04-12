@@ -1084,3 +1084,95 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(
             parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
         )
+
+    def test_recursion_depth_limit(self):
+        """Test that deeply nested queries are blocked to prevent stack overflow."""
+        # Create a deeply nested query that exceeds the default depth limit
+        depth = 50
+        sql = "SELECT 1"
+        for _ in range(depth):
+            sql = f"SELECT 1 IN (SELECT 1 FROM ({sql}))"
+
+        # Should raise ParseError due to depth limit (default 120)
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql)
+
+        error_message = str(ctx.exception)
+        self.assertIn("Recursion depth limit", error_message)
+
+    def test_recursion_depth_limit_configurable(self):
+        """Test that recursion depth limit can be configured."""
+        # Small depth limit to trigger error quickly
+        depth = 10
+        sql = "SELECT 1"
+        for _ in range(depth):
+            sql = f"SELECT 1 IN (SELECT 1 FROM ({sql}))"
+
+        # Should raise ParseError due to custom depth limit
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_depth=5)
+
+        error_message = str(ctx.exception)
+        self.assertIn("Recursion depth limit", error_message)
+        self.assertIn("(5)", error_message)  # Should mention the limit value
+
+    def test_recursion_depth_acceptable_nesting(self):
+        """Test that reasonable query nesting still works."""
+        # Create a moderately nested query that should still parse
+        depth = 10
+        sql = "SELECT 1"
+        for _ in range(depth):
+            sql = f"SELECT 1 FROM ({sql})"
+
+        # Should parse successfully with default depth limit
+        result = parse_one(sql)
+        self.assertIsInstance(result, exp.Select)
+
+    def test_ast_node_limit_configurable(self):
+        """Test that AST node limit can be configured."""
+        # Create a moderately complex query with nested expressions
+        width = 3000
+        depth = 30
+        expr = "x" + "=x" * depth  # Nested expressions
+        cols = [expr for _ in range(width)]
+        sql = f"SELECT {','.join(cols)}"
+
+        # Should raise ParseError due to custom low limit
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=50000)
+
+        error_message = str(ctx.exception)
+        self.assertIn("Maximum number of AST nodes (50000)", error_message)
+
+    def test_ast_node_limit_normal_query(self):
+        """Test that normal queries don't hit node limit."""
+        # Normal complex query should work fine
+        sql = """
+        SELECT
+            a, b, c, d, e, f, g, h, i, j,
+            (SELECT COUNT(*) FROM t1 WHERE x = 1) as col1,
+            (SELECT COUNT(*) FROM t2 WHERE y = 2) as col2,
+            CASE
+                WHEN a > 10 THEN 'high'
+                WHEN a > 5 THEN 'medium'
+                ELSE 'low'
+            END as category
+        FROM table1
+        WHERE
+            a IN (SELECT a FROM table2)
+            OR b IN (SELECT b FROM table3)
+        """
+        # Should parse successfully
+        result = parse_one(sql)
+        self.assertIsInstance(result, exp.Select)
+
+    def test_ast_node_limit_wide_query(self):
+        """Test that reasonably wide queries work."""
+        # Create a query with many columns (but not pathological)
+        width = 500
+        cols = [f"col{i}" for i in range(width)]
+        sql = f"SELECT {','.join(cols)} FROM table1"
+
+        # Should parse successfully with default limit
+        result = parse_one(sql)
+        self.assertIsInstance(result, exp.Select)

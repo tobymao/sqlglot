@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 import logging
 import re
@@ -291,12 +292,22 @@ class Parser:
         max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
+        max_depth: Maximum nesting depth for recursive parsing to prevent stack overflow.
+            Prevents deeply nested queries (e.g., 50+ levels of subqueries) from causing
+            RecursionError or segmentation faults.
+            Default: 120
+        max_nodes: Maximum number of AST nodes to prevent memory exhaustion from pathological queries.
+            A single small query can be engineered to generate millions of nodes, exhausting RAM.
+            Limits total nodes created during parsing.
+            Default: 1000000 (1M)
     """
 
     __slots__ = (
         "error_level",
         "error_message_context",
         "max_errors",
+        "max_depth",
+        "max_nodes",
         "dialect",
         "sql",
         "errors",
@@ -310,6 +321,8 @@ class Parser:
         "_chunks",
         "_chunk_index",
         "_tokens_size",
+        "_depth",
+        "_node_count",
     )
 
     FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
@@ -1825,11 +1838,15 @@ class Parser:
         error_level: ErrorLevel | None = None,
         error_message_context: int = 100,
         max_errors: int = 3,
+        max_depth: int = 120,
+        max_nodes: int = 1000000,
         dialect: DialectType = None,
     ):
         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context: int = error_message_context
         self.max_errors: int = max_errors
+        self.max_depth: int = max_depth
+        self.max_nodes: int = max_nodes
         self.dialect: t.Any = _resolve_dialect(dialect)
         self.sql: str = ""
         self.errors: list[ParseError] = []
@@ -1843,6 +1860,8 @@ class Parser:
         self._pipe_cte_counter: int = 0
         self._chunks: list[list[Token]] = []
         self._chunk_index: i64 = 0
+        self._depth: int = 0
+        self._node_count: int = 0
 
     def reset(self) -> None:
         self.sql = ""
@@ -1857,6 +1876,8 @@ class Parser:
         self._pipe_cte_counter = 0
         self._chunks = []
         self._chunk_index = 0
+        self._depth = 0
+        self._node_count = 0
 
     def _advance(self, times: i64 = 1) -> None:
         index = self._index + times
@@ -1884,6 +1905,38 @@ class Parser:
     def _retreat(self, index: i64) -> None:
         if index != self._index:
             self._advance(index - self._index)
+
+    @contextlib.contextmanager
+    def _parse_depth(self) -> t.Iterator[None]:
+        """
+        Context manager to track recursion depth and prevent stack overflow.
+
+        Raises ParseError if max_depth is exceeded, which is caught by existing error handling.
+        """
+        self._depth += 1
+        try:
+            if self._depth > self.max_depth:
+                self.raise_error(
+                    f"Recursion depth limit ({self.max_depth}) exceeded. "
+                    "Query is too deeply nested (e.g., subqueries or expressions). "
+                    "This may indicate a malicious or pathological query."
+                )
+            yield
+        finally:
+            self._depth -= 1
+
+    def _count_node(self) -> None:
+        """
+        Count a node in the AST and raise error if limit exceeded.
+        Called from multiple places to track total nodes created.
+        """
+        self._node_count += 1
+        if self._node_count > self.max_nodes:
+            self.raise_error(
+                f"Maximum number of AST nodes ({self.max_nodes}) exceeded. "
+                "Query has too many expressions/subexpressions which may indicate "
+                "a malicious or pathological query designed to exhaust memory."
+            )
 
     def _add_comments(self, expression: exp.Expr | None) -> None:
         if expression and self._prev_comments:
@@ -2065,6 +2118,10 @@ class Parser:
         if token:
             instance.update_positions(token)
         instance.add_comments(comments) if comments else self._add_comments(instance)
+
+        # Track node count to prevent memory exhaustion from AST amplification
+        self._count_node()
+
         if not instance.is_primitive:
             instance = self.validate_expression(instance)
         return instance
@@ -2239,28 +2296,29 @@ class Parser:
         )
 
     def _parse_statement(self) -> exp.Expr | None:
-        if not self._curr:
-            return None
+        with self._parse_depth():
+            if not self._curr:
+                return None
 
-        if self._match_set(self.STATEMENT_PARSERS):
-            comments = self._prev_comments
-            stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
-            stmt.add_comments(comments, prepend=True)
-            return stmt
+            if self._match_set(self.STATEMENT_PARSERS):
+                comments = self._prev_comments
+                stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+                stmt.add_comments(comments, prepend=True)
+                return stmt
 
-        if self._match_set(self.dialect.tokenizer_class.COMMANDS):
-            return self._parse_command()
+            if self._match_set(self.dialect.tokenizer_class.COMMANDS):
+                return self._parse_command()
 
-        if self._match_text_seq("WHILE"):
-            return self._parse_whileblock()
+            if self._match_text_seq("WHILE"):
+                return self._parse_whileblock()
 
-        expression = self._parse_expression()
-        expression = self._parse_set_operations(expression) if expression else self._parse_select()
+            expression = self._parse_expression()
+            expression = self._parse_set_operations(expression) if expression else self._parse_select()
 
-        if isinstance(expression, exp.Subquery) and self._match(TokenType.PIPE_GT, advance=False):
-            expression = self._parse_pipe_syntax_query(expression)
+            if isinstance(expression, exp.Subquery) and self._match(TokenType.PIPE_GT, advance=False):
+                expression = self._parse_pipe_syntax_query(expression)
 
-        return self._parse_query_modifiers(expression)
+            return self._parse_query_modifiers(expression)
 
     def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
         start = self._prev
@@ -3727,21 +3785,22 @@ class Parser:
         consume_pipe: bool = True,
         from_: exp.From | None = None,
     ) -> exp.Expr | None:
-        query = self._parse_select_query(
-            nested=nested,
-            table=table,
-            parse_subquery_alias=parse_subquery_alias,
-            parse_set_operation=parse_set_operation,
-        )
+        with self._parse_depth():
+            query = self._parse_select_query(
+                nested=nested,
+                table=table,
+                parse_subquery_alias=parse_subquery_alias,
+                parse_set_operation=parse_set_operation,
+            )
 
-        if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
-            if not query and from_:
-                query = exp.select("*").from_(from_)
-            if isinstance(query, exp.Query):
-                query = self._parse_pipe_syntax_query(query)
-                query = query.subquery(copy=False) if query and table else query
+            if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
+                if not query and from_:
+                    query = exp.select("*").from_(from_)
+                if isinstance(query, exp.Query):
+                    query = self._parse_pipe_syntax_query(query)
+                    query = query.subquery(copy=False) if query and table else query
 
-        return query
+            return query
 
     def _parse_select_query(
         self,
@@ -3996,17 +4055,18 @@ class Parser:
     def _parse_subquery(
         self, this: exp.Expr | None, parse_alias: bool = True
     ) -> exp.Subquery | None:
-        if not this:
-            return None
+        with self._parse_depth():
+            if not this:
+                return None
 
-        return self.expression(
-            exp.Subquery(
-                this=this,
-                pivots=self._parse_pivots(),
-                alias=self._parse_table_alias() if parse_alias else None,
-                sample=self._parse_table_sample(),
+            return self.expression(
+                exp.Subquery(
+                    this=this,
+                    pivots=self._parse_pivots(),
+                    alias=self._parse_table_alias() if parse_alias else None,
+                    sample=self._parse_table_sample(),
+                )
             )
-        )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
         from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
@@ -5608,7 +5668,8 @@ class Parser:
         return this
 
     def _parse_expression(self) -> exp.Expr | None:
-        return self._parse_alias(self._parse_assignment())
+        with self._parse_depth():
+            return self._parse_alias(self._parse_assignment())
 
     def _parse_assignment(self) -> exp.Expr | None:
         this = self._parse_disjunction()
@@ -6838,6 +6899,8 @@ class Parser:
                 except TypeError:
                     func = func_builder(args, dialect=self.dialect)
 
+                # Count node for function created via builder (bypasses expression())
+                self._count_node()
                 func = self.validate_expression(func, args)
                 if self.dialect.PRESERVE_ORIGINAL_NAMES:
                     func.meta["name"] = this
@@ -7519,6 +7582,7 @@ class Parser:
             args = self._parse_csv(
                 lambda: self._parse_alias(self._parse_assignment(), explicit=True)
             )
+            self._count_node()
             this = self.validate_expression(exp.If.from_arg_list(args), args)
             self._match_r_paren()
         else:
@@ -7572,6 +7636,7 @@ class Parser:
         args = [this, *self._parse_csv(self._parse_lambda)]
 
         gap_fill = exp.GapFill.from_arg_list(args)
+        self._count_node()
         return self.validate_expression(gap_fill, args)
 
     def _parse_char(self) -> exp.Chr:
@@ -7681,6 +7746,7 @@ class Parser:
         # the STRING_AGG call is parsed like in MySQL / SQLite and can thus be transpiled more easily to them.
         if not self._match_text_seq("WITHIN", "GROUP"):
             self._retreat(index)
+            self._count_node()
             return self.validate_expression(exp.GroupConcat.from_arg_list(args), args)
 
         # The corresponding match_r_paren will be called in parse_function (caller)
@@ -8005,6 +8071,7 @@ class Parser:
         if length:
             args.append(length)
 
+        self._count_node()
         return self.validate_expression(exp.Substring.from_arg_list(args), args)
 
     def _parse_trim(self) -> exp.Trim:

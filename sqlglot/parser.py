@@ -8926,6 +8926,7 @@ class Parser:
                             if self._match_text_seq("ROW")
                             else self._parse_value(values=False),
                             expression=self._match_text_seq("VALUES") and self._parse_value(),
+                            where=self._parse_where(),
                         )
                     )
             elif self._match(TokenType.UPDATE):
@@ -8936,7 +8937,8 @@ class Parser:
                     then = self.expression(
                         exp.Update(
                             expressions=self._match(TokenType.SET)
-                            and self._parse_csv(self._parse_equality)
+                            and self._parse_csv(self._parse_equality),
+                            where=self._parse_where(),
                         )
                     )
             elif self._match(TokenType.DELETE):

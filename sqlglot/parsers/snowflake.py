@@ -978,15 +978,21 @@ class SnowflakeParser(parser.Parser):
         return super()._parse_with_property()
 
     def _parse_row_access_policy(self) -> exp.RowAccessProperty:
-        policy = self._parse_column()
-        if not self._match(TokenType.ON):
-            self.raise_error("Expected ON after ROW ACCESS POLICY name")
-        return self.expression(
-            exp.RowAccessProperty(
-                this=policy.to_dot() if isinstance(policy, exp.Column) else policy,
-                expressions=self._parse_wrapped_csv(self._parse_id_var),
-            )
-        )
+        # GET_DDL outputs #unknown_policy when the user lacks privileges to see the policy name
+        if self._match(TokenType.HASH):
+            policy: exp.Expr | None = self._parse_var(any_token=True)
+            if policy:
+                policy = exp.Var(this=f"#{policy.name}")
+            expressions = None
+        else:
+            policy = self._parse_column()
+            if isinstance(policy, exp.Column):
+                policy = policy.to_dot()
+            if not self._match(TokenType.ON):
+                self.raise_error("Expected ON after ROW ACCESS POLICY name")
+            expressions = self._parse_wrapped_csv(self._parse_id_var)
+
+        return self.expression(exp.RowAccessProperty(this=policy, expressions=expressions))
 
     def _parse_create(self) -> exp.Create | exp.Command:
         expression = super()._parse_create()

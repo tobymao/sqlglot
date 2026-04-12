@@ -124,7 +124,7 @@ class TestRecursionDepthProtection(unittest.TestCase):
         depth = 20
         sql = "SELECT * FROM t1"
         for i in range(depth):
-            sql = f"SELECT * FROM ({sql}) t{i} JOIN t{i+1} ON t{i}.id = t{i+1}.id"
+            sql = f"SELECT * FROM ({sql}) t{i} JOIN t{i + 1} ON t{i}.id = t{i + 1}.id"
 
         # This might hit depth limit depending on JOIN nesting complexity
         try:
@@ -454,9 +454,7 @@ class TestExplicitDepthValues(unittest.TestCase):
 
     def test_subquery_with_join_depth_equals_5(self):
         """Test that subquery with JOIN inside stays at depth 5."""
-        self.assertEqual(
-            get_depth("SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.id = t2.id)"), 5
-        )
+        self.assertEqual(get_depth("SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.id = t2.id)"), 5)
 
     def test_nested_subqueries_with_joins_depth_progression(self):
         """Test depth progression with nested subqueries containing joins."""
@@ -502,7 +500,9 @@ class TestExplicitDepthValues(unittest.TestCase):
 
         # Verify strictly increasing by 2 each time
         for i in range(1, len(depths)):
-            self.assertEqual(depths[i], depths[i - 1] + 2, f"Depth not increasing monotonically at level {i}")
+            self.assertEqual(
+                depths[i], depths[i - 1] + 2, f"Depth not increasing monotonically at level {i}"
+            )
 
 
 class TestActualRecursionDepth(unittest.TestCase):
@@ -667,7 +667,9 @@ class TestPayloadComparison(unittest.TestCase):
 
         # All should be reasonable sizes (under 100 for simple queries)
         for query, count in queries.items():
-            self.assertLess(count, 100, f"Query '{query}' has unexpectedly high node count: {count}")
+            self.assertLess(
+                count, 100, f"Query '{query}' has unexpectedly high node count: {count}"
+            )
 
     def test_amplification_progression(self):
         """Test how node count grows with amplification payloads."""
@@ -913,7 +915,9 @@ class TestCountNodeCallSites(unittest.TestCase):
         """Test SUBSTRING node counting with multiple calls."""
         count_one = get_node_count("SELECT SUBSTRING(x, 1, 5)")
         count_two = get_node_count("SELECT SUBSTRING(x, 1, 5), SUBSTRING(y, 2, 3)")
-        count_three = get_node_count("SELECT SUBSTRING(x, 1, 5), SUBSTRING(y, 2, 3), SUBSTRING(z, 3, 1)")
+        count_three = get_node_count(
+            "SELECT SUBSTRING(x, 1, 5), SUBSTRING(y, 2, 3), SUBSTRING(z, 3, 1)"
+        )
         # More calls should mean more nodes
         self.assertLess(count_one, count_two)
         self.assertLess(count_two, count_three)
@@ -921,7 +925,6 @@ class TestCountNodeCallSites(unittest.TestCase):
     def test_substring_with_expressions(self):
         """Test SUBSTRING with complex expressions."""
         count_literal = get_node_count("SELECT SUBSTRING('hello', 1, 3)")
-        count_column = get_node_count("SELECT SUBSTRING(x, 1, 3)")
         count_expression = get_node_count("SELECT SUBSTRING(x, ABS(y), LENGTH(z))")
         # More complex expressions should mean more nodes
         self.assertGreater(count_expression, count_literal)

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import generator, tokens
-from sqlglot.dialects.dialect import Dialect, NormalizationStrategy
+from sqlglot import exp, generator, tokens
+from sqlglot.dialects.dialect import Dialect, NormalizationStrategy, rename_func
+from sqlglot.parsers.db2 import Db2Parser
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -49,5 +50,20 @@ class Db2(Dialect):
             "SYSTOOLS": TokenType.SCHEMA,
         }
 
+    Parser = Db2Parser
+
     class Generator(generator.Generator):
-        pass
+        TRANSFORMS = {
+            **generator.Generator.TRANSFORMS,
+            exp.StrPosition: rename_func("POSSTR"),
+            exp.TimeToStr: rename_func("VARCHAR_FORMAT"),
+        }
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            this = self.sql(expression, "this")
+            expression_sql = self.sql(expression, "expression")
+
+            if this.upper() in ("DAYOFWEEK", "DAYOFYEAR"):
+                return f"{this.upper()}({expression_sql})"
+
+            return f"EXTRACT({this} FROM {expression_sql})"

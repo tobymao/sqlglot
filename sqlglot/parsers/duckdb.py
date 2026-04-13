@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
         ),
         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
         "JSON": exp.ParseJSON.from_arg_list,
+        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
         "LIST_APPEND": exp.ArrayAppend.from_arg_list,

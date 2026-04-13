@@ -548,6 +548,13 @@ class TestDuckDB(Validator):
             """SELECT JSON_EXTRACT_STRING('{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }', ['$.family', '$.species'])""",
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
+                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
+            },
+        )
         self.validate_identity(
             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",

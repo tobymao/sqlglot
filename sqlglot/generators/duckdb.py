@@ -3427,6 +3427,29 @@ class DuckDBGenerator(generator.Generator):
         start = expression.args["start"]
         length = expression.args["length"]
         insertion = expression.expression
+
+        if _is_binary(base):
+            # DuckDB's SUBSTRING doesn't accept BLOB; operate on the HEX string instead
+            # (each byte = 2 hex chars), then UNHEX back to BLOB
+            left = exp.Substring(
+                this=exp.Hex(this=base.copy()),
+                start=exp.Literal.number(1),
+                length=(start.copy() - exp.Literal.number(1)) * exp.Literal.number(2),
+            )
+            right = exp.Substring(
+                this=exp.Hex(this=base.copy()),
+                start=(start.copy() + length.copy() - exp.Literal.number(1)) * exp.Literal.number(2)
+                + exp.Literal.number(1),
+            )
+            return self.sql(
+                exp.Unhex(
+                    this=exp.DPipe(
+                        this=exp.DPipe(this=left, expression=exp.Hex(this=insertion)),
+                        expression=right,
+                    )
+                )
+            )
+
         left = exp.Substring(
             this=base.copy(),
             start=exp.Literal.number(1),

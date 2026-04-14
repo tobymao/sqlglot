@@ -640,6 +640,7 @@ class SnowflakeGenerator(generator.Generator):
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
         exp.DType.BIGDECIMAL: "DOUBLE",
+        exp.DType.JSON: "VARIANT",
         exp.DType.NESTED: "OBJECT",
         exp.DType.STRUCT: "OBJECT",
         exp.DType.TEXT: "VARCHAR",

@@ -760,6 +760,10 @@ class TestDuckDB(Validator):
                 "duckdb": """SELECT '{"x": 1}'::JSON""",
                 "postgres": """SELECT '{"x": 1}'::JSONB""",
             },
+            write={
+                "duckdb": """SELECT CAST('{"x": 1}' AS JSON)""",
+                "snowflake": """SELECT CAST('{"x": 1}' AS VARIANT)""",
+            },
         )
         self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",

@@ -119,6 +119,7 @@ class SparkGenerator(Spark2Generator):
                 f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}"
             ),
             exp.SafeAdd: rename_func("TRY_ADD"),
+            exp.SafeDivide: rename_func("TRY_DIVIDE"),
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),
             exp.StartsWith: rename_func("STARTSWITH"),

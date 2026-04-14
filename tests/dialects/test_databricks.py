@@ -510,6 +510,18 @@ class TestDatabricks(Validator):
             },
         )
 
+    def test_try_divide(self):
+        self.validate_all(
+            "SELECT TRY_DIVIDE(a, b)",
+            read={"databricks": "SELECT TRY_DIVIDE(a, b)"},
+            write={
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+                "snowflake": "SELECT IFF(b <> 0, a / b, NULL)",
+                "duckdb": "SELECT CASE WHEN b <> 0 THEN a / b ELSE NULL END",
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+            },
+        )
+
     def test_declare(self):
         self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
         self.validate_identity("DECLARE x INT")

@@ -560,17 +560,6 @@ class BigQueryGenerator(generator.Generator):
             expr.unnest() if isinstance(expr, exp.Paren) else expr,
         )
 
-    def loaddata_sql(self, expression: exp.LoadData) -> str:
-        files = expression.args.get("files")
-        if files:
-            overwrite = " OVERWRITE" if expression.args.get("overwrite") else ""
-            this = self.sql(expression, "this")
-            table = f" {this}" if expression.args.get("overwrite") else f" INTO TABLE {this}"
-            files_sql = self.func("FILES", *files.expressions)
-            return f"LOAD DATA{overwrite}{table} FROM {files_sql}"
-
-        return super().loaddata_sql(expression)
-
     def column_parts(self, expression: exp.Column) -> str:
         if expression.meta.get("quoted_column"):
             # If a column reference is of the form `dataset.table`.name, we need

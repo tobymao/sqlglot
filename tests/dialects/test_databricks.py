@@ -492,14 +492,13 @@ class TestDatabricks(Validator):
         )
 
     def test_set_variable(self):
-        # Both SET VAR and SET VARIABLE are synonyms; both normalize to SET VARIABLE on output
         self.validate_identity("SET VAR v = 5", "SET VARIABLE v = 5")
         self.validate_identity("SET VARIABLE v = 5")
         self.validate_identity("SET VARIABLE v1 = 1, v2 = '2'")
         self.validate_identity("SET VARIABLE (v1, v2) = (SELECT 1, 2)")
         self.validate_identity("SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))")
         self.validate_identity("SET VARIABLE v = DEFAULT")
- 
+
     def test_iff(self):
         # IFF is a synonym for IF in Databricks; it normalizes to IF on output
         self.validate_all(

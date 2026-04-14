@@ -14,6 +14,7 @@ class DatabricksParser(SparkParser):
 
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,
+        "IFF": exp.If.from_arg_list,
         "GETDATE": exp.CurrentTimestamp.from_arg_list,
         "DATEADD": build_date_delta(exp.DateAdd),
         "DATE_ADD": build_date_delta(exp.DateAdd),

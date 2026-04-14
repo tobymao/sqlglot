@@ -2277,6 +2277,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("ENCRYPT_RAW is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def parseurl_sql(self, expression: exp.ParseUrl) -> str:
+        self.unsupported("PARSE_URL is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

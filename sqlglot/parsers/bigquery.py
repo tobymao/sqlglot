@@ -706,27 +706,6 @@ class BigQueryParser(parser.Parser):
             )
         )
 
-    def _parse_load(self) -> exp.LoadData | exp.Command:
-        index = self._index
-
-        if self._match_text_seq("DATA"):
-            overwrite = self._match(TokenType.OVERWRITE)
-            if not overwrite:
-                self._match_pair(TokenType.INTO, TokenType.TABLE)
-
-            this = self._parse_table(schema=True)
-            if this and self._match_text_seq("FROM", "FILES"):
-                return self.expression(
-                    exp.LoadData(
-                        this=this,
-                        overwrite=overwrite,
-                        files=exp.Properties(expressions=self._parse_wrapped_properties()),
-                    )
-                )
-
-        self._retreat(index)
-        return super()._parse_load()
-
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         func_index = self._index + 1
         this = super()._parse_column_ops(this)

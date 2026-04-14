@@ -3558,6 +3558,8 @@ class Parser:
                     local=local,
                     overwrite=overwrite,
                     inpath=inpath,
+                    files=self._match_text_seq("FROM", "FILES")
+                    and exp.Properties(expressions=self._parse_wrapped_properties()),
                     partition=self._parse_partition(),
                     input_format=self._match_text_seq("INPUTFORMAT") and self._parse_string(),
                     serde=self._match_text_seq("SERDE") and self._parse_string(),

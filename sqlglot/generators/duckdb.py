@@ -2259,6 +2259,15 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("DuckDB does not support the COMPRESS() function")
         return self.function_fallback_sql(expression)
 
+    def encrypt_sql(self, expression: exp.Encrypt) -> str:
+        self.unsupported("ENCRYPT is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
+    def decrypt_sql(self, expression: exp.Decrypt) -> str:
+        func_name = "TRY_DECRYPT" if expression.args.get("safe") else "DECRYPT"
+        self.unsupported(f"{func_name} is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

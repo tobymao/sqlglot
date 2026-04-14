@@ -499,6 +499,17 @@ class TestDatabricks(Validator):
         self.validate_identity("SET VARIABLE (v1, v2) = (SELECT 1, 2)")
         self.validate_identity("SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))")
         self.validate_identity("SET VARIABLE v = DEFAULT")
+ 
+    def test_iff(self):
+        # IFF is a synonym for IF in Databricks; it normalizes to IF on output
+        self.validate_all(
+            "SELECT IF(x > 0, 'positive', 'non-positive')",
+            read={"databricks": "SELECT IFF(x > 0, 'positive', 'non-positive')"},
+            write={
+                "databricks": "SELECT IF(x > 0, 'positive', 'non-positive')",
+                "snowflake": "SELECT IFF(x > 0, 'positive', 'non-positive')",
+            },
+        )
 
     def test_declare(self):
         self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")

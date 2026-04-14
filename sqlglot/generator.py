@@ -2811,18 +2811,20 @@ class Generator:
         return self._replace_line_breaks(text).replace(delimiter, escaped_delimiter)
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
+        is_overwrite = expression.args.get("overwrite")
+        overwrite = " OVERWRITE" if is_overwrite else ""
+        this = self.sql(expression, "this")
+
         files = expression.args.get("files")
         if files:
-            overwrite = " OVERWRITE" if expression.args.get("overwrite") else ""
-            this = self.sql(expression, "this")
-            table = f" {this}" if expression.args.get("overwrite") else f" INTO TABLE {this}"
-            files_sql = self.func("FILES", *files.expressions)
-            return f"LOAD DATA{overwrite}{table} FROM {files_sql}"
+            files_sql = self.expressions(files, flat=True)
+            files_sql = f"FILES{self.wrap(files_sql)}"
+            this = f" {this}" if is_overwrite else f" INTO TABLE {this}"
+            return f"LOAD DATA{overwrite}{this} FROM {files_sql}"
 
         local = " LOCAL" if expression.args.get("local") else ""
         inpath = f" INPATH {self.sql(expression, 'inpath')}"
-        overwrite = " OVERWRITE" if expression.args.get("overwrite") else ""
-        this = f" INTO TABLE {self.sql(expression, 'this')}"
+        this = f" INTO TABLE {this}"
         partition = self.sql(expression, "partition")
         partition = f" {partition}" if partition else ""
         input_format = self.sql(expression, "input_format")

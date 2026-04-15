@@ -3422,6 +3422,35 @@ class DuckDBGenerator(generator.Generator):
     def rtrimmedlength_sql(self, expression: exp.RtrimmedLength) -> str:
         return self.func("LENGTH", exp.Trim(this=expression.this, position="TRAILING"))
 
+    def stuff_sql(self, expression: exp.Stuff) -> str:
+        base = expression.this
+        start = expression.args["start"]
+        length = expression.args["length"]
+        insertion = expression.expression
+        is_binary = _is_binary(base)
+
+        if is_binary:
+            # DuckDB's SUBSTRING doesn't accept BLOB; operate on the HEX string instead
+            # (each byte = 2 hex chars), then UNHEX back to BLOB
+            base = exp.Hex(this=base)
+            insertion = exp.Hex(this=insertion)
+            start = (start - exp.Literal.number(1)) * exp.Literal.number(2) + exp.Literal.number(1)
+
+        left = exp.Substring(
+            this=base.copy(),
+            start=exp.Literal.number(1),
+            length=start.copy() - exp.Literal.number(1),
+        )
+        right = exp.Substring(this=base.copy(), start=start.copy() + length.copy())
+        result: exp.Expr = exp.DPipe(
+            this=exp.DPipe(this=left, expression=insertion), expression=right
+        )
+
+        if is_binary:
+            result = exp.Unhex(this=result)
+
+        return self.sql(result)
+
     def rand_sql(self, expression: exp.Rand) -> str:
         seed = expression.this
         if seed is not None:

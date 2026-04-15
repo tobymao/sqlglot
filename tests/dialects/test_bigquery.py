@@ -210,6 +210,12 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
+        for load_data_sql in (
+            "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+        ):
+            with self.subTest(load_data_sql=load_data_sql):
+                self.validate_identity(load_data_sql).assert_is(exp.LoadData)
         self.validate_identity("CAST(x AS BIGNUMERIC)")
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")

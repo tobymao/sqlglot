@@ -126,6 +126,7 @@ AGG_FUNCTIONS = {
     "deltaSumTimestamp",
     "groupArray",
     "groupArrayLast",
+    "groupConcat",
     "groupUniqArray",
     "groupArrayInsertAt",
     "groupArrayMovingAvg",
@@ -703,6 +704,27 @@ class ClickHouseParser(parser.Parser):
             instance = exp_class(this=anon_func.this, expressions=anon_func.expressions)
             if params:
                 instance.set("params", params)
+
+            if (
+                isinstance(instance, exp.ParameterizedAgg)
+                and instance.name == "groupConcat"
+                and len(instance.expressions) <= 1
+                and len(instance.args.get("params") or []) <= 1
+            ):
+                instance = exp.GroupConcat(
+                    this=seq_get(instance.args.get("params") or [], 0),
+                    separator=seq_get(instance.expressions, 0),
+                )
+            elif (
+                isinstance(instance, exp.AnonymousAggFunc)
+                and instance.name == "groupConcat"
+                and len(instance.expressions) <= 2
+            ):
+                instance = exp.GroupConcat(
+                    this=seq_get(instance.expressions, 0),
+                    separator=seq_get(instance.expressions, 1),
+                )
+
             func = self.expression(instance)
 
             if isinstance(expr, exp.Window):

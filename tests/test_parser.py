@@ -1084,3 +1084,29 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(
             parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
         )
+
+    def test_max_nodes(self):
+        self.assertIsInstance(parse_one("SELECT 1", max_nodes=1_000_000), exp.Select)
+
+        cols = [f"col{i}" for i in range(500)]
+        sql = f"SELECT {','.join(cols)} FROM t"
+        self.assertIsInstance(parse_one(sql, max_nodes=1_000_000), exp.Select)
+
+        width = 10000
+        depth = 100
+        expr = "x" + "=x" * depth
+        cols = [expr for _ in range(width)]
+        sql = f"SELECT {','.join(cols)}"
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=1_000_000)
+        self.assertIn("Maximum number of AST nodes", str(ctx.exception))
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=50_000)
+        self.assertIn("(50000)", str(ctx.exception))
+
+        # Hitting a limit in one parse doesn't affect the next
+        with self.assertRaises(ParseError):
+            parse_one("SELECT " + ",".join(f"x={i}" for i in range(100)), max_nodes=5)
+        self.assertIsInstance(parse_one("SELECT 1, 2, 3"), exp.Select)

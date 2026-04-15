@@ -3282,6 +3282,10 @@ class DuckDBGenerator(generator.Generator):
             )
         )
 
+    def arrayunionagg_sql(self, expression: exp.ArrayUnionAgg) -> str:
+        self.unsupported("ARRAY_UNION_AGG is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
         arr = expression.this
         func = self.func("LIST_DISTINCT", arr)

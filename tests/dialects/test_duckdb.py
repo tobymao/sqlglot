@@ -552,7 +552,28 @@ class TestDuckDB(Validator):
             "SELECT JSON_ARRAY('a', 'b', 'c')",
             write={
                 "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
-                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
+                "snowflake": "SELECT TO_JSON(ARRAY_CONSTRUCT('a', 'b', 'c'))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL, 'a', 1)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL, 'a', 1)",
+                "snowflake": "SELECT TO_JSON(ARRAY_CONSTRUCT(NULL, 'a', 1))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL)",
+                "snowflake": "SELECT TO_JSON(ARRAY_CONSTRUCT(NULL))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY()",
+            write={
+                "duckdb": "SELECT JSON_ARRAY()",
+                "snowflake": "SELECT TO_JSON(ARRAY_CONSTRUCT())",
             },
         )
         self.validate_identity(

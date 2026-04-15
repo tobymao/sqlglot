@@ -2333,6 +2333,7 @@ class DuckDBGenerator(generator.Generator):
         return f"({self.sql(exp.replace_placeholders(self.RANDSTR_TEMPLATE, **replacements))})"
 
     def reduce_sql(self, expression: exp.Reduce) -> str:
+        # DuckDB's LIST_REDUCE doesn't support a finish function, so preserve REDUCE as-is
         if expression.args.get("finish"):
             return self.function_fallback_sql(expression)
 

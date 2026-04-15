@@ -3434,14 +3434,23 @@ class DuckDBGenerator(generator.Generator):
             # (each byte = 2 hex chars), then UNHEX back to BLOB
             base = exp.Hex(this=base)
             insertion = exp.Hex(this=insertion)
-            start = (start - exp.Literal.number(1)) * exp.Literal.number(2) + exp.Literal.number(1)
-
-        left = exp.Substring(
-            this=base.copy(),
-            start=exp.Literal.number(1),
-            length=start.copy() - exp.Literal.number(1),
-        )
-        right = exp.Substring(this=base.copy(), start=start.copy() + length.copy())
+            left = exp.Substring(
+                this=base.copy(),
+                start=exp.Literal.number(1),
+                length=(start.copy() - exp.Literal.number(1)) * exp.Literal.number(2),
+            )
+            right = exp.Substring(
+                this=base.copy(),
+                start=((start + length) - exp.Literal.number(1)) * exp.Literal.number(2)
+                + exp.Literal.number(1),
+            )
+        else:
+            left = exp.Substring(
+                this=base.copy(),
+                start=exp.Literal.number(1),
+                length=start.copy() - exp.Literal.number(1),
+            )
+            right = exp.Substring(this=base.copy(), start=start + length)
         result: exp.Expr = exp.DPipe(
             this=exp.DPipe(this=left, expression=insertion), expression=right
         )

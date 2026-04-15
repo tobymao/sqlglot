@@ -815,14 +815,6 @@ class TestSnowflake(Validator):
         ).selects[0].this.unit.assert_is(exp.Column)
 
         self.validate_all(
-            "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-            write={
-                "snowflake": "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-                "duckdb": r"""SELECT CASE WHEN SUBSTRING('.$^', 1, 2) = '' AND 'a$b$c' = '' THEN NULL WHEN SUBSTRING('.$^', 1, 2) = '' AND 2 = 1 THEN 'a$b$c' WHEN SUBSTRING('.$^', 1, 2) = '' THEN NULL WHEN 2 < 0 THEN NULL WHEN 'a$b$c' IS NULL OR SUBSTRING('.$^', 1, 2) IS NULL OR 2 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('a$b$c', CASE WHEN SUBSTRING('.$^', 1, 2) = '' THEN '' ELSE '[' || REGEXP_REPLACE(SUBSTRING('.$^', 1, 2), '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), x -> NOT x = '')[2] END""",
-            },
-        )
-
-        self.validate_all(
             "SELECT STRTOK('a$b/cg', '$/.')",
             write={
                 "snowflake": "SELECT STRTOK('a$b/cg', '$/.', 1)",

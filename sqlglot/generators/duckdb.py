@@ -2535,27 +2535,16 @@ class DuckDBGenerator(generator.Generator):
             start = expression.args.get("start")
             length = expression.args.get("length")
 
-            new_start = (
-                exp.Literal.number(1)
-                if start is not None and start.is_number and start.to_py() == 0
-                else exp.If(this=start.eq(0), true=exp.Literal.number(1), false=start.copy())
-                if start is not None and not start.is_number
-                else None
+            return self.func(
+                "SUBSTRING",
+                expression.this,
+                exp.If(this=start.eq(0), true=exp.Literal.number(1), false=start)
+                if start is not None
+                else None,
+                exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
+                if length is not None
+                else None,
             )
-            new_length = (
-                exp.Literal.number(0)
-                if length is not None and length.is_number and length.to_py() < 0
-                else exp.If(this=length.copy() < 0, true=exp.Literal.number(0), false=length.copy())
-                if length is not None and not length.is_number
-                else None
-            )
-
-            if new_start is not None or new_length is not None:
-                expression = expression.copy()
-                if new_start is not None:
-                    expression.set("start", new_start)
-                if new_length is not None:
-                    expression.set("length", new_length)
 
         return self.function_fallback_sql(expression)
 

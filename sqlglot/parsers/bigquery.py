@@ -730,6 +730,16 @@ class BigQueryParser(parser.Parser):
                 self._retreat(func_index)
                 parsed = self._parse_function(any_token=True)
                 if parsed:
+                    if prefix == "AI" and isinstance(parsed, exp.Anonymous):
+                        ai_scalars: dict[str, type[exp.Func]] = {
+                            "EMBED": exp.AIEmbed,
+                            "SIMILARITY": exp.AISimilarity,
+                            "GENERATE": exp.AIGenerate,
+                        }
+                        expr_type = ai_scalars.get(parsed.name.upper())
+                        if expr_type:
+                            parsed = expr_type(expressions=parsed.expressions)
+
                     this = self.expression(exp.Dot(this=this.this, expression=parsed))
 
         return this

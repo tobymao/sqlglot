@@ -2449,6 +2449,18 @@ OPTIONS (
             "SELECT AI.GENERATE_BOOL(MODEL `mydataset.gemini_model`, 'Is sky blue?')"
         )
 
+        ast = self.validate_identity("SELECT AI.EMBED('hello')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIEmbed)
+
+        ast = self.validate_identity("SELECT AI.SIMILARITY('a', 'b')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AISimilarity)
+
+        ast = self.validate_identity("SELECT AI.GENERATE('Write a haiku')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIGenerate)
+
     def test_merge(self):
         self.validate_all(
             """

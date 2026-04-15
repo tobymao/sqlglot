@@ -272,6 +272,9 @@ class BigQueryGenerator(generator.Generator):
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
+        exp.AIEmbed: rename_func("EMBED"),
+        exp.AIGenerate: rename_func("GENERATE"),
+        exp.AISimilarity: rename_func("SIMILARITY"),
         exp.ApproxTopK: rename_func("APPROX_TOP_COUNT"),
         exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
         exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),

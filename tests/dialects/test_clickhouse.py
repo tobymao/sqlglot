@@ -1734,10 +1734,12 @@ LIFETIME(MIN 0 MAX 0)""",
         self.assertEqual(gc2.this.name, "part_name")
         self.assertIsNone(gc2.args.get("separator"))
 
-        # groupConcat(sep, limit)(col) - not converted to GroupConcat; limit must be preserved
+        # groupConcat(sep, limit)(col) - with limit
         parsed3 = self.validate_identity("SELECT groupConcat(', ', 2)(part_name) FROM t")
-        self.assertIsInstance(parsed3.selects[0], exp.ParameterizedAgg)
-        self.assertEqual(parsed3.selects[0].name, "groupConcat")
+        gc3 = parsed3.selects[0]
+        self.assertIsInstance(gc3, exp.GroupConcat)
+        self.assertIsInstance(gc3.this, exp.Limit)
+        self.assertEqual(gc3.this.this.name, "part_name")
 
         # Combinators are preserved as CombinedAggFunc / CombinedParameterizedAgg
         self.validate_identity("SELECT groupConcatIf(x, cond) FROM t").selects[0].assert_is(

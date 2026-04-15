@@ -363,6 +363,7 @@ class ClickHouseParser(parser.Parser):
     FUNCTION_PARSERS = {
         **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "MATCH"},
         "ARRAYJOIN": lambda self: self.expression(exp.Explode(this=self._parse_expression())),
+        "GROUPCONCAT": lambda self: self._parse_group_concat(),
         "QUANTILE": lambda self: self._parse_quantile(),
         "MEDIAN": lambda self: self._parse_quantile(),
         "COLUMNS": lambda self: self._parse_columns(),
@@ -704,27 +705,6 @@ class ClickHouseParser(parser.Parser):
             instance = exp_class(this=anon_func.this, expressions=anon_func.expressions)
             if params:
                 instance.set("params", params)
-
-            if (
-                isinstance(instance, exp.ParameterizedAgg)
-                and instance.name == "groupConcat"
-                and len(instance.expressions) <= 1
-                and len(instance.args.get("params") or []) <= 1
-            ):
-                instance = exp.GroupConcat(
-                    this=seq_get(instance.args.get("params") or [], 0),
-                    separator=seq_get(instance.expressions, 0),
-                )
-            elif (
-                isinstance(instance, exp.AnonymousAggFunc)
-                and instance.name == "groupConcat"
-                and len(instance.expressions) <= 2
-            ):
-                instance = exp.GroupConcat(
-                    this=seq_get(instance.expressions, 0),
-                    separator=seq_get(instance.expressions, 1),
-                )
-
             func = self.expression(instance)
 
             if isinstance(expr, exp.Window):
@@ -750,6 +730,22 @@ class ClickHouseParser(parser.Parser):
             return params
 
         return None
+
+    def _parse_group_concat(self) -> exp.GroupConcat:
+        args = self._parse_csv(self._parse_lambda)
+        params = self._parse_func_params()
+
+        if params:
+            # groupConcat(sep [, limit])(expr)
+            separator = seq_get(args, 0)
+            limit = seq_get(args, 1)
+            this: exp.Expr | None = seq_get(params, 0)
+            if limit is not None:
+                this = exp.Limit(this=this, expression=limit)
+            return self.expression(exp.GroupConcat(this=this, separator=separator))
+
+        # groupConcat(expr)
+        return self.expression(exp.GroupConcat(this=seq_get(args, 0)))
 
     def _parse_quantile(self) -> exp.Quantile:
         this = self._parse_lambda()

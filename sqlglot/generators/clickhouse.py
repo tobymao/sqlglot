@@ -417,16 +417,30 @@ class ClickHouseGenerator(generator.Generator):
     }
 
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+        this = expression.this
         separator = expression.args.get("separator")
+
+        if isinstance(this, exp.Limit) and this.this:
+            limit = this
+            this = limit.this.pop()
+            return self.sql(
+                exp.ParameterizedAgg(
+                    this="groupConcat",
+                    params=[this],
+                    expressions=[separator, limit.expression],
+                )
+            )
+
         if separator:
             return self.sql(
                 exp.ParameterizedAgg(
                     this="groupConcat",
-                    params=[expression.this],
+                    params=[this],
                     expressions=[separator],
                 )
             )
-        return self.func("groupConcat", expression.this)
+
+        return self.func("groupConcat", this)
 
     def offset_sql(self, expression: exp.Offset) -> str:
         offset = super().offset_sql(expression)

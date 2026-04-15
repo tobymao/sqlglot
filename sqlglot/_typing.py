@@ -29,6 +29,7 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
     error_level: ErrorLevel | None
     error_message_context: int
     max_errors: int
+    max_nodes: int
 
 
 class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):

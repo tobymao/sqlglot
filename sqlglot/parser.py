@@ -291,12 +291,15 @@ class Parser:
         max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
+        max_nodes: Maximum number of AST nodes to prevent memory exhaustion.
+            Set to -1 (default) to disable the check.
     """
 
     __slots__ = (
         "error_level",
         "error_message_context",
         "max_errors",
+        "max_nodes",
         "dialect",
         "sql",
         "errors",
@@ -310,6 +313,7 @@ class Parser:
         "_chunks",
         "_chunk_index",
         "_tokens_size",
+        "_node_count",
     )
 
     FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
@@ -1825,11 +1829,13 @@ class Parser:
         error_level: ErrorLevel | None = None,
         error_message_context: int = 100,
         max_errors: int = 3,
+        max_nodes: int = -1,
         dialect: DialectType = None,
     ):
         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context: int = error_message_context
         self.max_errors: int = max_errors
+        self.max_nodes: int = max_nodes
         self.dialect: t.Any = _resolve_dialect(dialect)
         self.sql: str = ""
         self.errors: list[ParseError] = []
@@ -1843,6 +1849,7 @@ class Parser:
         self._pipe_cte_counter: int = 0
         self._chunks: list[list[Token]] = []
         self._chunk_index: i64 = 0
+        self._node_count: int = 0
 
     def reset(self) -> None:
         self.sql = ""
@@ -1857,6 +1864,7 @@ class Parser:
         self._pipe_cte_counter = 0
         self._chunks = []
         self._chunk_index = 0
+        self._node_count = 0
 
     def _advance(self, times: i64 = 1) -> None:
         index = self._index + times
@@ -1971,6 +1979,10 @@ class Parser:
         self.errors.append(error)
 
     def validate_expression(self, expression: E, args: list | None = None) -> E:
+        if self.max_nodes > -1:
+            self._node_count += 1
+            if self._node_count > self.max_nodes:
+                self.raise_error(f"Maximum number of AST nodes ({self.max_nodes}) exceeded")
         if self.error_level != ErrorLevel.IGNORE:
             for error_message in expression.error_messages(args):
                 self.raise_error(error_message)

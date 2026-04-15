@@ -2,7 +2,7 @@
 
 ## The problem
 
-SQLGlot is a pure Python SQL parser, transpiler, and optimizer. It supports 34 SQL dialects and has zero dependencies. It powers a growing number of open and closed source projects like [SQLMesh](https://github.com/TobikoData/sqlmesh), [Apache Superset](https://github.com/apache/superset), and many others, which collectively process millions of queries. People love that it's pure Python because it's easy to install, easy to hack on, and runs anywhere, but "pure Python" and "fast" don't usually show up in the same sentence.
+SQLGlot is a pure Python SQL parser, transpiler, and optimizer. It supports 34 SQL dialects and has zero dependencies. It powers a growing number of open source and commercial projects like [SQLMesh](https://github.com/TobikoData/sqlmesh), [Apache Superset](https://github.com/apache/superset), and many others, which collectively process millions of queries. People love that it's pure Python because it's easy to install, easy to hack on, and runs anywhere, but "pure Python" and "fast" don't usually show up in the same sentence.
 
 For most use cases SQLGlot is plenty fast. But when you're parsing millions of queries in a data pipeline or running the optimizer over hundreds of TPC-H queries, those milliseconds add up. We wanted to make it faster without giving up what makes it great.
 
@@ -22,7 +22,7 @@ What we really wanted was to keep our codebase as it is but somehow make it fast
 
 [mypyc](https://mypyc.readthedocs.io/) is a transpiler that takes type-annotated Python and converts it to C extension modules. It's built on top of [mypy](https://github.com/python/mypy), so it understands your type annotations and uses them to generate efficient C code.
 
-The idea is that mypyc combines CPython's C API with native operations wherever it can. It still uses CPython under the hood, but when your type annotations are tight enough, it can bypass the interpreter's dynamic dispatch and generate direct C calls for things like attribute lookups, method calls, and integer arithmetic. If you already have good type annotations (and we did, since we were already running mypy), you can get significant speedups without changing your source code at all.
+mypyc combines CPython's C API with native operations wherever it can. When your type annotations are tight enough, it bypasses the interpreter's dynamic dispatch and generates direct C calls for things like attribute lookups, method calls, and integer arithmetic. If you already have good type annotations (and we did, since we were already running mypy), you can get significant speedups without changing your source code at all.
 
 ## Getting it to compile
 
@@ -34,7 +34,7 @@ Remember how we said you can get significant speedups without changing your sour
 
 mypyc wasn't designed to handle a module with ~950 classes. Our AST definition lived in a single module, and when the compiler tried to process it, one of its internal compilation passes was doing redundant work on every instruction. On a module that large, it would eat all available memory and die with OOM even on a 64 GB machine. We had to dig into mypyc's internals and optimize that pass just to get compilation to finish ([python/mypy#20897](https://github.com/python/mypy/pull/20897)).
 
-That was just the first blocker. We found and fixed six more bugs in mypyc's code generation, each of which produced either crashes or silently wrong behavior:
+That was just the first blocker. We found and fixed five more bugs in mypyc's code generation, each of which produced either crashes or silently wrong behavior:
 
 - Dictionary comprehensions containing lambdas would crash the compiler entirely ([#21009](https://github.com/python/mypy/pull/21009))
 - Method resolution would silently break with deep inheritance hierarchies ([#20917](https://github.com/python/mypy/pull/20917))
@@ -50,7 +50,9 @@ Even after fixing the compiler bugs, we had to adapt parts of our codebase to wo
 
 The biggest category was **class attribute annotations**. SQLGlot's dialect system is built on class-level dictionaries that child dialects extend. Every Parser and Generator overrides things like `FUNCTIONS`, `TRANSFORMS`, and `KEYWORDS`. In normal Python this just works, but mypyc treats class attributes differently: without a `ClassVar` annotation, accessing `Parent.FUNCTIONS` would return a low-level descriptor instead of the actual dictionary (basically, you'd get metadata about the attribute instead of its value). The fix is straightforward (annotate with `ClassVar` and mypyc leaves it alone) but we had to go through the entire codebase and add these annotations everywhere they were needed.
 
-Beyond that, there was a grab bag of smaller adaptations: replacing metaclasses with `__init_subclass__` (mypyc only supports `ABCMeta`), converting lazy `from X import Y` imports inside methods to qualified access (mypyc doesn't support `from` imports in compiled functions), moving instance variable declarations into `__init__` (mypyc generates faster attribute access when it can see where variables are initialized), and fixing type annotations that mypyc's strict runtime enforcement flagged as incorrect. That last one was actually a nice surprise: mypyc caught real bugs we'd been carrying without knowing it, like generator methods annotated with the wrong expression type or variables that could be `None` but weren't marked as `Optional`.
+Beyond that, there was a grab bag of smaller adaptations. We replaced metaclasses with `__init_subclass__` (mypyc only supports `ABCMeta`), converted lazy `from X import Y` imports inside methods to qualified access (mypyc doesn't support `from` imports in compiled functions), and moved instance variable declarations into `__init__` so mypyc could generate faster attribute access.
+
+We also had to fix type annotations that mypyc's strict runtime enforcement flagged as incorrect. That was actually a nice surprise: mypyc caught real bugs we'd been carrying without knowing it, like generator methods annotated with the wrong expression type or variables that could be `None` but weren't marked as `Optional`.
 
 ---
 
@@ -84,7 +86,7 @@ A few smaller patterns round out the picture. Annotating module-level constants 
 
 ## Contributing performance primitives to mypyc
 
-SQLGlot's tokenizer is the hottest code path in the entire library. It scans SQL strings character by character, checking whether each character is whitespace, a digit, alphanumeric, and so on. These string operations happen millions of times per query, and before our work mypyc didn't have optimized native versions of them. It would fall back to calling the regular Python methods through the C API, which works but leaves performance on the table.
+SQLGlot's tokenizer is the hottest code path in the library. It scans SQL strings character by character, checking whether each character is whitespace, a digit, alphanumeric, and so on. These string operations happen millions of times when processing queries at scale, and before our work mypyc didn't have optimized native versions of them; Instead, it would fall back to calling the regular Python methods through the C API, which works but leaves performance on the table.
 
 We contributed five string operation primitives back to mypyc:
 
@@ -96,7 +98,7 @@ We contributed five string operation primitives back to mypyc:
 | `str.lower()` / `str.upper()` | up to 2.6x | [#20948](https://github.com/python/mypy/pull/20948) |
 | `str[i]` indexing (ASCII cache) | 3.9x | [#21035](https://github.com/python/mypy/pull/21035) |
 
-The string indexing optimization deserves a closer look. The tokenizer constantly indexes into the SQL string with `self.sql[i]`. In CPython, single-character ASCII strings are cached internally, so `"hello"[0]` always returns the same pre-existing `"h"` object without allocating anything new. But mypyc's string indexing was creating a brand new string object on every access. By teaching mypyc to use CPython's cached ASCII characters, we got a 3.9x speedup on what is arguably the single most frequent operation in the entire tokenizer.
+The string indexing optimization deserves a closer look. The tokenizer constantly indexes into the SQL string with `self.sql[i]`. In CPython, single-character ASCII strings are cached internally, so `"hello"[0]` always returns the same pre-existing `"h"` object without allocating anything new. But mypyc's string indexing was creating a brand new string object on every access. Once we added support for CPython's cached ASCII characters in mypyc, we got a 3.9x speedup on what is arguably the single most frequent operation in the entire tokenizer.
 
 ---
 

@@ -320,6 +320,9 @@ class Generator:
     # Whether MERGE ... WHEN MATCHED BY SOURCE is allowed
     MATCHED_BY_SOURCE = True
 
+    # Whether MERGE ... WHEN MATCHED/NOT MATCHED THEN UPDATE/INSERT ... WHERE is supported
+    SUPPORTS_MERGE_WHERE = False
+
     # Whether the INTERVAL expression works only with values like '1 day'
     SINGLE_STRING_INTERVAL = False
 
@@ -4452,13 +4455,25 @@ class Generator:
             this = f"INSERT {this}" if this else "INSERT"
             then = self.sql(then_expression, "expression")
             then = f"{this} VALUES {then}" if then else this
+            where = self.sql(then_expression, "where")
+            if where and not self.SUPPORTS_MERGE_WHERE:
+                self.unsupported("WHERE clause in MERGE INSERT is not supported")
+                where = ""
+            then = f"{then}{where}"
         elif isinstance(then_expression, exp.Update):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
                 then = f"UPDATE {self.sql(then_expression, 'expressions')}"
             else:
                 expressions_sql = self.expressions(then_expression)
-                then = f"UPDATE SET{self.sep()}{expressions_sql}" if expressions_sql else "UPDATE"
-
+                where = self.sql(then_expression, "where")
+                if where and not self.SUPPORTS_MERGE_WHERE:
+                    self.unsupported("WHERE clause in MERGE UPDATE is not supported")
+                    where = ""
+                then = (
+                    f"UPDATE SET{self.sep()}{expressions_sql}{where}"
+                    if expressions_sql
+                    else "UPDATE"
+                )
         else:
             then = self.sql(then_expression)
         return f"WHEN {matched}{source}{condition} THEN {then}"

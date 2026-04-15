@@ -2281,6 +2281,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("PARSE_URL is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def parseip_sql(self, expression: exp.ParseIp) -> str:
+        self.unsupported("PARSE_IP is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)
         if not from_first:

@@ -4455,27 +4455,22 @@ class Generator:
             this = f"INSERT {this}" if this else "INSERT"
             then = self.sql(then_expression, "expression")
             then = f"{this} VALUES {then}" if then else this
-            where = self.sql(then_expression, "where")
-            if where and not self.SUPPORTS_MERGE_WHERE:
-                self.unsupported("WHERE clause in MERGE INSERT is not supported")
-                where = ""
-            then = f"{then}{where}"
         elif isinstance(then_expression, exp.Update):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
                 then = f"UPDATE {self.sql(then_expression, 'expressions')}"
             else:
                 expressions_sql = self.expressions(then_expression)
-                where = self.sql(then_expression, "where")
-                if where and not self.SUPPORTS_MERGE_WHERE:
-                    self.unsupported("WHERE clause in MERGE UPDATE is not supported")
-                    where = ""
-                then = (
-                    f"UPDATE SET{self.sep()}{expressions_sql}{where}"
-                    if expressions_sql
-                    else "UPDATE"
-                )
+                then = f"UPDATE SET{self.sep()}{expressions_sql}" if expressions_sql else "UPDATE"
         else:
             then = self.sql(then_expression)
+
+        if isinstance(then_expression, (exp.Insert, exp.Update)):
+            where = self.sql(then_expression, "where")
+            if where and not self.SUPPORTS_MERGE_WHERE:
+                kind = "INSERT" if isinstance(then_expression, exp.Insert) else "UPDATE"
+                self.unsupported(f"WHERE clause in MERGE {kind} is not supported")
+                where = ""
+            then = f"{then}{where}"
         return f"WHEN {matched}{source}{condition} THEN {then}"
 
     def whens_sql(self, expression: exp.Whens) -> str:

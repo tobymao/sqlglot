@@ -221,7 +221,7 @@ class TestSnowflake(Validator):
             "JAROWINKLER_SIMILARITY('hello', 'world')",
             write={
                 "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
-                "duckdb": "JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world'))",
+                "duckdb": "CAST(JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world')) * 100 AS INT)",
                 "clickhouse": "jaroWinklerSimilarity(UPPER('hello'), UPPER('world'))",
             },
         )

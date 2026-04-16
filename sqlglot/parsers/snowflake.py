@@ -539,6 +539,7 @@ class SnowflakeParser(parser.Parser):
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             case_insensitive=True,
+            integer_scale=True,
         ),
         "MD5_HEX": exp.MD5.from_arg_list,
         "MD5_BINARY": exp.MD5Digest.from_arg_list,

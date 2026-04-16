@@ -24,7 +24,6 @@ from sqlglot.dialects.dialect import (
     getbit_sql,
     groupconcat_sql,
     inline_array_unless_query,
-    jarowinkler_similarity,
     months_between_sql,
     no_datetime_sql,
     no_comment_column_constraint_sql,
@@ -1609,7 +1608,6 @@ class DuckDBGenerator(generator.Generator):
         ),
         exp.Ceil: _ceil_floor,
         exp.Floor: _ceil_floor,
-        exp.JarowinklerSimilarity: jarowinkler_similarity("JARO_WINKLER_SIMILARITY"),
         exp.JSONBExists: rename_func("JSON_EXISTS"),
         exp.JSONExtract: _arrow_json_extract_sql,
         exp.JSONExtractArray: _json_extract_value_array_sql,
@@ -2284,6 +2282,21 @@ class DuckDBGenerator(generator.Generator):
     def parseip_sql(self, expression: exp.ParseIp) -> str:
         self.unsupported("PARSE_IP is not supported in DuckDB")
         return self.function_fallback_sql(expression)
+
+    def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
+        this = expression.this
+        expr = expression.expression
+
+        if expression.args.get("case_insensitive"):
+            this = exp.Upper(this=this)
+            expr = exp.Upper(this=expr)
+
+        result = exp.func("JARO_WINKLER_SIMILARITY", this, expr)
+
+        if expression.args.get("integer_scale"):
+            result = exp.cast(result * 100, "INTEGER")
+
+        return self.sql(result)
 
     def nthvalue_sql(self, expression: exp.NthValue) -> str:
         from_first = expression.args.get("from_first", True)

@@ -2535,16 +2535,12 @@ class DuckDBGenerator(generator.Generator):
             start = expression.args.get("start")
             length = expression.args.get("length")
 
-            return self.func(
-                "SUBSTRING",
-                expression.this,
-                exp.If(this=start.eq(0), true=exp.Literal.number(1), false=start)
-                if start is not None
-                else None,
-                exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
-                if length is not None
-                else None,
-            )
+            if start := expression.args.get("start"):
+                start = exp.If(this=start.eq(0), true=exp.Literal.number(1), false=start)
+            if length := expression.args.get("length"):
+                length = exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
+
+            return self.func("SUBSTRING", expression.this, start, length)
 
         return self.function_fallback_sql(expression)
 

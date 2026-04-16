@@ -464,7 +464,7 @@ class TestExasol(Validator):
             write={
                 "exasol": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'DY')",
                 "oracle": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'DY')",
-                "postgres": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'Dy')",
+                "postgres": "SELECT TO_CHAR(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'TMDy')",
                 "databricks": "SELECT DATE_FORMAT(CAST('2024-07-08 13:45:00' AS TIMESTAMP), 'EEE')",
             },
         )

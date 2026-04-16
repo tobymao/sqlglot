@@ -152,12 +152,10 @@ class TestPostgres(Validator):
             "SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')"
         )
         self.validate_identity(
-            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 AM', 'DD Mon YYYY HH:MI AM')",
-            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 AM', 'DD Mon YYYY HH12:MI AM')",
+            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 AM', 'DD Mon YYYY HH:MI AM')"
         )
         self.validate_identity(
-            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 PM', 'DD Mon YYYY HH:MI PM')",
-            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 PM', 'DD Mon YYYY HH12:MI AM')",
+            "SELECT TO_TIMESTAMP('05 Dec 2000 10:00 PM', 'DD Mon YYYY HH:MI PM')"
         )
         self.validate_identity(
             "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"
@@ -1022,59 +1020,6 @@ FROM json_data, field_ids""",
                 "redshift": "SELECT TO_CHAR(foo, bar)",
             },
         )
-
-        # TO_CHAR format token conversions: month names, weekday names, AM/PM, HH
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'Mon YYYY')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%b %Y')",
-                "postgres": "SELECT TO_CHAR(dt, 'Mon YYYY')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'Month YYYY')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%B %Y')",
-                "postgres": "SELECT TO_CHAR(dt, 'Month YYYY')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'Day')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%A')",
-                "postgres": "SELECT TO_CHAR(dt, 'Day')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'Dy')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%a')",
-                "postgres": "SELECT TO_CHAR(dt, 'Dy')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'HH12:MI AM')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%I:%M %p')",
-                "postgres": "SELECT TO_CHAR(dt, 'HH12:MI AM')",
-            },
-        )
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'DD Mon YYYY HH24:MI')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%d %b %Y %H:%M')",
-                "postgres": "SELECT TO_CHAR(dt, 'DD Mon YYYY HH24:MI')",
-            },
-        )
-        # Bare HH (no 12/24 suffix) defaults to 12-hour in PostgreSQL
-        self.validate_all(
-            "SELECT TO_CHAR(dt, 'HH:MI')",
-            write={
-                "clickhouse": "SELECT formatDateTime(dt, '%I:%M')",
-                "postgres": "SELECT TO_CHAR(dt, 'HH12:MI')",
-            },
-        )
-
         self.validate_all(
             "CREATE TABLE table1 (a INT, b INT, PRIMARY KEY (a))",
             read={

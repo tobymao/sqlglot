@@ -2332,11 +2332,8 @@ class DuckDBGenerator(generator.Generator):
         replacements = {"seed": seed_value, "length": length}
         return f"({self.sql(exp.replace_placeholders(self.RANDSTR_TEMPLATE, **replacements))})"
 
+    @unsupported_args("finish")
     def reduce_sql(self, expression: exp.Reduce) -> str:
-        # DuckDB's LIST_REDUCE doesn't support a finish function, so preserve REDUCE as-is
-        if expression.args.get("finish"):
-            return self.function_fallback_sql(expression)
-
         array_arg = expression.this
         initial_value = expression.args.get("initial")
         merge_lambda = expression.args.get("merge")

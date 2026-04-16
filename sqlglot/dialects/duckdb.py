@@ -116,6 +116,8 @@ class DuckDB(Dialect):
             "$": TokenType.PARAMETER,
         }
 
+        VAR_SINGLE_TOKENS = {"$"}
+
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     Parser = DuckDBParser

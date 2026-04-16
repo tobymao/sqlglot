@@ -180,6 +180,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT GET_BIT(CAST('0110010' AS BIT), 2)")
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
+        self.validate_identity("SELECT 1 AS a$b")
         self.validate_identity("""SELECT '{"x": 1}' -> c FROM t""")
 
         self.assertEqual(

@@ -2530,6 +2530,24 @@ class DuckDBGenerator(generator.Generator):
 
         return strposition_sql(self, expression)
 
+    def substring_sql(self, expression: exp.Substring) -> str:
+        if expression.args.get("zero_start"):
+            start = expression.args.get("start")
+            length = expression.args.get("length")
+
+            return self.func(
+                "SUBSTRING",
+                expression.this,
+                exp.If(this=start.eq(0), true=exp.Literal.number(1), false=start)
+                if start is not None
+                else None,
+                exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
+                if length is not None
+                else None,
+            )
+
+        return self.function_fallback_sql(expression)
+
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
         # Check if target_type requires TIMESTAMPTZ (for LTZ/TZ variants)
         target_type = expression.args.get("target_type")

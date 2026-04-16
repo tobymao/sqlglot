@@ -21,12 +21,20 @@ class Postgres(Dialect):
     }
 
     TIME_MAPPING = {
+        "AM": "%p",  # AM/PM meridiem indicator
+        "A.M.": "%p",  # AM/PM with periods
         "d": "%u",  # 1-based day of week
         "D": "%u",  # 1-based day of week
+        "day": "%A",  # full weekday name (lowercase)
+        "Day": "%A",  # full weekday name (capitalized)
+        "DAY": "%A",  # full weekday name (uppercase)
         "dd": "%d",  # day of month
         "DD": "%d",  # day of month
         "ddd": "%j",  # zero padded day of year
         "DDD": "%j",  # zero padded day of year
+        "dy": "%a",  # abbreviated weekday name (lowercase)
+        "Dy": "%a",  # abbreviated weekday name (capitalized)
+        "DY": "%a",  # abbreviated weekday name (uppercase)
         "FMDD": "%-d",  # - is no leading zero for Python; same for FM in postgres
         "FMDDD": "%-j",  # day of year
         "FMHH12": "%-I",  # 9
@@ -34,13 +42,27 @@ class Postgres(Dialect):
         "FMMI": "%-M",  # Minute
         "FMMM": "%-m",  # 1
         "FMSS": "%-S",  # Second
+        "hh": "%I",  # 12-hour (HH defaults to 12-hour in PG)
+        "HH": "%I",  # 12-hour (HH defaults to 12-hour in PG)
         "HH12": "%I",  # 09
         "HH24": "%H",  # 09
         "mi": "%M",  # zero padded minute
         "MI": "%M",  # zero padded minute
         "mm": "%m",  # 01
         "MM": "%m",  # 01
+        "mon": "%b",  # abbreviated month name (lowercase)
+        "Mon": "%b",  # abbreviated month name (capitalized)
+        "MON": "%b",  # abbreviated month name (uppercase)
+        "month": "%B",  # full month name (lowercase)
+        "Month": "%B",  # full month name (capitalized)
+        "MONTH": "%B",  # full month name (uppercase)
         "OF": "%z",  # utc offset
+        "PM": "%p",  # PG treats AM/PM as synonymous; both print actual meridiem
+        "P.M.": "%p",
+        "am": "%p",
+        "a.m.": "%p",
+        "pm": "%p",
+        "p.m.": "%p",
         "ss": "%S",  # zero padded second
         "SS": "%S",  # zero padded second
         "TMDay": "%A",  # TM is locale dependent
@@ -55,6 +77,17 @@ class Postgres(Dialect):
         "YY": "%y",  # 15
         "yyyy": "%Y",  # 2015
         "YYYY": "%Y",  # 2015
+    }
+
+    # Prefer bare forms (Mon, Day, Dy, Month) over TM-prefixed forms when
+    # generating Postgres SQL from the internal strftime representation.
+    INVERSE_TIME_MAPPING = {
+        "%A": "Day",
+        "%a": "Dy",
+        "%b": "Mon",
+        "%B": "Month",
+        "%I": "HH12",
+        "%p": "AM",
     }
 
     class Tokenizer(tokens.Tokenizer):

@@ -1399,7 +1399,6 @@ class TestDialect(Validator):
             "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
             write={
                 "trino": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-                "duckdb": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "hive": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "spark": "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",

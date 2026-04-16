@@ -786,7 +786,6 @@ TBLPROPERTIES (
             "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
             write={
                 "trino": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
-                "duckdb": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "hive": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "presto": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "spark": "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",

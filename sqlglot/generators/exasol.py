@@ -265,6 +265,142 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _json_object_key_part(key: exp.Expr) -> exp.Expr:
+    key_expr: exp.Expr
+    if key.is_string or key.is_type(*exp.DataType.TEXT_TYPES):
+        key_expr = exp.func("COALESCE", key.copy(), exp.Literal.string(""))
+    else:
+        key_expr = (
+            exp.case()
+            .when(key.copy().is_(exp.null()), exp.Literal.string(""))
+            .else_(exp.DPipe(this=key.copy(), expression=exp.Literal.string("")))
+        )
+
+    return exp.func(
+        "CONCAT",
+        exp.Literal.string('"'),
+        key_expr,
+        exp.Literal.string('": '),
+    )
+
+
+def _json_string_part(value: exp.Expr) -> exp.Expr:
+    escaped = exp.Replace(
+        this=exp.Replace(
+            this=value,
+            expression=exp.Literal.string("\\"),
+            replacement=exp.Literal.string("\\\\"),
+        ),
+        expression=exp.Literal.string('"'),
+        replacement=exp.Literal.string('\\"'),
+    )
+    return exp.DPipe(
+        this=exp.DPipe(this=exp.Literal.string('"'), expression=escaped),
+        expression=exp.Literal.string('"'),
+    )
+
+
+def _json_null_safe_part(value: exp.Expr, rendered: exp.Expr) -> exp.Expr:
+    return exp.case().when(value.copy().is_(exp.null()), exp.Literal.string("null")).else_(rendered)
+
+
+def _json_formatted_temporal_part(value: exp.Expr, format_string: str) -> exp.Expr:
+    return _json_null_safe_part(
+        value,
+        _json_string_part(exp.ToChar(this=value.copy(), format=exp.Literal.string(format_string))),
+    )
+
+
+def _json_runtime_value_part(value: exp.Expr) -> exp.Expr:
+    value_type = exp.Typeof(this=value.copy())
+    stringified = exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
+    quoted = _json_string_part(stringified)
+
+    return (
+        exp.case()
+        .when(value.copy().is_(exp.null()), exp.Literal.string("null"))
+        .when(
+            exp.EQ(this=value_type.copy(), expression=exp.Literal.string("BOOLEAN")),
+            exp.func("LOWER", stringified.copy()),
+        )
+        .when(
+            exp.EQ(this=value_type.copy(), expression=exp.Literal.string("DATE")),
+            quoted.copy(),
+        )
+        .when(
+            exp.Like(this=value_type.copy(), expression=exp.Literal.string("TIMESTAMP%")),
+            quoted.copy(),
+        )
+        .when(
+            exp.or_(
+                exp.Like(this=value_type.copy(), expression=exp.Literal.string("DECIMAL%")),
+                exp.EQ(this=value_type.copy(), expression=exp.Literal.string("DOUBLE PRECISION")),
+            ),
+            stringified,
+        )
+        .else_(quoted)
+    )
+
+
+def _json_object_value_part(value: exp.Expr) -> exp.Expr:
+    if isinstance(value, exp.Null):
+        return exp.Literal.string("null")
+
+    if isinstance(value, exp.Boolean):
+        return exp.Literal.string("true" if value.this else "false")
+
+    if value.is_number:
+        return value.copy()
+
+    if value.is_string:
+        escaped = value.name.replace("\\", "\\\\").replace('"', '\\"')
+        return exp.Literal.string(f'"{escaped}"')
+
+    if value.is_type(*exp.DataType.TEXT_TYPES):
+        return _json_string_part(exp.func("COALESCE", value.copy(), exp.Literal.string("")))
+
+    if isinstance(value, (exp.CurrentDate, exp.Date)):
+        return _json_formatted_temporal_part(value, "YYYY-MM-DD")
+
+    if isinstance(value, (exp.CurrentTimestamp,)):
+        return _json_formatted_temporal_part(value, "YYYY-MM-DD HH24:MI:SS")
+
+    if isinstance(value, (exp.CurrentTime, exp.Time)):
+        return _json_formatted_temporal_part(value, "HH24:MI:SS")
+
+    if value.is_type(exp.DType.DATE):
+        return _json_formatted_temporal_part(value, "YYYY-MM-DD")
+
+    if value.is_type(
+        exp.DType.DATETIME,
+        exp.DType.DATETIME2,
+        exp.DType.DATETIME64,
+        exp.DType.SMALLDATETIME,
+        exp.DType.TIMESTAMP,
+        exp.DType.TIMESTAMPTZ,
+        exp.DType.TIMESTAMPLTZ,
+        exp.DType.TIMESTAMPNTZ,
+        exp.DType.TIMESTAMP_S,
+        exp.DType.TIMESTAMP_MS,
+        exp.DType.TIMESTAMP_NS,
+    ):
+        return _json_formatted_temporal_part(value, "YYYY-MM-DD HH24:MI:SS")
+
+    if value.is_type(*exp.DataType.NUMERIC_TYPES):
+        return exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
+
+    if value.is_type(exp.DType.BOOLEAN):
+        return (
+            exp.case()
+            .when(value.copy().is_(exp.null()), exp.Literal.string("null"))
+            .else_(
+                exp.func("LOWER", exp.DPipe(this=value.copy(), expression=exp.Literal.string("")))
+            )
+        )
+
+    return _json_runtime_value_part(value)
+
+
 class ExasolGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -312,7 +448,7 @@ class ExasolGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     TRANSFORMS = {
-        **generator.Generator.TRANSFORMS,
+        **{k: v for k, v in generator.Generator.TRANSFORMS.items() if k != exp.JSONObject},
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/every.htm
         exp.All: rename_func("EVERY"),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/bit_and.htm
@@ -903,6 +1039,37 @@ class ExasolGenerator(generator.Generator):
             sql = f"{sql} EMITS {emits}"
 
         return sql
+
+    @unsupported_args("null_handling", "return_type", "encoding")
+    def jsonobject_sql(self, expression: exp.JSONObject) -> str:
+        if expression.args.get("unique_keys") is not None:
+            self.unsupported(
+                "Argument 'unique_keys' is not supported for expression 'JSONObject' when targeting Exasol."
+            )
+
+        if not expression.expressions:
+            return self.sql(exp.Literal.string("{}"))
+
+        parts: list[str | exp.Expr] = [exp.Literal.string("{")]
+
+        for i, key_value in enumerate(expression.expressions):
+            if i:
+                parts.append(exp.Literal.string(", "))
+
+            if not isinstance(key_value, exp.JSONKeyValue):
+                self.unsupported("Only JSON key-value pairs are supported for Exasol JSON_OBJECT")
+                return self.function_fallback_sql(expression)
+
+            if key_value.this.is_string:
+                escaped = key_value.this.name.replace("\\", "\\\\").replace('"', '\\"')
+                parts.append(exp.Literal.string(f'"{escaped}": '))
+            else:
+                parts.append(_json_object_key_part(key_value.this))
+
+            parts.append(_json_object_value_part(key_value.expression))
+
+        parts.append(exp.Literal.string("}"))
+        return self.func("CONCAT", *parts)
 
     @unsupported_args("flag")
     def regexplike_sql(self, expression: exp.RegexpLike) -> str:

@@ -886,6 +886,54 @@ class TestExasol(Validator):
         self.validate_identity(
             """SELECT JSON_EXTRACT('{"firstname" : "Ann", "surname" : "Smith", "age" : 29}', '$.firstname', '$.surname', '$.age') EMITS (firstname VARCHAR(100), surname VARCHAR(100), age INT)"""
         )
+        self.validate_all(
+            """SELECT CONCAT('{', '"id": ', 87, ', ', '"active": ', 'true', ', ', '"name": ', '"carrot"', '}')""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('id', 87, 'active', TRUE, 'name', 'carrot')""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"user": ', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"', ', ', '"balance": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('user', CAST(user_name AS CHAR), 'balance', account_balance) AS jsonData FROM t""",
+            },
+        )
+        self.validate_all(
+            """SELECT '{}'""",
+            read={
+                "mysql": """SELECT JSON_OBJECT()""",
+            },
+        )
+        self.validate_all(
+            """SELECT CONCAT('{', '"na\\"me": ', 1, '}')""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('na"me', 1)""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"' || COALESCE(CAST(user_name AS CHAR), '') || '": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            read={
+                "mysql": """SELECT JSON_OBJECT(CAST(user_name AS CHAR), account_balance) AS jsonData FROM t""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"col1": ', CASE WHEN t.col1 IS NULL THEN 'null' WHEN TYPEOF(t.col1) = 'BOOLEAN' THEN LOWER(t.col1 || '') WHEN TYPEOF(t.col1) = 'DATE' THEN '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col1) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col1) LIKE 'DECIMAL%' OR TYPEOF(t.col1) = 'DOUBLE PRECISION' THEN t.col1 || '' ELSE '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' END, ', ', '"col2": ', CASE WHEN t.col2 IS NULL THEN 'null' WHEN TYPEOF(t.col2) = 'BOOLEAN' THEN LOWER(t.col2 || '') WHEN TYPEOF(t.col2) = 'DATE' THEN '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col2) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col2) LIKE 'DECIMAL%' OR TYPEOF(t.col2) = 'DOUBLE PRECISION' THEN t.col2 || '' ELSE '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' END, '}') FROM x AS t""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('col1', t.col1, 'col2', t.col2) FROM x AS t""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"name": ', '"' || REPLACE(REPLACE(COALESCE(CAST(NULL AS CHAR), ''), '\', '\\'), '"', '\"') || '"', ', ', '"count": ', 'null', '}')""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('name', CAST(NULL AS CHAR), 'count', NULL)""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"name": ', '"Alice"', ', ', '"age": ', 25, ', ', '"time": ', CASE WHEN CURRENT_TIMESTAMP() IS NULL THEN 'null' ELSE '"' || REPLACE(REPLACE(TO_CHAR(CURRENT_TIMESTAMP(), 'YYYY-MM-DD HH24:MI:SS'), '\', '\\'), '"', '\"') || '"' END, ', ', '"date": ', CASE WHEN CURRENT_DATE IS NULL THEN 'null' ELSE '"' || REPLACE(REPLACE(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'), '\', '\\'), '"', '\"') || '"' END, ', ', '"other": ', 'null', ', ', '"average": ', 3.5455, '}')""",
+            read={
+                "mysql": """SELECT JSON_OBJECT('name', 'Alice', 'age', 25, 'time', CURRENT_TIMESTAMP(), 'date', CURRENT_DATE(), 'other', NULL, 'average', 3.5455)""",
+            },
+        )
 
     def test_group_by_all(self):
         self.validate_all(

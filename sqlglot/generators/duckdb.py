@@ -2332,6 +2332,17 @@ class DuckDBGenerator(generator.Generator):
         replacements = {"seed": seed_value, "length": length}
         return f"({self.sql(exp.replace_placeholders(self.RANDSTR_TEMPLATE, **replacements))})"
 
+    @unsupported_args("finish")
+    def reduce_sql(self, expression: exp.Reduce) -> str:
+        array_arg = expression.this
+        initial_value = expression.args.get("initial")
+        merge_lambda = expression.args.get("merge")
+
+        if merge_lambda:
+            merge_lambda.set("colon", True)
+
+        return self.func("list_reduce", array_arg, merge_lambda, initial_value)
+
     def zipf_sql(self, expression: exp.Zipf) -> str:
         """
         Transpile Snowflake's ZIPF to DuckDB using CDF-based inverse sampling.

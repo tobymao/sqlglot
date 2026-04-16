@@ -3522,17 +3522,14 @@ class DuckDBGenerator(generator.Generator):
         return "RANDOM()"
 
     def bytelength_sql(self, expression: exp.ByteLength) -> str:
-        # DuckDB OCTET_LENGTH requires BLOB input
-        # Snowflake OCTET_LENGTH accepts VARCHAR or BINARY
-        # For VARCHAR, we wrap with ENCODE to convert to BLOB
         arg = expression.this
 
-        # If argument is binary type (checked via type annotation), use directly
-        if _is_binary(arg):
-            return self.func("OCTET_LENGTH", arg)
+        # Check if it's a text type (handles both literals and annotated expressions)
+        if arg.is_type(*exp.DataType.TEXT_TYPES):
+            return self.func("OCTET_LENGTH", exp.Encode(this=arg))
 
-        # For all other cases (strings), wrap with ENCODE
-        return self.func("OCTET_LENGTH", exp.Encode(this=arg))
+        # Default: pass through as-is (conservative for DuckDB, handles binary and unannotated)
+        return self.func("OCTET_LENGTH", arg)
 
     def base64encode_sql(self, expression: exp.Base64Encode) -> str:
         # DuckDB TO_BASE64 requires BLOB input

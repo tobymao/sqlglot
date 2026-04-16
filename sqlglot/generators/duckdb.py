@@ -1536,7 +1536,6 @@ class DuckDBGenerator(generator.Generator):
         exp.BitwiseOrAgg: _bitwise_agg_sql,
         exp.BitwiseRightShift: _bitshift_sql,
         exp.BitwiseXorAgg: _bitwise_agg_sql,
-        exp.ByteLength: lambda self, e: self.func("OCTET_LENGTH", e.this),
         exp.CommentColumnConstraint: no_comment_column_constraint_sql,
         exp.Corr: lambda self, e: self._corr_sql(e),
         exp.CosineDistance: rename_func("LIST_COSINE_DISTANCE"),
@@ -3521,6 +3520,16 @@ class DuckDBGenerator(generator.Generator):
 
         # Default DuckDB behavior - just return RANDOM() as float
         return "RANDOM()"
+
+    def bytelength_sql(self, expression: exp.ByteLength) -> str:
+        arg = expression.this
+
+        # Check if it's a text type (handles both literals and annotated expressions)
+        if arg.is_type(*exp.DataType.TEXT_TYPES):
+            return self.func("OCTET_LENGTH", exp.Encode(this=arg))
+
+        # Default: pass through as-is (conservative for DuckDB, handles binary and unannotated)
+        return self.func("OCTET_LENGTH", arg)
 
     def base64encode_sql(self, expression: exp.Base64Encode) -> str:
         # DuckDB TO_BASE64 requires BLOB input

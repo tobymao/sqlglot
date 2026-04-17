@@ -52,4 +52,5 @@ class Db2(Dialect):
 
     Generator = Db2Generator
 
+
 # Made with Bob

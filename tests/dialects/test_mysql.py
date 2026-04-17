@@ -196,6 +196,11 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
+        self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+        self.validate_identity(
+            "ALTER TABLE t RENAME KEY a TO b",
+            "ALTER TABLE t RENAME INDEX a TO b",
+        )
         self.validate_identity(
             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )

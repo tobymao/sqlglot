@@ -279,6 +279,10 @@ class AlterRename(Expression):
     pass
 
 
+class RenameIndex(Expression):
+    arg_types = {"this": True, "to": True}
+
+
 class AlterModifySqlSecurity(Expression):
     arg_types = {"expressions": True}
 

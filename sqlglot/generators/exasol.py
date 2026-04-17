@@ -265,7 +265,17 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _json_object_key_part(key: exp.Expr) -> exp.Expr:
+def _json_literal_part(self: ExasolGenerator, value: str) -> exp.Expr:
+    escaped = self.escape_str(value, delimiter='"', escaped_delimiter='\\"')
+    return exp.Literal.string(f'"{escaped}"')
+
+
+def _json_literal_key_part(self: ExasolGenerator, value: str) -> exp.Expr:
+    escaped = self.escape_str(value, delimiter='"', escaped_delimiter='\\"')
+    return exp.Literal.string(f'"{escaped}": ')
+
+
+def _json_key_part(key: exp.Expr) -> exp.Expr:
     key_expr: exp.Expr
     if key.is_string or key.is_type(*exp.DataType.TEXT_TYPES):
         key_expr = exp.func("COALESCE", key.copy(), exp.Literal.string(""))
@@ -342,7 +352,19 @@ def _json_runtime_value_part(value: exp.Expr) -> exp.Expr:
     )
 
 
-def _json_object_value_part(value: exp.Expr) -> exp.Expr:
+def _json_temporal_format(value: exp.Expr) -> str:
+    if isinstance(value, (exp.CurrentDate, exp.Date)) or value.is_type(exp.DType.DATE):
+        return "YYYY-MM-DD"
+
+    if isinstance(value, (exp.CurrentTime, exp.Time)) or value.is_type(
+        exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIME_NS
+    ):
+        return "HH24:MI:SS"
+
+    return "YYYY-MM-DD HH24:MI:SS"
+
+
+def _json_value_part(self: ExasolGenerator, value: exp.Expr) -> exp.Expr:
     if isinstance(value, exp.Null):
         return exp.Literal.string("null")
 
@@ -353,38 +375,18 @@ def _json_object_value_part(value: exp.Expr) -> exp.Expr:
         return value.copy()
 
     if value.is_string:
-        escaped = value.name.replace("\\", "\\\\").replace('"', '\\"')
-        return exp.Literal.string(f'"{escaped}"')
+        return _json_literal_part(self, value.name)
 
     if value.is_type(*exp.DataType.TEXT_TYPES):
         return _json_string_part(exp.func("COALESCE", value.copy(), exp.Literal.string("")))
 
-    if isinstance(value, (exp.CurrentDate, exp.Date)):
-        return _json_formatted_temporal_part(value, "YYYY-MM-DD")
-
-    if isinstance(value, (exp.CurrentTimestamp,)):
-        return _json_formatted_temporal_part(value, "YYYY-MM-DD HH24:MI:SS")
-
-    if isinstance(value, (exp.CurrentTime, exp.Time)):
-        return _json_formatted_temporal_part(value, "HH24:MI:SS")
-
-    if value.is_type(exp.DType.DATE):
-        return _json_formatted_temporal_part(value, "YYYY-MM-DD")
-
-    if value.is_type(
-        exp.DType.DATETIME,
-        exp.DType.DATETIME2,
-        exp.DType.DATETIME64,
-        exp.DType.SMALLDATETIME,
-        exp.DType.TIMESTAMP,
-        exp.DType.TIMESTAMPTZ,
-        exp.DType.TIMESTAMPLTZ,
-        exp.DType.TIMESTAMPNTZ,
-        exp.DType.TIMESTAMP_S,
-        exp.DType.TIMESTAMP_MS,
-        exp.DType.TIMESTAMP_NS,
+    if isinstance(
+        value, (exp.CurrentDate, exp.CurrentTime, exp.CurrentTimestamp, exp.Date, exp.Time)
     ):
-        return _json_formatted_temporal_part(value, "YYYY-MM-DD HH24:MI:SS")
+        return _json_formatted_temporal_part(value, _json_temporal_format(value))
+
+    if value.is_type(*exp.DataType.TEMPORAL_TYPES):
+        return _json_formatted_temporal_part(value, _json_temporal_format(value))
 
     if value.is_type(*exp.DataType.NUMERIC_TYPES):
         return exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
@@ -1061,12 +1063,11 @@ class ExasolGenerator(generator.Generator):
                 return self.function_fallback_sql(expression)
 
             if key_value.this.is_string:
-                escaped = key_value.this.name.replace("\\", "\\\\").replace('"', '\\"')
-                parts.append(exp.Literal.string(f'"{escaped}": '))
+                parts.append(_json_literal_key_part(self, key_value.this.name))
             else:
-                parts.append(_json_object_key_part(key_value.this))
+                parts.append(_json_key_part(key_value.this))
 
-            parts.append(_json_object_value_part(key_value.expression))
+            parts.append(_json_value_part(self, key_value.expression))
 
         parts.append(exp.Literal.string("}"))
         return self.func("CONCAT", *parts)

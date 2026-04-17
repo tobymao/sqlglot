@@ -148,24 +148,12 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT DATE_SUB(x, INTERVAL '3' MONTH)")
 
         # Two-argument shorthand - default unit DAY
-        self.validate_all(
-            "SELECT DATE_SUB(x, 3)",
-            write={"starrocks": "SELECT DATE_SUB(x, INTERVAL 3 DAY)"},
-        )
-        self.validate_all(
-            "SELECT DATE_ADD(x, 7)",
-            write={"starrocks": "SELECT DATE_ADD(x, INTERVAL 7 DAY)"},
-        )
+        self.validate_identity("SELECT DATE_SUB(x, 3)", "SELECT DATE_SUB(x, INTERVAL 3 DAY)")
+        self.validate_identity("SELECT DATE_ADD(x, 7)", "SELECT DATE_ADD(x, INTERVAL 7 DAY)")
 
         # ADDDATE / SUBDATE aliases
-        self.validate_all(
-            "SELECT ADDDATE(x, 7)",
-            write={"starrocks": "SELECT DATE_ADD(x, INTERVAL 7 DAY)"},
-        )
-        self.validate_all(
-            "SELECT SUBDATE(x, 7)",
-            write={"starrocks": "SELECT DATE_SUB(x, INTERVAL 7 DAY)"},
-        )
+        self.validate_identity("SELECT ADDDATE(x, 7)", "SELECT DATE_ADD(x, INTERVAL 7 DAY)")
+        self.validate_identity("SELECT SUBDATE(x, 7)", "SELECT DATE_SUB(x, INTERVAL 7 DAY)")
 
     def test_regex(self):
         self.validate_all(

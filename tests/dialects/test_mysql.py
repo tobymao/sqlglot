@@ -194,6 +194,11 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
+        self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+        self.validate_identity(
+            "ALTER TABLE t RENAME KEY a TO b",
+            "ALTER TABLE t RENAME INDEX a TO b",
+        )
         self.validate_identity(
             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )
@@ -1680,3 +1685,10 @@ COMMENT='客户账户表'"""
                 "snowflake": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
             },
         )
+
+    def test_rename_index(self):
+        expr = self.parse_one("ALTER TABLE t RENAME INDEX a TO b")
+        rename = expr.find(exp.RenameIndex)
+        self.assertIsInstance(rename, exp.RenameIndex)
+        self.assertEqual(rename.this.name, "a")
+        self.assertEqual(rename.args["to"].name, "b")

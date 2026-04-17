@@ -710,6 +710,11 @@ class MySQLGenerator(generator.Generator):
         """
         return super().alterrename_sql(expression, include_to=False)
 
+    def renameindex_sql(self, expression: exp.RenameIndex) -> str:
+        this = self.sql(expression, "this")
+        to = self.sql(expression, "to")
+        return f"RENAME INDEX {this} TO {to}"
+
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         dtype = self.sql(expression, "dtype")
         if not dtype:

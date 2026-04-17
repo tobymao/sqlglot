@@ -4428,3 +4428,14 @@ class DuckDBGenerator(generator.Generator):
             corr_expr = expression  # make mypy happy
 
         return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))
+
+    def uuid_sql(self, expression: exp.Uuid) -> str:
+        if expression.this and expression.args.get("name"):
+            self.unsupported("UUID v5 (named UUIDs) are not supported in DuckDB")
+            return self.function_fallback_sql(expression)
+
+        uuid_func = self.func("UUID")
+        if expression.args.get("is_string"):
+            return self.sql(exp.cast(uuid_func, exp.DataType.Type.TEXT))
+
+        return uuid_func

@@ -1685,13 +1685,11 @@ COMMENT='客户账户表'"""
 
     def test_invisible_column(self):
         expr = self.parse_one("CREATE TABLE t (c INT INVISIBLE)")
-        self.assertIsInstance(
-            expr.find(exp.InvisibleColumnConstraint),
-            exp.InvisibleColumnConstraint,
+        self.assertIsNotNone(
+            expr.find(exp.InvisibleColumnConstraint)
         )
 
         expr = self.parse_one("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
         self.assertIsInstance(
-            expr.find(exp.InvisibleColumnConstraint),
-            exp.InvisibleColumnConstraint,
+            expr.find(exp.InvisibleColumnConstraint)
         )

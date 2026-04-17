@@ -2480,6 +2480,10 @@ class DuckDBGenerator(generator.Generator):
         from_ = f" FROM {from_}" if from_ else ""
         return f"SHOW {expression.name}{from_}"
 
+    def soundex_sql(self, expression: exp.Soundex) -> str:
+        self.unsupported("SOUNDEX is not supported in DuckDB")
+        return self.func("SOUNDEX", expression.this)
+
     def sortarray_sql(self, expression: exp.SortArray) -> str:
         arr = expression.this
         asc = expression.args.get("asc")

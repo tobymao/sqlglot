@@ -1598,6 +1598,7 @@ def build_date_delta(
 
 def build_date_delta_with_interval(
     expression_class: Type[E],
+    default_unit: str | None = None,
 ) -> t.Callable[[BuilderArgs], E | None]:
     def _builder(args: BuilderArgs) -> E | None:
         if len(args) < 2:
@@ -1606,7 +1607,13 @@ def build_date_delta_with_interval(
         interval = args[1]
 
         if not isinstance(interval, exp.Interval):
-            raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+            if default_unit is None:
+                raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+            return expression_class(
+                this=args[0],
+                expression=interval,
+                unit=exp.Literal.string(default_unit),
+            )
 
         return expression_class(this=args[0], expression=interval.this, unit=unit_to_str(interval))
 

@@ -142,6 +142,31 @@ class TestStarrocks(Validator):
             "SELECT DATE_DIFF('MINUTE', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
         )
 
+    def test_date_add_sub(self):
+        # Standard INTERVAL form
+        self.validate_identity("SELECT DATE_ADD(x, INTERVAL '3' DAY)")
+        self.validate_identity("SELECT DATE_SUB(x, INTERVAL '3' MONTH)")
+
+        # Two-argument shorthand - default unit DAY
+        self.validate_all(
+            "SELECT DATE_SUB(x, 3)",
+            write={"starrocks": "SELECT DATE_SUB(x, INTERVAL 3 DAY)"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(x, 7)",
+            write={"starrocks": "SELECT DATE_ADD(x, INTERVAL 7 DAY)"},
+        )
+
+        # ADDDATE / SUBDATE aliases
+        self.validate_all(
+            "SELECT ADDDATE(x, 7)",
+            write={"starrocks": "SELECT DATE_ADD(x, INTERVAL 7 DAY)"},
+        )
+        self.validate_all(
+            "SELECT SUBDATE(x, 7)",
+            write={"starrocks": "SELECT DATE_SUB(x, INTERVAL 7 DAY)"},
+        )
+
     def test_regex(self):
         self.validate_all(
             "SELECT REGEXP(abc, '%foo%')",

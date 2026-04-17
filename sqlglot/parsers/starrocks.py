@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import build_timestamp_trunc
+from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 
@@ -10,6 +10,10 @@ from sqlglot.parsers.mysql import MySQLParser
 class StarRocksParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
+        "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
+        "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": build_timestamp_trunc,
         "DATEDIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")

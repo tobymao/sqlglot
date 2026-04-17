@@ -4435,6 +4435,7 @@ class DuckDBGenerator(generator.Generator):
             return self.function_fallback_sql(expression)
 
         uuid_func = self.func("UUID")
+        # BigQuery's GENERATE_UUID returns VARCHAR, so cast to TEXT when is_string flag is set
         if expression.args.get("is_string"):
             return self.sql(exp.cast(uuid_func, exp.DataType.Type.TEXT))
 

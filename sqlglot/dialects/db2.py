@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, tokens
+from sqlglot import generator, tokens
 from sqlglot.dialects.dialect import Dialect, NormalizationStrategy
 from sqlglot.tokens import TokenType
 

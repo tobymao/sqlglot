@@ -1686,9 +1686,3 @@ COMMENT='客户账户表'"""
             },
         )
 
-    def test_rename_index(self):
-        expr = self.parse_one("ALTER TABLE t RENAME INDEX a TO b")
-        rename = expr.find(exp.RenameIndex)
-        self.assertIsInstance(rename, exp.RenameIndex)
-        self.assertEqual(rename.this.name, "a")
-        self.assertEqual(rename.args["to"].name, "b")

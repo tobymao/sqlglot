@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import generator, tokens
+from sqlglot import tokens
 from sqlglot.dialects.dialect import Dialect, NormalizationStrategy
+from sqlglot.generators.db2 import Db2 as Db2Generator
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -49,9 +50,6 @@ class Db2(Dialect):
             "SYSTOOLS": TokenType.SCHEMA,
         }
 
-    class Generator(generator.Generator):
-        AFTER_HAVING_MODIFIER_TRANSFORMS = {
-            "cluster": lambda self, e: "",
-            "distribute": lambda self, e: "",
-            "sort": lambda self, e: "",
-        }
+    Generator = Db2Generator
+
+# Made with Bob

@@ -51,7 +51,7 @@ class Db2(Dialect):
 
     class Generator(generator.Generator):
         AFTER_HAVING_MODIFIER_TRANSFORMS = {
-            exp.Cluster: lambda self, e: "",
-            exp.Distribute: lambda self, e: "",
-            exp.Sort: lambda self, e: "",
+            "cluster": lambda self, e: "",
+            "distribute": lambda self, e: "",
+            "sort": lambda self, e: "",
         }

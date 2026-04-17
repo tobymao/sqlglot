@@ -497,6 +497,9 @@ class SnowflakeGenerator(generator.Generator):
         exp.GetExtract: rename_func("GET"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
         exp.If: if_sql(name="IFF", false_value="NULL"),
+        exp.JSONArray: lambda self, e: self.func(
+            "TO_VARIANT", self.func("ARRAY_CONSTRUCT", *e.expressions)
+        ),
         exp.JSONExtractArray: _json_extract_value_array_sql,
         exp.JSONExtractScalar: lambda self, e: self.func(
             "JSON_EXTRACT_PATH_TEXT", e.this, e.expression

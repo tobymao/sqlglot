@@ -28,6 +28,8 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a INT UNSIGNED ZEROFILL)")
+        self.validate_identity("CREATE TABLE foo (a INT INVISIBLE)")
+        self.validate_identity("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
@@ -1679,4 +1681,15 @@ COMMENT='客户账户表'"""
                 "oracle": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
                 "snowflake": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
             },
+        )
+
+    def test_invisible_column(self):
+        expr = self.parse_one("CREATE TABLE t (c INT INVISIBLE)")
+        self.assertIsNotNone(
+            expr.find(exp.InvisibleColumnConstraint)
+        )
+
+        expr = self.parse_one("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
+        self.assertIsInstance(
+            expr.find(exp.InvisibleColumnConstraint)
         )

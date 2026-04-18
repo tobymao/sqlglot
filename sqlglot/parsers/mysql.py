@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
         "MODIFY": lambda self: self._parse_alter_table_alter(),
+        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
     }
 
     ALTER_ALTER_PARSERS = {

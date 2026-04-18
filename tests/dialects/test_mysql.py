@@ -34,6 +34,7 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
+        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(
@@ -1694,3 +1695,9 @@ COMMENT='客户账户表'"""
 
         expr = self.parse_one("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
         self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))
+
+    def test_alter_table_auto_increment(self):
+        prop = self.parse_one("ALTER TABLE t AUTO_INCREMENT=3000000000").find(
+            exp.AutoIncrementProperty
+        )
+        self.assertEqual(prop.this.to_py(), 3000000000)

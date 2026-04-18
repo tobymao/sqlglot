@@ -7257,7 +7257,11 @@ class Parser:
         return result
 
     def _parse_unique_key(self) -> exp.Expr | None:
-        if self._curr and self._curr.text.upper() in self.CONSTRAINT_PARSERS:
+        if (
+            self._curr
+            and self._curr.token_type != TokenType.IDENTIFIER
+            and self._curr.text.upper() in self.CONSTRAINT_PARSERS
+        ):
             return None
         return self._parse_id_var(any_token=False)
 

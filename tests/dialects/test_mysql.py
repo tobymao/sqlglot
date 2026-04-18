@@ -142,6 +142,18 @@ class TestMySQL(Validator):
             "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
         )
         self.validate_identity(
+            "CREATE TABLE t (a INT, b INT, UNIQUE KEY `Unique` (a, b))",
+            "CREATE TABLE t (a INT, b INT, UNIQUE `Unique` (a, b))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY `Index` (a))",
+            "CREATE TABLE t (a INT, UNIQUE `Index` (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY `Key` (a))",
+            "CREATE TABLE t (a INT, UNIQUE `Key` (a))",
+        )
+        self.validate_identity(
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
         )

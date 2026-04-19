@@ -79,6 +79,7 @@ class Delete(Expression, DML):
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
         "cluster": False,  # Clickhouse
+        "hint": False,
     }
 
     def delete(
@@ -301,6 +302,7 @@ class Update(Expression, DML):
         "order": False,
         "limit": False,
         "options": False,
+        "hint": False,
     }
 
     def table(

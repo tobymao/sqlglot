@@ -270,14 +270,13 @@ def _json_literal_part(self: ExasolGenerator, value: str) -> exp.Expr:
     return exp.Literal.string(f'"{escaped}"')
 
 
-def _json_literal_key_part(self: ExasolGenerator, value: str) -> exp.Expr:
-    escaped = self.escape_str(value, delimiter='"', escaped_delimiter='\\"')
-    return exp.Literal.string(f'"{escaped}": ')
+def _json_key_part(self: ExasolGenerator, key: exp.Expr) -> exp.Expr:
+    if key.is_string:
+        escaped = self.escape_str(key.name, delimiter='"', escaped_delimiter='\\"')
+        return exp.Literal.string(f'"{escaped}": ')
 
-
-def _json_key_part(key: exp.Expr) -> exp.Expr:
     key_expr: exp.Expr
-    if key.is_string or key.is_type(*exp.DataType.TEXT_TYPES):
+    if key.is_type(*exp.DataType.TEXT_TYPES):
         key_expr = exp.func("COALESCE", key.copy(), exp.Literal.string(""))
     else:
         key_expr = (
@@ -286,12 +285,7 @@ def _json_key_part(key: exp.Expr) -> exp.Expr:
             .else_(exp.DPipe(this=key.copy(), expression=exp.Literal.string("")))
         )
 
-    return exp.func(
-        "CONCAT",
-        exp.Literal.string('"'),
-        key_expr,
-        exp.Literal.string('": '),
-    )
+    return exp.DPipe(this=_json_string_part(key_expr), expression=exp.Literal.string(": "))
 
 
 def _json_string_part(value: exp.Expr) -> exp.Expr:
@@ -1042,16 +1036,8 @@ class ExasolGenerator(generator.Generator):
 
         return sql
 
-    @unsupported_args("null_handling", "return_type", "encoding")
+    @unsupported_args("null_handling", "return_type", "encoding", "unique_keys")
     def jsonobject_sql(self, expression: exp.JSONObject) -> str:
-        if expression.args.get("unique_keys") is not None:
-            self.unsupported(
-                "Argument 'unique_keys' is not supported for expression 'JSONObject' when targeting Exasol."
-            )
-
-        if not expression.expressions:
-            return self.sql(exp.Literal.string("{}"))
-
         parts: list[str | exp.Expr] = [exp.Literal.string("{")]
 
         for i, key_value in enumerate(expression.expressions):
@@ -1062,11 +1048,7 @@ class ExasolGenerator(generator.Generator):
                 self.unsupported("Only JSON key-value pairs are supported for Exasol JSON_OBJECT")
                 return self.function_fallback_sql(expression)
 
-            if key_value.this.is_string:
-                parts.append(_json_literal_key_part(self, key_value.this.name))
-            else:
-                parts.append(_json_key_part(key_value.this))
-
+            parts.append(_json_key_part(self, key_value.this))
             parts.append(_json_value_part(self, key_value.expression))
 
         parts.append(exp.Literal.string("}"))

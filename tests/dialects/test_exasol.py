@@ -899,7 +899,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            """SELECT '{}'""",
+            """SELECT CONCAT('{', '}')""",
             read={
                 "mysql": """SELECT JSON_OBJECT()""",
             },
@@ -911,7 +911,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            r"""SELECT CONCAT('{', '"' || COALESCE(CAST(user_name AS CHAR), '') || '": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            r"""SELECT CONCAT('{', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"' || ': ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
             read={
                 "mysql": """SELECT JSON_OBJECT(CAST(user_name AS CHAR), account_balance) AS jsonData FROM t""",
             },

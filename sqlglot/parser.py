@@ -7601,7 +7601,8 @@ class Parser:
         return self.expression(
             exp.Chr(
                 expressions=self._parse_csv(self._parse_assignment),
-                charset=self._match(TokenType.USING) and self._parse_var(),
+                charset=self._match(TokenType.USING)
+                and self._parse_var(tokens={TokenType.IDENTIFIER}),
             )
         )
 
@@ -7722,7 +7723,9 @@ class Parser:
 
         if self._match(TokenType.USING):
             to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(
-                kind=self._parse_var(tokens={TokenType.BINARY})
+                kind=self._parse_var(
+                    tokens={TokenType.BINARY, TokenType.IDENTIFIER},
+                )
             )
         elif self._match(TokenType.COMMA):
             to = self._parse_types()

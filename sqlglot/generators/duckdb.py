@@ -4429,14 +4429,6 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))
 
+    @unsupported_args("this", "name")
     def uuid_sql(self, expression: exp.Uuid) -> str:
-        if expression.this and expression.args.get("name"):
-            self.unsupported("UUID v5 (named UUIDs) are not supported in DuckDB")
-            return self.function_fallback_sql(expression)
-
-        uuid_func = self.func("UUID")
-        # BigQuery's GENERATE_UUID returns VARCHAR, so cast to TEXT when is_string flag is set
-        if expression.args.get("is_string"):
-            return self.sql(exp.cast(uuid_func, exp.DataType.Type.TEXT))
-
-        return uuid_func
+        return super().uuid_sql(expression)

@@ -31,11 +31,9 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT t1.id FROM t1 LEFT SEMI JOIN t2 ON t1.id = t2.id")
 
     def test_distinct_on(self):
-        self.validate_all(
+        self.validate_identity(
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
-            write={
-                "starrocks": "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
-            },
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
         )
 
     def test_generate_date_array(self):

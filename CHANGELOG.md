@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v30.6.0] - 2026-04-20
+### :boom: BREAKING CHANGES
+- due to [`dcf9ed5`](https://github.com/tobymao/sqlglot/commit/dcf9ed58303bf320f3e3498618bd95639037efde) - compile python generator *(PR [#7528](https://github.com/tobymao/sqlglot/pull/7528) by [@georgesittas](https://github.com/georgesittas))*:
+
+  compile python generator (#7528)
+
+
+### :sparkles: New Features
+- [`dcf9ed5`](https://github.com/tobymao/sqlglot/commit/dcf9ed58303bf320f3e3498618bd95639037efde) - **mypyc**: compile python generator *(PR [#7528](https://github.com/tobymao/sqlglot/pull/7528) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`8e5e255`](https://github.com/tobymao/sqlglot/commit/8e5e2557c7f40c61fcf08d22141a3dd94b3a2ccb) - **postgres**: dotted function calls in create trigger ddls closes [#7527](https://github.com/tobymao/sqlglot/pull/7527) *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`08ea329`](https://github.com/tobymao/sqlglot/commit/08ea3293631ba930d01bbb2b62cca969354f8134) - avoid git submodule errors when publishing API docs *(PR [#7526](https://github.com/tobymao/sqlglot/pull/7526) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.5.0] - 2026-04-20
 ### :boom: BREAKING CHANGES
 - due to [`98ca4cd`](https://github.com/tobymao/sqlglot/commit/98ca4cdd60124c0e566d1de40855b30a169219fd) - transpile TRY_DIVIDE to/from other dialects [CLAUDE] *(PR [#7489](https://github.com/tobymao/sqlglot/pull/7489) by [@baruchoxman](https://github.com/baruchoxman))*:
@@ -14226,3 +14243,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.4.2]: https://github.com/tobymao/sqlglot/compare/v30.4.1...v30.4.2
 [v30.4.3]: https://github.com/tobymao/sqlglot/compare/v30.4.2...v30.4.3
 [v30.5.0]: https://github.com/tobymao/sqlglot/compare/v30.4.3...v30.5.0
+[v30.6.0]: https://github.com/tobymao/sqlglot/compare/v30.5.0...v30.6.0

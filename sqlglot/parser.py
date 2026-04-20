@@ -2688,7 +2688,7 @@ class Parser:
         if not self._match_set((TokenType.FUNCTION, TokenType.PROCEDURE)):
             self.raise_error("Expected FUNCTION or PROCEDURE after EXECUTE")
 
-        func_call = self._parse_function(anonymous=True, optional_parens=False)
+        func_call = self._parse_column()
         return self.expression(exp.TriggerExecute(this=func_call))
 
     def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:

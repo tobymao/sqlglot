@@ -7602,7 +7602,9 @@ class Parser:
             exp.Chr(
                 expressions=self._parse_csv(self._parse_assignment),
                 charset=self._match(TokenType.USING)
-                and self._parse_var(tokens={TokenType.IDENTIFIER}),
+                and self._parse_var(
+                    tokens={TokenType.BINARY, TokenType.IDENTIFIER},
+                ),
             )
         )
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -18,6 +19,13 @@ from sqlglot.tokens import TokenType
 # All specifiers for time parts (as opposed to date parts)
 # https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
 TIME_SPECIFIERS = {"f", "H", "h", "I", "i", "k", "l", "p", "r", "S", "s", "T"}
+
+# Character class for MySQL 8.0 unquoted identifiers.
+# https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+# Use to decide whether a quoted name can safely be
+# emitted unquoted (e.g. normalizing `utf8mb4` → utf8mb4
+# while preserving quotes around names like `my charset`).
+UNQUOTED_IDENTIFIER = re.compile(r"[A-Za-z0-9_$]+")
 
 
 def _has_time_specifier(date_format: str) -> bool:
@@ -485,6 +493,21 @@ class MySQLParser(parser.Parser):
     def _parse_set_item_charset(self, kind: str) -> exp.Expr:
         this = self._parse_string() or self._parse_unquoted_field()
         return self.expression(exp.SetItem(this=this, kind=kind))
+
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """Preserve quoting when a charset name has
+        characters that require it (e.g. spaces, as
+        allowed for custom XML-registered charsets).
+        Safe names unwrap to a bare Var so roundtrips
+        remain minimal.
+        """
+        identifier = self._parse_identifier()
+        if identifier:
+            name = identifier.name
+            if name and UNQUOTED_IDENTIFIER.fullmatch(name):
+                return exp.Var(this=name)
+            return identifier
+        return self._parse_var(tokens={TokenType.BINARY})
 
     def _parse_set_item_names(self) -> exp.Expr:
         charset = self._parse_string() or self._parse_unquoted_field()

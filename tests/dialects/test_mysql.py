@@ -651,6 +651,13 @@ class TestMySQL(Validator):
             "SELECT CONVERT(x USING `binary`)",
             "SELECT CAST(x AS CHAR CHARACTER SET binary)",
         )
+        self.validate_identity(
+            "SELECT CONVERT(x USING `my charset`)",
+            "SELECT CAST(x AS CHAR CHARACTER SET `my charset`)",
+        )
+        self.validate_identity(
+            "SELECT CHAR(65 USING `my charset`)",
+        )
 
     def test_match_against(self):
         self.validate_all(

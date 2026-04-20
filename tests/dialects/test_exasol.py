@@ -893,7 +893,7 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            r"""SELECT CONCAT('{', '"user": ', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"', ', ', '"balance": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            r"""SELECT CONCAT('{', '"user": ', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"', ', ', '"balance": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
             read={
                 "mysql": """SELECT JSON_OBJECT('user', CAST(user_name AS CHAR), 'balance', account_balance) AS jsonData FROM t""",
             },
@@ -911,13 +911,13 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            r"""SELECT CONCAT('{', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"' || ': ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) = 'DATE' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            r"""SELECT CONCAT('{', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"' || ': ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
             read={
                 "mysql": """SELECT JSON_OBJECT(CAST(user_name AS CHAR), account_balance) AS jsonData FROM t""",
             },
         )
         self.validate_all(
-            r"""SELECT CONCAT('{', '"col1": ', CASE WHEN t.col1 IS NULL THEN 'null' WHEN TYPEOF(t.col1) = 'BOOLEAN' THEN LOWER(t.col1 || '') WHEN TYPEOF(t.col1) = 'DATE' THEN '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col1) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col1) LIKE 'DECIMAL%' OR TYPEOF(t.col1) = 'DOUBLE PRECISION' THEN t.col1 || '' ELSE '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' END, ', ', '"col2": ', CASE WHEN t.col2 IS NULL THEN 'null' WHEN TYPEOF(t.col2) = 'BOOLEAN' THEN LOWER(t.col2 || '') WHEN TYPEOF(t.col2) = 'DATE' THEN '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col2) LIKE 'TIMESTAMP%' THEN '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' WHEN TYPEOF(t.col2) LIKE 'DECIMAL%' OR TYPEOF(t.col2) = 'DOUBLE PRECISION' THEN t.col2 || '' ELSE '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' END, '}') FROM x AS t""",
+            r"""SELECT CONCAT('{', '"col1": ', CASE WHEN t.col1 IS NULL THEN 'null' WHEN TYPEOF(t.col1) = 'BOOLEAN' THEN LOWER(t.col1 || '') WHEN TYPEOF(t.col1) LIKE 'DECIMAL%' OR TYPEOF(t.col1) = 'DOUBLE PRECISION' THEN t.col1 || '' ELSE '"' || REPLACE(REPLACE(t.col1 || '', '\', '\\'), '"', '\"') || '"' END, ', ', '"col2": ', CASE WHEN t.col2 IS NULL THEN 'null' WHEN TYPEOF(t.col2) = 'BOOLEAN' THEN LOWER(t.col2 || '') WHEN TYPEOF(t.col2) LIKE 'DECIMAL%' OR TYPEOF(t.col2) = 'DOUBLE PRECISION' THEN t.col2 || '' ELSE '"' || REPLACE(REPLACE(t.col2 || '', '\', '\\'), '"', '\"') || '"' END, '}') FROM x AS t""",
             read={
                 "mysql": """SELECT JSON_OBJECT('col1', t.col1, 'col2', t.col2) FROM x AS t""",
             },

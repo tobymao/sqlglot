@@ -328,14 +328,6 @@ def _json_runtime_value_part(value: exp.Expr) -> exp.Expr:
             exp.func("LOWER", stringified.copy()),
         )
         .when(
-            exp.EQ(this=value_type.copy(), expression=exp.Literal.string("DATE")),
-            quoted.copy(),
-        )
-        .when(
-            exp.Like(this=value_type.copy(), expression=exp.Literal.string("TIMESTAMP%")),
-            quoted.copy(),
-        )
-        .when(
             exp.or_(
                 exp.Like(this=value_type.copy(), expression=exp.Literal.string("DECIMAL%")),
                 exp.EQ(this=value_type.copy(), expression=exp.Literal.string("DOUBLE PRECISION")),

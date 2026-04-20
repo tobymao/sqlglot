@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import typing as t
 
 from sqlglot import exp, generator, transforms
@@ -265,15 +266,32 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _json_literal_part(self: ExasolGenerator, value: str) -> exp.Expr:
-    escaped = self.escape_str(value, delimiter='"', escaped_delimiter='\\"')
-    return exp.Literal.string(f'"{escaped}"')
+_JSON_STRING_ESCAPE_SEQUENCES: tuple[tuple[str, str], ...] = (
+    ("\\", "\\\\"),
+    ('"', '\\"'),
+)
 
 
-def _json_key_part(self: ExasolGenerator, key: exp.Expr) -> exp.Expr:
+def _json_escape_part(value: exp.Expr) -> exp.Expr:
+    escaped = value
+
+    for raw, replacement in _JSON_STRING_ESCAPE_SEQUENCES:
+        escaped = exp.Replace(
+            this=escaped,
+            expression=exp.Literal.string(raw),
+            replacement=exp.Literal.string(replacement),
+        )
+
+    return escaped
+
+
+def _json_literal_part(value: str) -> exp.Expr:
+    return exp.Literal.string(json.dumps(value, ensure_ascii=False))
+
+
+def _json_key_part(key: exp.Expr) -> exp.Expr:
     if key.is_string:
-        escaped = self.escape_str(key.name, delimiter='"', escaped_delimiter='\\"')
-        return exp.Literal.string(f'"{escaped}": ')
+        return exp.Literal.string(f"{json.dumps(key.name, ensure_ascii=False)}: ")
 
     key_expr: exp.Expr
     if key.is_type(*exp.DataType.TEXT_TYPES):
@@ -285,19 +303,16 @@ def _json_key_part(self: ExasolGenerator, key: exp.Expr) -> exp.Expr:
             .else_(exp.DPipe(this=key.copy(), expression=exp.Literal.string("")))
         )
 
-    return exp.DPipe(this=_json_string_part(key_expr), expression=exp.Literal.string(": "))
+    return exp.func(
+        "CONCAT",
+        exp.Literal.string('"'),
+        _json_escape_part(key_expr),
+        exp.Literal.string('": '),
+    )
 
 
 def _json_string_part(value: exp.Expr) -> exp.Expr:
-    escaped = exp.Replace(
-        this=exp.Replace(
-            this=value,
-            expression=exp.Literal.string("\\"),
-            replacement=exp.Literal.string("\\\\"),
-        ),
-        expression=exp.Literal.string('"'),
-        replacement=exp.Literal.string('\\"'),
-    )
+    escaped = _json_escape_part(value)
     return exp.DPipe(
         this=exp.DPipe(this=exp.Literal.string('"'), expression=escaped),
         expression=exp.Literal.string('"'),
@@ -350,7 +365,7 @@ def _json_temporal_format(value: exp.Expr) -> str:
     return "YYYY-MM-DD HH24:MI:SS"
 
 
-def _json_value_part(self: ExasolGenerator, value: exp.Expr) -> exp.Expr:
+def _json_value_part(value: exp.Expr) -> exp.Expr:
     if isinstance(value, exp.Null):
         return exp.Literal.string("null")
 
@@ -361,29 +376,23 @@ def _json_value_part(self: ExasolGenerator, value: exp.Expr) -> exp.Expr:
         return value.copy()
 
     if value.is_string:
-        return _json_literal_part(self, value.name)
+        return _json_literal_part(value.name)
 
     if value.is_type(*exp.DataType.TEXT_TYPES):
         return _json_string_part(exp.func("COALESCE", value.copy(), exp.Literal.string("")))
 
     if isinstance(
         value, (exp.CurrentDate, exp.CurrentTime, exp.CurrentTimestamp, exp.Date, exp.Time)
-    ):
-        return _json_formatted_temporal_part(value, _json_temporal_format(value))
-
-    if value.is_type(*exp.DataType.TEMPORAL_TYPES):
+    ) or value.is_type(*exp.DataType.TEMPORAL_TYPES):
         return _json_formatted_temporal_part(value, _json_temporal_format(value))
 
     if value.is_type(*exp.DataType.NUMERIC_TYPES):
         return exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
 
     if value.is_type(exp.DType.BOOLEAN):
-        return (
-            exp.case()
-            .when(value.copy().is_(exp.null()), exp.Literal.string("null"))
-            .else_(
-                exp.func("LOWER", exp.DPipe(this=value.copy(), expression=exp.Literal.string("")))
-            )
+        return _json_null_safe_part(
+            value,
+            exp.func("LOWER", exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))),
         )
 
     return _json_runtime_value_part(value)
@@ -1040,8 +1049,8 @@ class ExasolGenerator(generator.Generator):
                 self.unsupported("Only JSON key-value pairs are supported for Exasol JSON_OBJECT")
                 return self.function_fallback_sql(expression)
 
-            parts.append(_json_key_part(self, key_value.this))
-            parts.append(_json_value_part(self, key_value.expression))
+            parts.append(_json_key_part(key_value.this))
+            parts.append(_json_value_part(key_value.expression))
 
         parts.append(exp.Literal.string("}"))
         return self.func("CONCAT", *parts)

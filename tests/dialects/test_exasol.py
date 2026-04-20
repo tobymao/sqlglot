@@ -911,7 +911,13 @@ class TestExasol(Validator):
             },
         )
         self.validate_all(
-            r"""SELECT CONCAT('{', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '"' || ': ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
+            r"""SELECT CONCAT('{', '"path": ', '"C:\\tmp\\file.txt"', '}')""",
+            read={
+                "mysql": r"""SELECT JSON_OBJECT('path', 'C:\\tmp\\file.txt')""",
+            },
+        )
+        self.validate_all(
+            r"""SELECT CONCAT('{', '"' || REPLACE(REPLACE(COALESCE(CAST(user_name AS CHAR), ''), '\', '\\'), '"', '\"') || '": ', CASE WHEN account_balance IS NULL THEN 'null' WHEN TYPEOF(account_balance) = 'BOOLEAN' THEN LOWER(account_balance || '') WHEN TYPEOF(account_balance) LIKE 'DECIMAL%' OR TYPEOF(account_balance) = 'DOUBLE PRECISION' THEN account_balance || '' ELSE '"' || REPLACE(REPLACE(account_balance || '', '\', '\\'), '"', '\"') || '"' END, '}') AS jsonData FROM t""",
             read={
                 "mysql": """SELECT JSON_OBJECT(CAST(user_name AS CHAR), account_balance) AS jsonData FROM t""",
             },

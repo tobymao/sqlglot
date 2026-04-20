@@ -100,6 +100,14 @@ class StarRocksGenerator(MySQLGenerator):
         exp.JSONExtract: arrow_json_extract_sql,
         exp.Property: property_sql,
         exp.RegexpLike: rename_func("REGEXP"),
+        # Inherited from MySQL, minus operations StarRocks supports natively
+        # (QUALIFY, FULL OUTER JOIN, SEMI/ANTI JOIN)
+        exp.Select: transforms.preprocess(
+            [
+                transforms.eliminate_distinct_on,
+                transforms.unnest_generate_date_array_using_recursive_cte,
+            ]
+        ),
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
         exp.StDistance: st_distance_sphere,

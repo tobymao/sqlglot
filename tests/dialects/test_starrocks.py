@@ -27,6 +27,21 @@ class TestStarrocks(Validator):
 
         self.validate_identity("CURRENT_VERSION()")
 
+        self.validate_identity("SELECT t1.id FROM t1 LEFT ANTI JOIN t2 ON t1.id = t2.id")
+        self.validate_identity("SELECT t1.id FROM t1 LEFT SEMI JOIN t2 ON t1.id = t2.id")
+
+    def test_distinct_on(self):
+        self.validate_identity(
+            "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+        )
+
+    def test_generate_date_array(self):
+        self.validate_identity(
+            "SELECT * FROM UNNEST(GENERATE_DATE_ARRAY(DATE '2020-01-01', DATE '2020-02-01', INTERVAL 1 WEEK)) AS _q(date_week)",
+            "WITH RECURSIVE _generated_dates(date_week) AS (SELECT CAST('2020-01-01' AS DATE) AS date_week UNION ALL SELECT CAST(DATE_ADD(date_week, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_week, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_week FROM _generated_dates) AS _generated_dates",
+        )
+
     def test_ddl(self):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

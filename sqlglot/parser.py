@@ -3580,6 +3580,8 @@ class Parser:
         return self._parse_as_command(self._prev)
 
     def _parse_delete(self) -> exp.Delete:
+        hint = self._parse_hint()
+
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
@@ -3590,6 +3592,7 @@ class Parser:
 
         return self.expression(
             exp.Delete(
+                hint=hint,
                 tables=tables,
                 this=self._match(TokenType.FROM) and self._parse_table(joins=True),
                 using=self._match(TokenType.USING)
@@ -3603,7 +3606,9 @@ class Parser:
         )
 
     def _parse_update(self) -> exp.Update:
+        hint = self._parse_hint()
         kwargs: dict[str, object] = {
+            "hint": hint,
             "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
         }
         while self._curr:

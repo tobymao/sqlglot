@@ -1685,6 +1685,7 @@ class Generator:
         return f"{local}DIRECTORY {self.sql(expression, 'this')}{row_format}"
 
     def delete_sql(self, expression: exp.Delete) -> str:
+        hint = self.sql(expression, "hint")
         this = self.sql(expression, "this")
         this = f" FROM {this}" if this else ""
         using = self.expressions(expression, key="using")
@@ -1701,7 +1702,7 @@ class Generator:
             expression_sql = f"{this}{using}{cluster}{where}{returning}{order}{limit}"
         else:
             expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
-        return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
+        return self.prepend_ctes(expression, f"DELETE{hint}{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
@@ -2467,6 +2468,7 @@ class Generator:
         return (join_sql, "")
 
     def update_sql(self, expression: exp.Update) -> str:
+        hint = self.sql(expression, "hint")
         this = self.sql(expression, "this")
         join_sql, from_sql = self._update_from_joins_sql(expression)
         set_sql = self.expressions(expression, flat=True)
@@ -2480,7 +2482,7 @@ class Generator:
             expression_sql = f"{returning}{from_sql}{where_sql}"
         options = self.expressions(expression, key="options")
         options = f" OPTION({options})" if options else ""
-        sql = f"UPDATE {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
+        sql = f"UPDATE{hint} {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:

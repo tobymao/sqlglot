@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -19,13 +18,6 @@ from sqlglot.tokens import TokenType
 # All specifiers for time parts (as opposed to date parts)
 # https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
 TIME_SPECIFIERS = {"f", "H", "h", "I", "i", "k", "l", "p", "r", "S", "s", "T"}
-
-# Character class for MySQL 8.0 unquoted identifiers.
-# https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
-# Use to decide whether a quoted name can safely be
-# emitted unquoted (e.g. normalizing `utf8mb4` → utf8mb4
-# while preserving quotes around names like `my charset`).
-UNQUOTED_IDENTIFIER = re.compile(r"[A-Za-z0-9_$]+")
 
 
 def _has_time_specifier(date_format: str) -> bool:
@@ -504,7 +496,7 @@ class MySQLParser(parser.Parser):
         identifier = self._parse_identifier()
         if identifier:
             name = identifier.name
-            if name and UNQUOTED_IDENTIFIER.fullmatch(name):
+            if name and exp.SAFE_IDENTIFIER_RE.match(name):
                 return exp.Var(this=name)
             return identifier
         return self._parse_var(tokens={TokenType.BINARY})

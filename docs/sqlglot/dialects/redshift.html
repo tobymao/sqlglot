@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="pdoc 16.0.0"/>
+    <title>sqlglot.dialects.redshift API documentation</title>
+
+    <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
+    <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
+    <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;z-index:999;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent; z-index:1}nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{cursor:pointer;display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:.75rem center;margin-bottom:1rem;}.pdoc .alert > em{display:none;}.pdoc .alert > *:last-child{margin-bottom:0;}.pdoc .alert.note{color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .alert.tip{color:#0a3622;background-color:#d1e7dd;border-color:#a3cfbb;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%230a3622%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%206a6%206%200%201%201%2010.174%204.31c-.203.196-.359.4-.453.619l-.762%201.769A.5.5%200%200%201%2010.5%2013a.5.5%200%200%201%200%201%20.5.5%200%200%201%200%201l-.224.447a1%201%200%200%201-.894.553H6.618a1%201%200%200%201-.894-.553L5.5%2015a.5.5%200%200%201%200-1%20.5.5%200%200%201%200-1%20.5.5%200%200%201-.46-.302l-.761-1.77a2%202%200%200%200-.453-.618A5.98%205.98%200%200%201%202%206m6-5a5%205%200%200%200-3.479%208.592c.263.254.514.564.676.941L5.83%2012h4.342l.632-1.467c.162-.377.413-.687.676-.941A5%205%200%200%200%208%201%22/%3E%3C/svg%3E");}.pdoc .alert.important{color:#055160;background-color:#cff4fc;border-color:#9eeaf9;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23055160%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%200a2%202%200%200%200-2%202v12a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V2a2%202%200%200%200-2-2zm6%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .alert.caution{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M11.46.146A.5.5%200%200%200%2011.107%200H4.893a.5.5%200%200%200-.353.146L.146%204.54A.5.5%200%200%200%200%204.893v6.214a.5.5%200%200%200%20.146.353l4.394%204.394a.5.5%200%200%200%20.353.146h6.214a.5.5%200%200%200%20.353-.146l4.394-4.394a.5.5%200%200%200%20.146-.353V4.893a.5.5%200%200%200-.146-.353zM8%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--accent);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .decorator-deprecated{color:#842029;}.pdoc .decorator-deprecated ~ span{filter:grayscale(1) opacity(0.8);}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .view-value-toggle-state,.pdoc .view-value-toggle-state ~ .default_value{display:none;}.pdoc .view-value-toggle-state:checked ~ .default_value{display:inherit;}.pdoc .view-value-button{font-size:.5rem;vertical-align:middle;border-style:dashed;margin-top:-0.1rem;}.pdoc .view-value-button:hover{background:white;}.pdoc .view-value-button::before{content:"show";text-align:center;width:2.2em;display:inline-block;}.pdoc .view-value-toggle-state:checked ~ .view-value-button::before{content:"hide";}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:27px;vertical-align:bottom;width:50px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! custom.css */</style></head>
+<body>
+    <nav class="pdoc">
+        <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
+        <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
+        <div>            <a class="pdoc-button module-list-button" href="../dialects.html">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
+  <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
+</svg>                &nbsp;sqlglot.dialects</a>
+
+
+            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+                   pattern=".+" required>
+
+
+
+            <h2>API Documentation</h2>
+                <ul class="memberlist">
+            <li>
+                    <a class="class" href="#Redshift">Redshift</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#Redshift.NORMALIZATION_STRATEGY">NORMALIZATION_STRATEGY</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.EXPRESSION_METADATA">EXPRESSION_METADATA</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INDEX_OFFSET">INDEX_OFFSET</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.COPY_PARAMS_ARE_CSV">COPY_PARAMS_ARE_CSV</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.HEX_LOWERCASE">HEX_LOWERCASE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.HAS_DISTINCT_ARRAY_CONSTRUCTORS">HAS_DISTINCT_ARRAY_CONSTRUCTORS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.COALESCE_COMPARISON_NON_STANDARD">COALESCE_COMPARISON_NON_STANDARD</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL">REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.ARRAY_FUNCS_PROPAGATES_NULLS">ARRAY_FUNCS_PROPAGATES_NULLS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.TIME_FORMAT">TIME_FORMAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.TIME_MAPPING">TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.Parser">Parser</a>
+                        </li>
+                        <li>
+                                <a class="class" href="#Redshift.Tokenizer">Redshift.Tokenizer</a>
+                                        <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.BIT_STRINGS">BIT_STRINGS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.HEX_STRINGS">HEX_STRINGS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.KEYWORDS">KEYWORDS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.SINGLE_TOKENS">SINGLE_TOKENS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Redshift.Tokenizer.BYTE_STRING_ESCAPES">BYTE_STRING_ESCAPES</a>
+                                    </li>
+                            </ul>
+
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.Generator">Generator</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.SUPPORTS_COLUMN_JOIN_MARKS">SUPPORTS_COLUMN_JOIN_MARKS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.UNESCAPED_SEQUENCES">UNESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.STRINGS_SUPPORT_ESCAPED_SEQUENCES">STRINGS_SUPPORT_ESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES">BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INITCAP_SUPPORTS_CUSTOM_DELIMITERS">INITCAP_SUPPORTS_CUSTOM_DELIMITERS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.jsonpath_tokenizer_class">jsonpath_tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INVERSE_FORMAT_MAPPING">INVERSE_FORMAT_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INVERSE_FORMAT_TRIE">INVERSE_FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.INVERSE_CREATABLE_KIND_MAPPING">INVERSE_CREATABLE_KIND_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.ESCAPED_SEQUENCES">ESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.VALID_INTERVAL_UNITS">VALID_INTERVAL_UNITS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.UNICODE_START">UNICODE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redshift.UNICODE_END">UNICODE_END</a>
+                        </li>
+                </ul>
+
+            </li>
+    </ul>
+
+
+            <footer>Copyright (c) 2023 Toby Mao</footer>
+
+        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
+            built with <span class="visually-hidden">pdoc</span><img
+                alt="pdoc logo"
+                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22pdoc%20logo%22%20width%3D%22300%22%20height%3D%22160%22%20viewBox%3D%220%200%20150%2080%22%3E%3Ctitle%3Epdoc%3C/title%3E%3Cpath%20d%3D%22M132.316%2048.886c.276-4.679%202.342-6.698%204.409-7.982s4.27-1.165%206.751-1.055c1.586.07%203.044.156%204.222-.482%201.142-.619%202.026-1.932%202.162-3.739.268-3.576-1.929-5.368-5.006-5.551s-7.599.524-10.517%201.606c-4.455%201.652-8.588%206.606-9.552%208.992s-2.342%206.193-1.745%2010.873%202.664%209.221%205.878%2011.79%205.878%203.808%2010.103%204.312%203.444.229%206.062.229%205.006-2.202%204.914-4.909-2.296-5.001-4.501-4.863-3.077.505-5.281.229-7.715-2.064-7.899-9.451z%22%20fill%3D%22%23198754%22/%3E%3Ccircle%20cx%3D%22101.504%22%20cy%3D%2248.943%22%20r%3D%2214.208%22%20fill%3D%22none%22%20stroke%3D%22%23198754%22%20stroke-width%3D%229.354%22/%3E%3Cpath%20d%3D%22M87.81.002c-3.637.065-5.001.454-7.014%201.232s-3.443%201.363-6.3%204.282c-1.723%201.76-3.148%205.019-3.776%207.329-.413%201.521-.316%202.63-.316%202.63l-.195%2034.612c.065%205.774-6.755%208.305-9.612%208.37s-9.678-1.038-9.743-9.408%207.128-9.521%208.362-9.521c1.413-.13%202.526-.021%203.718-.016%202.071.009%204.157-.778%204.092-4.671s-4.157-4.736-4.157-4.736c-6.3-.843-11.43%202.206-11.43%202.206S40.917%2038.15%2041.372%2049.634%2051.568%2068.19%2061.311%2068.125s18.316-7.007%2018.445-17.193l.13-22.772c.046-2.291%202.683-3.644%204.476-4.203.745-.232%201.694-.274%201.694-.274l10.457-.13s4.871-.324%207.729-3.114%204.352-6.294%204.352-6.294.974-3.049.13-4.606-.195-1.233-2.792-3.309-8.573-4.477-8.573-4.477S91.447-.063%2087.81.002zM0%2047.169l.065%2028.417S0%2080.127%204.481%2079.997s5.072-3.866%205.049-4.152l-.113-28.482s1.624-7.656%209.937-7.721%2010.002%206.942%2010.002%208.499-.909%2010.51-9.093%2010.51c-.948%200-2.99-.567-4.145-.272-3.919%201-3.194%204.554-3.194%204.554s.065%205.061%207.404%204.996%2018.575-6.034%2018.575-19.074S26.953%2030.04%2019.549%2029.91%201.234%2035.296%200%2047.169z%22%20fill%3D%22%23198754%22/%3E%3Cg%20transform%3D%22matrix%28.325601%200%200%20.325256%20-10.32669%20-45.802786%29%22%3E%3Ccircle%20cx%3D%22297.554%22%20cy%3D%22172.286%22%20r%3D%2216.5%22%20fill%3D%22%23fff%22/%3E%3Cellipse%20cx%3D%22297.709%22%20cy%3D%22172.642%22%20rx%3D%2211.071%22%20ry%3D%2210.871%22%20fill%3D%22%23105a48%22/%3E%3Ccircle%20cx%3D%22304.104%22%20cy%3D%22167.667%22%20r%3D%224.5%22%20fill%3D%22%23fff%22/%3E%3C/g%3E%3Cpath%20d%3D%22M94.661%2017.032l.893-1.476s.99.714%201.916.925%201.575.114%202.955.114l14.565-.162c1.283-.032%203.085-.762%203.02-3.293s-.373-3.503-.373-3.503l1.283-.487s.52.503.877%201.573.309%201.995.292%202.66-.227%201.541-.227%201.541%201.564-.308%202.359-1.038.823-.779%201.489-1.508.812-.86.812-.86.552-.13.877.26.341.957.065%201.46-1.672%202.206-3.247%203.066-2.76%201.427-3.929%201.768-3.848.73-7.063.714l-10.944-.114s-2.143-.081-3.02-.373-2.241-.973-2.598-1.265z%22%20fill%3D%22%23d36d49%22/%3E%3Cg%20fill%3D%22%23105a48%22%3E%3Cellipse%20cx%3D%2293.052%22%20cy%3D%2243.567%22%20rx%3D%22.869%22%20ry%3D%221.014%22%20transform%3D%22rotate%28341.022%29%22/%3E%3Cellipse%20cx%3D%22104.3%22%20cy%3D%22-16.184%22%20rx%3D%22.865%22%20ry%3D%221.009%22%20transform%3D%22rotate%2814.786%29%22/%3E%3C/g%3E%3C/svg%3E"/>
+        </a>
+</div>
+    </nav>
+    <main class="pdoc">
+            <section class="module-info">
+                        <a class="pdoc-button git-button" href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects/redshift.py">Edit on GitHub</a>
+                    <h1 class="modulename">
+<a href="./../../sqlglot.html">sqlglot</a><wbr>.<a href="./../dialects.html">dialects</a><wbr>.redshift    </h1>
+
+                
+                        <input id="mod-redshift-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+
+                        <label class="view-source-button" for="mod-redshift-view-source"><span>View Source</span></label>
+
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.typing.redshift</span><span class="w"> </span><span class="kn">import</span> <span class="n">EXPRESSION_METADATA</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.dialect</span><span class="w"> </span><span class="kn">import</span> <span class="n">NormalizationStrategy</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.dialects.postgres</span><span class="w"> </span><span class="kn">import</span> <span class="n">Postgres</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.generators.redshift</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedshiftGenerator</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.parsers.redshift</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedshiftParser</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlglot.tokens</span><span class="w"> </span><span class="kn">import</span> <span class="n">TokenType</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Redshift</span><span class="p">(</span><span class="n">Postgres</span><span class="p">):</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="c1"># https://docs.aws.amazon.com/redshift/latest/dg/r_names.html</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">NORMALIZATION_STRATEGY</span> <span class="o">=</span> <span class="n">NormalizationStrategy</span><span class="o">.</span><span class="n">CASE_INSENSITIVE</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="n">EXPRESSION_METADATA</span> <span class="o">=</span> <span class="n">EXPRESSION_METADATA</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="n">INDEX_OFFSET</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="n">COPY_PARAMS_ARE_CSV</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="n">HEX_LOWERCASE</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="n">HAS_DISTINCT_ARRAY_CONSTRUCTORS</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="n">COALESCE_COMPARISON_NON_STANDARD</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="n">REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="n">ARRAY_FUNCS_PROPAGATES_NULLS</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="c1"># ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;YYYY-MM-DD HH24:MI:SS&#39;&quot;</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">Postgres</span><span class="o">.</span><span class="n">TIME_MAPPING</span><span class="p">,</span> <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span> <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span> <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">}</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>    <span class="n">Parser</span> <span class="o">=</span> <span class="n">RedshiftParser</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="n">BIT_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>            <span class="o">**</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="s2">&quot;(+)&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">JOIN_MARKER</span><span class="p">,</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="s2">&quot;HLLSKETCH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">HLLSKETCH</span><span class="p">,</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="s2">&quot;MINUS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>            <span class="s2">&quot;SUPER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SUPER</span><span class="p">,</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>            <span class="s2">&quot;TOP&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TOP</span><span class="p">,</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="s2">&quot;UNLOAD&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>            <span class="s2">&quot;VARBYTE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>            <span class="s2">&quot;BINARY VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="p">}</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="n">KEYWORDS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;VALUES&quot;</span><span class="p">)</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="c1"># Redshift allows # to appear as a table identifier prefix</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>        <span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>    <span class="n">Generator</span> <span class="o">=</span> <span class="n">RedshiftGenerator</span>
+</span></pre></div>
+
+
+            </section>
+                <section id="Redshift">
+                            <input id="Redshift-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Redshift</span><wbr>(<span class="base"><a href="postgres.html#Postgres">sqlglot.dialects.postgres.Postgres</a></span>):
+
+                <label class="view-source-button" for="Redshift-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Redshift"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Redshift-12"><a href="#Redshift-12"><span class="linenos">12</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Redshift</span><span class="p">(</span><span class="n">Postgres</span><span class="p">):</span>
+</span><span id="Redshift-13"><a href="#Redshift-13"><span class="linenos">13</span></a>    <span class="c1"># https://docs.aws.amazon.com/redshift/latest/dg/r_names.html</span>
+</span><span id="Redshift-14"><a href="#Redshift-14"><span class="linenos">14</span></a>    <span class="n">NORMALIZATION_STRATEGY</span> <span class="o">=</span> <span class="n">NormalizationStrategy</span><span class="o">.</span><span class="n">CASE_INSENSITIVE</span>
+</span><span id="Redshift-15"><a href="#Redshift-15"><span class="linenos">15</span></a>
+</span><span id="Redshift-16"><a href="#Redshift-16"><span class="linenos">16</span></a>    <span class="n">EXPRESSION_METADATA</span> <span class="o">=</span> <span class="n">EXPRESSION_METADATA</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="Redshift-17"><a href="#Redshift-17"><span class="linenos">17</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Redshift-18"><a href="#Redshift-18"><span class="linenos">18</span></a>    <span class="n">INDEX_OFFSET</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="Redshift-19"><a href="#Redshift-19"><span class="linenos">19</span></a>    <span class="n">COPY_PARAMS_ARE_CSV</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Redshift-20"><a href="#Redshift-20"><span class="linenos">20</span></a>    <span class="n">HEX_LOWERCASE</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Redshift-21"><a href="#Redshift-21"><span class="linenos">21</span></a>    <span class="n">HAS_DISTINCT_ARRAY_CONSTRUCTORS</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Redshift-22"><a href="#Redshift-22"><span class="linenos">22</span></a>    <span class="n">COALESCE_COMPARISON_NON_STANDARD</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Redshift-23"><a href="#Redshift-23"><span class="linenos">23</span></a>    <span class="n">REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Redshift-24"><a href="#Redshift-24"><span class="linenos">24</span></a>    <span class="n">ARRAY_FUNCS_PROPAGATES_NULLS</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Redshift-25"><a href="#Redshift-25"><span class="linenos">25</span></a>
+</span><span id="Redshift-26"><a href="#Redshift-26"><span class="linenos">26</span></a>    <span class="c1"># ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html</span>
+</span><span id="Redshift-27"><a href="#Redshift-27"><span class="linenos">27</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;YYYY-MM-DD HH24:MI:SS&#39;&quot;</span>
+</span><span id="Redshift-28"><a href="#Redshift-28"><span class="linenos">28</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">Postgres</span><span class="o">.</span><span class="n">TIME_MAPPING</span><span class="p">,</span> <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span> <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span> <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">}</span>
+</span><span id="Redshift-29"><a href="#Redshift-29"><span class="linenos">29</span></a>
+</span><span id="Redshift-30"><a href="#Redshift-30"><span class="linenos">30</span></a>    <span class="n">Parser</span> <span class="o">=</span> <span class="n">RedshiftParser</span>
+</span><span id="Redshift-31"><a href="#Redshift-31"><span class="linenos">31</span></a>
+</span><span id="Redshift-32"><a href="#Redshift-32"><span class="linenos">32</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Redshift-33"><a href="#Redshift-33"><span class="linenos">33</span></a>        <span class="n">BIT_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Redshift-34"><a href="#Redshift-34"><span class="linenos">34</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Redshift-35"><a href="#Redshift-35"><span class="linenos">35</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="Redshift-36"><a href="#Redshift-36"><span class="linenos">36</span></a>
+</span><span id="Redshift-37"><a href="#Redshift-37"><span class="linenos">37</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Redshift-38"><a href="#Redshift-38"><span class="linenos">38</span></a>            <span class="o">**</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="Redshift-39"><a href="#Redshift-39"><span class="linenos">39</span></a>            <span class="s2">&quot;(+)&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">JOIN_MARKER</span><span class="p">,</span>
+</span><span id="Redshift-40"><a href="#Redshift-40"><span class="linenos">40</span></a>            <span class="s2">&quot;HLLSKETCH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">HLLSKETCH</span><span class="p">,</span>
+</span><span id="Redshift-41"><a href="#Redshift-41"><span class="linenos">41</span></a>            <span class="s2">&quot;MINUS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="Redshift-42"><a href="#Redshift-42"><span class="linenos">42</span></a>            <span class="s2">&quot;SUPER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SUPER</span><span class="p">,</span>
+</span><span id="Redshift-43"><a href="#Redshift-43"><span class="linenos">43</span></a>            <span class="s2">&quot;TOP&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TOP</span><span class="p">,</span>
+</span><span id="Redshift-44"><a href="#Redshift-44"><span class="linenos">44</span></a>            <span class="s2">&quot;UNLOAD&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Redshift-45"><a href="#Redshift-45"><span class="linenos">45</span></a>            <span class="s2">&quot;VARBYTE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="Redshift-46"><a href="#Redshift-46"><span class="linenos">46</span></a>            <span class="s2">&quot;BINARY VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="Redshift-47"><a href="#Redshift-47"><span class="linenos">47</span></a>        <span class="p">}</span>
+</span><span id="Redshift-48"><a href="#Redshift-48"><span class="linenos">48</span></a>        <span class="n">KEYWORDS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;VALUES&quot;</span><span class="p">)</span>
+</span><span id="Redshift-49"><a href="#Redshift-49"><span class="linenos">49</span></a>
+</span><span id="Redshift-50"><a href="#Redshift-50"><span class="linenos">50</span></a>        <span class="c1"># Redshift allows # to appear as a table identifier prefix</span>
+</span><span id="Redshift-51"><a href="#Redshift-51"><span class="linenos">51</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="Redshift-52"><a href="#Redshift-52"><span class="linenos">52</span></a>        <span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+</span><span id="Redshift-53"><a href="#Redshift-53"><span class="linenos">53</span></a>
+</span><span id="Redshift-54"><a href="#Redshift-54"><span class="linenos">54</span></a>    <span class="n">Generator</span> <span class="o">=</span> <span class="n">RedshiftGenerator</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Redshift.NORMALIZATION_STRATEGY" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NORMALIZATION_STRATEGY</span>        =
+<span class="default_value">&lt;NormalizationStrategy.CASE_INSENSITIVE: &#39;CASE_INSENSITIVE&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.NORMALIZATION_STRATEGY"></a>
+    
+            <div class="docstring"><p>Specifies the strategy according to which identifiers should be normalized.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.EXPRESSION_METADATA" class="classattr">
+                                <div class="attr variable">
+            <span class="name">EXPRESSION_METADATA</span>        =
+<input id="Redshift.EXPRESSION_METADATA-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.EXPRESSION_METADATA-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions/core.html#Add">sqlglot.expressions.core.Add</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Adjacent">sqlglot.expressions.core.Adjacent</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#And">sqlglot.expressions.core.And</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayContains">sqlglot.expressions.array.ArrayContains</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayContainsAll">sqlglot.expressions.array.ArrayContainsAll</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayOverlaps">sqlglot.expressions.array.ArrayOverlaps</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayPosition">sqlglot.expressions.array.ArrayPosition</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Binary">sqlglot.expressions.core.Binary</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseAnd">sqlglot.expressions.core.BitwiseAnd</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseLeftShift">sqlglot.expressions.core.BitwiseLeftShift</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseOr">sqlglot.expressions.core.BitwiseOr</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseRightShift">sqlglot.expressions.core.BitwiseRightShift</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseXor">sqlglot.expressions.core.BitwiseXor</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Collate">sqlglot.expressions.functions.Collate</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Connector">sqlglot.expressions.core.Connector</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Corr">sqlglot.expressions.aggregate.Corr</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#DPipe">sqlglot.expressions.core.DPipe</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Distance">sqlglot.expressions.core.Distance</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Div">sqlglot.expressions.core.Div</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Dot">sqlglot.expressions.core.Dot</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#EQ">sqlglot.expressions.core.EQ</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Escape">sqlglot.expressions.core.Escape</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#ExtendsLeft">sqlglot.expressions.core.ExtendsLeft</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#ExtendsRight">sqlglot.expressions.core.ExtendsRight</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#GT">sqlglot.expressions.core.GT</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#GTE">sqlglot.expressions.core.GTE</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Glob">sqlglot.expressions.core.Glob</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#ILike">sqlglot.expressions.core.ILike</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#IntDiv">sqlglot.expressions.core.IntDiv</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Is">sqlglot.expressions.core.Is</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONArrayContains">sqlglot.expressions.json.JSONArrayContains</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBContains">sqlglot.expressions.json.JSONBContains</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBContainsAllTopKeys">sqlglot.expressions.json.JSONBContainsAllTopKeys</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBContainsAnyTopKeys">sqlglot.expressions.json.JSONBContainsAnyTopKeys</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBDeleteAtPath">sqlglot.expressions.json.JSONBDeleteAtPath</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBExtract">sqlglot.expressions.json.JSONBExtract</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONBExtractScalar">sqlglot.expressions.json.JSONBExtractScalar</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONExtract">sqlglot.expressions.json.JSONExtract</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/json.html#JSONExtractScalar">sqlglot.expressions.json.JSONExtractScalar</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Kwarg">sqlglot.expressions.core.Kwarg</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#LT">sqlglot.expressions.core.LT</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#LTE">sqlglot.expressions.core.LTE</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Like">sqlglot.expressions.core.Like</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Match">sqlglot.expressions.core.Match</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Mod">sqlglot.expressions.core.Mod</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Mul">sqlglot.expressions.core.Mul</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#NEQ">sqlglot.expressions.core.NEQ</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#NestedJSONSelect">sqlglot.expressions.core.NestedJSONSelect</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#NullSafeEQ">sqlglot.expressions.core.NullSafeEQ</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#NullSafeNEQ">sqlglot.expressions.core.NullSafeNEQ</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Operator">sqlglot.expressions.core.Operator</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Or">sqlglot.expressions.core.Or</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Overlaps">sqlglot.expressions.core.Overlaps</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Pow">sqlglot.expressions.core.Pow</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#PropertyEQ">sqlglot.expressions.core.PropertyEQ</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/string.html#RegexpFullMatch">sqlglot.expressions.string.RegexpFullMatch</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/string.html#RegexpILike">sqlglot.expressions.string.RegexpILike</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#RegexpLike">sqlglot.expressions.core.RegexpLike</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#SimilarTo">sqlglot.expressions.core.SimilarTo</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Sub">sqlglot.expressions.core.Sub</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Xor">sqlglot.expressions.core.Xor</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Alias">sqlglot.expressions.core.Alias</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#BitwiseNot">sqlglot.expressions.core.BitwiseNot</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Neg">sqlglot.expressions.core.Neg</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Not">sqlglot.expressions.core.Not</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Paren">sqlglot.expressions.core.Paren</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#PivotAlias">sqlglot.expressions.core.PivotAlias</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Unary">sqlglot.expressions.core.Unary</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#CountIf">sqlglot.expressions.aggregate.CountIf</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixSeconds">sqlglot.expressions.temporal.UnixSeconds</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArraySize">sqlglot.expressions.array.ArraySize</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Int64">sqlglot.expressions.functions.Int64</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixMillis">sqlglot.expressions.temporal.UnixMillis</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixMicros">sqlglot.expressions.temporal.UnixMicros</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#ApproxDistinct">sqlglot.expressions.core.ApproxDistinct</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BIGINT: &#39;BIGINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#FromBase64">sqlglot.expressions.string.FromBase64</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BINARY: &#39;BINARY&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#FromBase32">sqlglot.expressions.string.FromBase32</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BINARY: &#39;BINARY&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#IsInf">sqlglot.expressions.math.IsInf</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#LogicalOr">sqlglot.expressions.aggregate.LogicalOr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Between">sqlglot.expressions.core.Between</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Any">sqlglot.expressions.core.Any</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#LogicalAnd">sqlglot.expressions.aggregate.LogicalAnd</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#All">sqlglot.expressions.core.All</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#EndsWith">sqlglot.expressions.string.EndsWith</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Contains">sqlglot.expressions.string.Contains</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Exists">sqlglot.expressions.functions.Exists</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#IsNan">sqlglot.expressions.math.IsNan</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#In">sqlglot.expressions.core.In</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#StartsWith">sqlglot.expressions.string.StartsWith</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Boolean">sqlglot.expressions.core.Boolean</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.BOOLEAN: &#39;BOOLEAN&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateStrToDate">sqlglot.expressions.temporal.DateStrToDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#CurrentDate">sqlglot.expressions.temporal.CurrentDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#LastDay">sqlglot.expressions.temporal.LastDay</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateFromParts">sqlglot.expressions.temporal.DateFromParts</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeStrToDate">sqlglot.expressions.temporal.TimeStrToDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Date">sqlglot.expressions.temporal.Date</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TsOrDsToDate">sqlglot.expressions.temporal.TsOrDsToDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DiToDate">sqlglot.expressions.temporal.DiToDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#StrToDate">sqlglot.expressions.temporal.StrToDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATE: &#39;DATE&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DatetimeAdd">sqlglot.expressions.temporal.DatetimeAdd</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATETIME: &#39;DATETIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DatetimeSub">sqlglot.expressions.temporal.DatetimeSub</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATETIME: &#39;DATETIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#CurrentDatetime">sqlglot.expressions.temporal.CurrentDatetime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATETIME: &#39;DATETIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Datetime">sqlglot.expressions.temporal.Datetime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DATETIME: &#39;DATETIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Tanh">sqlglot.expressions.math.Tanh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#VariancePop">sqlglot.expressions.aggregate.VariancePop</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Exp">sqlglot.expressions.math.Exp</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Rand">sqlglot.expressions.functions.Rand</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Pi">sqlglot.expressions.math.Pi</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Sinh">sqlglot.expressions.math.Sinh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Cbrt">sqlglot.expressions.math.Cbrt</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Ln">sqlglot.expressions.math.Ln</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Cos">sqlglot.expressions.math.Cos</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#StddevPop">sqlglot.expressions.aggregate.StddevPop</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#ToDouble">sqlglot.expressions.string.ToDouble</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Quantile">sqlglot.expressions.aggregate.Quantile</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Radians">sqlglot.expressions.math.Radians</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Atanh">sqlglot.expressions.math.Atanh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Skewness">sqlglot.expressions.aggregate.Skewness</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Avg">sqlglot.expressions.aggregate.Avg</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Asinh">sqlglot.expressions.math.Asinh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Cosh">sqlglot.expressions.math.Cosh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Acosh">sqlglot.expressions.math.Acosh</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Sqrt">sqlglot.expressions.math.Sqrt</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#SafeDivide">sqlglot.expressions.math.SafeDivide</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Round">sqlglot.expressions.math.Round</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Tan">sqlglot.expressions.math.Tan</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Kurtosis">sqlglot.expressions.aggregate.Kurtosis</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Variance">sqlglot.expressions.aggregate.Variance</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Log">sqlglot.expressions.math.Log</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Sin">sqlglot.expressions.math.Sin</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#StddevSamp">sqlglot.expressions.aggregate.StddevSamp</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#ApproxQuantile">sqlglot.expressions.aggregate.ApproxQuantile</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Stddev">sqlglot.expressions.aggregate.Stddev</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Degrees">sqlglot.expressions.math.Degrees</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Atan">sqlglot.expressions.math.Atan</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Cot">sqlglot.expressions.math.Cot</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Asin">sqlglot.expressions.math.Asin</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Acos">sqlglot.expressions.math.Acos</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.DOUBLE: &#39;DOUBLE&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Sign">sqlglot.expressions.math.Sign</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#BitLength">sqlglot.expressions.string.BitLength</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DayOfMonth">sqlglot.expressions.temporal.DayOfMonth</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#StrPosition">sqlglot.expressions.string.StrPosition</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateToDi">sqlglot.expressions.temporal.DateToDi</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Length">sqlglot.expressions.string.Length</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Quarter">sqlglot.expressions.temporal.Quarter</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Getbit">sqlglot.expressions.math.Getbit</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixDate">sqlglot.expressions.temporal.UnixDate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Hour">sqlglot.expressions.temporal.Hour</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Ceil">sqlglot.expressions.math.Ceil</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DayOfYear">sqlglot.expressions.temporal.DayOfYear</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TsOrDiToDi">sqlglot.expressions.temporal.TsOrDiToDi</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DayOfWeek">sqlglot.expressions.temporal.DayOfWeek</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Ascii">sqlglot.expressions.string.Ascii</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Levenshtein">sqlglot.expressions.string.Levenshtein</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeDiff">sqlglot.expressions.temporal.TimeDiff</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimestampDiff">sqlglot.expressions.temporal.TimestampDiff</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DatetimeDiff">sqlglot.expressions.temporal.DatetimeDiff</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Unicode">sqlglot.expressions.string.Unicode</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INT: &#39;INT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#JustifyInterval">sqlglot.expressions.temporal.JustifyInterval</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INTERVAL: &#39;INTERVAL&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#JustifyHours">sqlglot.expressions.temporal.JustifyHours</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INTERVAL: &#39;INTERVAL&#39;&gt;}, &lt;class &#39;<a href="../expressions/datatypes.html#Interval">sqlglot.expressions.datatypes.Interval</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INTERVAL: &#39;INTERVAL&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#JustifyDays">sqlglot.expressions.temporal.JustifyDays</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INTERVAL: &#39;INTERVAL&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#MakeInterval">sqlglot.expressions.temporal.MakeInterval</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.INTERVAL: &#39;INTERVAL&#39;&gt;}, &lt;class &#39;<a href="../expressions/json.html#ParseJSON">sqlglot.expressions.json.ParseJSON</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.JSON: &#39;JSON&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#CurrentTime">sqlglot.expressions.temporal.CurrentTime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIME: &#39;TIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeAdd">sqlglot.expressions.temporal.TimeAdd</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIME: &#39;TIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Time">sqlglot.expressions.temporal.Time</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIME: &#39;TIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeSub">sqlglot.expressions.temporal.TimeSub</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIME: &#39;TIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Localtime">sqlglot.expressions.temporal.Localtime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIME: &#39;TIME&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimestampLtzFromParts">sqlglot.expressions.temporal.TimestampLtzFromParts</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimestampTzFromParts">sqlglot.expressions.temporal.TimestampTzFromParts</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#CurrentTimestampLTZ">sqlglot.expressions.temporal.CurrentTimestampLTZ</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#CurrentTimestamp">sqlglot.expressions.temporal.CurrentTimestamp</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeStrToTime">sqlglot.expressions.temporal.TimeStrToTime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixToTime">sqlglot.expressions.temporal.UnixToTime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#StrToTime">sqlglot.expressions.temporal.StrToTime</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimestampAdd">sqlglot.expressions.temporal.TimestampAdd</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimestampSub">sqlglot.expressions.temporal.TimestampSub</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DayOfWeekIso">sqlglot.expressions.temporal.DayOfWeekIso</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#YearOfWeekIso">sqlglot.expressions.temporal.YearOfWeekIso</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Month">sqlglot.expressions.temporal.Month</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#YearOfWeek">sqlglot.expressions.temporal.YearOfWeek</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Year">sqlglot.expressions.temporal.Year</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#WeekOfYear">sqlglot.expressions.temporal.WeekOfYear</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Day">sqlglot.expressions.temporal.Day</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Week">sqlglot.expressions.temporal.Week</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.TINYINT: &#39;TINYINT&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#CurrentVersion">sqlglot.expressions.functions.CurrentVersion</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#CurrentCatalog">sqlglot.expressions.functions.CurrentCatalog</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Translate">sqlglot.expressions.string.Translate</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Chr">sqlglot.expressions.string.Chr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Dayname">sqlglot.expressions.temporal.Dayname</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/query.html#RawString">sqlglot.expressions.query.RawString</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Substring">sqlglot.expressions.string.Substring</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#String">sqlglot.expressions.string.String</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Lower">sqlglot.expressions.string.Lower</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeToStr">sqlglot.expressions.temporal.TimeToStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Space">sqlglot.expressions.string.Space</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayToString">sqlglot.expressions.array.ArrayToString</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixToStr">sqlglot.expressions.temporal.UnixToStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#ToBase32">sqlglot.expressions.string.ToBase32</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Upper">sqlglot.expressions.string.Upper</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Trim">sqlglot.expressions.string.Trim</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Concat">sqlglot.expressions.string.Concat</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#CurrentUser">sqlglot.expressions.functions.CurrentUser</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#UnixToTimeStr">sqlglot.expressions.temporal.UnixToTimeStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#GroupConcat">sqlglot.expressions.aggregate.GroupConcat</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TsOrDsToDateStr">sqlglot.expressions.temporal.TsOrDsToDateStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#SHA2">sqlglot.expressions.string.SHA2</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#TimeToTimeStr">sqlglot.expressions.temporal.TimeToTimeStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#CurrentSchema">sqlglot.expressions.functions.CurrentSchema</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateToDateStr">sqlglot.expressions.temporal.DateToDateStr</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#SHA">sqlglot.expressions.string.SHA</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#Initcap">sqlglot.expressions.string.Initcap</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#ToBase64">sqlglot.expressions.string.ToBase64</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Monthname">sqlglot.expressions.temporal.Monthname</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#MD5">sqlglot.expressions.string.MD5</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#SessionUser">sqlglot.expressions.functions.SessionUser</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/string.html#ConcatWs">sqlglot.expressions.string.ConcatWs</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.VARCHAR: &#39;VARCHAR&#39;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArraySlice">sqlglot.expressions.array.ArraySlice</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/query.html#Order">sqlglot.expressions.query.Order</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayReverse">sqlglot.expressions.array.ArrayReverse</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#ArrayConcatAgg">sqlglot.expressions.aggregate.ArrayConcatAgg</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#LastValue">sqlglot.expressions.aggregate.LastValue</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Filter">sqlglot.expressions.core.Filter</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/math.html#Abs">sqlglot.expressions.math.Abs</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/query.html#Window">sqlglot.expressions.query.Window</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/query.html#Limit">sqlglot.expressions.query.Limit</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#AnyValue">sqlglot.expressions.aggregate.AnyValue</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#HavingMax">sqlglot.expressions.core.HavingMax</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#SortArray">sqlglot.expressions.array.SortArray</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayConcat">sqlglot.expressions.array.ArrayConcat</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Min">sqlglot.expressions.aggregate.Min</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Least">sqlglot.expressions.functions.Least</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Greatest">sqlglot.expressions.functions.Greatest</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Coalesce">sqlglot.expressions.functions.Coalesce</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Max">sqlglot.expressions.aggregate.Max</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayLast">sqlglot.expressions.array.ArrayLast</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ArrayFirst">sqlglot.expressions.array.ArrayFirst</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Anonymous">sqlglot.expressions.core.Anonymous</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateAdd">sqlglot.expressions.temporal.DateAdd</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateSub">sqlglot.expressions.temporal.DateSub</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateTrunc">sqlglot.expressions.temporal.DateTrunc</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Cast">sqlglot.expressions.functions.Cast</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#TryCast">sqlglot.expressions.functions.TryCast</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#Map">sqlglot.expressions.array.Map</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#VarMap">sqlglot.expressions.array.VarMap</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;dictcomp&gt;.&lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#Array">sqlglot.expressions.array.Array</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#ArrayAgg">sqlglot.expressions.aggregate.ArrayAgg</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Bracket">sqlglot.expressions.core.Bracket</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Case">sqlglot.expressions.functions.Case</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Count">sqlglot.expressions.aggregate.Count</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#DateDiff">sqlglot.expressions.temporal.DateDiff</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/datatypes.html#DataType">sqlglot.expressions.datatypes.DataType</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Distinct">sqlglot.expressions.core.Distinct</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#Explode">sqlglot.expressions.array.Explode</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Extract">sqlglot.expressions.temporal.Extract</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/query.html#HexString">sqlglot.expressions.query.HexString</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#GenerateSeries">sqlglot.expressions.array.GenerateSeries</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#GenerateDateArray">sqlglot.expressions.temporal.GenerateDateArray</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#GenerateTimestampArray">sqlglot.expressions.temporal.GenerateTimestampArray</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#If">sqlglot.expressions.functions.If</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Literal">sqlglot.expressions.core.Literal</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/core.html#Null">sqlglot.expressions.core.Null</a>&#39;&gt;: {&#39;returns&#39;: &lt;DType.NULL: &#39;NULL&#39;&gt;}, &lt;class &#39;<a href="../expressions/functions.html#Nullif">sqlglot.expressions.functions.Nullif</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#Struct">sqlglot.expressions.array.Struct</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/aggregate.html#Sum">sqlglot.expressions.aggregate.Sum</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/temporal.html#Timestamp">sqlglot.expressions.temporal.Timestamp</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#ToMap">sqlglot.expressions.array.ToMap</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/array.html#Unnest">sqlglot.expressions.array.Unnest</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}, &lt;class &#39;<a href="../expressions/query.html#Subquery">sqlglot.expressions.query.Subquery</a>&#39;&gt;: {&#39;annotator&#39;: &lt;function &lt;lambda&gt;&gt;}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.EXPRESSION_METADATA"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.SUPPORTS_USER_DEFINED_TYPES"></a>
+    
+            <div class="docstring"><p>Whether user-defined data types are supported.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.INDEX_OFFSET" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INDEX_OFFSET</span>        =
+<span class="default_value">0</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INDEX_OFFSET"></a>
+    
+            <div class="docstring"><p>The base index offset for arrays.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.COPY_PARAMS_ARE_CSV" class="classattr">
+                                <div class="attr variable">
+            <span class="name">COPY_PARAMS_ARE_CSV</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.COPY_PARAMS_ARE_CSV"></a>
+    
+            <div class="docstring"><p>Whether COPY statement parameters are separated by comma or whitespace</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.HEX_LOWERCASE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_LOWERCASE</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.HEX_LOWERCASE"></a>
+    
+            <div class="docstring"><p>Whether the <code>HEX</code> function returns a lowercase hexadecimal string.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.HAS_DISTINCT_ARRAY_CONSTRUCTORS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HAS_DISTINCT_ARRAY_CONSTRUCTORS</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.HAS_DISTINCT_ARRAY_CONSTRUCTORS"></a>
+    
+            <div class="docstring"><p>Whether the ARRAY constructor is context-sensitive, i.e in Redshift ARRAY[1, 2, 3] != ARRAY(1, 2, 3)
+as the former is of type INT[] vs the latter which is SUPER</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.COALESCE_COMPARISON_NON_STANDARD" class="classattr">
+                                <div class="attr variable">
+            <span class="name">COALESCE_COMPARISON_NON_STANDARD</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.COALESCE_COMPARISON_NON_STANDARD"></a>
+    
+            <div class="docstring"><p>Whether COALESCE in comparisons has non-standard NULL semantics.</p>
+
+<p>We can't convert <code>COALESCE(x, 1) = 2</code> into <code>NOT x IS NULL AND x = 2</code> for redshift,
+because they are not always equivalent. For example,  if <code>x</code> is <code>NULL</code> and it comes
+from a table, then the result is <code>NULL</code>, despite <code>FALSE AND NULL</code> evaluating to <code>FALSE</code>.</p>
+
+<p>In standard SQL and most dialects, these expressions are equivalent, but Redshift treats
+table NULLs differently in this context.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL" class="classattr">
+                                <div class="attr variable">
+            <span class="name">REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL"></a>
+    
+            <div class="docstring"><p>Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.ARRAY_FUNCS_PROPAGATES_NULLS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ARRAY_FUNCS_PROPAGATES_NULLS</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.ARRAY_FUNCS_PROPAGATES_NULLS"></a>
+    
+            <div class="docstring"><p>Whether Array update functions return NULL when the input array is NULL.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.TIME_FORMAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_FORMAT</span>        =
+<span class="default_value">&#34;&#39;YYYY-MM-DD HH24:MI:SS&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.TIME_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_MAPPING</span><span class="annotation">: dict[str, str]</span>        =
+<input id="Redshift.TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.TIME_MAPPING-view-value"></label><span class="default_value">{&#39;d&#39;: &#39;%u&#39;, &#39;D&#39;: &#39;%u&#39;, &#39;dd&#39;: &#39;%d&#39;, &#39;DD&#39;: &#39;%d&#39;, &#39;ddd&#39;: &#39;%j&#39;, &#39;DDD&#39;: &#39;%j&#39;, &#39;FMDD&#39;: &#39;%-d&#39;, &#39;FMDDD&#39;: &#39;%-j&#39;, &#39;FMHH12&#39;: &#39;%-I&#39;, &#39;FMHH24&#39;: &#39;%-H&#39;, &#39;FMMI&#39;: &#39;%-M&#39;, &#39;FMMM&#39;: &#39;%-m&#39;, &#39;FMSS&#39;: &#39;%-S&#39;, &#39;HH12&#39;: &#39;%I&#39;, &#39;HH24&#39;: &#39;%H&#39;, &#39;mi&#39;: &#39;%M&#39;, &#39;MI&#39;: &#39;%M&#39;, &#39;mm&#39;: &#39;%m&#39;, &#39;MM&#39;: &#39;%m&#39;, &#39;OF&#39;: &#39;%z&#39;, &#39;ss&#39;: &#39;%S&#39;, &#39;SS&#39;: &#39;%S&#39;, &#39;TMDay&#39;: &#39;%A&#39;, &#39;TMDy&#39;: &#39;%a&#39;, &#39;TMMon&#39;: &#39;%b&#39;, &#39;TMMonth&#39;: &#39;%B&#39;, &#39;TZ&#39;: &#39;%Z&#39;, &#39;US&#39;: &#39;%f&#39;, &#39;ww&#39;: &#39;%U&#39;, &#39;WW&#39;: &#39;%U&#39;, &#39;yy&#39;: &#39;%y&#39;, &#39;YY&#39;: &#39;%y&#39;, &#39;yyyy&#39;: &#39;%Y&#39;, &#39;YYYY&#39;: &#39;%Y&#39;, &#39;MON&#39;: &#39;%b&#39;, &#39;HH&#39;: &#39;%I&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.TIME_MAPPING"></a>
+    
+            <div class="docstring"><p>Associates this dialect's time formats with their equivalent Python <code>strftime</code> formats.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.Parser" class="classattr">
+                                <div class="attr variable">
+            <span class="name">Parser</span>        =
+<span class="default_value">&lt;class &#39;<a href="../parsers/redshift.html#RedshiftParser">sqlglot.parsers.redshift.RedshiftParser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Parser"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Generator" class="classattr">
+                                <div class="attr variable">
+            <span class="name">Generator</span>        =
+<span class="default_value">&lt;class &#39;<a href="../generators/redshift.html#RedshiftGenerator">sqlglot.generators.redshift.RedshiftGenerator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Generator"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.SUPPORTS_COLUMN_JOIN_MARKS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_COLUMN_JOIN_MARKS</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.SUPPORTS_COLUMN_JOIN_MARKS"></a>
+    
+            <div class="docstring"><p>Whether the old-style outer join (+) syntax is supported.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.UNESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNESCAPED_SEQUENCES</span><span class="annotation">: dict[str, str]</span>        =
+<input id="Redshift.UNESCAPED_SEQUENCES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.UNESCAPED_SEQUENCES-view-value"></label><span class="default_value">{&#39;\\a&#39;: &#39;\x07&#39;, &#39;\\b&#39;: &#39;\x08&#39;, &#39;\\f&#39;: &#39;\x0c&#39;, &#39;\\n&#39;: &#39;\n&#39;, &#39;\\r&#39;: &#39;\r&#39;, &#39;\\t&#39;: &#39;\t&#39;, &#39;\\v&#39;: &#39;\x0b&#39;, &#39;\\\\&#39;: &#39;\\&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.UNESCAPED_SEQUENCES"></a>
+    
+            <div class="docstring"><p>Mapping of an escaped sequence (<code>\n</code>) to its unescaped version (<code>
+</code>).</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.STRINGS_SUPPORT_ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRINGS_SUPPORT_ESCAPED_SEQUENCES</span><span class="annotation">: bool</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.STRINGS_SUPPORT_ESCAPED_SEQUENCES"></a>
+    
+            <div class="docstring"><p>Whether string literals support escape sequences (e.g. <code>\n</code>). Set by the metaclass based on the tokenizer's STRING_ESCAPES.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES</span><span class="annotation">: bool</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES"></a>
+    
+            <div class="docstring"><p>Whether byte string literals support escape sequences. Set by the metaclass based on the tokenizer's BYTE_STRING_ESCAPES.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redshift.INITCAP_SUPPORTS_CUSTOM_DELIMITERS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INITCAP_SUPPORTS_CUSTOM_DELIMITERS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INITCAP_SUPPORTS_CUSTOM_DELIMITERS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Redshift.Tokenizer">Redshift.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.jsonpath_tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">jsonpath_tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;sqlglot.dialects.dialect.JSONPathTokenizer&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.jsonpath_tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../parsers/redshift.html#RedshiftParser">sqlglot.parsers.redshift.RedshiftParser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../generators/redshift.html#RedshiftGenerator">sqlglot.generators.redshift.RedshiftGenerator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: dict</span>        =
+<input id="Redshift.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.TIME_TRIE-view-value"></label><span class="default_value">{&#39;d&#39;: {0: True, &#39;d&#39;: {0: True, &#39;d&#39;: {0: True}}}, &#39;D&#39;: {0: True, &#39;D&#39;: {0: True, &#39;D&#39;: {0: True}}}, &#39;F&#39;: {&#39;M&#39;: {&#39;D&#39;: {&#39;D&#39;: {0: True, &#39;D&#39;: {0: True}}}, &#39;H&#39;: {&#39;H&#39;: {&#39;1&#39;: {&#39;2&#39;: {0: True}}, &#39;2&#39;: {&#39;4&#39;: {0: True}}}}, &#39;M&#39;: {&#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}}, &#39;S&#39;: {&#39;S&#39;: {0: True}}}}, &#39;H&#39;: {&#39;H&#39;: {&#39;1&#39;: {&#39;2&#39;: {0: True}}, &#39;2&#39;: {&#39;4&#39;: {0: True}}, 0: True}}, &#39;m&#39;: {&#39;i&#39;: {0: True}, &#39;m&#39;: {0: True}}, &#39;M&#39;: {&#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;O&#39;: {&#39;N&#39;: {0: True}}}, &#39;O&#39;: {&#39;F&#39;: {0: True}}, &#39;s&#39;: {&#39;s&#39;: {0: True}}, &#39;S&#39;: {&#39;S&#39;: {0: True}}, &#39;T&#39;: {&#39;M&#39;: {&#39;D&#39;: {&#39;a&#39;: {&#39;y&#39;: {0: True}}, &#39;y&#39;: {0: True}}, &#39;M&#39;: {&#39;o&#39;: {&#39;n&#39;: {0: True, &#39;t&#39;: {&#39;h&#39;: {0: True}}}}}}, &#39;Z&#39;: {0: True}}, &#39;U&#39;: {&#39;S&#39;: {0: True}}, &#39;w&#39;: {&#39;w&#39;: {0: True}}, &#39;W&#39;: {&#39;W&#39;: {0: True}}, &#39;y&#39;: {&#39;y&#39;: {0: True, &#39;y&#39;: {&#39;y&#39;: {0: True}}}}, &#39;Y&#39;: {&#39;Y&#39;: {0: True, &#39;Y&#39;: {&#39;Y&#39;: {0: True}}}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: dict</span>        =
+<input id="Redshift.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;d&#39;: {0: True, &#39;d&#39;: {0: True, &#39;d&#39;: {0: True}}}, &#39;D&#39;: {0: True, &#39;D&#39;: {0: True, &#39;D&#39;: {0: True}}}, &#39;F&#39;: {&#39;M&#39;: {&#39;D&#39;: {&#39;D&#39;: {0: True, &#39;D&#39;: {0: True}}}, &#39;H&#39;: {&#39;H&#39;: {&#39;1&#39;: {&#39;2&#39;: {0: True}}, &#39;2&#39;: {&#39;4&#39;: {0: True}}}}, &#39;M&#39;: {&#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}}, &#39;S&#39;: {&#39;S&#39;: {0: True}}}}, &#39;H&#39;: {&#39;H&#39;: {&#39;1&#39;: {&#39;2&#39;: {0: True}}, &#39;2&#39;: {&#39;4&#39;: {0: True}}, 0: True}}, &#39;m&#39;: {&#39;i&#39;: {0: True}, &#39;m&#39;: {0: True}}, &#39;M&#39;: {&#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;O&#39;: {&#39;N&#39;: {0: True}}}, &#39;O&#39;: {&#39;F&#39;: {0: True}}, &#39;s&#39;: {&#39;s&#39;: {0: True}}, &#39;S&#39;: {&#39;S&#39;: {0: True}}, &#39;T&#39;: {&#39;M&#39;: {&#39;D&#39;: {&#39;a&#39;: {&#39;y&#39;: {0: True}}, &#39;y&#39;: {0: True}}, &#39;M&#39;: {&#39;o&#39;: {&#39;n&#39;: {0: True, &#39;t&#39;: {&#39;h&#39;: {0: True}}}}}}, &#39;Z&#39;: {0: True}}, &#39;U&#39;: {&#39;S&#39;: {0: True}}, &#39;w&#39;: {&#39;w&#39;: {0: True}}, &#39;W&#39;: {&#39;W&#39;: {0: True}}, &#39;y&#39;: {&#39;y&#39;: {0: True, &#39;y&#39;: {&#39;y&#39;: {0: True}}}}, &#39;Y&#39;: {&#39;Y&#39;: {0: True, &#39;Y&#39;: {&#39;Y&#39;: {0: True}}}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: dict[str, str]</span>        =
+<input id="Redshift.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%u&#39;: &#39;D&#39;, &#39;%d&#39;: &#39;DD&#39;, &#39;%j&#39;: &#39;DDD&#39;, &#39;%-d&#39;: &#39;FMDD&#39;, &#39;%-j&#39;: &#39;FMDDD&#39;, &#39;%-I&#39;: &#39;FMHH12&#39;, &#39;%-H&#39;: &#39;FMHH24&#39;, &#39;%-M&#39;: &#39;FMMI&#39;, &#39;%-m&#39;: &#39;FMMM&#39;, &#39;%-S&#39;: &#39;FMSS&#39;, &#39;%I&#39;: &#39;HH&#39;, &#39;%H&#39;: &#39;HH24&#39;, &#39;%M&#39;: &#39;MI&#39;, &#39;%m&#39;: &#39;MM&#39;, &#39;%z&#39;: &#39;OF&#39;, &#39;%S&#39;: &#39;SS&#39;, &#39;%A&#39;: &#39;TMDay&#39;, &#39;%a&#39;: &#39;TMDy&#39;, &#39;%b&#39;: &#39;MON&#39;, &#39;%B&#39;: &#39;TMMonth&#39;, &#39;%Z&#39;: &#39;TZ&#39;, &#39;%f&#39;: &#39;US&#39;, &#39;%U&#39;: &#39;WW&#39;, &#39;%y&#39;: &#39;YY&#39;, &#39;%Y&#39;: &#39;YYYY&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: dict</span>        =
+<input id="Redshift.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;u&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;j&#39;: {0: True}, &#39;-&#39;: {&#39;d&#39;: {0: True}, &#39;j&#39;: {0: True}, &#39;I&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;m&#39;: {0: True}, &#39;S&#39;: {0: True}}, &#39;I&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;m&#39;: {0: True}, &#39;z&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;A&#39;: {0: True}, &#39;a&#39;: {0: True}, &#39;b&#39;: {0: True}, &#39;B&#39;: {0: True}, &#39;Z&#39;: {0: True}, &#39;f&#39;: {0: True}, &#39;U&#39;: {0: True}, &#39;y&#39;: {0: True}, &#39;Y&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.INVERSE_FORMAT_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_FORMAT_MAPPING</span><span class="annotation">: dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INVERSE_FORMAT_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.INVERSE_FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_FORMAT_TRIE</span><span class="annotation">: dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INVERSE_FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.INVERSE_CREATABLE_KIND_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_CREATABLE_KIND_MAPPING</span><span class="annotation">: dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.INVERSE_CREATABLE_KIND_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.ESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ESCAPED_SEQUENCES</span><span class="annotation">: dict[str, str]</span>        =
+<input id="Redshift.ESCAPED_SEQUENCES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.ESCAPED_SEQUENCES-view-value"></label><span class="default_value">{&#39;\x07&#39;: &#39;\\a&#39;, &#39;\x08&#39;: &#39;\\b&#39;, &#39;\x0c&#39;: &#39;\\f&#39;, &#39;\n&#39;: &#39;\\n&#39;, &#39;\r&#39;: &#39;\\r&#39;, &#39;\t&#39;: &#39;\\t&#39;, &#39;\x0b&#39;: &#39;\\v&#39;, &#39;\\&#39;: &#39;\\\\&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.ESCAPED_SEQUENCES"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.VALID_INTERVAL_UNITS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">VALID_INTERVAL_UNITS</span><span class="annotation">: set[str]</span>        =
+<input id="Redshift.VALID_INTERVAL_UNITS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.VALID_INTERVAL_UNITS-view-value"></label><span class="default_value">{&#39;QTRS&#39;, &#39;TZH&#39;, &#39;HR&#39;, &#39;DAYS&#39;, &#39;US&#39;, &#39;NSEC&#39;, &#39;MICROSECS&#39;, &#39;WK&#39;, &#39;NSECOND&#39;, &#39;MSECONDS&#39;, &#39;WOY&#39;, &#39;MINUTE&#39;, &#39;WEEKDAY&#39;, &#39;MILLISEC&#39;, &#39;MILLISECS&#39;, &#39;MONS&#39;, &#39;MONTHS&#39;, &#39;NSECONDS&#39;, &#39;USECS&#39;, &#39;Y&#39;, &#39;YEAR&#39;, &#39;DAYOFWEEK&#39;, &#39;SECONDS&#39;, &#39;QTR&#39;, &#39;YYYY&#39;, &#39;MILLISECONDS&#39;, &#39;DECADE&#39;, &#39;MM&#39;, &#39;MSECS&#39;, &#39;HOUR&#39;, &#39;DAYOFWEEK_ISO&#39;, &#39;MICROSEC&#39;, &#39;CENTS&#39;, &#39;MS&#39;, &#39;DAYOFWEEKISO&#39;, &#39;MICROSECONDS&#39;, &#39;MILLISECOND&#39;, &#39;USECONDS&#39;, &#39;SECS&#39;, &#39;EPOCH_NANOSECONDS&#39;, &#39;QUARTER&#39;, &#39;USEC&#39;, &#39;HH&#39;, &#39;YRS&#39;, &#39;WEEK&#39;, &#39;EPOCH_MICROSECOND&#39;, &#39;DECADES&#39;, &#39;WEEKOFYEAR&#39;, &#39;WY&#39;, &#39;NANOSECOND&#39;, &#39;DOW&#39;, &#39;SECOND&#39;, &#39;SEC&#39;, &#39;MIL&#39;, &#39;CENTURY&#39;, &#39;HRS&#39;, &#39;DAYOFYEAR&#39;, &#39;YY&#39;, &#39;NANOSEC&#39;, &#39;NANOSECS&#39;, &#39;M&#39;, &#39;WEEKOFYEARISO&#39;, &#39;YEARS&#39;, &#39;Q&#39;, &#39;MILLENNIUM&#39;, &#39;WEEKISO&#39;, &#39;DAY OF WEEK&#39;, &#39;WEEK_ISO&#39;, &#39;MILS&#39;, &#39;MINS&#39;, &#39;NS&#39;, &#39;W&#39;, &#39;EPOCH&#39;, &#39;D&#39;, &#39;DAYOFMONTH&#39;, &#39;DAY&#39;, &#39;MILLISECON&#39;, &#39;CENTURIES&#39;, &#39;S&#39;, &#39;QUARTERS&#39;, &#39;WEEKDAY_ISO&#39;, &#39;WEEKOFYEAR_ISO&#39;, &#39;DEC&#39;, &#39;DW_ISO&#39;, &#39;DY&#39;, &#39;C&#39;, &#39;MONTH&#39;, &#39;YR&#39;, &#39;DW&#39;, &#39;YYY&#39;, &#39;EPOCH_SECOND&#39;, &#39;MIN&#39;, &#39;DD&#39;, &#39;DOW_ISO&#39;, &#39;MI&#39;, &#39;EPOCH_MICROSECONDS&#39;, &#39;MSEC&#39;, &#39;DAY OF YEAR&#39;, &#39;TZM&#39;, &#39;MINUTES&#39;, &#39;MON&#39;, &#39;MSECOND&#39;, &#39;DOY&#39;, &#39;EPOCH_MILLISECONDS&#39;, &#39;MILLENIA&#39;, &#39;EPOCH_NANOSECOND&#39;, &#39;EPOCH_MILLISECOND&#39;, &#39;MICROSECOND&#39;, &#39;EPOCH_SECONDS&#39;, &#39;TIMEZONE_HOUR&#39;, &#39;H&#39;, &#39;HOURS&#39;, &#39;TIMEZONE_MINUTE&#39;, &#39;CENT&#39;, &#39;DECS&#39;, &#39;USECOND&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.VALID_INTERVAL_UNITS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span><span class="annotation">: str | None</span>        =
+<span class="default_value">&#34;e&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span><span class="annotation">: str | None</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.UNICODE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNICODE_START</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.UNICODE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.UNICODE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNICODE_END</span><span class="annotation">: str | None</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.UNICODE_END"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="postgres.html#Postgres">sqlglot.dialects.postgres.Postgres</a></dt>
+                                <dd id="Redshift.TYPED_DIVISION" class="variable"><a href="postgres.html#Postgres.TYPED_DIVISION">TYPED_DIVISION</a></dd>
+                <dd id="Redshift.CONCAT_COALESCE" class="variable"><a href="postgres.html#Postgres.CONCAT_COALESCE">CONCAT_COALESCE</a></dd>
+                <dd id="Redshift.NULL_ORDERING" class="variable"><a href="postgres.html#Postgres.NULL_ORDERING">NULL_ORDERING</a></dd>
+                <dd id="Redshift.TABLESAMPLE_SIZE_IS_PERCENT" class="variable"><a href="postgres.html#Postgres.TABLESAMPLE_SIZE_IS_PERCENT">TABLESAMPLE_SIZE_IS_PERCENT</a></dd>
+                <dd id="Redshift.TABLES_REFERENCEABLE_AS_COLUMNS" class="variable"><a href="postgres.html#Postgres.TABLES_REFERENCEABLE_AS_COLUMNS">TABLES_REFERENCEABLE_AS_COLUMNS</a></dd>
+                <dd id="Redshift.DEFAULT_FUNCTIONS_COLUMN_NAMES" class="variable"><a href="postgres.html#Postgres.DEFAULT_FUNCTIONS_COLUMN_NAMES">DEFAULT_FUNCTIONS_COLUMN_NAMES</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="Redshift.Tokenizer">
+                            <input id="Redshift.Tokenizer-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Redshift.Tokenizer</span><wbr>(<span class="base"><a href="postgres.html#Postgres.Tokenizer">sqlglot.dialects.postgres.Postgres.Tokenizer</a></span>):
+
+                <label class="view-source-button" for="Redshift.Tokenizer-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Redshift.Tokenizer-32"><a href="#Redshift.Tokenizer-32"><span class="linenos">32</span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Redshift.Tokenizer-33"><a href="#Redshift.Tokenizer-33"><span class="linenos">33</span></a>        <span class="n">BIT_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Redshift.Tokenizer-34"><a href="#Redshift.Tokenizer-34"><span class="linenos">34</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Redshift.Tokenizer-35"><a href="#Redshift.Tokenizer-35"><span class="linenos">35</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]</span>
+</span><span id="Redshift.Tokenizer-36"><a href="#Redshift.Tokenizer-36"><span class="linenos">36</span></a>
+</span><span id="Redshift.Tokenizer-37"><a href="#Redshift.Tokenizer-37"><span class="linenos">37</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Redshift.Tokenizer-38"><a href="#Redshift.Tokenizer-38"><span class="linenos">38</span></a>            <span class="o">**</span><span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-39"><a href="#Redshift.Tokenizer-39"><span class="linenos">39</span></a>            <span class="s2">&quot;(+)&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">JOIN_MARKER</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-40"><a href="#Redshift.Tokenizer-40"><span class="linenos">40</span></a>            <span class="s2">&quot;HLLSKETCH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">HLLSKETCH</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-41"><a href="#Redshift.Tokenizer-41"><span class="linenos">41</span></a>            <span class="s2">&quot;MINUS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-42"><a href="#Redshift.Tokenizer-42"><span class="linenos">42</span></a>            <span class="s2">&quot;SUPER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SUPER</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-43"><a href="#Redshift.Tokenizer-43"><span class="linenos">43</span></a>            <span class="s2">&quot;TOP&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TOP</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-44"><a href="#Redshift.Tokenizer-44"><span class="linenos">44</span></a>            <span class="s2">&quot;UNLOAD&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-45"><a href="#Redshift.Tokenizer-45"><span class="linenos">45</span></a>            <span class="s2">&quot;VARBYTE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-46"><a href="#Redshift.Tokenizer-46"><span class="linenos">46</span></a>            <span class="s2">&quot;BINARY VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="Redshift.Tokenizer-47"><a href="#Redshift.Tokenizer-47"><span class="linenos">47</span></a>        <span class="p">}</span>
+</span><span id="Redshift.Tokenizer-48"><a href="#Redshift.Tokenizer-48"><span class="linenos">48</span></a>        <span class="n">KEYWORDS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;VALUES&quot;</span><span class="p">)</span>
+</span><span id="Redshift.Tokenizer-49"><a href="#Redshift.Tokenizer-49"><span class="linenos">49</span></a>
+</span><span id="Redshift.Tokenizer-50"><a href="#Redshift.Tokenizer-50"><span class="linenos">50</span></a>        <span class="c1"># Redshift allows # to appear as a table identifier prefix</span>
+</span><span id="Redshift.Tokenizer-51"><a href="#Redshift.Tokenizer-51"><span class="linenos">51</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="n">Postgres</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="Redshift.Tokenizer-52"><a href="#Redshift.Tokenizer-52"><span class="linenos">52</span></a>        <span class="n">SINGLE_TOKENS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Redshift.Tokenizer.BIT_STRINGS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_STRINGS</span>        =
+<span class="default_value">[]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.BIT_STRINGS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Tokenizer.HEX_STRINGS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_STRINGS</span>        =
+<span class="default_value">[]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.HEX_STRINGS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Tokenizer.STRING_ESCAPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRING_ESCAPES</span>        =
+<span class="default_value">[&#39;\\&#39;, &#34;&#39;&#34;]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.STRING_ESCAPES"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Tokenizer.KEYWORDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">KEYWORDS</span>        =
+<input id="Redshift.Tokenizer.KEYWORDS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.Tokenizer.KEYWORDS-view-value"></label><span class="default_value">{&#39;{%&#39;: &lt;TokenType.BLOCK_START: 71&gt;, &#39;{%+&#39;: &lt;TokenType.BLOCK_START: 71&gt;, &#39;{%-&#39;: &lt;TokenType.BLOCK_START: 71&gt;, &#39;%}&#39;: &lt;TokenType.BLOCK_END: 72&gt;, &#39;+%}&#39;: &lt;TokenType.BLOCK_END: 72&gt;, &#39;-%}&#39;: &lt;TokenType.BLOCK_END: 72&gt;, &#39;{{+&#39;: &lt;TokenType.BLOCK_START: 71&gt;, &#39;{{-&#39;: &lt;TokenType.BLOCK_START: 71&gt;, &#39;+}}&#39;: &lt;TokenType.BLOCK_END: 72&gt;, &#39;-}}&#39;: &lt;TokenType.BLOCK_END: 72&gt;, &#39;&amp;&lt;&#39;: &lt;TokenType.AMP_LT: 61&gt;, &#39;&amp;&gt;&#39;: &lt;TokenType.AMP_GT: 62&gt;, &#39;==&#39;: &lt;TokenType.EQ: 28&gt;, &#39;::&#39;: &lt;TokenType.DCOLON: 14&gt;, &#39;?::&#39;: &lt;TokenType.QDCOLON: 366&gt;, &#39;||&#39;: &lt;TokenType.DPIPE: 37&gt;, &#39;|&gt;&#39;: &lt;TokenType.PIPE_GT: 38&gt;, &#39;&gt;=&#39;: &lt;TokenType.GTE: 26&gt;, &#39;&lt;=&#39;: &lt;TokenType.LTE: 24&gt;, &#39;&lt;&gt;&#39;: &lt;TokenType.NEQ: 29&gt;, &#39;!=&#39;: &lt;TokenType.NEQ: 29&gt;, &#39;:=&#39;: &lt;TokenType.COLON_EQ: 31&gt;, &#39;&lt;=&gt;&#39;: &lt;TokenType.NULLSAFE_EQ: 30&gt;, &#39;-&gt;&#39;: &lt;TokenType.ARROW: 45&gt;, &#39;-&gt;&gt;&#39;: &lt;TokenType.DARROW: 46&gt;, &#39;=&gt;&#39;: &lt;TokenType.FARROW: 47&gt;, &#39;#&gt;&#39;: &lt;TokenType.HASH_ARROW: 49&gt;, &#39;#&gt;&gt;&#39;: &lt;TokenType.DHASH_ARROW: 50&gt;, &#39;&lt;-&gt;&#39;: &lt;TokenType.LR_ARROW: 51&gt;, &#39;&amp;&amp;&#39;: &lt;TokenType.DAMP: 60&gt;, &#39;??&#39;: &lt;TokenType.DQMARK: 18&gt;, &#39;~~~&#39;: &lt;TokenType.GLOB: 284&gt;, &#39;~~&#39;: &lt;TokenType.LIKE: 315&gt;, &#39;~~*&#39;: &lt;TokenType.ILIKE: 292&gt;, &#39;~*&#39;: &lt;TokenType.IRLIKE: 304&gt;, &#39;-|-&#39;: &lt;TokenType.ADJACENT: 63&gt;, &#39;ALL&#39;: &lt;TokenType.ALL: 218&gt;, &#39;AND&#39;: &lt;TokenType.AND: 34&gt;, &#39;ANTI&#39;: &lt;TokenType.ANTI: 219&gt;, &#39;ANY&#39;: &lt;TokenType.ANY: 220&gt;, &#39;ASC&#39;: &lt;TokenType.ASC: 223&gt;, &#39;AS&#39;: &lt;TokenType.ALIAS: 216&gt;, &#39;ASOF&#39;: &lt;TokenType.ASOF: 224&gt;, &#39;AUTOINCREMENT&#39;: &lt;TokenType.AUTO_INCREMENT: 226&gt;, &#39;AUTO_INCREMENT&#39;: &lt;TokenType.AUTO_INCREMENT: 226&gt;, &#39;BEGIN&#39;: &lt;TokenType.BEGIN: 227&gt;, &#39;BETWEEN&#39;: &lt;TokenType.BETWEEN: 228&gt;, &#39;CACHE&#39;: &lt;TokenType.CACHE: 230&gt;, &#39;UNCACHE&#39;: &lt;TokenType.UNCACHE: 409&gt;, &#39;CASE&#39;: &lt;TokenType.CASE: 231&gt;, &#39;CHARACTER SET&#39;: &lt;TokenType.CHARACTER_SET: 232&gt;, &#39;CLUSTER BY&#39;: &lt;TokenType.CLUSTER_BY: 233&gt;, &#39;COLLATE&#39;: &lt;TokenType.COLLATE: 234&gt;, &#39;COLUMN&#39;: &lt;TokenType.COLUMN: 79&gt;, &#39;COMMIT&#39;: &lt;TokenType.COMMIT: 237&gt;, &#39;CONNECT BY&#39;: &lt;TokenType.CONNECT_BY: 238&gt;, &#39;CONSTRAINT&#39;: &lt;TokenType.CONSTRAINT: 239&gt;, &#39;COPY&#39;: &lt;TokenType.COPY: 240&gt;, &#39;CREATE&#39;: &lt;TokenType.CREATE: 241&gt;, &#39;CROSS&#39;: &lt;TokenType.CROSS: 242&gt;, &#39;CUBE&#39;: &lt;TokenType.CUBE: 243&gt;, &#39;CURRENT_DATE&#39;: &lt;TokenType.CURRENT_DATE: 244&gt;, &#39;CURRENT_SCHEMA&#39;: &lt;TokenType.CURRENT_SCHEMA: 246&gt;, &#39;CURRENT_TIME&#39;: &lt;TokenType.CURRENT_TIME: 247&gt;, &#39;CURRENT_TIMESTAMP&#39;: &lt;TokenType.CURRENT_TIMESTAMP: 248&gt;, &#39;CURRENT_USER&#39;: &lt;TokenType.CURRENT_USER: 249&gt;, &#39;CURRENT_CATALOG&#39;: &lt;TokenType.CURRENT_CATALOG: 251&gt;, &#39;DATABASE&#39;: &lt;TokenType.DATABASE: 78&gt;, &#39;DEFAULT&#39;: &lt;TokenType.DEFAULT: 253&gt;, &#39;DELETE&#39;: &lt;TokenType.DELETE: 254&gt;, &#39;DESC&#39;: &lt;TokenType.DESC: 255&gt;, &#39;DESCRIBE&#39;: &lt;TokenType.DESCRIBE: 256&gt;, &#39;DISTINCT&#39;: &lt;TokenType.DISTINCT: 259&gt;, &#39;DISTRIBUTE BY&#39;: &lt;TokenType.DISTRIBUTE_BY: 260&gt;, &#39;DROP&#39;: &lt;TokenType.DROP: 262&gt;, &#39;ELSE&#39;: &lt;TokenType.ELSE: 263&gt;, &#39;END&#39;: &lt;TokenType.END: 264&gt;, &#39;ENUM&#39;: &lt;TokenType.ENUM: 203&gt;, &#39;ESCAPE&#39;: &lt;TokenType.ESCAPE: 265&gt;, &#39;EXCEPT&#39;: &lt;TokenType.EXCEPT: 266&gt;, &#39;EXECUTE&#39;: &lt;TokenType.EXECUTE: 267&gt;, &#39;EXISTS&#39;: &lt;TokenType.EXISTS: 268&gt;, &#39;FALSE&#39;: &lt;TokenType.FALSE: 269&gt;, &#39;FETCH&#39;: &lt;TokenType.FETCH: 270&gt;, &#39;FILTER&#39;: &lt;TokenType.FILTER: 273&gt;, &#39;FILE&#39;: &lt;TokenType.FILE: 271&gt;, &#39;FIRST&#39;: &lt;TokenType.FIRST: 275&gt;, &#39;FULL&#39;: &lt;TokenType.FULL: 281&gt;, &#39;FUNCTION&#39;: &lt;TokenType.FUNCTION: 282&gt;, &#39;FOR&#39;: &lt;TokenType.FOR: 276&gt;, &#39;FOREIGN KEY&#39;: &lt;TokenType.FOREIGN_KEY: 278&gt;, &#39;FORMAT&#39;: &lt;TokenType.FORMAT: 279&gt;, &#39;FROM&#39;: &lt;TokenType.FROM: 280&gt;, &#39;GEOGRAPHY&#39;: &lt;TokenType.GEOGRAPHY: 170&gt;, &#39;GEOMETRY&#39;: &lt;TokenType.GEOMETRY: 173&gt;, &#39;GLOB&#39;: &lt;TokenType.GLOB: 284&gt;, &#39;GROUP BY&#39;: &lt;TokenType.GROUP_BY: 287&gt;, &#39;GROUPING SETS&#39;: &lt;TokenType.GROUPING_SETS: 288&gt;, &#39;HAVING&#39;: &lt;TokenType.HAVING: 289&gt;, &#39;ILIKE&#39;: &lt;TokenType.ILIKE: 292&gt;, &#39;IN&#39;: &lt;TokenType.IN: 293&gt;, &#39;INDEX&#39;: &lt;TokenType.INDEX: 294&gt;, &#39;INET&#39;: &lt;TokenType.INET: 198&gt;, &#39;INNER&#39;: &lt;TokenType.INNER: 296&gt;, &#39;INSERT&#39;: &lt;TokenType.INSERT: 297&gt;, &#39;INTERVAL&#39;: &lt;TokenType.INTERVAL: 301&gt;, &#39;INTERSECT&#39;: &lt;TokenType.INTERSECT: 300&gt;, &#39;INTO&#39;: &lt;TokenType.INTO: 302&gt;, &#39;IS&#39;: &lt;TokenType.IS: 305&gt;, &#39;ISNULL&#39;: &lt;TokenType.ISNULL: 306&gt;, &#39;JOIN&#39;: &lt;TokenType.JOIN: 307&gt;, &#39;KEEP&#39;: &lt;TokenType.KEEP: 309&gt;, &#39;KILL&#39;: &lt;TokenType.KILL: 311&gt;, &#39;LATERAL&#39;: &lt;TokenType.LATERAL: 313&gt;, &#39;LEFT&#39;: &lt;TokenType.LEFT: 314&gt;, &#39;LIKE&#39;: &lt;TokenType.LIKE: 315&gt;, &#39;LIMIT&#39;: &lt;TokenType.LIMIT: 316&gt;, &#39;LOAD&#39;: &lt;TokenType.LOAD: 318&gt;, &#39;LOCALTIME&#39;: &lt;TokenType.LOCALTIME: 177&gt;, &#39;LOCALTIMESTAMP&#39;: &lt;TokenType.LOCALTIMESTAMP: 178&gt;, &#39;LOCK&#39;: &lt;TokenType.LOCK: 319&gt;, &#39;MERGE&#39;: &lt;TokenType.MERGE: 325&gt;, &#39;NAMESPACE&#39;: &lt;TokenType.NAMESPACE: 436&gt;, &#39;NATURAL&#39;: &lt;TokenType.NATURAL: 328&gt;, &#39;NEXT&#39;: &lt;TokenType.NEXT: 329&gt;, &#39;NOT&#39;: &lt;TokenType.NOT: 27&gt;, &#39;NOTNULL&#39;: &lt;TokenType.NOTNULL: 331&gt;, &#39;NULL&#39;: &lt;TokenType.NULL: 332&gt;, &#39;OBJECT&#39;: &lt;TokenType.OBJECT: 197&gt;, &#39;OFFSET&#39;: &lt;TokenType.OFFSET: 334&gt;, &#39;ON&#39;: &lt;TokenType.ON: 335&gt;, &#39;OR&#39;: &lt;TokenType.OR: 35&gt;, &#39;XOR&#39;: &lt;TokenType.XOR: 64&gt;, &#39;ORDER BY&#39;: &lt;TokenType.ORDER_BY: 338&gt;, &#39;ORDINALITY&#39;: &lt;TokenType.ORDINALITY: 341&gt;, &#39;OUT&#39;: &lt;TokenType.OUT: 342&gt;, &#39;OUTER&#39;: &lt;TokenType.OUTER: 344&gt;, &#39;OVER&#39;: &lt;TokenType.OVER: 345&gt;, &#39;OVERLAPS&#39;: &lt;TokenType.OVERLAPS: 346&gt;, &#39;OVERWRITE&#39;: &lt;TokenType.OVERWRITE: 347&gt;, &#39;PARTITION&#39;: &lt;TokenType.PARTITION: 349&gt;, &#39;PARTITION BY&#39;: &lt;TokenType.PARTITION_BY: 350&gt;, &#39;PARTITIONED BY&#39;: &lt;TokenType.PARTITION_BY: 350&gt;, &#39;PARTITIONED_BY&#39;: &lt;TokenType.PARTITION_BY: 350&gt;, &#39;PERCENT&#39;: &lt;TokenType.PERCENT: 351&gt;, &#39;PIVOT&#39;: &lt;TokenType.PIVOT: 352&gt;, &#39;PRAGMA&#39;: &lt;TokenType.PRAGMA: 357&gt;, &#39;PRIMARY KEY&#39;: &lt;TokenType.PRIMARY_KEY: 359&gt;, &#39;PROCEDURE&#39;: &lt;TokenType.PROCEDURE: 360&gt;, &#39;OPERATOR&#39;: &lt;TokenType.OPERATOR: 337&gt;, &#39;QUALIFY&#39;: &lt;TokenType.QUALIFY: 364&gt;, &#39;RANGE&#39;: &lt;TokenType.RANGE: 367&gt;, &#39;RECURSIVE&#39;: &lt;TokenType.RECURSIVE: 368&gt;, &#39;REGEXP&#39;: &lt;TokenType.RLIKE: 376&gt;, &#39;RENAME&#39;: &lt;TokenType.RENAME: 370&gt;, &#39;REPLACE&#39;: &lt;TokenType.REPLACE: 371&gt;, &#39;RETURNING&#39;: &lt;TokenType.RETURNING: 372&gt;, &#39;REFERENCES&#39;: &lt;TokenType.REFERENCES: 374&gt;, &#39;RIGHT&#39;: &lt;TokenType.RIGHT: 375&gt;, &#39;RLIKE&#39;: &lt;TokenType.RLIKE: 376&gt;, &#39;ROLLBACK&#39;: &lt;TokenType.ROLLBACK: 378&gt;, &#39;ROLLUP&#39;: &lt;TokenType.ROLLUP: 379&gt;, &#39;ROW&#39;: &lt;TokenType.ROW: 380&gt;, &#39;ROWS&#39;: &lt;TokenType.ROWS: 381&gt;, &#39;SCHEMA&#39;: &lt;TokenType.SCHEMA: 81&gt;, &#39;SELECT&#39;: &lt;TokenType.SELECT: 383&gt;, &#39;SEMI&#39;: &lt;TokenType.SEMI: 384&gt;, &#39;SESSION&#39;: &lt;TokenType.SESSION: 57&gt;, &#39;SESSION_USER&#39;: &lt;TokenType.SESSION_USER: 59&gt;, &#39;SET&#39;: &lt;TokenType.SET: 388&gt;, &#39;SETTINGS&#39;: &lt;TokenType.SETTINGS: 389&gt;, &#39;SHOW&#39;: &lt;TokenType.SHOW: 390&gt;, &#39;SIMILAR TO&#39;: &lt;TokenType.SIMILAR_TO: 391&gt;, &#39;SOME&#39;: &lt;TokenType.SOME: 392&gt;, &#39;SORT BY&#39;: &lt;TokenType.SORT_BY: 393&gt;, &#39;SQL SECURITY&#39;: &lt;TokenType.SQL_SECURITY: 395&gt;, &#39;START WITH&#39;: &lt;TokenType.START_WITH: 396&gt;, &#39;STRAIGHT_JOIN&#39;: &lt;TokenType.STRAIGHT_JOIN: 398&gt;, &#39;TABLE&#39;: &lt;TokenType.TABLE: 82&gt;, &#39;TABLESAMPLE&#39;: &lt;TokenType.TABLE_SAMPLE: 401&gt;, &#39;TEMP&#39;: &lt;TokenType.TEMPORARY: 403&gt;, &#39;TEMPORARY&#39;: &lt;TokenType.TEMPORARY: 403&gt;, &#39;THEN&#39;: &lt;TokenType.THEN: 405&gt;, &#39;TRUE&#39;: &lt;TokenType.TRUE: 406&gt;, &#39;TRUNCATE&#39;: &lt;TokenType.TRUNCATE: 407&gt;, &#39;TRIGGER&#39;: &lt;TokenType.TRIGGER: 408&gt;, &#39;UNION&#39;: &lt;TokenType.UNION: 410&gt;, &#39;UNKNOWN&#39;: &lt;TokenType.UNKNOWN: 212&gt;, &#39;UNNEST&#39;: &lt;TokenType.UNNEST: 411&gt;, &#39;UNPIVOT&#39;: &lt;TokenType.UNPIVOT: 412&gt;, &#39;UPDATE&#39;: &lt;TokenType.UPDATE: 413&gt;, &#39;USE&#39;: &lt;TokenType.USE: 414&gt;, &#39;USING&#39;: &lt;TokenType.USING: 415&gt;, &#39;UUID&#39;: &lt;TokenType.UUID: 169&gt;, &#39;VIEW&#39;: &lt;TokenType.VIEW: 418&gt;, &#39;VOLATILE&#39;: &lt;TokenType.VOLATILE: 420&gt;, &#39;WHEN&#39;: &lt;TokenType.WHEN: 422&gt;, &#39;WHERE&#39;: &lt;TokenType.WHERE: 423&gt;, &#39;WINDOW&#39;: &lt;TokenType.WINDOW: 424&gt;, &#39;WITH&#39;: &lt;TokenType.WITH: 425&gt;, &#39;APPLY&#39;: &lt;TokenType.APPLY: 221&gt;, &#39;ARRAY&#39;: &lt;TokenType.ARRAY: 222&gt;, &#39;BIT&#39;: &lt;TokenType.BIT: 95&gt;, &#39;BOOL&#39;: &lt;TokenType.BOOLEAN: 96&gt;, &#39;BOOLEAN&#39;: &lt;TokenType.BOOLEAN: 96&gt;, &#39;BYTE&#39;: &lt;TokenType.TINYINT: 97&gt;, &#39;MEDIUMINT&#39;: &lt;TokenType.MEDIUMINT: 101&gt;, &#39;INT1&#39;: &lt;TokenType.TINYINT: 97&gt;, &#39;TINYINT&#39;: &lt;TokenType.TINYINT: 97&gt;, &#39;INT16&#39;: &lt;TokenType.SMALLINT: 99&gt;, &#39;SHORT&#39;: &lt;TokenType.SMALLINT: 99&gt;, &#39;SMALLINT&#39;: &lt;TokenType.SMALLINT: 99&gt;, &#39;HUGEINT&#39;: &lt;TokenType.INT128: 108&gt;, &#39;UHUGEINT&#39;: &lt;TokenType.UINT128: 109&gt;, &#39;INT2&#39;: &lt;TokenType.SMALLINT: 99&gt;, &#39;INTEGER&#39;: &lt;TokenType.INT: 103&gt;, &#39;INT&#39;: &lt;TokenType.INT: 103&gt;, &#39;INT4&#39;: &lt;TokenType.INT: 103&gt;, &#39;INT32&#39;: &lt;TokenType.INT: 103&gt;, &#39;INT64&#39;: &lt;TokenType.BIGINT: 105&gt;, &#39;INT128&#39;: &lt;TokenType.INT128: 108&gt;, &#39;INT256&#39;: &lt;TokenType.INT256: 110&gt;, &#39;LONG&#39;: &lt;TokenType.BIGINT: 105&gt;, &#39;BIGINT&#39;: &lt;TokenType.BIGINT: 105&gt;, &#39;INT8&#39;: &lt;TokenType.BIGINT: 105&gt;, &#39;UINT&#39;: &lt;TokenType.UINT: 104&gt;, &#39;UINT128&#39;: &lt;TokenType.UINT128: 109&gt;, &#39;UINT256&#39;: &lt;TokenType.UINT256: 111&gt;, &#39;DEC&#39;: &lt;TokenType.DECIMAL: 115&gt;, &#39;DECIMAL&#39;: &lt;TokenType.DECIMAL: 115&gt;, &#39;DECIMAL32&#39;: &lt;TokenType.DECIMAL32: 116&gt;, &#39;DECIMAL64&#39;: &lt;TokenType.DECIMAL64: 117&gt;, &#39;DECIMAL128&#39;: &lt;TokenType.DECIMAL128: 118&gt;, &#39;DECIMAL256&#39;: &lt;TokenType.DECIMAL256: 119&gt;, &#39;DECFLOAT&#39;: &lt;TokenType.DECFLOAT: 120&gt;, &#39;BIGDECIMAL&#39;: &lt;TokenType.BIGDECIMAL: 122&gt;, &#39;BIGNUMERIC&#39;: &lt;TokenType.BIGDECIMAL: 122&gt;, &#39;BIGNUM&#39;: &lt;TokenType.BIGNUM: 107&gt;, &#39;LIST&#39;: &lt;TokenType.LIST: 317&gt;, &#39;MAP&#39;: &lt;TokenType.MAP: 320&gt;, &#39;NULLABLE&#39;: &lt;TokenType.NULLABLE: 172&gt;, &#39;NUMBER&#39;: &lt;TokenType.DECIMAL: 115&gt;, &#39;NUMERIC&#39;: &lt;TokenType.DECIMAL: 115&gt;, &#39;FIXED&#39;: &lt;TokenType.DECIMAL: 115&gt;, &#39;REAL&#39;: &lt;TokenType.FLOAT: 112&gt;, &#39;FLOAT&#39;: &lt;TokenType.DOUBLE: 113&gt;, &#39;FLOAT4&#39;: &lt;TokenType.FLOAT: 112&gt;, &#39;FLOAT8&#39;: &lt;TokenType.DOUBLE: 113&gt;, &#39;DOUBLE&#39;: &lt;TokenType.DOUBLE: 113&gt;, &#39;DOUBLE PRECISION&#39;: &lt;TokenType.DOUBLE: 113&gt;, &#39;JSON&#39;: &lt;TokenType.JSON: 139&gt;, &#39;JSONB&#39;: &lt;TokenType.JSONB: 140&gt;, &#39;CHAR&#39;: &lt;TokenType.CHAR: 123&gt;, &#39;CHARACTER&#39;: &lt;TokenType.CHAR: 123&gt;, &#39;CHAR VARYING&#39;: &lt;TokenType.VARCHAR: 125&gt;, &#39;CHARACTER VARYING&#39;: &lt;TokenType.VARCHAR: 125&gt;, &#39;NCHAR&#39;: &lt;TokenType.NCHAR: 124&gt;, &#39;VARCHAR&#39;: &lt;TokenType.VARCHAR: 125&gt;, &#39;VARCHAR2&#39;: &lt;TokenType.VARCHAR: 125&gt;, &#39;NVARCHAR&#39;: &lt;TokenType.NVARCHAR: 126&gt;, &#39;NVARCHAR2&#39;: &lt;TokenType.NVARCHAR: 126&gt;, &#39;BPCHAR&#39;: &lt;TokenType.BPCHAR: 127&gt;, &#39;STR&#39;: &lt;TokenType.TEXT: 128&gt;, &#39;STRING&#39;: &lt;TokenType.TEXT: 128&gt;, &#39;TEXT&#39;: &lt;TokenType.TEXT: 128&gt;, &#39;LONGTEXT&#39;: &lt;TokenType.LONGTEXT: 130&gt;, &#39;MEDIUMTEXT&#39;: &lt;TokenType.MEDIUMTEXT: 129&gt;, &#39;TINYTEXT&#39;: &lt;TokenType.TINYTEXT: 135&gt;, &#39;CLOB&#39;: &lt;TokenType.TEXT: 128&gt;, &#39;LONGVARCHAR&#39;: &lt;TokenType.TEXT: 128&gt;, &#39;BINARY&#39;: &lt;TokenType.BINARY: 137&gt;, &#39;BLOB&#39;: &lt;TokenType.VARBINARY: 138&gt;, &#39;LONGBLOB&#39;: &lt;TokenType.LONGBLOB: 133&gt;, &#39;MEDIUMBLOB&#39;: &lt;TokenType.MEDIUMBLOB: 132&gt;, &#39;TINYBLOB&#39;: &lt;TokenType.TINYBLOB: 134&gt;, &#39;BYTEA&#39;: &lt;TokenType.VARBINARY: 138&gt;, &#39;VARBINARY&#39;: &lt;TokenType.VARBINARY: 138&gt;, &#39;TIME&#39;: &lt;TokenType.TIME: 141&gt;, &#39;TIMETZ&#39;: &lt;TokenType.TIMETZ: 142&gt;, &#39;TIME_NS&#39;: &lt;TokenType.TIME_NS: 143&gt;, &#39;TIMESTAMP&#39;: &lt;TokenType.TIMESTAMP: 144&gt;, &#39;TIMESTAMPTZ&#39;: &lt;TokenType.TIMESTAMPTZ: 145&gt;, &#39;TIMESTAMPLTZ&#39;: &lt;TokenType.TIMESTAMPLTZ: 146&gt;, &#39;TIMESTAMP_LTZ&#39;: &lt;TokenType.TIMESTAMPLTZ: 146&gt;, &#39;TIMESTAMPNTZ&#39;: &lt;TokenType.TIMESTAMPNTZ: 147&gt;, &#39;TIMESTAMP_NTZ&#39;: &lt;TokenType.TIMESTAMPNTZ: 147&gt;, &#39;DATE&#39;: &lt;TokenType.DATE: 155&gt;, &#39;DATETIME&#39;: &lt;TokenType.DATETIME: 151&gt;, &#39;INT4RANGE&#39;: &lt;TokenType.INT4RANGE: 157&gt;, &#39;INT4MULTIRANGE&#39;: &lt;TokenType.INT4MULTIRANGE: 158&gt;, &#39;INT8RANGE&#39;: &lt;TokenType.INT8RANGE: 159&gt;, &#39;INT8MULTIRANGE&#39;: &lt;TokenType.INT8MULTIRANGE: 160&gt;, &#39;NUMRANGE&#39;: &lt;TokenType.NUMRANGE: 161&gt;, &#39;NUMMULTIRANGE&#39;: &lt;TokenType.NUMMULTIRANGE: 162&gt;, &#39;TSRANGE&#39;: &lt;TokenType.TSRANGE: 163&gt;, &#39;TSMULTIRANGE&#39;: &lt;TokenType.TSMULTIRANGE: 164&gt;, &#39;TSTZRANGE&#39;: &lt;TokenType.TSTZRANGE: 165&gt;, &#39;TSTZMULTIRANGE&#39;: &lt;TokenType.TSTZMULTIRANGE: 166&gt;, &#39;DATERANGE&#39;: &lt;TokenType.DATERANGE: 167&gt;, &#39;DATEMULTIRANGE&#39;: &lt;TokenType.DATEMULTIRANGE: 168&gt;, &#39;UNIQUE&#39;: &lt;TokenType.UNIQUE: 426&gt;, &#39;VECTOR&#39;: &lt;TokenType.VECTOR: 213&gt;, &#39;STRUCT&#39;: &lt;TokenType.STRUCT: 399&gt;, &#39;SEQUENCE&#39;: &lt;TokenType.SEQUENCE: 386&gt;, &#39;VARIANT&#39;: &lt;TokenType.VARIANT: 196&gt;, &#39;ALTER&#39;: &lt;TokenType.ALTER: 217&gt;, &#39;ANALYZE&#39;: &lt;TokenType.ANALYZE: 435&gt;, &#39;CALL&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;COMMENT&#39;: &lt;TokenType.COMMENT: 236&gt;, &#39;EXPLAIN&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;GRANT&#39;: &lt;TokenType.GRANT: 286&gt;, &#39;REVOKE&#39;: &lt;TokenType.REVOKE: 373&gt;, &#39;OPTIMIZE&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;PREPARE&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;VACUUM&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;USER-DEFINED&#39;: &lt;TokenType.USERDEFINED: 191&gt;, &#39;FOR VERSION&#39;: &lt;TokenType.VERSION_SNAPSHOT: 430&gt;, &#39;FOR TIMESTAMP&#39;: &lt;TokenType.TIMESTAMP_SNAPSHOT: 431&gt;, &#39;~&#39;: &lt;TokenType.RLIKE: 376&gt;, &#39;@@&#39;: &lt;TokenType.DAT: 52&gt;, &#39;@&gt;&#39;: &lt;TokenType.AT_GT: 54&gt;, &#39;&lt;@&#39;: &lt;TokenType.LT_AT: 53&gt;, &#39;?&amp;&#39;: &lt;TokenType.QMARK_AMP: 66&gt;, &#39;?|&#39;: &lt;TokenType.QMARK_PIPE: 67&gt;, &#39;#-&#39;: &lt;TokenType.HASH_DASH: 68&gt;, &#39;|/&#39;: &lt;TokenType.PIPE_SLASH: 40&gt;, &#39;||/&#39;: &lt;TokenType.DPIPE_SLASH: 41&gt;, &#39;BIGSERIAL&#39;: &lt;TokenType.BIGSERIAL: 188&gt;, &#39;CSTRING&#39;: &lt;TokenType.PSEUDO_TYPE: 362&gt;, &#39;DECLARE&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;DO&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;EXEC&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;HSTORE&#39;: &lt;TokenType.HSTORE: 184&gt;, &#39;MONEY&#39;: &lt;TokenType.MONEY: 192&gt;, &#39;NAME&#39;: &lt;TokenType.NAME: 136&gt;, &#39;OID&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;ONLY&#39;: &lt;TokenType.ONLY: 336&gt;, &#39;POINT&#39;: &lt;TokenType.POINT: 174&gt;, &#39;REFRESH&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;REINDEX&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;RESET&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;SERIAL&#39;: &lt;TokenType.SERIAL: 186&gt;, &#39;SMALLSERIAL&#39;: &lt;TokenType.SMALLSERIAL: 187&gt;, &#39;REGCLASS&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGCOLLATION&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGCONFIG&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGDICTIONARY&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGNAMESPACE&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGOPER&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGOPERATOR&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGPROC&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGPROCEDURE&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGROLE&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;REGTYPE&#39;: &lt;TokenType.OBJECT_IDENTIFIER: 333&gt;, &#39;XML&#39;: &lt;TokenType.XML: 189&gt;, &#39;VARIADIC&#39;: &lt;TokenType.VARIADIC: 417&gt;, &#39;INOUT&#39;: &lt;TokenType.INOUT: 343&gt;, &#39;(+)&#39;: &lt;TokenType.JOIN_MARKER: 308&gt;, &#39;HLLSKETCH&#39;: &lt;TokenType.HLLSKETCH: 183&gt;, &#39;MINUS&#39;: &lt;TokenType.EXCEPT: 266&gt;, &#39;SUPER&#39;: &lt;TokenType.SUPER: 185&gt;, &#39;TOP&#39;: &lt;TokenType.TOP: 404&gt;, &#39;UNLOAD&#39;: &lt;TokenType.COMMAND: 235&gt;, &#39;VARBYTE&#39;: &lt;TokenType.VARBINARY: 138&gt;, &#39;BINARY VARYING&#39;: &lt;TokenType.VARBINARY: 138&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.KEYWORDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Tokenizer.SINGLE_TOKENS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SINGLE_TOKENS</span>        =
+<input id="Redshift.Tokenizer.SINGLE_TOKENS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Redshift.Tokenizer.SINGLE_TOKENS-view-value"></label><span class="default_value">{&#39;(&#39;: &lt;TokenType.L_PAREN: 1&gt;, &#39;)&#39;: &lt;TokenType.R_PAREN: 2&gt;, &#39;[&#39;: &lt;TokenType.L_BRACKET: 3&gt;, &#39;]&#39;: &lt;TokenType.R_BRACKET: 4&gt;, &#39;{&#39;: &lt;TokenType.L_BRACE: 5&gt;, &#39;}&#39;: &lt;TokenType.R_BRACE: 6&gt;, &#39;&amp;&#39;: &lt;TokenType.AMP: 36&gt;, &#39;^&#39;: &lt;TokenType.CARET: 42&gt;, &#39;:&#39;: &lt;TokenType.COLON: 11&gt;, &#39;,&#39;: &lt;TokenType.COMMA: 7&gt;, &#39;.&#39;: &lt;TokenType.DOT: 8&gt;, &#39;-&#39;: &lt;TokenType.DASH: 9&gt;, &#39;=&#39;: &lt;TokenType.EQ: 28&gt;, &#39;&gt;&#39;: &lt;TokenType.GT: 25&gt;, &#39;&lt;&#39;: &lt;TokenType.LT: 23&gt;, &#39;%&#39;: &lt;TokenType.MOD: 326&gt;, &#39;!&#39;: &lt;TokenType.NOT: 27&gt;, &#39;|&#39;: &lt;TokenType.PIPE: 39&gt;, &#39;+&#39;: &lt;TokenType.PLUS: 10&gt;, &#39;;&#39;: &lt;TokenType.SEMICOLON: 19&gt;, &#39;/&#39;: &lt;TokenType.SLASH: 22&gt;, &#39;\\&#39;: &lt;TokenType.BACKSLASH: 21&gt;, &#39;*&#39;: &lt;TokenType.STAR: 20&gt;, &#39;~&#39;: &lt;TokenType.TILDE: 44&gt;, &#39;?&#39;: &lt;TokenType.PLACEHOLDER: 353&gt;, &#39;@&#39;: &lt;TokenType.PARAMETER: 56&gt;, &#34;&#39;&#34;: &lt;TokenType.UNKNOWN: 212&gt;, &#39;`&#39;: &lt;TokenType.UNKNOWN: 212&gt;, &#39;&#34;&#39;: &lt;TokenType.UNKNOWN: 212&gt;, &#39;$&#39;: &lt;TokenType.HEREDOC_STRING: 93&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.SINGLE_TOKENS"></a>
+    
+    
+
+                            </div>
+                            <div id="Redshift.Tokenizer.BYTE_STRING_ESCAPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_STRING_ESCAPES</span>        =
+<span class="default_value">[&#39;\\&#39;, &#34;&#39;&#34;]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Redshift.Tokenizer.BYTE_STRING_ESCAPES"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></dt>
+                                <dd id="Redshift.Tokenizer.__init__" class="function"><a href="../tokens.html#Tokenizer.__init__">Tokenizer</a></dd>
+                <dd id="Redshift.Tokenizer.RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.RAW_STRINGS">RAW_STRINGS</a></dd>
+                <dd id="Redshift.Tokenizer.UNICODE_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.UNICODE_STRINGS">UNICODE_STRINGS</a></dd>
+                <dd id="Redshift.Tokenizer.IDENTIFIERS" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS">IDENTIFIERS</a></dd>
+                <dd id="Redshift.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
+                <dd id="Redshift.Tokenizer.ESCAPE_FOLLOW_CHARS" class="variable"><a href="../tokens.html#Tokenizer.ESCAPE_FOLLOW_CHARS">ESCAPE_FOLLOW_CHARS</a></dd>
+                <dd id="Redshift.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
+                <dd id="Redshift.Tokenizer.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS">STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS</a></dd>
+                <dd id="Redshift.Tokenizer.NESTED_COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.NESTED_COMMENTS">NESTED_COMMENTS</a></dd>
+                <dd id="Redshift.Tokenizer.HINT_START" class="variable"><a href="../tokens.html#Tokenizer.HINT_START">HINT_START</a></dd>
+                <dd id="Redshift.Tokenizer.TOKENS_PRECEDING_HINT" class="variable"><a href="../tokens.html#Tokenizer.TOKENS_PRECEDING_HINT">TOKENS_PRECEDING_HINT</a></dd>
+                <dd id="Redshift.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
+                <dd id="Redshift.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>
+                <dd id="Redshift.Tokenizer.NUMERIC_LITERALS" class="variable"><a href="../tokens.html#Tokenizer.NUMERIC_LITERALS">NUMERIC_LITERALS</a></dd>
+                <dd id="Redshift.Tokenizer.NUMBERS_CAN_HAVE_DECIMALS" class="variable"><a href="../tokens.html#Tokenizer.NUMBERS_CAN_HAVE_DECIMALS">NUMBERS_CAN_HAVE_DECIMALS</a></dd>
+                <dd id="Redshift.Tokenizer.COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.COMMENTS">COMMENTS</a></dd>
+                <dd id="Redshift.Tokenizer.dialect" class="variable"><a href="../tokens.html#Tokenizer.dialect">dialect</a></dd>
+                <dd id="Redshift.Tokenizer.tokenize" class="function"><a href="../tokens.html#Tokenizer.tokenize">tokenize</a></dd>
+                <dd id="Redshift.Tokenizer.sql" class="variable"><a href="../tokens.html#Tokenizer.sql">sql</a></dd>
+                <dd id="Redshift.Tokenizer.size" class="variable"><a href="../tokens.html#Tokenizer.size">size</a></dd>
+                <dd id="Redshift.Tokenizer.tokens" class="variable"><a href="../tokens.html#Tokenizer.tokens">tokens</a></dd>
+
+            </div>
+            <div><dt><a href="postgres.html#Postgres.Tokenizer">sqlglot.dialects.postgres.Postgres.Tokenizer</a></dt>
+                                <dd id="Redshift.Tokenizer.BYTE_STRINGS" class="variable"><a href="postgres.html#Postgres.Tokenizer.BYTE_STRINGS">BYTE_STRINGS</a></dd>
+                <dd id="Redshift.Tokenizer.HEREDOC_STRINGS" class="variable"><a href="postgres.html#Postgres.Tokenizer.HEREDOC_STRINGS">HEREDOC_STRINGS</a></dd>
+                <dd id="Redshift.Tokenizer.HEREDOC_TAG_IS_IDENTIFIER" class="variable"><a href="postgres.html#Postgres.Tokenizer.HEREDOC_TAG_IS_IDENTIFIER">HEREDOC_TAG_IS_IDENTIFIER</a></dd>
+                <dd id="Redshift.Tokenizer.HEREDOC_STRING_ALTERNATIVE" class="variable"><a href="postgres.html#Postgres.Tokenizer.HEREDOC_STRING_ALTERNATIVE">HEREDOC_STRING_ALTERNATIVE</a></dd>
+                <dd id="Redshift.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="postgres.html#Postgres.Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+    </main>
+<script>
+    function escapeHTML(html) {
+        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
+    }
+
+    const originalContent = document.querySelector("main.pdoc");
+    let currentContent = originalContent;
+
+    function setContent(innerHTML) {
+        let elem;
+        if (innerHTML) {
+            elem = document.createElement("main");
+            elem.classList.add("pdoc");
+            elem.innerHTML = innerHTML;
+        } else {
+            elem = originalContent;
+        }
+        if (currentContent !== elem) {
+            currentContent.replaceWith(elem);
+            currentContent = elem;
+        }
+    }
+
+    function getSearchTerm() {
+        return (new URL(window.location)).searchParams.get("search");
+    }
+
+    const searchBox = document.querySelector(".pdoc input[type=search]");
+    searchBox.addEventListener("input", function () {
+        let url = new URL(window.location);
+        if (searchBox.value.trim()) {
+            url.hash = "";
+            url.searchParams.set("search", searchBox.value);
+        } else {
+            url.searchParams.delete("search");
+        }
+        history.replaceState("", "", url.toString());
+        onInput();
+    });
+    window.addEventListener("popstate", onInput);
+
+
+    let search, searchErr;
+
+    async function initialize() {
+        try {
+            search = await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve(window.pdocSearch);
+                script.onerror = (e) => reject(e);
+                script.src = "../../search.js";
+                document.getElementsByTagName("head")[0].appendChild(script);
+            });
+        } catch (e) {
+            console.error("Cannot fetch pdoc search index");
+            searchErr = "Cannot fetch search index.";
+        }
+        onInput();
+
+        document.querySelector("nav.pdoc").addEventListener("click", e => {
+            if (e.target.hash) {
+                searchBox.value = "";
+                searchBox.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    function onInput() {
+        setContent((() => {
+            const term = getSearchTerm();
+            if (!term) {
+                return null
+            }
+            if (searchErr) {
+                return `<h3>Error: ${searchErr}</h3>`
+            }
+            if (!search) {
+                return "<h3>Searching...</h3>"
+            }
+
+            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+
+            const results = search(term);
+
+            let html;
+            if (results.length === 0) {
+                html = `No search results for '${escapeHTML(term)}'.`
+            } else {
+                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
+            }
+            for (let result of results.slice(0, 10)) {
+                let doc = result.doc;
+                let url = `../../${doc.modulename.replaceAll(".", "/")}.html`;
+                if (doc.qualname) {
+                    url += `#${doc.qualname}`;
+                }
+
+                let heading;
+                switch (result.doc.kind) {
+                    case "function":
+                        if (doc.fullname.endsWith(".__init__")) {
+                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
+                        } else {
+                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
+                        }
+                        break;
+                    case "class":
+                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
+                        if (doc.bases)
+                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
+                        heading += `:`;
+                        break;
+                    case "variable":
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        if (doc.annotation)
+                            heading += `<span class="annotation">${doc.annotation}</span>`;
+                        if (doc.default_value)
+                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
+                        break;
+                    default:
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        break;
+                }
+                html += `
+                        <section class="search-result">
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
+                        <div class="docstring">${doc.doc}</div>
+                        </section>
+                    `;
+
+            }
+            return html;
+        })());
+    }
+
+    if (getSearchTerm()) {
+        initialize();
+        searchBox.value = getSearchTerm();
+        onInput();
+    } else {
+        searchBox.addEventListener("focus", initialize, {once: true});
+    }
+
+    searchBox.addEventListener("keydown", e => {
+        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
+            let focused = currentContent.querySelector(".search-result.focused");
+            if (!focused) {
+                currentContent.querySelector(".search-result").classList.add("focused");
+            } else if (
+                e.key === "ArrowDown"
+                && focused.nextElementSibling
+                && focused.nextElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.nextElementSibling.classList.add("focused");
+                focused.nextElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "ArrowUp"
+                && focused.previousElementSibling
+                && focused.previousElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.previousElementSibling.classList.add("focused");
+                focused.previousElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "Enter"
+            ) {
+                focused.querySelector("a").click();
+            }
+        }
+    });
+</script></body>
+</html>

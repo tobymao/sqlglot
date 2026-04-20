@@ -2220,7 +2220,7 @@ class TestSnowflake(Validator):
                 "spark2": "UUID()",
                 "spark": "UUID()",
                 "databricks": "UUID()",
-                "duckdb": UnsupportedError,
+                "duckdb": "(SELECT CAST(LOWER(SUBSTRING(h, 1, 8) || '-' || SUBSTRING(h, 9, 4) || '-' || '5' || SUBSTRING(h, 14, 3) || '-' || FORMAT('{:02x}', CAST('0x' || SUBSTRING(h, 17, 2) AS INT) & 63 | 128) || SUBSTRING(h, 19, 2) || '-' || SUBSTRING(h, 21, 12)) AS UUID) FROM (SELECT SUBSTRING(SHA1(UNHEX(REPLACE('fe971b24-9572-4005-b22f-351e9c09274d', '-', '')) || ENCODE('foo')), 1, 32) AS h))",
                 "presto": "UUID()",
                 "trino": "UUID()",
                 "postgres": "GEN_RANDOM_UUID()",

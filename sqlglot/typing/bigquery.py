@@ -104,10 +104,17 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
             query_type = unnested.meta.get("query_type")
 
             if query_type and query_type.is_type(exp.DType.STRUCT):
-                col_defs = [e for e in query_type.expressions if isinstance(e, exp.ColumnDef)]
+                query_exprs = query_type.expressions
 
-                if not any(cd.kind and cd.kind.is_type(exp.DType.UNKNOWN) for cd in col_defs):
-                    if unnested.text("kind").upper() == "STRUCT":
+                col_defs = [
+                    e
+                    for e in query_exprs
+                    if isinstance(e, exp.ColumnDef)
+                    and not (e.kind and e.kind.is_type(exp.DType.UNKNOWN))
+                ]
+
+                if len(col_defs) == len(query_exprs):
+                    if unnested.args.get("kind") == "STRUCT":
                         # ARRAY(SELECT AS STRUCT ...) -> ARRAY<STRUCT<col1, col2, ...>>
                         projection_type = query_type
                     elif len(col_defs) == 1 and (col_type := col_defs[0].kind):

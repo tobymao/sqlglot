@@ -135,6 +135,9 @@ jobs:
           git checkout -B api-docs origin/main
           rm -rf docs
           mv /tmp/generated-docs docs
+          git rm -f .gitmodules
+          git rm -f --cached sqlglot-integration-tests
+          rm -rf sqlglot-integration-tests
       - name: Commit API docs
         uses: stefanzweifel/git-auto-commit-action@v4
         with:

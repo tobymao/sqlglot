@@ -486,6 +486,20 @@ class MySQLParser(parser.Parser):
         this = self._parse_string() or self._parse_unquoted_field()
         return self.expression(exp.SetItem(this=this, kind=kind))
 
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """
+        Preserve quoting when a charset name has characters that require it (e.g. spaces, as allowed
+        for custom XML-registered charsets). Safe names unwrap to a bare Var so roundtrips remain minimal.
+        """
+        identifier = self._parse_identifier()
+        if identifier:
+            return (
+                exp.Var(this=name)
+                if exp.SAFE_IDENTIFIER_RE.match(name := identifier.name)
+                else identifier
+            )
+        return self._parse_var(tokens={TokenType.BINARY})
+
     def _parse_set_item_names(self) -> exp.Expr:
         charset = self._parse_string() or self._parse_unquoted_field()
         if self._match_text_seq("COLLATE"):

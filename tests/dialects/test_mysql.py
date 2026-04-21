@@ -634,6 +634,30 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CONVERT('a' USING binary)", "CAST('a' AS CHAR CHARACTER SET binary)"
         )
+        self.validate_identity(
+            "SELECT CONVERT(`col` USING `utf8mb4`)",
+            "SELECT CAST(`col` AS CHAR CHARACTER SET utf8mb4)",
+        )
+        self.validate_identity(
+            "SELECT CHAR(0xC3A9 USING `utf8mb4`)",
+            "SELECT CHAR(x'C3A9' USING utf8mb4)",
+        )
+        self.validate_identity("SELECT CHAR(65 USING BINARY)")
+        self.validate_identity(
+            "SELECT CHAR(65 USING `binary`)",
+            "SELECT CHAR(65 USING binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT(x USING `binary`)",
+            "SELECT CAST(x AS CHAR CHARACTER SET binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT(x USING `my charset`)",
+            "SELECT CAST(x AS CHAR CHARACTER SET `my charset`)",
+        )
+        self.validate_identity(
+            "SELECT CHAR(65 USING `my charset`)",
+        )
 
     def test_match_against(self):
         self.validate_all(

@@ -7599,8 +7599,17 @@ class Parser:
         return self.expression(
             exp.Chr(
                 expressions=self._parse_csv(self._parse_assignment),
-                charset=self._match(TokenType.USING) and self._parse_var(),
+                charset=self._match(TokenType.USING) and self._parse_charset_name(),
             )
+        )
+
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """
+        Parse a charset name after USING or CHARACTER SET. Dialects that need to preserve quoting
+        for specific name shapes override this.
+        """
+        return self._parse_var(
+            tokens={TokenType.BINARY, TokenType.IDENTIFIER},
         )
 
     def _parse_cast(self, strict: bool, safe: bool | None = None) -> exp.Expr:
@@ -7719,9 +7728,7 @@ class Parser:
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(
-                kind=self._parse_var(tokens={TokenType.BINARY})
-            )
+            to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_charset_name())
         elif self._match(TokenType.COMMA):
             to = self._parse_types()
         else:

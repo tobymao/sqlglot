@@ -950,3 +950,118 @@ class TestExasol(Validator):
                 write="exasol",
                 unsupported_level=ErrorLevel.RAISE,
             )
+
+    def test_group_by_alias_local(self):
+        # GROUP BY bare alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT city, COUNT(*) AS cnt FROM t GROUP BY LOCAL.cnt",
+            read={"mysql": "SELECT city, COUNT(*) AS cnt FROM t GROUP BY cnt"},
+            write={"exasol": "SELECT city, COUNT(*) AS cnt FROM t GROUP BY LOCAL.cnt"},
+        )
+        # GROUP BY expression alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT YEAR(TO_DATE(a_date)) AS a_year FROM t GROUP BY LOCAL.a_year",
+            read={"mysql": "SELECT YEAR(a_date) AS a_year FROM t GROUP BY a_year"},
+            write={"exasol": "SELECT YEAR(TO_DATE(a_date)) AS a_year FROM t GROUP BY LOCAL.a_year"},
+        )
+        # GROUP BY non-alias column -> unchanged
+        self.validate_all(
+            "SELECT city, COUNT(*) FROM t GROUP BY city",
+            read={"mysql": "SELECT city, COUNT(*) FROM t GROUP BY city"},
+            write={"exasol": "SELECT city, COUNT(*) FROM t GROUP BY city"},
+        )
+        # HAVING alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1",
+            read={"mysql": "SELECT COUNT(*) AS cnt FROM t HAVING cnt > 1"},
+            write={"exasol": "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1"},
+        )
+
+    def test_cte_literal_auto_alias(self):
+        # Integer literal in CTE gets synthetic alias
+        self.validate_all(
+            'WITH cte AS (SELECT 12345 AS "_col_0") SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT 12345) SELECT * FROM cte"},
+            write={"exasol": 'WITH cte AS (SELECT 12345 AS "_col_0") SELECT * FROM cte'},
+        )
+        # Mixed literals get sequential aliases
+        self.validate_all(
+            'WITH cte AS (SELECT 12345 AS "_col_0", \'value\' AS "_col_1") SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT 12345, 'value') SELECT * FROM cte"},
+            write={
+                "exasol": 'WITH cte AS (SELECT 12345 AS "_col_0", \'value\' AS "_col_1") SELECT * FROM cte'
+            },
+        )
+        # Existing alias preserved
+        self.validate_identity(
+            "WITH cte AS (SELECT 12345 AS id, 'value' AS name) SELECT * FROM cte"
+        )
+        # Function call / arithmetic gets alias
+        self.validate_all(
+            'WITH cte AS (SELECT LOWER(name) AS "_col_0", 1 + 2 AS "_col_1" FROM t) SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT LOWER(name), 1 + 2 FROM t) SELECT * FROM cte"},
+            write={
+                "exasol": 'WITH cte AS (SELECT LOWER(name) AS "_col_0", 1 + 2 AS "_col_1" FROM t) SELECT * FROM cte'
+            },
+        )
+        # Bare column: no alias injected
+        self.validate_identity("WITH cte AS (SELECT col FROM t) SELECT * FROM cte")
+        # Bare star inside CTE: no alias injected (wrapping star would be invalid SQL)
+        self.validate_identity("WITH cte AS (SELECT * FROM t) SELECT * FROM cte")
+        # Qualified star inside CTE: no alias injected
+        self.validate_identity("WITH cte AS (SELECT t.* FROM t) SELECT * FROM cte")
+        # Nested CTE: outer star still passes through unwrapped
+        self.validate_identity(
+            "WITH outer_cte AS (WITH inner_cte AS (SELECT 1 AS x) SELECT * FROM inner_cte) SELECT * FROM outer_cte"
+        )
+        # Non-CTE subquery: no alias injected
+        self.validate_identity("SELECT * FROM (SELECT 1) AS t")
+
+    def test_json_object(self):
+        from sqlglot import parse_one
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.qualify import qualify
+
+        # Empty JSON_OBJECT -> '{}' literal
+        self.validate_all(
+            "SELECT '{}'",
+            read={"mysql": "SELECT JSON_OBJECT()"},
+            write={"exasol": "SELECT '{}'"},
+        )
+
+        # String-typed column: NULL-safe quoted value via CASE
+        ast = parse_one("SELECT JSON_OBJECT('name', str_name) AS j FROM t", read="mysql")
+        schema = {"t": {"str_name": "VARCHAR"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("CASE WHEN", result)
+        self.assertIn("IS NULL THEN 'null'", result)
+        self.assertIn("'\"name\": '", result)
+
+        # Numeric-typed column: COALESCE(CAST(..) AS VARCHAR(100)), 'null')
+        ast = parse_one("SELECT JSON_OBJECT('id', int_id) AS j FROM t", read="mysql")
+        schema = {"t": {"int_id": "INT"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("COALESCE(CAST(", result)
+        self.assertIn("AS VARCHAR(100)), 'null')", result)
+
+        # Multi-pair with comma separators
+        ast = parse_one("SELECT JSON_OBJECT('id', int_id, 'name', str_name) FROM t", read="mysql")
+        schema = {"t": {"int_id": "INT", "str_name": "VARCHAR"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("'\"id\": '", result)
+        self.assertIn("', \"name\": '", result)

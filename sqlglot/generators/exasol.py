@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.errors import UnsupportedError
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.scope import build_scope
 from sqlglot.parsers.exasol import DATE_UNITS
 
@@ -232,6 +233,33 @@ def _add_date_sql(self: ExasolGenerator, expression: DATE_ADD_OR_SUB) -> str:
     return self.func(f"ADD_{unit}S", expression.this, offset_expr)
 
 
+def _add_cte_column_aliases(expression: exp.Expr) -> exp.Expr:
+    """
+    Exasol rejects unaliased non-column expressions inside CTE SELECT lists.
+    Inject synthetic aliases like ``_col_0`` for any projection that isn't
+    already aliased, a bare column reference, or a star (which Exasol expands
+    by itself and would be invalid wrapped in an alias).
+    """
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    if not isinstance(expression.parent, exp.CTE):
+        return expression
+
+    new_selects: list[exp.Expr] = []
+    counter = 0
+    for sel in expression.expressions:
+        if isinstance(sel, (exp.Alias, exp.Column, exp.Star)) or sel.find(exp.Star):
+            new_selects.append(sel)
+            continue
+
+        new_selects.append(exp.alias_(sel, exp.to_identifier(f"_col_{counter}", quoted=True)))
+        counter += 1
+
+    expression.set("expressions", new_selects)
+    return expression
+
+
 def _group_by_all(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.Select):
         return expression
@@ -392,12 +420,14 @@ class ExasolGenerator(generator.Generator):
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
         exp.Select: transforms.preprocess(
             [
+                _add_cte_column_aliases,
                 _qualify_unscoped_star,
                 _add_local_prefix_for_aliases,
                 _group_by_all,
             ]
         ),
         exp.SubstringIndex: _substring_index_sql,
+        exp.JSONObject: lambda self, e: self.jsonobject_sql(e),
         exp.WeekOfYear: rename_func("WEEK"),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm
         exp.Date: rename_func("TO_DATE"),
@@ -903,6 +933,61 @@ class ExasolGenerator(generator.Generator):
             sql = f"{sql} EMITS {emits}"
 
         return sql
+
+    def jsonobject_sql(self, expression: exp.JSONObject) -> str:
+        pairs = expression.expressions or []
+        if not pairs:
+            return self.sql(exp.Literal.string("{}"))
+
+        concat_args: list[exp.Expression] = [exp.Literal.string("{")]
+        for i, pair in enumerate(pairs):
+            if not isinstance(pair, exp.JSONKeyValue):
+                return self.function_fallback_sql(expression)
+            key = pair.this
+            value = pair.args.get("expression")
+            if key is None or value is None:
+                return self.function_fallback_sql(expression)
+
+            prefix = ", " if i > 0 else ""
+            key_label = f'{prefix}"{key.name.replace(chr(34), chr(92) + chr(34))}": '
+            concat_args.append(exp.Literal.string(key_label))
+
+            if value.is_string:
+                wrapped: exp.Expression = exp.Concat(
+                    expressions=[
+                        exp.Literal.string('"'),
+                        value,
+                        exp.Literal.string('"'),
+                    ]
+                )
+            else:
+                typed_value = value if value.type else annotate_types(value, dialect=self.dialect)
+                if typed_value.is_type(*exp.DataType.TEXT_TYPES):
+                    wrapped = exp.Case(
+                        ifs=[
+                            exp.If(
+                                this=typed_value.is_(exp.Null()),
+                                true=exp.Literal.string("null"),
+                            )
+                        ],
+                        default=exp.Concat(
+                            expressions=[
+                                exp.Literal.string('"'),
+                                typed_value.copy(),
+                                exp.Literal.string('"'),
+                            ]
+                        ),
+                    )
+                else:
+                    wrapped = exp.Coalesce(
+                        this=exp.cast(typed_value, exp.DataType.build("VARCHAR(100)")),
+                        expressions=[exp.Literal.string("null")],
+                    )
+
+            concat_args.append(wrapped)
+
+        concat_args.append(exp.Literal.string("}"))
+        return self.sql(exp.Concat(expressions=concat_args))
 
     @unsupported_args("flag")
     def regexplike_sql(self, expression: exp.RegexpLike) -> str:

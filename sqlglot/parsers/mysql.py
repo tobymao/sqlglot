@@ -487,18 +487,13 @@ class MySQLParser(parser.Parser):
         return self.expression(exp.SetItem(this=this, kind=kind))
 
     def _parse_charset_name(self) -> exp.Expr | None:
-        """Preserve quoting when a charset name has
-        characters that require it (e.g. spaces, as
-        allowed for custom XML-registered charsets).
-        Safe names unwrap to a bare Var so roundtrips
-        remain minimal.
+        """
+        Preserve quoting when a charset name has characters that require it (e.g. spaces, as allowed
+        for custom XML-registered charsets). Safe names unwrap to a bare Var so roundtrips remain minimal.
         """
         identifier = self._parse_identifier()
         if identifier:
-            name = identifier.name
-            if name and exp.SAFE_IDENTIFIER_RE.match(name):
-                return exp.Var(this=name)
-            return identifier
+            return exp.Var(this=name) if exp.SAFE_IDENTIFIER_RE.match(name := identifier.name) else identifier
         return self._parse_var(tokens={TokenType.BINARY})
 
     def _parse_set_item_names(self) -> exp.Expr:

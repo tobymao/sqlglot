@@ -8503,12 +8503,7 @@ class Parser:
             drop.set("kind", drop.args.get("kind", "COLUMN"))
         return drop
 
-    def _parse_drop_primary_key(self) -> exp.DropPrimaryKey:
-        return self.expression(exp.DropPrimaryKey())
-
     def _parse_alter_drop_action(self) -> exp.Expr | None:
-        if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
-            return self._parse_drop_primary_key()
         return self._parse_drop_column()
 
     # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html

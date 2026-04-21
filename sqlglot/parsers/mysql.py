@@ -310,6 +310,11 @@ class MySQLParser(parser.Parser):
             return self.expression(exp.RenameIndex(this=old, to=new))
         return super()._parse_alter_table_rename()
 
+    def _parse_alter_drop_action(self) -> exp.Expr | None:
+        if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
+            return self.expression(exp.DropPrimaryKey())
+        return super()._parse_alter_drop_action()
+
     def _parse_generated_as_identity(
         self,
     ) -> (

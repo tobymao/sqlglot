@@ -354,6 +354,10 @@ class Drop(Expression):
         return kind and kind.upper()
 
 
+class DropPrimaryKey(Expression):
+    arg_types = {}
+
+
 class Command(Expression):
     arg_types = {"this": True, "expression": False}
 

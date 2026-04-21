@@ -186,9 +186,8 @@ class Scope:
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
-            elif isinstance(node, exp.Lateral) or (
-                isinstance(node, exp.UDTF)
-                and isinstance(node.parent, (exp.From, exp.Join, exp.Lateral))
+            elif type(node) is exp.Lateral or (
+                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
             ):
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):

@@ -8503,6 +8503,14 @@ class Parser:
             drop.set("kind", drop.args.get("kind", "COLUMN"))
         return drop
 
+    def _parse_drop_primary_key(self) -> exp.DropPrimaryKey:
+        return self.expression(exp.DropPrimaryKey())
+
+    def _parse_alter_drop_action(self) -> exp.Expr | None:
+        if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
+            return self._parse_drop_primary_key()
+        return self._parse_drop_column()
+
     # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
     def _parse_drop_partition(self, exists: bool | None = None) -> exp.DropPartition:
         return self.expression(
@@ -8613,7 +8621,7 @@ class Parser:
             return self._parse_csv(lambda: self._parse_drop_partition(exists=partition_exists))
 
         self._retreat(index)
-        return self._parse_csv(self._parse_drop_column)
+        return self._parse_csv(self._parse_alter_drop_action)
 
     def _parse_alter_table_rename(self) -> exp.AlterRename | exp.RenameColumn | None:
         if self._match(TokenType.COLUMN) or not self.ALTER_RENAME_REQUIRES_COLUMN:

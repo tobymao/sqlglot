@@ -937,7 +937,6 @@ ORDER BY
             "ALTER ROLE CURRENT_USER WITH REPLICATION",
             "ALTER RULE foo ON bla RENAME TO baz",
             "ALTER SEQUENCE IF EXISTS baz RESTART WITH boo",
-            "ALTER TABLE integers DROP PRIMARY KEY",
             "ALTER TABLE table1 MODIFY COLUMN name1 SET TAG foo='bar'",
             "ALTER TABLE table1 RENAME COLUMN c1 AS c2",
             "ALTER TABLE table1 RENAME COLUMN c1 TO c2, c2 TO c3",

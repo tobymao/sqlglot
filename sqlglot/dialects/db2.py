@@ -18,7 +18,6 @@ class Db2(Dialect):
             "DBCLOB": TokenType.TEXT,
             "GRAPHIC": TokenType.NCHAR,
             "VARGRAPHIC": TokenType.NVARCHAR,
-            "TIMESTMP": TokenType.TIMESTAMP,
         }
 
     Generator = Db2Generator

@@ -7611,6 +7611,8 @@ class Parser:
         Dialects that need to preserve quoting for
         specific name shapes override this.
         """
+        Parse a charset name after USING or CHARACTER SET. Dialects that need to preserve quoting
+        for specific name shapes override this.
         return self._parse_var(
             tokens={TokenType.BINARY, TokenType.IDENTIFIER},
         )

@@ -2047,6 +2047,22 @@ class DuckDBGenerator(generator.Generator):
         """,
     )
 
+    UUID_V5_TEMPLATE: exp.Expr = exp.maybe_parse(
+        """
+        (SELECT
+            LOWER(
+                SUBSTR(h, 1, 8) || '-' ||
+                SUBSTR(h, 9, 4) || '-' ||
+                '5' || SUBSTR(h, 14, 3) || '-' ||
+                FORMAT('{:02x}', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
+                SUBSTR(h, 21, 12)
+            )
+        FROM (
+            SELECT SUBSTR(SHA1(UNHEX(REPLACE(:namespace, '-', '')) || ENCODE(:name, 'utf8')), 1, 32) AS h
+        ))
+        """
+    )
+
     # Shared bag semantics outer frame for ARRAY_EXCEPT and ARRAY_INTERSECTION.
     # Each element is paired with its 1-based position via LIST_ZIP, then filtered
     # by a comparison operator (supplied via :cond) that determines the operation:
@@ -4430,106 +4446,16 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))
 
     def uuid_sql(self, expression: exp.Uuid) -> str:
+        namespace = expression.this
+        name = expression.args.get("name")
+
         # UUID v5 (namespace + name) - Emulate using SHA1
-        if expression.this and expression.args.get("name"):
-            namespace = expression.this
-            name = expression.args.get("name")
-
-            # Inner query: SELECT substr(sha1(unhex(replace(namespace, '-', '')) || encode(name)), 1, 32) AS h
-            # Step 1: replace(namespace, '-', '')
-            namespace_stripped = exp.func(
-                "REPLACE", namespace, exp.Literal.string("-"), exp.Literal.string("")
+        if namespace and name:
+            result = exp.replace_placeholders(
+                self.UUID_V5_TEMPLATE.copy(),
+                namespace=namespace,
+                name=name,
             )
+            return self.sql(result)
 
-            # Step 2: unhex(...)
-            namespace_bytes = exp.func("UNHEX", namespace_stripped)
-
-            # Step 3: encode(name) - DuckDB defaults to UTF-8
-            name_bytes = exp.Encode(this=name, charset=exp.Literal.string("utf8"))
-
-            # Step 4: namespace_bytes || name_bytes
-            concat_bytes = exp.DPipe(this=namespace_bytes, expression=name_bytes)
-
-            # Step 5: sha1(...)
-            sha1_hash = exp.func("SHA1", concat_bytes)
-
-            # Step 6: substr(..., 1, 32)
-            hash_32_chars = exp.func(
-                "SUBSTR", sha1_hash, exp.Literal.number(1), exp.Literal.number(32)
-            )
-
-            # Inner SELECT
-            inner_select = exp.Select(expressions=[exp.alias_(hash_32_chars, "h")])
-
-            # Outer query: Format as UUID v5
-            # Reference to 'h' column from inner query
-            h = exp.column("h")
-
-            # Build the UUID string parts
-            # substr(h, 1, 8) || '-' || substr(h, 9, 4) || '-' || '5' || substr(h, 14, 3) || '-' || ...
-
-            # Part 1: substr(h, 1, 8)
-            part1 = exp.func("SUBSTR", h, exp.Literal.number(1), exp.Literal.number(8))
-
-            # Part 2: substr(h, 9, 4)
-            part2 = exp.func("SUBSTR", h, exp.Literal.number(9), exp.Literal.number(4))
-
-            # Part 3: '5' || substr(h, 14, 3)  (version 5)
-            part3 = exp.DPipe(
-                this=exp.Literal.string("5"),
-                expression=exp.func("SUBSTR", h, exp.Literal.number(14), exp.Literal.number(3)),
-            )
-
-            # Part 4: format('{:02x}', (('0x' || substr(h, 17, 2))::INTEGER & 63) | 128) || substr(h, 19, 2)
-            # This sets the variant bits
-            h_17_2 = exp.func("SUBSTR", h, exp.Literal.number(17), exp.Literal.number(2))
-            hex_str = exp.DPipe(this=exp.Literal.string("0x"), expression=h_17_2)
-            as_int = exp.cast(hex_str, exp.DataType.Type.INT)
-            masked = exp.BitwiseAnd(this=as_int, expression=exp.Literal.number(63))
-            variant_byte = exp.BitwiseOr(this=masked, expression=exp.Literal.number(128))
-            formatted = exp.func("FORMAT", exp.Literal.string("{:02x}"), variant_byte)
-            h_19_2 = exp.func("SUBSTR", h, exp.Literal.number(19), exp.Literal.number(2))
-            part4 = exp.DPipe(this=formatted, expression=h_19_2)
-
-            # Part 5: substr(h, 21, 12)
-            part5 = exp.func("SUBSTR", h, exp.Literal.number(21), exp.Literal.number(12))
-
-            # Concatenate all parts: part1 || '-' || part2 || '-' || part3 || '-' || part4 || '-' || part5
-            dash = exp.Literal.string("-")
-            concat = exp.DPipe(
-                this=exp.DPipe(
-                    this=exp.DPipe(
-                        this=exp.DPipe(
-                            this=exp.DPipe(
-                                this=exp.DPipe(
-                                    this=exp.DPipe(
-                                        this=exp.DPipe(this=part1, expression=dash),
-                                        expression=part2,
-                                    ),
-                                    expression=dash,
-                                ),
-                                expression=part3,
-                            ),
-                            expression=dash,
-                        ),
-                        expression=part4,
-                    ),
-                    expression=dash,
-                ),
-                expression=part5,
-            )
-
-            # Wrap in lower() and cast to UUID
-            lowered = exp.func("LOWER", concat)
-            uuid_value = exp.cast(lowered, exp.DataType.Type.UUID)
-
-            # Outer SELECT: SELECT uuid_value FROM (inner_select)
-            outer_select = exp.Select(expressions=[uuid_value]).from_(
-                exp.Subquery(this=inner_select)
-            )
-
-            # Wrap the entire thing in a subquery/parentheses
-            return f"({self.sql(outer_select)})"
-
-        # UUID v4 or BigQuery compatibility
         return super().uuid_sql(expression)

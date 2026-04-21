@@ -5829,17 +5829,15 @@ class Parser:
 
             self._retreat(index)
 
-        unit = (
-            None
-            if interval_span_units_omitted
-            else (
-                self._parse_function()
-                or (
-                    not self._match_set((TokenType.ALIAS, TokenType.DCOLON), advance=False)
-                    and self._parse_var(any_token=True, upper=True)
-                )
-            )
-        )
+        if interval_span_units_omitted:
+            unit = None
+        else:
+            unit = self._parse_function()
+            if not unit and (
+                self._curr.token_type == TokenType.VAR
+                or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
+            ):
+                unit = self._parse_var(any_token=True, upper=True)
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile

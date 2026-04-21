@@ -344,6 +344,16 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
         self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 DAY'")
+        self.validate_identity("SELECT date_col - INTERVAL '30' FROM t")
+        self.validate_identity("SELECT date_col - INTERVAL '1' AS one_second_later")
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '30' DAY FROM t",
+            "SELECT date_col - INTERVAL '30 DAY' FROM t",
+        )
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '1' HOUR AS one_hour_later",
+            "SELECT date_col - INTERVAL '1 HOUR' AS one_hour_later",
+        )
         self.validate_identity("foo$")
         self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")

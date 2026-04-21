@@ -349,6 +349,23 @@ WHERE
   t2.row_num = 2;
 WITH t1 AS (SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t2.row_num AS row_num FROM t1 AS t2 WHERE t2.row_num = 2;
 
+# title: Test preventing merge of window expressions where clause without table prefix
+# execute: false
+SELECT
+  a,
+  b
+FROM (
+  SELECT
+    x.a,
+    x.b,
+    ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) as row_num
+  FROM
+    x
+) AS t1
+WHERE
+  row_num = 1;
+SELECT t1.a AS a, t1.b AS b FROM (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) AS t1 WHERE t1.row_num = 1;
+
 # title: Values Test
 # dialect: spark
 WITH t1 AS (

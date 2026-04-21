@@ -149,7 +149,8 @@ def _mergeable(
             )
         ]
         return any(
-            column.table == inner_select_name and column.name in window_aliases
+            (not column.table or column.table == inner_select_name)
+            and column.name in window_aliases
             for column in unmergable_window_columns
         )
 

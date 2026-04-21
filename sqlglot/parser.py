@@ -5835,7 +5835,11 @@ class Parser:
             else (
                 self._parse_function()
                 or (
-                    not self._match_set((TokenType.ALIAS, TokenType.DCOLON), advance=False)
+                    self._curr is not None
+                    and (
+                        self._curr.token_type == TokenType.VAR
+                        or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
+                    )
                     and self._parse_var(any_token=True, upper=True)
                 )
             )

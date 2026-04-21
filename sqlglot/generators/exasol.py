@@ -890,6 +890,31 @@ class ExasolGenerator(generator.Generator):
         false = self.sql(expression, "false")
         return f"IF {this} THEN {true} ELSE {false} ENDIF"
 
+    # https://docs.exasol.com/db/latest/sql/open_schema.htm
+    def use_sql(self, expression: exp.Use) -> str:
+        kind = expression.args.get("kind")
+        if kind and self.sql(kind).upper() != "SCHEMA":
+            self.unsupported(f"'USE {self.sql(kind)}' is not supported in Exasol")
+            return super().use_sql(expression)
+        this = self.sql(expression, "this")
+        return f"OPEN SCHEMA {this}"
+
+    # https://docs.exasol.com/db/latest/sql_references/metadata/metadata_system_tables.htm
+    def show_sql(self, expression: exp.Show) -> str:
+        if expression.name == "TABLES":
+            db_name = expression.text("db")
+            schema_filter: exp.Expression = (
+                exp.Literal.string(db_name.upper()) if db_name else exp.CurrentSchema()
+            )
+            select = (
+                exp.select(exp.column("TABLE_NAME"))
+                .from_(exp.table_("EXA_ALL_TABLES", db="SYS"))
+                .where(exp.column("TABLE_SCHEMA").eq(schema_filter))
+            )
+            return self.sql(select)
+
+        return super().show_sql(expression)
+
     def collate_sql(self, expression: exp.Collate) -> str:
         return self.sql(expression.this)
 

@@ -266,74 +266,35 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-_JSON_STRING_ESCAPE_SEQUENCES: tuple[tuple[str, str], ...] = (
-    ("\\", "\\\\"),
-    ('"', '\\"'),
-)
+def _json_long_varchar_cast(value: exp.Expr) -> exp.Expr:
+    if isinstance(value, exp.Cast) and value.to.is_type(*exp.DataType.TEXT_TYPES):
+        value = value.this
+
+    return exp.cast(value.copy(), exp.DType.TEXT)
 
 
-def _json_escape_part(value: exp.Expr) -> exp.Expr:
-    escaped = value
-
-    for raw, replacement in _JSON_STRING_ESCAPE_SEQUENCES:
-        escaped = exp.Replace(
-            this=escaped,
-            expression=exp.Literal.string(raw),
-            replacement=exp.Literal.string(replacement),
-        )
-
-    return escaped
-
-
-def _json_literal_part(value: str) -> exp.Expr:
-    return exp.Literal.string(json.dumps(value, ensure_ascii=False))
+def _json_quoted(value: exp.Expr) -> exp.Expr:
+    return exp.DPipe(
+        this=exp.DPipe(this=exp.Literal.string('"'), expression=value),
+        expression=exp.Literal.string('"'),
+    )
 
 
 def _json_key_part(key: exp.Expr) -> exp.Expr:
     if key.is_string:
         return exp.Literal.string(f"{json.dumps(key.name, ensure_ascii=False)}: ")
 
-    key_expr: exp.Expr
-    if key.is_type(*exp.DataType.TEXT_TYPES):
-        key_expr = exp.func("COALESCE", key.copy(), exp.Literal.string(""))
-    else:
-        key_expr = (
-            exp.case()
-            .when(key.copy().is_(exp.null()), exp.Literal.string(""))
-            .else_(exp.DPipe(this=key.copy(), expression=exp.Literal.string("")))
-        )
+    key = exp.func("COALESCE", _json_long_varchar_cast(key), exp.Literal.string(""))
 
-    return exp.func(
-        "CONCAT",
-        exp.Literal.string('"'),
-        _json_escape_part(key_expr),
-        exp.Literal.string('": '),
-    )
-
-
-def _json_string_part(value: exp.Expr) -> exp.Expr:
-    escaped = _json_escape_part(value)
     return exp.DPipe(
-        this=exp.DPipe(this=exp.Literal.string('"'), expression=escaped),
-        expression=exp.Literal.string('"'),
-    )
-
-
-def _json_null_safe_part(value: exp.Expr, rendered: exp.Expr) -> exp.Expr:
-    return exp.case().when(value.copy().is_(exp.null()), exp.Literal.string("null")).else_(rendered)
-
-
-def _json_formatted_temporal_part(value: exp.Expr, format_string: str) -> exp.Expr:
-    return _json_null_safe_part(
-        value,
-        _json_string_part(exp.ToChar(this=value.copy(), format=exp.Literal.string(format_string))),
+        this=exp.DPipe(this=exp.Literal.string('"'), expression=key),
+        expression=exp.Literal.string('": '),
     )
 
 
 def _json_runtime_value_part(value: exp.Expr) -> exp.Expr:
     value_type = exp.Typeof(this=value.copy())
-    stringified = exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
-    quoted = _json_string_part(stringified)
+    stringified = _json_long_varchar_cast(value)
 
     return (
         exp.case()
@@ -349,51 +310,44 @@ def _json_runtime_value_part(value: exp.Expr) -> exp.Expr:
             ),
             stringified,
         )
-        .else_(quoted)
+        .else_(_json_quoted(stringified))
     )
-
-
-def _json_temporal_format(value: exp.Expr) -> str:
-    if isinstance(value, (exp.CurrentDate, exp.Date)) or value.is_type(exp.DType.DATE):
-        return "YYYY-MM-DD"
-
-    if isinstance(value, (exp.CurrentTime, exp.Time)) or value.is_type(
-        exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIME_NS
-    ):
-        return "HH24:MI:SS"
-
-    return "YYYY-MM-DD HH24:MI:SS"
 
 
 def _json_value_part(value: exp.Expr) -> exp.Expr:
     if isinstance(value, exp.Null):
-        return exp.Literal.string("null")
+        return exp.func("COALESCE", _json_long_varchar_cast(value), exp.Literal.string("null"))
 
-    if isinstance(value, exp.Boolean):
-        return exp.Literal.string("true" if value.this else "false")
+    if isinstance(value, exp.Boolean) or value.is_type(exp.DType.BOOLEAN):
+        stringified = _json_long_varchar_cast(value)
+
+        if not isinstance(value, exp.Boolean):
+            stringified = exp.func("COALESCE", stringified, exp.Literal.string("null"))
+
+        return exp.func("LOWER", stringified)
 
     if value.is_number:
-        return value.copy()
+        return _json_long_varchar_cast(value)
 
     if value.is_string:
-        return _json_literal_part(value.name)
+        return exp.Literal.string(json.dumps(value.name, ensure_ascii=False))
 
     if value.is_type(*exp.DataType.TEXT_TYPES):
-        return _json_string_part(exp.func("COALESCE", value.copy(), exp.Literal.string("")))
+        return _json_quoted(
+            exp.func("COALESCE", _json_long_varchar_cast(value), exp.Literal.string(""))
+        )
 
     if isinstance(
         value, (exp.CurrentDate, exp.CurrentTime, exp.CurrentTimestamp, exp.Date, exp.Time)
     ) or value.is_type(*exp.DataType.TEMPORAL_TYPES):
-        return _json_formatted_temporal_part(value, _json_temporal_format(value))
+        return exp.func(
+            "COALESCE",
+            _json_quoted(_json_long_varchar_cast(value)),
+            exp.Literal.string("null"),
+        )
 
     if value.is_type(*exp.DataType.NUMERIC_TYPES):
-        return exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))
-
-    if value.is_type(exp.DType.BOOLEAN):
-        return _json_null_safe_part(
-            value,
-            exp.func("LOWER", exp.DPipe(this=value.copy(), expression=exp.Literal.string(""))),
-        )
+        return exp.func("COALESCE", _json_long_varchar_cast(value), exp.Literal.string("null"))
 
     return _json_runtime_value_part(value)
 

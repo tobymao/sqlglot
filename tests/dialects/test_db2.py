@@ -15,6 +15,19 @@ class TestDB2(Validator):
         self.validate_identity("CREATE TABLE t (a DECIMAL(10, 2))")
         self.validate_identity("CREATE TABLE t (a TIMESTAMP)")
 
+        # Test NCHAR and NVARCHAR (should preserve, not convert to CHAR/VARCHAR)
+        self.validate_identity("CREATE TABLE t (a NCHAR(10))")
+        self.validate_identity("CREATE TABLE t (a NVARCHAR(100))")
+
+        # Test Db2-specific types (should roundtrip)
+        self.validate_identity("CREATE TABLE t (a DBCLOB)")
+        self.validate_identity("CREATE TABLE t (a GRAPHIC(100))")
+        self.validate_identity("CREATE TABLE t (a VARGRAPHIC(100))")
+
+        # Test that CHAR and NCHAR are distinct
+        self.validate_identity("CREATE TABLE t (a CHAR(10), b NCHAR(10))")
+        self.validate_identity("CREATE TABLE t (a VARCHAR(100), b NVARCHAR(100))")
+
     def test_null_ordering(self):
         """Test NULL_ORDERING = 'nulls_are_large' - NULLs sort last in ASC, first in DESC"""
         # ASC: NULLs should be last (no explicit NULLS FIRST/LAST needed)
@@ -37,35 +50,6 @@ class TestDB2(Validator):
         # Decimal division
         self.validate_identity("SELECT 5.0 / 2.0")
         self.validate_identity("SELECT CAST(5 AS DECIMAL) / CAST(2 AS DECIMAL)")
-
-    def test_db2_specific_types(self):
-        """Test Db2-specific data types and cross-dialect mapping"""
-        # DBCLOB - Double-byte CLOB
-        self.validate_all(
-            "CREATE TABLE t (a DBCLOB)",
-            write={
-                "db2": "CREATE TABLE t (a TEXT)",
-                "postgres": "CREATE TABLE t (a TEXT)",
-            },
-        )
-
-        # GRAPHIC - Fixed-length double-byte character string
-        self.validate_all(
-            "CREATE TABLE t (a GRAPHIC(100))",
-            write={
-                "db2": "CREATE TABLE t (a CHAR(100))",
-                "postgres": "CREATE TABLE t (a CHAR(100))",
-            },
-        )
-
-        # VARGRAPHIC - Variable-length double-byte character string
-        self.validate_all(
-            "CREATE TABLE t (a VARGRAPHIC(100))",
-            write={
-                "db2": "CREATE TABLE t (a VARCHAR(100))",
-                "postgres": "CREATE TABLE t (a VARCHAR(100))",
-            },
-        )
 
     def test_strip_modifiers(self):
         """Test AFTER_HAVING_MODIFIER_TRANSFORMS - strips CLUSTER/DISTRIBUTE/SORT BY"""
@@ -100,6 +84,57 @@ class TestDB2(Validator):
             write={
                 "db2": "SELECT * FROM t",
                 "spark": "SELECT * FROM t CLUSTER BY y NULLS LAST DISTRIBUTE BY x NULLS LAST SORT BY z NULLS LAST",
+            },
+        )
+
+    def test_type_transpilation(self):
+        """Test type transpilation between Db2 and other dialects"""
+        # NCHAR/NVARCHAR: Db2 preserves, other dialects convert to CHAR/VARCHAR
+        self.validate_all(
+            "CREATE TABLE t (a NCHAR(10))",
+            write={
+                "db2": "CREATE TABLE t (a NCHAR(10))",
+                "postgres": "CREATE TABLE t (a CHAR(10))",
+                "mysql": "CREATE TABLE t (a CHAR(10))",
+                "snowflake": "CREATE TABLE t (a CHAR(10))",
+            },
+        )
+
+        self.validate_all(
+            "CREATE TABLE t (a NVARCHAR(100))",
+            write={
+                "db2": "CREATE TABLE t (a NVARCHAR(100))",
+                "postgres": "CREATE TABLE t (a VARCHAR(100))",
+                "mysql": "CREATE TABLE t (a VARCHAR(100))",
+                "snowflake": "CREATE TABLE t (a VARCHAR(100))",
+            },
+        )
+
+        # GRAPHIC/VARGRAPHIC/DBCLOB: Db2-specific, preserved in other dialects
+        self.validate_all(
+            "CREATE TABLE t (a GRAPHIC(10))",
+            write={
+                "db2": "CREATE TABLE t (a GRAPHIC(10))",
+                "postgres": "CREATE TABLE t (a GRAPHIC(10))",
+                "mysql": "CREATE TABLE t (a GRAPHIC(10))",
+            },
+        )
+
+        self.validate_all(
+            "CREATE TABLE t (a VARGRAPHIC(100))",
+            write={
+                "db2": "CREATE TABLE t (a VARGRAPHIC(100))",
+                "postgres": "CREATE TABLE t (a VARGRAPHIC(100))",
+                "mysql": "CREATE TABLE t (a VARGRAPHIC(100))",
+            },
+        )
+
+        self.validate_all(
+            "CREATE TABLE t (a DBCLOB)",
+            write={
+                "db2": "CREATE TABLE t (a DBCLOB)",
+                "postgres": "CREATE TABLE t (a DBCLOB)",
+                "mysql": "CREATE TABLE t (a DBCLOB)",
             },
         )
 

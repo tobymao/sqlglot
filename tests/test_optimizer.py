@@ -1180,6 +1180,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         exp.DataType.build(expected, dialect=dialect).sql(dialect),
                     )
 
+    def test_annotate_types_cte_over_unnamed_subquery(self):
+        schema = MappingSchema({"t": {"id": "VARCHAR", "ts": "TIMESTAMP"}})
+        sql = "WITH c AS (SELECT * FROM (SELECT * FROM t)) SELECT id, ts FROM c"
+
+        expression = annotate_types(
+            optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=schema),
+            schema=schema,
+        )
+
+        self.assertEqual(expression.selects[0].type.this, exp.DataType.Type.VARCHAR)
+        self.assertEqual(expression.selects[1].type.this, exp.DataType.Type.TIMESTAMP)
+
     def test_cast_type_annotation(self):
         expression = annotate_types(parse_one("CAST('2020-01-01' AS TIMESTAMPTZ(9))"))
         self.assertEqual(expression.type.this, exp.DataType.Type.TIMESTAMPTZ)

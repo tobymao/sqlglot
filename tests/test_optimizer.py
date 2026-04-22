@@ -306,6 +306,19 @@ class TestOptimizer(unittest.TestCase):
             catalog="c",
         )
 
+    def test_qualify_tables_copies_typed_alias_columns(self):
+        expression = parse_one('SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)')
+
+        original = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(original, exp.ColumnDef)
+
+        optimizer.qualify_tables.qualify_tables(expression, canonicalize_table_aliases=True)
+
+        new = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(new, exp.ColumnDef)
+        self.assertIsNot(original, new)
+        self.assertEqual(original.sql(), new.sql())
+
     def test_normalize(self):
         self.assertEqual(
             optimizer.normalize.normalize(

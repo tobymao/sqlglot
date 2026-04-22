@@ -3439,8 +3439,8 @@ class Generator:
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         if self.dialect.CONCAT_WS_COALESCE and not expression.args.get("coalesce"):
-            # Target dialect's CONCAT_WS skips NULLs, but source dialect doesn't (e.g. Snowflake).
-            # Wrap in a CASE to preserve the source's NULL-returns-NULL behavior.
+            # Dialect's CONCAT_WS function coalesces NULLs to empty strings, but the expression does not.
+            # Wrap the entire call in a CASE expression that returns NULL if any input IS NULL.
             all_args = expression.expressions
             expression.set("coalesce", True)
             return self.sql(

@@ -282,7 +282,6 @@ TBLPROPERTIES (
                 "duckdb": "CONCAT_WS(' ', NULL, 'Smith')",
                 "spark": "CONCAT_WS(' ', NULL, 'Smith')",
                 "hive": "CONCAT_WS(' ', NULL, 'Smith')",
-                "snowflake": "CONCAT_WS(' ', COALESCE(NULL, ''), 'Smith')",
             },
         )
 

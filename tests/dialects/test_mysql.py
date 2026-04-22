@@ -1411,6 +1411,14 @@ COMMENT='客户账户表'"""
         self.assertIsInstance(show.args["like"], exp.Literal)
         self.assertEqual(show.text("like"), "%foo%")
 
+        show = self.validate_identity("SHOW TABLES IN test", "SHOW TABLES FROM test")
+        self.assertEqual(show.name, "TABLES")
+        self.assertEqual(show.text("db"), "test")
+
+        show = self.validate_identity("SHOW FULL TABLES IN test", "SHOW FULL TABLES FROM test")
+        self.assertTrue(show.args["full"])
+        self.assertEqual(show.text("db"), "test")
+
     def test_set_variable(self):
         cmd = self.parse_one("SET SESSION x = 1")
         item = cmd.expressions[0]

@@ -408,7 +408,13 @@ class MySQLParser(parser.Parser):
         else:
             target_id = None
 
-        log = self._parse_string() if self._match_text_seq("IN") else None
+        index = self._index
+        if self._match_text_seq("IN"):
+            log = self._parse_string()
+            if log is None:
+                self._retreat(index)
+        else:
+            log = None
 
         if this in ("BINLOG EVENTS", "RELAYLOG EVENTS"):
             position = self._parse_number() if self._match_text_seq("FROM") else None
@@ -417,7 +423,7 @@ class MySQLParser(parser.Parser):
             position = None
             db = None
 
-            if self._match(TokenType.FROM):
+            if self._match(TokenType.FROM) or self._match_text_seq("IN"):
                 db = self._parse_id_var()
             elif self._match(TokenType.DOT):
                 db = target_id

@@ -9,6 +9,8 @@ from sqlglot.parsers.dremio import DremioParser
 class Dremio(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     CONCAT_COALESCE = True
+    CONCAT_WS_COALESCE = True
+    CONCAT_WS_COALESCE = True
     TYPED_DIVISION = True
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_VALUES_DEFAULT = False

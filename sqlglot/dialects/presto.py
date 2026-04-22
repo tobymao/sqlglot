@@ -19,6 +19,7 @@ class Presto(Dialect):
     NULL_ORDERING = "nulls_are_last"
     TIME_FORMAT = MySQL.TIME_FORMAT
     STRICT_STRING_CONCAT = True
+    CONCAT_WS_COALESCE = True
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: bool | None = None

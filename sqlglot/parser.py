@@ -342,7 +342,7 @@ class Parser:
         "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
             expressions=args,
             safe=not dialect.STRICT_STRING_CONCAT,
-            coalesce=dialect.CONCAT_COALESCE,
+            coalesce=dialect.CONCAT_WS_COALESCE,
         ),
         "CONVERT_TIMEZONE": build_convert_timezone,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(

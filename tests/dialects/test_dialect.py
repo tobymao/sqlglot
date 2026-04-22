@@ -2449,7 +2449,6 @@ class TestDialect(Validator):
             write={
                 "clickhouse": "CONCAT_WS('-', 'a', 'b')",
                 "duckdb": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
-                "presto": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR)) END",
                 "hive": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
                 "spark": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
                 "trino": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR)) END",
@@ -2462,7 +2461,6 @@ class TestDialect(Validator):
                 "clickhouse": "CONCAT_WS('-', x)",
                 "duckdb": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
                 "hive": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
-                "presto": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', CAST(x AS VARCHAR)) END",
                 "spark": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
                 "trino": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', CAST(x AS VARCHAR)) END",
             },

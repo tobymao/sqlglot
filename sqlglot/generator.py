@@ -3397,7 +3397,13 @@ class Generator:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
             args = [exp.cast(e, exp.DType.TEXT) for e in args]
 
-        if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
+        concat_coalesce = (
+            self.dialect.CONCAT_WS_COALESCE
+            if isinstance(expression, exp.ConcatWs)
+            else self.dialect.CONCAT_COALESCE
+        )
+
+        if not concat_coalesce and expression.args.get("coalesce"):
 
             def _wrap_with_coalesce(e: exp.Expr) -> exp.Expr:
                 if not e.type:
@@ -3432,8 +3438,8 @@ class Generator:
         return self.func("CONCAT", *expressions)
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
-        if self.dialect.CONCAT_COALESCE and not expression.args.get("coalesce"):
-            # Dialect's CONCAT_WS function coalesces NULLs to empty strings, but the expression does not.
+        if self.dialect.CONCAT_WS_COALESCE and not expression.args.get("coalesce"):
+            # Dialect's CONCAT_WS function skips NULL args, but the expression does not.
             # Wrap the entire call in a CASE expression that returns NULL if any input IS NULL.
             all_args = expression.expressions
             expression.set("coalesce", True)

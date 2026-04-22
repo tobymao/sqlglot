@@ -399,6 +399,9 @@ class Dialect(metaclass=_Dialect):
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
 
+    CONCAT_WS_COALESCE = False
+    """A `NULL` arg in `CONCAT_WS` yields `NULL` by default, but in some dialects it is skipped."""
+
     HEX_LOWERCASE = False
     """Whether the `HEX` function returns a lowercase hexadecimal string."""
 

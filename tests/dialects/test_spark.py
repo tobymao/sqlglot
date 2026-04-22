@@ -276,6 +276,15 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_all(
+            "CONCAT_WS(' ', NULL, 'Smith')",
+            write={
+                "duckdb": "CONCAT_WS(' ', NULL, 'Smith')",
+                "spark": "CONCAT_WS(' ', NULL, 'Smith')",
+                "hive": "CONCAT_WS(' ', NULL, 'Smith')",
+            },
+        )
+
         # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
         self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
 

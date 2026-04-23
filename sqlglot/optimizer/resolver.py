@@ -142,7 +142,7 @@ class Resolver:
             if isinstance(source, exp.Table):
                 columns = self.schema.column_names(source, only_visible)
             elif isinstance(source, Scope) and isinstance(
-                (source_expr := source.expression), (exp.Values, exp.Unnest, exp.Lateral)
+                source_expr := source.expression, (exp.Values, exp.Unnest, exp.Lateral)
             ):
                 columns = source_expr.named_selects
 

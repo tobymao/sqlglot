@@ -300,14 +300,23 @@ class TypeAnnotator:
 
                     alias_column_names = expression.alias_column_names
 
-                    if (
-                        isinstance(expression, exp.Unnest)
-                        and expression.type
-                        and expression.type.is_type(exp.DType.STRUCT)
+                    if isinstance(expression, exp.Unnest):
+                        exp_type = expression.type
+                    elif isinstance(expression, exp.Lateral) and isinstance(
+                        expression.this, exp.Explode
                     ):
+                        exp_type = expression.this.type
+                    else:
+                        exp_type = None
+
+                    struct_type = (
+                        exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
+                    )
+
+                    if struct_type:
                         selects[name] = {
                             col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
-                            for col_def in expression.type.expressions
+                            for col_def in struct_type.expressions
                             if isinstance(col_def, exp.ColumnDef) and col_def.kind
                         }
                     else:

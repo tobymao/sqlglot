@@ -2282,6 +2282,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("PARSE_IP is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def decompressstring_sql(self, expression: exp.DecompressString) -> str:
+        self.unsupported("DECOMPRESS_STRING is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
         this = expression.this
         expr = expression.expression

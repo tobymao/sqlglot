@@ -511,6 +511,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost")(
             rename_func("EDITDISTANCE")
         ),
+        exp.List: rename_func("ARRAY_AGG"),
         exp.LocationProperty: lambda self, e: f"LOCATION={self.sql(e, 'this')}",
         exp.LogicalAnd: rename_func("BOOLAND_AGG"),
         exp.LogicalOr: rename_func("BOOLOR_AGG"),
@@ -1047,6 +1048,11 @@ class SnowflakeGenerator(generator.Generator):
             expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
 
         return expr_sql
+
+    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+        if expression.args.get("check_null"):
+            return self.func("ARRAY_DISTINCT", expression.this)
+        return self.func("ARRAY_DISTINCT", exp.ArrayCompact(this=expression.this))
 
     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)

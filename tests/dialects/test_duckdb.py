@@ -691,6 +691,20 @@ class TestDuckDB(Validator):
             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
         )
         self.validate_all(
+            "SELECT LIST(col) FROM t",
+            write={
+                "duckdb": "SELECT LIST(col) FROM t",
+                "snowflake": "SELECT ARRAY_AGG(col) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT LIST_DISTINCT(col)",
+            write={
+                "duckdb": "SELECT LIST_DISTINCT(col)",
+                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))",
+            },
+        )
+        self.validate_all(
             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
             write={
                 "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",

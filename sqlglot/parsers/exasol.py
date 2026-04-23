@@ -127,7 +127,7 @@ class ExasolParser(parser.Parser):
         "JSON_EXTRACT": lambda self: self._parse_json_extract(),
     }
 
-    def _parse_statement(self) -> t.Optional[exp.Expr]:
+    def _parse_statement(self) -> Expr | None:
         # https://docs.exasol.com/db/latest/sql/open_schema.htm
         if self._match_text_seq("OPEN", "SCHEMA"):
             return self.expression(exp.Use(this=self._parse_table(schema=False)))

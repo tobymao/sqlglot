@@ -2047,6 +2047,22 @@ class DuckDBGenerator(generator.Generator):
         """,
     )
 
+    UUID_V5_TEMPLATE: exp.Expr = exp.maybe_parse(
+        """
+        (SELECT
+            LOWER(
+                SUBSTR(h, 1, 8) || '-' ||
+                SUBSTR(h, 9, 4) || '-' ||
+                '5' || SUBSTR(h, 14, 3) || '-' ||
+                FORMAT('{:02x}', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
+                SUBSTR(h, 21, 12)
+            )
+        FROM (
+            SELECT SUBSTR(SHA1(UNHEX(REPLACE(:namespace, '-', '')) || ENCODE(:name, 'utf8')), 1, 32) AS h
+        ))
+        """
+    )
+
     # Shared bag semantics outer frame for ARRAY_EXCEPT and ARRAY_INTERSECTION.
     # Each element is paired with its 1-based position via LIST_ZIP, then filtered
     # by a comparison operator (supplied via :cond) that determines the operation:
@@ -4428,3 +4444,18 @@ class DuckDBGenerator(generator.Generator):
             corr_expr = expression  # make mypy happy
 
         return self.sql(exp.case().when(exp.IsNan(this=corr_expr), exp.null()).else_(corr_expr))
+
+    def uuid_sql(self, expression: exp.Uuid) -> str:
+        namespace = expression.this
+        name = expression.args.get("name")
+
+        # UUID v5 (namespace + name) - Emulate using SHA1
+        if namespace and name:
+            result = exp.replace_placeholders(
+                self.UUID_V5_TEMPLATE.copy(),
+                namespace=namespace,
+                name=name,
+            )
+            return self.sql(result)
+
+        return super().uuid_sql(expression)

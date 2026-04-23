@@ -24,6 +24,7 @@ class DuckDB(Dialect):
     SUPPORTS_FIXED_SIZE_ARRAYS = True
     STRICT_JSON_PATH_SYNTAX = False
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
+    UUID_IS_STRING_TYPE = False
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

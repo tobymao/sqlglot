@@ -2210,19 +2210,20 @@ class TestSnowflake(Validator):
             "SELECT UUID_STRING(), UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')"
         )
 
+        # Note: Snowflake's UUID_STRING returns VARCHAR, DuckDB also returns VARCHAR from string operations
         self.validate_all(
             "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
             read={
                 "snowflake": "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
             },
             write={
-                "hive": "UUID()",
-                "spark2": "UUID()",
-                "spark": "UUID()",
-                "databricks": "UUID()",
-                "duckdb": "UUID()",
-                "presto": "UUID()",
-                "trino": "UUID()",
+                "hive": "CAST(UUID() AS STRING)",
+                "spark2": "CAST(UUID() AS STRING)",
+                "spark": "CAST(UUID() AS STRING)",
+                "databricks": "CAST(UUID() AS STRING)",
+                "duckdb": "(SELECT LOWER(SUBSTRING(h, 1, 8) || '-' || SUBSTRING(h, 9, 4) || '-' || '5' || SUBSTRING(h, 14, 3) || '-' || FORMAT('{:02x}', CAST('0x' || SUBSTRING(h, 17, 2) AS INT) & 63 | 128) || SUBSTRING(h, 19, 2) || '-' || SUBSTRING(h, 21, 12)) FROM (SELECT SUBSTRING(SHA1(UNHEX(REPLACE('fe971b24-9572-4005-b22f-351e9c09274d', '-', '')) || ENCODE('foo')), 1, 32) AS h))",
+                "presto": "CAST(UUID() AS VARCHAR)",
+                "trino": "CAST(UUID() AS VARCHAR)",
                 "postgres": "GEN_RANDOM_UUID()",
                 "bigquery": "GENERATE_UUID()",
             },

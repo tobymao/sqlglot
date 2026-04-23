@@ -693,7 +693,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT LIST(col) FROM t",
             write={
-                "duckdb": "SELECT LIST(col) FROM t",
+                "duckdb": "SELECT ARRAY_AGG(col) FROM t",
                 "snowflake": "SELECT ARRAY_AGG(col) FROM t",
             },
         )

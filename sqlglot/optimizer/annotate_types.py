@@ -343,10 +343,11 @@ class TypeAnnotator:
                 if pivot.unpivot:
                     for field in pivot.fields:
                         field_col = field.this
-                        if not isinstance(field_col, exp.Column) or not field.expressions:
+
+                        first = seq_get(field.expressions, 0)
+                        if not first:
                             continue
 
-                        first = field.expressions[0]
                         is_pivot_alias = isinstance(first, exp.PivotAlias)
 
                         # FOR column type from the alias literal, or VARCHAR if no alias

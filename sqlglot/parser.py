@@ -421,6 +421,11 @@ class Parser:
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
         "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
+        "UUID_STRING": lambda args, dialect: exp.Uuid(
+            this=seq_get(args, 0),
+            name=seq_get(args, 1),
+            is_string=dialect.UUID_IS_STRING_TYPE or None,
+        ),
         "VAR_MAP": build_var_map,
     }
 

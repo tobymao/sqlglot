@@ -3881,7 +3881,6 @@ FROM subquery2""",
                 "trino": "UUID()",
                 "mysql": "UUID()",
                 "postgres": "GEN_RANDOM_UUID()",
-                "snowflake": "UUID_STRING()",
                 "tsql": "NEWID()",
             },
             write={

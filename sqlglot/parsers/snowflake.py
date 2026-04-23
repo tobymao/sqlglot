@@ -715,7 +715,6 @@ class SnowflakeParser(parser.Parser):
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
-        "UUID_STRING": lambda args: exp.Uuid(this=seq_get(args, 0), name=seq_get(args, 1)),
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,
     }

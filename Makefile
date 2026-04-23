@@ -8,6 +8,7 @@ endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
 FIND_SO := find sqlglot -name "*.so"
+NPROC := $(shell python -c "import os; print(os.cpu_count() or 1)")
 
 hidec:
 	rm -rf $(SO_BACKUP) && $(FIND_SO) | tar cf $(SO_BACKUP) -T - 2>/dev/null && $(FIND_SO) -delete; true
@@ -38,10 +39,10 @@ install-dev:
 	fi
 
 install-devc:
-	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace
+	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC)
 
 install-devc-release: clean
-	cd sqlglotc && python setup.py build_ext --inplace
+	cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC)
 
 install-pre-commit:
 	pre-commit install

@@ -511,7 +511,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost")(
             rename_func("EDITDISTANCE")
         ),
-        exp.List: rename_func("ARRAY_AGG"),
         exp.LocationProperty: lambda self, e: f"LOCATION={self.sql(e, 'this')}",
         exp.LogicalAnd: rename_func("BOOLAND_AGG"),
         exp.LogicalOr: rename_func("BOOLOR_AGG"),

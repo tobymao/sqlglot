@@ -651,25 +651,6 @@ class TestOptimizer(unittest.TestCase):
             )
             optimizer.qualify_columns.validate_qualify_columns(qualified)
 
-        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING>>"}}
-        expression = annotate_types(
-            optimizer.qualify.qualify(
-                parse_one(
-                    "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
-                    read="spark",
-                ),
-                schema=schema,
-                dialect="spark",
-            ),
-            schema=schema,
-            dialect="spark",
-        )
-        self.assertEqual(
-            expression.sql(dialect="spark"),
-            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
-        )
-        self.assertEqual(expression.selects[0].type, exp.DataType.build("STRING", dialect="spark"))
-
         schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
         expression = annotate_types(
             optimizer.qualify.qualify(
@@ -689,6 +670,25 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(expression.selects[0].type, exp.DataType.build("STRING", dialect="spark"))
         self.assertEqual(expression.selects[1].type, exp.DataType.build("INT", dialect="spark"))
+
+        schema = {"my_table": {"items": "ARRAY<STRUCT<amount FLOAT, type STRING>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT (SELECT SUM(ci.amount) FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci WHERE ci.type = 'promotion') AS total FROM my_table",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT (SELECT SUM(`ci`.`amount`) AS `_col_0` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci` WHERE `ci`.`type` = 'promotion') AS `total` FROM `my_table` AS `my_table`",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})

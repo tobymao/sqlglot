@@ -129,6 +129,8 @@ class sdist(_sdist):
 setup(
     name="sqlglotc",
     packages=[],
-    ext_modules=mypycify(_source_paths(), opt_level=os.environ.get("MYPYC_OPT", "2")),
+    ext_modules=mypycify(
+        _source_paths(), opt_level=os.environ.get("MYPYC_OPT", "2"), separate=True
+    ),
     cmdclass={"build_ext": build_ext, "sdist": sdist},
 )

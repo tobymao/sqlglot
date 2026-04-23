@@ -338,8 +338,10 @@ class TypeAnnotator:
                 inner_name = (
                     pivot_source.name if isinstance(pivot_source, exp.Table) else pivot.alias
                 )
-                col_types = dict(selects.get(inner_name, {}))
 
+                source_types = selects.get(inner_name, {})
+
+                col_types = {}
                 if pivot.unpivot:
                     for field in pivot.fields:
                         field_col = field.this
@@ -367,7 +369,7 @@ class TypeAnnotator:
                                 else [val_expr]
                             )
                             for val_col, src_col in zip(val_cols, src_cols):
-                                src_type = col_types.get(src_col.output_name) or src_col.type
+                                src_type = source_types.get(src_col.output_name) or src_col.type
                                 if isinstance(src_type, exp.DataType) and not src_type.is_type(
                                     exp.DType.UNKNOWN
                                 ):

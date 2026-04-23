@@ -133,7 +133,7 @@ class ExasolParser(parser.Parser):
             return self.expression(exp.Use(this=self._parse_table(schema=False)))
         return super()._parse_statement()
 
-    def _parse_column(self) -> t.Optional[exp.Expr]:
+    def _parse_column(self) -> Expr | None:
         column = super()._parse_column()
         if not isinstance(column, exp.Column):
             return column

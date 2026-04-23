@@ -2286,6 +2286,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("DECOMPRESS_STRING is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def decompressbinary_sql(self, expression: exp.DecompressBinary) -> str:
+        self.unsupported("DECOMPRESS_BINARY is not supported in DuckDB")
+        return self.function_fallback_sql(expression)
+
     def jarowinklersimilarity_sql(self, expression: exp.JarowinklerSimilarity) -> str:
         this = expression.this
         expr = expression.expression

@@ -138,13 +138,6 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
 
                 raise OptimizeError(error_msg)
 
-            if unqualified_columns and scope.pivots and scope.pivots[0].unpivot:
-                # New columns produced by the UNPIVOT can't be qualified, but there may be columns
-                # under the UNPIVOT's IN clause that can and should be qualified. We recompute
-                # this list here to ensure those in the former category will be excluded.
-                unpivot_columns = set(_unpivot_columns(scope.pivots[0]))
-                unqualified_columns = [c for c in unqualified_columns if c not in unpivot_columns]
-
             all_unqualified_columns.extend(unqualified_columns)
 
     if all_unqualified_columns:
@@ -188,13 +181,18 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
         scope.clear_cache()
 
 
-def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Column]:
+def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
     name_columns = [
         field.this
         for field in unpivot.fields
-        if isinstance(field, exp.In) and isinstance(field.this, exp.Column)
+        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
     ]
-    value_columns = (c for e in unpivot.expressions for c in e.find_all(exp.Column))
+    value_columns = (
+        ident
+        for e in unpivot.expressions
+        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
+        if isinstance(ident, exp.Identifier)
+    )
 
     return itertools.chain(name_columns, value_columns)
 

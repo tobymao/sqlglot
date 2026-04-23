@@ -139,6 +139,17 @@ class Resolver:
 
             source = self.scope.sources[name]
 
+            # A pivoted CTE reference is stored as an exp.Table in the scope sources (see
+            # _traverse_tables in scope.py), but the underlying CTE Scope still holds the
+            # column information we need to resolve pre-pivot columns.
+            if (
+                isinstance(source, exp.Table)
+                and not source.db
+                and source.args.get("pivots")
+                and source.name in self.scope.cte_sources
+            ):
+                source = self.scope.cte_sources[source.name]
+
             if isinstance(source, exp.Table):
                 columns = self.schema.column_names(source, only_visible)
             elif isinstance(source, Scope) and isinstance(

@@ -275,6 +275,15 @@ def _resolve_dialect(dialect: DialectType) -> Dialect:
     return Dialect.get_or_raise(dialect)
 
 
+def _unpivot_target(expr: exp.Expr) -> exp.Expr:
+    # UNPIVOT's pre-FOR values and FOR field are new output names, not column references.
+    if isinstance(expr, exp.Column) and not expr.table:
+        return expr.this
+    if isinstance(expr, exp.Tuple):
+        expr.set("expressions", [_unpivot_target(e) for e in expr.expressions])
+    return expr
+
+
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
@@ -5141,6 +5150,12 @@ class Parser:
                 group=group,
             )
         )
+
+        if unpivot:
+            pivot.set("expressions", [_unpivot_target(e) for e in pivot.expressions])
+            for pivot_field in pivot.fields:
+                if isinstance(pivot_field, exp.In):
+                    pivot_field.set("this", _unpivot_target(pivot_field.this))
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())

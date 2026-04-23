@@ -355,7 +355,9 @@ class TypeAnnotator:
                             if alias_node:
                                 col_types[field_col.name] = alias_node.type
                         else:
-                            col_types[field_col.name] = exp.DType.VARCHAR
+                            col_types[field_col.name] = exp.DataType.build(
+                                "VARCHAR", dialect=self.dialect
+                            )
 
                         # Value column types from the IN source columns
                         src = first.this if is_pivot_alias else first

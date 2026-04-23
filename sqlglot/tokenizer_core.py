@@ -558,8 +558,8 @@ class TokenizerCore:
         "nested_comments",
         "hint_start",
         "tokens_preceding_hint",
-        "bit_strings",
-        "hex_strings",
+        "has_bit_strings",
+        "has_hex_strings",
         "numeric_literals",
         "var_single_tokens",
         "string_escapes_allowed_in_raw_strings",
@@ -589,8 +589,8 @@ class TokenizerCore:
         nested_comments: bool,
         hint_start: str,
         tokens_preceding_hint: set[TokenType],
-        bit_strings: list[str | tuple[str, str]],
-        hex_strings: list[str | tuple[str, str]],
+        has_bit_strings: bool,
+        has_hex_strings: bool,
         numeric_literals: dict[str, str],
         var_single_tokens: set[str],
         string_escapes_allowed_in_raw_strings: bool,
@@ -617,8 +617,8 @@ class TokenizerCore:
         self.nested_comments = nested_comments
         self.hint_start = hint_start
         self.tokens_preceding_hint = tokens_preceding_hint
-        self.bit_strings = bit_strings
-        self.hex_strings = hex_strings
+        self.has_bit_strings = has_bit_strings
+        self.has_hex_strings = has_hex_strings
         self.numeric_literals = numeric_literals
         self.var_single_tokens = var_single_tokens
         self.string_escapes_allowed_in_raw_strings = string_escapes_allowed_in_raw_strings
@@ -917,9 +917,9 @@ class TokenizerCore:
         if self._char == "0":
             peek = _CHAR_UPPER.get(self._peek, self._peek)
             if peek == "B":
-                return self._scan_bits() if self.bit_strings else self._add(TokenType.NUMBER)
+                return self._scan_bits() if self.has_bit_strings else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return self._scan_hex() if self.hex_strings else self._add(TokenType.NUMBER)
+                return self._scan_hex() if self.has_hex_strings else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0

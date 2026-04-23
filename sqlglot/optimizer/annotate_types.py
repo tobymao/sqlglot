@@ -345,23 +345,20 @@ class TypeAnnotator:
                         field_col = field.this
 
                         first = seq_get(field.expressions, 0)
-                        if not first:
-                            continue
-
-                        is_pivot_alias = isinstance(first, exp.PivotAlias)
 
                         # FOR column type from the alias literal, or VARCHAR if no alias
-                        if is_pivot_alias:
+                        if isinstance(first, exp.PivotAlias):
                             alias_node = first.args.get("alias")
                             if alias_node:
                                 col_types[field_col.name] = alias_node.type
+                            src = first.this
                         else:
                             col_types[field_col.name] = exp.DataType.build(
                                 "VARCHAR", dialect=self.dialect
                             )
+                            src = first
 
                         # Value column types from the IN source columns
-                        src = first.this if is_pivot_alias else first
                         src_cols = src.expressions if isinstance(src, exp.Tuple) else [src]
                         for val_expr in pivot.expressions:
                             val_cols = (

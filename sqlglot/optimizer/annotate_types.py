@@ -369,8 +369,10 @@ class TypeAnnotator:
                                 else [val_expr]
                             )
                             for val_col, src_col in zip(val_cols, src_cols):
-                                src_type = col_types.get(src_col.output_name)
-                                if src_type:
+                                src_type = col_types.get(src_col.output_name) or src_col.type
+                                if isinstance(src_type, exp.DataType) and not src_type.is_type(
+                                    exp.DType.UNKNOWN
+                                ):
                                     col_types[val_col.output_name] = src_type
 
                 if col_types:

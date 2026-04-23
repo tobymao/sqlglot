@@ -675,6 +675,20 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT LIST(DISTINCT col) FILTER(WHERE NOT col IS NULL) OVER (PARTITION BY grp) FROM t"
             },
         )
+        self.validate_all(
+            "SELECT ARRAY_AGG(col) FROM t",
+            write={
+                "snowflake": "SELECT ARRAY_AGG(col) FROM t",
+                "duckdb": "SELECT ARRAY_AGG(col) FILTER(WHERE col IS NOT NULL) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT(col)",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT(col)",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(col) <> LIST_COUNT(col) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(col, _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(col) END",
+            },
+        )
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")

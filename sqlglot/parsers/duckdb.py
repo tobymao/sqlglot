@@ -133,6 +133,7 @@ class DuckDBParser(parser.Parser):
         "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+        "LIST_DISTINCT": exp.ArrayDistinct.from_arg_list,
         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
         "LIST_CONCAT": parser.build_array_concat,
         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,

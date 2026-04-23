@@ -180,6 +180,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT GET_BIT(CAST('0110010' AS BIT), 2)")
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
+        self.validate_identity("SELECT 1 AS a$b")
         self.validate_identity("""SELECT '{"x": 1}' -> c FROM t""")
 
         self.assertEqual(
@@ -232,7 +233,7 @@ class TestDuckDB(Validator):
                     "snowflake": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "spark": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "sqlite": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
-                    "starrocks": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+                    "starrocks": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "teradata": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "trino": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "tsql": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
@@ -548,6 +549,34 @@ class TestDuckDB(Validator):
             """SELECT JSON_EXTRACT_STRING('{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }', ['$.family', '$.species'])""",
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL, 'a', 1)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL, 'a', 1)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL, 'a', 1))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY()",
+            write={
+                "duckdb": "SELECT JSON_ARRAY()",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+            },
+        )
         self.validate_identity(
             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",
@@ -760,6 +789,10 @@ class TestDuckDB(Validator):
                 "duckdb": """SELECT '{"x": 1}'::JSON""",
                 "postgres": """SELECT '{"x": 1}'::JSONB""",
             },
+            write={
+                "duckdb": """SELECT CAST('{"x": 1}' AS JSON)""",
+                "snowflake": """SELECT CAST('{"x": 1}' AS VARIANT)""",
+            },
         )
         self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
@@ -775,6 +808,35 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT IFF(_u.pos = _u_2.pos_2, _u_2.col, NULL) AS col FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE([1, 2, 3])) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => [1, 2, 3])) AS _u_2(seq, key, path, pos_2, col, this) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > (ARRAY_SIZE([1, 2, 3]) - 1) AND _u_2.pos_2 = (ARRAY_SIZE([1, 2, 3]) - 1))",
             },
         )
+
+        self.validate_all(
+            "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
+            read={
+                "snowflake": "SELECT TO_NUMBER('12.3456')",
+            },
+            write={
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(38, 0))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('12.3456' AS DECIMAL(10, 0))",
+            read={
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10)",
+            },
+            write={
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 0))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('12.3456' AS DECIMAL(10, 2))",
+            read={
+                "snowflake": "SELECT TO_NUMBER('12.3456', 10, 2)",
+            },
+            write={
+                "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 2))",
+            },
+        )
+
         self.validate_all(
             "VAR_POP(x)",
             read={

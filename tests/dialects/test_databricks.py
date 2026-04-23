@@ -491,6 +491,37 @@ class TestDatabricks(Validator):
             "SELECT OVERLAY('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0)",
         )
 
+    def test_set_variable(self):
+        self.validate_identity("SET VAR v = 5", "SET VARIABLE v = 5")
+        self.validate_identity("SET VARIABLE v = 5")
+        self.validate_identity("SET VARIABLE v1 = 1, v2 = '2'")
+        self.validate_identity("SET VARIABLE (v1, v2) = (SELECT 1, 2)")
+        self.validate_identity("SET VARIABLE v = (SELECT MAX(c1) FROM VALUES (1), (2) AS T(c1))")
+        self.validate_identity("SET VARIABLE v = DEFAULT")
+
+    def test_iff(self):
+        # IFF is a synonym for IF in Databricks; it normalizes to IF on output
+        self.validate_all(
+            "SELECT IF(x > 0, 'positive', 'non-positive')",
+            read={"databricks": "SELECT IFF(x > 0, 'positive', 'non-positive')"},
+            write={
+                "databricks": "SELECT IF(x > 0, 'positive', 'non-positive')",
+                "snowflake": "SELECT IFF(x > 0, 'positive', 'non-positive')",
+            },
+        )
+
+    def test_try_divide(self):
+        self.validate_all(
+            "SELECT TRY_DIVIDE(a, b)",
+            read={"databricks": "SELECT TRY_DIVIDE(a, b)"},
+            write={
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+                "snowflake": "SELECT IFF(b <> 0, a / b, NULL)",
+                "duckdb": "SELECT CASE WHEN b <> 0 THEN a / b ELSE NULL END",
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+            },
+        )
+
     def test_declare(self):
         self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
         self.validate_identity("DECLARE x INT")

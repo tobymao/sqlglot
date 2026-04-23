@@ -6,8 +6,8 @@ from enum import IntEnum, auto
 from sqlglot.errors import TokenError
 
 # dict lookup is faster than .upper() and .isdigit()
-_CHAR_UPPER: t.Dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
-_DIGIT_CHARS: t.FrozenSet[str] = frozenset("0123456789")
+_CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
+_DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
 
 
 class TokenType(IntEnum):
@@ -467,7 +467,7 @@ class TokenType(IntEnum):
 
 class Token:
     # mypyc doesn't expose slots
-    _attrs: t.ClassVar[t.Tuple[str, ...]] = (
+    _attrs: t.ClassVar[tuple[str, ...]] = (
         "token_type",
         "text",
         "line",
@@ -506,7 +506,7 @@ class Token:
         col: int = 1,
         start: int = 0,
         end: int = 0,
-        comments: t.Optional[t.List[str]] = None,
+        comments: list[str] | None = None,
     ) -> None:
         self.token_type = token_type
         self.text = text
@@ -574,33 +574,33 @@ class TokenizerCore:
 
     def __init__(
         self,
-        single_tokens: t.Dict[str, TokenType],
-        keywords: t.Dict[str, TokenType],
-        quotes: t.Dict[str, str],
-        format_strings: t.Dict[str, t.Tuple[str, TokenType]],
-        identifiers: t.Dict[str, str],
-        comments: t.Dict[str, t.Optional[str]],
-        string_escapes: t.Set[str],
-        byte_string_escapes: t.Set[str],
-        identifier_escapes: t.Set[str],
-        escape_follow_chars: t.Set[str],
-        commands: t.Set[TokenType],
-        command_prefix_tokens: t.Set[TokenType],
+        single_tokens: dict[str, TokenType],
+        keywords: dict[str, TokenType],
+        quotes: dict[str, str],
+        format_strings: dict[str, tuple[str, TokenType]],
+        identifiers: dict[str, str],
+        comments: dict[str, str | None],
+        string_escapes: set[str],
+        byte_string_escapes: set[str],
+        identifier_escapes: set[str],
+        escape_follow_chars: set[str],
+        commands: set[TokenType],
+        command_prefix_tokens: set[TokenType],
         nested_comments: bool,
         hint_start: str,
-        tokens_preceding_hint: t.Set[TokenType],
-        bit_strings: t.List[t.Union[str, t.Tuple[str, str]]],
-        hex_strings: t.List[t.Union[str, t.Tuple[str, str]]],
-        numeric_literals: t.Dict[str, str],
-        var_single_tokens: t.Set[str],
+        tokens_preceding_hint: set[TokenType],
+        bit_strings: list[str | tuple[str, str]],
+        hex_strings: list[str | tuple[str, str]],
+        numeric_literals: dict[str, str],
+        var_single_tokens: set[str],
         string_escapes_allowed_in_raw_strings: bool,
         heredoc_tag_is_identifier: bool,
         heredoc_string_alternative: TokenType,
-        keyword_trie: t.Dict,
+        keyword_trie: dict,
         numbers_can_be_underscore_separated: bool,
         numbers_can_have_decimals: bool,
         identifiers_can_start_with_digit: bool,
-        unescaped_sequences: t.Dict[str, str],
+        unescaped_sequences: dict[str, str],
     ) -> None:
         self.single_tokens = single_tokens
         self.keywords = keywords
@@ -631,12 +631,12 @@ class TokenizerCore:
         self.unescaped_sequences = unescaped_sequences
         self.sql = ""
         self.size = 0
-        self.tokens: t.List[Token] = []
+        self.tokens: list[Token] = []
         self._start = 0
         self._current = 0
         self._line = 1
         self._col = 0
-        self._comments: t.List[str] = []
+        self._comments: list[str] = []
         self._char = ""
         self._end = False
         self._peek = ""
@@ -656,7 +656,7 @@ class TokenizerCore:
         self._peek = ""
         self._prev_token_line = -1
 
-    def tokenize(self, sql: str) -> t.List[Token]:
+    def tokenize(self, sql: str) -> list[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
         self.reset()
         self.sql = sql
@@ -757,7 +757,7 @@ class TokenizerCore:
     def _text(self) -> str:
         return self.sql[self._start : self._current]
 
-    def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
+    def _add(self, token_type: TokenType, text: str | None = None) -> None:
         self._prev_token_line = self._line
 
         if self._comments and token_type == TokenType.SEMICOLON and self.tokens:
@@ -932,7 +932,7 @@ class TokenizerCore:
         is_underscore_separated: bool = False
         number_text: str = ""
         numeric_literal: str = ""
-        numeric_type: t.Optional[TokenType] = None
+        numeric_type: TokenType | None = None
 
         while True:
             if self._peek in _DIGIT_CHARS:
@@ -1118,7 +1118,7 @@ class TokenizerCore:
     def _extract_string(
         self,
         delimiter: str,
-        escapes: t.Optional[t.Set[str]] = None,
+        escapes: set[str] | None = None,
         raw_string: bool = False,
         raise_unmatched: bool = True,
     ) -> str:

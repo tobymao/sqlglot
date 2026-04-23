@@ -63,34 +63,34 @@ class Scope:
     """
 
     _collected: bool
-    _raw_columns: t.List[exp.Column]
-    _table_columns: t.List[exp.TableColumn]
-    _stars: t.List[exp.Column | exp.Dot]
-    _derived_tables: t.List[exp.Subquery]
-    _udtfs: t.List[exp.UDTF]
-    _tables: t.List[exp.Table]
-    _ctes: t.List[exp.CTE]
-    _subqueries: t.List[exp.Select | exp.SetOperation]
-    _join_hints: t.List[exp.JoinHint]
-    _semi_anti_join_tables: t.Set[str]
-    _column_index: t.Set[int]
-    _selected_sources: t.Optional[t.Dict[str, t.Tuple[exp.Selectable, exp.Table | Scope]]]
-    _columns: t.Optional[t.List[exp.Column]]
-    _external_columns: t.Optional[t.List[exp.Column]]
-    _local_columns: t.Optional[t.List[exp.Column]]
-    _pivots: t.Optional[t.List[exp.Pivot]]
-    _references: t.Optional[t.List[t.Tuple[str, exp.Selectable]]]
+    _raw_columns: list[exp.Column]
+    _table_columns: list[exp.TableColumn]
+    _stars: list[exp.Column | exp.Dot]
+    _derived_tables: list[exp.Subquery]
+    _udtfs: list[exp.UDTF]
+    _tables: list[exp.Table]
+    _ctes: list[exp.CTE]
+    _subqueries: list[exp.Select | exp.SetOperation]
+    _join_hints: list[exp.JoinHint]
+    _semi_anti_join_tables: set[str]
+    _column_index: set[int]
+    _selected_sources: dict[str, tuple[exp.Selectable, exp.Table | Scope]] | None
+    _columns: list[exp.Column] | None
+    _external_columns: list[exp.Column] | None
+    _local_columns: list[exp.Column] | None
+    _pivots: list[exp.Pivot] | None
+    _references: list[tuple[str, exp.Selectable]] | None
 
     def __init__(
         self,
         expression: exp.Expr,
-        sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        outer_columns: t.Optional[t.List[str]] = None,
-        parent: t.Optional[Scope] = None,
+        sources: dict[str, exp.Table | Scope] | None = None,
+        outer_columns: list[str] | None = None,
+        parent: Scope | None = None,
         scope_type: ScopeType = ScopeType.ROOT,
-        lateral_sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        cte_sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        can_be_correlated: t.Optional[bool] = None,
+        lateral_sources: dict[str, exp.Table | Scope] | None = None,
+        cte_sources: dict[str, exp.Table | Scope] | None = None,
+        can_be_correlated: bool | None = None,
     ) -> None:
         self.expression = expression
         self.sources = sources or {}
@@ -101,12 +101,12 @@ class Scope:
         self.outer_columns = outer_columns or []
         self.parent = parent
         self.scope_type = scope_type
-        self.subquery_scopes: t.List[Scope] = []
-        self.derived_table_scopes: t.List[Scope] = []
-        self.table_scopes: t.List[Scope] = []
-        self.cte_scopes: t.List[Scope] = []
-        self.union_scopes: t.List[Scope] = []
-        self.udtf_scopes: t.List[Scope] = []
+        self.subquery_scopes: list[Scope] = []
+        self.derived_table_scopes: list[Scope] = []
+        self.table_scopes: list[Scope] = []
+        self.cte_scopes: list[Scope] = []
+        self.union_scopes: list[Scope] = []
+        self.udtf_scopes: list[Scope] = []
         self.can_be_correlated = can_be_correlated
         self.clear_cache()
 
@@ -134,10 +134,10 @@ class Scope:
         self,
         expression: exp.Expr,
         scope_type: ScopeType,
-        sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        cte_sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        lateral_sources: t.Optional[t.Dict[str, exp.Table | Scope]] = None,
-        outer_columns: t.Optional[t.List[str]] = None,
+        sources: dict[str, exp.Table | Scope] | None = None,
+        cte_sources: dict[str, exp.Table | Scope] | None = None,
+        lateral_sources: dict[str, exp.Table | Scope] | None = None,
+        outer_columns: list[str] | None = None,
     ) -> Scope:
         """Branch from the current scope to a new, inner scope"""
         return Scope(
@@ -186,7 +186,9 @@ class Scope:
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
-            elif isinstance(node, exp.UDTF):
+            elif type(node) is exp.Lateral or (
+                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
+            ):
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
@@ -203,10 +205,10 @@ class Scope:
         if not self._collected:
             self._collect()
 
-    def walk(self, prune: t.Optional[t.Callable[[exp.Expr], bool]] = None) -> Iterator[exp.Expr]:
+    def walk(self, prune: t.Callable[[exp.Expr], bool] | None = None) -> Iterator[exp.Expr]:
         return walk_in_scope(self.expression, prune=prune)
 
-    def find(self, *expression_types: Type[E]) -> t.Optional[E]:
+    def find(self, *expression_types: Type[E]) -> E | None:
         return find_in_scope(self.expression, *expression_types)
 
     def find_all(self, *expression_types: Type[E]) -> Iterator[E]:
@@ -226,7 +228,7 @@ class Scope:
         self.clear_cache()
 
     @property
-    def tables(self) -> t.List[exp.Table]:
+    def tables(self) -> list[exp.Table]:
         """
         List of tables in this scope.
 
@@ -237,7 +239,7 @@ class Scope:
         return self._tables
 
     @property
-    def ctes(self) -> t.List[exp.CTE]:
+    def ctes(self) -> list[exp.CTE]:
         """
         List of CTEs in this scope.
 
@@ -248,7 +250,7 @@ class Scope:
         return self._ctes
 
     @property
-    def derived_tables(self) -> t.List[exp.Subquery]:
+    def derived_tables(self) -> list[exp.Subquery]:
         """
         List of derived tables in this scope.
 
@@ -262,7 +264,7 @@ class Scope:
         return self._derived_tables
 
     @property
-    def udtfs(self) -> t.List[exp.UDTF]:
+    def udtfs(self) -> list[exp.UDTF]:
         """
         List of "User Defined Tabular Functions" in this scope.
 
@@ -273,7 +275,7 @@ class Scope:
         return self._udtfs
 
     @property
-    def subqueries(self) -> t.List[exp.Select | exp.SetOperation]:
+    def subqueries(self) -> list[exp.Select | exp.SetOperation]:
         """
         List of subqueries in this scope.
 
@@ -287,7 +289,7 @@ class Scope:
         return self._subqueries
 
     @property
-    def stars(self) -> t.List[exp.Column | exp.Dot]:
+    def stars(self) -> list[exp.Column | exp.Dot]:
         """
         List of star expressions (columns or dots) in this scope.
         """
@@ -295,7 +297,7 @@ class Scope:
         return self._stars
 
     @property
-    def column_index(self) -> t.Set[int]:
+    def column_index(self) -> set[int]:
         """
         Set of column object IDs that belong to this scope's expression.
         """
@@ -303,7 +305,7 @@ class Scope:
         return self._column_index
 
     @property
-    def columns(self) -> t.List[exp.Column]:
+    def columns(self) -> list[exp.Column]:
         """
         List of columns in this scope.
 
@@ -360,12 +362,12 @@ class Scope:
         return self._columns
 
     @property
-    def table_columns(self) -> t.List[exp.TableColumn]:
+    def table_columns(self) -> list[exp.TableColumn]:
         self._ensure_collected()
         return self._table_columns
 
     @property
-    def selected_sources(self) -> t.Dict[str, t.Tuple[exp.Selectable, exp.Table | Scope]]:
+    def selected_sources(self) -> dict[str, tuple[exp.Selectable, exp.Table | Scope]]:
         """
         Mapping of nodes and sources that are actually selected from in this scope.
 
@@ -376,7 +378,7 @@ class Scope:
             dict[str, (exp.Table|exp.Select, exp.Table|Scope)]: selected sources and nodes
         """
         if self._selected_sources is None:
-            result: t.Dict[str, t.Tuple[exp.Selectable, exp.Table | Scope]] = {}
+            result: dict[str, tuple[exp.Selectable, exp.Table | Scope]] = {}
 
             for name, node in self.references:
                 if name in self._semi_anti_join_tables:
@@ -393,7 +395,7 @@ class Scope:
         return self._selected_sources
 
     @property
-    def references(self) -> t.List[t.Tuple[str, exp.Selectable]]:
+    def references(self) -> list[tuple[str, exp.Selectable]]:
         if self._references is None:
             self._references = []
 
@@ -414,7 +416,7 @@ class Scope:
         return self._references
 
     @property
-    def external_columns(self) -> t.List[exp.Column]:
+    def external_columns(self) -> list[exp.Column]:
         """
         Columns that appear to reference sources in outer scopes.
 
@@ -437,7 +439,7 @@ class Scope:
         return self._external_columns
 
     @property
-    def local_columns(self) -> t.List[exp.Column]:
+    def local_columns(self) -> list[exp.Column]:
         """
         Columns in this scope that are not external.
 
@@ -451,7 +453,7 @@ class Scope:
         return self._local_columns
 
     @property
-    def unqualified_columns(self) -> t.List[exp.Column]:
+    def unqualified_columns(self) -> list[exp.Column]:
         """
         Unqualified columns in the current scope.
 
@@ -461,7 +463,7 @@ class Scope:
         return [c for c in self.columns if not c.text("table")]
 
     @property
-    def join_hints(self) -> t.List[exp.JoinHint]:
+    def join_hints(self) -> list[exp.JoinHint]:
         """
         Hints that exist in the scope that reference tables
 
@@ -472,7 +474,7 @@ class Scope:
         return self._join_hints
 
     @property
-    def pivots(self) -> t.List[exp.Pivot]:
+    def pivots(self) -> list[exp.Pivot]:
         if self._pivots is None:
             self._pivots = [
                 pivot for _, node in self.references for pivot in node.args.get("pivots") or []
@@ -481,11 +483,11 @@ class Scope:
         return self._pivots
 
     @property
-    def semi_or_anti_join_tables(self) -> t.Set[str]:
+    def semi_or_anti_join_tables(self) -> set[str]:
         self._ensure_collected()
         return self._semi_anti_join_tables
 
-    def source_columns(self, source_name: str) -> t.List[exp.Column]:
+    def source_columns(self, source_name: str) -> list[exp.Column]:
         """
         Get all columns in the current scope for a particular source.
 
@@ -531,7 +533,7 @@ class Scope:
         """Determine if this scope is a correlated subquery"""
         return bool(self.can_be_correlated and self.external_columns)
 
-    def rename_source(self, old_name: t.Optional[str], new_name: str) -> None:
+    def rename_source(self, old_name: str | None, new_name: str) -> None:
         """Rename a source in this scope"""
         old_name = old_name or ""
         if old_name in self.sources:
@@ -573,14 +575,14 @@ class Scope:
 
         yield from reversed(result)
 
-    def ref_count(self) -> t.Dict[int, int]:
+    def ref_count(self) -> dict[int, int]:
         """
         Count the number of times each scope in this tree is referenced.
 
         Returns:
             dict[int, int]: Mapping of Scope instance ID to reference count
         """
-        scope_ref_count: t.Dict[int, int] = defaultdict(int)
+        scope_ref_count: dict[int, int] = defaultdict(int)
 
         for scope in self.traverse():
             for _, source in scope.selected_sources.values():
@@ -595,7 +597,7 @@ class Scope:
         return scope_ref_count
 
 
-def traverse_scope(expression: exp.Expr) -> t.List[Scope]:
+def traverse_scope(expression: exp.Expr) -> list[Scope]:
     """
     Traverse an expression by its "scopes".
 
@@ -626,7 +628,7 @@ def traverse_scope(expression: exp.Expr) -> t.List[Scope]:
     return []
 
 
-def build_scope(expression: exp.Expr) -> t.Optional[Scope]:
+def build_scope(expression: exp.Expr) -> Scope | None:
     """
     Build a scope tree.
 
@@ -685,12 +687,12 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
 
 
 def _traverse_union(scope: Scope) -> Iterator[Scope]:
-    prev_scope: t.Optional[Scope] = None
-    union_scope_stack: t.List[Scope] = [scope]
+    prev_scope: Scope | None = None
+    union_scope_stack: list[Scope] = [scope]
 
     set_op = scope.expression
     assert isinstance(set_op, exp.SetOperation)
-    expression_stack: t.List[exp.Expr] = [set_op.right, set_op.left]
+    expression_stack: list[exp.Expr] = [set_op.right, set_op.left]
 
     while expression_stack:
         expression = expression_stack.pop()
@@ -737,7 +739,7 @@ def _traverse_ctes(scope: Scope) -> Iterator[Scope]:
             if isinstance(union, exp.SetOperation):
                 sources[cte_name] = scope.branch(union.this, scope_type=ScopeType.CTE)
 
-        child_scope: t.Optional[Scope] = None
+        child_scope: Scope | None = None
 
         for child_scope in _traverse_scope(
             scope.branch(
@@ -846,7 +848,7 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             expressions.extend(join.this for join in node.args.get("joins") or [])
             continue
 
-        child_scope: t.Optional[Scope] = None
+        child_scope: Scope | None = None
 
         for child_scope in _traverse_scope(
             scope.branch(
@@ -874,7 +876,7 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
 
 def _traverse_subqueries(scope: Scope) -> Iterator[Scope]:
     for subquery in scope.subqueries:
-        top: t.Optional[Scope] = None
+        top: Scope | None = None
         for child_scope in _traverse_scope(scope.branch(subquery, scope_type=ScopeType.SUBQUERY)):
             yield child_scope
             top = child_scope
@@ -890,10 +892,10 @@ def _traverse_udtfs(scope: Scope) -> Iterator[Scope]:
     else:
         udtf_expressions = []
 
-    sources: t.Dict[str, exp.Table | Scope] = {}
+    sources: dict[str, exp.Table | Scope] = {}
     for expression in udtf_expressions:
         if isinstance(expression, exp.Subquery):
-            top: t.Optional[Scope] = None
+            top: Scope | None = None
             for child_scope in _traverse_scope(
                 scope.branch(
                     expression,
@@ -913,7 +915,7 @@ def _traverse_udtfs(scope: Scope) -> Iterator[Scope]:
 
 def walk_in_scope(
     expression: exp.Expr,
-    prune: t.Optional[t.Callable[[exp.Expr], bool]] = None,
+    prune: t.Callable[[exp.Expr], bool] | None = None,
 ) -> Iterator[exp.Expr]:
     """
     Returns a generator object which visits all nodes in the syntrax tree, stopping at
@@ -928,7 +930,7 @@ def walk_in_scope(
     Yields:
         exp.Expr: each node in scope
     """
-    stack: t.List[exp.Expr] = [expression]
+    stack: list[exp.Expr] = [expression]
 
     while stack:
         node = stack.pop()
@@ -984,7 +986,7 @@ def find_all_in_scope(
 def find_in_scope(
     expression: exp.Expr,
     *expression_types: Type[E],
-) -> t.Optional[E]:
+) -> E | None:
     """
     Returns the first node in this scope which matches at least one of the specified types.
 

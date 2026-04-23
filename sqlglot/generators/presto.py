@@ -208,7 +208,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
 
 class PrestoGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
@@ -227,7 +227,7 @@ class PrestoGenerator(generator.Generator):
     MULTI_ARG_DISTINCT = False
     SUPPORTS_TO_NUMBER = False
     HEX_FUNC = "TO_HEX"
-    PARSE_JSON_NAME: t.Optional[str] = "JSON_PARSE"
+    PARSE_JSON_NAME: str | None = "JSON_PARSE"
     PAD_FILL_PATTERN_IS_REQUIRED = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     SUPPORTS_MEDIAN = False
@@ -536,8 +536,8 @@ class PrestoGenerator(generator.Generator):
 
             annotate_types(expression, dialect=self.dialect)
 
-        values: t.List[str] = []
-        schema: t.List[str] = []
+        values: list[str] = []
+        schema: list[str] = []
         unknown_type = False
 
         for e in expression.expressions:
@@ -571,8 +571,8 @@ class PrestoGenerator(generator.Generator):
         return f"START TRANSACTION{modes}"
 
     def offset_limit_modifiers(
-        self, expression: exp.Expr, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
-    ) -> t.List[str]:
+        self, expression: exp.Expr, fetch: bool, limit: exp.Fetch | exp.Limit | None
+    ) -> list[str]:
         return [
             self.sql(expression, "offset"),
             self.sql(limit),

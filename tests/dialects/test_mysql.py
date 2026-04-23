@@ -22,16 +22,23 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE 00f (1d BIGINT)")
         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+        self.validate_identity("UPDATE /*+ MAX_EXECUTION_TIME(1) */ t SET a = 1")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+        self.validate_identity("DELETE /*+ MAX_EXECUTION_TIME(1) */ FROM t WHERE a = 1")
         self.validate_identity("DELETE FROM t FORCE INDEX (idx) WHERE a > 5 ORDER BY id")
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a INT UNSIGNED ZEROFILL)")
+        self.validate_identity("CREATE TABLE foo (a INT INVISIBLE)")
+        self.validate_identity("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+        self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
+        self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
+        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(
@@ -140,6 +147,18 @@ class TestMySQL(Validator):
             "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
         )
         self.validate_identity(
+            "CREATE TABLE t (a INT, b INT, UNIQUE KEY `Unique` (a, b))",
+            "CREATE TABLE t (a INT, b INT, UNIQUE `Unique` (a, b))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY `Index` (a))",
+            "CREATE TABLE t (a INT, UNIQUE `Index` (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY `Key` (a))",
+            "CREATE TABLE t (a INT, UNIQUE `Key` (a))",
+        )
+        self.validate_identity(
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
         )
@@ -194,6 +213,11 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
+        self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+        self.validate_identity(
+            "ALTER TABLE t RENAME KEY a TO b",
+            "ALTER TABLE t RENAME INDEX a TO b",
+        )
         self.validate_identity(
             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )
@@ -611,6 +635,30 @@ class TestMySQL(Validator):
         )
         self.validate_identity(
             "CONVERT('a' USING binary)", "CAST('a' AS CHAR CHARACTER SET binary)"
+        )
+        self.validate_identity(
+            "SELECT CONVERT(`col` USING `utf8mb4`)",
+            "SELECT CAST(`col` AS CHAR CHARACTER SET utf8mb4)",
+        )
+        self.validate_identity(
+            "SELECT CHAR(0xC3A9 USING `utf8mb4`)",
+            "SELECT CHAR(x'C3A9' USING utf8mb4)",
+        )
+        self.validate_identity("SELECT CHAR(65 USING BINARY)")
+        self.validate_identity(
+            "SELECT CHAR(65 USING `binary`)",
+            "SELECT CHAR(65 USING binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT(x USING `binary`)",
+            "SELECT CAST(x AS CHAR CHARACTER SET binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT(x USING `my charset`)",
+            "SELECT CAST(x AS CHAR CHARACTER SET `my charset`)",
+        )
+        self.validate_identity(
+            "SELECT CHAR(65 USING `my charset`)",
         )
 
     def test_match_against(self):
@@ -1363,6 +1411,14 @@ COMMENT='客户账户表'"""
         self.assertIsInstance(show.args["like"], exp.Literal)
         self.assertEqual(show.text("like"), "%foo%")
 
+        show = self.validate_identity("SHOW TABLES IN test", "SHOW TABLES FROM test")
+        self.assertEqual(show.name, "TABLES")
+        self.assertEqual(show.text("db"), "test")
+
+        show = self.validate_identity("SHOW FULL TABLES IN test", "SHOW FULL TABLES FROM test")
+        self.assertTrue(show.args["full"])
+        self.assertEqual(show.text("db"), "test")
+
     def test_set_variable(self):
         cmd = self.parse_one("SET SESSION x = 1")
         item = cmd.expressions[0]
@@ -1680,3 +1736,16 @@ COMMENT='客户账户表'"""
                 "snowflake": "SELECT LEAD(col1, 1) RESPECT NULLS OVER (ORDER BY col2 NULLS FIRST) FROM table1",
             },
         )
+
+    def test_invisible_column(self):
+        expr = self.parse_one("CREATE TABLE t (c INT INVISIBLE)")
+        self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))
+
+        expr = self.parse_one("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
+        self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))
+
+    def test_alter_table_auto_increment(self):
+        prop = self.parse_one("ALTER TABLE t AUTO_INCREMENT=3000000000").find(
+            exp.AutoIncrementProperty
+        )
+        self.assertEqual(prop.this.to_py(), 3000000000)

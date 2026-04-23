@@ -16,18 +16,18 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _build_contains_substring(args: t.List) -> exp.Contains:
+def _build_contains_substring(args: list) -> exp.Contains:
     this = exp.Lower(this=seq_get(args, 0))
     expr = exp.Lower(this=seq_get(args, 1))
     return exp.Contains(this=this, expression=expr, json_scope=seq_get(args, 2))
 
 
-def _build_date(args: t.List) -> exp.Date | exp.DateFromParts:
+def _build_date(args: list) -> exp.Date | exp.DateFromParts:
     expr_type = exp.DateFromParts if len(args) == 3 else exp.Date
     return expr_type.from_arg_list(args)
 
 
-def build_date_diff(args: t.List) -> exp.Expr:
+def build_date_diff(args: list) -> exp.Expr:
     expr = exp.DateDiff(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
@@ -42,7 +42,7 @@ def build_date_diff(args: t.List) -> exp.Expr:
     return expr
 
 
-def _build_datetime(args: t.List) -> exp.Func:
+def _build_datetime(args: list) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToDatetime.from_arg_list(args)
     if len(args) == 2:
@@ -51,9 +51,9 @@ def _build_datetime(args: t.List) -> exp.Func:
 
 
 def _build_extract_json_with_default_path(
-    expr_type: t.Type[E],
+    expr_type: type[E],
 ) -> t.Callable:
-    def _builder(args: t.List, dialect: t.Any) -> E:
+    def _builder(args: list, dialect: t.Any) -> E:
         if len(args) == 1:
             args.append(exp.Literal.string("$"))
         return parser.build_extract_json_with_path(expr_type)(args, dialect)
@@ -61,8 +61,8 @@ def _build_extract_json_with_default_path(
     return _builder
 
 
-def _build_format_time(expr_type: t.Type[exp.Expr]) -> t.Callable[[t.List], exp.TimeToStr]:
-    def _builder(args: t.List) -> exp.TimeToStr:
+def _build_format_time(expr_type: type[exp.Expr]) -> t.Callable[[list], exp.TimeToStr]:
+    def _builder(args: list) -> exp.TimeToStr:
         formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
             [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
         )
@@ -72,7 +72,7 @@ def _build_format_time(expr_type: t.Type[exp.Expr]) -> t.Callable[[t.List], exp.
     return _builder
 
 
-def _build_json_strip_nulls(args: t.List) -> exp.JSONStripNulls:
+def _build_json_strip_nulls(args: list) -> exp.JSONStripNulls:
     expression = exp.JSONStripNulls(this=seq_get(args, 0))
     for arg in args[1:]:
         if isinstance(arg, exp.Kwarg):
@@ -82,7 +82,7 @@ def _build_json_strip_nulls(args: t.List) -> exp.JSONStripNulls:
     return expression
 
 
-def _build_levenshtein(args: t.List) -> exp.Levenshtein:
+def _build_levenshtein(args: list) -> exp.Levenshtein:
     max_dist = seq_get(args, 2)
     return exp.Levenshtein(
         this=seq_get(args, 0),
@@ -91,16 +91,14 @@ def _build_levenshtein(args: t.List) -> exp.Levenshtein:
     )
 
 
-def _build_parse_timestamp(args: t.List) -> exp.StrToTime:
+def _build_parse_timestamp(args: list) -> exp.StrToTime:
     this = build_formatted_time(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
     this.set("zone", seq_get(args, 2))
     return this
 
 
-def _build_regexp_extract(
-    expr_type: t.Type[E], default_group: t.Optional[exp.Expr] = None
-) -> t.Callable:
-    def _builder(args: t.List, dialect: t.Any) -> E:
+def _build_regexp_extract(expr_type: type[E], default_group: exp.Expr | None = None) -> t.Callable:
+    def _builder(args: list, dialect: t.Any) -> E:
         try:
             group = re.compile(args[1].name).groups == 1
         except re.error:
@@ -122,7 +120,7 @@ def _build_regexp_extract(
     return _builder
 
 
-def _build_time(args: t.List) -> exp.Func:
+def _build_time(args: list) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToTime(this=args[0])
     if len(args) == 2:
@@ -130,13 +128,13 @@ def _build_time(args: t.List) -> exp.Func:
     return exp.TimeFromParts.from_arg_list(args)
 
 
-def _build_timestamp(args: t.List) -> exp.Timestamp:
+def _build_timestamp(args: list) -> exp.Timestamp:
     timestamp = exp.Timestamp.from_arg_list(args)
     timestamp.set("with_tz", True)
     return timestamp
 
 
-def _build_to_hex(args: t.List) -> exp.Hex | exp.MD5:
+def _build_to_hex(args: list) -> exp.Hex | exp.MD5:
     arg = seq_get(args, 0)
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
 
@@ -178,7 +176,7 @@ class BigQueryParser(parser.Parser):
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
-    FUNCTIONS: t.ClassVar[t.Dict[str, t.Callable]] = {
+    FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "SEARCH"},
         "APPROX_TOP_COUNT": exp.ApproxTopK.from_arg_list,
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
@@ -201,7 +199,9 @@ class BigQueryParser(parser.Parser):
         "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
         "DIV": binary_from_function(exp.IntDiv),
         "EDIT_DISTANCE": _build_levenshtein,
+        "EMBED": exp.AIEmbed.from_arg_list,
         "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
+        "GENERATE": exp.AIGenerate.from_arg_list,
         "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
         "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
@@ -240,6 +240,7 @@ class BigQueryParser(parser.Parser):
             this=seq_get(args, 0), length=exp.Literal.number(256)
         ),
         "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+        "SIMILARITY": exp.AISimilarity.from_arg_list,
         "SPLIT": lambda args: exp.Split(
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
             this=seq_get(args, 0),
@@ -284,8 +285,13 @@ class BigQueryParser(parser.Parser):
         "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
         "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
         "GENERATE_TEXT_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding, is_text=True),
+        "GENERATE_TEXT": lambda self: self._parse_generate(exp.GenerateText),
+        "GENERATE_TABLE": lambda self: self._parse_generate(exp.GenerateTable),
+        "GENERATE_BOOL": lambda self: self._parse_generate(exp.GenerateBool),
+        "GENERATE_INT": lambda self: self._parse_generate(exp.GenerateInt),
+        "GENERATE_DOUBLE": lambda self: self._parse_generate(exp.GenerateDouble),
         "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
-        "FORECAST": lambda self: self._parse_ml(exp.MLForecast),
+        "FORECAST": lambda self: self._parse_forecast(),
     }
 
     NO_PAREN_FUNCTIONS: t.ClassVar = {
@@ -337,7 +343,7 @@ class BigQueryParser(parser.Parser):
         "SAFE_ORDINAL": (1, True),
     }
 
-    def _parse_for_in(self) -> t.Union[exp.ForIn, exp.Command]:
+    def _parse_for_in(self) -> exp.ForIn | exp.Command:
         index = self._index
         this = self._parse_range()
         self._match_text_seq("DO")
@@ -346,7 +352,7 @@ class BigQueryParser(parser.Parser):
             return self._parse_as_command(self._prev)
         return self.expression(exp.ForIn(this=this, expression=self._parse_statement()))
 
-    def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expr]:
+    def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
         this = super()._parse_table_part(schema=schema) or self._parse_number()
 
         # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
@@ -383,7 +389,7 @@ class BigQueryParser(parser.Parser):
         is_db_reference: bool = False,
         wildcard: bool = False,
         fast: bool = False,
-    ) -> t.Optional[exp.Table | exp.Dot]:
+    ) -> exp.Table | exp.Dot | None:
         table = super()._parse_table_parts(
             schema=schema, is_db_reference=is_db_reference, wildcard=True, fast=fast
         )
@@ -419,7 +425,7 @@ class BigQueryParser(parser.Parser):
                 if part:
                     part.update_positions(table.this)
 
-            this: t.Optional[exp.Expr] = this_id
+            this: exp.Expr | None = this_id
             if rest and this:
                 this = exp.Dot.build([this, *rest])  # type: ignore[list-item]
 
@@ -464,7 +470,7 @@ class BigQueryParser(parser.Parser):
 
         return table
 
-    def _parse_column(self) -> t.Optional[exp.Expr]:
+    def _parse_column(self) -> exp.Expr | None:
         column = super()._parse_column()
         if isinstance(column, exp.Column):
             parts = column.parts
@@ -509,7 +515,7 @@ class BigQueryParser(parser.Parser):
 
         return json_object
 
-    def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
+    def _parse_bracket(self, this: exp.Expr | None = None) -> exp.Expr | None:
         bracket = super()._parse_bracket(this)
 
         if isinstance(bracket, exp.Array):
@@ -522,17 +528,19 @@ class BigQueryParser(parser.Parser):
             for expression in bracket.expressions:
                 name = expression.name.upper()
 
-                if name not in self.BRACKET_OFFSETS:
+                expressions = expression.expressions
+
+                if name not in self.BRACKET_OFFSETS or not expressions:
                     break
 
                 offset, safe = self.BRACKET_OFFSETS[name]
                 bracket.set("offset", offset)
                 bracket.set("safe", safe)
-                expression.replace(expression.expressions[0])
+                expression.replace(expressions[0])
 
         return bracket
 
-    def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
+    def _parse_unnest(self, with_alias: bool = True) -> exp.Unnest | None:
         unnest = super()._parse_unnest(with_alias=with_alias)
 
         if not unnest:
@@ -573,7 +581,7 @@ class BigQueryParser(parser.Parser):
 
         return expr
 
-    def _parse_ml(self, expr_type: t.Type[E], **kwargs: t.Any) -> E:
+    def _parse_ml(self, expr_type: type[E], **kwargs: t.Any) -> E:
         self._match_text_seq("MODEL")
         this = self._parse_table()
 
@@ -593,6 +601,25 @@ class BigQueryParser(parser.Parser):
             )
         )
 
+    def _parse_generate(self, expr_type: type[E], **kwargs: t.Any) -> E:
+        self._match_text_seq("MODEL")
+        this = self._parse_table()
+
+        self._match(TokenType.COMMA)
+
+        if self._match_text_seq("TABLE"):
+            expression = self._parse_table()
+        elif self._match(TokenType.L_PAREN, advance=False):
+            expression = self._parse_table()
+        else:
+            expression = self._parse_bitwise()
+
+        params_struct = self._match(TokenType.COMMA) and self._parse_bitwise()
+
+        return self.expression(
+            expr_type(this=this, expression=expression, params_struct=params_struct, **kwargs)
+        )
+
     def _parse_translate(self) -> exp.Translate | exp.MLTranslate:
         # Check if this is ML.TRANSLATE by looking at previous tokens
         token = seq_get(self._tokens, self._index - 4)
@@ -600,6 +627,30 @@ class BigQueryParser(parser.Parser):
             return self._parse_ml(exp.MLTranslate)
 
         return exp.Translate.from_arg_list(self._parse_function_args())
+
+    def _parse_forecast(self) -> exp.AIForecast | exp.MLForecast:
+        # Check if this is ML.FORECAST by looking at previous tokens.
+        token = seq_get(self._tokens, self._index - 4)
+        if token and token.text.upper() == "ML":
+            return self._parse_ml(exp.MLForecast)
+
+        # AI.FORECAST is a TVF, where the first argument is either TABLE <table>
+        # or a parenthesized query statement, followed by named arguments.
+        self._match(TokenType.TABLE)
+        this = self._parse_table()
+        if not this:
+            self.raise_error("Expected table or query statement")
+
+        expr = self.expression(exp.AIForecast(this=this))
+        while self._match(TokenType.COMMA):
+            arg = self._parse_lambda()
+            if isinstance(arg, exp.Kwarg):
+                expr.set(arg.this.name, arg)
+            else:
+                self.raise_error(f"Expected key => value syntax for AI.FORECAST, got {arg}")
+                break
+
+        return expr
 
     def _parse_features_at_time(self) -> exp.FeaturesAtTime:
         self._match(TokenType.TABLE)
@@ -658,14 +709,14 @@ class BigQueryParser(parser.Parser):
             )
         )
 
-    def _parse_column_ops(self, this: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
+    def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         func_index = self._index + 1
         this = super()._parse_column_ops(this)
 
         if isinstance(this, exp.Dot) and isinstance(this.expression, exp.Func):
             prefix = this.this.name.upper()
 
-            func: t.Optional[t.Type[exp.Func]] = None
+            func: type[exp.Func] | None = None
             if prefix == "NET":
                 func = exp.NetFunc
             elif prefix == "SAFE":
@@ -676,5 +727,12 @@ class BigQueryParser(parser.Parser):
                 # which is parsed by the base column ops parser due to anonymous_func=true
                 self._retreat(func_index)
                 this = func(this=self._parse_function(any_token=True))
+            elif prefix in ("AI", "ML"):
+                # AI.* and ML.* function calls can use custom BigQuery signatures that rely on
+                # function parsers, so re-parse the function in non-anonymous mode.
+                self._retreat(func_index)
+                parsed = self._parse_function(any_token=True)
+                if parsed:
+                    this = self.expression(exp.Dot(this=this.this, expression=parsed))
 
         return this

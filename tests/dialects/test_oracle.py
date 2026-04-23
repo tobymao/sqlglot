@@ -881,6 +881,21 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
 
+    def test_merge(self):
+        self.validate_all(
+            "MERGE INTO target tgt USING (SELECT id, col1 FROM source_tbl) src ON tgt.id = src.id "
+            "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 WHERE tgt.some_column IS NULL "
+            "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1) WHERE NOT src.col1 IS NULL",
+            write={
+                "oracle": "MERGE INTO target tgt USING (SELECT id, col1 FROM source_tbl) src ON tgt.id = src.id "
+                "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 WHERE tgt.some_column IS NULL "
+                "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1) WHERE NOT src.col1 IS NULL",
+                "": "MERGE INTO target AS tgt USING (SELECT id, col1 FROM source_tbl) AS src ON tgt.id = src.id "
+                "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 "
+                "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1)",
+            },
+        )
+
     def test_merge_builder_alias(self):
         merge_stmt = exp.merge(
             "WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1",

@@ -47,4 +47,5 @@ sqlglotc = { path = "./sqlglotc" }
 line-length = 100
 
 [tool.ruff.lint]
+extend-select = ["UP"]
 ignore = ["E721", "E741"]

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
@@ -19,7 +18,7 @@ class ClickHouse(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
-    LOG_BASE_FIRST: t.Optional[bool] = None
+    LOG_BASE_FIRST: bool | None = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     PRESERVE_ORIGINAL_NAMES = True
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
@@ -37,13 +36,13 @@ class ClickHouse(Dialect):
 
     CREATABLE_KIND_MAPPING = {"DATABASE": "SCHEMA"}
 
-    SET_OP_DISTINCT_BY_DEFAULT: t.Dict[t.Type[exp.Expr], t.Optional[bool]] = {
+    SET_OP_DISTINCT_BY_DEFAULT: dict[type[exp.Expr], bool | None] = {
         exp.Except: False,
         exp.Intersect: False,
         exp.Union: None,
     }
 
-    def generate_values_aliases(self, expression: exp.Values) -> t.List[exp.Identifier]:
+    def generate_values_aliases(self, expression: exp.Values) -> list[exp.Identifier]:
         # Clickhouse allows VALUES to have an embedded structure e.g:
         # VALUES('person String, place String', ('Noah', 'Paris'), ...)
         # In this case, we don't want to qualify the columns

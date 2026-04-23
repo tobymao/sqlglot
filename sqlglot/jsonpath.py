@@ -53,7 +53,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
 
     i = 0
 
-    def _curr() -> t.Optional[TokenType]:
+    def _curr() -> TokenType | None:
         return tokens[i].token_type if i < size else None
 
     def _prev() -> Token:
@@ -72,9 +72,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
         pass
 
     @t.overload
-    def _match(
-        token_type: TokenType, raise_unmatched: t.Literal[False] = False
-    ) -> t.Optional[Token]:
+    def _match(token_type: TokenType, raise_unmatched: t.Literal[False] = False) -> Token | None:
         pass
 
     def _match(token_type, raise_unmatched=False):
@@ -84,7 +82,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
             raise ParseError(_error(f"Expected {token_type}"))
         return None
 
-    def _match_set(types: Collection[TokenType]) -> t.Optional[Token]:
+    def _match_set(types: Collection[TokenType]) -> Token | None:
         return _advance() if _curr() in types else None
 
     def _parse_literal() -> t.Any:
@@ -182,14 +180,14 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     # We canonicalize the JSON path AST so that it always starts with a
     # "root" element, so paths like "field" will be generated as "$.field"
     _match(TokenType.DOLLAR)
-    expressions: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
+    expressions: list[exp.JSONPathPart] = [exp.JSONPathRoot()]
 
     while _curr():
         if _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
 
             if _match_set(jsonpath_tokenizer.VAR_TOKENS):
-                value: t.Optional[str | exp.JSONPathWildcard] = _parse_var_text()
+                value: str | exp.JSONPathWildcard | None = _parse_var_text()
             elif _match(TokenType.IDENTIFIER):
                 value = _prev().text
             elif _match(TokenType.STAR):
@@ -217,7 +215,7 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
     return exp.JSONPath(expressions=expressions)
 
 
-JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expr], t.Callable[..., str]] = {
+JSON_PATH_PART_TRANSFORMS: dict[type[exp.Expr], t.Callable[..., str]] = {
     exp.JSONPathFilter: lambda _, e: f"?{e.this}",
     exp.JSONPathKey: lambda self, e: self._jsonpathkey_sql(e),
     exp.JSONPathRecursive: lambda _, e: f"..{e.this or ''}",

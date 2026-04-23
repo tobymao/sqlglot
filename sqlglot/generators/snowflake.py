@@ -34,12 +34,13 @@ from sqlglot.parsers.snowflake import (
     build_object_construct,
 )
 from sqlglot.tokens import TokenType
+from collections import defaultdict
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _build_datediff(args: t.List) -> exp.DateDiff:
+def _build_datediff(args: list) -> exp.DateDiff:
     return exp.DateDiff(
         this=seq_get(args, 2),
         expression=seq_get(args, 1),
@@ -48,8 +49,8 @@ def _build_datediff(args: t.List) -> exp.DateDiff:
     )
 
 
-def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _builder(args: t.List) -> E:
+def _build_date_time_add(expr_type: type[E]) -> t.Callable[[list], E]:
+    def _builder(args: list) -> E:
         return expr_type(
             this=seq_get(args, 2),
             expression=seq_get(args, 1),
@@ -253,10 +254,10 @@ def _qualify_unnested_columns(expression: exp.Expr) -> exp.Expr:
             return expression
 
         taken_source_names = set(scope.sources)
-        column_source: t.Dict[str, exp.Identifier] = {}
-        unnest_to_identifier: t.Dict[exp.Unnest, exp.Identifier] = {}
+        column_source: dict[str, exp.Identifier] = {}
+        unnest_to_identifier: dict[exp.Unnest, exp.Identifier] = {}
 
-        unnest_identifier: t.Optional[exp.Identifier] = None
+        unnest_identifier: exp.Identifier | None = None
         orig_expression = expression.copy()
 
         for unnest in unnests:
@@ -265,7 +266,7 @@ def _qualify_unnested_columns(expression: exp.Expr) -> exp.Expr:
 
             # Try to infer column names produced by an unnest operator. This is only possible
             # when we can peek into the (statically known) contents of the unnested value.
-            unnest_columns: t.Set[str] = set()
+            unnest_columns: set[str] = set()
             for unnest_expr in unnest.expressions:
                 if not isinstance(unnest_expr, exp.Array):
                     continue
@@ -372,7 +373,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
     SINGLE_STRING_INTERVAL = True
@@ -480,6 +481,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
         exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
+        exp.HandlerProperty: lambda self, e: f"HANDLER = {self.sql(e, 'this')}",
         exp.FileFormatProperty: lambda self, e: (
             f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})"
         ),
@@ -495,6 +497,9 @@ class SnowflakeGenerator(generator.Generator):
         exp.GetExtract: rename_func("GET"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
         exp.If: if_sql(name="IFF", false_value="NULL"),
+        exp.JSONArray: lambda self, e: self.func(
+            "TO_VARIANT", self.func("ARRAY_CONSTRUCT", *e.expressions)
+        ),
         exp.JSONExtractArray: _json_extract_value_array_sql,
         exp.JSONExtractScalar: lambda self, e: self.func(
             "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
@@ -529,13 +534,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.ToFile: lambda self, e: self.func(
             f"{'TRY_' if e.args.get('safe') else ''}TO_FILE", e.this, e.args.get("path")
         ),
-        exp.ToNumber: lambda self, e: self.func(
-            f"{'TRY_' if e.args.get('safe') else ''}TO_NUMBER",
-            e.this,
-            e.args.get("format"),
-            e.args.get("precision"),
-            e.args.get("scale"),
-        ),
         exp.JSONFormat: rename_func("TO_JSON"),
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
@@ -544,6 +542,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.RegexpExtract: _regexpextract_sql,
         exp.RegexpExtractAll: _regexpextract_sql,
         exp.RegexpILike: _regexpilike_sql,
+        exp.RowAccessProperty: lambda self, e: self.rowaccessproperty_sql(e),
         exp.Select: transforms.preprocess(
             [
                 transforms.eliminate_window_clause,
@@ -644,6 +643,7 @@ class SnowflakeGenerator(generator.Generator):
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
         exp.DType.BIGDECIMAL: "DOUBLE",
+        exp.DType.JSON: "VARIANT",
         exp.DType.NESTED: "OBJECT",
         exp.DType.STRUCT: "OBJECT",
         exp.DType.TEXT: "VARCHAR",
@@ -658,6 +658,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
@@ -712,12 +713,26 @@ class SnowflakeGenerator(generator.Generator):
         return super().datatype_sql(expression)
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        precision = expression.args.get("precision")
+        scale = expression.args.get("scale")
+
+        default_precision = isinstance(precision, exp.Literal) and precision.name == "38"
+        default_scale = isinstance(scale, exp.Literal) and scale.name == "0"
+
+        if default_precision and default_scale:
+            precision = None
+            scale = None
+        elif default_scale:
+            scale = None
+
+        func_name = "TRY_TO_NUMBER" if expression.args.get("safe") else "TO_NUMBER"
+
         return self.func(
-            "TO_NUMBER",
+            func_name,
             expression.this,
             expression.args.get("format"),
-            expression.args.get("precision"),
-            expression.args.get("scale"),
+            precision,
+            scale,
         )
 
     def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
@@ -728,7 +743,7 @@ class SnowflakeGenerator(generator.Generator):
 
         return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
 
-    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+    def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type(exp.DType.GEOGRAPHY):
             return self.func("TO_GEOGRAPHY", expression.this)
         if expression.is_type(exp.DType.GEOMETRY):
@@ -848,6 +863,12 @@ class SnowflakeGenerator(generator.Generator):
         privileges = f" WITH PRIVILEGES {privileges}" if privileges else ""
 
         return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
+
+    def rowaccessproperty_sql(self, expression: exp.RowAccessProperty) -> str:
+        if not expression.this:
+            return "ROW ACCESS"
+        on = f" ON ({self.expressions(expression, flat=True)})" if expression.expressions else ""
+        return f"WITH ROW ACCESS POLICY {self.sql(expression, 'this')}{on}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"
@@ -989,7 +1010,7 @@ class SnowflakeGenerator(generator.Generator):
             expression.limit(exp.Null(), copy=False)
         return super().select_sql(expression)
 
-    def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
+    def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         is_materialized = expression.find(exp.MaterializedProperty)
         copy_grants_property = expression.find(exp.CopyGrantsProperty)
 

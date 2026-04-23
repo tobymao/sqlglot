@@ -12,9 +12,9 @@ if t.TYPE_CHECKING:
 
 
 def build_with_ignore_nulls(
-    exp_class: t.Type[exp.Expr],
-) -> t.Callable[[t.List[exp.Expr]], exp.Expr]:
-    def _parse(args: t.List[exp.Expr]) -> exp.Expr:
+    exp_class: type[exp.Expr],
+) -> t.Callable[[list[exp.Expr]], exp.Expr]:
+    def _parse(args: list[exp.Expr]) -> exp.Expr:
         this = exp_class(this=seq_get(args, 0))
         if seq_get(args, 1) == exp.true():
             return exp.IgnoreNulls(this=this)
@@ -23,13 +23,13 @@ def build_with_ignore_nulls(
     return _parse
 
 
-def _build_to_date(args: t.List) -> exp.TsOrDsToDate:
+def _build_to_date(args: list) -> exp.TsOrDsToDate:
     expr = build_formatted_time(exp.TsOrDsToDate, "hive")(args)
     expr.set("safe", True)
     return expr
 
 
-def _build_date_add(args: t.List) -> exp.TsOrDsAdd:
+def _build_date_add(args: list) -> exp.TsOrDsAdd:
     expression = seq_get(args, 1)
     if expression:
         expression = expression * -1
@@ -120,6 +120,7 @@ class HiveParser(parser.Parser):
         "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
             expressions=self._parse_wrapped_csv(self._parse_property)
         ),
+        "USING": lambda self: self._parse_using_property(),
     }
 
     ALTER_PARSERS = {
@@ -127,7 +128,7 @@ class HiveParser(parser.Parser):
         "CHANGE": lambda self: self._parse_alter_table_change(),
     }
 
-    def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
+    def _parse_transform(self) -> exp.Transform | exp.QueryTransform | None:
         if not self._match(TokenType.L_PAREN, advance=False):
             self._retreat(self._index - 1)
             return None
@@ -164,9 +165,9 @@ class HiveParser(parser.Parser):
             )
         )
 
-    def _parse_quantile_function(self, func: t.Type[F]) -> F:
+    def _parse_quantile_function(self, func: type[F]) -> F:
         if self._match(TokenType.DISTINCT):
-            first_arg: t.Optional[exp.Expr] = self.expression(
+            first_arg: exp.Expr | None = self.expression(
                 exp.Distinct(expressions=[self._parse_lambda()])
             )
         else:
@@ -181,7 +182,7 @@ class HiveParser(parser.Parser):
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         """
         Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
         STRING in all contexts except for schema definitions. For example, this is in Spark v3.4.0:
@@ -216,7 +217,7 @@ class HiveParser(parser.Parser):
 
         return this
 
-    def _parse_alter_table_change(self) -> t.Optional[exp.Expr]:
+    def _parse_alter_table_change(self) -> exp.Expr | None:
         self._match(TokenType.COLUMN)
         this = self._parse_field(any_token=True)
 
@@ -237,9 +238,16 @@ class HiveParser(parser.Parser):
             exp.AlterColumn(this=this, rename_to=column_new, dtype=dtype, comment=comment)
         )
 
+    def _parse_using_property(self) -> exp.Property:
+        if self._match_texts(("JAR", "FILE", "ARCHIVE")):
+            kind = self._prev.text.upper()
+            return exp.UsingProperty(this=self._parse_string(), kind=kind)
+
+        return self._parse_property_assignment(exp.FileFormatProperty)
+
     def _parse_partition_and_order(
         self,
-    ) -> t.Tuple[t.List[exp.Expr], t.Optional[exp.Expr]]:
+    ) -> tuple[list[exp.Expr], exp.Expr | None]:
         return (
             (
                 self._parse_csv(self._parse_assignment)

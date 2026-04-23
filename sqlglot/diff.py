@@ -67,10 +67,10 @@ if t.TYPE_CHECKING:
 def diff(
     source: exp.Expr,
     target: exp.Expr,
-    matchings: t.List[t.Tuple[exp.Expr, exp.Expr]] | None = None,
+    matchings: list[tuple[exp.Expr, exp.Expr]] | None = None,
     delta_only: bool = False,
     **kwargs: t.Any,
-) -> t.List[Edit]:
+) -> list[Edit]:
     """
     Returns the list of changes between the source and the target expressions.
 
@@ -98,7 +98,7 @@ def diff(
 
     def compute_node_mappings(
         old_nodes: tuple[exp.Expr, ...], new_nodes: tuple[exp.Expr, ...]
-    ) -> t.Dict[int, exp.Expr]:
+    ) -> dict[int, exp.Expr]:
         node_mapping = {}
         for old_node, new_node in zip(reversed(old_nodes), reversed(new_nodes)):
             new_node._hash = hash(new_node)
@@ -178,9 +178,9 @@ class ChangeDistiller:
         self,
         source: exp.Expr,
         target: exp.Expr,
-        matchings: t.List[t.Tuple[exp.Expr, exp.Expr]] | None = None,
+        matchings: list[tuple[exp.Expr, exp.Expr]] | None = None,
         delta_only: bool = False,
-    ) -> t.List[Edit]:
+    ) -> list[Edit]:
         matchings = matchings or []
         pre_matched_nodes = {id(s): id(t) for s, t in matchings}
 
@@ -194,13 +194,13 @@ class ChangeDistiller:
         }
         self._unmatched_source_nodes = set(self._source_index) - set(pre_matched_nodes)
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
-        self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
+        self._bigram_histo_cache: dict[int, defaultdict[str, int]] = {}
 
         matching_set = self._compute_matching_set() | set(pre_matched_nodes.items())
         return self._generate_edit_script(dict(matching_set), delta_only)
 
-    def _generate_edit_script(self, matchings: t.Dict[int, int], delta_only: bool) -> t.List[Edit]:
-        edit_script: t.List[Edit] = []
+    def _generate_edit_script(self, matchings: dict[int, int], delta_only: bool) -> list[Edit]:
+        edit_script: list[Edit] = []
         for removed_node_id in self._unmatched_source_nodes:
             edit_script.append(Remove(self._source_index[removed_node_id]))
         for inserted_node_id in self._unmatched_target_nodes:
@@ -244,8 +244,8 @@ class ChangeDistiller:
         return edit_script
 
     def _generate_move_edits(
-        self, source: exp.Expr, target: exp.Expr, matchings: t.Dict[int, int]
-    ) -> t.List[Move]:
+        self, source: exp.Expr, target: exp.Expr, matchings: dict[int, int]
+    ) -> list[Move]:
         source_args = [id(e) for e in _expression_only_args(source)]
         target_args = [id(e) for e in _expression_only_args(target)]
 
@@ -262,7 +262,7 @@ class ChangeDistiller:
 
         return move_edits
 
-    def _compute_matching_set(self) -> t.Set[t.Tuple[int, int]]:
+    def _compute_matching_set(self) -> set[tuple[int, int]]:
         leaves_matching_set = self._compute_leaf_matching_set()
         matching_set = leaves_matching_set.copy()
 
@@ -307,8 +307,8 @@ class ChangeDistiller:
 
         return matching_set
 
-    def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
-        candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expr, exp.Expr]] = []
+    def _compute_leaf_matching_set(self) -> set[tuple[int, int]]:
+        candidate_matchings: list[tuple[float, int, int, exp.Expr, exp.Expr]] = []
         source_expression_leaves = list(_get_expression_leaves(self._source))
         target_expression_leaves = list(_get_expression_leaves(self._target))
         for source_leaf in source_expression_leaves:
@@ -356,13 +356,13 @@ class ChangeDistiller:
 
         return 2 * overlap_len / total_grams
 
-    def _bigram_histo(self, expression: exp.Expr) -> t.DefaultDict[str, int]:
+    def _bigram_histo(self, expression: exp.Expr) -> defaultdict[str, int]:
         if id(expression) in self._bigram_histo_cache:
             return self._bigram_histo_cache[id(expression)]
 
         expression_str = self._sql_generator.generate(expression)
         count = max(0, len(expression_str) - 1)
-        bigram_histo: t.DefaultDict[str, int] = defaultdict(int)
+        bigram_histo: defaultdict[str, int] = defaultdict(int)
         for i in range(count):
             bigram_histo[expression_str[i : i + 2]] += 1
 
@@ -407,7 +407,7 @@ def _is_same_type(source: exp.Expr, target: exp.Expr) -> bool:
     return False
 
 
-def _parent_similarity_score(source: t.Optional[exp.Expr], target: t.Optional[exp.Expr]) -> int:
+def _parent_similarity_score(source: exp.Expr | None, target: exp.Expr | None) -> int:
     if source is None or target is None or type(source) is not type(target):
         return 0
 
@@ -424,7 +424,7 @@ def _expression_only_args(expression: exp.Expr) -> Iterator[exp.Expr]:
 
 def _lcs(
     seq_a: Sequence[T], seq_b: Sequence[T], equal: t.Callable[[T, T], bool]
-) -> Sequence[t.Optional[T]]:
+) -> Sequence[T | None]:
     """Calculates the longest common subsequence"""
 
     len_a = len(seq_a)

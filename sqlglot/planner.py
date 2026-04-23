@@ -43,9 +43,7 @@ class Plan:
 
 class Step:
     @classmethod
-    def from_expression(
-        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
-    ) -> Step:
+    def from_expression(cls, expression: exp.Expr, ctes: dict[str, Step] | None = None) -> Step:
         """
         Builds a DAG of Steps from a SQL expression so that it's easier to execute in an engine.
         Note: the expression's tables and subqueries must be aliased for this method to work. For
@@ -123,7 +121,7 @@ class Step:
             join.add_dependency(step)
             step = join
 
-        projections: t.List[
+        projections: list[
             exp.Expr
         ] = []  # final selects in this chain of steps representing a select
         operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
@@ -184,7 +182,7 @@ class Step:
                 f"_g{i}": e for i, e in enumerate(group.expressions if group else [])
             }
 
-            intermediate: t.Dict[str | exp.Expr, str] = {}
+            intermediate: dict[str | exp.Expr, str] = {}
             for k, v in aggregate.group.items():
                 intermediate[v] = k
                 if isinstance(v, exp.Column):
@@ -244,12 +242,12 @@ class Step:
         return step
 
     def __init__(self) -> None:
-        self.name: t.Optional[str] = None
+        self.name: str | None = None
         self.dependencies: set[Step] = set()
         self.dependents: set[Step] = set()
         self.projections: Sequence[exp.Expr] = []
         self.limit: float = math.inf
-        self.condition: t.Optional[exp.Expr] = None
+        self.condition: exp.Expr | None = None
 
     def add_dependency(self, dependency: Step) -> None:
         self.dependencies.add(dependency)
@@ -299,15 +297,13 @@ class Step:
         name = f" {name}" if name else ""
         return f"{self.type_name}:{name} ({id(self)})"
 
-    def _to_s(self, _indent: str) -> t.List[str]:
+    def _to_s(self, _indent: str) -> list[str]:
         return []
 
 
 class Scan(Step):
     @classmethod
-    def from_expression(
-        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
-    ) -> Step:
+    def from_expression(cls, expression: exp.Expr, ctes: dict[str, Step] | None = None) -> Step:
         table = expression
         alias_ = expression.alias_or_name
 
@@ -327,17 +323,15 @@ class Scan(Step):
 
     def __init__(self) -> None:
         super().__init__()
-        self.source: t.Optional[exp.Expr] = None
+        self.source: exp.Expr | None = None
 
-    def _to_s(self, indent: str) -> t.List[str]:
+    def _to_s(self, indent: str) -> list[str]:
         return [f"{indent}Source: {self.source.sql() if self.source else '-static-'}"]  # type: ignore
 
 
 class Join(Step):
     @classmethod
-    def from_joins(
-        cls, joins: Iterable[exp.Join], ctes: t.Optional[dict[str, Step]] = None
-    ) -> Join:
+    def from_joins(cls, joins: Iterable[exp.Join], ctes: dict[str, Step] | None = None) -> Join:
         step = Join()
 
         for join in joins:
@@ -355,10 +349,10 @@ class Join(Step):
 
     def __init__(self) -> None:
         super().__init__()
-        self.source_name: t.Optional[str] = None
-        self.joins: t.Dict[str, t.Dict[str, t.List[str] | exp.Expr]] = {}
+        self.source_name: str | None = None
+        self.joins: dict[str, dict[str, list[str] | exp.Expr]] = {}
 
-    def _to_s(self, indent: str) -> t.List[str]:
+    def _to_s(self, indent: str) -> list[str]:
         lines = [f"{indent}Source: {self.source_name or self.name}"]
         for name, join in self.joins.items():
             lines.append(f"{indent}{name}: {join['side'] or 'INNER'}")
@@ -373,12 +367,12 @@ class Join(Step):
 class Aggregate(Step):
     def __init__(self) -> None:
         super().__init__()
-        self.aggregations: t.List[exp.Expr] = []
-        self.operands: t.Tuple[exp.Expr, ...] = ()
-        self.group: t.Dict[str, exp.Expr] = {}
-        self.source: t.Optional[str] = None
+        self.aggregations: list[exp.Expr] = []
+        self.operands: tuple[exp.Expr, ...] = ()
+        self.group: dict[str, exp.Expr] = {}
+        self.source: str | None = None
 
-    def _to_s(self, indent: str) -> t.List[str]:
+    def _to_s(self, indent: str) -> list[str]:
         lines = [f"{indent}Aggregations:"]
 
         for expression in self.aggregations:
@@ -404,7 +398,7 @@ class Sort(Step):
         super().__init__()
         self.key = None
 
-    def _to_s(self, indent: str) -> t.List[str]:
+    def _to_s(self, indent: str) -> list[str]:
         lines = [f"{indent}Key:"]
 
         for expression in self.key:  # type: ignore
@@ -416,7 +410,7 @@ class Sort(Step):
 class SetOperation(Step):
     def __init__(
         self,
-        op: t.Type[exp.Expr],
+        op: type[exp.Expr],
         left: str | None,
         right: str | None,
         distinct: bool = False,
@@ -429,7 +423,7 @@ class SetOperation(Step):
 
     @classmethod
     def from_expression(
-        cls, expression: exp.Expr, ctes: t.Optional[t.Dict[str, Step]] = None
+        cls, expression: exp.Expr, ctes: dict[str, Step] | None = None
     ) -> SetOperation:
         assert isinstance(expression, exp.SetOperation)
 
@@ -455,7 +449,7 @@ class SetOperation(Step):
 
         return step
 
-    def _to_s(self, indent: str) -> t.List[str]:
+    def _to_s(self, indent: str) -> list[str]:
         lines = []
         if self.distinct:
             lines.append(f"{indent}Distinct: {self.distinct}")

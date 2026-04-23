@@ -19,14 +19,14 @@ class Context:
     evaluation of aggregation functions.
     """
 
-    def __init__(self, tables: t.Dict[str, Table], env: t.Optional[t.Dict] = None) -> None:
+    def __init__(self, tables: dict[str, Table], env: dict | None = None) -> None:
         """
         Args
             tables: representing the scope of the current execution context.
             env: dictionary of functions within the execution context.
         """
         self.tables = tables
-        self._table: t.Optional[Table] = None
+        self._table: Table | None = None
         self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
         self.row_readers = {name: table.reader for name, table in tables.items()}
         self.env = {**ENV, **(env or {}), "scope": self.row_readers}
@@ -55,7 +55,7 @@ class Context:
             table.add_columns(*columns)
 
     @property
-    def columns(self) -> t.Tuple:
+    def columns(self) -> tuple:
         return self.table.columns
 
     def __iter__(self):
@@ -76,13 +76,13 @@ class Context:
             table.rows = rows
 
     def sort(self, key) -> None:
-        def sort_key(row: t.Tuple) -> t.Tuple:
+        def sort_key(row: tuple) -> tuple:
             self.set_row(row)
             return tuple((t is None, t) for t in self.eval_tuple(key))
 
         self.table.rows.sort(key=sort_key)
 
-    def set_row(self, row: t.Tuple) -> None:
+    def set_row(self, row: tuple) -> None:
         for table in self.tables.values():
             table.reader.row = row
         self.env["scope"] = self.row_readers

@@ -163,13 +163,9 @@ class BigQuery(Dialect):
 
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
-        BYTE_STRINGS = [
-            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("b", "B")
-        ]
+        BYTE_STRINGS = [(prefix + q, q) for q in t.cast(list[str], QUOTES) for prefix in ("b", "B")]
 
-        RAW_STRINGS = [
-            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("r", "R")
-        ]
+        RAW_STRINGS = [(prefix + q, q) for q in t.cast(list[str], QUOTES) for prefix in ("r", "R")]
 
         NESTED_COMMENTS = False
 
@@ -187,6 +183,7 @@ class BigQuery(Dialect):
             "EXCEPTION": TokenType.COMMAND,
             "EXPORT": TokenType.EXPORT,
             "FLOAT64": TokenType.DOUBLE,
+            "FOR SYSTEM TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "LOOP": TokenType.COMMAND,
             "MODEL": TokenType.MODEL,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, tokens
 
@@ -20,6 +19,7 @@ class DuckDB(Dialect):
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True
+    CONCAT_WS_COALESCE = True
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_FIXED_SIZE_ARRAYS = True
     STRICT_JSON_PATH_SYNTAX = False
@@ -52,7 +52,7 @@ class DuckDB(Dialect):
         "%f_nine": "%n",
     }
 
-    def to_json_path(self, path: t.Optional[exp.Expr]) -> t.Optional[exp.Expr]:
+    def to_json_path(self, path: exp.Expr | None) -> exp.Expr | None:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
             # Additionally, it allows accessing the back of lists using the `[#-i]` syntax.
@@ -116,6 +116,8 @@ class DuckDB(Dialect):
             **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,
         }
+
+        VAR_SINGLE_TOKENS = {"$"}
 
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 

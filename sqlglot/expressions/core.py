@@ -30,10 +30,13 @@ from builtins import type as Type
 from sqlglot._typing import GeneratorNoDialectArgs, ParserNoDialectArgs
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Self, Unpack
+    from typing_extensions import Self, Unpack, Concatenate
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions.datatypes import DATA_TYPE, DataType, DType, Interval
     from sqlglot.expressions.query import Select
+    from sqlglot._typing import P
+
+    R = t.TypeVar("R")
 
 logger = logging.getLogger("sqlglot")
 
@@ -41,7 +44,7 @@ SQLGLOT_META: str = "sqlglot.meta"
 SQLGLOT_ANONYMOUS = "sqlglot.anonymous"
 TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
-POSITION_META_KEYS: t.Tuple[str, ...] = ("line", "col", "start", "end")
+POSITION_META_KEYS: tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
 
@@ -79,21 +82,21 @@ class Expr:
     """
 
     key: t.ClassVar[str] = "expression"
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True}
-    required_args: t.ClassVar[t.Set[str]] = {"this"}
+    arg_types: t.ClassVar[dict[str, bool]] = {"this": True}
+    required_args: t.ClassVar[set[str]] = {"this"}
     is_var_len_args: t.ClassVar[bool] = False
     _hash_raw_args: t.ClassVar[bool] = False
     is_subquery: t.ClassVar[bool] = False
     is_cast: t.ClassVar[bool] = False
 
-    args: t.Dict[str, t.Any]
-    parent: t.Optional[Expr]
-    arg_key: t.Optional[str]
-    index: t.Optional[int]
-    comments: t.Optional[t.List[str]]
-    _type: t.Optional[DataType]
-    _meta: t.Optional[t.Dict[str, t.Any]]
-    _hash: t.Optional[int]
+    args: dict[str, t.Any]
+    parent: Expr | None
+    arg_key: str | None
+    index: int | None
+    comments: list[str] | None
+    _type: DataType | None
+    _meta: dict[str, t.Any] | None
+    _hash: int | None
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -108,14 +111,14 @@ class Expr:
     is_primitive: t.ClassVar[bool] = False
 
     def __init__(self, **args: object) -> None:
-        self.args: t.Dict[str, t.Any] = args
-        self.parent: t.Optional[Expr] = None
-        self.arg_key: t.Optional[str] = None
-        self.index: t.Optional[int] = None
-        self.comments: t.Optional[t.List[str]] = None
-        self._type: t.Optional[DataType] = None
-        self._meta: t.Optional[t.Dict[str, t.Any]] = None
-        self._hash: t.Optional[int] = None
+        self.args: dict[str, t.Any] = args
+        self.parent: Expr | None = None
+        self.arg_key: str | None = None
+        self.index: int | None = None
+        self.comments: list[str] | None = None
+        self._type: DataType | None = None
+        self._meta: dict[str, t.Any] | None = None
+        self._hash: int | None = None
 
         if not self.is_primitive:
             for arg_key, value in self.args.items():
@@ -130,7 +133,7 @@ class Expr:
         raise NotImplementedError
 
     @property
-    def expressions(self) -> t.List[t.Any]:
+    def expressions(self) -> list[t.Any]:
         raise NotImplementedError
 
     def text(self, key: str) -> str:
@@ -160,7 +163,7 @@ class Expr:
         raise NotImplementedError
 
     @property
-    def alias_column_names(self) -> t.List[str]:
+    def alias_column_names(self) -> list[str]:
         raise NotImplementedError
 
     @property
@@ -176,11 +179,11 @@ class Expr:
         raise NotImplementedError
 
     @property
-    def type(self) -> t.Optional[DataType]:
+    def type(self) -> DataType | None:
         raise NotImplementedError
 
     @type.setter
-    def type(self, dtype: t.Optional[DataType | DType | str]) -> None:
+    def type(self, dtype: DataType | DType | str | None) -> None:
         raise NotImplementedError
 
     def is_type(self, *dtypes: DATA_TYPE) -> bool:
@@ -190,7 +193,7 @@ class Expr:
         raise NotImplementedError
 
     @property
-    def meta(self) -> t.Dict[str, t.Any]:
+    def meta(self) -> dict[str, t.Any]:
         raise NotImplementedError
 
     def __deepcopy__(self, memo: t.Any) -> Expr:
@@ -199,10 +202,10 @@ class Expr:
     def copy(self: E) -> E:
         raise NotImplementedError
 
-    def add_comments(self, comments: t.Optional[t.List[str]] = None, prepend: bool = False) -> None:
+    def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
         raise NotImplementedError
 
-    def pop_comments(self) -> t.List[str]:
+    def pop_comments(self) -> list[str]:
         raise NotImplementedError
 
     def append(self, arg_key: str, value: t.Any) -> None:
@@ -212,12 +215,12 @@ class Expr:
         self,
         arg_key: str,
         value: object,
-        index: t.Optional[int] = None,
+        index: int | None = None,
         overwrite: bool = True,
     ) -> None:
         raise NotImplementedError
 
-    def _set_parent(self, arg_key: str, value: object, index: t.Optional[int] = None) -> None:
+    def _set_parent(self, arg_key: str, value: object, index: int | None = None) -> None:
         raise NotImplementedError
 
     @property
@@ -227,17 +230,17 @@ class Expr:
     def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
         raise NotImplementedError
 
-    def find(self, *expression_types: Type[E], bfs: bool = True) -> t.Optional[E]:
+    def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
         raise NotImplementedError
 
     def find_all(self, *expression_types: Type[E], bfs: bool = True) -> Iterator[E]:
         raise NotImplementedError
 
-    def find_ancestor(self, *expression_types: Type[E]) -> t.Optional[E]:
+    def find_ancestor(self, *expression_types: Type[E]) -> E | None:
         raise NotImplementedError
 
     @property
-    def parent_select(self) -> t.Optional[Select]:
+    def parent_select(self) -> Select | None:
         raise NotImplementedError
 
     @property
@@ -248,14 +251,14 @@ class Expr:
         raise NotImplementedError
 
     def walk(
-        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expr], bool]] = None
+        self, bfs: bool = True, prune: t.Callable[[Expr], bool] | None = None
     ) -> Iterator[Expr]:
         raise NotImplementedError
 
-    def dfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> Iterator[Expr]:
+    def dfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
         raise NotImplementedError
 
-    def bfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> Iterator[Expr]:
+    def bfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
         raise NotImplementedError
 
     def unnest(self) -> Expr:
@@ -264,7 +267,7 @@ class Expr:
     def unalias(self) -> Expr:
         raise NotImplementedError
 
-    def unnest_operands(self) -> t.Tuple[Expr, ...]:
+    def unnest_operands(self) -> tuple[Expr, ...]:
         raise NotImplementedError
 
     def flatten(self, unnest: bool = True) -> Iterator[Expr]:
@@ -292,7 +295,7 @@ class Expr:
     def assert_is(self, type_: Type[E]) -> E:
         raise NotImplementedError
 
-    def error_messages(self, args: t.Optional[Sequence[object]] = None) -> list[str]:
+    def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
         raise NotImplementedError
 
     def dump(self) -> list[dict[str, t.Any]]:
@@ -304,7 +307,7 @@ class Expr:
         return dump(self)
 
     @classmethod
-    def load(cls, obj: t.Optional[list[dict[str, Any]]]) -> Expr:
+    def load(cls, obj: list[dict[str, Any]] | None) -> Expr:
         """
         Load a dict (as returned by `Expr.dump`) into an Expr instance.
         """
@@ -316,7 +319,7 @@ class Expr:
 
     def and_(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
@@ -326,7 +329,7 @@ class Expr:
 
     def or_(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
@@ -339,18 +342,18 @@ class Expr:
 
     def update_positions(
         self: E,
-        other: t.Optional[Token | Expr] = None,
-        line: t.Optional[int] = None,
-        col: t.Optional[int] = None,
-        start: t.Optional[int] = None,
-        end: t.Optional[int] = None,
+        other: Token | Expr | None = None,
+        line: int | None = None,
+        col: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
     ) -> E:
         raise NotImplementedError
 
     def as_(
         self,
         alias: str | Identifier,
-        quoted: t.Optional[bool] = None,
+        quoted: bool | None = None,
         dialect: DialectType = None,
         copy: bool = True,
         table: bool | Sequence[str | Identifier] = False,
@@ -370,8 +373,8 @@ class Expr:
     def isin(
         self,
         *expressions: t.Any,
-        query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
+        query: ExpOrStr | None = None,
+        unnest: ExpOrStr | None | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
@@ -379,7 +382,7 @@ class Expr:
         raise NotImplementedError
 
     def between(
-        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: bool | None = None
     ) -> Between:
         raise NotImplementedError
 
@@ -482,6 +485,49 @@ class Expr:
     def __invert__(self) -> Not:
         raise NotImplementedError
 
+    def pipe(
+        self, func: t.Callable[Concatenate[Self, P], R], *args: P.args, **kwargs: P.kwargs
+    ) -> R:
+        """Apply a function to `Self` (the current instance) and return the result.
+
+        Doing `expr.pipe(func, *args, **kwargs)` is equivalent to `func(expr, *args, **kwargs)`.
+
+        It allows you to chain operations in a fluent way on any given function that takes `Self` as its first argument.
+
+        Tip:
+            If `func` doesn't take `Self` as it's first argument, you can use a lambda to work around it.
+
+        Args:
+            func: The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
+            *args: Additional positional arguments to pass to `func` after `Self`.
+            **kwargs: Additional keyword arguments to pass to `func`.
+
+        Returns:
+            The result of applying `func` to `Self` with the given arguments.
+        """
+        return func(self, *args, **kwargs)
+
+    def apply(
+        self, func: t.Callable[Concatenate[Self, P], t.Any], *args: P.args, **kwargs: P.kwargs
+    ) -> Self:
+        """Apply a function to `Self` (the current instance) for side effects, and return `Self`.
+
+        Useful for inspecting intermediate expressions in a method chain by simply adding/removing `apply` calls, especially when combined with `pipe`.
+
+        Tip:
+            If `func` doesn't take `Self` as it's first argument, you can use a lambda to work around it.
+
+        Args:
+            func: The function to apply. It should take `Self` as its first argument, followed by any additional arguments specified in `*args` and `**kwargs`.
+            *args: Additional positional arguments to pass to `func` after `Self`.
+            **kwargs: Additional keyword arguments to pass to `func`.
+
+        Returns:
+            The same instance.
+        """
+        func(self, *args, **kwargs)
+        return self
+
 
 class Expression(Expr):
     __slots__ = (
@@ -503,8 +549,8 @@ class Expression(Expr):
 
     def __hash__(self) -> int:
         if self._hash is None:
-            nodes: t.List[Expr] = []
-            queue: t.Deque[Expr] = deque()
+            nodes: list[Expr] = []
+            queue: deque[Expr] = deque()
             queue.append(self)
 
             while queue:
@@ -542,7 +588,7 @@ class Expression(Expr):
     def __reduce__(
         self,
     ) -> tuple[
-        t.Callable[[t.Optional[list[dict[str, t.Any]]]], t.Optional[t.Union[Expr, DType]]],
+        t.Callable[[list[dict[str, t.Any]] | None], Expr | DType | None],
         tuple[list[dict[str, t.Any]]],
     ]:
         from sqlglot.serde import dump, load
@@ -564,7 +610,7 @@ class Expression(Expr):
         return self.args.get("expression")
 
     @property
-    def expressions(self) -> t.List[t.Any]:
+    def expressions(self) -> list[t.Any]:
         """
         Retrieves the argument with key "expressions".
         """
@@ -629,7 +675,7 @@ class Expression(Expr):
         return self.text("alias")
 
     @property
-    def alias_column_names(self) -> t.List[str]:
+    def alias_column_names(self) -> list[str]:
         table_alias = self.args.get("alias")
         if not table_alias:
             return []
@@ -662,13 +708,13 @@ class Expression(Expr):
         return ""
 
     @property
-    def type(self) -> t.Optional[DataType]:
+    def type(self) -> DataType | None:
         if self.is_cast:
             return self._type or self.to  # type: ignore[attr-defined]
         return self._type
 
     @type.setter
-    def type(self, dtype: t.Optional[DataType | DType | str]) -> None:
+    def type(self, dtype: DataType | DType | str | None) -> None:
         if dtype and type(dtype).__name__ != "DataType":
             from sqlglot.expressions.datatypes import DataType as _DataType
 
@@ -683,14 +729,14 @@ class Expression(Expr):
         return not any((isinstance(v, Expr) or type(v) is list) and v for v in self.args.values())
 
     @property
-    def meta(self) -> t.Dict[str, t.Any]:
+    def meta(self) -> dict[str, t.Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta
 
     def __deepcopy__(self, memo: t.Any) -> Expr:
         root = self.__class__()
-        stack: t.List[t.Tuple[Expr, Expr]] = [(self, root)]
+        stack: list[tuple[Expr, Expr]] = [(self, root)]
 
         while stack:
             node, copy = stack.pop()
@@ -728,7 +774,7 @@ class Expression(Expr):
         """
         return deepcopy(self)
 
-    def add_comments(self, comments: t.Optional[t.List[str]] = None, prepend: bool = False) -> None:
+    def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
         if self.comments is None:
             self.comments = []
 
@@ -746,7 +792,7 @@ class Expression(Expr):
             if prepend:
                 self.comments = comments + self.comments
 
-    def pop_comments(self) -> t.List[str]:
+    def pop_comments(self) -> list[str]:
         comments = self.comments or []
         self.comments = None
         return comments
@@ -771,7 +817,7 @@ class Expression(Expr):
         self,
         arg_key: str,
         value: object,
-        index: t.Optional[int] = None,
+        index: int | None = None,
         overwrite: bool = True,
     ) -> None:
         """
@@ -784,7 +830,7 @@ class Expression(Expr):
             overwrite: assuming an index is given, this determines whether to overwrite the
                 list entry instead of only inserting a new value (i.e., like list.insert).
         """
-        node: t.Optional[Expr] = self
+        node: Expr | None = self
 
         while node and node._hash is not None:
             node._hash = None
@@ -818,7 +864,7 @@ class Expression(Expr):
         self.args[arg_key] = value
         self._set_parent(arg_key, value, index)
 
-    def _set_parent(self, arg_key: str, value: object, index: t.Optional[int] = None) -> None:
+    def _set_parent(self, arg_key: str, value: object, index: int | None = None) -> None:
         if isinstance(value, Expr):
             value.parent = self
             value.arg_key = arg_key
@@ -862,7 +908,7 @@ class Expression(Expr):
             elif isinstance(vs, Expr):
                 yield t.cast(E, vs)
 
-    def find(self, *expression_types: Type[E], bfs: bool = True) -> t.Optional[E]:
+    def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
         """
         Returns the first node in this tree which matches at least one of
         the specified types.
@@ -892,7 +938,7 @@ class Expression(Expr):
             if isinstance(expression, expression_types):
                 yield expression
 
-    def find_ancestor(self, *expression_types: Type[E]) -> t.Optional[E]:
+    def find_ancestor(self, *expression_types: Type[E]) -> E | None:
         """
         Returns a nearest parent matching expression_types.
 
@@ -908,7 +954,7 @@ class Expression(Expr):
         return ancestor  # type: ignore[return-value]
 
     @property
-    def parent_select(self) -> t.Optional[Select]:
+    def parent_select(self) -> Select | None:
         """
         Returns the parent select statement.
         """
@@ -931,7 +977,7 @@ class Expression(Expr):
         return expression
 
     def walk(
-        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expr], bool]] = None
+        self, bfs: bool = True, prune: t.Callable[[Expr], bool] | None = None
     ) -> Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree.
@@ -950,7 +996,7 @@ class Expression(Expr):
         else:
             yield from self.dfs(prune=prune)
 
-    def dfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> Iterator[Expr]:
+    def dfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.
@@ -968,7 +1014,7 @@ class Expression(Expr):
             for v in node.iter_expressions(reverse=True):
                 stack.append(v)
 
-    def bfs(self, prune: t.Optional[t.Callable[[Expr], bool]] = None) -> Iterator[Expr]:
+    def bfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
         """
         Returns a generator object which visits all nodes in this tree in
         the BFS (Breadth-first) order.
@@ -976,7 +1022,7 @@ class Expression(Expr):
         Returns:
             The generator object.
         """
-        queue: t.Deque[Expr] = deque()
+        queue: deque[Expr] = deque()
         queue.append(self)
 
         while queue:
@@ -1004,7 +1050,7 @@ class Expression(Expr):
             return self.this
         return self
 
-    def unnest_operands(self) -> t.Tuple[Expr, ...]:
+    def unnest_operands(self) -> tuple[Expr, ...]:
         """
         Returns unnested operands as a tuple.
         """
@@ -1155,7 +1201,7 @@ class Expression(Expr):
             raise AssertionError(f"{self} is not {type_}.")
         return self
 
-    def error_messages(self, args: t.Optional[Sequence[object]] = None) -> list[str]:
+    def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
         """
         Checks if this expression is valid (e.g. all mandatory args are set).
 
@@ -1171,7 +1217,7 @@ class Expression(Expr):
                 if k not in self.arg_types:
                     raise TypeError(f"Unexpected keyword: '{k}' for {self.__class__}")
 
-        errors: t.Optional[list[str]] = None
+        errors: list[str] | None = None
 
         for k in self.required_args:
             v = self.args.get(k)
@@ -1197,7 +1243,7 @@ class Expression(Expr):
 
     def and_(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
@@ -1227,7 +1273,7 @@ class Expression(Expr):
 
     def or_(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         dialect: DialectType = None,
         copy: bool = True,
         wrap: bool = True,
@@ -1273,11 +1319,11 @@ class Expression(Expr):
 
     def update_positions(
         self: E,
-        other: t.Optional[Token | Expr] = None,
-        line: t.Optional[int] = None,
-        col: t.Optional[int] = None,
-        start: t.Optional[int] = None,
-        end: t.Optional[int] = None,
+        other: Token | Expr | None = None,
+        line: int | None = None,
+        col: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
     ) -> E:
         """
         Update this expression with positions from a token or other expression.
@@ -1316,7 +1362,7 @@ class Expression(Expr):
     def as_(
         self,
         alias: str | Identifier,
-        quoted: t.Optional[bool] = None,
+        quoted: bool | None = None,
         dialect: DialectType = None,
         copy: bool = True,
         table: bool | Sequence[str | Identifier] = False,
@@ -1350,15 +1396,15 @@ class Expression(Expr):
     def isin(
         self,
         *expressions: t.Any,
-        query: t.Optional[ExpOrStr] = None,
-        unnest: t.Optional[ExpOrStr] | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
+        query: ExpOrStr | None = None,
+        unnest: ExpOrStr | None | list[ExpOrStr] | tuple[ExpOrStr, ...] = None,
         dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> In:
         from sqlglot.expressions.query import Query
 
-        subquery: t.Optional[Expr] = None
+        subquery: Expr | None = None
         if query:
             subquery = maybe_parse(query, dialect=dialect, copy=copy, **opts)
             if isinstance(subquery, Query):
@@ -1380,7 +1426,7 @@ class Expression(Expr):
         )
 
     def between(
-        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: t.Optional[bool] = None
+        self, low: t.Any, high: t.Any, copy: bool = True, symmetric: bool | None = None
     ) -> Between:
         between = Between(
             this=maybe_copy(self, copy),
@@ -1550,7 +1596,7 @@ class Any(Expression, SubqueryPredicate):
 
 @trait
 class Binary(Condition):
-    arg_types: t.ClassVar[t.Dict[str, bool]] = {"this": True, "expression": True}
+    arg_types: t.ClassVar[dict[str, bool]] = {"this": True, "expression": True}
 
     @property
     def left(self) -> Expr:
@@ -1644,7 +1690,7 @@ class Column(Expression, Condition):
         return self.name
 
     @property
-    def parts(self) -> t.List[Identifier | Star]:
+    def parts(self) -> list[Identifier | Star]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)
@@ -1803,7 +1849,7 @@ class Dot(Expression, Binary):
         return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
     @property
-    def parts(self) -> t.List[Expr]:
+    def parts(self) -> list[Expr]:
         """Return the parts of a table / column in order catalog, db, table."""
         this, *parts = self.flatten()
 
@@ -1843,7 +1889,7 @@ class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
 
     @property
-    def aliases(self) -> t.List[Expr]:
+    def aliases(self) -> list[Expr]:
         return self.expressions
 
 
@@ -1939,7 +1985,7 @@ class Slice(Expression):
 class TimeUnit(Expr):
     """Automatically converts unit arg into a var."""
 
-    UNABBREVIATED_UNIT_NAME: t.ClassVar[t.Dict[str, str]] = {
+    UNABBREVIATED_UNIT_NAME: t.ClassVar[dict[str, str]] = {
         "D": "DAY",
         "H": "HOUR",
         "M": "MINUTE",
@@ -1952,7 +1998,7 @@ class TimeUnit(Expr):
         "Y": "YEAR",
     }
 
-    VAR_LIKE: t.ClassVar[t.Tuple[Type[Expr], ...]] = (Column, Literal, Var)
+    VAR_LIKE: t.ClassVar[tuple[Type[Expr], ...]] = (Column, Literal, Var)
 
     def __init__(self, **args: object) -> None:
         super().__init__(**args)
@@ -1970,7 +2016,7 @@ class TimeUnit(Expr):
             unit.set("this", Var(this=unit.this.name.upper()))  # type: ignore[union-attr]
 
     @property
-    def unit(self) -> t.Optional[Expr]:
+    def unit(self) -> Expr | None:
         return self.args.get("unit")
 
 
@@ -1982,7 +2028,7 @@ class _TimeUnit(Expression, TimeUnit):
 
 @trait
 class IntervalOp(TimeUnit):
-    def interval(self) -> "Interval":
+    def interval(self) -> Interval:
         from sqlglot.expressions.datatypes import Interval
 
         expr = self.expression
@@ -2267,7 +2313,7 @@ def not_(
     return Not(this=_wrap(this, Connector))
 
 
-def _lazy_unnest(**kwargs: object) -> "Expr":
+def _lazy_unnest(**kwargs: object) -> Expr:
     from sqlglot.expressions.array import Unnest
 
     return Unnest(**kwargs)
@@ -2402,7 +2448,7 @@ def maybe_parse(
     *,
     into: Type[E],
     dialect: DialectType = None,
-    prefix: t.Optional[str] = None,
+    prefix: str | None = None,
     copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
@@ -2412,9 +2458,9 @@ def maybe_parse(
 def maybe_parse(
     sql_or_expression: int | str | E,
     *,
-    into: t.Optional[IntoType] = None,
+    into: IntoType | None = None,
     dialect: DialectType = None,
-    prefix: t.Optional[str] = None,
+    prefix: str | None = None,
     copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E: ...
@@ -2423,9 +2469,9 @@ def maybe_parse(
 def maybe_parse(
     sql_or_expression: ExpOrStr,
     *,
-    into: t.Optional[IntoType] = None,
+    into: IntoType | None = None,
     dialect: DialectType = None,
-    prefix: t.Optional[str] = None,
+    prefix: str | None = None,
     copy: bool = False,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> Expr:
@@ -2529,8 +2575,8 @@ def _apply_builder(
     instance: E,
     arg: str,
     copy: bool = True,
-    prefix: t.Optional[str] = None,
-    into: t.Optional[Type[Expr]] = None,
+    prefix: str | None = None,
+    into: Type[Expr] | None = None,
     dialect: DialectType = None,
     into_arg="this",
     **opts: Unpack[ParserNoDialectArgs],
@@ -2550,15 +2596,15 @@ def _apply_builder(
 
 
 def _apply_child_list_builder(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     instance: E,
     arg: str,
     append: bool = True,
     copy: bool = True,
-    prefix: t.Optional[str] = None,
-    into: t.Optional[Type[Expr]] = None,
+    prefix: str | None = None,
+    into: Type[Expr] | None = None,
     dialect: DialectType = None,
-    properties: t.Optional[MutableMapping[str, object]] = None,
+    properties: MutableMapping[str, object] | None = None,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E:
     instance = maybe_copy(instance, copy)
@@ -2597,13 +2643,13 @@ def _apply_child_list_builder(
 
 
 def _apply_list_builder(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     instance: E,
     arg: str,
     append: bool = True,
     copy: bool = True,
-    prefix: t.Optional[str] = None,
-    into: t.Optional[Type[Expr]] = None,
+    prefix: str | None = None,
+    into: Type[Expr] | None = None,
     dialect: DialectType = None,
     **opts: Unpack[ParserNoDialectArgs],
 ) -> E:
@@ -2630,10 +2676,10 @@ def _apply_list_builder(
 
 
 def _apply_conjunction_builder(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     instance: E,
     arg: str,
-    into: t.Optional[Type[Expr]] = None,
+    into: Type[Expr] | None = None,
     append: bool = True,
     copy: bool = True,
     dialect: DialectType = None,
@@ -2656,7 +2702,7 @@ def _apply_conjunction_builder(
 
 
 def _combine(
-    expressions: Sequence[t.Optional[ExpOrStr]],
+    expressions: Sequence[ExpOrStr | None],
     operator: Type[Expr],
     dialect: DialectType = None,
     copy: bool = True,
@@ -2686,7 +2732,7 @@ def _wrap(expression: None, kind: Type[Expr]) -> None: ...
 def _wrap(expression: E, kind: Type[Expr]) -> E | Paren: ...
 
 
-def _wrap(expression: t.Optional[E], kind: Type[Expr]) -> t.Optional[E] | Paren:
+def _wrap(expression: E | None, kind: Type[Expr]) -> E | None | Paren:
     return Paren(this=expression) if isinstance(expression, kind) else expression
 
 
@@ -2708,12 +2754,12 @@ SAFE_IDENTIFIER_RE: t.Pattern[str] = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None: ...
+def to_identifier(name: None, quoted: bool | None = None, copy: bool = True) -> None: ...
 
 
 @t.overload
 def to_identifier(
-    name: int | str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
+    name: int | str | Identifier, quoted: bool | None = None, copy: bool = True
 ) -> Identifier: ...
 
 
@@ -2785,7 +2831,7 @@ def condition(
 
 
 def and_(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
@@ -2815,7 +2861,7 @@ def and_(
 
 
 def or_(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
@@ -2845,7 +2891,7 @@ def or_(
 
 
 def xor(
-    *expressions: t.Optional[ExpOrStr],
+    *expressions: ExpOrStr | None,
     dialect: DialectType = None,
     copy: bool = True,
     wrap: bool = True,
@@ -2895,9 +2941,9 @@ def paren(expression: ExpOrStr, copy: bool = True) -> Paren:
 
 def alias_(
     expression: ExpOrStr,
-    alias: t.Optional[str | Identifier],
+    alias: str | Identifier | None,
     table: bool | Sequence[str | Identifier] = False,
-    quoted: t.Optional[bool] = None,
+    quoted: bool | None = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts: Unpack[ParserNoDialectArgs],
@@ -2955,12 +3001,12 @@ def alias_(
 @t.overload
 def column(
     col: str | Identifier,
-    table: t.Optional[str | Identifier] = None,
-    db: t.Optional[str | Identifier] = None,
-    catalog: t.Optional[str | Identifier] = None,
+    table: str | Identifier | None = None,
+    db: str | Identifier | None = None,
+    catalog: str | Identifier | None = None,
     *,
-    fields: Collection[t.Union[str, Identifier]],
-    quoted: t.Optional[bool] = None,
+    fields: Collection[str | Identifier],
+    quoted: bool | None = None,
     copy: bool = True,
 ) -> Dot:
     pass
@@ -2969,12 +3015,12 @@ def column(
 @t.overload
 def column(
     col: str | Identifier | Star,
-    table: t.Optional[str | Identifier] = None,
-    db: t.Optional[str | Identifier] = None,
-    catalog: t.Optional[str | Identifier] = None,
+    table: str | Identifier | None = None,
+    db: str | Identifier | None = None,
+    catalog: str | Identifier | None = None,
     *,
     fields: t.Literal[None] = None,
-    quoted: t.Optional[bool] = None,
+    quoted: bool | None = None,
     copy: bool = True,
 ) -> Column:
     pass

@@ -321,6 +321,24 @@ class AIClassify(Expression, Func):
     _sql_names = ["AI_CLASSIFY"]
 
 
+class AIEmbed(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_EMBED"]
+
+
+class AISimilarity(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_SIMILARITY"]
+
+
+class AIGenerate(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_GENERATE"]
+
+
 class FeaturesAtTime(Expression, Func):
     arg_types = {"this": True, "time": False, "num_rows": False, "ignore_feature_nulls": False}
 
@@ -329,8 +347,43 @@ class GenerateEmbedding(Expression, Func):
     arg_types = {"this": True, "expression": True, "params_struct": False, "is_text": False}
 
 
+class GenerateText(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateTable(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateBool(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateInt(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class GenerateDouble(Expression, Func):
+    arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
 class MLForecast(Expression, Func):
     arg_types = {"this": True, "expression": False, "params_struct": False}
+
+
+class AIForecast(Expression, Func):
+    arg_types = {
+        "this": True,
+        "data_col": False,
+        "timestamp_col": False,
+        "model": False,
+        "id_cols": False,
+        "horizon": False,
+        "forecast_end_timestamp": False,
+        "confidence_level": False,
+        "output_historical_time_series": False,
+        "context_window": False,
+    }
 
 
 class MLTranslate(Expression, Func):

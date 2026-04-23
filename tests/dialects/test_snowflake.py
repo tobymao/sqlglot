@@ -221,7 +221,7 @@ class TestSnowflake(Validator):
             "JAROWINKLER_SIMILARITY('hello', 'world')",
             write={
                 "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
-                "duckdb": "JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world'))",
+                "duckdb": "CAST(JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world')) * 100 AS INT)",
                 "clickhouse": "jaroWinklerSimilarity(UPPER('hello'), UPPER('world'))",
             },
         )
@@ -499,9 +499,39 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "TO_DECIMAL(expr, fmt, precision, scale)", "TO_NUMBER(expr, fmt, precision, scale)"
         )
-        self.validate_identity("TO_NUMBER(expr)")
-        self.validate_identity("TO_NUMBER(expr, fmt)")
-        self.validate_identity("TO_NUMBER(expr, fmt, precision, scale)")
+        self.validate_identity("TO_NUMBER(expr, 38, 0)", "TO_NUMBER(expr)")
+        self.validate_identity("TO_NUMBER(expr, 38)", "TO_NUMBER(expr)")
+
+        ast = self.validate_identity("TO_NUMBER('12.3456')")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "38")
+        self.assertEqual(ast.args.get("scale").name, "0")
+
+        ast = self.validate_identity("TO_NUMBER('12.3456', 10, 1)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "10")
+        self.assertEqual(ast.args.get("scale").name, "1")
+
+        ast = self.validate_identity("TO_NUMBER('12.3456', '99.99')")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertEqual(ast.args.get("format").name, "99.99")
+        self.assertEqual(ast.args.get("precision").name, "38")
+        self.assertEqual(ast.args.get("scale").name, "0")
+
+        ast = self.validate_identity("TO_NUMBER('12.3456', '99.99', 10, 1)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertEqual(ast.args.get("format").name, "99.99")
+        self.assertEqual(ast.args.get("precision").name, "10")
+        self.assertEqual(ast.args.get("scale").name, "1")
+
+        ast = self.validate_identity("TO_NUMBER('12.3456', 3)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "3")
+        self.assertEqual(ast.args.get("scale").name, "0")
+
         self.validate_identity("TO_DECFLOAT('123.456')")
         self.validate_identity("TO_DECFLOAT('1,234.56', '999,999.99')")
         self.validate_identity("TRY_TO_DECFLOAT('123.456')")
@@ -542,9 +572,44 @@ class TestSnowflake(Validator):
         self.validate_identity("TRY_TO_FILE(object_col)")
         self.validate_identity("TRY_TO_FILE('file.csv')")
         self.validate_identity("TRY_TO_FILE('file.csv', 'relativepath/')")
-        self.validate_identity("TRY_TO_NUMBER('123.45')")
-        self.validate_identity("TRY_TO_NUMBER('123.45', '999.99')")
-        self.validate_identity("TRY_TO_NUMBER('123.45', '999.99', 10, 2)")
+        self.validate_identity("TRY_TO_NUMBER(expr, 38, 0)", "TRY_TO_NUMBER(expr)")
+        self.validate_identity("TRY_TO_NUMBER(expr, 38)", "TRY_TO_NUMBER(expr)")
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456')")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "38")
+        self.assertEqual(ast.args.get("scale").name, "0")
+        self.assertTrue(ast.args.get("safe"))
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456', 10, 1)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "10")
+        self.assertEqual(ast.args.get("scale").name, "1")
+        self.assertTrue(ast.args.get("safe"))
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456', '99.99')")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertEqual(ast.args.get("format").name, "99.99")
+        self.assertEqual(ast.args.get("precision").name, "38")
+        self.assertEqual(ast.args.get("scale").name, "0")
+        self.assertTrue(ast.args.get("safe"))
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456', '99.99', 10, 1)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertEqual(ast.args.get("format").name, "99.99")
+        self.assertEqual(ast.args.get("precision").name, "10")
+        self.assertEqual(ast.args.get("scale").name, "1")
+        self.assertTrue(ast.args.get("safe"))
+
+        ast = self.validate_identity("TRY_TO_NUMBER('12.3456', 3)")
+        self.assertIsInstance(ast, exp.ToNumber)
+        self.assertIsNone(ast.args.get("format"))
+        self.assertEqual(ast.args.get("precision").name, "3")
+        self.assertEqual(ast.args.get("scale").name, "0")
+        self.assertTrue(ast.args.get("safe"))
+
         self.validate_identity("TO_NUMERIC('123.45')", "TO_NUMBER('123.45')")
         self.validate_identity("TO_NUMERIC('123.45', '999.99')", "TO_NUMBER('123.45', '999.99')")
         self.validate_identity(
@@ -748,14 +813,6 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT DATEADD(DAY, -7, DATEADD(t.m, 1, CAST('2023-01-03' AS DATE))) FROM (SELECT 'month' AS m) AS t"
         ).selects[0].this.unit.assert_is(exp.Column)
-
-        self.validate_all(
-            "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-            write={
-                "snowflake": "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-                "duckdb": r"""SELECT CASE WHEN SUBSTRING('.$^', 1, 2) = '' AND 'a$b$c' = '' THEN NULL WHEN SUBSTRING('.$^', 1, 2) = '' AND 2 = 1 THEN 'a$b$c' WHEN SUBSTRING('.$^', 1, 2) = '' THEN NULL WHEN 2 < 0 THEN NULL WHEN 'a$b$c' IS NULL OR SUBSTRING('.$^', 1, 2) IS NULL OR 2 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('a$b$c', CASE WHEN SUBSTRING('.$^', 1, 2) = '' THEN '' ELSE '[' || REGEXP_REPLACE(SUBSTRING('.$^', 1, 2), '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), x -> NOT x = '')[2] END""",
-            },
-        )
 
         self.validate_all(
             "SELECT STRTOK('a$b/cg', '$/.')",
@@ -4354,6 +4411,10 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity(
+            "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
+        )
+
     def test_stored_procedures(self):
         self.validate_identity("CALL a.b.c(x, y)", check_command_warning=True)
         self.validate_identity(
@@ -5878,6 +5939,41 @@ SINGLE = TRUE""",
         self.validate_identity("CREATE OR REPLACE VIEW FOO (A, B) AS SELECT A, B FROM TBL")
         self.validate_identity(
             "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
+        )
+
+    def test_create_view_row_access_policy(self):
+        self.validate_identity(
+            "CREATE VIEW v WITH ROW ACCESS POLICY mypolicy ON (col1) AS SELECT col1 FROM t1"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE VIEW v WITH ROW ACCESS POLICY db.schema.mypolicy ON (col1, col2) AS SELECT col1, col2 FROM t1"
+        )
+        self.validate_identity(
+            "CREATE VIEW v (COL1 COMMENT 'description') WITH ROW ACCESS POLICY db.schema.policy ON (COL1) COMMENT='some comment' AS (SELECT a FROM t1 LEFT JOIN t2 ON t1.id = t2.id)"
+        )
+        self.validate_identity(
+            "CREATE VIEW v ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+            "CREATE VIEW v WITH ROW ACCESS POLICY p ON (c) AS SELECT c FROM t",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c INT) ROW ACCESS POLICY p ON (c)",
+            "CREATE TABLE t (c INT) WITH ROW ACCESS POLICY p ON (c)",
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one(
+                "CREATE VIEW v WITH ROW ACCESS POLICY p AS SELECT 1",
+                dialect="snowflake",
+            )
+        self.validate_identity(
+            "CREATE VIEW v WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1",
+        )
+        self.assertEqual(
+            parse_one(
+                "CREATE VIEW v WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1",
+                dialect="snowflake",
+            ).sql(dialect="snowflake", identify=True),
+            'CREATE VIEW "v" WITH ROW ACCESS POLICY #unknown_policy AS SELECT 1',
         )
 
     def test_semantic_view(self):

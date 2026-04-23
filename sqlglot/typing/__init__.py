@@ -4,7 +4,7 @@ from sqlglot import exp
 from sqlglot.helper import subclasses
 from builtins import type as Type
 
-ExprMetadataType = t.Dict[Type[exp.Expr], t.Dict[str, t.Any]]
+ExprMetadataType = dict[Type[exp.Expr], dict[str, t.Any]]
 
 TIMESTAMP_EXPRESSIONS = {
     exp.CurrentTimestamp,

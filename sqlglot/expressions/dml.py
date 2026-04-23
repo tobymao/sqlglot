@@ -38,7 +38,7 @@ class DML(Expr):
         dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
-    ) -> "Self":
+    ) -> Self:
         """
         Set the RETURNING expression. Not supported by all dialects.
 
@@ -79,6 +79,7 @@ class Delete(Expression, DML):
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
         "cluster": False,  # Clickhouse
+        "hint": False,
     }
 
     def delete(
@@ -116,7 +117,7 @@ class Delete(Expression, DML):
 
     def where(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -217,8 +218,8 @@ class Insert(Expression, DDL, DML):
         self,
         alias: ExpOrStr,
         as_: ExpOrStr,
-        recursive: t.Optional[bool] = None,
-        materialized: t.Optional[bool] = None,
+        recursive: bool | None = None,
+        materialized: bool | None = None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -282,7 +283,8 @@ class LoadData(Expression):
         "this": True,
         "local": False,
         "overwrite": False,
-        "inpath": True,
+        "inpath": False,
+        "files": False,
         "partition": False,
         "input_format": False,
         "serde": False,
@@ -300,6 +302,7 @@ class Update(Expression, DML):
         "order": False,
         "limit": False,
         "options": False,
+        "hint": False,
     }
 
     def table(
@@ -377,7 +380,7 @@ class Update(Expression, DML):
 
     def where(
         self,
-        *expressions: t.Optional[ExpOrStr],
+        *expressions: ExpOrStr | None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -416,7 +419,7 @@ class Update(Expression, DML):
 
     def from_(
         self,
-        expression: t.Optional[ExpOrStr] = None,
+        expression: ExpOrStr | None = None,
         dialect: DialectType = None,
         copy: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
@@ -458,8 +461,8 @@ class Update(Expression, DML):
         self,
         alias: ExpOrStr,
         as_: ExpOrStr,
-        recursive: t.Optional[bool] = None,
-        materialized: t.Optional[bool] = None,
+        recursive: bool | None = None,
+        materialized: bool | None = None,
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,

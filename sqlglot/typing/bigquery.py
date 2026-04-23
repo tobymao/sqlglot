@@ -93,22 +93,33 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     #
     # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
     # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
+    # ARRAY(SELECT ... UNION ALL SELECT ...)                  -- ARRAY<type from coerced projections>
+    # ARRAY(SELECT AS STRUCT 1 AS a, 'b' AS b)                -- ARRAY<STRUCT<INT64, STRING>>
     if len(array_args) == 1:
         unnested = array_args[0].unnest()
-        projection_type: t.Optional[exp.DataType | exp.DType] = None
+        projection_type: exp.DataType | exp.DType | None = None
 
         # Handle ARRAY(SELECT ...) - single SELECT query
         if isinstance(unnested, exp.Select):
-            if (
-                (query_type := unnested.meta.get("query_type")) is not None
-                and query_type.is_type(exp.DType.STRUCT)
-                and len(query_type.expressions) == 1
-                and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-                and (col_type := col_def.kind) is not None
-                and not col_type.is_type(exp.DType.UNKNOWN)
-            ):
-                projection_type = col_type
+            query_type = unnested.meta.get("query_type")
+
+            if query_type and query_type.is_type(exp.DType.STRUCT):
+                query_exprs = query_type.expressions
+
+                col_defs = [
+                    e
+                    for e in query_exprs
+                    if isinstance(e, exp.ColumnDef)
+                    and not (e.kind and e.kind.is_type(exp.DType.UNKNOWN))
+                ]
+
+                if len(col_defs) == len(query_exprs):
+                    if unnested.args.get("kind") == "STRUCT":
+                        # ARRAY(SELECT AS STRUCT ...) -> ARRAY<STRUCT<col1, col2, ...>>
+                        projection_type = query_type
+                    elif len(col_defs) == 1 and (col_type := col_defs[0].kind):
+                        # ARRAY(SELECT col FROM ...) -> ARRAY<col_type>
+                        projection_type = col_type
 
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):

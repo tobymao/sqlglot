@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import seq_get
@@ -23,7 +22,7 @@ class MaterializeParser(PostgresParser):
         ),
     }
 
-    def _parse_lambda_arg(self) -> t.Optional[exp.Expr]:
+    def _parse_lambda_arg(self) -> exp.Expr | None:
         return self._parse_field()
 
     def _parse_map(self) -> exp.ToMap:

@@ -281,3 +281,9 @@ SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
 # canonicalize_table_aliases: true
 SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
 SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g);
+
+# title: Qualify JSONB_TO_RECORDSET with typed alias columns and canonicalize_table_aliases
+# dialect: postgres
+# canonicalize_table_aliases: true
+SELECT jsonvalue.id FROM deal, JSONB_TO_RECORDSET(CAST(deal.type AS JSONB)) AS jsonvalue(id INT, key VARCHAR, text VARCHAR);
+SELECT _1.id FROM c.db.deal AS _0, JSONB_TO_RECORDSET(CAST(_0.type AS JSONB)) AS _1(id INT, key VARCHAR, text VARCHAR);

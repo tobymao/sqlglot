@@ -25,10 +25,7 @@ if t.TYPE_CHECKING:
     BinaryCoercionFunc = t.Callable[
         [exp.Expr, exp.Expr], t.Optional[t.Union[exp.DataType, exp.DType]]
     ]
-    BinaryCoercions = t.Dict[
-        t.Tuple[exp.DType, exp.DType],
-        BinaryCoercionFunc,
-    ]
+    BinaryCoercions = dict[tuple[exp.DType, exp.DType], BinaryCoercionFunc]
 
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.typing import ExprMetadataType
@@ -47,9 +44,9 @@ BIGINT_EXTRACT_DATE_PARTS = {
 
 def annotate_types(
     expression: E,
-    schema: t.Optional[t.Dict | Schema] = None,
-    expression_metadata: t.Optional[ExprMetadataType] = None,
-    coerces_to: t.Optional[t.Dict[exp.DType, t.Set[exp.DType]]] = None,
+    schema: dict[str, object] | Schema | None = None,
+    expression_metadata: ExprMetadataType | None = None,
+    coerces_to: dict[exp.DType, set[exp.DType]] | None = None,
     dialect: DialectType = None,
     overwrite_types: bool = True,
 ) -> E:
@@ -85,7 +82,7 @@ def annotate_types(
     ).annotate(expression)
 
 
-def _coerce_date_literal(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
+def _coerce_date_literal(l: exp.Expr, unit: exp.Expr | None) -> exp.DType:
     date_text = l.name
     is_iso_date_ = is_iso_date(date_text)
 
@@ -99,7 +96,7 @@ def _coerce_date_literal(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
     return exp.DType.UNKNOWN
 
 
-def _coerce_date(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
+def _coerce_date(l: exp.Expr, unit: exp.Expr | None) -> exp.DType:
     if not is_date_unit(unit):
         return exp.DType.DATETIME
     return l.type.this if l.type else exp.DType.UNKNOWN
@@ -107,7 +104,7 @@ def _coerce_date(l: exp.Expr, unit: t.Optional[exp.Expr]) -> exp.DType:
 
 def swap_args(func: BinaryCoercionFunc) -> BinaryCoercionFunc:
     @functools.wraps(func)
-    def _swapped(l: exp.Expr, r: exp.Expr) -> t.Optional[t.Union[exp.DataType, exp.DType]]:
+    def _swapped(l: exp.Expr, r: exp.Expr) -> exp.DataType | exp.DType | None:
         return func(r, l)
 
     return _swapped
@@ -117,7 +114,7 @@ def swap_all(coercions: BinaryCoercions) -> BinaryCoercions:
     return {**coercions, **{(b, a): swap_args(func) for (a, b), func in coercions.items()}}
 
 
-def _build_coerces_to() -> t.Dict[exp.DType, t.Set[exp.DType]]:
+def _build_coerces_to() -> dict[exp.DType, set[exp.DType]]:
     # Highest-to-lowest type precedence, as specified in Spark's docs (ANSI):
     # https://spark.apache.org/docs/3.2.0/sql-ref-ansi-compliance.html
     text_precedence = (
@@ -146,9 +143,9 @@ def _build_coerces_to() -> t.Dict[exp.DType, t.Set[exp.DType]]:
         exp.DType.DATE,
     )
 
-    result: t.Dict[exp.DType, t.Set[exp.DType]] = {}
+    result: dict[exp.DType, set[exp.DType]] = {}
     for type_precedence in (text_precedence, numeric_precedence, timelike_precedence):
-        coerces_to: t.Set[exp.DType] = set()
+        coerces_to: set[exp.DType] = set()
         for data_type in type_precedence:
             result[data_type] = coerces_to.copy()
             coerces_to |= {data_type}
@@ -164,7 +161,7 @@ class TypeAnnotator:
     }
 
     # Specifies what types a given type can be coerced into
-    COERCES_TO: t.ClassVar[t.Dict[exp.DType, t.Set[exp.DType]]] = _COERCES_TO
+    COERCES_TO: t.ClassVar[dict[exp.DType, set[exp.DType]]] = _COERCES_TO
 
     # Coercion functions for binary operations.
     # Map of type pairs to a callable that takes both sides of the binary operation and returns the resulting type.
@@ -197,9 +194,9 @@ class TypeAnnotator:
     def __init__(
         self,
         schema: Schema,
-        expression_metadata: t.Optional[ExprMetadataType] = None,
-        coerces_to: t.Optional[t.Dict[exp.DType, t.Set[exp.DType]]] = None,
-        binary_coercions: t.Optional[BinaryCoercions] = None,
+        expression_metadata: ExprMetadataType | None = None,
+        coerces_to: dict[exp.DType, set[exp.DType]] | None = None,
+        binary_coercions: BinaryCoercions | None = None,
         overwrite_types: bool = True,
     ) -> None:
         self.schema = schema
@@ -210,10 +207,10 @@ class TypeAnnotator:
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
         # Caches the ids of annotated sub-Exprs, to ensure we only visit them once
-        self._visited: t.Set[int] = set()
+        self._visited: set[int] = set()
 
         # Caches NULL-annotated expressions to set them to UNKNOWN after type inference is completed
-        self._null_expressions: t.Dict[int, exp.Expr] = {}
+        self._null_expressions: dict[int, exp.Expr] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
@@ -221,13 +218,13 @@ class TypeAnnotator:
         # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
         # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
         # would reprocess the entire subtree to coerce the types of its operands' projections
-        self._setop_column_types: t.Dict[int, t.Dict[str, exp.DataType | exp.DType]] = {}
+        self._setop_column_types: dict[int, dict[str, exp.DataType | exp.DType]] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
         self._overwrite_types = overwrite_types
 
         # Maps Scope to its corresponding selected sources
-        self._scope_selects: t.Dict[Scope, t.Dict[str, t.Dict[str, t.Any]]] = {}
+        self._scope_selects: dict[Scope, dict[str, dict[str, t.Any]]] = {}
 
     def clear(self) -> None:
         self._visited.clear()
@@ -238,7 +235,7 @@ class TypeAnnotator:
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
     def _set_type(
-        self, expression: exp.Expr, target_type: t.Optional[exp.DataType | exp.DType]
+        self, expression: exp.Expr, target_type: exp.DataType | exp.DType | None
     ) -> exp.Expr:
         prev_type = expression.type
         expression_id = id(expression)
@@ -279,7 +276,7 @@ class TypeAnnotator:
 
         return expression
 
-    def _get_scope_selects(self, scope: Scope) -> t.Dict[str, t.Dict[str, t.Any]]:
+    def _get_scope_selects(self, scope: Scope) -> dict[str, dict[str, t.Any]]:
         if scope not in self._scope_selects:
             selects = {}
             for name, source in scope.sources.items():
@@ -386,7 +383,7 @@ class TypeAnnotator:
     def _annotate_expression(
         self,
         expression: exp.Expr,
-        scope: t.Optional[Scope] = None,
+        scope: Scope | None = None,
     ) -> None:
         stack = [(expression, False)]
 
@@ -406,7 +403,7 @@ class TypeAnnotator:
 
             if scope and isinstance(expr, exp.Column) and expr.table:
                 source = None
-                source_scope: t.Optional[Scope] = scope
+                source_scope: Scope | None = scope
                 while source_scope and not source:
                     source = source_scope.sources.get(expr.table)
                     if not source:
@@ -461,7 +458,7 @@ class TypeAnnotator:
 
         # Build alias -> type map from fully-annotated projections (last match wins,
         # consistent with how _expand_alias_refs handles duplicate aliases).
-        alias_types: t.Dict[str, exp.DataType | exp.DType] = {}
+        alias_types: dict[str, exp.DataType | exp.DType] = {}
         for sel in query.selects:
             if (
                 isinstance(sel, exp.Alias)
@@ -524,7 +521,7 @@ class TypeAnnotator:
 
     def _get_setop_column_types(
         self, setop: exp.SetOperation
-    ) -> t.Dict[str, exp.DataType | exp.DType]:
+    ) -> dict[str, exp.DataType | exp.DType]:
         """
         Computes and returns the coerced column types for a SetOperation.
 
@@ -541,7 +538,7 @@ class TypeAnnotator:
         if setop_id in self._setop_column_types:
             return self._setop_column_types[setop_id]
 
-        col_types: t.Dict[str, exp.DataType | exp.DType] = {}
+        col_types: dict[str, exp.DataType | exp.DType] = {}
 
         # Validate that left and right have same number of projections
         if not (
@@ -808,11 +805,9 @@ class TypeAnnotator:
         self._set_type(expression, exp.DType.UNKNOWN)
         return expression
 
-    def _annotate_struct_value(
-        self, expression: exp.Expr
-    ) -> t.Optional[exp.DataType] | exp.ColumnDef:
+    def _annotate_struct_value(self, expression: exp.Expr) -> exp.DataType | None | exp.ColumnDef:
         # Case: STRUCT(key AS value)
-        this: t.Optional[exp.Expr] = None
+        this: exp.Expr | None = None
         kind = expression.type
 
         if alias := expression.args.get("alias"):

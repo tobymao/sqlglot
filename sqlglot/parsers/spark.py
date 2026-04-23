@@ -11,7 +11,7 @@ from sqlglot.parsers.spark2 import Spark2Parser, build_as_cast
 from sqlglot.tokens import TokenType
 
 
-def _build_datediff(args: t.List) -> exp.Expr:
+def _build_datediff(args: list) -> exp.Expr:
     """
     Although Spark docs don't mention the "unit" argument, Spark3 added support for
     it at some point. Databricks also supports this variant (see below).
@@ -37,7 +37,7 @@ def _build_datediff(args: t.List) -> exp.Expr:
     )
 
 
-def _build_dateadd(args: t.List) -> exp.Expr:
+def _build_dateadd(args: list) -> exp.Expr:
     expression = seq_get(args, 1)
 
     if len(args) == 2:
@@ -87,6 +87,7 @@ class SparkParser(Spark2Parser):
         "TIMESTAMPADD": _build_dateadd,
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TRY_ADD": exp.SafeAdd.from_arg_list,
+        "TRY_DIVIDE": exp.SafeDivide.from_arg_list,
         "TRY_MULTIPLY": exp.SafeMultiply.from_arg_list,
         "TRY_SUBTRACT": exp.SafeSubtract.from_arg_list,
         "DATEDIFF": _build_datediff,
@@ -110,7 +111,7 @@ class SparkParser(Spark2Parser):
         TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
     }
 
-    def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
+    def _parse_query_parameter(self) -> exp.Expr | None:
         this = self._parse_id_var()
         self._match(TokenType.R_BRACE)
         return self.expression(exp.Placeholder(this=this, widget=True))
@@ -137,7 +138,7 @@ class SparkParser(Spark2Parser):
             return self.expression(exp.ComputedColumnConstraint(this=this.expression))
         return this
 
-    def _parse_pivot_aggregation(self) -> t.Optional[exp.Expr]:
+    def _parse_pivot_aggregation(self) -> exp.Expr | None:
         # Spark 3+ and Databricks support non aggregate functions in PIVOT too, e.g
         # PIVOT (..., 'foo' AS bar FOR col_to_pivot IN (...))
         aggregate_expr = self._parse_function() or self._parse_disjunction()

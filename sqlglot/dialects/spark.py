@@ -20,7 +20,7 @@ class Spark(Spark2):
 
         RAW_STRINGS = [
             (prefix + q, q)
-            for q in t.cast(t.List[str], Spark2.Tokenizer.QUOTES)
+            for q in t.cast(list[str], Spark2.Tokenizer.QUOTES)
             for prefix in ("r", "R")
         ]
 

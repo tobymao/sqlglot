@@ -613,6 +613,7 @@ x + interval '1' month
 | Trino | Official |
 | TSQL | Official |
 | YDB | [Plugin](https://pypi.org/project/ydb-sqlglot-plugin) |
+| MaxCompute | [Plugin](https://pypi.org/project/sqlglot-maxcompute) |
 
 **Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
 

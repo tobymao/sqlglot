@@ -33,7 +33,7 @@ def _has_time_specifier(date_format: str) -> bool:
     return False
 
 
-def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
+def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
     mysql_date_format = seq_get(args, 1)
     date_format = Dialect["mysql"].format_time(mysql_date_format)
     this = seq_get(args, 0)
@@ -247,11 +247,13 @@ class MySQLParser(parser.Parser):
         "KEY": lambda self: self._parse_index_constraint(),
         "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint()),
+        "INVISIBLE": lambda self: self.expression(exp.InvisibleColumnConstraint()),
     }
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
         "MODIFY": lambda self: self._parse_alter_table_alter(),
+        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -300,6 +302,19 @@ class MySQLParser(parser.Parser):
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
 
+    def _parse_alter_table_rename(self):
+        if self._match_texts(("INDEX", "KEY")):
+            old = self._parse_field(any_token=True)
+            self._match_text_seq("TO")
+            new = self._parse_field(any_token=True)
+            return self.expression(exp.RenameIndex(this=old, to=new))
+        return super()._parse_alter_table_rename()
+
+    def _parse_alter_drop_action(self) -> exp.Expr | None:
+        if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
+            return self.expression(exp.DropPrimaryKey())
+        return super()._parse_alter_drop_action()
+
     def _parse_generated_as_identity(
         self,
     ) -> (
@@ -321,7 +336,7 @@ class MySQLParser(parser.Parser):
 
         return this
 
-    def _parse_primary_key_part(self) -> t.Optional[exp.Expr]:
+    def _parse_primary_key_part(self) -> exp.Expr | None:
         this = self._parse_id_var()
         if not self._match(TokenType.L_PAREN):
             return this
@@ -330,7 +345,7 @@ class MySQLParser(parser.Parser):
         self._match_r_paren()
         return self.expression(exp.ColumnPrefix(this=this, expression=expression))
 
-    def _parse_index_constraint(self, kind: t.Optional[str] = None) -> exp.IndexColumnConstraint:
+    def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         if kind:
             self._match_texts(("INDEX", "KEY"))
 
@@ -381,8 +396,8 @@ class MySQLParser(parser.Parser):
         self,
         this: str,
         target: bool | str = False,
-        full: t.Optional[bool] = None,
-        global_: t.Optional[bool] = None,
+        full: bool | None = None,
+        global_: bool | None = None,
     ) -> exp.Show:
         json = self._match_text_seq("JSON")
 
@@ -393,7 +408,13 @@ class MySQLParser(parser.Parser):
         else:
             target_id = None
 
-        log = self._parse_string() if self._match_text_seq("IN") else None
+        index = self._index
+        if self._match_text_seq("IN"):
+            log = self._parse_string()
+            if log is None:
+                self._retreat(index)
+        else:
+            log = None
 
         if this in ("BINLOG EVENTS", "RELAYLOG EVENTS"):
             position = self._parse_number() if self._match_text_seq("FROM") else None
@@ -402,7 +423,7 @@ class MySQLParser(parser.Parser):
             position = None
             db = None
 
-            if self._match(TokenType.FROM):
+            if self._match(TokenType.FROM) or self._match_text_seq("IN"):
                 db = self._parse_id_var()
             elif self._match(TokenType.DOT):
                 db = target_id
@@ -459,7 +480,7 @@ class MySQLParser(parser.Parser):
 
     def _parse_oldstyle_limit(
         self,
-    ) -> t.Tuple[t.Optional[exp.Expr], t.Optional[exp.Expr]]:
+    ) -> tuple[exp.Expr | None, exp.Expr | None]:
         limit = None
         offset = None
         if self._match_text_seq("LIMIT"):
@@ -476,6 +497,20 @@ class MySQLParser(parser.Parser):
         this = self._parse_string() or self._parse_unquoted_field()
         return self.expression(exp.SetItem(this=this, kind=kind))
 
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """
+        Preserve quoting when a charset name has characters that require it (e.g. spaces, as allowed
+        for custom XML-registered charsets). Safe names unwrap to a bare Var so roundtrips remain minimal.
+        """
+        identifier = self._parse_identifier()
+        if identifier:
+            return (
+                exp.Var(this=name)
+                if exp.SAFE_IDENTIFIER_RE.match(name := identifier.name)
+                else identifier
+            )
+        return self._parse_var(tokens={TokenType.BINARY})
+
     def _parse_set_item_names(self) -> exp.Expr:
         charset = self._parse_string() or self._parse_unquoted_field()
         if self._match_text_seq("COLLATE"):
@@ -487,7 +522,7 @@ class MySQLParser(parser.Parser):
 
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         # mysql binary is special and can work anywhere, even in order by operations
         # it operates like a no paren func
         if self._match(TokenType.BINARY, advance=False):
@@ -514,8 +549,8 @@ class MySQLParser(parser.Parser):
 
     def _parse_partition_property(
         self,
-    ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
-        partition_cls: t.Optional[t.Type[exp.Expr]] = None
+    ) -> exp.Expr | None | list[exp.Expr]:
+        partition_cls: type[exp.Expr] | None = None
         value_parser = None
 
         if self._match_text_seq("RANGE"):
@@ -542,7 +577,7 @@ class MySQLParser(parser.Parser):
             )
         )
 
-    def _parse_partition_range_value(self) -> t.Optional[exp.Expr]:
+    def _parse_partition_range_value(self) -> exp.Expr | None:
         self._match_text_seq("PARTITION")
         name = self._parse_id_var()
 

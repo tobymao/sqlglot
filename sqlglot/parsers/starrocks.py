@@ -1,16 +1,24 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import build_timestamp_trunc
+from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
+from sqlglot.tokens import TokenType
 
 
 class StarRocksParser(MySQLParser):
+    # StarRocks supports LEFT SEMI JOIN and LEFT ANTI JOIN natively
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
+    TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
+        "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
+        "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": build_timestamp_trunc,
         "DATEDIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
@@ -64,7 +72,7 @@ class StarRocksParser(MySQLParser):
 
         return create
 
-    def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
+    def _parse_unnest(self, with_alias: bool = True) -> exp.Unnest | None:
         unnest = super()._parse_unnest(with_alias=with_alias)
 
         if unnest:
@@ -94,7 +102,7 @@ class StarRocksParser(MySQLParser):
 
     def _parse_partition_property(
         self,
-    ) -> t.Optional[exp.Expr] | t.List[exp.Expr]:
+    ) -> exp.Expr | None | list[exp.Expr]:
         expr = super()._parse_partition_property()
 
         if not expr:

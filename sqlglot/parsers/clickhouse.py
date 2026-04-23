@@ -66,7 +66,7 @@ def _build_split_by_char(args: list) -> exp.Split | exp.Anonymous:
     return exp.Anonymous(this="splitByChar", expressions=args)
 
 
-def _build_split(exp_class: Type[E]) -> t.Callable[[t.List], E]:
+def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
     )
@@ -126,6 +126,7 @@ AGG_FUNCTIONS = {
     "deltaSumTimestamp",
     "groupArray",
     "groupArrayLast",
+    "groupConcat",
     "groupUniqArray",
     "groupArrayInsertAt",
     "groupArrayMovingAvg",
@@ -207,7 +208,7 @@ AGG_FUNCTIONS = {
 
 # Sorted longest-first so that compound suffixes (e.g. "SimpleState") are matched
 # before their sub-suffixes (e.g. "State") when resolving multi-combinator functions.
-AGG_FUNCTIONS_SUFFIXES: t.List[str] = sorted(
+AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
     [
         "If",
         "Array",
@@ -330,7 +331,7 @@ class ClickHouseParser(parser.Parser):
     AGG_FUNC_MAPPING = AGG_FUNC_MAPPING
 
     @classmethod
-    def _resolve_clickhouse_agg(cls, name: str) -> t.Optional[tuple[str, Sequence[str]]]:
+    def _resolve_clickhouse_agg(cls, name: str) -> tuple[str, Sequence[str]] | None:
         # ClickHouse allows chaining multiple combinators on aggregate functions.
         # See https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
         # N.B. this resolution allows any suffix stack, including ones that ClickHouse rejects
@@ -340,7 +341,7 @@ class ClickHouseParser(parser.Parser):
         # repeatedly strip and queue suffixes (checking longer suffixes first, see comment on
         # AGG_FUNCTIONS_SUFFIXES_SORTED). This loop only runs for 2 or more suffixes,
         # as AGG_FUNC_MAPPING memoizes all 0- and 1-suffix
-        accumulated_suffixes: t.Deque[str] = deque()
+        accumulated_suffixes: deque[str] = deque()
         while (parts := AGG_FUNC_MAPPING.get(name)) is None:
             for suffix in AGG_FUNCTIONS_SUFFIXES:
                 if name.endswith(suffix) and len(name) != len(suffix):
@@ -362,6 +363,7 @@ class ClickHouseParser(parser.Parser):
     FUNCTION_PARSERS = {
         **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "MATCH"},
         "ARRAYJOIN": lambda self: self.expression(exp.Explode(this=self._parse_expression())),
+        "GROUPCONCAT": lambda self: self._parse_group_concat(),
         "QUANTILE": lambda self: self._parse_quantile(),
         "MEDIAN": lambda self: self._parse_quantile(),
         "COLUMNS": lambda self: self._parse_columns(),
@@ -459,17 +461,17 @@ class ClickHouseParser(parser.Parser):
         TokenType.DETACH: lambda self: self._parse_detach(),
     }
 
-    def _parse_wrapped_select_or_assignment(self) -> t.Optional[exp.Expr]:
+    def _parse_wrapped_select_or_assignment(self) -> exp.Expr | None:
         return self._parse_wrapped(
             lambda: self._parse_select() or self._parse_assignment(), optional=True
         )
 
-    def _parse_check_constraint(self) -> t.Optional[exp.CheckColumnConstraint]:
+    def _parse_check_constraint(self) -> exp.CheckColumnConstraint | None:
         return self.expression(
             exp.CheckColumnConstraint(this=self._parse_wrapped_select_or_assignment())
         )
 
-    def _parse_assume_constraint(self) -> t.Optional[exp.AssumeColumnConstraint]:
+    def _parse_assume_constraint(self) -> exp.AssumeColumnConstraint | None:
         return self.expression(
             exp.AssumeColumnConstraint(this=self._parse_wrapped_select_or_assignment())
         )
@@ -481,12 +483,12 @@ class ClickHouseParser(parser.Parser):
         )
 
     # https://clickhouse.com/docs/en/sql-reference/statements/create/function
-    def _parse_user_defined_function_expression(self) -> t.Optional[exp.Expr]:
+    def _parse_user_defined_function_expression(self) -> exp.Expr | None:
         return self._parse_lambda()
 
     def _parse_types(
         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         dtype = super()._parse_types(
             check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
         )
@@ -517,7 +519,7 @@ class ClickHouseParser(parser.Parser):
             exp.Anonymous(this="extract", expressions=[this, self._parse_bitwise()])
         )
 
-    def _parse_assignment(self) -> t.Optional[exp.Expr]:
+    def _parse_assignment(self) -> exp.Expr | None:
         this = super()._parse_assignment()
 
         if self._match(TokenType.PLACEHOLDER):
@@ -531,7 +533,7 @@ class ClickHouseParser(parser.Parser):
 
         return this
 
-    def _parse_query_parameter(self) -> t.Optional[exp.Expr]:
+    def _parse_query_parameter(self) -> exp.Expr | None:
         """
         Parse a placeholder expression like SELECT {abc: UInt32} or FROM {table: Identifier}
         https://clickhouse.com/docs/en/sql-reference/syntax#defining-and-using-query-parameters
@@ -555,7 +557,7 @@ class ClickHouseParser(parser.Parser):
 
         return self.expression(exp.Placeholder(this=this, kind=kind))
 
-    def _parse_bracket(self, this: t.Optional[exp.Expr] = None) -> t.Optional[exp.Expr]:
+    def _parse_bracket(self, this: exp.Expr | None = None) -> exp.Expr | None:
         if this:
             bracket_json_type = None
 
@@ -588,9 +590,9 @@ class ClickHouseParser(parser.Parser):
 
         return bracket
 
-    def _parse_global_in(self, this: t.Optional[exp.Expr]) -> exp.Not | exp.In:
+    def _parse_global_in(self, this: exp.Expr | None) -> exp.Not | exp.In:
         is_negated = self._match(TokenType.NOT)
-        in_expr: t.Optional[exp.In] = None
+        in_expr: exp.In | None = None
         if self._match(TokenType.IN):
             in_expr = self._parse_in(this)
             in_expr.set("is_global", True)
@@ -600,12 +602,12 @@ class ClickHouseParser(parser.Parser):
         self,
         schema: bool = False,
         joins: bool = False,
-        alias_tokens: t.Optional[Collection[TokenType]] = None,
+        alias_tokens: Collection[TokenType] | None = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
         parse_partition: bool = False,
         consume_pipe: bool = False,
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         this = super()._parse_table(
             schema=schema,
             joins=joins,
@@ -630,9 +632,9 @@ class ClickHouseParser(parser.Parser):
         return super()._parse_position(haystack_first=True)
 
     # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-    def _parse_cte(self) -> t.Optional[exp.CTE]:
+    def _parse_cte(self) -> exp.CTE | None:
         # WITH <identifier> AS <subquery expression>
-        cte: t.Optional[exp.CTE] = self._try_parse(super()._parse_cte)
+        cte: exp.CTE | None = self._try_parse(super()._parse_cte)
 
         if not cte:
             # WITH <expression> AS <identifier>
@@ -644,7 +646,7 @@ class ClickHouseParser(parser.Parser):
 
     def _parse_join_parts(
         self,
-    ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
+    ) -> tuple[Token | None, Token | None, Token | None]:
         is_global = self._prev if self._match(TokenType.GLOBAL) else None
 
         kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
@@ -655,7 +657,7 @@ class ClickHouseParser(parser.Parser):
 
     def _parse_join(
         self, skip_join_token: bool = False, parse_bracket: bool = False
-    ) -> t.Optional[exp.Join]:
+    ) -> exp.Join | None:
         join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
         if join:
             method = join.args.get("method")
@@ -672,11 +674,11 @@ class ClickHouseParser(parser.Parser):
 
     def _parse_function(
         self,
-        functions: t.Optional[t.Dict[str, t.Callable]] = None,
+        functions: dict[str, t.Callable] | None = None,
         anonymous: bool = False,
         optional_parens: bool = True,
         any_token: bool = False,
-    ) -> t.Optional[exp.Expr]:
+    ) -> exp.Expr | None:
         expr = super()._parse_function(
             functions=functions,
             anonymous=anonymous,
@@ -718,7 +720,7 @@ class ClickHouseParser(parser.Parser):
 
         return expr
 
-    def _parse_func_params(self, this: t.Optional[exp.Func] = None) -> t.Optional[t.List[exp.Expr]]:
+    def _parse_func_params(self, this: exp.Func | None = None) -> list[exp.Expr] | None:
         if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
             return self._parse_csv(self._parse_lambda)
 
@@ -729,6 +731,22 @@ class ClickHouseParser(parser.Parser):
 
         return None
 
+    def _parse_group_concat(self) -> exp.GroupConcat:
+        args = self._parse_csv(self._parse_lambda)
+        params = self._parse_func_params()
+
+        if params:
+            # groupConcat(sep [, limit])(expr)
+            separator = seq_get(args, 0)
+            limit = seq_get(args, 1)
+            this: exp.Expr | None = seq_get(params, 0)
+            if limit is not None:
+                this = exp.Limit(this=this, expression=limit)
+            return self.expression(exp.GroupConcat(this=this, separator=separator))
+
+        # groupConcat(expr)
+        return self.expression(exp.GroupConcat(this=seq_get(args, 0)))
+
     def _parse_quantile(self) -> exp.Quantile:
         this = self._parse_lambda()
         params = self._parse_func_params()
@@ -736,12 +754,12 @@ class ClickHouseParser(parser.Parser):
             return self.expression(exp.Quantile(this=params[0], quantile=this))
         return self.expression(exp.Quantile(this=this, quantile=exp.Literal.number(0.5)))
 
-    def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expr]:
+    def _parse_wrapped_id_vars(self, optional: bool = False) -> list[exp.Expr]:
         return super()._parse_wrapped_id_vars(optional=True)
 
     def _parse_column_def(
-        self, this: t.Optional[exp.Expr], computed_column: bool = True
-    ) -> t.Optional[exp.Expr]:
+        self, this: exp.Expr | None, computed_column: bool = True
+    ) -> exp.Expr | None:
         if self._match(TokenType.DOT):
             return exp.Dot(this=this, expression=self._parse_id_var())
 
@@ -759,7 +777,7 @@ class ClickHouseParser(parser.Parser):
             named_primary_key=named_primary_key,
         )
 
-    def _parse_on_property(self) -> t.Optional[exp.Expr]:
+    def _parse_on_property(self) -> exp.Expr | None:
         index = self._index
         if self._match_text_seq("CLUSTER"):
             this = self._parse_string() or self._parse_id_var()
@@ -769,7 +787,7 @@ class ClickHouseParser(parser.Parser):
                 self._retreat(index)
         return None
 
-    def _parse_index_constraint(self, kind: t.Optional[str] = None) -> exp.IndexColumnConstraint:
+    def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         # INDEX name1 expr TYPE type1(args) GRANULARITY value
         this = self._parse_id_var()
         expression = self._parse_assignment()
@@ -784,14 +802,14 @@ class ClickHouseParser(parser.Parser):
             )
         )
 
-    def _parse_partition(self) -> t.Optional[exp.Partition]:
+    def _parse_partition(self) -> exp.Partition | None:
         # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
         if not self._match(TokenType.PARTITION):
             return None
 
         if self._match_text_seq("ID"):
             # Corresponds to the PARTITION ID <string_value> syntax
-            expressions: t.List[exp.Expr] = [
+            expressions: list[exp.Expr] = [
                 self.expression(exp.PartitionId(this=self._parse_string()))
             ]
         else:
@@ -799,7 +817,7 @@ class ClickHouseParser(parser.Parser):
 
         return self.expression(exp.Partition(expressions=expressions))
 
-    def _parse_alter_table_replace(self) -> t.Optional[exp.Expr]:
+    def _parse_alter_table_replace(self) -> exp.Expr | None:
         partition = self._parse_partition()
 
         if not partition or not self._match(TokenType.FROM):
@@ -809,18 +827,18 @@ class ClickHouseParser(parser.Parser):
             exp.ReplacePartition(expression=partition, source=self._parse_table_parts())
         )
 
-    def _parse_alter_table_modify(self) -> t.Optional[exp.Expr]:
+    def _parse_alter_table_modify(self) -> exp.Expr | None:
         if properties := self._parse_properties():
             return self.expression(exp.AlterModifySqlSecurity(expressions=properties.expressions))
         return None
 
-    def _parse_definer(self) -> t.Optional[exp.DefinerProperty]:
+    def _parse_definer(self) -> exp.DefinerProperty | None:
         self._match(TokenType.EQ)
         if self._match(TokenType.CURRENT_USER):
             return exp.DefinerProperty(this=exp.Var(this=self._prev.text.upper()))
         return exp.DefinerProperty(this=self._parse_string())
 
-    def _parse_projection_def(self) -> t.Optional[exp.ProjectionDef]:
+    def _parse_projection_def(self) -> exp.ProjectionDef | None:
         if not self._match_text_seq("PROJECTION"):
             return None
 
@@ -830,12 +848,10 @@ class ClickHouseParser(parser.Parser):
             )
         )
 
-    def _parse_constraint(self) -> t.Optional[exp.Expr]:
+    def _parse_constraint(self) -> exp.Expr | None:
         return super()._parse_constraint() or self._parse_projection_def()
 
-    def _parse_alias(
-        self, this: t.Optional[exp.Expr], explicit: bool = False
-    ) -> t.Optional[exp.Expr]:
+    def _parse_alias(self, this: exp.Expr | None, explicit: bool = False) -> exp.Expr | None:
         # In clickhouse "SELECT <expr> APPLY(...)" is a query modifier,
         # so "APPLY" shouldn't be parsed as <expr>'s alias. However, "SELECT <expr> apply" is a valid alias
         if self._match_pair(TokenType.APPLY, TokenType.L_PAREN, advance=False):
@@ -843,7 +859,7 @@ class ClickHouseParser(parser.Parser):
 
         return super()._parse_alias(this=this, explicit=explicit)
 
-    def _parse_expression(self) -> t.Optional[exp.Expr]:
+    def _parse_expression(self) -> exp.Expr | None:
         this = super()._parse_expression()
 
         # Clickhouse allows "SELECT <expr> [APPLY(func)] [...]]" modifier
@@ -861,7 +877,7 @@ class ClickHouseParser(parser.Parser):
             this = exp.Apply(this=this, expression=self._parse_var(any_token=True))
         return this
 
-    def _parse_value(self, values: bool = True) -> t.Optional[exp.Tuple]:
+    def _parse_value(self, values: bool = True) -> exp.Tuple | None:
         value = super()._parse_value(values=values)
         if not value:
             return None

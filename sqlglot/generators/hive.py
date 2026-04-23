@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import typing as t
 from functools import partial
 
 from sqlglot import exp, generator, transforms
@@ -64,7 +63,7 @@ TIME_DIFF_FACTOR = {
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
-HIVE_TS_OR_DS_EXPRESSIONS: t.Tuple[t.Type[exp.Expr], ...] = (
+HIVE_TS_OR_DS_EXPRESSIONS: tuple[type[exp.Expr], ...] = (
     exp.DateDiff,
     exp.Day,
     exp.Month,
@@ -183,7 +182,7 @@ def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
 
 
 class HiveGenerator(generator.Generator):
-    SELECT_KINDS: t.Tuple[str, ...] = ()
+    SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
@@ -200,7 +199,7 @@ class HiveGenerator(generator.Generator):
     SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
     SUPPORTS_TO_NUMBER = False
     WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
-    PARSE_JSON_NAME: t.Optional[str] = None
+    PARSE_JSON_NAME: str | None = None
     PAD_FILL_PATTERN_IS_REQUIRED = True
     SUPPORTS_MEDIAN = False
     ARRAY_SIZE_NAME = "SIZE"
@@ -530,6 +529,10 @@ class HiveGenerator(generator.Generator):
             this = this.this
 
         return self.func("DATE_FORMAT", this, self.format_time(expression))
+
+    def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
+        kind = expression.args.get("kind")
+        return f"USING {kind} {self.sql(expression, 'this')}"
 
     def fileformatproperty_sql(self, expression: exp.FileFormatProperty) -> str:
         if isinstance(expression.this, exp.InputOutputFormat):

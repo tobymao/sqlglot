@@ -13,8 +13,8 @@ if t.TYPE_CHECKING:
 
 
 def preprocess(
-    transforms: t.List[t.Callable[[exp.Expr], exp.Expr]],
-    generator: t.Optional[t.Callable[[Generator, exp.Expr], str]] = None,
+    transforms: list[t.Callable[[exp.Expr], exp.Expr]],
+    generator: t.Callable[[Generator, exp.Expr], str] | None = None,
 ) -> t.Callable[[Generator, exp.Expr], str]:
     """
     Creates a new transform by chaining a sequence of transformations and converts the resulting
@@ -293,21 +293,19 @@ def unnest_to_explode(
     """Convert cross join unnest into lateral view explode."""
 
     def _unnest_zip_exprs(
-        u: exp.Unnest, unnest_exprs: t.List[exp.Expr], has_multi_expr: bool
-    ) -> t.List[exp.Expr]:
+        u: exp.Unnest, unnest_exprs: list[exp.Expr], has_multi_expr: bool
+    ) -> list[exp.Expr]:
         if has_multi_expr:
             if not unnest_using_arrays_zip:
                 raise UnsupportedError("Cannot transpile UNNEST with multiple input arrays")
 
             # Use INLINE(ARRAYS_ZIP(...)) for multiple expressions
-            zip_exprs: t.List[exp.Expr] = [
-                exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)
-            ]
+            zip_exprs: list[exp.Expr] = [exp.Anonymous(this="ARRAYS_ZIP", expressions=unnest_exprs)]
             u.set("expressions", zip_exprs)
             return zip_exprs
         return unnest_exprs
 
-    def _udtf_type(u: exp.Unnest, has_multi_expr: bool) -> t.Type[exp.Func]:
+    def _udtf_type(u: exp.Unnest, has_multi_expr: bool) -> type[exp.Func]:
         if u.args.get("offset"):
             return exp.Posexplode
         return exp.Inline if has_multi_expr else exp.Explode
@@ -402,12 +400,12 @@ def explode_projection_to_unnest(
             taken_select_names = set(expression.named_selects)
             taken_source_names = {name for name, _ in Scope(expression).references}
 
-            def new_name(names: t.Set[str], name: str) -> str:
+            def new_name(names: set[str], name: str) -> str:
                 name = find_new_name(names, name)
                 names.add(name)
                 return name
 
-            arrays: t.List[exp.Condition] = []
+            arrays: list[exp.Condition] = []
             series_alias = new_name(taken_select_names, "pos")
             series = exp.alias_(
                 exp.Unnest(
@@ -606,7 +604,7 @@ def epoch_cast_to_ts(expression: exp.Expr) -> exp.Expr:
 def eliminate_semi_and_anti_joins(expression: exp.Expr) -> exp.Expr:
     """Convert SEMI and ANTI joins into equivalent forms that use EXIST instead."""
     if isinstance(expression, exp.Select):
-        for join in expression.args.get("joins") or []:
+        for join in list(expression.args.get("joins") or []):
             on = join.args.get("on")
             if on and join.kind in ("SEMI", "ANTI"):
                 subquery = exp.select("1").from_(join.this).where(on)
@@ -980,7 +978,7 @@ def eliminate_window_clause(expression: exp.Expr) -> exp.Expr:
         windows = expression.args["windows"]
         expression.set("windows", None)
 
-        window_expression: t.Dict[str, exp.Expr] = {}
+        window_expression: dict[str, exp.Expr] = {}
 
         def _inline_inherited_window(window: exp.Expr) -> None:
             inherited_window = window_expression.get(window.alias.lower())

@@ -31,6 +31,10 @@ class TestExasol(Validator):
                 "mysql": "SELECT FROM_UNIXTIME(col)",
             },
         )
+        self.validate_identity(
+            "select foo, bar from table_1 minus select foo, bar from table_2",
+            "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
+        )
 
     def test_exasol_keywords(self):
         keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]

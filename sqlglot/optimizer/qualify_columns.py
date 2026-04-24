@@ -15,7 +15,7 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-    from collections.abc import Iterator, Iterable
+    from collections.abc import Iterator, Iterable, Sequence
 
 
 def qualify_columns(
@@ -179,6 +179,33 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
 
     if has_pseudocolumns:
         scope.clear_cache()
+
+
+def _pivot_output_columns(pivot: exp.Pivot, pre_pivot_columns: Sequence[str]) -> list[str]:
+    """Compute the columns exposed after a (UN)PIVOT, given its pre-pivot source columns.
+
+    Returns an empty list for degenerate pivots (no IN-list or no output names) so callers
+    can fall through to their non-pivot handling.
+    """
+    if pivot.unpivot:
+        excluded = {
+            c.output_name
+            for field in pivot.fields
+            if isinstance(field, exp.In)
+            for e in field.expressions
+            for c in e.find_all(exp.Column)
+        }
+        outputs = [i.name for i in _unpivot_columns(pivot)]
+    else:
+        excluded = {c.output_name for c in pivot.find_all(exp.Column)}
+        outputs = [c.output_name for c in pivot.args.get("columns") or []]
+        if not outputs:
+            outputs = [c.alias_or_name for c in pivot.expressions]
+
+    if not excluded or not outputs:
+        return []
+
+    return [c for c in pre_pivot_columns if c not in excluded] + outputs
 
 
 def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
@@ -605,7 +632,13 @@ def _qualify_columns(
         column_name = column.name
 
         if column_table and column_table in scope.sources:
+            column_source = scope.sources[column_table]
             source_columns = resolver.get_source_columns(column_table)
+            # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
+            if isinstance(column_source, exp.Table) and (
+                pivots := column_source.args.get("pivots")
+            ):
+                source_columns = _pivot_output_columns(pivots[0], source_columns)
             if (
                 not allow_partial_qualification
                 and source_columns
@@ -782,26 +815,7 @@ def _expand_stars(
     coalesced_columns = set()
     dialect = resolver.dialect
 
-    pivot_output_columns = None
-    pivot_exclude_columns: set[str] = set()
-
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
-    if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
-        if pivot.unpivot:
-            pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
-
-            for field in pivot.fields:
-                if isinstance(field, exp.In):
-                    pivot_exclude_columns.update(
-                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
-                    )
-
-        else:
-            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
-
-            pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
-            if not pivot_output_columns:
-                pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
         isinstance(col, exp.Dot) for col in scope.stars
@@ -865,11 +879,7 @@ def _expand_stars(
             replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
-                if pivot_output_columns and pivot_exclude_columns:
-                    pivot_columns = [c for c in columns if c not in pivot_exclude_columns]
-                    pivot_columns.extend(pivot_output_columns)
-                else:
-                    pivot_columns = pivot.alias_column_names
+                pivot_columns = pivot.alias_column_names or _pivot_output_columns(pivot, columns)
 
                 if pivot_columns:
                     new_selections.extend(

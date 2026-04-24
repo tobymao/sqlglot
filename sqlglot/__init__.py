@@ -15,16 +15,25 @@ import sys
 from pathlib import Path
 from builtins import type as Type
 
+import importlib.util
+
+# Legacy single-shared-lib builds put a hash-named `*__mypyc.so` at the
+# package root; Python's import machinery can't discover that by its bare
+# name, so pre-load it explicitly. Under `separate=True`, per-module shared
+# libs (e.g. `errors__mypyc.so`) sit next to their .py sources and are
+# resolved lazily via their shims -- skip those.
 for path in Path(__file__).parent.glob("*__mypyc*.so"):
     name = path.stem.split(".")[0]
-    if name not in sys.modules:
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(name, path)
-        if spec and spec.loader:
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[name] = mod
-            spec.loader.exec_module(mod)
+    module_base = name.removesuffix("__mypyc")
+    if (path.parent / f"{module_base}.py").exists():
+        continue
+    if name in sys.modules:
+        continue
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec and spec.loader:
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[name] = mod
+        spec.loader.exec_module(mod)
 
 import logging
 import typing as t

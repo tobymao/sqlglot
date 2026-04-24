@@ -350,9 +350,7 @@ class TypeAnnotator:
                                 col_types[field_col.name] = alias_node.type
                             src = first.this
                         else:
-                            col_types[field_col.name] = exp.DataType.build(
-                                "TEXT", dialect=self.dialect
-                            )
+                            col_types[field_col.name] = exp.DType.VARCHAR.into_expr()
                             src = first
 
                         # Value column types from the IN source columns

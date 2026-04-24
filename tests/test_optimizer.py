@@ -659,6 +659,23 @@ class TestOptimizer(unittest.TestCase):
             'UNPIVOT("val" FOR "name" IN ("cte"."a", "cte"."b", "cte"."c")) AS "u"',
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2, 45 AS q3, 3 AS q4) "
+                    "SELECT * FROM produce UNPIVOT((first_half, second_half) FOR semesters "
+                    "IN ((q1, q2) AS 'h1', (q3, q4) AS 'h2'))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`, 45 AS `q3`, 3 AS `q4`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`semesters` AS `semesters`, "
+            "`produce`.`first_half` AS `first_half`, `produce`.`second_half` AS `second_half` "
+            "FROM `produce` AS `produce` UNPIVOT((`first_half`, `second_half`) FOR `semesters` "
+            "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

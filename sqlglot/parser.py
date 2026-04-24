@@ -5010,6 +5010,8 @@ class Parser:
         )
 
     def _parse_pivots(self) -> list[exp.Pivot] | None:
+        if self._curr.token_type not in (TokenType.PIVOT, TokenType.UNPIVOT):
+            return None
         return list(iter(self._parse_pivot, None)) or None
 
     def _parse_joins(self) -> t.Iterator[exp.Join]:

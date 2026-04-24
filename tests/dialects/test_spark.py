@@ -1067,6 +1067,16 @@ TBLPROPERTIES (
             },
         )
 
+    def test_named_struct(self):
+        self.validate_all(
+            "SELECT named_struct('a', 1, 'b', 'x')",
+            write={
+                "spark": "SELECT STRUCT(1 AS a, 'x' AS b)",
+                "databricks": "SELECT STRUCT(1 AS a, 'x' AS b)",
+                "hive": "SELECT NAMED_STRUCT('a', 1, 'b', 'x')",
+            },
+        )
+
     def test_bool_or(self):
         self.validate_all(
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",

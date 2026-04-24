@@ -451,11 +451,22 @@ class HiveGenerator(generator.Generator):
         return sql.replace("FOR ", "", 1)
 
     def struct_sql(self, expression: exp.Struct) -> str:
-        values = []
+        # When every child names its field, emit named_struct(...) — a Hive/Spark
+        # built-in that preserves field names. STRUCT(v AS k, ...) alias syntax is
+        # Spark-only, so falling back to STRUCT(v, ...) would silently drop names.
+        if expression.expressions and all(
+            isinstance(e, exp.PropertyEQ) for e in expression.expressions
+        ):
+            flat: list[exp.Expression] = []
+            for e in expression.expressions:
+                flat.append(exp.Literal.string(e.this.name))
+                flat.append(e.expression)
+            return self.func("NAMED_STRUCT", *flat)
 
-        for i, e in enumerate(expression.expressions):
+        values = []
+        for e in expression.expressions:
             if isinstance(e, exp.PropertyEQ):
-                self.unsupported("Hive does not support named structs.")
+                self.unsupported("Hive does not support mixed named/unnamed structs.")
                 values.append(e.expression)
             else:
                 values.append(e)

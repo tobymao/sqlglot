@@ -460,7 +460,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
                 "duckdb": "SELECT {'_0': 1, '_1': 2, '_2': 3}, {}, {'_0': 'abc'}, {'_0': 1, 'str_col': t.str_col}, {'a': 1, 'b': 'abc'}, {'abc': str_col}",
-                "hive": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1, 'abc'), STRUCT(str_col)",
+                "hive": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), NAMED_STRUCT('a', 1, 'b', 'abc'), NAMED_STRUCT('abc', str_col)",
                 "spark2": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
                 "spark": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
                 "snowflake": "SELECT OBJECT_CONSTRUCT('_0', 1, '_1', 2, '_2', 3), OBJECT_CONSTRUCT(), OBJECT_CONSTRUCT('_0', 'abc'), OBJECT_CONSTRUCT('_0', 1, '_1', t.str_col), OBJECT_CONSTRUCT('a', 1, 'b', 'abc'), OBJECT_CONSTRUCT('abc', str_col)",
@@ -2680,7 +2680,7 @@ OPTIONS (
                 "trino": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', CAST(ROW(85, 90) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER))), CAST(ROW('Bob', CAST(ROW(92, 88) AS ROW(math INTEGER, english INTEGER))) AS ROW(name VARCHAR, scores ROW(math INTEGER, english INTEGER)))])",
                 "spark2": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)))",
                 "databricks": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, STRUCT(85 AS math, 90 AS english) AS scores), STRUCT('Bob' AS name, STRUCT(92 AS math, 88 AS english) AS scores)))",
-                "hive": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice', STRUCT(85, 90)), STRUCT('Bob', STRUCT(92, 88))))",
+                "hive": "SELECT * FROM EXPLODE(ARRAY(NAMED_STRUCT('name', 'Alice', 'scores', NAMED_STRUCT('math', 85, 'english', 90)), NAMED_STRUCT('name', 'Bob', 'scores', NAMED_STRUCT('math', 92, 'english', 88))))",
             },
         )
 
@@ -2694,7 +2694,7 @@ OPTIONS (
                 "trino": "SELECT * FROM UNNEST(ARRAY[CAST(ROW('Alice', 85) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Bob', 92) AS ROW(name VARCHAR, score INTEGER)), CAST(ROW('Diana', 95) AS ROW(name VARCHAR, score INTEGER))])",
                 "spark2": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Diana' AS name, 95 AS score)))",
                 "databricks": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice' AS name, 85 AS score), STRUCT('Bob' AS name, 92 AS score), STRUCT('Diana' AS name, 95 AS score)))",
-                "hive": "SELECT * FROM EXPLODE(ARRAY(STRUCT('Alice', 85), STRUCT('Bob', 92), STRUCT('Diana', 95)))",
+                "hive": "SELECT * FROM EXPLODE(ARRAY(NAMED_STRUCT('name', 'Alice', 'score', 85), NAMED_STRUCT('name', 'Bob', 'score', 92), NAMED_STRUCT('name', 'Diana', 'score', 95)))",
             },
         )
 

@@ -29,6 +29,18 @@ def _build_to_date(args: list) -> exp.TsOrDsToDate:
     return expr
 
 
+def _build_named_struct(args: list) -> exp.Struct:
+    # Spark/Hive built-in: named_struct('k1', v1, 'k2', v2, ...). Map to exp.Struct
+    # with PropertyEQ children so _annotate_struct can assign STRUCT<k1 T1, k2 T2>.
+    # Without this entry, the call falls through to exp.Anonymous and types are lost.
+    expressions: list[exp.Expression] = []
+    for i in range(0, len(args) - 1, 2):
+        key, value = args[i], args[i + 1]
+        name = key.this if isinstance(key, exp.Literal) else key.name
+        expressions.append(exp.PropertyEQ(this=exp.to_identifier(name), expression=value))
+    return exp.Struct(expressions=expressions)
+
+
 def _build_date_add(args: list) -> exp.TsOrDsAdd:
     expression = seq_get(args, 1)
     if expression:
@@ -86,6 +98,7 @@ class HiveParser(parser.Parser):
         "LAST_VALUE": build_with_ignore_nulls(exp.LastValue),
         "MAP": parser.build_var_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
+        "NAMED_STRUCT": _build_named_struct,
         "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
         "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
         "SEQUENCE": exp.GenerateSeries.from_arg_list,

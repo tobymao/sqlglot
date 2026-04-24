@@ -30,9 +30,7 @@ def _build_to_date(args: list) -> exp.TsOrDsToDate:
 
 
 def _build_named_struct(args: list) -> exp.Struct:
-    # Spark/Hive built-in: named_struct('k1', v1, 'k2', v2, ...). Map to exp.Struct
-    # with PropertyEQ children so _annotate_struct can assign STRUCT<k1 T1, k2 T2>.
-    # Without this entry, the call falls through to exp.Anonymous and types are lost.
+    """Map named_struct('k', v, ...) to exp.Struct so _annotate_struct sees it."""
     expressions: list[exp.Expression] = []
     for i in range(0, len(args) - 1, 2):
         key, value = args[i], args[i + 1]

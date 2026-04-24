@@ -715,7 +715,7 @@ class SnowflakeParser(parser.Parser):
         ),
         "STRTOK_TO_ARRAY": lambda args: exp.StrtokToArray(
             this=seq_get(args, 0),
-            expression=seq_get(args, 1),
+            expression=seq_get(args, 1) or exp.Literal.string(" "),
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),

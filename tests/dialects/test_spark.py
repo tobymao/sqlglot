@@ -1073,7 +1073,6 @@ TBLPROPERTIES (
             write={
                 "spark": "SELECT STRUCT(1 AS a, 'x' AS b)",
                 "databricks": "SELECT STRUCT(1 AS a, 'x' AS b)",
-                "hive": "SELECT NAMED_STRUCT('a', 1, 'b', 'x')",
             },
         )
 

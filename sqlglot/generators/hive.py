@@ -466,7 +466,9 @@ class HiveGenerator(generator.Generator):
         values = []
         for e in expression.expressions:
             if isinstance(e, exp.PropertyEQ):
-                self.unsupported("Hive does not support mixed named/unnamed structs.")
+                self.unsupported(
+                    "Hive struct constructors do not support mixing named and unnamed fields in one struct."
+                )
                 values.append(e.expression)
             else:
                 values.append(e)

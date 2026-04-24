@@ -975,9 +975,6 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "STRING_TO_ARRAY(x, 'a')",
-            read={
-                "snowflake": "STRTOK_TO_ARRAY(x, 'a')",
-            },
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",

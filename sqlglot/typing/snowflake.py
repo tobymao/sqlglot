@@ -275,6 +275,7 @@ EXPRESSION_METADATA = {
             exp.RegexpExtractAll,
             exp.Split,
             exp.StringToArray,
+            exp.StrtokToArray,
         )
     },
     **{

@@ -331,12 +331,8 @@ class TypeAnnotator:
                     selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
             for pivot in scope.pivots:
-                pivot_source = scope.sources.get(pivot.alias)
-                if not pivot_source:
-                    continue
-
                 inner_name = (
-                    pivot_source.name if isinstance(pivot_source, exp.Table) else pivot.alias
+                    pivot.parent.name if isinstance(pivot.parent, exp.Table) else pivot.alias
                 )
 
                 col_types = selects.get(inner_name, {}).copy()
@@ -355,7 +351,7 @@ class TypeAnnotator:
                             src = first.this
                         else:
                             col_types[field_col.name] = exp.DataType.build(
-                                "VARCHAR", dialect=self.dialect
+                                "TEXT", dialect=self.dialect
                             )
                             src = first
 
@@ -465,15 +461,12 @@ class TypeAnnotator:
                     if not source:
                         source_scope = source_scope.parent
 
-                if isinstance(source, exp.Table):
-                    schema_type = self.schema.get_column_type(source, expr)
-                    if schema_type.is_type(exp.DType.UNKNOWN) and source.args.get("pivots"):
-                        pivot_type = (
-                            self._get_scope_selects(scope).get(expr.table, {}).get(expr.name)
-                        )
-                        if pivot_type:
-                            schema_type = pivot_type
-                    self._set_type(expr, schema_type)
+                # Pivot-indexed selects win first: they capture UNPIVOT outputs whether
+                # or not the pivot alias made it into scope.sources.
+                if pivot_type := self._get_scope_selects(scope).get(expr.table, {}).get(expr.name):
+                    self._set_type(expr, pivot_type)
+                elif isinstance(source, exp.Table):
+                    self._set_type(expr, self.schema.get_column_type(source, expr))
                 elif source and source_scope:
                     col_type = (
                         self._get_scope_selects(source_scope).get(expr.table, {}).get(expr.name)

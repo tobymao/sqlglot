@@ -38,6 +38,18 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT DEFAULT 5")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL DEFAULT 5")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c VARCHAR(50) NOT NULL DEFAULT 'foo'")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'hi'")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT FIRST")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT AFTER d")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL AFTER d")
+        self.validate_identity(
+            "ALTER TABLE t MODIFY c INT NOT NULL",
+            "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
+        )
         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

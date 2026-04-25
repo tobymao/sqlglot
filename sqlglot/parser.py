@@ -7101,7 +7101,14 @@ class Parser:
         if not kind and not constraints:
             return this
 
-        return self.expression(exp.ColumnDef(this=this, kind=kind, constraints=constraints))
+        position = None
+        if self._match_texts(("FIRST", "AFTER")):
+            pos = self._prev.text
+            position = self.expression(exp.ColumnPosition(this=self._parse_column(), position=pos))
+
+        return self.expression(
+            exp.ColumnDef(this=this, kind=kind, constraints=constraints, position=position)
+        )
 
     def _parse_auto_increment(
         self,
@@ -8505,19 +8512,7 @@ class Parser:
         if not self._prev.text.upper() == "ADD":
             return None
 
-        expression = self._parse_column_def_with_exists()
-        if not expression:
-            return None
-
-        # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
-        if self._match_texts(("FIRST", "AFTER")):
-            position = self._prev.text
-            column_position = self.expression(
-                exp.ColumnPosition(this=self._parse_column(), position=position)
-            )
-            expression.set("position", column_position)
-
-        return expression
+        return self._parse_column_def_with_exists()
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
         drop = self._parse_drop() if self._match(TokenType.DROP) else None

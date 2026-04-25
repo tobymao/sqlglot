@@ -734,6 +734,26 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT []")
 
+    def test_show_and_explain(self):
+        show_tables = self.parse_one("SHOW TABLES")
+        self.assertIsInstance(show_tables, exp.Show)
+        self.assertEqual(show_tables.sql(dialect="clickhouse"), "SHOW TABLES")
+
+        show_create = self.parse_one("SHOW CREATE TABLE t")
+        self.assertIsInstance(show_create, exp.Show)
+        self.assertEqual(show_create.sql(dialect="clickhouse"), "SHOW CREATE TABLE t")
+
+        explain = self.parse_one("EXPLAIN SELECT 1")
+        self.assertIsInstance(explain, exp.Describe)
+        self.assertEqual(explain.text("kind"), "EXPLAIN")
+        self.assertEqual(explain.sql(dialect="clickhouse"), "EXPLAIN SELECT 1")
+
+        explain_estimate = self.parse_one("EXPLAIN ESTIMATE SELECT 1")
+        self.assertIsInstance(explain_estimate, exp.Describe)
+        self.assertEqual(explain_estimate.text("kind"), "EXPLAIN")
+        self.assertEqual(explain_estimate.text("style"), "ESTIMATE")
+        self.assertEqual(explain_estimate.sql(dialect="clickhouse"), "EXPLAIN ESTIMATE SELECT 1")
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

@@ -90,6 +90,7 @@ class ClickHouse(Dialect):
             "ENUM8": TokenType.ENUM8,
             "ENUM16": TokenType.ENUM16,
             "EXCHANGE": TokenType.COMMAND,
+            "EXPLAIN": TokenType.DESCRIBE,
             "FINAL": TokenType.FINAL,
             "FIXEDSTRING": TokenType.FIXEDSTRING,
             "FLOAT32": TokenType.FLOAT,
@@ -120,6 +121,8 @@ class ClickHouse(Dialect):
         }
 
         KEYWORDS.pop("/*+")
+
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

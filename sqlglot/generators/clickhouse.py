@@ -479,6 +479,26 @@ class ClickHouseGenerator(generator.Generator):
 
         return super().cast_sql(expression)
 
+    def describe_sql(self, expression: exp.Describe) -> str:
+        keyword = "EXPLAIN" if expression.text("kind").upper() == "EXPLAIN" else "DESCRIBE"
+        style = expression.args.get("style")
+        style = f" {style}" if style else ""
+        format = self.sql(expression, "format")
+        format = f" {format}" if format else ""
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
+        as_json = " AS JSON" if expression.args.get("as_json") else ""
+
+        return f"{keyword}{style}{format} {self.sql(expression, 'this')}{partition}{as_json}"
+
+    def show_sql(self, expression: exp.Show) -> str:
+        target = self.sql(expression, "target")
+        target = f" {target}" if target else ""
+        from_ = self.sql(expression, "from_")
+        from_ = f" FROM {from_}" if from_ else ""
+
+        return f"SHOW {expression.name}{target}{from_}"
+
     def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
         this = self.json_path_part(expression.this)
         return str(int(this) + 1) if is_int(this) else this

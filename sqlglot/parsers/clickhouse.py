@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import Token, TokenType
+from sqlglot.trie import new_trie
 from builtins import type as Type
 
 if t.TYPE_CHECKING:
@@ -70,6 +71,13 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
     )
+
+
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[ClickHouseParser], exp.Show]:
+    def _parse(self: ClickHouseParser) -> exp.Show:
+        return self._parse_show_clickhouse(*args, **kwargs)
+
+    return _parse
 
 
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
@@ -456,10 +464,41 @@ class ClickHouseParser(parser.Parser):
         TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
     }
 
+    DESCRIBE_STYLES = {
+        *parser.Parser.DESCRIBE_STYLES,
+        "ESTIMATE",
+    }
+
+    SHOW_PARSERS = {
+        "TABLES": _show_parser("TABLES"),
+        "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+    }
+
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.DETACH: lambda self: self._parse_detach(),
+        TokenType.SHOW: lambda self: self._parse_show(),
     }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+
+    def _parse_show_clickhouse(self, this: str, target: bool = False) -> exp.Show:
+        target_table = self._parse_table(schema=True) if target else None
+        from_ = (
+            self._parse_table(schema=True)
+            if not target and self._match_set((TokenType.FROM, TokenType.IN))
+            else None
+        )
+        return self.expression(exp.Show(this=this, target=target_table, from_=from_))
+
+    def _parse_describe(self) -> exp.Describe:
+        kind = self._prev.text.upper()
+        describe = super()._parse_describe()
+
+        if kind == "EXPLAIN":
+            describe.set("kind", kind)
+
+        return describe
 
     def _parse_wrapped_select_or_assignment(self) -> exp.Expr | None:
         return self._parse_wrapped(

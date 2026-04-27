@@ -245,6 +245,10 @@ class AlterColumn(Expression):
     }
 
 
+class ModifyColumn(Expression):
+    pass
+
+
 class AlterIndex(Expression):
     arg_types = {"this": True, "visible": True}
 

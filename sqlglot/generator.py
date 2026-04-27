@@ -464,6 +464,9 @@ class Generator:
     # Whether the CREATE TABLE LIKE statement is supported
     SUPPORTS_CREATE_TABLE_LIKE = True
 
+    # Whether ALTER TABLE ... MODIFY COLUMN column-redefinition syntax is supported
+    SUPPORTS_MODIFY_COLUMN = False
+
     # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
@@ -3935,6 +3938,11 @@ class Generator:
             return f"ALTER COLUMN {this} {keyword} NOT NULL"
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
+
+    def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
+        if not self.SUPPORTS_MODIFY_COLUMN:
+            self.unsupported("MODIFY COLUMN is not supported in this dialect")
+        return f"MODIFY COLUMN {self.sql(expression, 'this')}"
 
     def alterindex_sql(self, expression: exp.AlterIndex) -> str:
         this = self.sql(expression, "this")

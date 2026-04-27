@@ -2112,6 +2112,16 @@ class DuckDBGenerator(generator.Generator):
         """
     )
 
+    STRTOK_TO_ARRAY_TEMPLATE: exp.Expr = exp.maybe_parse(
+        """
+        CASE WHEN :delimiter IS NULL THEN NULL
+        ELSE LIST_FILTER(
+            REGEXP_SPLIT_TO_ARRAY(:string, CASE WHEN :delimiter = '' THEN '.^' ELSE CONCAT('[', :escaped, ']') END),
+            x -> NOT x = ''
+        ) END
+        """
+    )
+
     # Template for STRTOK function transpilation
     #
     # DuckDB itself doesn't have a strtok function. This handles the transpilation from Snowflake to DuckDB.
@@ -4344,6 +4354,25 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(result)
 
         return self.function_fallback_sql(expression)
+
+    def strtoktoarray_sql(self, expression: exp.StrtokToArray) -> str:
+        string_arg = expression.this
+        delimiter_arg = expression.args.get("expression") or exp.Literal.string(" ")
+
+        escaped = exp.RegexpReplace(
+            this=delimiter_arg.copy(),
+            expression=exp.Literal.string(r"([\[\]^.\-*+?(){}|$\\])"),
+            replacement=exp.Literal.string(r"\\\1"),
+            modifiers=exp.Literal.string("g"),
+        )
+        return self.sql(
+            exp.replace_placeholders(
+                self.STRTOK_TO_ARRAY_TEMPLATE.copy(),
+                string=string_arg,
+                delimiter=delimiter_arg,
+                escaped=escaped,
+            )
+        )
 
     def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
         result = self.func("APPROX_QUANTILE", expression.this, expression.args.get("quantile"))

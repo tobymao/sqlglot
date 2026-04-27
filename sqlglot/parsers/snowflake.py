@@ -713,6 +713,10 @@ class SnowflakeParser(parser.Parser):
             delimiter=seq_get(args, 1) or exp.Literal.string(" "),
             part_index=seq_get(args, 2) or exp.Literal.number("1"),
         ),
+        "STRTOK_TO_ARRAY": lambda args: exp.StrtokToArray(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1) or exp.Literal.string(" "),
+        ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
         "WEEKISO": exp.WeekOfYear.from_arg_list,

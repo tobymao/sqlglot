@@ -570,6 +570,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
         exp.StringToArray: rename_func("STRTOK_TO_ARRAY"),
+        exp.StrtokToArray: rename_func("STRTOK_TO_ARRAY"),
         exp.Stuff: rename_func("INSERT"),
         exp.StPoint: rename_func("ST_MAKEPOINT"),
         exp.TimeAdd: date_delta_sql("TIMEADD"),

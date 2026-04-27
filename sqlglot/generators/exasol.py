@@ -232,6 +232,33 @@ def _add_date_sql(self: ExasolGenerator, expression: DATE_ADD_OR_SUB) -> str:
     return self.func(f"ADD_{unit}S", expression.this, offset_expr)
 
 
+def _add_cte_column_aliases(expression: exp.Expr) -> exp.Expr:
+    """
+    Exasol rejects unaliased non-column expressions inside CTE SELECT lists.
+    Inject synthetic aliases like ``_col_0`` for any projection that isn't
+    already aliased, a bare column reference, or a star (which Exasol expands
+    by itself and would be invalid wrapped in an alias).
+    """
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    if not isinstance(expression.parent, exp.CTE):
+        return expression
+
+    new_selects: list[exp.Expr] = []
+    counter = 0
+    for sel in expression.expressions:
+        if isinstance(sel, (exp.Alias, exp.Column, exp.Star)) or sel.find(exp.Star):
+            new_selects.append(sel)
+            continue
+
+        new_selects.append(exp.alias_(sel, exp.to_identifier(f"_col_{counter}", quoted=True)))
+        counter += 1
+
+    expression.set("expressions", new_selects)
+    return expression
+
+
 def _group_by_all(expression: exp.Expr) -> exp.Expr:
     if not isinstance(expression, exp.Select):
         return expression
@@ -392,6 +419,7 @@ class ExasolGenerator(generator.Generator):
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
         exp.Select: transforms.preprocess(
             [
+                _add_cte_column_aliases,
                 _qualify_unscoped_star,
                 _add_local_prefix_for_aliases,
                 _group_by_all,

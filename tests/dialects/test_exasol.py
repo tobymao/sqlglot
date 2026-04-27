@@ -991,3 +991,43 @@ class TestExasol(Validator):
                 "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA"
             },
         )
+
+    def test_cte_literal_auto_alias(self):
+        # Integer literal in CTE gets synthetic alias
+        self.validate_all(
+            'WITH cte AS (SELECT 12345 AS "_col_0") SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT 12345) SELECT * FROM cte"},
+            write={"exasol": 'WITH cte AS (SELECT 12345 AS "_col_0") SELECT * FROM cte'},
+        )
+        # Mixed literals get sequential aliases
+        self.validate_all(
+            'WITH cte AS (SELECT 12345 AS "_col_0", \'value\' AS "_col_1") SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT 12345, 'value') SELECT * FROM cte"},
+            write={
+                "exasol": 'WITH cte AS (SELECT 12345 AS "_col_0", \'value\' AS "_col_1") SELECT * FROM cte'
+            },
+        )
+        # Existing alias preserved
+        self.validate_identity(
+            "WITH cte AS (SELECT 12345 AS id, 'value' AS name) SELECT * FROM cte"
+        )
+        # Function call / arithmetic gets alias
+        self.validate_all(
+            'WITH cte AS (SELECT LOWER(name) AS "_col_0", 1 + 2 AS "_col_1" FROM t) SELECT * FROM cte',
+            read={"mysql": "WITH cte AS (SELECT LOWER(name), 1 + 2 FROM t) SELECT * FROM cte"},
+            write={
+                "exasol": 'WITH cte AS (SELECT LOWER(name) AS "_col_0", 1 + 2 AS "_col_1" FROM t) SELECT * FROM cte'
+            },
+        )
+        # Bare column: no alias injected
+        self.validate_identity("WITH cte AS (SELECT col FROM t) SELECT * FROM cte")
+        # Bare star inside CTE: no alias injected (wrapping star would be invalid SQL)
+        self.validate_identity("WITH cte AS (SELECT * FROM t) SELECT * FROM cte")
+        # Qualified star inside CTE: no alias injected
+        self.validate_identity("WITH cte AS (SELECT t.* FROM t) SELECT * FROM cte")
+        # Nested CTE: outer star still passes through unwrapped
+        self.validate_identity(
+            "WITH outer_cte AS (WITH inner_cte AS (SELECT 1 AS x) SELECT * FROM inner_cte) SELECT * FROM outer_cte"
+        )
+        # Non-CTE subquery: no alias injected
+        self.validate_identity("SELECT * FROM (SELECT 1) AS t")

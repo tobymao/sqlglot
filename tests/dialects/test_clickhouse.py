@@ -734,25 +734,72 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT []")
 
-    def test_show_and_explain(self):
-        show_tables = self.parse_one("SHOW TABLES")
-        self.assertIsInstance(show_tables, exp.Show)
-        self.assertEqual(show_tables.sql(dialect="clickhouse"), "SHOW TABLES")
+    def test_explain(self):
+        for sql, style in (
+            ("EXPLAIN SELECT 1", None),
+            ("EXPLAIN ESTIMATE SELECT 1", "ESTIMATE"),
+            ("EXPLAIN AST SELECT 1", "AST"),
+            ("EXPLAIN SYNTAX SELECT 1", "SYNTAX"),
+            ("EXPLAIN QUERY TREE SELECT 1", "QUERY TREE"),
+            ("EXPLAIN PLAN SELECT 1", "PLAN"),
+            ("EXPLAIN PIPELINE SELECT 1", "PIPELINE"),
+            ("EXPLAIN json = 1, description = 0 SELECT 1", None),
+            ("EXPLAIN PLAN json = 1, description = 0 SELECT 1", "PLAN"),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql)
+                self.assertIsInstance(expression, exp.Describe)
+                self.assertEqual(expression.text("kind"), "EXPLAIN")
+                self.assertEqual(expression.args.get("style"), style)
 
-        show_create = self.parse_one("SHOW CREATE TABLE t")
-        self.assertIsInstance(show_create, exp.Show)
-        self.assertEqual(show_create.sql(dialect="clickhouse"), "SHOW CREATE TABLE t")
+        for sql in (
+            "EXPLAIN TABLE OVERRIDE mysql('127.0.0.1:3306', 'db', 'tbl', 'root', 'clickhouse') PARTITION BY toYYYYMM(assumeNotNull(created))",
+            "EXPLAIN FOO SELECT 1",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 
-        explain = self.parse_one("EXPLAIN SELECT 1")
-        self.assertIsInstance(explain, exp.Describe)
-        self.assertEqual(explain.text("kind"), "EXPLAIN")
-        self.assertEqual(explain.sql(dialect="clickhouse"), "EXPLAIN SELECT 1")
+    def test_show(self):
+        for sql, write_sql in (
+            ("SHOW TABLES", None),
+            ("SHOW TABLES FROM system", None),
+            ("SHOW TABLES IN system", "SHOW TABLES FROM system"),
+            ("SHOW CREATE TABLE t", None),
+            ("SHOW CREATE TABLE db.t", None),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, write_sql=write_sql).assert_is(exp.Show)
 
-        explain_estimate = self.parse_one("EXPLAIN ESTIMATE SELECT 1")
-        self.assertIsInstance(explain_estimate, exp.Describe)
-        self.assertEqual(explain_estimate.text("kind"), "EXPLAIN")
-        self.assertEqual(explain_estimate.text("style"), "ESTIMATE")
-        self.assertEqual(explain_estimate.sql(dialect="clickhouse"), "EXPLAIN ESTIMATE SELECT 1")
+        for sql in (
+            "SHOW FULL TABLES FROM system LIKE '%user%'",
+            "SHOW TABLES FROM system LIMIT 2",
+            "SHOW DATABASES ILIKE '%de%'",
+            "SHOW COLUMNS FROM t",
+            "SHOW DICTIONARIES",
+            "SHOW INDEX FROM tbl",
+            "SHOW PROCESSLIST",
+            "SHOW GRANTS FOR user1 WITH IMPLICIT FINAL",
+            "SHOW CREATE USER CURRENT_USER",
+            "SHOW CREATE ROLE role1",
+            "SHOW CREATE ROW POLICY p ON db.t",
+            "SHOW CREATE QUOTA CURRENT",
+            "SHOW CREATE SETTINGS PROFILE p",
+            "SHOW USERS",
+            "SHOW CURRENT ROLES",
+            "SHOW SETTINGS ILIKE '%timeout%'",
+            "SHOW SETTING max_threads",
+            "SHOW FILESYSTEM CACHES",
+            "SHOW ENGINES",
+            "SHOW FUNCTIONS ILIKE 'to%'",
+            "SHOW MERGES LIKE 'your_t%' LIMIT 1",
+            "SHOW CLUSTERS LIKE 'test%' LIMIT 1",
+            "SHOW CLUSTER 'test_shard_localhost'",
+            "SHOW CREATE MASKING POLICY policy_name ON db.t",
+            "SHOW CREATE TABLE t FORMAT TSVRaw",
+            "SHOW CREATE TABLE t INTO OUTFILE 'x'",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")

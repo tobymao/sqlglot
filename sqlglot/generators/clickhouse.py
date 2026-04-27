@@ -483,13 +483,18 @@ class ClickHouseGenerator(generator.Generator):
         keyword = "EXPLAIN" if expression.text("kind").upper() == "EXPLAIN" else "DESCRIBE"
         style = expression.args.get("style")
         style = f" {style}" if style else ""
+        expressions = self.expressions(expression, key="expressions", flat=True)
+        expressions = f" {expressions}" if keyword == "EXPLAIN" and expressions else ""
         format = self.sql(expression, "format")
         format = f" {format}" if format else ""
         partition = self.sql(expression, "partition")
         partition = f" {partition}" if partition else ""
         as_json = " AS JSON" if expression.args.get("as_json") else ""
 
-        return f"{keyword}{style}{format} {self.sql(expression, 'this')}{partition}{as_json}"
+        return (
+            f"{keyword}{style}{expressions}{format} {self.sql(expression, 'this')}"
+            f"{partition}{as_json}"
+        )
 
     def show_sql(self, expression: exp.Show) -> str:
         target = self.sql(expression, "target")

@@ -73,8 +73,10 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     )
 
 
-def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[ClickHouseParser], exp.Show]:
-    def _parse(self: ClickHouseParser) -> exp.Show:
+def _show_parser(
+    *args: t.Any, **kwargs: t.Any
+) -> t.Callable[[ClickHouseParser], exp.Show | exp.Command]:
+    def _parse(self: ClickHouseParser) -> exp.Show | exp.Command:
         return self._parse_show_clickhouse(*args, **kwargs)
 
     return _parse
@@ -464,10 +466,13 @@ class ClickHouseParser(parser.Parser):
         TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
     }
 
-    DESCRIBE_STYLES = {
-        *parser.Parser.DESCRIBE_STYLES,
+    EXPLAIN_STYLES = (
+        "AST",
         "ESTIMATE",
-    }
+        "PIPELINE",
+        "PLAN",
+        "SYNTAX",
+    )
 
     SHOW_PARSERS = {
         "TABLES": _show_parser("TABLES"),
@@ -482,23 +487,69 @@ class ClickHouseParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
-    def _parse_show_clickhouse(self, this: str, target: bool = False) -> exp.Show:
+    def _parse_show_clickhouse(self, this: str, target: bool = False) -> exp.Show | exp.Command:
         target_table = self._parse_table(schema=True) if target else None
         from_ = (
             self._parse_table(schema=True)
             if not target and self._match_set((TokenType.FROM, TokenType.IN))
             else None
         )
-        return self.expression(exp.Show(this=this, target=target_table, from_=from_))
+        show = self.expression(exp.Show(this=this, target=target_table, from_=from_))
 
-    def _parse_describe(self) -> exp.Describe:
-        kind = self._prev.text.upper()
-        describe = super()._parse_describe()
+        if self._curr and self._curr.token_type != TokenType.SEMICOLON:
+            return self._parse_as_command(self._tokens[0])
 
-        if kind == "EXPLAIN":
-            describe.set("kind", kind)
+        return show
 
-        return describe
+    def _parse_explain_settings(self) -> list[exp.EQ] | None:
+        expressions = []
+
+        while True:
+            index = self._index
+            setting = self._parse_id_var()
+
+            if not setting or not self._match(TokenType.EQ):
+                self._retreat(index)
+                break
+
+            expressions.append(
+                self.expression(exp.EQ(this=setting, expression=self._parse_assignment()))
+            )
+
+            if not self._match(TokenType.COMMA):
+                break
+
+        return expressions or None
+
+    def _parse_describe(self) -> exp.Describe | exp.Command:
+        if self._prev.text.upper() != "EXPLAIN":
+            return super()._parse_describe()
+
+        start = self._prev
+        style = None
+
+        if self._match_text_seq("QUERY", "TREE"):
+            style = "QUERY TREE"
+        elif self._match_text_seq("TABLE", "OVERRIDE"):
+            style = "TABLE OVERRIDE"
+        elif self._match_texts(self.EXPLAIN_STYLES):
+            style = self._prev.text.upper()
+
+        expressions = self._parse_explain_settings()
+        if self._match_set(self.STATEMENT_PARSERS, advance=False):
+            this = self._parse_statement()
+        else:
+            this = self._parse_select()
+
+        if not this:
+            return self._parse_as_command(start)
+
+        if self._curr and self._curr.token_type != TokenType.SEMICOLON:
+            return self._parse_as_command(start)
+
+        return self.expression(
+            exp.Describe(this=this, kind="EXPLAIN", style=style, expressions=expressions)
+        )
 
     def _parse_wrapped_select_or_assignment(self) -> exp.Expr | None:
         return self._parse_wrapped(

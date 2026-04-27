@@ -809,7 +809,13 @@ class TestClickhouse(Validator):
             with self.subTest(sql=sql):
                 self.validate_identity(sql).assert_is(exp.Show)
 
-        for sql in ("SHOW FOO BAR",):
+        for sql in (
+            "SHOW FOO BAR",
+            "SHOW TABLES FOO BAR",
+            "SHOW SETTINGS max_threads",
+            "SHOW ACCESS FOR user1",
+            "SHOW FUNCTIONS NOT LIKE 'to%'",
+        ):
             with self.subTest(sql=sql):
                 self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 

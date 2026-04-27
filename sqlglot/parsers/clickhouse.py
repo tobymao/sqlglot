@@ -546,13 +546,139 @@ class ClickHouseParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
+    SHOW_NO_QUERY = {
+        "ACCESS",
+        "ENABLED ROLES",
+        "FILESYSTEM CACHES",
+        "SETTINGS PROFILES",
+        "USERS",
+    }
+
+    SHOW_QUERY_STARTERS = {
+        "CHANGED SETTINGS": {"LIKE", "ILIKE"},
+        "CLUSTERS": {"LIKE", "ILIKE", "NOT", "LIMIT"},
+        "DATABASES": {"LIKE", "ILIKE", "NOT", "LIMIT", "INTO", "FORMAT"},
+        "DICTIONARIES": {"FROM", "LIKE", "LIMIT", "INTO", "FORMAT"},
+        "FUNCTIONS": {"LIKE", "ILIKE"},
+        "MERGES": {"LIKE", "ILIKE", "NOT", "LIMIT"},
+        "PROCESSLIST": {"INTO", "FORMAT"},
+        "SETTINGS": {"LIKE", "ILIKE", "PROFILES"},
+        "TABLES": {"FROM", "IN", "LIKE", "ILIKE", "NOT", "LIMIT", "INTO", "FORMAT"},
+    }
+
+    SHOW_IDENTIFIER_REQUIRED = {
+        "CLUSTER",
+        "CREATE DATABASE",
+        "CREATE DICTIONARY",
+        "CREATE MASKING POLICY",
+        "CREATE QUOTA",
+        "CREATE ROLE",
+        "CREATE ROW POLICY",
+        "CREATE SETTINGS PROFILE",
+        "CREATE TABLE",
+        "CREATE TEMPORARY TABLE",
+        "CREATE USER",
+        "CREATE VIEW",
+        "SETTING",
+    }
+
+    SHOW_IDENTIFIER_OR_STARTERS = {
+        "COLUMNS": {"FROM", "IN"},
+        "EXTENDED COLUMNS": {"FROM", "IN"},
+        "EXTENDED FULL COLUMNS": {"FROM", "IN"},
+        "EXTENDED INDEX": {"FROM", "IN"},
+        "EXTENDED INDEXES": {"FROM", "IN"},
+        "EXTENDED INDICES": {"FROM", "IN"},
+        "EXTENDED KEYS": {"FROM", "IN"},
+        "FULL COLUMNS": {"FROM", "IN"},
+        "FULL EXTENDED COLUMNS": {"FROM", "IN"},
+        "FULL TABLES": {"FROM", "IN", "LIKE", "ILIKE", "NOT", "LIMIT", "INTO", "FORMAT"},
+        "FULL TEMPORARY TABLES": {
+            "FROM",
+            "IN",
+            "LIKE",
+            "ILIKE",
+            "NOT",
+            "LIMIT",
+            "INTO",
+            "FORMAT",
+        },
+        "GRANTS": {"FOR", "WITH", "FINAL"},
+        "INDEX": {"FROM", "IN"},
+        "INDEXES": {"FROM", "IN"},
+        "INDICES": {"FROM", "IN"},
+        "KEYS": {"FROM", "IN"},
+        "ROW POLICIES": {"ON"},
+        "TABLE": {"FROM", "IN", "LIKE", "ILIKE", "NOT", "LIMIT", "INTO", "FORMAT"},
+        "TEMPORARY FULL TABLES": {
+            "FROM",
+            "IN",
+            "LIKE",
+            "ILIKE",
+            "NOT",
+            "LIMIT",
+            "INTO",
+            "FORMAT",
+        },
+        "TEMPORARY TABLE": {"FROM", "IN", "LIKE", "ILIKE", "NOT", "LIMIT", "INTO", "FORMAT"},
+        "TEMPORARY TABLES": {
+            "FROM",
+            "IN",
+            "LIKE",
+            "ILIKE",
+            "NOT",
+            "LIMIT",
+            "INTO",
+            "FORMAT",
+        },
+    }
+
+    @staticmethod
+    def _first_show_token(query: str) -> str:
+        stripped = query.strip()
+        return stripped.split(None, 1)[0].upper() if stripped else ""
+
+    @staticmethod
+    def _is_identifier_like(query: str) -> bool:
+        stripped = query.lstrip()
+        if not stripped:
+            return False
+        return bool(stripped[0].isalnum() or stripped[0] in ("_", "`", '"', "'", "("))
+
+    def _is_supported_show_query(self, this: str, query: str | None) -> bool:
+        if not query or not query.strip():
+            return this not in self.SHOW_IDENTIFIER_REQUIRED
+
+        if this in self.SHOW_NO_QUERY:
+            return False
+
+        token = self._first_show_token(query)
+
+        if this in self.SHOW_QUERY_STARTERS:
+            return token in self.SHOW_QUERY_STARTERS[this]
+
+        if this in self.SHOW_IDENTIFIER_REQUIRED:
+            return self._is_identifier_like(query)
+
+        if this in self.SHOW_IDENTIFIER_OR_STARTERS:
+            return token in self.SHOW_IDENTIFIER_OR_STARTERS[this] or self._is_identifier_like(
+                query
+            )
+
+        return True
+
     def _parse_show_clickhouse(self, this: str) -> exp.Show | exp.Command:
         query = None
         if self._curr:
-            start = self._curr
+            query_start = self._curr
             while self._curr:
                 self._advance()
-            query = self._find_sql(start, self._prev)
+            query = self._find_sql(query_start, self._prev)
+
+        if not self._is_supported_show_query(this, query):
+            expression = f" {this}{f' {query.strip()}' if query and query.strip() else ''}"
+            self._warn_unsupported()
+            return exp.Command(this="SHOW", expression=expression)
 
         return self.expression(exp.Show(this=this, query=query))
 

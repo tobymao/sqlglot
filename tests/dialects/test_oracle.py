@@ -744,7 +744,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_all(
             "TRUNC(SYSDATE, 'YEAR')",
             write={
-                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
+                "clickhouse": "dateTrunc('YEAR', CURRENT_TIMESTAMP())",
                 "oracle": "TRUNC(SYSDATE, 'YEAR')",
             },
         )

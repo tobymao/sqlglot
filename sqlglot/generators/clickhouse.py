@@ -681,9 +681,12 @@ class ClickHouseGenerator(generator.Generator):
 
         return super().values_sql(expression, values_as_table=values_as_table)
 
-    def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+    def timestamptrunc_sql(self, expression: exp.DateTrunc | exp.TimestampTrunc) -> str:
         unit = unit_to_str(expression)
         # https://clickhouse.com/docs/whats-new/changelog/2023#improvement
         if self.dialect.version < (23, 12) and unit and unit.is_string:
             unit = exp.Literal.string(unit.name.lower())
         return self.func("dateTrunc", unit, expression.this, expression.args.get("zone"))
+
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        return self.timestamptrunc_sql(expression)

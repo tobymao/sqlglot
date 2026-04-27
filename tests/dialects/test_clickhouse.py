@@ -1817,6 +1817,14 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
 
+        self.validate_all(
+            "date_trunc('WEEK', today())",
+            write={
+                "clickhouse, version=23.8": "dateTrunc('week', today())",
+                "clickhouse, version=24.1": "dateTrunc('WEEK', today())",
+            },
+        )
+
     def test_string_split(self):
         self.validate_all(
             "splitByString('s', x)",

@@ -1113,8 +1113,8 @@ class Expression(Expr):
         Returns:
             The transformed tree.
         """
-        root = None
-        new_node = None
+        root: t.Any = None
+        new_node: t.Any = None
 
         for node in (self.copy() if copy else self).dfs(prune=lambda n: n is not new_node):
             parent, arg_key, index = node.parent, node.arg_key, node.index

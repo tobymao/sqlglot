@@ -34,7 +34,7 @@ def _build_named_struct(args: list) -> exp.Struct:
     expressions: list[exp.Expression] = []
     for i in range(0, len(args) - 1, 2):
         key, value = args[i], args[i + 1]
-        name = key.this if isinstance(key, exp.Literal) else key.name
+        name = key.name
         expressions.append(exp.PropertyEQ(this=exp.to_identifier(name), expression=value))
     return exp.Struct(expressions=expressions)
 

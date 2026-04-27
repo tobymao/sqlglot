@@ -277,8 +277,6 @@ class TypeAnnotator:
         return expression
 
     def _get_scope_selects(self, scope: Scope) -> dict[str, dict[str, t.Any]]:
-        from sqlglot.optimizer.qualify_columns import pivot_output_columns
-
         if scope not in self._scope_selects:
             selects = {}
             for name, source in scope.sources.items():
@@ -359,13 +357,15 @@ class TypeAnnotator:
                         val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
                     )
                     for val_col, in_col in zip(val_cols, in_cols):
-                        new_types[val_col.output_name] = in_col.type or src_types.get(
-                            in_col.output_name
+                        new_types[val_col.output_name] = (
+                            src_types.get(in_col.output_name)
+                            if in_col.is_type(exp.DType.UNKNOWN)
+                            else in_col.type
                         )
 
                 col_types = {
                     name: type_
-                    for name in pivot_output_columns(pivot, src_types)
+                    for name in pivot.output_columns(src_types)
                     if (type_ := new_types.get(name) or src_types.get(name))
                 }
                 if col_types:

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import itertools
 import typing as t
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
 from sqlglot.expressions.core import (
     Aliases,
+    Column,
     Condition,
     Distinct,
     Dot,
@@ -1761,6 +1763,38 @@ class Pivot(Expression):
     @property
     def fields(self) -> list[Expr]:
         return self.args.get("fields", [])
+
+    def output_columns(self, pre_pivot_columns: t.Iterable[str]) -> list[str]:
+        if self.unpivot:
+            excluded = {
+                c.output_name
+                for field in self.fields
+                if isinstance(field, In)
+                for e in field.expressions
+                for c in e.find_all(Column)
+            }
+            name_columns = [
+                field.this
+                for field in self.fields
+                if isinstance(field, In) and isinstance(field.this, Identifier)
+            ]
+            value_columns = (
+                ident
+                for e in self.expressions
+                for ident in (e.expressions if isinstance(e, Tuple) else [e])
+                if isinstance(ident, Identifier)
+            )
+            outputs = [i.name for i in itertools.chain(name_columns, value_columns)]
+        else:
+            excluded = {c.output_name for c in self.find_all(Column)}
+            outputs = [c.output_name for c in self.args.get("columns") or []]
+            if not outputs:
+                outputs = [c.alias_or_name for c in self.expressions]
+
+        if not excluded or not outputs:
+            return []
+
+        return [c for c in pre_pivot_columns if c not in excluded] + outputs
 
 
 class UnpivotColumns(Expression):

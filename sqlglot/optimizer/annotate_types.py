@@ -336,6 +336,9 @@ class TypeAnnotator:
                 if not pivot.unpivot:
                     continue
 
+                src_types = (
+                    selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
+                )
                 new_types = {}
                 for field in pivot.fields:
                     field_col = field.this
@@ -351,16 +354,15 @@ class TypeAnnotator:
                         in_src = first
 
                     in_cols = in_src.expressions if isinstance(in_src, exp.Tuple) else [in_src]
-                    for val_expr in pivot.expressions:
-                        val_cols = (
-                            val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
+                    val_expr = seq_get(pivot.expressions, 0)
+                    val_cols = (
+                        val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
+                    )
+                    for val_col, in_col in zip(val_cols, in_cols):
+                        new_types[val_col.output_name] = (
+                            src_types.get(in_col.output_name) or in_col.type
                         )
-                        for val_col, src_col in zip(val_cols, in_cols):
-                            new_types[val_col.output_name] = src_col.type
 
-                src_types = (
-                    selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
-                )
                 col_types = {
                     name: type_
                     for name in pivot_output_columns(pivot, src_types)

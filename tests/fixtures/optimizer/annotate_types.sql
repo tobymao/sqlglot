@@ -94,6 +94,18 @@ STRUCT<INT, DOUBLE, VARCHAR>;
 STRUCT(1 AS "CaseSensitive");
 STRUCT<"CaseSensitive" INT>;
 
+# dialect: spark
+NAMED_STRUCT('col', 1);
+STRUCT<col INT>;
+
+# dialect: spark
+NAMED_STRUCT('col', 1, 'row', 2.5);
+STRUCT<col INT, row DOUBLE>;
+
+# dialect: databricks
+NAMED_STRUCT('col', 1, 'nested', NAMED_STRUCT('inner', 'x'));
+STRUCT<col INT, nested STRUCT<inner VARCHAR>>;
+
 # dialect: duckdb
 STRUCT_PACK(a := 1, b := 2.5);
 STRUCT<a INT, b DOUBLE>;

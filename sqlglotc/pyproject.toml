@@ -4,17 +4,23 @@ dynamic = ["version"]
 description = "mypyc-compiled extensions for sqlglot"
 authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
 license = "MIT"
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 
 [project.optional-dependencies]
-dev = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy"]
+dev = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy >= 1.20.0"]
 
 [project.urls]
 Homepage = "https://sqlglot.com/"
 Repository = "https://github.com/tobymao/sqlglot"
 
 [build-system]
-requires = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy", "types-python-dateutil", "sqlglot"]
+requires = [
+    "setuptools >= 61.0",
+    "setuptools_scm",
+    "sqlglot-mypy >= 1.20.0",
+    "types-python-dateutil",
+    "sqlglot",
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]

@@ -1,19 +1,22 @@
 # ruff: noqa: F401
-"""Re-exports from optimizer submodules, deferred to first use.
+"""Lazy re-exports from optimizer submodules.
 
-Under mypyc's ``separate=True``, importing ``sqlglot`` can transitively
-trigger this package's ``__init__.py`` before ``sqlglot`` has finished
-binding names like ``exp`` / ``Schema``. Eager ``from sqlglot.optimizer.optimizer
-import ...`` at module top used to kick off a circular-import cascade.
-PEP 562 ``__getattr__`` lets the names resolve only when they're first
-actually accessed, by which point ``sqlglot``'s namespace is settled.
+Eager re-exports here trip a circular import under sqlglot[c]: importing
+sqlglot loads compiled `expressions.builders`, which eagerly wires up its
+links to compiled optimizer modules, which causes Python to run this
+file. The eager `from sqlglot.optimizer.optimizer import ...` then asks
+for `sqlglot.Schema`, but `sqlglot/__init__.py` hasn't bound it yet.
+
+PEP 562 `__getattr__` defers the import to first attribute access, by
+which point sqlglot is fully loaded. Tracked upstream in python/mypy#21299.
 """
 
 from __future__ import annotations
 
-import typing as _t
+import typing as t
 
-if _t.TYPE_CHECKING:
+# Only for type checkers and IDEs; runtime resolution goes through __getattr__.
+if t.TYPE_CHECKING:
     from sqlglot.optimizer.optimizer import RULES as RULES, optimize as optimize
     from sqlglot.optimizer.scope import (
         Scope as Scope,
@@ -24,12 +27,8 @@ if _t.TYPE_CHECKING:
         walk_in_scope as walk_in_scope,
     )
 
-# Explicit re-export map. An explicit mapping avoids the ambiguity of
-# fuzzy "search the first module that has the name" — several submodules
-# share names with functions inside `optimizer.py` (e.g. both a
-# `qualify` submodule and a `qualify` function re-exported in the
-# `optimizer` module), so callers doing `optimizer.qualify.qualify(...)`
-# need the submodule, not the function.
+# Explicit, because some names collide between optimizer.py and submodules
+# (e.g. `qualify` is both a function and a submodule).
 _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "RULES": ("sqlglot.optimizer.optimizer", "RULES"),
     "optimize": ("sqlglot.optimizer.optimizer", "optimize"),
@@ -42,7 +41,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
 }
 
 
-def __getattr__(name: str) -> _t.Any:
+def __getattr__(name: str) -> t.Any:
     import importlib
 
     target = _LAZY_ATTRS.get(name)
@@ -50,9 +49,7 @@ def __getattr__(name: str) -> _t.Any:
         module_name, attr = target
         value = getattr(importlib.import_module(module_name), attr)
     else:
-        # Fall back to loading `sqlglot.optimizer.<name>` as a submodule.
-        # The old eager __init__ used to populate these as a side effect
-        # of its imports; under lazy resolution we have to do it explicitly.
+        # Submodule fallback so `from sqlglot.optimizer import qualify` works.
         try:
             value = importlib.import_module(f"{__name__}.{name}")
         except ModuleNotFoundError:

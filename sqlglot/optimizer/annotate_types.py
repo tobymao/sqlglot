@@ -341,10 +341,10 @@ class TypeAnnotator:
                     field_col = field.this
                     first = seq_get(field.expressions, 0)
 
-                    if isinstance(first, exp.PivotAlias):
-                        alias_node = first.args.get("alias")
-                        if alias_node:
-                            new_types[field_col.name] = alias_node.type
+                    if isinstance(first, exp.PivotAlias) and (
+                        alias_node := first.args.get("alias")
+                    ):
+                        new_types[field_col.name] = alias_node.type
                         in_src = first.this
                     else:
                         new_types[field_col.name] = exp.DType.VARCHAR.into_expr()
@@ -475,7 +475,10 @@ class TypeAnnotator:
                 if (isinstance(source, exp.Table) and source.args.get("pivots")) or (
                     not source and scope.pivots
                 ):
-                    pivot_type = self._get_scope_selects(scope).get(expr.table, {}).get(expr.name)
+                    pivot_scope = source_scope or scope
+                    pivot_type = (
+                        self._get_scope_selects(pivot_scope).get(expr.table, {}).get(expr.name)
+                    )
                     if pivot_type:
                         self._set_type(expr, pivot_type)
 

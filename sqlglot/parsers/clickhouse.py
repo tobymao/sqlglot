@@ -576,7 +576,7 @@ class ClickHouseParser(parser.Parser):
 
         return expressions or None
 
-    def _parse_describe(self) -> exp.Describe | exp.Command:
+    def _parse_describe(self) -> exp.Describe:
         if self._prev.text.upper() != "EXPLAIN":
             return super()._parse_describe()
 
@@ -607,10 +607,12 @@ class ClickHouseParser(parser.Parser):
             this = self._parse_select()
 
         if not this:
-            return self._parse_as_command(start)
+            # Keep fallback behavior as Command for unsupported EXPLAIN payloads.
+            return t.cast(exp.Describe, self._parse_as_command(start))
 
         if self._curr and self._curr.token_type != TokenType.SEMICOLON:
-            return self._parse_as_command(start)
+            # Keep fallback behavior as Command for trailing unsupported tokens.
+            return t.cast(exp.Describe, self._parse_as_command(start))
 
         return self.expression(
             exp.Describe(this=this, kind="EXPLAIN", style=style, expressions=expressions)

@@ -475,8 +475,67 @@ class ClickHouseParser(parser.Parser):
     )
 
     SHOW_PARSERS = {
+        "ACCESS": _show_parser("ACCESS"),
+        "CHANGED SETTINGS": _show_parser("CHANGED SETTINGS"),
+        "CLUSTER": _show_parser("CLUSTER"),
+        "CLUSTERS": _show_parser("CLUSTERS"),
+        "COLUMNS": _show_parser("COLUMNS"),
+        "CREATE DATABASE": _show_parser("CREATE DATABASE"),
+        "CREATE DICTIONARY": _show_parser("CREATE DICTIONARY"),
+        "CREATE MASKING POLICY": _show_parser("CREATE MASKING POLICY"),
+        "CREATE POLICY": _show_parser("CREATE POLICY"),
+        "CREATE PROFILE": _show_parser("CREATE PROFILE"),
+        "CREATE QUOTA": _show_parser("CREATE QUOTA"),
+        "CREATE ROLE": _show_parser("CREATE ROLE"),
+        "CREATE ROW POLICY": _show_parser("CREATE ROW POLICY"),
+        "CREATE SETTINGS PROFILE": _show_parser("CREATE SETTINGS PROFILE"),
+        "CREATE TABLE": _show_parser("CREATE TABLE"),
+        "CREATE TEMPORARY TABLE": _show_parser("CREATE TEMPORARY TABLE"),
+        "CREATE USER": _show_parser("CREATE USER"),
+        "CREATE VIEW": _show_parser("CREATE VIEW"),
+        "CURRENT QUOTA": _show_parser("CURRENT QUOTA"),
+        "CURRENT ROLES": _show_parser("CURRENT ROLES"),
+        "DATABASE": _show_parser("DATABASE"),
+        "DATABASES": _show_parser("DATABASES"),
+        "DICTIONARIES": _show_parser("DICTIONARIES"),
+        "DICTIONARY": _show_parser("DICTIONARY"),
+        "ENABLED ROLES": _show_parser("ENABLED ROLES"),
+        "ENGINES": _show_parser("ENGINES"),
+        "EXTENDED COLUMNS": _show_parser("EXTENDED COLUMNS"),
+        "EXTENDED FULL COLUMNS": _show_parser("EXTENDED FULL COLUMNS"),
+        "EXTENDED INDEX": _show_parser("EXTENDED INDEX"),
+        "EXTENDED INDEXES": _show_parser("EXTENDED INDEXES"),
+        "EXTENDED INDICES": _show_parser("EXTENDED INDICES"),
+        "EXTENDED KEYS": _show_parser("EXTENDED KEYS"),
+        "FILESYSTEM CACHES": _show_parser("FILESYSTEM CACHES"),
+        "FULL COLUMNS": _show_parser("FULL COLUMNS"),
+        "FULL EXTENDED COLUMNS": _show_parser("FULL EXTENDED COLUMNS"),
+        "FULL TABLES": _show_parser("FULL TABLES"),
+        "FULL TEMPORARY TABLES": _show_parser("FULL TEMPORARY TABLES"),
+        "FUNCTIONS": _show_parser("FUNCTIONS"),
+        "GRANTS": _show_parser("GRANTS"),
+        "INDEX": _show_parser("INDEX"),
+        "INDEXES": _show_parser("INDEXES"),
+        "INDICES": _show_parser("INDICES"),
+        "KEYS": _show_parser("KEYS"),
+        "MERGES": _show_parser("MERGES"),
+        "POLICIES": _show_parser("POLICIES"),
+        "PROCESSLIST": _show_parser("PROCESSLIST"),
+        "PROFILES": _show_parser("PROFILES"),
+        "QUOTA": _show_parser("QUOTA"),
+        "QUOTAS": _show_parser("QUOTAS"),
+        "ROLES": _show_parser("ROLES"),
+        "ROW POLICIES": _show_parser("ROW POLICIES"),
+        "SETTING": _show_parser("SETTING"),
+        "SETTINGS": _show_parser("SETTINGS"),
+        "SETTINGS PROFILES": _show_parser("SETTINGS PROFILES"),
+        "TABLE": _show_parser("TABLE"),
         "TABLES": _show_parser("TABLES"),
-        "CREATE TABLE": _show_parser("CREATE TABLE", target=True),
+        "TEMPORARY FULL TABLES": _show_parser("TEMPORARY FULL TABLES"),
+        "TEMPORARY TABLE": _show_parser("TEMPORARY TABLE"),
+        "TEMPORARY TABLES": _show_parser("TEMPORARY TABLES"),
+        "USERS": _show_parser("USERS"),
+        "VIEW": _show_parser("VIEW"),
     }
 
     STATEMENT_PARSERS = {
@@ -487,19 +546,15 @@ class ClickHouseParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
 
-    def _parse_show_clickhouse(self, this: str, target: bool = False) -> exp.Show | exp.Command:
-        target_table = self._parse_table(schema=True) if target else None
-        from_ = (
-            self._parse_table(schema=True)
-            if not target and self._match_set((TokenType.FROM, TokenType.IN))
-            else None
-        )
-        show = self.expression(exp.Show(this=this, target=target_table, from_=from_))
+    def _parse_show_clickhouse(self, this: str) -> exp.Show | exp.Command:
+        query = None
+        if self._curr:
+            start = self._curr
+            while self._curr:
+                self._advance()
+            query = self._find_sql(start, self._prev)
 
-        if self._curr and self._curr.token_type != TokenType.SEMICOLON:
-            return self._parse_as_command(self._tokens[0])
-
-        return show
+        return self.expression(exp.Show(this=this, query=query))
 
     def _parse_explain_settings(self) -> list[exp.EQ] | None:
         expressions = []
@@ -531,7 +586,17 @@ class ClickHouseParser(parser.Parser):
         if self._match_text_seq("QUERY", "TREE"):
             style = "QUERY TREE"
         elif self._match_text_seq("TABLE", "OVERRIDE"):
-            style = "TABLE OVERRIDE"
+            start = self._tokens[self._index - 2]
+            while self._curr:
+                self._advance()
+            text = self._find_sql(start, self._prev)
+            size = len(start.text)
+            return self.expression(
+                exp.Describe(
+                    this=exp.Command(this=text[:size], expression=text[size:]),
+                    kind="EXPLAIN",
+                )
+            )
         elif self._match_texts(self.EXPLAIN_STYLES):
             style = self._prev.text.upper()
 

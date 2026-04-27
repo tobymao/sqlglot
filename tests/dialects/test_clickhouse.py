@@ -745,6 +745,10 @@ class TestClickhouse(Validator):
             ("EXPLAIN PIPELINE SELECT 1", "PIPELINE"),
             ("EXPLAIN json = 1, description = 0 SELECT 1", None),
             ("EXPLAIN PLAN json = 1, description = 0 SELECT 1", "PLAN"),
+            (
+                "EXPLAIN TABLE OVERRIDE mysql('127.0.0.1:3306', 'db', 'tbl', 'root', 'clickhouse') PARTITION BY toYYYYMM(assumeNotNull(created))",
+                None,
+            ),
         ):
             with self.subTest(sql=sql):
                 expression = self.validate_identity(sql)
@@ -752,10 +756,7 @@ class TestClickhouse(Validator):
                 self.assertEqual(expression.text("kind"), "EXPLAIN")
                 self.assertEqual(expression.args.get("style"), style)
 
-        for sql in (
-            "EXPLAIN TABLE OVERRIDE mysql('127.0.0.1:3306', 'db', 'tbl', 'root', 'clickhouse') PARTITION BY toYYYYMM(assumeNotNull(created))",
-            "EXPLAIN FOO SELECT 1",
-        ):
+        for sql in ("EXPLAIN FOO SELECT 1",):
             with self.subTest(sql=sql):
                 self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 
@@ -763,7 +764,7 @@ class TestClickhouse(Validator):
         for sql, write_sql in (
             ("SHOW TABLES", None),
             ("SHOW TABLES FROM system", None),
-            ("SHOW TABLES IN system", "SHOW TABLES FROM system"),
+            ("SHOW TABLES IN system", None),
             ("SHOW CREATE TABLE t", None),
             ("SHOW CREATE TABLE db.t", None),
         ):
@@ -774,10 +775,13 @@ class TestClickhouse(Validator):
             "SHOW FULL TABLES FROM system LIKE '%user%'",
             "SHOW TABLES FROM system LIMIT 2",
             "SHOW DATABASES ILIKE '%de%'",
+            "SHOW DATABASES NOT LIKE '%de%'",
             "SHOW COLUMNS FROM t",
+            "SHOW EXTENDED FULL COLUMNS FROM tbl FROM db ILIKE '%x%' LIMIT 10 INTO OUTFILE 'f' FORMAT TSVRaw",
             "SHOW DICTIONARIES",
             "SHOW INDEX FROM tbl",
-            "SHOW PROCESSLIST",
+            "SHOW EXTENDED KEYS FROM tbl FROM db WHERE a > 1 INTO OUTFILE 'x' FORMAT TSVRaw",
+            "SHOW PROCESSLIST INTO OUTFILE 'x' FORMAT TSVRaw",
             "SHOW GRANTS FOR user1 WITH IMPLICIT FINAL",
             "SHOW CREATE USER CURRENT_USER",
             "SHOW CREATE ROLE role1",
@@ -786,7 +790,11 @@ class TestClickhouse(Validator):
             "SHOW CREATE SETTINGS PROFILE p",
             "SHOW USERS",
             "SHOW CURRENT ROLES",
+            "SHOW ENABLED ROLES",
+            "SHOW SETTINGS PROFILES",
+            "SHOW ROW POLICIES ON db.t",
             "SHOW SETTINGS ILIKE '%timeout%'",
+            "SHOW CHANGED SETTINGS ILIKE '%memory%'",
             "SHOW SETTING max_threads",
             "SHOW FILESYSTEM CACHES",
             "SHOW ENGINES",
@@ -798,6 +806,10 @@ class TestClickhouse(Validator):
             "SHOW CREATE TABLE t FORMAT TSVRaw",
             "SHOW CREATE TABLE t INTO OUTFILE 'x'",
         ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql).assert_is(exp.Show)
+
+        for sql in ("SHOW FOO BAR",):
             with self.subTest(sql=sql):
                 self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 

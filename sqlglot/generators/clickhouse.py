@@ -497,6 +497,11 @@ class ClickHouseGenerator(generator.Generator):
         )
 
     def show_sql(self, expression: exp.Show) -> str:
+        query = expression.args.get("query")
+        if isinstance(query, str):
+            query = f" {query.strip()}" if query.strip() else ""
+            return f"SHOW {expression.name}{query}"
+
         target = self.sql(expression, "target")
         target = f" {target}" if target else ""
         from_ = self.sql(expression, "from_")

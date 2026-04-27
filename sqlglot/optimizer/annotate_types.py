@@ -336,9 +336,6 @@ class TypeAnnotator:
                 if not pivot.unpivot:
                     continue
 
-                src_types = (
-                    selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
-                )
                 new_types = {}
                 for field in pivot.fields:
                     field_col = field.this
@@ -359,12 +356,11 @@ class TypeAnnotator:
                             val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
                         )
                         for val_col, src_col in zip(val_cols, in_cols):
-                            src_type = src_types.get(src_col.output_name) or src_col.type
-                            if isinstance(src_type, exp.DataType) and not src_type.is_type(
-                                exp.DType.UNKNOWN
-                            ):
-                                new_types[val_col.output_name] = src_type
+                            new_types[val_col.output_name] = src_col.type
 
+                src_types = (
+                    selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
+                )
                 col_types = {
                     name: type_
                     for name in pivot_output_columns(pivot, src_types)

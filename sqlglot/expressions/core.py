@@ -282,8 +282,8 @@ class Expr:
         raise NotImplementedError
 
     def transform(
-        self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
-    ) -> t.Any:
+        self, fun: t.Callable[..., T], *args: object, copy: bool = True, **kwargs: object
+    ) -> T:
         raise NotImplementedError
 
     def replace(self, expression: T) -> T:
@@ -1097,8 +1097,8 @@ class Expression(Expr):
         return Dialect.get_or_raise(dialect).generate(self, copy=copy, **opts)
 
     def transform(
-        self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
-    ) -> t.Any:
+        self, fun: t.Callable[..., T], *args: object, copy: bool = True, **kwargs: object
+    ) -> T:
         """
         Visits all tree nodes (excluding already transformed ones)
         and applies the given transformation function to each node.
@@ -1113,8 +1113,8 @@ class Expression(Expr):
         Returns:
             The transformed tree.
         """
-        root: t.Any = None
-        new_node: t.Any = None
+        root = None
+        new_node = None
 
         for node in (self.copy() if copy else self).dfs(prune=lambda n: n is not new_node):
             parent, arg_key, index = node.parent, node.arg_key, node.index

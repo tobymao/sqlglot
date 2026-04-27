@@ -359,8 +359,8 @@ class TypeAnnotator:
                         val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
                     )
                     for val_col, in_col in zip(val_cols, in_cols):
-                        new_types[val_col.output_name] = (
-                            src_types.get(in_col.output_name) or in_col.type
+                        new_types[val_col.output_name] = in_col.type or src_types.get(
+                            in_col.output_name
                         )
 
                 col_types = {

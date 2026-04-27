@@ -16,6 +16,7 @@ class JSONArray(Expression, Func):
         "return_type": False,
         "strict": False,
     }
+    is_var_len_args = True
 
 
 class JSONArrayAgg(Expression, AggFunc):

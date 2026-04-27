@@ -577,6 +577,13 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
             },
         )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c', 'd', 'e'))",
+            },
+        )
         self.validate_identity(
             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",

@@ -15,7 +15,7 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-    from collections.abc import Iterator, Iterable, Sequence
+    from collections.abc import Iterator, Iterable
 
 
 def qualify_columns(
@@ -181,7 +181,7 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
         scope.clear_cache()
 
 
-def _pivot_output_columns(pivot: exp.Pivot, pre_pivot_columns: Sequence[str]) -> list[str]:
+def pivot_output_columns(pivot: exp.Pivot, pre_pivot_columns: Iterable[str]) -> list[str]:
     """Compute the columns exposed after a (UN)PIVOT, given its pre-pivot source columns.
 
     Returns an empty list for degenerate pivots (no IN-list or no output names) so callers
@@ -638,7 +638,7 @@ def _qualify_columns(
             if isinstance(column_source, exp.Table) and (
                 pivots := column_source.args.get("pivots")
             ):
-                source_columns = _pivot_output_columns(pivots[0], source_columns)
+                source_columns = pivot_output_columns(pivots[0], source_columns)
             if (
                 not allow_partial_qualification
                 and source_columns
@@ -879,7 +879,7 @@ def _expand_stars(
             replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
-                pivot_columns = pivot.alias_column_names or _pivot_output_columns(pivot, columns)
+                pivot_columns = pivot.alias_column_names or pivot_output_columns(pivot, columns)
 
                 if pivot_columns:
                     new_selections.extend(

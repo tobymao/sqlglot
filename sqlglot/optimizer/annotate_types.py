@@ -277,6 +277,8 @@ class TypeAnnotator:
         return expression
 
     def _get_scope_selects(self, scope: Scope) -> dict[str, dict[str, t.Any]]:
+        from sqlglot.optimizer.qualify_columns import pivot_output_columns
+
         if scope not in self._scope_selects:
             selects = {}
             for name, source in scope.sources.items():
@@ -331,43 +333,43 @@ class TypeAnnotator:
                     selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
             for pivot in scope.pivots:
-                inner_name = (
-                    pivot.parent.name if isinstance(pivot.parent, exp.Table) else pivot.alias
+                if not pivot.unpivot:
+                    continue
+
+                src_types = (
+                    selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
                 )
+                new_types: dict[str, exp.DataType | exp.DType] = {}
+                for field in pivot.fields:
+                    field_col = field.this
+                    first = seq_get(field.expressions, 0)
 
-                col_types = selects.get(inner_name, {}).copy()
+                    if isinstance(first, exp.PivotAlias):
+                        alias_node = first.args.get("alias")
+                        if alias_node:
+                            new_types[field_col.name] = alias_node.type
+                        in_src = first.this
+                    else:
+                        new_types[field_col.name] = exp.DType.VARCHAR.into_expr()
+                        in_src = first
 
-                if pivot.unpivot:
-                    for field in pivot.fields:
-                        field_col = field.this
+                    in_cols = in_src.expressions if isinstance(in_src, exp.Tuple) else [in_src]
+                    for val_expr in pivot.expressions:
+                        val_cols = (
+                            val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
+                        )
+                        for val_col, src_col in zip(val_cols, in_cols):
+                            src_type = src_types.get(src_col.output_name) or src_col.type
+                            if isinstance(src_type, exp.DataType) and not src_type.is_type(
+                                exp.DType.UNKNOWN
+                            ):
+                                new_types[val_col.output_name] = src_type
 
-                        first = seq_get(field.expressions, 0)
-
-                        # FOR column type from the alias literal, or VARCHAR if no alias
-                        if isinstance(first, exp.PivotAlias):
-                            alias_node = first.args.get("alias")
-                            if alias_node:
-                                col_types[field_col.name] = alias_node.type
-                            src = first.this
-                        else:
-                            col_types[field_col.name] = exp.DType.VARCHAR.into_expr()
-                            src = first
-
-                        # Value column types from the IN source columns
-                        src_cols = src.expressions if isinstance(src, exp.Tuple) else [src]
-                        for val_expr in pivot.expressions:
-                            val_cols = (
-                                val_expr.expressions
-                                if isinstance(val_expr, exp.Tuple)
-                                else [val_expr]
-                            )
-                            for val_col, src_col in zip(val_cols, src_cols):
-                                src_type = col_types.get(src_col.output_name) or src_col.type
-                                if isinstance(src_type, exp.DataType) and not src_type.is_type(
-                                    exp.DType.UNKNOWN
-                                ):
-                                    col_types[val_col.output_name] = src_type
-
+                col_types = {
+                    name: type_
+                    for name in pivot_output_columns(pivot, src_types)
+                    if (type_ := new_types.get(name) or src_types.get(name))
+                }
                 if col_types:
                     selects[pivot.alias] = col_types
 
@@ -459,11 +461,7 @@ class TypeAnnotator:
                     if not source:
                         source_scope = source_scope.parent
 
-                # Pivot-indexed selects win first: they capture UNPIVOT outputs whether
-                # or not the pivot alias made it into scope.sources.
-                if pivot_type := self._get_scope_selects(scope).get(expr.table, {}).get(expr.name):
-                    self._set_type(expr, pivot_type)
-                elif isinstance(source, exp.Table):
+                if isinstance(source, exp.Table):
                     self._set_type(expr, self.schema.get_column_type(source, expr))
                 elif source and source_scope:
                     col_type = (
@@ -477,6 +475,13 @@ class TypeAnnotator:
                         self._set_type(expr, exp.DType.UNKNOWN)
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
+
+                if (isinstance(source, exp.Table) and source.args.get("pivots")) or (
+                    not source and scope.pivots
+                ):
+                    pivot_type = self._get_scope_selects(scope).get(expr.table, {}).get(expr.name)
+                    if pivot_type:
+                        self._set_type(expr, pivot_type)
 
                 if expr.is_type(exp.DType.JSON) and (dot_parts := expr.meta.get("dot_parts")):
                     # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.

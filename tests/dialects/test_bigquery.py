@@ -134,6 +134,10 @@ class TestBigQuery(Validator):
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+        self.validate_identity(
+            "SELECT * FROM tbl FOR SYSTEM TIME AS OF z",
+            "SELECT * FROM tbl FOR SYSTEM_TIME AS OF z",
+        )
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
@@ -198,6 +202,10 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("LOOP SET x = x + 1", check_command_warning=True)
         self.validate_identity("REPEAT SET x = x + 1", check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE foo DROP PRIMARY KEY IF EXISTS",
+            check_command_warning=True,
+        )
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 1, 12, 30, 10)")
         self.validate_identity(
             "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
@@ -206,6 +214,12 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
+        for load_data_sql in (
+            "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+        ):
+            with self.subTest(load_data_sql=load_data_sql):
+                self.validate_identity(load_data_sql).assert_is(exp.LoadData)
         self.validate_identity("CAST(x AS BIGNUMERIC)")
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
@@ -1764,8 +1778,8 @@ WHERE
                 "trino": "IF(y <> 0, CAST(x AS DOUBLE) / y, NULL)",
                 "hive": "IF(y <> 0, x / y, NULL)",
                 "spark2": "IF(y <> 0, x / y, NULL)",
-                "spark": "IF(y <> 0, x / y, NULL)",
-                "databricks": "IF(y <> 0, x / y, NULL)",
+                "spark": "TRY_DIVIDE(x, y)",
+                "databricks": "TRY_DIVIDE(x, y)",
                 "snowflake": "IFF(y <> 0, x / y, NULL)",
                 "postgres": "CASE WHEN y <> 0 THEN CAST(x AS DOUBLE PRECISION) / y ELSE NULL END",
             },
@@ -1779,8 +1793,8 @@ WHERE
                 "trino": "IF((2 * y) <> 0, CAST((x + 1) AS DOUBLE) / (2 * y), NULL)",
                 "hive": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
                 "spark2": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
-                "spark": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
-                "databricks": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "spark": "TRY_DIVIDE(x + 1, 2 * y)",
+                "databricks": "TRY_DIVIDE(x + 1, 2 * y)",
                 "snowflake": "IFF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
                 "postgres": "CASE WHEN (2 * y) <> 0 THEN CAST((x + 1) AS DOUBLE PRECISION) / (2 * y) ELSE NULL END",
             },
@@ -2431,6 +2445,31 @@ OPTIONS (
                 )
 
                 assert ast.find(exp.GenerateEmbedding)
+
+        self.validate_identity(
+            "SELECT * FROM ML.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
+        )
+        self.validate_identity(
+            "SELECT * FROM AI.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
+        )
+        self.validate_identity(
+            "SELECT * FROM AI.GENERATE_TABLE(MODEL `mydataset.gemini_model`, (SELECT 'Q' AS prompt), STRUCT('name STRING' AS output_schema))"
+        )
+        self.validate_identity(
+            "SELECT AI.GENERATE_BOOL(MODEL `mydataset.gemini_model`, 'Is sky blue?')"
+        )
+
+        ast = self.validate_identity("SELECT AI.EMBED('hello')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIEmbed)
+
+        ast = self.validate_identity("SELECT AI.SIMILARITY('a', 'b')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AISimilarity)
+
+        ast = self.validate_identity("SELECT AI.GENERATE('Write a haiku')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIGenerate)
 
     def test_merge(self):
         self.validate_all(

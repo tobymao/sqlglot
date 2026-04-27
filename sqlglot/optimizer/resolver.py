@@ -139,36 +139,48 @@ class Resolver:
 
             source = self.scope.sources[name]
 
+            # A pivoted CTE reference is stored as an exp.Table in the scope sources (see
+            # _traverse_tables in scope.py), but the underlying CTE Scope still holds the
+            # column information we need to resolve pre-pivot columns.
+            if (
+                isinstance(source, exp.Table)
+                and not source.db
+                and source.args.get("pivots")
+                and source.name in self.scope.cte_sources
+            ):
+                source = self.scope.cte_sources[source.name]
+
             if isinstance(source, exp.Table):
                 columns = self.schema.column_names(source, only_visible)
             elif isinstance(source, Scope) and isinstance(
-                source.expression, (exp.Values, exp.Unnest)
+                source_expr := source.expression, (exp.Values, exp.Unnest, exp.Lateral)
             ):
-                columns = source.expression.named_selects
+                columns = source_expr.named_selects
 
                 # in bigquery, unnest structs are automatically scoped as tables, so you can
                 # directly select a struct field in a query.
                 # this handles the case where the unnest is statically defined.
-                if self.dialect.UNNEST_COLUMN_ONLY and isinstance(source.expression, exp.Unnest):
-                    unnest = source.expression
-
-                    # if type is not annotated yet, try to get it from the schema
-                    if not unnest.type or unnest.type.is_type(exp.DType.UNKNOWN):
-                        unnest_expr = seq_get(unnest.expressions, 0)
+                if self.dialect.UNNEST_COLUMN_ONLY and isinstance(source_expr, exp.Unnest):
+                    if not source_expr.type or source_expr.type.is_type(exp.DType.UNKNOWN):
+                        unnest_expr = seq_get(source_expr.expressions, 0)
                         if isinstance(unnest_expr, exp.Column) and self.scope.parent:
-                            col_type = self._get_unnest_column_type(unnest_expr)
-                            # extract element type if it's an ARRAY
+                            col_type = self._get_unnest_column_type(unnest_expr, self.scope.parent)
                             if col_type and col_type.is_type(exp.DType.ARRAY):
                                 element_types = col_type.expressions
                                 if element_types:
-                                    unnest.type = element_types[0].copy()
-                            else:
-                                if col_type:
-                                    unnest.type = col_type.copy()
-                    # check if the result type is a STRUCT - extract struct field names
-                    if unnest.is_type(exp.DType.STRUCT):
-                        for k in unnest.type.expressions:  # type: ignore
-                            columns.append(k.name)
+                                    source_expr.type = element_types[0].copy()
+                            elif col_type:
+                                source_expr.type = col_type.copy()
+
+                    columns.extend(self._struct_field_names(source_expr.type))
+                elif isinstance(source_expr, exp.Lateral) and isinstance(
+                    source_expr.this, exp.Explode
+                ):
+                    explode_col = source_expr.this.this
+
+                    if isinstance(explode_col, exp.Column) and source.parent:
+                        col_type = self._get_unnest_column_type(explode_col, source.parent)
+                        columns.extend(self._struct_field_names(col_type))
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
             else:
@@ -338,19 +350,27 @@ class Resolver:
 
         return unambiguous_columns
 
-    def _get_unnest_column_type(self, column: exp.Column) -> exp.DataType | None:
+    def _struct_field_names(self, col_type: exp.DataType | None) -> list[str]:
+        if col_type and col_type.is_type(exp.DType.ARRAY):
+            col_type = seq_get(col_type.expressions, 0)
+
+        return (
+            [k.name for k in col_type.expressions]
+            if col_type and col_type.is_type(exp.DType.STRUCT)
+            else []
+        )
+
+    def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
         """
-        Get the type of a column being unnested, tracing through CTEs/subqueries to find the base table.
+        Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
 
         Args:
-            column: The column expression being unnested.
+            column: The column expression being unnested/exploded.
+            scope: The scope to resolve the column in.
 
         Returns:
             The DataType of the column, or None if not found.
         """
-        scope = self.scope.parent
-        assert scope
-
         # if column is qualified, use that table, otherwise disambiguate using the resolver
         if column.table:
             table_name = column.table

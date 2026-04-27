@@ -247,11 +247,13 @@ class MySQLParser(parser.Parser):
         "KEY": lambda self: self._parse_index_constraint(),
         "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint()),
+        "INVISIBLE": lambda self: self.expression(exp.InvisibleColumnConstraint()),
     }
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
-        "MODIFY": lambda self: self._parse_alter_table_alter(),
+        "MODIFY": lambda self: self._parse_alter_table_modify(),
+        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -299,6 +301,32 @@ class MySQLParser(parser.Parser):
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
+
+    def _parse_alter_table_rename(self):
+        if self._match_texts(("INDEX", "KEY")):
+            old = self._parse_field(any_token=True)
+            self._match_text_seq("TO")
+            new = self._parse_field(any_token=True)
+            return self.expression(exp.RenameIndex(this=old, to=new))
+        return super()._parse_alter_table_rename()
+
+    def _parse_alter_drop_action(self) -> exp.Expr | None:
+        if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
+            return self.expression(exp.DropPrimaryKey())
+        return super()._parse_alter_drop_action()
+
+    def _parse_alter_table_modify(self) -> exp.Expr | None:
+        self._match(TokenType.COLUMN)
+
+        column = self._parse_field(any_token=True)
+        if column is None:
+            return None
+
+        column_def = self._parse_column_def(column)
+        if not isinstance(column_def, exp.ColumnDef):
+            return None
+
+        return self.expression(exp.ModifyColumn(this=column_def))
 
     def _parse_generated_as_identity(
         self,
@@ -393,7 +421,13 @@ class MySQLParser(parser.Parser):
         else:
             target_id = None
 
-        log = self._parse_string() if self._match_text_seq("IN") else None
+        index = self._index
+        if self._match_text_seq("IN"):
+            log = self._parse_string()
+            if log is None:
+                self._retreat(index)
+        else:
+            log = None
 
         if this in ("BINLOG EVENTS", "RELAYLOG EVENTS"):
             position = self._parse_number() if self._match_text_seq("FROM") else None
@@ -402,7 +436,7 @@ class MySQLParser(parser.Parser):
             position = None
             db = None
 
-            if self._match(TokenType.FROM):
+            if self._match(TokenType.FROM) or self._match_text_seq("IN"):
                 db = self._parse_id_var()
             elif self._match(TokenType.DOT):
                 db = target_id
@@ -475,6 +509,20 @@ class MySQLParser(parser.Parser):
     def _parse_set_item_charset(self, kind: str) -> exp.Expr:
         this = self._parse_string() or self._parse_unquoted_field()
         return self.expression(exp.SetItem(this=this, kind=kind))
+
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """
+        Preserve quoting when a charset name has characters that require it (e.g. spaces, as allowed
+        for custom XML-registered charsets). Safe names unwrap to a bare Var so roundtrips remain minimal.
+        """
+        identifier = self._parse_identifier()
+        if identifier:
+            return (
+                exp.Var(this=name)
+                if exp.SAFE_IDENTIFIER_RE.match(name := identifier.name)
+                else identifier
+            )
+        return self._parse_var(tokens={TokenType.BINARY})
 
     def _parse_set_item_names(self) -> exp.Expr:
         charset = self._parse_string() or self._parse_unquoted_field()

@@ -87,6 +87,7 @@ class SparkParser(Spark2Parser):
         "TIMESTAMPADD": _build_dateadd,
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TRY_ADD": exp.SafeAdd.from_arg_list,
+        "TRY_DIVIDE": exp.SafeDivide.from_arg_list,
         "TRY_MULTIPLY": exp.SafeMultiply.from_arg_list,
         "TRY_SUBTRACT": exp.SafeSubtract.from_arg_list,
         "DATEDIFF": _build_datediff,

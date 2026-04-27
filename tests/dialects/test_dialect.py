@@ -1399,7 +1399,6 @@ class TestDialect(Validator):
             "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
             write={
                 "trino": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-                "duckdb": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "hive": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "spark": "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -2449,11 +2448,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', 'a', 'b')",
             write={
                 "clickhouse": "CONCAT_WS('-', 'a', 'b')",
-                "duckdb": "CONCAT_WS('-', 'a', 'b')",
-                "presto": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
-                "hive": "CONCAT_WS('-', 'a', 'b')",
-                "spark": "CONCAT_WS('-', 'a', 'b')",
-                "trino": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
+                "duckdb": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
+                "hive": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
+                "spark": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
+                "trino": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR)) END",
             },
         )
 
@@ -2461,11 +2459,10 @@ class TestDialect(Validator):
             "CONCAT_WS('-', x)",
             write={
                 "clickhouse": "CONCAT_WS('-', x)",
-                "duckdb": "CONCAT_WS('-', x)",
-                "hive": "CONCAT_WS('-', x)",
-                "presto": "CONCAT_WS('-', CAST(x AS VARCHAR))",
-                "spark": "CONCAT_WS('-', x)",
-                "trino": "CONCAT_WS('-', CAST(x AS VARCHAR))",
+                "duckdb": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
+                "hive": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
+                "spark": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
+                "trino": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', CAST(x AS VARCHAR)) END",
             },
         )
         self.validate_all(
@@ -3642,6 +3639,7 @@ FROM subquery2""",
                 "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1' WEEK))",
                 "duckdb": "SELECT * FROM UNNEST(CAST(GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1' WEEK) AS DATE[]))",
                 "mysql": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
+                "starrocks": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
                 "postgres": "SELECT * FROM (SELECT CAST(value AS DATE) FROM GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1 WEEK') AS _t(value)) AS _unnested_generate_series",
                 "presto": "SELECT * FROM UNNEST(SEQUENCE(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), (1 * INTERVAL '7' DAY)))",
                 "redshift": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATEADD(WEEK, 1, date_value) AS DATE) FROM _generated_dates WHERE CAST(DATEADD(WEEK, 1, date_value) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
@@ -3883,7 +3881,6 @@ FROM subquery2""",
                 "trino": "UUID()",
                 "mysql": "UUID()",
                 "postgres": "GEN_RANDOM_UUID()",
-                "snowflake": "UUID_STRING()",
                 "tsql": "NEWID()",
             },
             write={

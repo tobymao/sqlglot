@@ -306,6 +306,19 @@ class TestOptimizer(unittest.TestCase):
             catalog="c",
         )
 
+    def test_qualify_tables_copies_typed_alias_columns(self):
+        expression = parse_one('SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)')
+
+        original = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(original, exp.ColumnDef)
+
+        optimizer.qualify_tables.qualify_tables(expression, canonicalize_table_aliases=True)
+
+        new = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(new, exp.ColumnDef)
+        self.assertIsNot(original, new)
+        self.assertEqual(original.sql(), new.sql())
+
     def test_normalize(self):
         self.assertEqual(
             optimizer.normalize.normalize(
@@ -619,6 +632,50 @@ class TestOptimizer(unittest.TestCase):
             "SELECT t.end AS end FROM t AS t",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2) "
+                    "SELECT * FROM produce UNPIVOT(sales FOR quarter IN (q1, q2))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`quarter` AS `quarter`, "
+            "`produce`.`sales` AS `sales` FROM `produce` AS `produce` "
+            "UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`)) AS `produce`",
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH cte AS (SELECT 1 AS a, 2 AS b, 3 AS c) "
+                    "SELECT u.val, u.name FROM cte UNPIVOT(val FOR name IN (a, b, c)) AS u"
+                ),
+            ).sql(),
+            'WITH "cte" AS (SELECT 1 AS "a", 2 AS "b", 3 AS "c") '
+            'SELECT "u"."val" AS "val", "u"."name" AS "name" FROM "cte" AS "cte" '
+            'UNPIVOT("val" FOR "name" IN ("cte"."a", "cte"."b", "cte"."c")) AS "u"',
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2, 45 AS q3, 3 AS q4) "
+                    "SELECT * FROM produce UNPIVOT((first_half, second_half) FOR semesters "
+                    "IN ((q1, q2) AS 'h1', (q3, q4) AS 'h2'))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`, 45 AS `q3`, 3 AS `q4`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`semesters` AS `semesters`, "
+            "`produce`.`first_half` AS `first_half`, `produce`.`second_half` AS `second_half` "
+            "FROM `produce` AS `produce` UNPIVOT((`first_half`, `second_half`) FOR `semesters` "
+            "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"
@@ -637,6 +694,45 @@ class TestOptimizer(unittest.TestCase):
                 expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
             )
             optimizer.qualify_columns.validate_qualify_columns(qualified)
+
+        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT ci.name, ci.age FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("STRING", dialect="spark"))
+        self.assertEqual(expression.selects[1].type, exp.DataType.build("INT", dialect="spark"))
+
+        schema = {"my_table": {"items": "ARRAY<STRUCT<amount FLOAT, type STRING>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT (SELECT SUM(ci.amount) FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci WHERE ci.type = 'promotion') AS total FROM my_table",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT (SELECT SUM(`ci`.`amount`) AS `_col_0` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci` WHERE `ci`.`type` = 'promotion') AS `total` FROM `my_table` AS `my_table`",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})

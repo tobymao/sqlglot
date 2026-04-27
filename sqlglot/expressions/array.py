@@ -189,7 +189,11 @@ class Flatten(Expression, Func):
 
 class StringToArray(Expression, Func):
     arg_types = {"this": True, "expression": False, "null": False}
-    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
+
+
+class StrtokToArray(Expression, Func):
+    arg_types = {"this": True, "expression": False}
 
 
 # Higher-order / lambda

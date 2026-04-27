@@ -539,6 +539,7 @@ class SnowflakeParser(parser.Parser):
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             case_insensitive=True,
+            integer_scale=True,
         ),
         "MD5_HEX": exp.MD5.from_arg_list,
         "MD5_BINARY": exp.MD5Digest.from_arg_list,
@@ -712,6 +713,10 @@ class SnowflakeParser(parser.Parser):
             delimiter=seq_get(args, 1) or exp.Literal.string(" "),
             part_index=seq_get(args, 2) or exp.Literal.number("1"),
         ),
+        "STRTOK_TO_ARRAY": lambda args: exp.StrtokToArray(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1) or exp.Literal.string(" "),
+        ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
         "WEEKISO": exp.WeekOfYear.from_arg_list,
@@ -726,6 +731,7 @@ class SnowflakeParser(parser.Parser):
         "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
         "LISTAGG": lambda self: self._parse_string_agg(),
         "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
+        "SUBSTR": lambda self: self._parse_substring(),
     }
     FUNCTION_PARSERS = {k: v for k, v in FUNCTION_PARSERS.items() if k != "TRIM"}
 
@@ -756,6 +762,11 @@ class SnowflakeParser(parser.Parser):
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
         "LOCATION": lambda self: self._parse_location_property(),
+        "ROW": lambda self: (
+            self._parse_row_access_policy()
+            if self._match_text_seq("ACCESS", "POLICY")
+            else self._parse_row()
+        ),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: (
             self._match_text_seq("TEMPLATE")
@@ -967,7 +978,27 @@ class SnowflakeParser(parser.Parser):
         if self._match(TokenType.TAG):
             return self._parse_tag()
 
+        if self._match_text_seq("ROW", "ACCESS", "POLICY"):
+            return self._parse_row_access_policy()
+
         return super()._parse_with_property()
+
+    def _parse_row_access_policy(self) -> exp.RowAccessProperty:
+        # GET_DDL outputs #unknown_policy when the user lacks privileges to see the policy name
+        if self._match(TokenType.HASH):
+            policy: exp.Expr | None = self._parse_var(any_token=True)
+            if policy:
+                policy = exp.Var(this=f"#{policy.name}")
+            expressions = None
+        else:
+            policy = self._parse_column()
+            if isinstance(policy, exp.Column):
+                policy = policy.to_dot()
+            if not self._match(TokenType.ON):
+                self.raise_error("Expected ON after ROW ACCESS POLICY name")
+            expressions = self._parse_wrapped_csv(self._parse_id_var)
+
+        return self.expression(exp.RowAccessProperty(this=policy, expressions=expressions))
 
     def _parse_create(self) -> exp.Create | exp.Command:
         expression = super()._parse_create()
@@ -1263,6 +1294,11 @@ class SnowflakeParser(parser.Parser):
     def _parse_position(self, haystack_first: bool = False) -> exp.StrPosition:
         result = super()._parse_position(haystack_first)
         result.set("clamp_position", True)
+        return result
+
+    def _parse_substring(self) -> exp.Substring:
+        result = super()._parse_substring()
+        result.set("zero_start", True)
         return result
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:

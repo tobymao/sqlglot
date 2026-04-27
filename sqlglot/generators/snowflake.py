@@ -481,6 +481,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
         exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
+        exp.HandlerProperty: lambda self, e: f"HANDLER = {self.sql(e, 'this')}",
         exp.FileFormatProperty: lambda self, e: (
             f"FILE_FORMAT=({self.expressions(e, 'expressions', sep=' ')})"
         ),
@@ -496,6 +497,9 @@ class SnowflakeGenerator(generator.Generator):
         exp.GetExtract: rename_func("GET"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
         exp.If: if_sql(name="IFF", false_value="NULL"),
+        exp.JSONArray: lambda self, e: self.func(
+            "TO_VARIANT", self.func("ARRAY_CONSTRUCT", *e.expressions)
+        ),
         exp.JSONExtractArray: _json_extract_value_array_sql,
         exp.JSONExtractScalar: lambda self, e: self.func(
             "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
@@ -538,6 +542,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.RegexpExtract: _regexpextract_sql,
         exp.RegexpExtractAll: _regexpextract_sql,
         exp.RegexpILike: _regexpilike_sql,
+        exp.RowAccessProperty: lambda self, e: self.rowaccessproperty_sql(e),
         exp.Select: transforms.preprocess(
             [
                 transforms.eliminate_window_clause,
@@ -565,6 +570,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
         exp.StringToArray: rename_func("STRTOK_TO_ARRAY"),
+        exp.StrtokToArray: rename_func("STRTOK_TO_ARRAY"),
         exp.Stuff: rename_func("INSERT"),
         exp.StPoint: rename_func("ST_MAKEPOINT"),
         exp.TimeAdd: date_delta_sql("TIMEADD"),
@@ -638,6 +644,7 @@ class SnowflakeGenerator(generator.Generator):
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
         exp.DType.BIGDECIMAL: "DOUBLE",
+        exp.DType.JSON: "VARIANT",
         exp.DType.NESTED: "OBJECT",
         exp.DType.STRUCT: "OBJECT",
         exp.DType.TEXT: "VARCHAR",
@@ -652,6 +659,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
@@ -857,6 +865,12 @@ class SnowflakeGenerator(generator.Generator):
 
         return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
 
+    def rowaccessproperty_sql(self, expression: exp.RowAccessProperty) -> str:
+        if not expression.this:
+            return "ROW ACCESS"
+        on = f" ON ({self.expressions(expression, flat=True)})" if expression.expressions else ""
+        return f"WITH ROW ACCESS POLICY {self.sql(expression, 'this')}{on}"
+
     def describe_sql(self, expression: exp.Describe) -> str:
         kind_value = expression.args.get("kind") or "TABLE"
 
@@ -1034,6 +1048,11 @@ class SnowflakeGenerator(generator.Generator):
             expr_sql = self.sql(exp.WithinGroup(this=expr_sql, expression=order))
 
         return expr_sql
+
+    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+        if expression.args.get("check_null"):
+            return self.func("ARRAY_DISTINCT", expression.this)
+        return self.func("ARRAY_DISTINCT", exp.ArrayCompact(this=expression.this))
 
     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)

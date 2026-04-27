@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp
+from sqlglot.dialects.dialect import build_date_delta_with_interval
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
@@ -26,11 +27,15 @@ def _build_date_trunc(args: list[exp.Expr]) -> exp.Expr:
 class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
+        "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
+        "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": _build_date_trunc,
         "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
         "MONTHS_ADD": exp.AddMonths.from_arg_list,
         "REGEXP": exp.RegexpLike.from_arg_list,
+        "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "TO_DATE": exp.TsOrDsToDate.from_arg_list,
     }
 

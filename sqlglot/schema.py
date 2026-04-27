@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
     from typing_extensions import Unpack
 
-    ColumnMapping = t.Union[dict[str, str], str, list[str]]
+    ColumnMapping = t.Union[dict, str, list]
 
 
 @trait
@@ -708,13 +708,7 @@ def ensure_schema(
     return MappingSchema(schema, **kwargs)
 
 
-@t.overload
-def ensure_column_mapping(mapping: list[str] | None) -> dict[str, None]: ...
-@t.overload
-def ensure_column_mapping(mapping: dict[str, str]) -> dict[str, str]: ...
-@t.overload
-def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, None] | dict[str, str]: ...
-def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, None] | dict[str, str]:
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict:
     if mapping is None:
         return {}
     elif isinstance(mapping, dict):

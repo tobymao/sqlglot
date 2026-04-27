@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    groupconcat_sql,
     no_ilike_sql,
     rename_func,
     strposition_sql,
@@ -25,6 +26,7 @@ class OracleGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True
+    SUPPORTS_MERGE_WHERE = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     DATA_TYPE_SPECIFIERS_ALLOWED = True
@@ -63,6 +65,7 @@ class OracleGenerator(generator.Generator):
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
+        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         exp.DateStrToDate: lambda self, e: self.func(
             "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
         ),

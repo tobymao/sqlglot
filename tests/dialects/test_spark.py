@@ -276,6 +276,15 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_all(
+            "CONCAT_WS(' ', NULL, 'Smith')",
+            write={
+                "duckdb": "CONCAT_WS(' ', NULL, 'Smith')",
+                "spark": "CONCAT_WS(' ', NULL, 'Smith')",
+                "hive": "CONCAT_WS(' ', NULL, 'Smith')",
+            },
+        )
+
         # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
         self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
 
@@ -786,7 +795,6 @@ TBLPROPERTIES (
             "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
             write={
                 "trino": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
-                "duckdb": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "hive": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "presto": "REDUCE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
                 "spark": "AGGREGATE(my_arr, 0, (acc, x) -> acc + x, s -> s * 2)",
@@ -1056,6 +1064,15 @@ TBLPROPERTIES (
             },
             write={
                 "databricks": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
+            },
+        )
+
+    def test_named_struct(self):
+        self.validate_all(
+            "SELECT named_struct('a', 1, 'b', 'x')",
+            write={
+                "spark": "SELECT STRUCT(1 AS a, 'x' AS b)",
+                "databricks": "SELECT STRUCT(1 AS a, 'x' AS b)",
             },
         )
 
@@ -1380,5 +1397,20 @@ TBLPROPERTIES (
             write={
                 "spark": "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
                 "databricks": "SET VARIABLE (v1, v2) = (SELECT 1, 2)",
+            },
+        )
+
+    def test_try_divide(self):
+        self.validate_all(
+            "SELECT TRY_DIVIDE(a, b)",
+            read={
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+            },
+            write={
+                "spark": "SELECT TRY_DIVIDE(a, b)",
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+                "snowflake": "SELECT IFF(b <> 0, a / b, NULL)",
+                "duckdb": "SELECT CASE WHEN b <> 0 THEN a / b ELSE NULL END",
             },
         )

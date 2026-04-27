@@ -180,6 +180,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT GET_BIT(CAST('0110010' AS BIT), 2)")
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
+        self.validate_identity("SELECT 1 AS a$b")
         self.validate_identity("""SELECT '{"x": 1}' -> c FROM t""")
 
         self.assertEqual(
@@ -232,7 +233,7 @@ class TestDuckDB(Validator):
                     "snowflake": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "spark": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "sqlite": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
-                    "starrocks": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+                    "starrocks": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "teradata": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "trino": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "tsql": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
@@ -548,6 +549,41 @@ class TestDuckDB(Validator):
             """SELECT JSON_EXTRACT_STRING('{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }', ['$.family', '$.species'])""",
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
         )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL, 'a', 1)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL, 'a', 1)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL, 'a', 1))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY()",
+            write={
+                "duckdb": "SELECT JSON_ARRAY()",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c', 'd', 'e'))",
+            },
+        )
         self.validate_identity(
             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",
@@ -662,6 +698,20 @@ class TestDuckDB(Validator):
             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
         )
         self.validate_all(
+            "SELECT LIST(col) FROM t",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(col) FROM t",
+                "snowflake": "SELECT ARRAY_AGG(col) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT LIST_DISTINCT(col)",
+            write={
+                "duckdb": "SELECT LIST_DISTINCT(col)",
+                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))",
+            },
+        )
+        self.validate_all(
             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
             write={
                 "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
@@ -759,6 +809,10 @@ class TestDuckDB(Validator):
             read={
                 "duckdb": """SELECT '{"x": 1}'::JSON""",
                 "postgres": """SELECT '{"x": 1}'::JSONB""",
+            },
+            write={
+                "duckdb": """SELECT CAST('{"x": 1}' AS JSON)""",
+                "snowflake": """SELECT CAST('{"x": 1}' AS VARIANT)""",
             },
         )
         self.validate_all(
@@ -928,9 +982,6 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "STRING_TO_ARRAY(x, 'a')",
-            read={
-                "snowflake": "STRTOK_TO_ARRAY(x, 'a')",
-            },
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",

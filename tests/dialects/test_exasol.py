@@ -31,6 +31,10 @@ class TestExasol(Validator):
                 "mysql": "SELECT FROM_UNIXTIME(col)",
             },
         )
+        self.validate_identity(
+            "select foo, bar from table_1 minus select foo, bar from table_2",
+            "SELECT foo, bar FROM table_1 EXCEPT SELECT foo, bar FROM table_2",
+        )
 
     def test_exasol_keywords(self):
         keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]
@@ -950,3 +954,40 @@ class TestExasol(Validator):
                 write="exasol",
                 unsupported_level=ErrorLevel.RAISE,
             )
+
+    def test_use_to_open_schema(self):
+        self.validate_all(
+            "OPEN SCHEMA test",
+            read={"mysql": "USE test"},
+            write={"exasol": "OPEN SCHEMA test"},
+        )
+        self.validate_identity("OPEN SCHEMA test")
+        self.validate_all(
+            'OPEN SCHEMA "my_database"',
+            read={"mysql": "USE `my_database`"},
+            write={"exasol": 'OPEN SCHEMA "my_database"'},
+        )
+        # USE ROLE / USE WAREHOUSE have no Exasol equivalent — emit unsupported
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "USE ROLE admin",
+                read="snowflake",
+                write="exasol",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+    def test_show_tables(self):
+        self.validate_all(
+            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = 'TEST'",
+            read={"mysql": "SHOW TABLES FROM test"},
+            write={
+                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = 'TEST'"
+            },
+        )
+        self.validate_all(
+            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA",
+            read={"mysql": "SHOW TABLES"},
+            write={
+                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA"
+            },
+        )

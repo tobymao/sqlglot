@@ -79,6 +79,7 @@ class Delete(Expression, DML):
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
         "cluster": False,  # Clickhouse
+        "hint": False,
     }
 
     def delete(
@@ -282,7 +283,8 @@ class LoadData(Expression):
         "this": True,
         "local": False,
         "overwrite": False,
-        "inpath": True,
+        "inpath": False,
+        "files": False,
         "partition": False,
         "input_format": False,
         "serde": False,
@@ -300,6 +302,7 @@ class Update(Expression, DML):
         "order": False,
         "limit": False,
         "options": False,
+        "hint": False,
     }
 
     def table(

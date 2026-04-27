@@ -199,7 +199,9 @@ class BigQueryParser(parser.Parser):
         "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
         "DIV": binary_from_function(exp.IntDiv),
         "EDIT_DISTANCE": _build_levenshtein,
+        "EMBED": exp.AIEmbed.from_arg_list,
         "FORMAT_DATE": _build_format_time(exp.TsOrDsToDate),
+        "GENERATE": exp.AIGenerate.from_arg_list,
         "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
         "JSON_EXTRACT_SCALAR": _build_extract_json_with_default_path(exp.JSONExtractScalar),
         "JSON_EXTRACT_ARRAY": _build_extract_json_with_default_path(exp.JSONExtractArray),
@@ -238,6 +240,7 @@ class BigQueryParser(parser.Parser):
             this=seq_get(args, 0), length=exp.Literal.number(256)
         ),
         "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+        "SIMILARITY": exp.AISimilarity.from_arg_list,
         "SPLIT": lambda args: exp.Split(
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
             this=seq_get(args, 0),
@@ -282,6 +285,11 @@ class BigQueryParser(parser.Parser):
         "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
         "GENERATE_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding),
         "GENERATE_TEXT_EMBEDDING": lambda self: self._parse_ml(exp.GenerateEmbedding, is_text=True),
+        "GENERATE_TEXT": lambda self: self._parse_generate(exp.GenerateText),
+        "GENERATE_TABLE": lambda self: self._parse_generate(exp.GenerateTable),
+        "GENERATE_BOOL": lambda self: self._parse_generate(exp.GenerateBool),
+        "GENERATE_INT": lambda self: self._parse_generate(exp.GenerateInt),
+        "GENERATE_DOUBLE": lambda self: self._parse_generate(exp.GenerateDouble),
         "VECTOR_SEARCH": lambda self: self._parse_vector_search(),
         "FORECAST": lambda self: self._parse_forecast(),
     }
@@ -593,6 +601,25 @@ class BigQueryParser(parser.Parser):
             )
         )
 
+    def _parse_generate(self, expr_type: type[E], **kwargs: t.Any) -> E:
+        self._match_text_seq("MODEL")
+        this = self._parse_table()
+
+        self._match(TokenType.COMMA)
+
+        if self._match_text_seq("TABLE"):
+            expression = self._parse_table()
+        elif self._match(TokenType.L_PAREN, advance=False):
+            expression = self._parse_table()
+        else:
+            expression = self._parse_bitwise()
+
+        params_struct = self._match(TokenType.COMMA) and self._parse_bitwise()
+
+        return self.expression(
+            expr_type(this=this, expression=expression, params_struct=params_struct, **kwargs)
+        )
+
     def _parse_translate(self) -> exp.Translate | exp.MLTranslate:
         # Check if this is ML.TRANSLATE by looking at previous tokens
         token = seq_get(self._tokens, self._index - 4)
@@ -700,5 +727,12 @@ class BigQueryParser(parser.Parser):
                 # which is parsed by the base column ops parser due to anonymous_func=true
                 self._retreat(func_index)
                 this = func(this=self._parse_function(any_token=True))
+            elif prefix in ("AI", "ML"):
+                # AI.* and ML.* function calls can use custom BigQuery signatures that rely on
+                # function parsers, so re-parse the function in non-anonymous mode.
+                self._retreat(func_index)
+                parsed = self._parse_function(any_token=True)
+                if parsed:
+                    this = self.expression(exp.Dot(this=this.this, expression=parsed))
 
         return this

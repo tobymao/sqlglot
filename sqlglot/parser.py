@@ -275,6 +275,15 @@ def _resolve_dialect(dialect: DialectType) -> Dialect:
     return Dialect.get_or_raise(dialect)
 
 
+def _unpivot_target(expr: exp.Expr) -> exp.Expr:
+    # UNPIVOT's pre-FOR values and FOR field are new output names, not column references.
+    if isinstance(expr, exp.Column) and not expr.table:
+        return expr.this
+    if isinstance(expr, exp.Tuple):
+        expr.set("expressions", [_unpivot_target(e) for e in expr.expressions])
+    return expr
+
+
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
@@ -291,12 +300,15 @@ class Parser:
         max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
             Default: 3
+        max_nodes: Maximum number of AST nodes to prevent memory exhaustion.
+            Set to -1 (default) to disable the check.
     """
 
     __slots__ = (
         "error_level",
         "error_message_context",
         "max_errors",
+        "max_nodes",
         "dialect",
         "sql",
         "errors",
@@ -310,6 +322,7 @@ class Parser:
         "_chunks",
         "_chunk_index",
         "_tokens_size",
+        "_node_count",
     )
 
     FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
@@ -338,7 +351,7 @@ class Parser:
         "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
             expressions=args,
             safe=not dialect.STRICT_STRING_CONCAT,
-            coalesce=dialect.CONCAT_COALESCE,
+            coalesce=dialect.CONCAT_WS_COALESCE,
         ),
         "CONVERT_TIMEZONE": build_convert_timezone,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
@@ -408,6 +421,11 @@ class Parser:
         "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
         "UPPER": build_upper,
         "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
+        "UUID_STRING": lambda args, dialect: exp.Uuid(
+            this=seq_get(args, 0),
+            name=seq_get(args, 1),
+            is_string=dialect.UUID_IS_STRING_TYPE or None,
+        ),
         "VAR_MAP": build_var_map,
     }
 
@@ -1825,11 +1843,13 @@ class Parser:
         error_level: ErrorLevel | None = None,
         error_message_context: int = 100,
         max_errors: int = 3,
+        max_nodes: int = -1,
         dialect: DialectType = None,
     ):
         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context: int = error_message_context
         self.max_errors: int = max_errors
+        self.max_nodes: int = max_nodes
         self.dialect: t.Any = _resolve_dialect(dialect)
         self.sql: str = ""
         self.errors: list[ParseError] = []
@@ -1843,6 +1863,7 @@ class Parser:
         self._pipe_cte_counter: int = 0
         self._chunks: list[list[Token]] = []
         self._chunk_index: i64 = 0
+        self._node_count: int = 0
 
     def reset(self) -> None:
         self.sql = ""
@@ -1857,6 +1878,7 @@ class Parser:
         self._pipe_cte_counter = 0
         self._chunks = []
         self._chunk_index = 0
+        self._node_count = 0
 
     def _advance(self, times: i64 = 1) -> None:
         index = self._index + times
@@ -1971,6 +1993,10 @@ class Parser:
         self.errors.append(error)
 
     def validate_expression(self, expression: E, args: list | None = None) -> E:
+        if self.max_nodes > -1:
+            self._node_count += 1
+            if self._node_count > self.max_nodes:
+                self.raise_error(f"Maximum number of AST nodes ({self.max_nodes}) exceeded")
         if self.error_level != ErrorLevel.IGNORE:
             for error_message in expression.error_messages(args):
                 self.raise_error(error_message)
@@ -2676,7 +2702,7 @@ class Parser:
         if not self._match_set((TokenType.FUNCTION, TokenType.PROCEDURE)):
             self.raise_error("Expected FUNCTION or PROCEDURE after EXECUTE")
 
-        func_call = self._parse_function(anonymous=True, optional_parens=False)
+        func_call = self._parse_column()
         return self.expression(exp.TriggerExecute(this=func_call))
 
     def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
@@ -3558,6 +3584,8 @@ class Parser:
                     local=local,
                     overwrite=overwrite,
                     inpath=inpath,
+                    files=self._match_text_seq("FROM", "FILES")
+                    and exp.Properties(expressions=self._parse_wrapped_properties()),
                     partition=self._parse_partition(),
                     input_format=self._match_text_seq("INPUTFORMAT") and self._parse_string(),
                     serde=self._match_text_seq("SERDE") and self._parse_string(),
@@ -3566,6 +3594,8 @@ class Parser:
         return self._parse_as_command(self._prev)
 
     def _parse_delete(self) -> exp.Delete:
+        hint = self._parse_hint()
+
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
@@ -3576,6 +3606,7 @@ class Parser:
 
         return self.expression(
             exp.Delete(
+                hint=hint,
                 tables=tables,
                 this=self._match(TokenType.FROM) and self._parse_table(joins=True),
                 using=self._match(TokenType.USING)
@@ -3589,7 +3620,9 @@ class Parser:
         )
 
     def _parse_update(self) -> exp.Update:
+        hint = self._parse_hint()
         kwargs: dict[str, object] = {
+            "hint": hint,
             "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
         }
         while self._curr:
@@ -4977,6 +5010,8 @@ class Parser:
         )
 
     def _parse_pivots(self) -> list[exp.Pivot] | None:
+        if self._curr.token_type not in (TokenType.PIVOT, TokenType.UNPIVOT):
+            return None
         return list(iter(self._parse_pivot, None)) or None
 
     def _parse_joins(self) -> t.Iterator[exp.Join]:
@@ -5122,6 +5157,12 @@ class Parser:
                 group=group,
             )
         )
+
+        if unpivot:
+            pivot.set("expressions", [_unpivot_target(e) for e in pivot.expressions])
+            for pivot_field in pivot.fields:
+                if isinstance(pivot_field, exp.In):
+                    pivot_field.set("this", _unpivot_target(pivot_field.this))
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())
@@ -5399,7 +5440,11 @@ class Parser:
             comments = self._prev_comments
             if top:
                 limit_paren = self._match(TokenType.L_PAREN)
-                expression = self._parse_term() if limit_paren else self._parse_number()
+                expression = (
+                    self._parse_term() or self._parse_select()
+                    if limit_paren
+                    else self._parse_number()
+                )
 
                 if limit_paren:
                     self._match_r_paren()
@@ -5806,17 +5851,15 @@ class Parser:
 
             self._retreat(index)
 
-        unit = (
-            None
-            if interval_span_units_omitted
-            else (
-                self._parse_function()
-                or (
-                    not self._match_set((TokenType.ALIAS, TokenType.DCOLON), advance=False)
-                    and self._parse_var(any_token=True, upper=True)
-                )
-            )
-        )
+        if interval_span_units_omitted:
+            unit = None
+        else:
+            unit = self._parse_function()
+            if not unit and (
+                self._curr.token_type == TokenType.VAR
+                or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
+            ):
+                unit = self._parse_var(any_token=True, upper=True)
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
@@ -7058,7 +7101,14 @@ class Parser:
         if not kind and not constraints:
             return this
 
-        return self.expression(exp.ColumnDef(this=this, kind=kind, constraints=constraints))
+        position = None
+        if self._match_texts(("FIRST", "AFTER")):
+            pos = self._prev.text
+            position = self.expression(exp.ColumnPosition(this=self._parse_column(), position=pos))
+
+        return self.expression(
+            exp.ColumnDef(this=this, kind=kind, constraints=constraints, position=position)
+        )
 
     def _parse_auto_increment(
         self,
@@ -7239,7 +7289,11 @@ class Parser:
         return result
 
     def _parse_unique_key(self) -> exp.Expr | None:
-        if self._curr and self._curr.text.upper() in self.CONSTRAINT_PARSERS:
+        if (
+            self._curr
+            and self._curr.token_type != TokenType.IDENTIFIER
+            and self._curr.text.upper() in self.CONSTRAINT_PARSERS
+        ):
             return None
         return self._parse_id_var(any_token=False)
 
@@ -7574,8 +7628,17 @@ class Parser:
         return self.expression(
             exp.Chr(
                 expressions=self._parse_csv(self._parse_assignment),
-                charset=self._match(TokenType.USING) and self._parse_var(),
+                charset=self._match(TokenType.USING) and self._parse_charset_name(),
             )
+        )
+
+    def _parse_charset_name(self) -> exp.Expr | None:
+        """
+        Parse a charset name after USING or CHARACTER SET. Dialects that need to preserve quoting
+        for specific name shapes override this.
+        """
+        return self._parse_var(
+            tokens={TokenType.BINARY, TokenType.IDENTIFIER},
         )
 
     def _parse_cast(self, strict: bool, safe: bool | None = None) -> exp.Expr:
@@ -7694,9 +7757,7 @@ class Parser:
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(
-                kind=self._parse_var(tokens={TokenType.BINARY})
-            )
+            to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_charset_name())
         elif self._match(TokenType.COMMA):
             to = self._parse_types()
         else:
@@ -8451,25 +8512,16 @@ class Parser:
         if not self._prev.text.upper() == "ADD":
             return None
 
-        expression = self._parse_column_def_with_exists()
-        if not expression:
-            return None
-
-        # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
-        if self._match_texts(("FIRST", "AFTER")):
-            position = self._prev.text
-            column_position = self.expression(
-                exp.ColumnPosition(this=self._parse_column(), position=position)
-            )
-            expression.set("position", column_position)
-
-        return expression
+        return self._parse_column_def_with_exists()
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
         drop = self._parse_drop() if self._match(TokenType.DROP) else None
         if drop and not isinstance(drop, exp.Command):
             drop.set("kind", drop.args.get("kind", "COLUMN"))
         return drop
+
+    def _parse_alter_drop_action(self) -> exp.Expr | None:
+        return self._parse_drop_column()
 
     # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
     def _parse_drop_partition(self, exists: bool | None = None) -> exp.DropPartition:
@@ -8581,7 +8633,7 @@ class Parser:
             return self._parse_csv(lambda: self._parse_drop_partition(exists=partition_exists))
 
         self._retreat(index)
-        return self._parse_csv(self._parse_drop_column)
+        return self._parse_csv(self._parse_alter_drop_action)
 
     def _parse_alter_table_rename(self) -> exp.AlterRename | exp.RenameColumn | None:
         if self._match(TokenType.COLUMN) or not self.ALTER_RENAME_REQUIRES_COLUMN:
@@ -8922,6 +8974,7 @@ class Parser:
                             if self._match_text_seq("ROW")
                             else self._parse_value(values=False),
                             expression=self._match_text_seq("VALUES") and self._parse_value(),
+                            where=self._parse_where(),
                         )
                     )
             elif self._match(TokenType.UPDATE):
@@ -8932,7 +8985,8 @@ class Parser:
                     then = self.expression(
                         exp.Update(
                             expressions=self._match(TokenType.SET)
-                            and self._parse_csv(self._parse_equality)
+                            and self._parse_csv(self._parse_equality),
+                            where=self._parse_where(),
                         )
                     )
             elif self._match(TokenType.DELETE):

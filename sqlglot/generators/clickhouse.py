@@ -416,6 +416,32 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
+    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+        this = expression.this
+        separator = expression.args.get("separator")
+
+        if isinstance(this, exp.Limit) and this.this:
+            limit = this
+            this = limit.this.pop()
+            return self.sql(
+                exp.ParameterizedAgg(
+                    this="groupConcat",
+                    params=[this],
+                    expressions=[separator, limit.expression],
+                )
+            )
+
+        if separator:
+            return self.sql(
+                exp.ParameterizedAgg(
+                    this="groupConcat",
+                    params=[this],
+                    expressions=[separator],
+                )
+            )
+
+        return self.func("groupConcat", this)
+
     def offset_sql(self, expression: exp.Offset) -> str:
         offset = super().offset_sql(expression)
 
@@ -655,9 +681,12 @@ class ClickHouseGenerator(generator.Generator):
 
         return super().values_sql(expression, values_as_table=values_as_table)
 
-    def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+    def timestamptrunc_sql(self, expression: exp.DateTrunc | exp.TimestampTrunc) -> str:
         unit = unit_to_str(expression)
         # https://clickhouse.com/docs/whats-new/changelog/2023#improvement
         if self.dialect.version < (23, 12) and unit and unit.is_string:
             unit = exp.Literal.string(unit.name.lower())
         return self.func("dateTrunc", unit, expression.this, expression.args.get("zone"))
+
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        return self.timestamptrunc_sql(expression)

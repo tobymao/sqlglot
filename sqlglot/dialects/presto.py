@@ -24,6 +24,7 @@ class Presto(Dialect):
     LOG_BASE_FIRST: bool | None = None
     SUPPORTS_VALUES_DEFAULT = False
     LEAST_GREATEST_IGNORES_NULLS = False
+    UUID_IS_STRING_TYPE = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 

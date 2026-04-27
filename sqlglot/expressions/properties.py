@@ -334,7 +334,7 @@ class RollupIndex(Expression):
 
 
 class RowAccessProperty(Property):
-    arg_types = {}
+    arg_types = {"this": False, "expressions": False}
 
 
 class PartitionByListProperty(Property):

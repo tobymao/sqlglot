@@ -881,6 +881,16 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
 
+    def test_listagg(self):
+        self.validate_identity(
+            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) "
+            "WITHIN GROUP (ORDER BY hire_date) FROM employees"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW ERROR) "
+            "WITHIN GROUP (ORDER BY hire_date) FROM employees"
+        )
+
     def test_merge(self):
         self.validate_all(
             "MERGE INTO target tgt USING (SELECT id, col1 FROM source_tbl) src ON tgt.id = src.id "

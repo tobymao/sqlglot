@@ -339,7 +339,7 @@ class TypeAnnotator:
                 src_types = (
                     selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
                 )
-                new_types: dict[str, exp.DataType | exp.DType] = {}
+                new_types = {}
                 for field in pivot.fields:
                     field_col = field.this
                     first = seq_get(field.expressions, 0)

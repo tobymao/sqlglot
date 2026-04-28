@@ -1390,6 +1390,9 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
         )
+        self.validate_identity(
+            "SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))"
+        )
 
         self.validate_all(
             "SELECT UNNEST(c) FROM t",

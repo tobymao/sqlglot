@@ -219,8 +219,8 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
     return nodes
 
 
-def replace_aliases(source, predicate):
-    aliases = {}
+def replace_aliases(source: exp.Select, predicate: exp.Expr) -> exp.Expr:
+    aliases: dict[str, exp.Expr] = {}
 
     for select in source.selects:
         if isinstance(select, exp.Alias):
@@ -228,7 +228,7 @@ def replace_aliases(source, predicate):
         else:
             aliases[select.name] = select
 
-    def _replace_alias(column):
+    def _replace_alias(column: exp.Expr) -> exp.Expr:
         if isinstance(column, exp.Column) and column.name in aliases:
             return aliases[column.name].copy()
         return column

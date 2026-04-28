@@ -999,7 +999,7 @@ def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool
     """Makes sure all identifiers that need to be quoted are quoted."""
     return expression.transform(
         Dialect.get_or_raise(dialect).quote_identifier, identify=identify, copy=False
-    )  # type: ignore
+    )
 
 
 def pushdown_cte_alias_columns(scope: Scope) -> None:

@@ -1830,7 +1830,7 @@ def pivot_column_names(aggregations: Iterable[exp.Expr], dialect: DialectType) -
             be quoted in the base parser's `_parse_pivot` method, due to `to_identifier`.
             Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
             """
-            agg_all_unquoted = agg.transform(
+            agg_all_unquoted: exp.Expr = agg.transform(
                 lambda node: (
                     exp.Identifier(this=node.name, quoted=False)
                     if isinstance(node, exp.Identifier)

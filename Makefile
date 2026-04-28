@@ -38,11 +38,23 @@ install-dev:
 		fi; \
 	fi
 
+# sqlglotc requires Python 3.10+ (sqlglot-mypy 1.20+ dropped 3.9). On 3.9
+# we skip the C build; tests fall back to pure-Python sqlglot.
+PY_GE_310 := $(shell python -c "import sys; print(int(sys.version_info >= (3, 10)))")
+
 install-devc:
-	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC)
+	@if [ "$(PY_GE_310)" = "1" ]; then \
+		cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC); \
+	else \
+		echo "Skipping sqlglotc build: requires Python 3.10+"; \
+	fi
 
 install-devc-release: clean
-	cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC)
+	@if [ "$(PY_GE_310)" = "1" ]; then \
+		cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC); \
+	else \
+		echo "Skipping sqlglotc build: requires Python 3.10+"; \
+	fi
 
 install-pre-commit:
 	pre-commit install

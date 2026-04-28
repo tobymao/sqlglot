@@ -243,6 +243,9 @@ class Expr:
         raise NotImplementedError
 
     def copy(self: E) -> E:
+        """
+        Returns a deep copy of the expression.
+        """
         raise NotImplementedError
 
     def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
@@ -252,6 +255,13 @@ class Expr:
         raise NotImplementedError
 
     def append(self, arg_key: str, value: t.Any) -> None:
+        """
+        Appends value to arg_key if it's a list or sets it as a new list.
+
+        Args:
+            arg_key (str): name of the list expression arg
+            value (Any): value to append to the list
+        """
         raise NotImplementedError
 
     def set(
@@ -329,10 +339,14 @@ class Expr:
 
     @property
     def parent_select(self) -> Select | None:
+        """
+        Returns the parent select statement.
+        """
         raise NotImplementedError
 
     @property
     def same_parent(self) -> bool:
+        """Returns if the parent is the same class as itself."""
         raise NotImplementedError
 
     def root(self) -> Expr:
@@ -999,9 +1013,6 @@ class Expression(Expr):
         return root
 
     def copy(self: E) -> E:
-        """
-        Returns a deep copy of the expression.
-        """
         return deepcopy(self)
 
     def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
@@ -1028,13 +1039,6 @@ class Expression(Expr):
         return comments
 
     def append(self, arg_key: str, value: t.Any) -> None:
-        """
-        Appends value to arg_key if it's a list or sets it as a new list.
-
-        Args:
-            arg_key (str): name of the list expression arg
-            value (Any): value to append to the list
-        """
         if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
         self._set_parent(arg_key, value)
@@ -1140,16 +1144,12 @@ class Expression(Expr):
 
     @property
     def parent_select(self) -> Select | None:
-        """
-        Returns the parent select statement.
-        """
         from sqlglot.expressions.query import Select as _Select
 
         return self.find_ancestor(_Select)
 
     @property
     def same_parent(self) -> bool:
-        """Returns if the parent is the same class as itself."""
         return type(self.parent) is self.__class__
 
     def root(self) -> Expr:

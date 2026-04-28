@@ -125,9 +125,9 @@ def _has_single_output_row(scope: Scope) -> bool:
     )
 
 
-def _is_limit_1(scope) -> bool:
+def _is_limit_1(scope: Scope) -> bool:
     limit = scope.expression.args.get("limit")
-    return limit and limit.expression.this == "1"
+    return limit is not None and limit.expression.this == "1"
 
 
 def join_condition(join):

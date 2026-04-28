@@ -331,11 +331,7 @@ class TypeAnnotator:
                     selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
             for pivot in scope.pivots:
-                if not pivot.unpivot:
-                    continue
-
-                col_types = self._get_unpivot_column_types(pivot, selects)
-                if col_types:
+                if pivot.unpivot and (col_types := self._get_unpivot_column_types(pivot, selects)):
                     selects[pivot.alias] = col_types
 
             self._scope_selects[scope] = selects
@@ -447,8 +443,14 @@ class TypeAnnotator:
                         self._set_type(expr, source.expression.type)
                     else:
                         self._set_type(expr, exp.DType.UNKNOWN)
-                elif scope.pivots and (
-                    pivot_type := self._get_scope_selects(scope).get(expr.table, {}).get(expr.name)
+                elif (
+                    not source
+                    and scope.pivots
+                    and (
+                        pivot_type := self._get_scope_selects(scope)
+                        .get(expr.table, {})
+                        .get(expr.name)
+                    )
                 ):
                     self._set_type(expr, pivot_type)
                 else:

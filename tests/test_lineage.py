@@ -449,6 +449,44 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
         self.assertEqual(downstream_b.reference_node_name, "dataset")
 
+    def test_lineage_no_self_loops_with_multi_aliased_union_cte(self) -> None:
+        # A 3+ branch UNION CTE parses to nested SetOps. Referencing it twice
+        # via different aliases used to leave the upstream node cached at the
+        # inner SetOp's key, so the second alias's traversal would find that
+        # node on a cache hit and append it to its own downstream.
+        query = """
+        WITH three_way AS (
+            SELECT a FROM t1
+            UNION ALL
+            SELECT a FROM t2
+            UNION ALL
+            SELECT a FROM t3
+        ),
+        attached AS (
+            SELECT COALESCE(r1.a, r2.a) AS a
+            FROM three_way AS r1
+            LEFT JOIN three_way AS r2 ON r1.a = r2.a
+        )
+        SELECT a FROM attached
+        """
+
+        node = lineage("a", query)
+
+        visited: set[int] = set()
+        stack = [(node, frozenset([id(node)]))]
+        while stack:
+            current, path = stack.pop()
+            if id(current) in visited:
+                continue
+            visited.add(id(current))
+            for child in current.downstream:
+                self.assertNotIn(
+                    id(child),
+                    path,
+                    f"cycle detected at node '{child.name}'",
+                )
+                stack.append((child, path | {id(child)}))
+
     def test_lineage_source_union(self) -> None:
         query = "SELECT x, created_at FROM dataset;"
         node = lineage(

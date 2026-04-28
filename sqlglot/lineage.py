@@ -184,11 +184,15 @@ def to_node(
                 trim_selects=trim_selects,
                 _cache=_cache,
             )
-            if _cache is not None:
+            # Skip caching a passed-in upstream returned by an inner SetOp:
+            # a sibling call at the same key with that node as its upstream
+            # would otherwise self-loop on the cache hit.
+            if _cache is not None and result is not upstream:
                 _cache[cache_key] = result
             return result
     if isinstance(scope.expression, exp.SetOperation):
         name = type(scope.expression).__name__.upper()
+        created_setop = upstream is None
         upstream = upstream or Node(name=name, source=scope.expression, expression=select)
 
         index = (
@@ -219,7 +223,7 @@ def to_node(
                 _cache=_cache,
             )
 
-        if _cache is not None:
+        if _cache is not None and created_setop:
             _cache[cache_key] = upstream
         return upstream
 

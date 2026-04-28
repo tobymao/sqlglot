@@ -53,7 +53,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
         ):
             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
-        def prefix_local(node, visible_aliases: dict[str, bool]) -> exp.Expr:
+        def prefix_local(node: exp.Expr, visible_aliases: dict[str, bool]) -> exp.Expr:
             if isinstance(node, exp.Column) and not node.table:
                 if node.name in visible_aliases:
                     return exp.Column(

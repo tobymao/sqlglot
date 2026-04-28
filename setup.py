@@ -9,7 +9,7 @@ setup(
             "duckdb>=0.6",
             # sqlglot-mypy 1.20+ is the build dep for sqlglotc and only ships
             # for py3.10+; on py3.9 just use upstream mypy for type checking.
-            "sqlglot-mypy >= 1.20.0; python_version >= '3.10'",
+            "sqlglot-mypy >= 1.20.0.post4; python_version >= '3.10'",
             "mypy; python_version < '3.10'",
             "setuptools_scm",
             "pandas",

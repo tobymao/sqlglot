@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import typing as t
 
 from sqlglot.errors import ParseError
@@ -1765,26 +1764,50 @@ class Pivot(Expression):
         return self.args.get("fields", [])
 
     def output_columns(self, pre_pivot_columns: t.Iterable[str]) -> list[str]:
+        """
+        Returns the columns produced by this (UN)PIVOT, in order.
+
+        The result is the relevant subset of `pre_pivot_columns` (those not consumed
+        by the operator) followed by the new columns the operator introduces.
+
+        AST shape (assuming `val FOR name IN (a, b)`):
+
+            PIVOT(SUM(val) FOR name IN ('a', 'b')):
+                expressions: aggregates,         e.g. [Sum(this=Column(val))]
+                fields:      [In(this=Column(name), expressions=[Literal('a'), Literal('b')])]
+                columns:     optional explicit output identifiers (e.g. set by Snowflake)
+
+            UNPIVOT(val FOR name IN (a, b)):
+                expressions: value identifier(s), e.g. [Identifier(val)]
+                                                  (Tuple of Identifiers for multi-value)
+                fields:      [In(this=Identifier(name), expressions=[Column(a), Column(b)])]
+
+        Computation:
+            - PIVOT: outputs are `columns` if set, otherwise the alias/name of each
+              aggregate in `expressions`. Every column referenced anywhere in the
+              PIVOT subtree is excluded from the pre-pivot carry-over (the source
+              columns are consumed by the aggregates).
+            - UNPIVOT: outputs are the name identifier(s) (`fields[*].this`) followed
+              by the value identifier(s) (`expressions`). Only the source columns
+              listed inside `fields[*].expressions` are excluded from the carry-over.
+        """
         if self.unpivot:
-            excluded = {
-                c.output_name
-                for field in self.fields
-                if isinstance(field, In)
-                for e in field.expressions
-                for c in e.find_all(Column)
-            }
-            name_columns = [
-                field.this
-                for field in self.fields
-                if isinstance(field, In) and isinstance(field.this, Identifier)
-            ]
-            value_columns = (
+            excluded: set[str] = set()
+            name_columns: list[Identifier] = []
+            for field in self.fields:
+                if not isinstance(field, In):
+                    continue
+                if isinstance(field.this, Identifier):
+                    name_columns.append(field.this)
+                for e in field.expressions:
+                    excluded.update(c.output_name for c in e.find_all(Column))
+            value_columns = [
                 ident
                 for e in self.expressions
                 for ident in (e.expressions if isinstance(e, Tuple) else [e])
                 if isinstance(ident, Identifier)
-            )
-            outputs = [i.name for i in itertools.chain(name_columns, value_columns)]
+            ]
+            outputs = [i.name for i in name_columns + value_columns]
         else:
             excluded = {c.output_name for c in self.find_all(Column)}
             outputs = [c.output_name for c in self.args.get("columns") or []]

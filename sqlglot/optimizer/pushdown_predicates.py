@@ -106,9 +106,7 @@ def pushdown(
         pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
 
 
-def pushdown_cnf(
-    predicates, sources, scope_ref_count, join_index: Mapping[str, int] | None = None
-):
+def pushdown_cnf(predicates, sources, scope_ref_count, join_index: Mapping[str, int] | None = None):
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
     """

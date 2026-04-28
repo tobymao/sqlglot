@@ -124,7 +124,9 @@ def normalization_distance(
     return total
 
 
-def _predicate_lengths(expression: exp.Expr, dnf: bool, max_: float = float("inf"), depth: int = 0) -> Iterator[int]:
+def _predicate_lengths(
+    expression: exp.Expr, dnf: bool, max_: float = float("inf"), depth: int = 0
+) -> Iterator[int]:
     """
     Returns a list of predicate lengths when expanded to normalized form.
 
@@ -196,7 +198,7 @@ def _distribute(
     from_func: Callable[..., exp.Condition],
     to_func: Callable[..., exp.Condition],
     simplifier: Simplifier,
-) :
+):
     if isinstance(a, exp.Connector):
         exp.replace_children(
             a,

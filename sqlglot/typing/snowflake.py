@@ -512,7 +512,6 @@ EXPRESSION_METADATA = {
             exp.HexDecodeString,
             exp.HexEncode,
             exp.Randstr,
-            exp.RegexpExtract,
             exp.RegexpReplace,
             exp.Repeat,
             exp.Replace,

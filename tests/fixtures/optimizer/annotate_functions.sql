@@ -91,6 +91,12 @@ BIGINT;
 LAST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
 BIGINT;
 
+FIRST_VALUE(tbl.bigint_col) OVER (ORDER BY tbl.bigint_col);
+BIGINT;
+
+FIRST_VALUE(tbl.str_col) OVER (ORDER BY tbl.str_col);
+TEXT;
+
 TO_BASE32(tbl.bytes_col);
 VARCHAR;
 
@@ -198,6 +204,14 @@ STRING;
 # dialect: spark2, spark, databricks
 SUBSTRING(tbl.bin_col, 0, 0);
 BINARY;
+
+# dialect: spark2, spark, databricks
+REGEXP_EXTRACT(tbl.str_col, pattern, 0);
+STRING;
+
+# dialect: spark2, spark, databricks
+REGEXP_EXTRACT(tbl.bin_col, pattern, 0);
+STRING;
 
 # dialect: spark2, spark, databricks
 CONCAT(tbl.bin_col, tbl.bin_col);
@@ -2374,6 +2388,10 @@ BIGINT;
 # dialect: snowflake
 ABS(tbl.bigint_col);
 BIGINT;
+
+# dialect: snowflake
+REGEXP_SUBSTR(tbl.str_col, pattern, 1);
+VARCHAR;
 
 # dialect: snowflake
 ABS(tbl.double_col);

@@ -1767,29 +1767,27 @@ class Pivot(Expression):
         """
         Returns the columns produced by this (UN)PIVOT, in order.
 
-        The result is the relevant subset of `pre_pivot_columns` (those not consumed
-        by the operator) followed by the new columns the operator introduces.
+        Example:
+            >>> from sqlglot import parse_one, exp
+            >>> piv = parse_one("SELECT * FROM t UNPIVOT(val FOR name IN (a, b))").find(exp.Pivot)
+            >>> piv.output_columns(["a", "b", "c"])
+            ['c', 'name', 'val']
 
-        AST shape (assuming `val FOR name IN (a, b)`):
-
+        AST shape:
             PIVOT(SUM(val) FOR name IN ('a', 'b')):
-                expressions: aggregates,         e.g. [Sum(this=Column(val))]
+                expressions: aggregate(s), e.g. [Sum(this=Column(val))]
                 fields:      [In(this=Column(name), expressions=[Literal('a'), Literal('b')])]
                 columns:     optional explicit output identifiers (e.g. set by Snowflake)
 
             UNPIVOT(val FOR name IN (a, b)):
-                expressions: value identifier(s), e.g. [Identifier(val)]
-                                                  (Tuple of Identifiers for multi-value)
+                expressions: value Identifier(s), or Tuple(Identifiers) for multi-value
                 fields:      [In(this=Identifier(name), expressions=[Column(a), Column(b)])]
+                             For literal-aliased entries (`a AS 'x'`) the IN expressions
+                             are wrapped in PivotAlias(this=Column, alias=Literal).
 
-        Computation:
-            - PIVOT: outputs are `columns` if set, otherwise the alias/name of each
-              aggregate in `expressions`. Every column referenced anywhere in the
-              PIVOT subtree is excluded from the pre-pivot carry-over (the source
-              columns are consumed by the aggregates).
-            - UNPIVOT: outputs are the name identifier(s) (`fields[*].this`) followed
-              by the value identifier(s) (`expressions`). Only the source columns
-              listed inside `fields[*].expressions` are excluded from the carry-over.
+        Args:
+            pre_pivot_columns: Columns visible to the operator before it runs
+                (e.g. the source table or subquery's projections).
         """
         if self.unpivot:
             excluded: set[str] = set()

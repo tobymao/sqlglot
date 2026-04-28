@@ -126,40 +126,69 @@ class Expr:
 
     @property
     def this(self) -> t.Any:
+        """
+        Retrieves the argument with key "this".
+        """
         raise NotImplementedError
 
     @property
     def expression(self) -> t.Any:
+        """
+        Retrieves the argument with key "expression".
+        """
         raise NotImplementedError
 
     @property
     def expressions(self) -> list[t.Any]:
+        """
+        Retrieves the argument with key "expressions".
+        """
         raise NotImplementedError
 
     def text(self, key: str) -> str:
+        """
+        Returns a textual representation of the argument corresponding to "key". This can only be used
+        for args that are strings or leaf Expr instances, such as identifiers and literals.
+        """
         raise NotImplementedError
 
     @property
     def is_string(self) -> bool:
+        """
+        Checks whether a Literal expression is a string.
+        """
         raise NotImplementedError
 
     @property
     def is_number(self) -> bool:
+        """
+        Checks whether a Literal expression is a number.
+        """
         raise NotImplementedError
 
     def to_py(self) -> t.Any:
+        """
+        Returns a Python object equivalent of the SQL node.
+        """
         raise NotImplementedError
 
     @property
     def is_int(self) -> bool:
+        """
+        Checks whether an expression is an integer.
+        """
         raise NotImplementedError
 
     @property
     def is_star(self) -> bool:
+        """Checks whether an expression is a star."""
         raise NotImplementedError
 
     @property
     def alias(self) -> str:
+        """
+        Returns the alias of the expression, or an empty string if it's not aliased.
+        """
         raise NotImplementedError
 
     @property
@@ -176,6 +205,20 @@ class Expr:
 
     @property
     def output_name(self) -> str:
+        """
+        Name of the output column if this expression is a selection.
+
+        If the Expr has no output name, an empty string is returned.
+
+        Example:
+            >>> from sqlglot import parse_one
+            >>> parse_one("SELECT a").expressions[0].output_name
+            'a'
+            >>> parse_one("SELECT b AS c").expressions[0].output_name
+            'c'
+            >>> parse_one("SELECT 1 + 2").expressions[0].output_name
+            ''
+        """
         raise NotImplementedError
 
     @property
@@ -200,6 +243,9 @@ class Expr:
         raise NotImplementedError
 
     def copy(self: E) -> E:
+        """
+        Returns a deep copy of the expression.
+        """
         raise NotImplementedError
 
     def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
@@ -209,6 +255,13 @@ class Expr:
         raise NotImplementedError
 
     def append(self, arg_key: str, value: t.Any) -> None:
+        """
+        Appends value to arg_key if it's a list or sets it as a new list.
+
+        Args:
+            arg_key (str): name of the list expression arg
+            value (Any): value to append to the list
+        """
         raise NotImplementedError
 
     def set(
@@ -218,6 +271,16 @@ class Expr:
         index: int | None = None,
         overwrite: bool = True,
     ) -> None:
+        """
+        Sets arg_key to value.
+
+        Args:
+            arg_key: name of the expression arg.
+            value: value to set the arg to.
+            index: if the arg is a list, this specifies what position to add the value in it.
+            overwrite: assuming an index is given, this determines whether to overwrite the
+                list entry instead of only inserting a new value (i.e., like list.insert).
+        """
         raise NotImplementedError
 
     def _set_parent(self, arg_key: str, value: object, index: int | None = None) -> None:
@@ -225,77 +288,235 @@ class Expr:
 
     @property
     def depth(self) -> int:
+        """
+        Returns the depth of this tree.
+        """
         raise NotImplementedError
 
     def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
+        """Yields the key and expression for all arguments, exploding list args."""
         raise NotImplementedError
 
     def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
+        """
+        Returns the first node in this tree which matches at least one of
+        the specified types.
+
+        Args:
+            expression_types: the expression type(s) to match.
+            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
+
+        Returns:
+            The node which matches the criteria or None if no such node was found.
+        """
         raise NotImplementedError
 
     def find_all(self, *expression_types: Type[E], bfs: bool = True) -> Iterator[E]:
+        """
+        Returns a generator object which visits all nodes in this tree and only
+        yields those that match at least one of the specified expression types.
+
+        Args:
+            expression_types: the expression type(s) to match.
+            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
+
+        Returns:
+            The generator object.
+        """
         raise NotImplementedError
 
     def find_ancestor(self, *expression_types: Type[E]) -> E | None:
+        """
+        Returns a nearest parent matching expression_types.
+
+        Args:
+            expression_types: the expression type(s) to match.
+
+        Returns:
+            The parent node.
+        """
         raise NotImplementedError
 
     @property
     def parent_select(self) -> Select | None:
+        """
+        Returns the parent select statement.
+        """
         raise NotImplementedError
 
     @property
     def same_parent(self) -> bool:
+        """Returns if the parent is the same class as itself."""
         raise NotImplementedError
 
     def root(self) -> Expr:
+        """
+        Returns the root expression of this tree.
+        """
         raise NotImplementedError
 
     def walk(
         self, bfs: bool = True, prune: t.Callable[[Expr], bool] | None = None
     ) -> Iterator[Expr]:
+        """
+        Returns a generator object which visits all nodes in this tree.
+
+        Args:
+            bfs: if set to True the BFS traversal order will be applied,
+                otherwise the DFS traversal will be used instead.
+            prune: callable that returns True if the generator should stop traversing
+                this branch of the tree.
+
+        Returns:
+            the generator object.
+        """
         raise NotImplementedError
 
     def dfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
+        """
+        Returns a generator object which visits all nodes in this tree in
+        the DFS (Depth-first) order.
+
+        Returns:
+            The generator object.
+        """
         raise NotImplementedError
 
     def bfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
+        """
+        Returns a generator object which visits all nodes in this tree in
+        the BFS (Breadth-first) order.
+
+        Returns:
+            The generator object.
+        """
         raise NotImplementedError
 
     def unnest(self) -> Expr:
+        """
+        Returns the first non parenthesis child or self.
+        """
         raise NotImplementedError
 
     def unalias(self) -> Expr:
+        """
+        Returns the inner expression if this is an Alias.
+        """
         raise NotImplementedError
 
     def unnest_operands(self) -> tuple[Expr, ...]:
+        """
+        Returns unnested operands as a tuple.
+        """
         raise NotImplementedError
 
     def flatten(self, unnest: bool = True) -> Iterator[Expr]:
+        """
+        Returns a generator which yields child nodes whose parents are the same class.
+
+        A AND B AND C -> [A, B, C]
+        """
         raise NotImplementedError
 
     def to_s(self) -> str:
+        """
+        Same as __repr__, but includes additional information which can be useful
+        for debugging, like empty or missing args and the AST nodes' object IDs.
+        """
         raise NotImplementedError
 
     def sql(
         self, dialect: DialectType = None, copy: bool = True, **opts: Unpack[GeneratorNoDialectArgs]
     ) -> str:
+        """
+        Returns SQL string representation of this tree.
+
+        Args:
+            dialect: the dialect of the output SQL string (eg. "spark", "hive", "presto", "mysql").
+            opts: other `sqlglot.generator.Generator` options.
+
+        Returns:
+            The SQL string.
+        """
         raise NotImplementedError
 
     def transform(
         self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
     ) -> t.Any:
+        """
+        Visits all tree nodes (excluding already transformed ones)
+        and applies the given transformation function to each node.
+
+        Args:
+            fun: a function which takes a node as an argument and returns a
+                new transformed node or the same node without modifications. If the function
+                returns None, then the corresponding node will be removed from the syntax tree.
+            copy: if set to True a new tree instance is constructed, otherwise the tree is
+                modified in place.
+
+        Returns:
+            The transformed tree.
+        """
         raise NotImplementedError
 
     def replace(self, expression: T) -> T:
+        """
+        Swap out this expression with a new expression.
+
+        For example::
+
+            >>> import sqlglot
+            >>> tree = sqlglot.parse_one("SELECT x FROM tbl")
+            >>> tree.find(sqlglot.exp.Column).replace(sqlglot.exp.column("y"))
+            Column(
+              this=Identifier(this=y, quoted=False))
+            >>> tree.sql()
+            'SELECT y FROM tbl'
+
+        Args:
+            expression (T): new node
+
+        Returns:
+            T: The new expression or expressions.
+        """
         raise NotImplementedError
 
     def pop(self: E) -> E:
+        """
+        Remove this expression from its AST.
+
+        Returns:
+            The popped expression.
+        """
         raise NotImplementedError
 
     def assert_is(self, type_: Type[E]) -> E:
+        """
+        Assert that this `Expr` is an instance of `type_`.
+
+        If it is NOT an instance of `type_`, this raises an assertion error.
+        Otherwise, this returns this expression.
+
+        Examples:
+            This is useful for type security in chained expressions:
+
+            >>> import sqlglot
+            >>> sqlglot.parse_one("SELECT x from y").assert_is(sqlglot.exp.Select).select("z").sql()
+            'SELECT x, z FROM y'
+        """
         raise NotImplementedError
 
     def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
+        """
+        Checks if this expression is valid (e.g. all mandatory args are set).
+
+        Args:
+            args: a sequence of values that were used to instantiate a Func expression. This is used
+                to check that the provided arguments don't exceed the function argument limit.
+
+        Returns:
+            A list of error messages for all possible errors that were found.
+        """
         raise NotImplementedError
 
     def dump(self) -> list[dict[str, t.Any]]:
@@ -325,6 +546,26 @@ class Expr:
         wrap: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
+        """
+        AND this condition with one or multiple expressions.
+
+        Example:
+            >>> condition("x=1").and_("y=1").sql()
+            'x = 1 AND y = 1'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expr` instance is passed, it will be used as-is.
+            dialect: the dialect used to parse the input expression.
+            copy: whether to copy the involved expressions (only applies to Exprs).
+            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+                precedence issues, but can be turned off when the produced AST is too deep and
+                causes recursion-related issues.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The new And condition.
+        """
         raise NotImplementedError
 
     def or_(
@@ -335,9 +576,42 @@ class Expr:
         wrap: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
+        """
+        OR this condition with one or multiple expressions.
+
+        Example:
+            >>> condition("x=1").or_("y=1").sql()
+            'x = 1 OR y = 1'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expr` instance is passed, it will be used as-is.
+            dialect: the dialect used to parse the input expression.
+            copy: whether to copy the involved expressions (only applies to Exprs).
+            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
+                precedence issues, but can be turned off when the produced AST is too deep and
+                causes recursion-related issues.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The new Or condition.
+        """
         raise NotImplementedError
 
     def not_(self, copy: bool = True) -> Not:
+        """
+        Wrap this condition with NOT.
+
+        Example:
+            >>> condition("x=1").not_().sql()
+            'NOT x = 1'
+
+        Args:
+            copy: whether to copy this object.
+
+        Returns:
+            The new Not instance.
+        """
         raise NotImplementedError
 
     def update_positions(
@@ -348,6 +622,19 @@ class Expr:
         start: int | None = None,
         end: int | None = None,
     ) -> E:
+        """
+        Update this expression with positions from a token or other expression.
+
+        Args:
+            other: a token or expression to update this expression with.
+            line: the line number to use if other is None
+            col: column number
+            start: start char index
+            end:  end char index
+
+        Returns:
+            The updated expression.
+        """
         raise NotImplementedError
 
     def as_(
@@ -597,30 +884,17 @@ class Expression(Expr):
 
     @property
     def this(self) -> t.Any:
-        """
-        Retrieves the argument with key "this".
-        """
         return self.args.get("this")
 
     @property
     def expression(self) -> t.Any:
-        """
-        Retrieves the argument with key "expression".
-        """
         return self.args.get("expression")
 
     @property
     def expressions(self) -> list[t.Any]:
-        """
-        Retrieves the argument with key "expressions".
-        """
         return self.args.get("expressions") or []
 
     def text(self, key: str) -> str:
-        """
-        Returns a textual representation of the argument corresponding to "key". This can only be used
-        for args that are strings or leaf Expr instances, such as identifiers and literals.
-        """
         field = self.args.get(key)
         if isinstance(field, str):
             return field
@@ -632,43 +906,27 @@ class Expression(Expr):
 
     @property
     def is_string(self) -> bool:
-        """
-        Checks whether a Literal expression is a string.
-        """
         return isinstance(self, Literal) and self.args["is_string"]
 
     @property
     def is_number(self) -> bool:
-        """
-        Checks whether a Literal expression is a number.
-        """
         return (isinstance(self, Literal) and not self.args["is_string"]) or (
             isinstance(self, Neg) and self.this.is_number
         )
 
     def to_py(self) -> t.Any:
-        """
-        Returns a Python object equivalent of the SQL node.
-        """
         raise ValueError(f"{self} cannot be converted to a Python object.")
 
     @property
     def is_int(self) -> bool:
-        """
-        Checks whether an expression is an integer.
-        """
         return self.is_number and isinstance(self.to_py(), int)
 
     @property
     def is_star(self) -> bool:
-        """Checks whether an expression is a star."""
         return isinstance(self, Star) or (isinstance(self, Column) and isinstance(self.this, Star))
 
     @property
     def alias(self) -> str:
-        """
-        Returns the alias of the expression, or an empty string if it's not aliased.
-        """
         alias = self.args.get("alias")
         if isinstance(alias, Expression):
             return alias.name
@@ -691,20 +949,6 @@ class Expression(Expr):
 
     @property
     def output_name(self) -> str:
-        """
-        Name of the output column if this expression is a selection.
-
-        If the Expr has no output name, an empty string is returned.
-
-        Example:
-            >>> from sqlglot import parse_one
-            >>> parse_one("SELECT a").expressions[0].output_name
-            'a'
-            >>> parse_one("SELECT b AS c").expressions[0].output_name
-            'c'
-            >>> parse_one("SELECT 1 + 2").expressions[0].output_name
-            ''
-        """
         return ""
 
     @property
@@ -769,9 +1013,6 @@ class Expression(Expr):
         return root
 
     def copy(self: E) -> E:
-        """
-        Returns a deep copy of the expression.
-        """
         return deepcopy(self)
 
     def add_comments(self, comments: list[str] | None = None, prepend: bool = False) -> None:
@@ -798,13 +1039,6 @@ class Expression(Expr):
         return comments
 
     def append(self, arg_key: str, value: t.Any) -> None:
-        """
-        Appends value to arg_key if it's a list or sets it as a new list.
-
-        Args:
-            arg_key (str): name of the list expression arg
-            value (Any): value to append to the list
-        """
         if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
         self._set_parent(arg_key, value)
@@ -820,16 +1054,6 @@ class Expression(Expr):
         index: int | None = None,
         overwrite: bool = True,
     ) -> None:
-        """
-        Sets arg_key to value.
-
-        Args:
-            arg_key: name of the expression arg.
-            value: value to set the arg to.
-            index: if the arg is a list, this specifies what position to add the value in it.
-            overwrite: assuming an index is given, this determines whether to overwrite the
-                list entry instead of only inserting a new value (i.e., like list.insert).
-        """
         node: Expr | None = self
 
         while node and node._hash is not None:
@@ -891,15 +1115,11 @@ class Expression(Expr):
 
     @property
     def depth(self) -> int:
-        """
-        Returns the depth of this tree.
-        """
         if self.parent:
             return self.parent.depth + 1
         return 0
 
     def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
-        """Yields the key and expression for all arguments, exploding list args."""
         for vs in reversed(self.args.values()) if reverse else self.args.values():
             if isinstance(vs, list):
                 for v in reversed(vs) if reverse else vs:
@@ -909,45 +1129,14 @@ class Expression(Expr):
                 yield t.cast(E, vs)
 
     def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
-        """
-        Returns the first node in this tree which matches at least one of
-        the specified types.
-
-        Args:
-            expression_types: the expression type(s) to match.
-            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
-
-        Returns:
-            The node which matches the criteria or None if no such node was found.
-        """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
     def find_all(self, *expression_types: Type[E], bfs: bool = True) -> Iterator[E]:
-        """
-        Returns a generator object which visits all nodes in this tree and only
-        yields those that match at least one of the specified expression types.
-
-        Args:
-            expression_types: the expression type(s) to match.
-            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
-
-        Returns:
-            The generator object.
-        """
         for expression in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
 
     def find_ancestor(self, *expression_types: Type[E]) -> E | None:
-        """
-        Returns a nearest parent matching expression_types.
-
-        Args:
-            expression_types: the expression type(s) to match.
-
-        Returns:
-            The parent node.
-        """
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
@@ -955,22 +1144,15 @@ class Expression(Expr):
 
     @property
     def parent_select(self) -> Select | None:
-        """
-        Returns the parent select statement.
-        """
         from sqlglot.expressions.query import Select as _Select
 
         return self.find_ancestor(_Select)
 
     @property
     def same_parent(self) -> bool:
-        """Returns if the parent is the same class as itself."""
         return type(self.parent) is self.__class__
 
     def root(self) -> Expr:
-        """
-        Returns the root expression of this tree.
-        """
         expression: Expr = self
         while expression.parent:
             expression = expression.parent
@@ -979,31 +1161,12 @@ class Expression(Expr):
     def walk(
         self, bfs: bool = True, prune: t.Callable[[Expr], bool] | None = None
     ) -> Iterator[Expr]:
-        """
-        Returns a generator object which visits all nodes in this tree.
-
-        Args:
-            bfs: if set to True the BFS traversal order will be applied,
-                otherwise the DFS traversal will be used instead.
-            prune: callable that returns True if the generator should stop traversing
-                this branch of the tree.
-
-        Returns:
-            the generator object.
-        """
         if bfs:
             yield from self.bfs(prune=prune)
         else:
             yield from self.dfs(prune=prune)
 
     def dfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
-        """
-        Returns a generator object which visits all nodes in this tree in
-        the DFS (Depth-first) order.
-
-        Returns:
-            The generator object.
-        """
         stack = [self]
 
         while stack:
@@ -1015,13 +1178,6 @@ class Expression(Expr):
                 stack.append(v)
 
     def bfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
-        """
-        Returns a generator object which visits all nodes in this tree in
-        the BFS (Breadth-first) order.
-
-        Returns:
-            The generator object.
-        """
         queue: deque[Expr] = deque()
         queue.append(self)
 
@@ -1034,34 +1190,20 @@ class Expression(Expr):
                 queue.append(v)
 
     def unnest(self) -> Expr:
-        """
-        Returns the first non parenthesis child or self.
-        """
         expression = self
         while type(expression) is Paren:
             expression = expression.this
         return expression
 
     def unalias(self) -> Expr:
-        """
-        Returns the inner expression if this is an Alias.
-        """
         if isinstance(self, Alias):
             return self.this
         return self
 
     def unnest_operands(self) -> tuple[Expr, ...]:
-        """
-        Returns unnested operands as a tuple.
-        """
         return tuple(arg.unnest() for arg in self.iter_expressions())
 
     def flatten(self, unnest: bool = True) -> Iterator[Expr]:
-        """
-        Returns a generator which yields child nodes whose parents are the same class.
-
-        A AND B AND C -> [A, B, C]
-        """
         for node in self.dfs(prune=lambda n: bool(n.parent and type(n) is not self.__class__)):
             if type(node) is not self.__class__:
                 yield node.unnest() if unnest and not node.is_subquery else node
@@ -1073,25 +1215,11 @@ class Expression(Expr):
         return _to_s(self)
 
     def to_s(self) -> str:
-        """
-        Same as __repr__, but includes additional information which can be useful
-        for debugging, like empty or missing args and the AST nodes' object IDs.
-        """
         return _to_s(self, verbose=True)
 
     def sql(
         self, dialect: DialectType = None, copy: bool = True, **opts: Unpack[GeneratorNoDialectArgs]
     ) -> str:
-        """
-        Returns SQL string representation of this tree.
-
-        Args:
-            dialect: the dialect of the output SQL string (eg. "spark", "hive", "presto", "mysql").
-            opts: other `sqlglot.generator.Generator` options.
-
-        Returns:
-            The SQL string.
-        """
         from sqlglot.dialects.dialect import Dialect
 
         return Dialect.get_or_raise(dialect).generate(self, copy=copy, **opts)
@@ -1099,20 +1227,6 @@ class Expression(Expr):
     def transform(
         self, fun: t.Callable, *args: object, copy: bool = True, **kwargs: object
     ) -> t.Any:
-        """
-        Visits all tree nodes (excluding already transformed ones)
-        and applies the given transformation function to each node.
-
-        Args:
-            fun: a function which takes a node as an argument and returns a
-                new transformed node or the same node without modifications. If the function
-                returns None, then the corresponding node will be removed from the syntax tree.
-            copy: if set to True a new tree instance is constructed, otherwise the tree is
-                modified in place.
-
-        Returns:
-            The transformed tree.
-        """
         root: t.Any = None
         new_node: t.Any = None
 
@@ -1129,25 +1243,6 @@ class Expression(Expr):
         return root
 
     def replace(self, expression: T) -> T:
-        """
-        Swap out this expression with a new expression.
-
-        For example::
-
-            >>> import sqlglot
-            >>> tree = sqlglot.parse_one("SELECT x FROM tbl")
-            >>> tree.find(sqlglot.exp.Column).replace(sqlglot.exp.column("y"))
-            Column(
-              this=Identifier(this=y, quoted=False))
-            >>> tree.sql()
-            'SELECT y FROM tbl'
-
-        Args:
-            expression (T): new node
-
-        Returns:
-            T: The new expression or expressions.
-        """
         parent = self.parent
 
         if not parent or parent is expression:
@@ -1174,44 +1269,15 @@ class Expression(Expr):
         return expression
 
     def pop(self: E) -> E:
-        """
-        Remove this expression from its AST.
-
-        Returns:
-            The popped expression.
-        """
         self.replace(None)
         return self
 
     def assert_is(self, type_: Type[E]) -> E:
-        """
-        Assert that this `Expr` is an instance of `type_`.
-
-        If it is NOT an instance of `type_`, this raises an assertion error.
-        Otherwise, this returns this expression.
-
-        Examples:
-            This is useful for type security in chained expressions:
-
-            >>> import sqlglot
-            >>> sqlglot.parse_one("SELECT x from y").assert_is(sqlglot.exp.Select).select("z").sql()
-            'SELECT x, z FROM y'
-        """
         if not isinstance(self, type_):
             raise AssertionError(f"{self} is not {type_}.")
         return self
 
     def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
-        """
-        Checks if this expression is valid (e.g. all mandatory args are set).
-
-        Args:
-            args: a sequence of values that were used to instantiate a Func expression. This is used
-                to check that the provided arguments don't exceed the function argument limit.
-
-        Returns:
-            A list of error messages for all possible errors that were found.
-        """
         if UNITTEST:
             for k in self.args:
                 if k not in self.arg_types:
@@ -1249,26 +1315,6 @@ class Expression(Expr):
         wrap: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
-        """
-        AND this condition with one or multiple expressions.
-
-        Example:
-            >>> condition("x=1").and_("y=1").sql()
-            'x = 1 AND y = 1'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expr` instance is passed, it will be used as-is.
-            dialect: the dialect used to parse the input expression.
-            copy: whether to copy the involved expressions (only applies to Exprs).
-            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
-                precedence issues, but can be turned off when the produced AST is too deep and
-                causes recursion-related issues.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The new And condition.
-        """
         return and_(self, *expressions, dialect=dialect, copy=copy, wrap=wrap, **opts)
 
     def or_(
@@ -1279,42 +1325,9 @@ class Expression(Expr):
         wrap: bool = True,
         **opts: Unpack[ParserNoDialectArgs],
     ) -> Condition:
-        """
-        OR this condition with one or multiple expressions.
-
-        Example:
-            >>> condition("x=1").or_("y=1").sql()
-            'x = 1 OR y = 1'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expr` instance is passed, it will be used as-is.
-            dialect: the dialect used to parse the input expression.
-            copy: whether to copy the involved expressions (only applies to Exprs).
-            wrap: whether to wrap the operands in `Paren`s. This is true by default to avoid
-                precedence issues, but can be turned off when the produced AST is too deep and
-                causes recursion-related issues.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The new Or condition.
-        """
         return or_(self, *expressions, dialect=dialect, copy=copy, wrap=wrap, **opts)
 
     def not_(self, copy: bool = True) -> Not:
-        """
-        Wrap this condition with NOT.
-
-        Example:
-            >>> condition("x=1").not_().sql()
-            'NOT x = 1'
-
-        Args:
-            copy: whether to copy this object.
-
-        Returns:
-            The new Not instance.
-        """
         return not_(self, copy=copy)
 
     def update_positions(
@@ -1325,19 +1338,6 @@ class Expression(Expr):
         start: int | None = None,
         end: int | None = None,
     ) -> E:
-        """
-        Update this expression with positions from a token or other expression.
-
-        Args:
-            other: a token or expression to update this expression with.
-            line: the line number to use if other is None
-            col: column number
-            start: start char index
-            end:  end char index
-
-        Returns:
-            The updated expression.
-        """
         if isinstance(other, Token):
             meta = self.meta
             meta["line"] = other.line

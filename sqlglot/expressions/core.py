@@ -141,7 +141,7 @@ class Expr:
     @property
     def expressions(self) -> list[t.Any]:
         """
-        Retrieves the argument with key "expression".
+        Retrieves the argument with key "expressions".
         """
         raise NotImplementedError
 

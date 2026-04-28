@@ -3201,6 +3201,7 @@ class Generator:
         if self.UNNEST_WITH_ORDINALITY:
             if alias and isinstance(offset, exp.Expr):
                 alias.append("columns", offset)
+                expression.set("offset", None)
 
         if alias and self.dialect.UNNEST_COLUMN_ONLY:
             columns = alias.columns

@@ -425,13 +425,12 @@ class TypeAnnotator:
                 if isinstance(source, exp.Table):
                     schema_type = self.schema.get_column_type(source, expr)
                     if schema_type.is_type(exp.DType.UNKNOWN) and source.args.get("pivots"):
-                        pivot_type = (
+                        schema_type = (
                             self._get_scope_selects(source_scope or scope)
                             .get(expr.table, {})
                             .get(expr.name)
+                            or schema_type
                         )
-                        if pivot_type:
-                            schema_type = pivot_type
                     self._set_type(expr, schema_type)
                 elif source and source_scope:
                     col_type = (

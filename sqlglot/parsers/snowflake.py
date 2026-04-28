@@ -103,13 +103,13 @@ def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callabl
                     # format strings (e.g., TO_TIMESTAMP('20240115', 'YYYYMMDD')) should
                     # use StrToTime, not UnixToTime.
                     unix_expr = exp.UnixToTime(this=value, scale=scale_or_fmt)
-                    unix_expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
+                    unix_expr.set("target_type", kind.into_expr())
                     return unix_expr
                 if scale_or_fmt and not int_scale_or_fmt:
                     # Format string provided (e.g., 'YYYY-MM-DD'), use StrToTime
                     strtotime_expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
                     strtotime_expr.set("safe", safe)
-                    strtotime_expr.set("target_type", exp.DataType.build(kind, dialect="snowflake"))
+                    strtotime_expr.set("target_type", kind.into_expr())
                     return strtotime_expr
 
         # Handle DATE/TIME with format strings - allow int_value if a format string is provided

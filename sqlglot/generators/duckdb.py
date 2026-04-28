@@ -270,7 +270,7 @@ def _to_boolean_sql(self: DuckDBGenerator, expression: exp.ToBoolean) -> str:
         case_expr = base_case_expr.else_(exp.func("TRY_CAST", arg, exp.DType.BOOLEAN.into_expr()))
     else:
         # TO_BOOLEAN: handle NaN/INF errors, 'on'/'off', and use regular CAST
-        cast_to_real = exp.func("TRY_CAST", arg, exp.DataType.build(exp.DType.FLOAT))
+        cast_to_real = exp.func("TRY_CAST", arg, exp.DType.FLOAT.into_expr())
 
         # Check for NaN and INF values
         nan_inf_check = exp.Or(
@@ -897,7 +897,7 @@ def _generate_datetime_array_sql(
     if is_generate_date_array:
         # The GENERATE_SERIES result type is TIMESTAMP array, so to match BQ's semantics for
         # GENERATE_DATE_ARRAY we must cast it back to DATE array
-        gen_series = exp.cast(gen_series, exp.DataType.build("ARRAY<DATE>"))
+        gen_series = exp.cast(gen_series, exp.DataType.from_str("ARRAY<DATE>"))
 
     return self.sql(gen_series)
 
@@ -907,7 +907,7 @@ def _json_extract_value_array_sql(
 ) -> str:
     json_extract = exp.JSONExtract(this=expression.this, expression=expression.expression)
     data_type = "ARRAY<STRING>" if isinstance(expression, exp.JSONValueArray) else "ARRAY<JSON>"
-    return self.sql(exp.cast(json_extract, to=exp.DataType.build(data_type)))
+    return self.sql(exp.cast(json_extract, to=exp.DataType.from_str(data_type)))
 
 
 def _cast_to_varchar(arg: exp.Expr | None) -> exp.Expr | None:
@@ -932,7 +932,7 @@ def _is_binary(arg: exp.Expr) -> bool:
 
 def _gen_with_cast_to_blob(self: DuckDBGenerator, expression: exp.Expr, result_sql: str) -> str:
     if _is_binary(expression):
-        blob = exp.DataType.build("BLOB", dialect="duckdb")
+        blob = exp.DataType.from_str("BLOB", dialect="duckdb")
         result_sql = self.sql(exp.Cast(this=result_sql, to=blob))
     return result_sql
 
@@ -1205,7 +1205,7 @@ def _bitshift_sql(
 
     if result_is_blob:
         result_sql = self.sql(
-            exp.Cast(this=result_sql, to=exp.DataType.build("BLOB", dialect="duckdb"))
+            exp.Cast(this=result_sql, to=exp.DataType.from_str("BLOB", dialect="duckdb"))
         )
 
     return result_sql
@@ -1667,7 +1667,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
         exp.ToBoolean: _to_boolean_sql,
         exp.ToVariant: lambda self, e: self.sql(
-            exp.cast(e.this, exp.DataType.build("VARIANT", dialect="duckdb"))
+            exp.cast(e.this, exp.DataType.from_str("VARIANT", dialect="duckdb"))
         ),
         exp.TimeToUnix: rename_func("EPOCH"),
         exp.TsOrDiToDi: lambda self, e: (
@@ -2644,7 +2644,7 @@ class DuckDBGenerator(generator.Generator):
         this = expression.this
         time_format = self.format_time(expression)
         safe = expression.args.get("safe")
-        time_type = exp.DataType.build("TIME", dialect="duckdb")
+        time_type = exp.DataType.from_str("TIME", dialect="duckdb")
         cast_expr = exp.TryCast if safe else exp.Cast
 
         if time_format:
@@ -2868,7 +2868,7 @@ class DuckDBGenerator(generator.Generator):
                             this=exp.Extract(this=exp.var("MICROSECOND"), expression=datetime_expr),
                             expression=exp.Literal.number(1000),
                         ),
-                        exp.DataType.build(cast_type, dialect="duckdb"),
+                        exp.DataType.from_str(cast_type, dialect="duckdb"),
                     )
                 )
 
@@ -2883,7 +2883,7 @@ class DuckDBGenerator(generator.Generator):
                         this="STRFTIME",
                         expressions=[strftime_input, exp.Literal.string(fmt)],
                     ),
-                    exp.DataType.build(cast_type, dialect="duckdb"),
+                    exp.DataType.from_str(cast_type, dialect="duckdb"),
                 )
             )
 
@@ -2892,7 +2892,7 @@ class DuckDBGenerator(generator.Generator):
             result: exp.Expr = exp.Anonymous(this=func_name, expressions=[datetime_expr])
             # EPOCH returns float, cast to BIGINT for integer result
             if part_name == "EPOCH_SECOND":
-                result = exp.cast(result, exp.DataType.build("BIGINT", dialect="duckdb"))
+                result = exp.cast(result, exp.DataType.from_str("BIGINT", dialect="duckdb"))
             return self.sql(result)
 
         return super().extract_sql(expression)

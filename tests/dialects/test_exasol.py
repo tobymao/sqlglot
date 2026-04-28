@@ -991,3 +991,52 @@ class TestExasol(Validator):
                 "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA"
             },
         )
+
+    def test_json_object(self):
+        from sqlglot import parse_one
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.qualify import qualify
+
+        # Empty JSON_OBJECT -> '{}' literal
+        self.validate_all(
+            "SELECT '{}'",
+            read={"mysql": "SELECT JSON_OBJECT()"},
+            write={"exasol": "SELECT '{}'"},
+        )
+
+        # String-typed column: NULL-safe quoted value via CASE
+        ast = parse_one("SELECT JSON_OBJECT('name', str_name) AS j FROM t", read="mysql")
+        schema = {"t": {"str_name": "VARCHAR"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("CASE WHEN", result)
+        self.assertIn("IS NULL THEN 'null'", result)
+        self.assertIn("'\"name\": '", result)
+
+        # Numeric-typed column: COALESCE(CAST(..) AS VARCHAR(100)), 'null')
+        ast = parse_one("SELECT JSON_OBJECT('id', int_id) AS j FROM t", read="mysql")
+        schema = {"t": {"int_id": "INT"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("COALESCE(CAST(", result)
+        self.assertIn("AS VARCHAR(100)), 'null')", result)
+
+        # Multi-pair with comma separators
+        ast = parse_one("SELECT JSON_OBJECT('id', int_id, 'name', str_name) FROM t", read="mysql")
+        schema = {"t": {"int_id": "INT", "str_name": "VARCHAR"}}
+        annotated = annotate_types(
+            qualify(ast, schema=schema, dialect="mysql"),
+            schema=schema,
+            dialect="mysql",
+        )
+        result = annotated.sql("exasol")
+        self.assertIn("'\"id\": '", result)
+        self.assertIn("', \"name\": '", result)

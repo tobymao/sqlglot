@@ -991,3 +991,29 @@ class TestExasol(Validator):
                 "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA"
             },
         )
+
+    def test_group_by_alias_local(self):
+        # GROUP BY bare alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT city, COUNT(*) AS cnt FROM t GROUP BY LOCAL.cnt",
+            read={"mysql": "SELECT city, COUNT(*) AS cnt FROM t GROUP BY cnt"},
+            write={"exasol": "SELECT city, COUNT(*) AS cnt FROM t GROUP BY LOCAL.cnt"},
+        )
+        # GROUP BY expression alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT YEAR(TO_DATE(a_date)) AS a_year FROM t GROUP BY LOCAL.a_year",
+            read={"mysql": "SELECT YEAR(a_date) AS a_year FROM t GROUP BY a_year"},
+            write={"exasol": "SELECT YEAR(TO_DATE(a_date)) AS a_year FROM t GROUP BY LOCAL.a_year"},
+        )
+        # GROUP BY non-alias column -> unchanged
+        self.validate_all(
+            "SELECT city, COUNT(*) FROM t GROUP BY city",
+            read={"mysql": "SELECT city, COUNT(*) FROM t GROUP BY city"},
+            write={"exasol": "SELECT city, COUNT(*) FROM t GROUP BY city"},
+        )
+        # HAVING alias -> LOCAL prefix
+        self.validate_all(
+            "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1",
+            read={"mysql": "SELECT COUNT(*) AS cnt FROM t HAVING cnt > 1"},
+            write={"exasol": "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1"},
+        )

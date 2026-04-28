@@ -86,7 +86,7 @@ def pushdown(
     sources,
     scope_ref_count,
     dialect: DialectType,
-    join_index: Mapping[object, int] | None = None,
+    join_index: Mapping[str, int] | None = None,
 ):
     if not condition:
         return
@@ -107,7 +107,7 @@ def pushdown(
 
 
 def pushdown_cnf(
-    predicates, sources, scope_ref_count, join_index: Mapping[object, int] | None = None
+    predicates, sources, scope_ref_count, join_index: Mapping[str, int] | None = None
 ):
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.

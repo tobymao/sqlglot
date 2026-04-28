@@ -14,7 +14,7 @@ from sqlglot.parser import build_trim
 
 
 def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
-    return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
+    return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.from_str(to_type))
 
 
 class Spark2Parser(HiveParser):

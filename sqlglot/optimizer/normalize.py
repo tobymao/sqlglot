@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 import logging
 
 from sqlglot import exp
@@ -124,7 +124,7 @@ def normalization_distance(
     return total
 
 
-def _predicate_lengths(expression, dnf: bool, max_: float = float("inf"), depth: int = 0):
+def _predicate_lengths(expression: exp.Expr, dnf: bool, max_: float = float("inf"), depth: int = 0) -> Iterator[int]:
     """
     Returns a list of predicate lengths when expanded to normalized form.
 
@@ -196,7 +196,7 @@ def _distribute(
     from_func: Callable[..., exp.Condition],
     to_func: Callable[..., exp.Condition],
     simplifier: Simplifier,
-) -> None:
+) :
     if isinstance(a, exp.Connector):
         exp.replace_children(
             a,

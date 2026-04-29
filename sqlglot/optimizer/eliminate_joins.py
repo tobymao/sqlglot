@@ -90,7 +90,7 @@ def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
 
 def _unique_outputs(scope: Scope) -> set[str]:
     """Determine output columns of `scope` that must have a unique combination per row"""
-    expr = t.cast(exp.Select, scope.expression)
+    expr = t.cast(exp.Query, scope.expression)
     if expr.args.get("distinct") is not None:
         return set(expr.named_selects)
 

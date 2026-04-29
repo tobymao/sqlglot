@@ -171,7 +171,9 @@ def lineage(
     for sel in selectable.selects:
         name = sel.alias_or_name
         if not name:
-            continue
+            raise SqlglotError(
+                f"Cannot fetch lineage for unnamed projection: {sel.sql(dialect=dialect)}."
+            )
 
         result[name] = to_node(
             name,

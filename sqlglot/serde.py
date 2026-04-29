@@ -3,6 +3,12 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
+from types import ModuleType
+
+if t.TYPE_CHECKING:
+    from typing_extensions import TypeIs
+
+StackVal = tuple[exp.Expr | exp.DType | t.Any, int | None, str | None, bool]
 
 
 INDEX = "i"
@@ -21,8 +27,8 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
     Dump an Expr into a JSON serializable List.
     """
     i = 0
-    payloads = []
-    stack: list[tuple[t.Any, int | None, str | None, bool]] = [(expression, None, None, False)]
+    payloads: list[dict[str, t.Any]] = []
+    stack: list[StackVal] = [(expression, None, None, False)]
 
     while stack:
         node, index, arg_key, is_array = stack.pop()
@@ -38,7 +44,7 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
 
         payloads.append(payload)
 
-        if hasattr(node, "parent"):
+        if _has_parent(node):
             klass = node.__class__.__qualname__
 
             if node.__class__.__module__ != exp.__name__:
@@ -54,12 +60,12 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
                 payload[META] = node._meta
             if node.args:
                 for k, vs in reversed(node.args.items()):
-                    if type(vs) is list:
+                    if isinstance(vs, list):
                         for v in reversed(vs):
                             stack.append((v, i, k, True))
                     elif vs is not None:
                         stack.append((vs, i, k, False))
-        elif type(node) is exp.DType:
+        elif isinstance(node, exp.DType):
             payload[CLASS] = DATA_TYPE
             payload[VALUE] = node.value
         else:
@@ -68,6 +74,10 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
         i += 1
 
     return payloads
+
+
+def _has_parent(node: object) -> TypeIs[exp.Expr]:
+    return hasattr(node, "parent")
 
 
 def load(
@@ -82,16 +92,16 @@ def load(
 
     payload, *tail = payloads
     root = _load(payload)
-    nodes: list[object] = [root]
+    nodes: list[exp.Expr | exp.DType | t.Any] = [root]
     for payload in tail:
         if CLASS in payload:
-            node: object = _load(payload)
+            node = _load(payload)
         else:
             node = payload[VALUE]
 
         nodes.append(node)
-        parent = nodes[payload[INDEX]]
-        arg_key = payload[ARG_KEY]
+        parent: exp.Expr = nodes[payload[INDEX]]
+        arg_key: str = payload[ARG_KEY]
 
         if payload.get(IS_ARRAY):
             parent.append(arg_key, node)
@@ -102,11 +112,11 @@ def load(
 
 
 def _load(payload: dict[str, t.Any]) -> exp.Expr | exp.DType:
-    class_name = payload[CLASS]
+    class_name: str = payload[CLASS]
 
     if class_name == DATA_TYPE:
         return exp.DType(payload[VALUE])
-
+    module: ModuleType
     if "." in class_name:
         module_path, class_name = class_name.rsplit(".", maxsplit=1)
         module = __import__(module_path, fromlist=[class_name])

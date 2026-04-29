@@ -1,5 +1,6 @@
-import typing as t
+from __future__ import annotations
 import datetime
+import typing as t
 
 # The generic time format is based on python time.strftime.
 # https://docs.python.org/3/library/time.html#time.strftime
@@ -7,8 +8,8 @@ from sqlglot.trie import TrieResult, in_trie, new_trie
 
 
 def format_time(
-    string: str, mapping: dict[str, str], trie: t.Optional[dict] = None
-) -> t.Optional[str]:
+    string: str, mapping: dict[str, str], trie: dict[str, t.Any] | None = None
+) -> str | None:
     """
     Converts a time string given a mapping.
 
@@ -31,7 +32,7 @@ def format_time(
     size = len(string)
     trie = trie or new_trie(mapping)
     current = trie
-    chunks = []
+    chunks: list[str] = []
     sym = None
 
     while end <= size:
@@ -61,7 +62,7 @@ def format_time(
     return "".join(mapping.get(chars, chars) for chars in chunks)
 
 
-TIMEZONES = {
+TIMEZONES: set[str] = {
     tz.lower()
     for tz in (
         "Africa/Abidjan",

@@ -1074,6 +1074,29 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertEqual(canon_alias_a.sql(), canon_alias_b.sql())
 
+        # Aliases on sources whose columns are never referenced are still internal
+        # handles and must be canonicalized — otherwise structurally identical queries
+        # would diverge purely on user-chosen names.
+        canon_unref_a = canonicalize_internal_names(
+            parse_one("SELECT 1 FROM users AS foo CROSS JOIN logs AS bar"),
+            schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
+        )
+        canon_unref_b = canonicalize_internal_names(
+            parse_one("SELECT 1 FROM users AS baz CROSS JOIN logs AS qux"),
+            schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
+        )
+        self.assertEqual(canon_unref_a.sql(), canon_unref_b.sql())
+
+        canon_exists_a = canonicalize_internal_names(
+            parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS abc)"),
+            schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
+        )
+        canon_exists_b = canonicalize_internal_names(
+            parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS xyz)"),
+            schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
+        )
+        self.assertEqual(canon_exists_a.sql(), canon_exists_b.sql())
+
         # Physical table identity is preserved for real tables (only the alias is
         # canonicalized); base-table column names and top-level output aliases are
         # preserved because they're part of the query's outward data contract.

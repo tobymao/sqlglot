@@ -46,6 +46,7 @@ def _source_files(src_dir):
         "errors.py",
         "generator.py",
         "helper.py",
+        "lineage.py",
         "parser.py",
         "schema.py",
         "serde.py",

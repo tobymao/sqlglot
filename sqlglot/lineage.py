@@ -28,6 +28,9 @@ class Node:
     source_name: str = ""
     reference_node_name: str = ""
 
+    # Caller-injected per-node data, populated via the `on_node` hook on lineage()
+    payload: dict[str, t.Any] = field(default_factory=dict)
+
     def walk(self) -> Iterator[Node]:
         visited: set[int] = set()
         queue = [self]
@@ -74,8 +77,16 @@ class Node:
         return GraphHTML(nodes, edges, **opts)
 
 
+@t.overload
+def lineage(column: str | exp.Column, sql: str | exp.Expr, **kwargs: t.Any) -> Node: ...
+
+
+@t.overload
+def lineage(column: None, sql: str | exp.Expr, **kwargs: t.Any) -> dict[str, Node]: ...
+
+
 def lineage(
-    column: str | exp.Column,
+    column: str | exp.Column | None,
     sql: str | exp.Expr,
     schema: dict | Schema | None = None,
     sources: Mapping[str, str | exp.Query] | None = None,
@@ -83,12 +94,17 @@ def lineage(
     scope: Scope | None = None,
     trim_selects: bool = True,
     copy: bool = True,
+    on_node: t.Callable[[Node], None] | None = None,
     **kwargs,
-) -> Node:
-    """Build the lineage graph for a column of a SQL query.
+) -> Node | dict[str, Node]:
+    """Build the lineage graph for a SQL query.
+
+    If `column` is given, returns the lineage Node for that single output column.
+    If `column` is None, returns a dict mapping every top-level output column name
+    to its lineage Node (with a shared cache so cross-column work is deduplicated).
 
     Args:
-        column: The column to build the lineage for.
+        column: The column to build the lineage for. Pass None to get all output columns.
         sql: The SQL string or expression.
         schema: The schema of tables.
         sources: A mapping of queries which will be used to continue building lineage.
@@ -96,14 +112,15 @@ def lineage(
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
         copy: Whether to copy the Expr arguments.
+        on_node: Optional callback invoked for every Node created during the walk,
+            after the Node's downstream is populated. Useful for injecting
+            caller-managed data into Node.payload during the walk.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
-        A lineage node.
+        A Node when `column` is provided, or a dict[str, Node] when `column` is None.
     """
-
     expression = maybe_parse(sql, copy=copy, dialect=dialect)
-    column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
 
     if sources:
         expression = exp.expand(
@@ -123,19 +140,50 @@ def lineage(
             schema=schema,
             **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
         )
-
         scope = build_scope(expression)
 
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")
 
     selectable = scope.expression
-    if not isinstance(selectable, exp.Selectable) or not any(
-        select.alias_or_name == column for select in selectable.selects
-    ):
-        raise SqlglotError(f"Cannot find column '{column}' in query.")
+    if not isinstance(selectable, exp.Selectable):
+        raise SqlglotError("Cannot build lineage, sql must be a query")
 
-    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
+    cache: dict[tuple, Node] = {}
+    scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] = {}
+
+    if column is not None:
+        column_name = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
+        if not any(select.alias_or_name == column_name for select in selectable.selects):
+            raise SqlglotError(f"Cannot find column '{column_name}' in query.")
+
+        return to_node(
+            column_name,
+            scope,
+            dialect,
+            trim_selects=trim_selects,
+            _cache=cache,
+            _scope_meta=scope_meta,
+            on_node=on_node,
+        )
+
+    result: dict[str, Node] = {}
+    for sel in selectable.selects:
+        name = sel.alias_or_name
+        if not name:
+            continue
+
+        result[name] = to_node(
+            name,
+            scope,
+            dialect,
+            trim_selects=trim_selects,
+            _cache=cache,
+            _scope_meta=scope_meta,
+            on_node=on_node,
+        )
+
+    return result
 
 
 def to_node(
@@ -148,6 +196,8 @@ def to_node(
     reference_node_name: str | None = None,
     trim_selects: bool = True,
     _cache: dict[tuple, Node] | None = None,
+    _scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] | None = None,
+    on_node: t.Callable[[Node], None] | None = None,
 ) -> Node:
     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
 
@@ -167,10 +217,24 @@ def to_node(
             )
         select = selectable.selects[column]
     else:
-        select = next(
-            (select for select in selectable.selects if select.alias_or_name == column),
-            exp.Star() if selectable.is_star else scope.expression,
-        )
+        # Resolving a column to its select scans selectable.selects on every call;
+        # memoize a per-scope {name: select} map and is_star bit instead.
+        if _scope_meta is None:
+            select = next(
+                (s for s in selectable.selects if s.alias_or_name == column),
+                exp.Star() if selectable.is_star else scope.expression,
+            )
+        else:
+            scope_id = id(scope)
+            meta = _scope_meta.get(scope_id)
+            if meta is None:
+                select_by_name: dict[str, exp.Expr] = {}
+                for sel in selectable.selects:
+                    select_by_name.setdefault(sel.alias_or_name, sel)
+                meta = (selectable.is_star, select_by_name)
+                _scope_meta[scope_id] = meta
+            is_star, select_by_name = meta
+            select = select_by_name.get(column, exp.Star() if is_star else scope.expression)
 
     if isinstance(scope.expression, exp.Subquery):
         for inner_scope in scope.subquery_scopes:
@@ -183,6 +247,8 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
             # Skip caching a passed-in upstream returned by an inner SetOp:
             # a sibling call at the same key with that node as its upstream
@@ -221,10 +287,14 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
 
         if _cache is not None and created_setop:
             _cache[cache_key] = upstream
+        if created_setop and on_node:
+            on_node(upstream)
         return upstream
 
     if trim_selects and isinstance(scope.expression, exp.Select):
@@ -266,15 +336,18 @@ def to_node(
                 upstream=node,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
 
     # if the select is a star add all scope sources as downstreams
     if isinstance(select, exp.Star):
         for src in scope.sources.values():
             src_expr = src.expression if isinstance(src, Scope) else src
-            node.downstream.append(
-                Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
-            )
+            star_node = Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
+            node.downstream.append(star_node)
+            if on_node:
+                on_node(star_node)
 
     # Find all columns that went into creating this one to list their lineage nodes.
     source_columns = set(find_all_in_scope(select, exp.Column))
@@ -340,6 +413,8 @@ def to_node(
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
@@ -369,28 +444,35 @@ def to_node(
                         reference_node_name=reference_node_name,
                         trim_selects=trim_selects,
                         _cache=_cache,
+                        _scope_meta=_scope_meta,
+                        on_node=on_node,
                     )
                 else:
                     col_expr = col_source or exp.Placeholder()
-                    node.downstream.append(
-                        Node(
-                            name=downstream_column.sql(comments=False),
-                            source=col_expr,
-                            expression=col_expr,
-                        )
+                    pivot_leaf = Node(
+                        name=downstream_column.sql(comments=False),
+                        source=col_expr,
+                        expression=col_expr,
                     )
+                    node.downstream.append(pivot_leaf)
+                    if on_node:
+                        on_node(pivot_leaf)
         else:
             # The source is not a scope and the column is not in any pivot - we've reached the end
             # of the line. At this point, if a source is not found it means this column's lineage
             # is unknown. This can happen if the definition of a source used in a query is not
             # passed into the `sources` map.
             col_expr = col_source or exp.Placeholder()
-            node.downstream.append(
-                Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
-            )
+            leaf = Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
+            node.downstream.append(leaf)
+            if on_node:
+                on_node(leaf)
 
     if _cache is not None:
         _cache[cache_key] = node
+
+    if on_node:
+        on_node(node)
 
     return node
 

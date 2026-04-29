@@ -290,7 +290,7 @@ SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK
 # execute: false
 # dialect: postgres
 WITH t AS (SELECT 1 AS c) SELECT t FROM t;
-WITH t AS (SELECT 1 AS c) SELECT t AS _col_0 FROM t AS t;
+WITH t AS (SELECT 1 AS c) SELECT t AS t FROM t AS t;
 
 --------------------------------------
 -- Derived tables

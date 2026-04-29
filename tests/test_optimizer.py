@@ -10,6 +10,7 @@ import sqlglot
 from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
@@ -1024,6 +1025,179 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_eliminate_subqueries(self):
         self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)
+
+    def test_canonicalize_internal_names(self):
+        schema = {
+            **self.schema,
+            "jtbl": {"j": "JSON"},
+            "pvt": {"c": "TEXT", "v": "INT"},
+        }
+        self.check_file(
+            "canonicalize_internal_names",
+            canonicalize_internal_names,
+            schema=schema,
+            catalog="c",
+            db="db",
+        )
+
+        # Physical table identity is part of the data contract: reading the same columns
+        # from a different table is a real change and must produce a different canonical form.
+        # (Tables are assumed to be qualified with catalog.db.table; an unqualified table
+        # name is treated as an internal handle and canonicalized, like a CTE reference.)
+        canon_a = canonicalize_internal_names(
+            parse_one("SELECT id, name FROM cat.db.users WHERE id > 5"),
+            schema={"cat": {"db": {"users": {"id": "INT", "name": "TEXT"}}}},
+        )
+        canon_diff_table = canonicalize_internal_names(
+            parse_one("SELECT id, name FROM cat.db.employees WHERE id > 5"),
+            schema={"cat": {"db": {"employees": {"id": "INT", "name": "TEXT"}}}},
+        )
+        self.assertNotEqual(canon_a.sql(), canon_diff_table.sql())
+
+        # Renaming a base-table column is likewise a data-contract change and must be
+        # detected even when everything else about the query shape is identical.
+        canon_rename = canonicalize_internal_names(
+            parse_one("SELECT emp_id, full_name FROM cat.db.users WHERE emp_id > 5"),
+            schema={"cat": {"db": {"users": {"emp_id": "INT", "full_name": "TEXT"}}}},
+        )
+        self.assertNotEqual(canon_a.sql(), canon_rename.sql())
+
+        # User-chosen table alias is an internal handle with no semantic effect — the same
+        # query with a different alias produces the same canonical form.
+        canon_alias_a = canonicalize_internal_names(
+            parse_one("SELECT foo.id FROM users AS foo"),
+            schema={"users": {"id": "INT"}},
+        )
+        canon_alias_b = canonicalize_internal_names(
+            parse_one("SELECT bar.id FROM users AS bar"),
+            schema={"users": {"id": "INT"}},
+        )
+        self.assertEqual(canon_alias_a.sql(), canon_alias_b.sql())
+
+        # Physical table identity is preserved for real tables (only the alias is
+        # canonicalized); base-table column names and top-level output aliases are
+        # preserved because they're part of the query's outward data contract.
+        canon = canonicalize_internal_names(
+            parse_one("SELECT a FROM x"),
+            schema={"x": {"a": "INT"}},
+            db="mydb",
+            catalog="cat",
+        )
+        self.assertEqual(canon.sql(), 'SELECT "_t0"."a" AS "a" FROM "cat"."mydb"."x" AS "_t0"')
+
+        # Top-level output alias is part of the contract — renaming it changes the
+        # canonical form even though the underlying data is identical.
+        canon_named = canonicalize_internal_names(
+            parse_one("SELECT a AS alpha FROM x"), schema={"x": {"a": "INT"}}
+        )
+        canon_renamed = canonicalize_internal_names(
+            parse_one("SELECT a AS beta FROM x"), schema={"x": {"a": "INT"}}
+        )
+        self.assertNotEqual(canon_named.sql(), canon_renamed.sql())
+
+        # Internal alias inside a CTE is self-consistent (the outer query must use the
+        # same name for the rename to be valid SQL), so renaming it with the top-level
+        # contract name held constant must not change the canonical form.
+        canon_inner_a = canonicalize_internal_names(
+            parse_one("WITH t AS (SELECT a AS foo FROM x) SELECT foo AS result FROM t"),
+            schema={"x": {"a": "INT"}},
+        )
+        canon_inner_b = canonicalize_internal_names(
+            parse_one("WITH t AS (SELECT a AS bar FROM x) SELECT bar AS result FROM t"),
+            schema={"x": {"a": "INT"}},
+        )
+        self.assertEqual(canon_inner_a.sql(), canon_inner_b.sql())
+
+        # Changing which base-table column a CTE reads must be detected as a real
+        # change even when the outer query is byte-for-byte identical (the CTE
+        # internally aliases the column so the outer reference name doesn't move).
+        canon_cte_col_a = canonicalize_internal_names(
+            parse_one("WITH t AS (SELECT a AS x FROM src) SELECT x FROM t"),
+            schema={"src": {"a": "INT", "b": "INT"}},
+        )
+        canon_cte_col_b = canonicalize_internal_names(
+            parse_one("WITH t AS (SELECT b AS x FROM src) SELECT x FROM t"),
+            schema={"src": {"a": "INT", "b": "INT"}},
+        )
+        self.assertNotEqual(canon_cte_col_a.sql(), canon_cte_col_b.sql())
+
+        # UNION BY NAME: different column-name sets must produce different canonical forms
+        # (two branches share no column name => NULL-padded) vs (both share "a" => unified)
+        schema_ux = {"x": {"a": "INT"}, "y": {"a": "INT", "b": "INT"}}
+        canon_match = canonicalize_internal_names(
+            parse_one("SELECT a FROM x UNION BY NAME SELECT a FROM y", dialect="duckdb"),
+            schema=schema_ux,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        canon_diff = canonicalize_internal_names(
+            parse_one("SELECT a FROM x UNION BY NAME SELECT b FROM y", dialect="duckdb"),
+            schema=schema_ux,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        self.assertNotEqual(canon_match, canon_diff)
+
+        # UNION BY NAME with a nested rhs: swapping the source column inside the nested
+        # branch must still be caught as a data-contract change.
+        schema_nested = {
+            "x": {"a": "INT"},
+            "y": {"b": "INT"},
+            "z": {"c": "INT", "d": "INT"},
+        }
+        canon_nested_a = canonicalize_internal_names(
+            parse_one(
+                "SELECT a + 1 AS shared FROM x UNION BY NAME "
+                "(SELECT b AS shared FROM y UNION BY NAME SELECT c AS shared FROM z)",
+                dialect="duckdb",
+            ),
+            schema=schema_nested,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        canon_nested_b = canonicalize_internal_names(
+            parse_one(
+                "SELECT a + 1 AS shared FROM x UNION BY NAME "
+                "(SELECT b AS shared FROM y UNION BY NAME SELECT d AS shared FROM z)",
+                dialect="duckdb",
+            ),
+            schema=schema_nested,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        self.assertNotEqual(canon_nested_a, canon_nested_b)
+
+        # Case-folding semantics: in case-insensitive dialects (e.g. postgres, lowercase-folding)
+        # unquoted `a` and quoted `"a"` refer to the same column and must match.
+        pg_schema = {"x": {"a": "INT", "b": "INT"}}
+        canon_pg_a = canonicalize_internal_names(
+            parse_one("SELECT a FROM x", dialect="postgres"), schema=pg_schema, dialect="postgres"
+        ).sql(dialect="postgres")
+        canon_pg_qa = canonicalize_internal_names(
+            parse_one('SELECT "a" FROM x', dialect="postgres"), schema=pg_schema, dialect="postgres"
+        ).sql(dialect="postgres")
+        self.assertEqual(canon_pg_a, canon_pg_qa)
+
+        # In Snowflake (upper-folding), unquoted `a` becomes `A`, while quoted `"a"` stays
+        # lowercase — they reference *different* columns. Base-table names are preserved,
+        # and the quote state on the lowercase column is retained because dropping it
+        # would let Snowflake re-case-fold `a` back to `A` (changing semantics).
+        sf_schema = {"X": {"A": "INT", '"a"': "INT"}}
+        canon_sf = canonicalize_internal_names(
+            parse_one('SELECT a, "a" FROM x', dialect="snowflake"),
+            schema=sf_schema,
+            dialect="snowflake",
+        ).sql(dialect="snowflake")
+        self.assertEqual(
+            canon_sf,
+            'SELECT "_t0"."A" AS "A", "_t0"."a" AS "a" FROM "_t0" AS "_t0"',
+        )
+
+        # But unquoted `A` and quoted `"A"` reference the same column — they must coalesce
+        # to the same canonical form.
+        sf_schema2 = {"X": {"A": "INT"}}
+        canon_sf2 = canonicalize_internal_names(
+            parse_one('SELECT A, "A" FROM x', dialect="snowflake"),
+            schema=sf_schema2,
+            dialect="snowflake",
+        ).sql(dialect="snowflake")
+        self.assertEqual(canon_sf2, 'SELECT "_t0"."A" AS "A", "_t0"."A" AS "A" FROM "_t0" AS "_t0"')
 
     def test_canonicalize(self):
         optimize = partial(
@@ -2110,9 +2284,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotated = _annotate(example_query)
 
         self.assertIsInstance(annotated.selects[0].this, exp.TableColumn)
-        self.assertEqual(
-            annotated.sql("bigquery"), "SELECT `t` AS `_col_0` FROM `d`.`s`.`t` AS `t`"
-        )
+        self.assertEqual(annotated.sql("bigquery"), "SELECT `t` AS `t` FROM `d`.`s`.`t` AS `t`")
         self.assertTrue(
             annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
         )

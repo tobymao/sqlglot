@@ -2068,7 +2068,9 @@ class Semicolon(Expression):
 
 
 class TableColumn(Expression):
-    pass
+    @property
+    def output_name(self) -> str:
+        return self.name
 
 
 class Variadic(Expression):

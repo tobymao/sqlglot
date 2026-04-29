@@ -239,6 +239,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.UnixToTimeStr,
             exp.Upper,
             exp.RawString,
+            exp.RegexpExtract,
             exp.SessionUser,
             exp.Space,
         }
@@ -252,6 +253,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ArrayReverse,
             exp.ArraySlice,
             exp.Filter,
+            exp.FirstValue,
             exp.HavingMax,
             exp.LastValue,
             exp.Limit,

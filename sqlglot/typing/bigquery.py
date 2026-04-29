@@ -178,7 +178,6 @@ EXPRESSION_METADATA = {
             exp.DateAdd,
             exp.DateTrunc,
             exp.DatetimeTrunc,
-            exp.FirstValue,
             exp.GroupConcat,
             exp.IgnoreNulls,
             exp.JSONExtract,

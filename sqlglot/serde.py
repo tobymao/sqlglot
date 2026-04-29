@@ -8,7 +8,7 @@ from types import ModuleType
 if t.TYPE_CHECKING:
     from typing_extensions import TypeIs
 
-StackVal = tuple[exp.Expr | exp.DType | t.Any, int | None, str | None, bool]
+StackVal = tuple[t.Union[exp.Expr, exp.DType, t.Any], t.Optional[int], t.Optional[str], bool]
 
 
 INDEX = "i"

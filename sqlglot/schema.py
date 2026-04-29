@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
     from typing_extensions import Unpack
 
-    ColumnMapping = t.Union[dict, str, list]
+    ColumnMapping = t.Union[dict[str, t.Any], str, list[str]]
 
 
 @trait
@@ -344,7 +344,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
     ) -> t.Any | None:
-        schema = super().find(
+        schema: exp.Table | dict[str, object] | None = super().find(
             table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
         )
         if ensure_data_types and isinstance(schema, dict):
@@ -417,7 +417,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
     ) -> list[str]:
         normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
 
-        schema = self.find(normalized_table)
+        schema: exp.Table | dict[str, object] | None = self.find(normalized_table)
         if schema is None:
             return []
 
@@ -440,7 +440,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
         if table_schema:
             column_type = table_schema.get(normalized_column_name)
 
@@ -500,7 +500,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
         return normalized_column_name in table_schema if table_schema else False
 
     def _normalize(self, schema: dict[str, object]) -> dict[str, object]:
@@ -708,7 +708,7 @@ def ensure_schema(
     return MappingSchema(schema, **kwargs)
 
 
-def ensure_column_mapping(mapping: ColumnMapping | None) -> dict:
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, t.Any]:
     if mapping is None:
         return {}
     elif isinstance(mapping, dict):

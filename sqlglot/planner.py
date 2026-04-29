@@ -120,11 +120,10 @@ class Step:
             join.source_name = step.name
             join.add_dependency(step)
             step = join
-
-        projections: list[
-            exp.Expr
-        ] = []  # final selects in this chain of steps representing a select
-        operands: dict[exp.Expr, str] = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
+        # final selects in this chain of steps representing a select
+        projections: list[exp.Expr] = []
+        # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
+        operands: dict[exp.Expr, str] = {}
         aggregations: dict[exp.Expr, None] = {}
         next_operand_name = name_sequence("_a_")
 

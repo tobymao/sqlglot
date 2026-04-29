@@ -11,8 +11,8 @@ from collections.abc import Iterator, Sequence, Iterable
 
 class Plan:
     def __init__(self, expression: exp.Expr) -> None:
-        self.expression = expression.copy()
-        self.root = Step.from_expression(self.expression)
+        self.expression: exp.Expr = expression.copy()
+        self.root: Step = Step.from_expression(self.expression)
         self._dag: dict[Step, set[Step]] = {}
 
     @property
@@ -93,10 +93,10 @@ class Step:
         """
         ctes = ctes or {}
         expression = expression.unnest()
-        with_ = expression.args.get("with_")
+        with_: exp.With | None = expression.args.get("with_")
 
         # CTEs break the mold of scope and introduce themselves to all in the context.
-        if with_:
+        if with_ is not None:
             ctes = ctes.copy()
             for cte in with_.expressions:
                 step = Step.from_expression(cte.this, ctes)
@@ -112,9 +112,9 @@ class Step:
         else:
             step = Scan()
 
-        joins = expression.args.get("joins")
+        joins: list[exp.Join] | None = expression.args.get("joins")
 
-        if joins:
+        if joins is not None:
             join = Join.from_joins(joins, ctes)
             join.name = step.name
             join.source_name = step.name
@@ -124,11 +124,11 @@ class Step:
         projections: list[
             exp.Expr
         ] = []  # final selects in this chain of steps representing a select
-        operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
-        aggregations = {}
+        operands: dict[exp.Expr, str] = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
+        aggregations: dict[exp.Expr, None] = {}
         next_operand_name = name_sequence("_a_")
 
-        def extract_agg_operands(expression):
+        def extract_agg_operands(expression: exp.Expr) -> bool:
             agg_funcs = tuple(expression.find_all(exp.AggFunc))
             if agg_funcs:
                 aggregations[expression] = None
@@ -144,7 +144,7 @@ class Step:
 
             return bool(agg_funcs)
 
-        def set_ops_and_aggs(step):
+        def set_ops_and_aggs(step) -> None:
             step.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
             step.aggregations = list(aggregations)
 
@@ -155,21 +155,21 @@ class Step:
             else:
                 projections.append(e)
 
-        where = expression.args.get("where")
+        where: exp.Where | None = expression.args.get("where")
 
-        if where:
+        if where is not None:
             step.condition = where.this
 
-        group = expression.args.get("group")
+        group: exp.Group | None = expression.args.get("group")
 
-        if group or aggregations:
+        if group is not None or aggregations:
             aggregate = Aggregate()
             aggregate.source = step.name
             aggregate.name = step.name
 
-            having = expression.args.get("having")
+            having: exp.Having | None = expression.args.get("having")
 
-            if having:
+            if having is not None:
                 if extract_agg_operands(exp.alias_(having.this, "_h", quoted=True)):
                     aggregate.condition = exp.column("_h", step.name, quoted=True)
                 else:
@@ -205,10 +205,10 @@ class Step:
         else:
             aggregate = None
 
-        order = expression.args.get("order")
+        order: exp.Order | None = expression.args.get("order")
 
-        if order:
-            if aggregate and isinstance(step, Aggregate):
+        if order is not None:
+            if aggregate is not None and isinstance(step, Aggregate):
                 for i, ordered in enumerate(order.expressions):
                     if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
                         ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
@@ -234,9 +234,9 @@ class Step:
             distinct.add_dependency(step)
             step = distinct
 
-        limit = expression.args.get("limit")
+        limit: exp.Limit | None = expression.args.get("limit")
 
-        if limit:
+        if limit is not None:
             step.limit = int(limit.text("expression"))
 
         return step
@@ -304,7 +304,7 @@ class Step:
 class Scan(Step):
     @classmethod
     def from_expression(cls, expression: exp.Expr, ctes: dict[str, Step] | None = None) -> Step:
-        table = expression
+        table: exp.Expr = expression
         alias_ = expression.alias_or_name
 
         if isinstance(expression, exp.Subquery):
@@ -356,7 +356,7 @@ class Join(Step):
         lines = [f"{indent}Source: {self.source_name or self.name}"]
         for name, join in self.joins.items():
             lines.append(f"{indent}{name}: {join['side'] or 'INNER'}")
-            join_key = ", ".join(str(key) for key in t.cast(list, join.get("join_key") or []))
+            join_key = ", ".join(str(key) for key in t.cast(list[str], join.get("join_key") or []))
             if join_key:
                 lines.append(f"{indent}Key: {join_key}")
             if join.get("condition"):
@@ -396,7 +396,7 @@ class Aggregate(Step):
 class Sort(Step):
     def __init__(self) -> None:
         super().__init__()
-        self.key = None
+        self.key: list[exp.Expr] | None = None
 
     def _to_s(self, indent: str) -> list[str]:
         lines = [f"{indent}Key:"]
@@ -408,18 +408,12 @@ class Sort(Step):
 
 
 class SetOperation(Step):
-    def __init__(
-        self,
-        op: type[exp.Expr],
-        left: str | None,
-        right: str | None,
-        distinct: bool = False,
-    ) -> None:
+    def __init__(self, op: type[exp.Expr], left: str, right: str, distinct: bool = False) -> None:
         super().__init__()
-        self.op = op
-        self.left = left
-        self.right = right
-        self.distinct = distinct
+        self.op: type[exp.Expr] = op
+        self.left: str = left
+        self.right: str = right
+        self.distinct: bool = distinct
 
     @classmethod
     def from_expression(
@@ -442,15 +436,15 @@ class SetOperation(Step):
         step.add_dependency(left)
         step.add_dependency(right)
 
-        limit = expression.args.get("limit")
+        limit: exp.Limit | None = expression.args.get("limit")
 
-        if limit:
+        if limit is not None:
             step.limit = int(limit.text("expression"))
 
         return step
 
     def _to_s(self, indent: str) -> list[str]:
-        lines = []
+        lines: list[str] = []
         if self.distinct:
             lines.append(f"{indent}Distinct: {self.distinct}")
         return lines

@@ -76,9 +76,7 @@ def canonicalize_internal_names(
         table_map: dict[str, str] = {}
 
         for source_name, source in scope.sources.items():
-            source_cols = columns_by_source.get(source_name)
-            if not source_cols:
-                continue
+            source_cols = columns_by_source.get(source_name, [])
 
             alias_holder: exp.Expr | None = None
             is_base_source = isinstance(source, exp.Table)

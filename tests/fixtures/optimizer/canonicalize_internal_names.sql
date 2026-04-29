@@ -20,7 +20,7 @@ WITH "_t1" AS (SELECT "_t0"."a" AS "_c0", "_t0"."b" AS "_c1" FROM "c"."db"."x" A
 
 # title: multi cte
 WITH t1 AS (SELECT a FROM x), t2 AS (SELECT b FROM y) SELECT t1.a, t2.b FROM t1 JOIN t2 ON t1.a = t2.b;
-WITH "_t2" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0"), "_t3" AS (SELECT "_t1"."b" AS "_c1" FROM "c"."db"."y" AS "_t1") SELECT "_t2"."_c0" AS "a", "_t3"."_c1" AS "b" FROM "_t2" AS "_t2" JOIN "_t3" AS "_t3" ON "_t2"."_c0" = "_t3"."_c1";
+WITH "_t1" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0"), "_t3" AS (SELECT "_t2"."b" AS "_c1" FROM "c"."db"."y" AS "_t2") SELECT "_t1"."_c0" AS "a", "_t3"."_c1" AS "b" FROM "_t1" AS "_t1" JOIN "_t3" AS "_t3" ON "_t1"."_c0" = "_t3"."_c1";
 
 # title: cross join
 SELECT x.a, y.c FROM x CROSS JOIN y;
@@ -161,7 +161,7 @@ SELECT "_t0"."_c0" AS "i", "_t0"."_c1" AS "s" FROM (VALUES (1, 'a'), (2, 'b')) A
 # title: lateral subquery alias is canonicalized, outer table shared with lateral body
 # dialect: postgres
 SELECT x.a, t.b FROM x, LATERAL (SELECT x.a + 1 AS b) AS t;
-SELECT "_t0"."a" AS "a", "_t1"."_c0" AS "b" FROM "c"."db"."x" AS "_t0", LATERAL (SELECT "_t0"."a" + 1 AS "_c0") AS "_t1";
+SELECT "_t0"."a" AS "a", "_t2"."_c0" AS "b" FROM "c"."db"."x" AS "_t0", LATERAL (SELECT "_t0"."a" + 1 AS "_c0") AS "_t2";
 
 # title: window function with partition and order
 SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS rn FROM x;

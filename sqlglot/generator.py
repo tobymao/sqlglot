@@ -3609,9 +3609,10 @@ class Generator:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
+        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
 
         ordinality = " FOR ORDINALITY" if expression.args.get("ordinality") else ""
-        return f"{this}{kind}{path}{ordinality}"
+        return f"{this}{kind}{format_json}{path}{ordinality}"
 
     def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
         return self.func("COLUMNS", *expression.expressions)

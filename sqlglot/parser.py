@@ -7931,12 +7931,18 @@ class Parser:
             kind = None
             nested = True
 
+        format_json = self._match_text_seq("FORMAT", "JSON")
         path = self._match_text_seq("PATH") and self._parse_string()
         nested_schema = nested and self._parse_json_schema()
 
         return self.expression(
             exp.JSONColumnDef(
-                this=this, kind=kind, path=path, nested_schema=nested_schema, ordinality=ordinality
+                this=this,
+                kind=kind,
+                path=path,
+                nested_schema=nested_schema,
+                ordinality=ordinality,
+                format_json=format_json,
             )
         )
 

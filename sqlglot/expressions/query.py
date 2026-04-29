@@ -1956,6 +1956,7 @@ class JSONColumnDef(Expression):
         "path": False,
         "nested_schema": False,
         "ordinality": False,
+        "format_json": False,
     }
 
 

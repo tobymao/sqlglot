@@ -4071,6 +4071,10 @@ class Generator:
         location = f" {location}" if location else ""
         return f"ADD {exists}{self.sql(expression.this)}{location}"
 
+    def allquantifier_sql(self, expression: exp.AllQuantifier) -> str:
+        this = self.expressions(expression, flat=True)
+        return f"ALL {this}"
+
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
 

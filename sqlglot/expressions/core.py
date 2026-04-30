@@ -2249,6 +2249,10 @@ class Distinct(Expression):
     arg_types = {"expressions": False, "on": False}
 
 
+class AllQuantifier(Expression):
+    arg_types = {"expressions": False}
+
+
 class In(Expression, Predicate):
     arg_types = {
         "this": True,

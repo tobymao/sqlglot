@@ -12,6 +12,7 @@ from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaErro
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
 from sqlglot.optimizer.normalize import normalization_distance
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -26,6 +27,10 @@ from tests.helpers import (
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
     return func(parse_one(sql, read=read_dialect), **kwargs)
+
+
+def qualify_then_canonicalize(expression, **qualify_kwargs):
+    return canonicalize_internal_names(qualify(expression, **qualify_kwargs))
 
 
 def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
@@ -1032,9 +1037,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "jtbl": {"j": "JSON"},
             "pvt": {"c": "TEXT", "v": "INT"},
         }
+
         self.check_file(
             "canonicalize_internal_names",
-            canonicalize_internal_names,
+            qualify_then_canonicalize,
             schema=schema,
             catalog="c",
             db="db",
@@ -1044,11 +1050,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # from a different table is a real change and must produce a different canonical form.
         # (Tables are assumed to be qualified with catalog.db.table; an unqualified table
         # name is treated as an internal handle and canonicalized, like a CTE reference.)
-        canon_a = canonicalize_internal_names(
+        canon_a = qualify_then_canonicalize(
             parse_one("SELECT id, name FROM cat.db.users WHERE id > 5"),
             schema={"cat": {"db": {"users": {"id": "INT", "name": "TEXT"}}}},
         )
-        canon_diff_table = canonicalize_internal_names(
+        canon_diff_table = qualify_then_canonicalize(
             parse_one("SELECT id, name FROM cat.db.employees WHERE id > 5"),
             schema={"cat": {"db": {"employees": {"id": "INT", "name": "TEXT"}}}},
         )
@@ -1056,7 +1062,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # Renaming a base-table column is likewise a data-contract change and must be
         # detected even when everything else about the query shape is identical.
-        canon_rename = canonicalize_internal_names(
+        canon_rename = qualify_then_canonicalize(
             parse_one("SELECT emp_id, full_name FROM cat.db.users WHERE emp_id > 5"),
             schema={"cat": {"db": {"users": {"emp_id": "INT", "full_name": "TEXT"}}}},
         )
@@ -1064,11 +1070,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # User-chosen table alias is an internal handle with no semantic effect — the same
         # query with a different alias produces the same canonical form.
-        canon_alias_a = canonicalize_internal_names(
+        canon_alias_a = qualify_then_canonicalize(
             parse_one("SELECT foo.id FROM users AS foo"),
             schema={"users": {"id": "INT"}},
         )
-        canon_alias_b = canonicalize_internal_names(
+        canon_alias_b = qualify_then_canonicalize(
             parse_one("SELECT bar.id FROM users AS bar"),
             schema={"users": {"id": "INT"}},
         )
@@ -1077,21 +1083,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Aliases on sources whose columns are never referenced are still internal
         # handles and must be canonicalized — otherwise structurally identical queries
         # would diverge purely on user-chosen names.
-        canon_unref_a = canonicalize_internal_names(
+        canon_unref_a = qualify_then_canonicalize(
             parse_one("SELECT 1 FROM users AS foo CROSS JOIN logs AS bar"),
             schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
         )
-        canon_unref_b = canonicalize_internal_names(
+        canon_unref_b = qualify_then_canonicalize(
             parse_one("SELECT 1 FROM users AS baz CROSS JOIN logs AS qux"),
             schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
         )
         self.assertEqual(canon_unref_a.sql(), canon_unref_b.sql())
 
-        canon_exists_a = canonicalize_internal_names(
+        canon_exists_a = qualify_then_canonicalize(
             parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS abc)"),
             schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
         )
-        canon_exists_b = canonicalize_internal_names(
+        canon_exists_b = qualify_then_canonicalize(
             parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS xyz)"),
             schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
         )
@@ -1100,7 +1106,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Physical table identity is preserved for real tables (only the alias is
         # canonicalized); base-table column names and top-level output aliases are
         # preserved because they're part of the query's outward data contract.
-        canon = canonicalize_internal_names(
+        canon = qualify_then_canonicalize(
             parse_one("SELECT a FROM x"),
             schema={"x": {"a": "INT"}},
             db="mydb",
@@ -1110,10 +1116,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # Top-level output alias is part of the contract — renaming it changes the
         # canonical form even though the underlying data is identical.
-        canon_named = canonicalize_internal_names(
+        canon_named = qualify_then_canonicalize(
             parse_one("SELECT a AS alpha FROM x"), schema={"x": {"a": "INT"}}
         )
-        canon_renamed = canonicalize_internal_names(
+        canon_renamed = qualify_then_canonicalize(
             parse_one("SELECT a AS beta FROM x"), schema={"x": {"a": "INT"}}
         )
         self.assertNotEqual(canon_named.sql(), canon_renamed.sql())
@@ -1121,11 +1127,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Internal alias inside a CTE is self-consistent (the outer query must use the
         # same name for the rename to be valid SQL), so renaming it with the top-level
         # contract name held constant must not change the canonical form.
-        canon_inner_a = canonicalize_internal_names(
+        canon_inner_a = qualify_then_canonicalize(
             parse_one("WITH t AS (SELECT a AS foo FROM x) SELECT foo AS result FROM t"),
             schema={"x": {"a": "INT"}},
         )
-        canon_inner_b = canonicalize_internal_names(
+        canon_inner_b = qualify_then_canonicalize(
             parse_one("WITH t AS (SELECT a AS bar FROM x) SELECT bar AS result FROM t"),
             schema={"x": {"a": "INT"}},
         )
@@ -1134,11 +1140,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Changing which base-table column a CTE reads must be detected as a real
         # change even when the outer query is byte-for-byte identical (the CTE
         # internally aliases the column so the outer reference name doesn't move).
-        canon_cte_col_a = canonicalize_internal_names(
+        canon_cte_col_a = qualify_then_canonicalize(
             parse_one("WITH t AS (SELECT a AS x FROM src) SELECT x FROM t"),
             schema={"src": {"a": "INT", "b": "INT"}},
         )
-        canon_cte_col_b = canonicalize_internal_names(
+        canon_cte_col_b = qualify_then_canonicalize(
             parse_one("WITH t AS (SELECT b AS x FROM src) SELECT x FROM t"),
             schema={"src": {"a": "INT", "b": "INT"}},
         )
@@ -1147,12 +1153,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # UNION BY NAME: different column-name sets must produce different canonical forms
         # (two branches share no column name => NULL-padded) vs (both share "a" => unified)
         schema_ux = {"x": {"a": "INT"}, "y": {"a": "INT", "b": "INT"}}
-        canon_match = canonicalize_internal_names(
+        canon_match = qualify_then_canonicalize(
             parse_one("SELECT a FROM x UNION BY NAME SELECT a FROM y", dialect="duckdb"),
             schema=schema_ux,
             dialect="duckdb",
         ).sql(dialect="duckdb")
-        canon_diff = canonicalize_internal_names(
+        canon_diff = qualify_then_canonicalize(
             parse_one("SELECT a FROM x UNION BY NAME SELECT b FROM y", dialect="duckdb"),
             schema=schema_ux,
             dialect="duckdb",
@@ -1166,7 +1172,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "y": {"b": "INT"},
             "z": {"c": "INT", "d": "INT"},
         }
-        canon_nested_a = canonicalize_internal_names(
+        canon_nested_a = qualify_then_canonicalize(
             parse_one(
                 "SELECT a + 1 AS shared FROM x UNION BY NAME "
                 "(SELECT b AS shared FROM y UNION BY NAME SELECT c AS shared FROM z)",
@@ -1175,7 +1181,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             schema=schema_nested,
             dialect="duckdb",
         ).sql(dialect="duckdb")
-        canon_nested_b = canonicalize_internal_names(
+        canon_nested_b = qualify_then_canonicalize(
             parse_one(
                 "SELECT a + 1 AS shared FROM x UNION BY NAME "
                 "(SELECT b AS shared FROM y UNION BY NAME SELECT d AS shared FROM z)",
@@ -1189,10 +1195,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Case-folding semantics: in case-insensitive dialects (e.g. postgres, lowercase-folding)
         # unquoted `a` and quoted `"a"` refer to the same column and must match.
         pg_schema = {"x": {"a": "INT", "b": "INT"}}
-        canon_pg_a = canonicalize_internal_names(
+        canon_pg_a = qualify_then_canonicalize(
             parse_one("SELECT a FROM x", dialect="postgres"), schema=pg_schema, dialect="postgres"
         ).sql(dialect="postgres")
-        canon_pg_qa = canonicalize_internal_names(
+        canon_pg_qa = qualify_then_canonicalize(
             parse_one('SELECT "a" FROM x', dialect="postgres"), schema=pg_schema, dialect="postgres"
         ).sql(dialect="postgres")
         self.assertEqual(canon_pg_a, canon_pg_qa)
@@ -1202,7 +1208,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # and the quote state on the lowercase column is retained because dropping it
         # would let Snowflake re-case-fold `a` back to `A` (changing semantics).
         sf_schema = {"X": {"A": "INT", '"a"': "INT"}}
-        canon_sf = canonicalize_internal_names(
+        canon_sf = qualify_then_canonicalize(
             parse_one('SELECT a, "a" FROM x', dialect="snowflake"),
             schema=sf_schema,
             dialect="snowflake",
@@ -1215,7 +1221,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # But unquoted `A` and quoted `"A"` reference the same column — they must coalesce
         # to the same canonical form.
         sf_schema2 = {"X": {"A": "INT"}}
-        canon_sf2 = canonicalize_internal_names(
+        canon_sf2 = qualify_then_canonicalize(
             parse_one('SELECT A, "A" FROM x', dialect="snowflake"),
             schema=sf_schema2,
             dialect="snowflake",

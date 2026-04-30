@@ -3,22 +3,14 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
-from sqlglot.schema import Schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def canonicalize_internal_names(
-    expression: E,
-    dialect: DialectType = None,
-    schema: dict[str, object] | Schema | None = None,
-    **qualify_kwargs: t.Any,
-) -> E:
+def canonicalize_internal_names(expression: E) -> E:
     """
     Rewrite a query to a canonical structural form.
 
@@ -27,13 +19,17 @@ def canonicalize_internal_names(
     internal column aliases) to sequential `_tN` / `_cN`. For set operations the
     top-level output is the leftmost leaf SELECT.
 
+    Assumes the expression has already been processed by `qualify` (or equivalent),
+    so that columns are bound to sources and aliases exist on every projection /
+    subquery / CTE.
+
     Example:
         >>> import sqlglot
+        >>> from sqlglot.optimizer.qualify import qualify
         >>> schema = {"src": {"c1": "INT", "c2": "INT"}}
-        >>> canonicalize_internal_names(sqlglot.parse_one("WITH t AS (SELECT c1, c2 FROM c.db.src) SELECT * FROM t"), schema=schema).sql()
+        >>> canonicalize_internal_names(qualify(sqlglot.parse_one("WITH t AS (SELECT c1, c2 FROM c.db.src) SELECT * FROM t"), schema=schema)).sql()
         'WITH "_t1" AS (SELECT "_t0"."c1" AS "_c0", "_t0"."c2" AS "_c1" FROM "c"."db"."src" AS "_t0") SELECT "_t1"."_c0" AS "c1", "_t1"."_c1" AS "c2" FROM "_t1" AS "_t1"'
     """
-    expression = t.cast("E", qualify(expression, dialect=dialect, schema=schema, **qualify_kwargs))
 
     # Top-level output scopes: their aliases are the query's data contract.
     # Regular UNION takes names from the left branch; UNION BY NAME takes names

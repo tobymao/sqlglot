@@ -96,12 +96,20 @@ class RedshiftParser(PostgresParser):
         this = self._parse_bitwise()
         return self.expression(exp.TryCast(this=this, to=to, safe=safe))
 
-    def _parse_approximate_count(self) -> exp.ApproxDistinct | None:
+    def _parse_approximate_count(self) -> exp.ApproxDistinct | exp.ApproxQuantile | None:
         index = self._index - 1
         func = self._parse_function()
 
         if isinstance(func, exp.Count) and isinstance(func.this, exp.Distinct):
             return self.expression(exp.ApproxDistinct(this=seq_get(func.this.expressions, 0)))
+        if isinstance(func, exp.WithinGroup) and isinstance(func.this, exp.PercentileDisc):
+            ordered = seq_get(func.expression.expressions, 0)
+            return self.expression(
+                exp.ApproxQuantile(
+                    this=ordered.this if ordered else None,
+                    quantile=func.this.this,
+                )
+            )
         self._retreat(index)
         return None
 

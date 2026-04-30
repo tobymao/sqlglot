@@ -332,7 +332,12 @@ class TypeAnnotator:
                     selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
             for pivot in scope.pivots:
-                if pivot.unpivot and (col_types := self._get_unpivot_column_types(pivot, selects)):
+                col_types = (
+                    self._get_unpivot_column_types(pivot, selects)
+                    if pivot.unpivot
+                    else self._get_pivot_column_types(pivot, selects)
+                )
+                if col_types:
                     selects[pivot.alias] = col_types
 
             self._scope_selects[scope] = selects
@@ -646,6 +651,52 @@ class TypeAnnotator:
             for name in pivot.output_columns(src_types)
             if (type_ := new_types.get(name) or src_types.get(name))
         }
+
+    def _get_pivot_column_types(
+        self, pivot: exp.Pivot, selects: dict[str, dict[str, t.Any]]
+    ) -> dict[str, t.Any]:
+        parent = pivot.parent
+        src_types = selects.get(parent.alias_or_name, {}) if parent else {}
+        if (
+            not src_types
+            and isinstance(parent, exp.Table)
+            and isinstance(self.schema, MappingSchema)
+        ):
+            src_types = (
+                self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
+            )
+
+        agg_types = [
+            agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions
+        ]
+
+        first_field = seq_get(pivot.fields, 0)
+        assert isinstance(first_field, exp.In)
+        pivot_constants = first_field.expressions
+
+        # output_columns() returns {post_rename: pre_rename}; the trailing pivoted
+        # slice is typed by the (constants x aggs) cross-product, while leading
+        # passthroughs (possibly renamed by `AS alias(...)`) look up their types
+        # via the pre-rename source name.
+        output_to_src = pivot.output_columns(src_types)
+        agg_cols_offset = len(output_to_src) - len(pivot_constants) * len(agg_types)
+        assert agg_cols_offset >= 0
+
+        output_names = list(output_to_src)
+        new_types: dict[str, t.Any] = {}
+
+        for name in output_names[:agg_cols_offset]:
+            if type_ := src_types.get(output_to_src[name]):
+                new_types[name] = type_
+
+        for name, agg_type in zip(
+            output_names[agg_cols_offset:],
+            (a for _ in pivot_constants for a in agg_types),
+        ):
+            if agg_type:
+                new_types[name] = agg_type
+
+        return new_types
 
     def _annotate_binary(self, expression: B) -> B:
         left, right = expression.left, expression.right

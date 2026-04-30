@@ -1763,14 +1763,15 @@ class Pivot(Expression):
     def fields(self) -> list[Expr]:
         return self.args.get("fields", [])
 
-    def output_columns(self, pre_pivot_columns: t.Iterable[str]) -> list[str]:
+    def output_columns(self, pre_pivot_columns: t.Iterable[str]) -> dict[str, str]:
         """
-        Returns the columns produced by this (UN)PIVOT, in order.
+        Returns an ordered map of post-rename output column name -> pre-rename
+        source-side name, in the order the (UN)PIVOT produces them.
 
-        Example:
+        For callers that just want the names, iterate the dict (or call .keys()):
             >>> from sqlglot import parse_one, exp
             >>> piv = parse_one("SELECT * FROM t UNPIVOT(val FOR name IN (a, b))").find(exp.Pivot)
-            >>> piv.output_columns(["a", "b", "c"])
+            >>> list(piv.output_columns(["a", "b", "c"]))
             ['c', 'name', 'val']
 
         AST shape:
@@ -1813,9 +1814,23 @@ class Pivot(Expression):
                 outputs = [c.alias_or_name for c in self.expressions]
 
         if not excluded or not outputs:
-            return []
+            return {}
 
-        return [c for c in pre_pivot_columns if c not in excluded] + outputs
+        pre_rename = [c for c in pre_pivot_columns if c not in excluded] + outputs
+
+        alias = self.args.get("alias")
+        renames = alias.args.get("columns") if alias else None
+
+        # `PIVOT(...) AS alias(c1, c2, ...)` renames the operator's output columns
+        # positionally from the front (DuckDB, Snowflake): the user's names cover
+        # the leading N output columns, remaining columns keep their auto names.
+        if renames:
+            rename_names = [r.name for r in renames]
+            post_rename = rename_names + pre_rename[len(rename_names) :]
+        else:
+            post_rename = pre_rename
+
+        return dict(zip(post_rename, pre_rename))
 
 
 class UnpivotColumns(Expression):

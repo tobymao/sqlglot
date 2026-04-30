@@ -1342,7 +1342,6 @@ FROM foo""",
         assert expr1.meta == {}
 
     def test_pipe_and_apply(self) -> None:
-
         def add_val(expr: exp.Expr, val: int, *, squared: bool) -> exp.Expr:
             nb = val**2 if squared else val
             return expr + nb

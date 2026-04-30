@@ -623,6 +623,9 @@ class Generator:
 
     UNSUPPORTED_TYPES: t.ClassVar[set[exp.DType]] = set()
 
+    TYPE_DEFAULT_PARAMS: t.ClassVar[dict[exp.DType, tuple[int, ...]]] = {}
+    TYPE_PARAM_BOUNDS: t.ClassVar[dict[exp.DType, tuple[int | None, ...]]] = {}
+
     TIME_PART_SINGULARS: t.ClassVar = {
         "MICROSECONDS": "MICROSECOND",
         "SECONDS": "SECOND",
@@ -1636,11 +1639,65 @@ class Generator:
         specifier = f" {specifier}" if specifier and self.DATA_TYPE_SPECIFIERS_ALLOWED else ""
         return f"{this}{specifier}"
 
+    def datatype_param_bound_limiter(
+        self, expression: exp.DataType, type_value: exp.DType
+    ) -> exp.DataType:
+        params = expression.expressions
+
+        if not params:
+            if defaults := self.TYPE_DEFAULT_PARAMS.get(type_value):
+                expression = expression.copy()
+                expression.set(
+                    "expressions",
+                    [exp.DataTypeParam(this=exp.Literal.number(d)) for d in defaults],
+                )
+            return expression
+
+        bounds = self.TYPE_PARAM_BOUNDS.get(type_value)
+        if not bounds:
+            return expression
+
+        new_params = list(params)
+        changed = False
+        for i, param in enumerate(params):
+            bound = bounds[i] if i < len(bounds) else None
+            if bound is None:
+                continue
+
+            param_value = param.this if isinstance(param, exp.DataTypeParam) else param
+            if (
+                isinstance(param_value, exp.Literal)
+                and param_value.is_number
+                and int(param_value.to_py()) > bound
+            ):
+                self.unsupported(
+                    f"{type_value.value} parameter ({int(param_value.to_py())}) "
+                    f"exceeds {self.dialect.__class__.__name__}'s maximum capping to {bound}"
+                )
+                new_param = param.copy()
+                capped = exp.Literal.number(bound)
+                if isinstance(new_param, exp.DataTypeParam):
+                    new_param.set("this", capped)
+                else:
+                    new_param = capped
+                new_params[i] = new_param
+                changed = True
+
+        if changed:
+            expression = expression.copy()
+            expression.set("expressions", new_params)
+        return expression
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         nested = ""
         values = ""
 
         expr_nested = expression.args.get("nested")
+        type_value = expression.this
+
+        if not expr_nested and isinstance(type_value, exp.DType):
+            expression = self.datatype_param_bound_limiter(expression, type_value)
+
         interior = (
             self.expressions(
                 expression, dynamic=True, new_line=True, skip_first=True, skip_last=True
@@ -1649,7 +1706,6 @@ class Generator:
             else self.expressions(expression, flat=True)
         )
 
-        type_value = expression.this
         if type_value in self.UNSUPPORTED_TYPES:
             self.unsupported(
                 f"Data type {type_value.value} is not supported when targeting {self.dialect.__class__.__name__}"

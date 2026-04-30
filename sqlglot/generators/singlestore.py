@@ -361,7 +361,12 @@ class SingleStoreGenerator(MySQLGenerator):
         exp.DType.JSONB: "BSON",
         exp.DType.TIMESTAMP: "TIMESTAMP",
         exp.DType.TIMESTAMP_S: "TIMESTAMP",
-        exp.DType.TIMESTAMP_MS: "TIMESTAMP(6)",
+        exp.DType.TIMESTAMP_MS: "TIMESTAMP",
+    }
+
+    TYPE_DEFAULT_PARAMS = {
+        **MySQLGenerator.TYPE_DEFAULT_PARAMS,
+        exp.DType.TIMESTAMP_MS: (6,),
     }
 
     # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/

@@ -393,11 +393,27 @@ class TestDatabricks(Validator):
             "SELECT DATEDIFF('end', 'start')",
             write={"databricks": "SELECT DATEDIFF(DAY, 'start', 'end')"},
         )
+        # 2-arg DATE_ADD returns DATE in Databricks regardless of input type;
+        # tsql output wraps the operand with a DATE cast to preserve that contract.
         self.validate_all(
             "SELECT DATE_ADD('2020-01-01', 1)",
             write={
-                "tsql": "SELECT DATEADD(DAY, 1, '2020-01-01')",
-                "databricks": "SELECT DATEADD(DAY, 1, '2020-01-01')",
+                "tsql": "SELECT DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
+                "databricks": "SELECT DATE_ADD('2020-01-01', 1)",
+            },
+        )
+        # 3-arg form preserves the operand's type; round-trips as DATEADD.
+        self.validate_all(
+            "SELECT DATE_ADD(MONTH, 1, '2020-01-01')",
+            write={
+                "databricks": "SELECT DATEADD(MONTH, 1, '2020-01-01')",
+            },
+        )
+        # `dateadd` is a full alias for `date_add`; arity selects the semantic.
+        self.validate_all(
+            "SELECT DATEADD(e, 24) FROM t",
+            write={
+                "databricks": "SELECT DATE_ADD(e, 24) FROM t",
             },
         )
 

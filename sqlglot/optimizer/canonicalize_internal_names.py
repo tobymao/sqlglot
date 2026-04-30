@@ -69,7 +69,16 @@ def canonicalize_internal_names(expression: E) -> E:
         for table_col in scope.table_columns:
             columns_by_source.setdefault(table_col.name, []).append(table_col)
 
-        table_map: dict[str, str] = {}
+        # source_canon: source's canonical name (used in WITH "_tN" AS, and as
+        #   the physical table name in `Table.this`). Shared across every reference
+        #   to the same source within this scope.
+        # ref_alias:   per-reference canonical alias (used as the alias on each
+        #   `Table` node and as the qualifier on its column refs). The first
+        #   reference reuses source_canon for compactness; subsequent refs get
+        #   fresh `_tN` names so a self-join like `cte AS x JOIN cte AS y`
+        #   produces unique aliases.
+        table_map: dict[str, tuple[str, str]] = {}
+        ref_canon_taken: set[str] = set()
 
         for source_name, source in scope.sources.items():
             source_cols = columns_by_source.get(source_name, [])
@@ -117,13 +126,19 @@ def canonicalize_internal_names(expression: E) -> E:
             else:
                 continue
 
-            table_map[source_name] = canon_t
+            if canon_t in ref_canon_taken:
+                ref_alias = next_table()
+            else:
+                ref_alias = canon_t
+                ref_canon_taken.add(canon_t)
+
+            table_map[source_name] = (canon_t, ref_alias)
 
             for src_col in source_cols:
                 # BigQuery whole-row struct ref (`SELECT t FROM t`): the identifier
-                # IS the table alias, so rename it to the canonical table name.
+                # IS the table alias, so rename it to this reference's alias.
                 if isinstance(src_col, exp.TableColumn):
-                    _canon(src_col.this, canon_t)
+                    _canon(src_col.this, ref_alias)
                     continue
 
                 old_name = src_col.name
@@ -145,11 +160,13 @@ def canonicalize_internal_names(expression: E) -> E:
 
                 table_id = src_col.args.get("table")
                 if table_id:
-                    _canon(table_id, canon_t)
+                    _canon(table_id, ref_alias)
 
             if alias_holder:
                 if alias := alias_holder.args.get("alias"):
                     if isinstance(alias.this, exp.Identifier):
+                        # The CTE/Subquery name itself uses source_canon (canon_t),
+                        # not ref_alias — it's the source's identity, not a reference.
                         _canon(alias.this, canon_t)
                     if alias.columns:
                         alias.set(
@@ -186,19 +203,22 @@ def canonicalize_internal_names(expression: E) -> E:
                     _canon(table_id, canon_t)
 
         for table in scope.tables:
-            canon = table_map.get(table.alias_or_name)
-            if not canon:
+            entry = table_map.get(table.alias_or_name)
+            if not entry:
                 continue
+            source_canon, ref_alias = entry
 
             # Real tables (qualified with db/catalog) keep their physical name;
-            # CTE/subquery references get the canonical `_tN`.
+            # CTE/subquery references get the source's canonical `_tN`.
             if isinstance(table.this, exp.Identifier) and not table.args.get("db"):
-                _canon(table.this, canon)
+                _canon(table.this, source_canon)
 
             alias = table.args.get("alias")
             if alias:
+                # The reference alias uses ref_alias, which is unique per Table
+                # node so multiple references to the same source can coexist.
                 if isinstance(alias.this, exp.Identifier):
-                    _canon(alias.this, canon)
+                    _canon(alias.this, ref_alias)
                 if alias.columns:
                     tc = table_columns.get(id(table), {})
                     alias.set(

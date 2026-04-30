@@ -1228,6 +1228,48 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         ).sql(dialect="snowflake")
         self.assertEqual(canon_sf2, 'SELECT "_t0"."A" AS "A", "_t0"."A" AS "A" FROM "_t0" AS "_t0"')
 
+        # Multiple references to the same source within a single scope (self-join on a
+        # CTE) must produce distinct per-reference aliases. Forcing each Table.alias to
+        # match the source's canonical name collapses both into `_tN AS _tN` and breaks
+        # downstream consumers (lineage's Scope.selected_sources raises "Alias already
+        # used"); column qualifiers like `x.foo` and `y.foo` also collapse to identical
+        # AST nodes, losing the distinction between the two references.
+        cte_self_join_schema = {"src": {"foo": "INT", "bar": "INT"}}
+        canon_self_join = qualify_then_canonicalize(
+            parse_one(
+                "WITH t AS (SELECT * FROM src) "
+                "SELECT x.foo AS l, y.bar AS r FROM t AS x JOIN t AS y ON x.foo = y.foo"
+            ),
+            schema=cte_self_join_schema,
+        )
+        self.assertEqual(
+            canon_self_join.sql(),
+            'WITH "_t1" AS (SELECT "_t0"."foo" AS "_c0", "_t0"."bar" AS "_c1" FROM "_t0" AS "_t0") '
+            'SELECT "_t2"."_c0" AS "l", "_t3"."_c1" AS "r" '
+            'FROM "_t1" AS "_t2" JOIN "_t1" AS "_t3" ON "_t2"."_c0" = "_t3"."_c0"',
+        )
+
+        # Three references to the same CTE: each gets its own alias from the global
+        # `_tN` sequence, and column refs are correctly disambiguated per reference.
+        canon_triple = qualify_then_canonicalize(
+            parse_one(
+                "WITH t AS (SELECT * FROM src) "
+                "SELECT a.foo, b.foo, c.foo FROM t AS a "
+                "JOIN t AS b ON a.foo = b.foo "
+                "JOIN t AS c ON b.foo = c.foo"
+            ),
+            schema=cte_self_join_schema,
+        )
+        # Re-walking the canonicalized AST must succeed (this is exactly what lineage
+        # does when computing Scope.selected_sources, and where the bug surfaced).
+        # selected_sources on the outer scope must contain three distinct entries —
+        # one per Table reference — even though they all back the same CTE source.
+        canon_triple_scope = build_scope(canon_triple)
+        assert canon_triple_scope is not None
+        outer_table_aliases = [t.alias for t in canon_triple_scope.tables]
+        self.assertEqual(len(set(outer_table_aliases)), 3, outer_table_aliases)
+        self.assertEqual(len(canon_triple_scope.selected_sources), 3)
+
     def test_canonicalize(self):
         optimize = partial(
             optimizer.optimize,

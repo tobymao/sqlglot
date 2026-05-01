@@ -4221,6 +4221,9 @@ class DuckDBGenerator(generator.Generator):
         # UNHEX('FF') correctly produces blob \xFF in DuckDB
         return super().hexstring_sql(expression, binary_function_repr="UNHEX")
 
+    def hexdecodestring_sql(self, expression: exp.HexDecodeString) -> str:
+        return self.sql(exp.Decode(this=exp.Unhex(this=expression.this)))
+
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.args.get("unit")
         date = expression.this

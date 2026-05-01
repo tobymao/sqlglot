@@ -3607,6 +3607,22 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(result)
 
+    def hexencode_sql(self, expression: exp.HexEncode) -> str:
+        arg = expression.this
+        case = expression.args.get("case")
+        hex_expr = exp.Hex(this=arg)
+
+        if case is None:
+            return self.sql(hex_expr)
+
+        # Emit runtime CASE WHEN to handle NULL propagation and case=0 (lowercase) vs case=1 (uppercase)
+        return self.sql(
+            exp.case()
+            .when(case.is_(exp.null()), exp.null())
+            .when(case.copy().eq(0), exp.Lower(this=hex_expr.copy()))
+            .else_(hex_expr)
+        )
+
     def replace_sql(self, expression: exp.Replace) -> str:
         result_sql = self.func(
             "REPLACE",

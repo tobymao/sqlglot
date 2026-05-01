@@ -66,6 +66,11 @@ class RedshiftParser(PostgresParser):
         "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp(sysdate=True)),
     }
 
+    FUNCTION_PARSERS = {
+        **PostgresParser.FUNCTION_PARSERS,
+        "OBJECT_TRANSFORM": lambda self: self._parse_object_transform(),
+    }
+
     SUPPORTS_IMPLICIT_UNNEST = True
 
     def _parse_table(
@@ -95,6 +100,16 @@ class RedshiftParser(PostgresParser):
         self._match(TokenType.COMMA)
         this = self._parse_bitwise()
         return self.expression(exp.TryCast(this=this, to=to, safe=safe))
+
+    def _parse_object_transform(self) -> exp.ObjectTransform:
+        this = self._parse_column()
+        keep: list[exp.Expr] = []
+        set_: list[exp.Expr] = []
+        if self._match(TokenType.KEEP):
+            keep = self._parse_csv(self._parse_primary)
+        if self._match(TokenType.SET):
+            set_ = self._parse_csv(self._parse_expression)
+        return self.expression(exp.ObjectTransform(this=this, keep=keep, set_=set_))
 
     def _parse_approximate_count(self) -> exp.ApproxDistinct | exp.ApproxQuantile | None:
         index = self._index - 1

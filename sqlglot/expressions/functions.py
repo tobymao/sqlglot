@@ -148,6 +148,10 @@ class Nullif(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
+class ObjectTransform(Expression, Func):
+    arg_types = {"this": True, "keep": False, "set_": False}
+
+
 class Nvl2(Expression, Func):
     arg_types = {"this": True, "true": True, "false": False}
 

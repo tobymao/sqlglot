@@ -128,6 +128,28 @@ class RedshiftParser(PostgresParser):
         self._retreat(index)
         return None
 
+    def _parse_limit(self, this=None, top=False, skip_limit_token=False):
+        limit = super()._parse_limit(this=this, top=top, skip_limit_token=skip_limit_token)
+        if top and limit and self._match_set(self.DISTINCT_TOKENS):
+            limit.set("distinct", self.expression(exp.Distinct()))
+        return limit
+
+    def _parse_select_query(
+        self, nested=False, table=False, parse_subquery_alias=True, parse_set_operation=True
+    ):
+        result = super()._parse_select_query(
+            nested=nested,
+            table=table,
+            parse_subquery_alias=parse_subquery_alias,
+            parse_set_operation=parse_set_operation,
+        )
+        if isinstance(result, exp.Select) and not result.args.get("distinct"):
+            limit = result.args.get("limit")
+            distinct = limit and limit.args.pop("distinct", None)
+            if distinct:
+                result.set("distinct", distinct)
+        return result
+
     def _parse_projections(self) -> tuple[list[exp.Expr], list[exp.Expr] | None]:
         projections, _ = super()._parse_projections()
         if self._prev.text.upper() == "EXCLUDE" and self._curr:

@@ -1052,15 +1052,33 @@ class Generator:
 
         pad = self.pad if pad is None else pad
         lines = sql.split("\n")
+        result = []
+        in_quote = ""
 
-        return "\n".join(
-            (
-                line
-                if (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
-                else f"{' ' * (level * self._indent + pad)}{line}"
+        for i, line in enumerate(lines):
+            should_indent = not (
+                (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
             )
-            for i, line in enumerate(lines)
-        )
+            result.append(
+                f"{' ' * (level * self._indent + pad)}{line}"
+                if should_indent and not in_quote
+                else line
+            )
+            it = enumerate(line)
+            for j, c in it:
+                if in_quote:
+                    if c == in_quote:
+                        if j + 1 < len(line) and line[j + 1] == in_quote:
+                            next(it, None)
+                        else:
+                            in_quote = ""
+                else:
+                    if c == self.dialect.QUOTE_START:
+                        in_quote = self.dialect.QUOTE_END
+                    elif c == self._identifier_start:
+                        in_quote = self._identifier_end
+
+        return "\n".join(result)
 
     def sql(
         self,

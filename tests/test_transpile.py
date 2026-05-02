@@ -988,6 +988,12 @@ ORDER BY
             transpile("SELECT '1\n2'", pretty=True, unsupported_level=ErrorLevel.IGNORE)[0],
             "SELECT\n  '1\n2'",
         )
+        # Quoted identifiers with literal newlines must not be reindented (GH #7593)
+        self.assertEqual(transpile('SELECT "1\n2"', pretty=True)[0], 'SELECT\n  "1\n2"')
+        self.assertEqual(
+            transpile('SELECT "Product\n(Foo, Bar)" AS x FROM t', pretty=True)[0],
+            'SELECT\n  "Product\n(Foo, Bar)" AS x\nFROM t',
+        )
 
     def test_sql_security(self):
         sqlglot_sql = "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1"

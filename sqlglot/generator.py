@@ -1056,9 +1056,7 @@ class Generator:
         in_quote = ""
 
         for i, line in enumerate(lines):
-            should_indent = not (
-                (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
-            )
+            should_indent = not ((skip_first and i == 0) or (skip_last and i == len(lines) - 1))
             result.append(
                 f"{' ' * (level * self._indent + pad)}{line}"
                 if should_indent and not in_quote

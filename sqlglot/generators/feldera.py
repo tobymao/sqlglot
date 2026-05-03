@@ -47,7 +47,10 @@ class FelderaGenerator(PostgresGenerator):
         return "LINEAR"
 
     def declarerecursiveview_sql(self, expression: exp.DeclareRecursiveView) -> str:
-        return f"DECLARE RECURSIVE VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+        return f"DECLARE RECURSIVE VIEW {self.sql(expression, 'this')}"
+
+    def watermarkcolumnconstraint_sql(self, expression: exp.WatermarkColumnConstraint) -> str:
+        return f"WATERMARK {self.sql(expression, 'expression')}"
 
     def exists_sql(self, expression: exp.Exists) -> str:
         predicate = expression.args.get("expression")

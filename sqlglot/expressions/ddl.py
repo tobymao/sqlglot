@@ -371,7 +371,7 @@ class Lateness(Expression):
 
 
 class DeclareRecursiveView(Expression, DDL):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True}
 
 
 class Transaction(Expression):

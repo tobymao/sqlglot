@@ -187,7 +187,7 @@ class LatenessColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class WatermarkColumnConstraint(Expression):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": False, "expression": True}
 
 
 class PathColumnConstraint(Expression, ColumnConstraintKind):

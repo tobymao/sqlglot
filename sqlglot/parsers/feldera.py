@@ -33,10 +33,7 @@ class FelderaParser(PostgresParser):
             exp.LatenessColumnConstraint(this=self._parse_disjunction())
         ),
         "WATERMARK": lambda self: self.expression(
-            exp.WatermarkColumnConstraint(
-                this=self._match(TokenType.FOR) and self._parse_column(),
-                expression=self._match(TokenType.ALIAS) and self._parse_disjunction(),
-            )
+            exp.WatermarkColumnConstraint(expression=self._parse_disjunction())
         ),
     }
 
@@ -136,14 +133,11 @@ class FelderaParser(PostgresParser):
             return self._parse_feldera_command(start)
 
         this = self._parse_table_parts(schema=True)
-        if not this or not self._match(TokenType.ALIAS):
+        schema = self._parse_schema(this=this)
+        if not isinstance(schema, exp.Schema):
             return self._parse_feldera_command(start)
 
-        expression = self._parse_ddl_select()
-        if not expression:
-            return self._parse_feldera_command(start)
-
-        return self.expression(exp.DeclareRecursiveView(this=this, expression=expression))
+        return self.expression(exp.DeclareRecursiveView(this=schema))
 
     def _parse_lateness(self) -> exp.Lateness:
         return self.expression(

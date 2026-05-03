@@ -33,7 +33,7 @@ class FelderaParser(PostgresParser):
             exp.LatenessColumnConstraint(this=self._parse_disjunction())
         ),
         "WATERMARK": lambda self: self.expression(
-            exp.WatermarkColumnConstraint(expression=self._parse_disjunction())
+            exp.FelderaWatermarkColumnConstraint(expression=self._parse_disjunction())
         ),
     }
 
@@ -137,7 +137,7 @@ class FelderaParser(PostgresParser):
         if not isinstance(schema, exp.Schema):
             return self._parse_feldera_command(start)
 
-        return self.expression(exp.DeclareRecursiveView(this=schema))
+        return self.expression(exp.FelderaDeclareRecursiveView(this=schema))
 
     def _parse_lateness(self) -> exp.Lateness:
         return self.expression(

@@ -187,6 +187,10 @@ class LatenessColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class WatermarkColumnConstraint(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
+class FelderaWatermarkColumnConstraint(WatermarkColumnConstraint):
     arg_types = {"this": False, "expression": True}
 
 

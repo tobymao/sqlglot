@@ -371,6 +371,10 @@ class Lateness(Expression):
 
 
 class DeclareRecursiveView(Expression, DDL):
+    arg_types = {"this": True, "expression": True}
+
+
+class FelderaDeclareRecursiveView(DeclareRecursiveView):
     arg_types = {"this": True}
 
 

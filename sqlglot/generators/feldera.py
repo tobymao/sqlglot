@@ -52,6 +52,14 @@ class FelderaGenerator(PostgresGenerator):
     def watermarkcolumnconstraint_sql(self, expression: exp.WatermarkColumnConstraint) -> str:
         return f"WATERMARK {self.sql(expression, 'expression')}"
 
+    def felderadeclarerecursiveview_sql(self, expression: exp.FelderaDeclareRecursiveView) -> str:
+        return self.declarerecursiveview_sql(expression)
+
+    def felderawatermarkcolumnconstraint_sql(
+        self, expression: exp.FelderaWatermarkColumnConstraint
+    ) -> str:
+        return self.watermarkcolumnconstraint_sql(expression)
+
     def exists_sql(self, expression: exp.Exists) -> str:
         predicate = expression.args.get("expression")
         if predicate is not None:

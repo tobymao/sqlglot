@@ -5563,6 +5563,12 @@ class Generator:
             f"WATERMARK FOR {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
         )
 
+    def internedcolumnconstraint_sql(self, expression: exp.InternedColumnConstraint) -> str:
+        return "INTERNED"
+
+    def latenesscolumnconstraint_sql(self, expression: exp.LatenessColumnConstraint) -> str:
+        return f"LATENESS {self.sql(expression, 'this')}"
+
     def encodeproperty_sql(self, expression: exp.EncodeProperty) -> str:
         encode = "KEY ENCODE" if expression.args.get("key") else "ENCODE"
         encode = f"{encode} {self.sql(expression, 'this')}"

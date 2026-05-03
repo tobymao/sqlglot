@@ -178,6 +178,14 @@ class UppercaseColumnConstraint(Expression, ColumnConstraintKind):
     arg_types = {}
 
 
+class InternedColumnConstraint(Expression, ColumnConstraintKind):
+    arg_types = {}
+
+
+class LatenessColumnConstraint(Expression, ColumnConstraintKind):
+    arg_types = {"this": True}
+
+
 class WatermarkColumnConstraint(Expression):
     arg_types = {"this": True, "expression": True}
 

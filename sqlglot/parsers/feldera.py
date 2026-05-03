@@ -59,10 +59,29 @@ class FelderaParser(PostgresParser):
         return super()._parse_statement()
 
     def _parse_create(self) -> exp.Create | exp.Command:
+        if self._curr and self._curr.text.upper() == "TYPE":
+            return self._parse_create_type(self._prev)
+
         if self._curr and self._curr.text.upper() in {"LINEAR", "AGGREGATE"}:
             return self._parse_create_aggregate(self._prev)
 
         return super()._parse_create()
+
+    def _parse_create_type(self, start: Token) -> exp.Create | exp.Command:
+        if not self._match_text_seq("TYPE"):
+            return self._parse_as_command(start)
+
+        exists = self._parse_exists(not_=True)
+        this = self._parse_table_parts(schema=True)
+
+        if not this or not self._match(TokenType.ALIAS):
+            return self._parse_as_command(start)
+
+        expression = self._parse_schema() or self._parse_types()
+        if not expression:
+            return self._parse_as_command(start)
+
+        return self.expression(exp.Create(this=this, kind="TYPE", exists=exists, expression=expression))
 
     def _parse_table_window_function(self, name: str) -> exp.Anonymous:
         expressions: list[exp.Expression] = []

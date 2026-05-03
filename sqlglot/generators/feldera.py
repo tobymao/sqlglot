@@ -49,6 +49,12 @@ class FelderaGenerator(PostgresGenerator):
     def declarerecursiveview_sql(self, expression: exp.DeclareRecursiveView) -> str:
         return f"DECLARE RECURSIVE VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
 
+    def exists_sql(self, expression: exp.Exists) -> str:
+        predicate = expression.args.get("expression")
+        if predicate is not None:
+            return self.func("EXISTS", expression.this, predicate)
+        return super().exists_sql(expression)
+
     def nullsafeeq_sql(self, expression: exp.NullSafeEQ) -> str:
         return self.binary(expression, "<=>")
 

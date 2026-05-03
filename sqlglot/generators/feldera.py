@@ -34,6 +34,17 @@ class FelderaGenerator(PostgresGenerator):
         exp.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
     }
 
+    PROPERTIES_LOCATION = {
+        **PostgresGenerator.PROPERTIES_LOCATION,
+        exp.LinearProperty: exp.Properties.Location.POST_CREATE,
+    }
+
+    def linearproperty_sql(self, expression: exp.LinearProperty) -> str:
+        return "LINEAR"
+
+    def declarerecursiveview_sql(self, expression: exp.DeclareRecursiveView) -> str:
+        return f"DECLARE RECURSIVE VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+
     def nullsafeeq_sql(self, expression: exp.NullSafeEQ) -> str:
         return self.binary(expression, "<=>")
 

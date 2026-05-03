@@ -215,6 +215,10 @@ class LanguageProperty(Property):
     arg_types = {"this": True}
 
 
+class LinearProperty(Property):
+    arg_types = {}
+
+
 class EnviromentProperty(Property):
     arg_types = {"expressions": True}
 

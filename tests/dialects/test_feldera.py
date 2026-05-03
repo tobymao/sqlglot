@@ -15,6 +15,16 @@ class TestFeldera(Validator):
         )
         self.validate_identity("SELECT * EXCLUDE (col1, col2) FROM t")
         self.validate_identity("CREATE MATERIALIZED VIEW v AS SELECT * FROM t")
+        self.validate_identity("DECLARE RECURSIVE VIEW v AS SELECT * FROM t")
+        self.assertIsInstance(
+            self.parse_one("DECLARE RECURSIVE VIEW v AS SELECT * FROM t"),
+            exp.DeclareRecursiveView,
+        )
+        self.validate_identity("CREATE LINEAR AGGREGATE a(x INT) RETURNS INT")
+        self.assertIsInstance(
+            self.parse_one("CREATE LINEAR AGGREGATE a(x INT) RETURNS INT"),
+            exp.Create,
+        )
         self.validate_identity("REMOVE FROM t VALUES (1, 'a')")
         self.assertIsInstance(self.parse_one("REMOVE FROM t VALUES (1, 'a')"), exp.Remove)
         self.validate_identity(

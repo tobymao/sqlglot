@@ -155,6 +155,13 @@ class Delete(Expression, DML):
         )
 
 
+class Remove(Expression, DML):
+    arg_types = {
+        "this": True,
+        "expression": True,
+    }
+
+
 class Export(Expression):
     arg_types = {"this": True, "connection": False, "options": True}
 

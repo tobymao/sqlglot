@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -15,6 +16,12 @@ class TestFeldera(Validator):
         self.validate_identity("SELECT * EXCLUDE (col1, col2) FROM t")
         self.validate_identity("CREATE MATERIALIZED VIEW v AS SELECT * FROM t")
         self.validate_identity("REMOVE FROM t VALUES (1, 'a')")
+        self.assertIsInstance(self.parse_one("REMOVE FROM t VALUES (1, 'a')"), exp.Remove)
+        self.validate_identity(
+            "LATENESS v.ts INTERVAL '5' SECOND",
+            "LATENESS v.ts INTERVAL '5 SECOND'",
+        )
+        self.assertIsInstance(self.parse_one("LATENESS v.ts INTERVAL '5' SECOND"), exp.Lateness)
         self.validate_identity(
             "CREATE TABLE t (ts TIMESTAMP LATENESS INTERVAL '1' HOUR, payload INT INTERNED)",
             "CREATE TABLE t (ts TIMESTAMP LATENESS INTERVAL '1 HOUR', payload INT INTERNED)",

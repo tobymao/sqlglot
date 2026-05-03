@@ -1707,6 +1707,9 @@ class Generator:
             expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
         return self.prepend_ctes(expression, f"DELETE{hint}{tables}{expression_sql}")
 
+    def remove_sql(self, expression: exp.Remove) -> str:
+        return f"REMOVE FROM {self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
         expressions = self.expressions(expression, flat=True)
@@ -3857,6 +3860,9 @@ class Generator:
 
     def command_sql(self, expression: exp.Command) -> str:
         return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
+
+    def lateness_sql(self, expression: exp.Lateness) -> str:
+        return f"LATENESS {self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")

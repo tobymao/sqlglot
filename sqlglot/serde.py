@@ -5,10 +5,8 @@ import typing as t
 from sqlglot import expressions as exp
 from types import ModuleType
 
-if t.TYPE_CHECKING:
-    from typing_extensions import TypeIs
 
-StackVal = tuple[t.Union[exp.Expr, exp.DType, t.Any], t.Optional[int], t.Optional[str], bool]
+StackVal = tuple[t.Any, t.Optional[int], t.Optional[str], bool]
 
 
 INDEX = "i"
@@ -44,7 +42,7 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
 
         payloads.append(payload)
 
-        if _has_parent(node):
+        if hasattr(node, "parent"):
             klass = node.__class__.__qualname__
 
             if node.__class__.__module__ != exp.__name__:
@@ -74,10 +72,6 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
         i += 1
 
     return payloads
-
-
-def _has_parent(node: object) -> TypeIs[exp.Expr]:
-    return hasattr(node, "parent")
 
 
 def load(

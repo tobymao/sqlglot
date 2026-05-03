@@ -45,6 +45,7 @@ class Feldera(Postgres):
             "INT64": TokenType.BIGINT,
             "LATENESS": TokenType.VAR,
             "LINEAR": TokenType.VAR,
+            "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MINUS": TokenType.EXCEPT,
             "NUMBER": TokenType.DECIMAL,
             "REMOVE": TokenType.VAR,

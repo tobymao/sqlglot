@@ -6,6 +6,13 @@ from sqlglot.tokens import Token, TokenType
 
 
 class FelderaParser(PostgresParser):
+    JOIN_KINDS = {
+        *PostgresParser.JOIN_KINDS,
+        TokenType.ASOF,
+    }
+
+    TABLE_ALIAS_TOKENS = PostgresParser.TABLE_ALIAS_TOKENS - {TokenType.ASOF}
+
     CONSTRAINT_PARSERS = {
         **PostgresParser.CONSTRAINT_PARSERS,
         "INTERNED": lambda self: self.expression(exp.InternedColumnConstraint()),

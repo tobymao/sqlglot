@@ -13,6 +13,9 @@ class TestFeldera(Validator):
         self.validate_identity(
             "SELECT i, ROW_NUMBER() OVER (PARTITION BY grp ORDER BY ts) AS rn FROM t QUALIFY rn = 1"
         )
+        self.validate_identity(
+            "SELECT * FROM l LEFT ASOF JOIN r MATCH_CONDITION (l.ts >= r.ts) ON l.id = r.id"
+        )
         self.validate_identity("SELECT * EXCLUDE (col1, col2) FROM t")
         self.validate_identity("CREATE MATERIALIZED VIEW v AS SELECT * FROM t")
         self.validate_identity("DECLARE RECURSIVE VIEW v AS SELECT * FROM t")

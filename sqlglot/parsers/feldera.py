@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import Token, TokenType
 
 
 class FelderaParser(PostgresParser):
+    FUNCTION_PARSERS = {
+        **PostgresParser.FUNCTION_PARSERS,
+        "HOP": lambda self: self._parse_table_window_function("HOP"),
+        "TUMBLE": lambda self: self._parse_table_window_function("TUMBLE"),
+    }
+
     JOIN_KINDS = {
         *PostgresParser.JOIN_KINDS,
         TokenType.ASOF,
@@ -50,6 +58,20 @@ class FelderaParser(PostgresParser):
             return self._parse_create_aggregate(self._prev)
 
         return super()._parse_create()
+
+    def _parse_table_window_function(self, name: str) -> exp.Anonymous:
+        expressions: list[exp.Expression] = []
+
+        if self._match(TokenType.TABLE):
+            table = self._parse_table(schema=True)
+            if table is not None:
+                expressions.append(t.cast(exp.Expression, table))
+            self._match(TokenType.COMMA)
+
+        expressions.extend(
+            self._parse_csv(lambda: t.cast(exp.Expression | None, self._parse_lambda(alias=False)))
+        )
+        return self.expression(exp.Anonymous(this=name, expressions=expressions))
 
     def _parse_create_aggregate(self, start: Token) -> exp.Create | exp.Command:
         linear = self._match_text_seq("LINEAR")

@@ -16,6 +16,14 @@ class TestFeldera(Validator):
         self.validate_identity(
             "SELECT * FROM l LEFT ASOF JOIN r MATCH_CONDITION (l.ts >= r.ts) ON l.id = r.id"
         )
+        self.validate_identity(
+            "SELECT * FROM TABLE(TUMBLE(TABLE t, DESCRIPTOR(ts), INTERVAL '5' MINUTE))",
+            "SELECT * FROM TABLE(TUMBLE(t, DESCRIPTOR(ts), INTERVAL '5 MINUTE'))",
+        )
+        self.validate_identity(
+            "SELECT * FROM TABLE(HOP(TABLE t, DESCRIPTOR(ts), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE))",
+            "SELECT * FROM TABLE(HOP(t, DESCRIPTOR(ts), INTERVAL '1 MINUTE', INTERVAL '5 MINUTE'))",
+        )
         self.validate_identity("SELECT * EXCLUDE (col1, col2) FROM t")
         self.validate_identity("CREATE MATERIALIZED VIEW v AS SELECT * FROM t")
         self.validate_identity("DECLARE RECURSIVE VIEW v AS SELECT * FROM t")

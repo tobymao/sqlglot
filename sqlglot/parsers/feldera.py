@@ -32,12 +32,19 @@ class FelderaParser(PostgresParser):
         "LATENESS": lambda self: self.expression(
             exp.LatenessColumnConstraint(this=self._parse_disjunction())
         ),
+        "WATERMARK": lambda self: self.expression(
+            exp.WatermarkColumnConstraint(
+                this=self._match(TokenType.FOR) and self._parse_column(),
+                expression=self._match(TokenType.ALIAS) and self._parse_disjunction(),
+            )
+        ),
     }
 
     SCHEMA_UNNAMED_CONSTRAINTS = {
         *PostgresParser.SCHEMA_UNNAMED_CONSTRAINTS,
         "INTERNED",
         "LATENESS",
+        "WATERMARK",
     }
 
     def _parse_statement(self) -> exp.Expr | None:

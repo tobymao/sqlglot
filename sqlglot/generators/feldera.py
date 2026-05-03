@@ -36,8 +36,12 @@ class FelderaGenerator(PostgresGenerator):
 
     PROPERTIES_LOCATION = {
         **PostgresGenerator.PROPERTIES_LOCATION,
+        exp.LocalProperty: exp.Properties.Location.POST_CREATE,
         exp.LinearProperty: exp.Properties.Location.POST_CREATE,
     }
+
+    def localproperty_sql(self, expression: exp.LocalProperty) -> str:
+        return "LOCAL"
 
     def linearproperty_sql(self, expression: exp.LinearProperty) -> str:
         return "LINEAR"

@@ -25,6 +25,14 @@ class TestFeldera(Validator):
             "SELECT * FROM TABLE(HOP(t, DESCRIPTOR(ts), INTERVAL '1 MINUTE', INTERVAL '5 MINUTE'))",
         )
         self.validate_identity("SELECT * EXCLUDE (col1, col2) FROM t")
+        self.validate_identity(
+            "CREATE LOCAL VIEW v WITH ('emit_final' = 'col') AS SELECT * FROM t",
+            "CREATE LOCAL VIEW v WITH (emit_final='col') AS SELECT * FROM t",
+        )
+        self.assertIsInstance(
+            self.parse_one("CREATE LOCAL VIEW v WITH ('emit_final' = 'col') AS SELECT * FROM t"),
+            exp.Create,
+        )
         self.validate_identity("CREATE MATERIALIZED VIEW v AS SELECT * FROM t")
         self.validate_identity("DECLARE RECURSIVE VIEW v AS SELECT * FROM t")
         self.assertIsInstance(

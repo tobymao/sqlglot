@@ -14,6 +14,11 @@ class FelderaParser(PostgresParser):
         "TUMBLE": lambda self: self._parse_table_window_function("TUMBLE"),
     }
 
+    PROPERTY_PARSERS = {
+        **PostgresParser.PROPERTY_PARSERS,
+        "LOCAL": lambda self: self.expression(exp.LocalProperty()),
+    }
+
     JOIN_KINDS = {
         *PostgresParser.JOIN_KINDS,
         TokenType.ASOF,

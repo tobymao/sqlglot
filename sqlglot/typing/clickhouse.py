@@ -12,10 +12,8 @@ EXPRESSION_METADATA = {
         }
     },
     exp.MD5Digest: {
-        "returns": exp.DataType(
-            this=exp.DataType.Type.FIXEDSTRING,
-            expressions=[exp.Literal.number(16)],
-            nullable=False,
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DataType.build("FixedString(16)", dialect="clickhouse")
         )
     },
 }

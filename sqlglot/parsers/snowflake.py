@@ -534,7 +534,7 @@ class SnowflakeParser(parser.Parser):
             this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
         ),
         "HEX_DECODE_BINARY": exp.Unhex.from_arg_list,
-        "HEX_ENCODE": lambda args: exp.Hex(this=seq_get(args, 0), case=seq_get(args, 1)),
+        "HEX_ENCODE": exp.Hex.from_arg_list,
         "IFF": exp.If.from_arg_list,
         "JAROWINKLER_SIMILARITY": lambda args: exp.JarowinklerSimilarity(
             this=seq_get(args, 0),

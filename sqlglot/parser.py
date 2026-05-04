@@ -4748,6 +4748,9 @@ class Parser:
         if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())
+            if joins:
+                for join in self._parse_joins():
+                    subquery.append("joins", join)
             return subquery
 
         bracket = parse_bracket and self._parse_bracket(None)

@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.platform.os }}
     strategy:
       matrix:
-        python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp314"]
+        python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
         platform:
           - os: ubuntu-latest
             archs: x86_64

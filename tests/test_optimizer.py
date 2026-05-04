@@ -1450,24 +1450,24 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_databricks_date_add_annotation(self):
         # Databricks treats `date_add` and `dateadd` as full aliases with arity
         # selecting the semantic:
-        #   - 2-arg (start, days):    always returns DATE
+        #   - 2-arg (start, days):     always returns DATE
         #   - 3-arg (unit, value, ts): preserves the operand's type
-        # The 2-arg form parses to TsOrDsAdd (annotated DATE in the Spark/
-        # Databricks typing chain); the 3-arg form parses to DateAdd
-        # (annotated via _annotate_timeunit, which preserves the operand type).
+        # DatabricksParser inherits SparkParser._build_dateadd, which routes:
+        #   - 2-arg → TsOrDsAdd (annotated DATE in the Spark/Databricks chain)
+        #   - 3-arg → TimestampAdd (annotated TIMESTAMP at base typing level)
         schema = MappingSchema({"t": {"e": "TIMESTAMP"}}, dialect="databricks")
         for sql, expected_class, expected_type in [
             ("SELECT date_add(e, 24) AS r FROM t", exp.TsOrDsAdd, exp.DataType.Type.DATE),
             ("SELECT dateadd(e, 24) AS r FROM t", exp.TsOrDsAdd, exp.DataType.Type.DATE),
             (
                 "SELECT date_add(month, 1, e) AS r FROM t",
-                exp.DateAdd,
-                exp.DataType.Type.TIMESTAMPTZ,
+                exp.TimestampAdd,
+                exp.DataType.Type.TIMESTAMP,
             ),
             (
                 "SELECT dateadd(day, 24, e) AS r FROM t",
-                exp.DateAdd,
-                exp.DataType.Type.TIMESTAMPTZ,
+                exp.TimestampAdd,
+                exp.DataType.Type.TIMESTAMP,
             ),
         ]:
             with self.subTest(sql):

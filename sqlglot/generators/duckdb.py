@@ -3612,7 +3612,7 @@ class DuckDBGenerator(generator.Generator):
         case = expression.args.get("case")
         hex_expr = exp.Hex(this=arg)
 
-        if case is None:
+        if not case:
             return self.sql(hex_expr)
 
         # Emit runtime CASE WHEN to handle NULL propagation and case=0 (lowercase) vs case=1 (uppercase)

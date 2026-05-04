@@ -894,10 +894,8 @@ def eliminate_join_marks(expression: exp.Expr) -> exp.Expr:
         # make sure we have AND of ORs to have clear join terms
         where = normalize(where.this)
         assert normalized(where), "Cannot normalize JOIN predicates"
-
-        joins_ons: defaultdict[str, list[exp.Expr]] = defaultdict(
-            list
-        )  # dict of {name: list of join AND conditions}
+        # dict of {name: list of join AND conditions}
+        joins_ons: defaultdict[str, list[exp.Expr]] = defaultdict(list)
         for cond in [where] if not isinstance(where, exp.And) else where.flatten():
             join_cols = [col for col in cond.find_all(exp.Column) if col.args.get("join_mark")]
 

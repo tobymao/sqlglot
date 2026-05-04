@@ -776,18 +776,16 @@ def move_schema_columns_to_partitioned_by(expression: exp.Expr) -> exp.Expr:
     The corresponding columns are removed from the create statement.
     """
     assert isinstance(expression, exp.Create)
-    has_schema = isinstance(expression.this, exp.Schema)
+    schema = expression.this
     is_partitionable = expression.kind in {"TABLE", "VIEW"}
 
-    if has_schema and is_partitionable:
+    if isinstance(schema, exp.Schema) and is_partitionable:
         prop = expression.find(exp.PartitionedByProperty)
         if prop and prop.this and not isinstance(prop.this, exp.Schema):
-            schema: exp.Schema = expression.this
             columns: set[str] = {v.name.upper() for v in prop.this.expressions}
-            partitions: list[exp.ColumnDef] = [
-                col for col in schema.expressions if col.name.upper() in columns
-            ]
-            schema.set("expressions", [e for e in schema.expressions if e not in partitions])
+            schema_exprs: list[exp.Expr] = schema.expressions
+            partitions = [col for col in schema_exprs if col.name.upper() in columns]
+            schema.set("expressions", [e for e in schema_exprs if e not in partitions])
             prop.replace(exp.PartitionedByProperty(this=exp.Schema(expressions=partitions)))
             expression.set("this", schema)
 

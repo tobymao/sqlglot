@@ -510,7 +510,7 @@ EXPRESSION_METADATA = {
             exp.CurrentOrganizationName,
             exp.DecompressString,
             exp.HexDecodeString,
-            exp.HexEncode,
+            exp.Hex,
             exp.Randstr,
             exp.RegexpExtract,
             exp.RegexpReplace,

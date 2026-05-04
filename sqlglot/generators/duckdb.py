@@ -3608,15 +3608,13 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(result)
 
-    def hexencode_sql(self, expression: exp.HexEncode) -> str:
-        arg = expression.this
+    def hex_sql(self, expression: exp.Hex) -> str:
         case = expression.args.get("case")
-        hex_expr = exp.Hex(this=arg)
 
         if not case:
-            return self.sql(hex_expr)
+            return self.func("HEX", expression.this)
 
-        # Emit runtime CASE WHEN to handle NULL propagation and case=0 (lowercase) vs case=1 (uppercase)
+        hex_expr = exp.Hex(this=expression.this)
         return self.sql(
             exp.case()
             .when(case.is_(exp.null()), exp.null())

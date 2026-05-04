@@ -303,15 +303,11 @@ class FromBase64(Expression, Func):
 
 
 class Hex(Expression, Func):
-    pass
+    arg_types = {"this": True, "case": False}
 
 
 class HexDecodeString(Expression, Func):
     pass
-
-
-class HexEncode(Expression, Func):
-    arg_types = {"this": True, "case": False}
 
 
 class LowerHex(Hex):

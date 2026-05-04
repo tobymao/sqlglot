@@ -276,7 +276,7 @@ class RedshiftGenerator(PostgresGenerator):
         set_ = self.expressions(expression, key="set_", flat=True)
         keep_sql = " KEEP " + keep if keep else ""
         set_sql = " SET " + set_ if set_ else ""
-        return self.func("OBJECT_TRANSFORM", prefix="(" + this + keep_sql + set_sql)
+        return f"OBJECT_TRANSFORM({this}{keep_sql}{set_sql})"
 
     def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
         return "APPROXIMATE " + self.sql(

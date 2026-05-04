@@ -8,7 +8,7 @@ from sqlglot.trie import TrieResult, in_trie, new_trie
 
 
 def format_time(
-    string: str, mapping: dict[str, str], trie: dict[str, t.Any] | None = None
+    string: str, mapping: dict[str, str], trie: dict[t.Any, t.Any] | None = None
 ) -> str | None:
     """
     Converts a time string given a mapping.

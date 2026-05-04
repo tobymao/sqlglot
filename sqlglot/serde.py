@@ -86,7 +86,7 @@ def load(
 
     payload, *tail = payloads
     root = _load(payload)
-    nodes: list[exp.Expr | exp.DType | t.Any] = [root]
+    nodes: list[object] = [root]
     for payload in tail:
         if CLASS in payload:
             node = _load(payload)

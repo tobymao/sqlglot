@@ -353,10 +353,12 @@ def unnest_to_explode(
                     alias = join_expr.args.get("alias")
                 else:
                     alias = unnest.args.get("alias")
+
                 if alias is None:
                     raise UnsupportedError(
                         "CROSS JOIN UNNEST to LATERAL VIEW EXPLODE transformation requires an alias"
                     )
+
                 exprs = unnest.expressions
                 # The number of unnest.expressions will be changed by _unnest_zip_exprs, we need to record it here
                 has_multi_expr = len(exprs) > 1

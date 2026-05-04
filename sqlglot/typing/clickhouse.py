@@ -11,4 +11,11 @@ EXPRESSION_METADATA = {
             exp.CountIf,
         }
     },
+    exp.MD5Digest: {
+        "returns": exp.DataType(
+            this=exp.DataType.Type.FIXEDSTRING,
+            expressions=[exp.Literal.number(16)],
+            nullable=False,
+        )
+    },
 }

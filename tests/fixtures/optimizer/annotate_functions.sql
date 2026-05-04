@@ -6336,3 +6336,11 @@ BIGINT;
 # dialect: trino
 ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b');
 VARCHAR;
+
+--------------------------------------
+-- Clickhouse
+--------------------------------------
+
+# dialect: clickhouse
+MD5(tbl.str_col);
+FIXEDSTRING(16);

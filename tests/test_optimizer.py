@@ -1457,18 +1457,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         #   - 3-arg → TimestampAdd (annotated TIMESTAMP at base typing level)
         schema = MappingSchema({"t": {"e": "TIMESTAMP"}}, dialect="databricks")
         for sql, expected_class, expected_type in [
-            ("SELECT date_add(e, 24) AS r FROM t", exp.TsOrDsAdd, exp.DataType.Type.DATE),
-            ("SELECT dateadd(e, 24) AS r FROM t", exp.TsOrDsAdd, exp.DataType.Type.DATE),
-            (
-                "SELECT date_add(month, 1, e) AS r FROM t",
-                exp.TimestampAdd,
-                exp.DataType.Type.TIMESTAMP,
-            ),
-            (
-                "SELECT dateadd(day, 24, e) AS r FROM t",
-                exp.TimestampAdd,
-                exp.DataType.Type.TIMESTAMP,
-            ),
+            ("SELECT date_add(e, 24) AS r FROM t",       exp.TsOrDsAdd,    exp.DataType.Type.DATE),
+            ("SELECT dateadd(e, 24) AS r FROM t",        exp.TsOrDsAdd,    exp.DataType.Type.DATE),
+            ("SELECT date_add(month, 1, e) AS r FROM t", exp.TimestampAdd, exp.DataType.Type.TIMESTAMP),
+            ("SELECT dateadd(day, 24, e) AS r FROM t",   exp.TimestampAdd, exp.DataType.Type.TIMESTAMP),
         ]:
             with self.subTest(sql):
                 expression = annotate_types(

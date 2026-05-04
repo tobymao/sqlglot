@@ -382,16 +382,14 @@ class TestDatabricks(Validator):
         )
 
     def test_add_date(self):
-        # 3-arg unit form: Databricks-specific extension (not in Spark OSS, which
-        # uses TIMESTAMPADD). DatabricksParser inherits SparkParser._build_dateadd,
-        # which routes 3-arg to exp.TimestampAdd. Round-trips as DATE_ADD in
-        # Databricks because SparkGenerator._dateadd_sql emits DATE_ADD for
-        # TimestampAdd. T-SQL transpile of TimestampAdd falls back to
-        # TIMESTAMP_ADD (T-SQL has no TimestampAdd handler); that gap is
-        # pre-existing in the Spark→T-SQL path and is separate from this fix.
+        # 3-arg form (Databricks extension; Spark OSS uses TIMESTAMPADD instead).
+        # Parses to TimestampAdd via inherited SparkParser._build_dateadd; round-trips
+        # as DATE_ADD. T-SQL has no TimestampAdd handler, so it falls back to
+        # TIMESTAMP_ADD — a pre-existing gap in the Spark→T-SQL path.
         self.validate_all(
             "SELECT DATEADD(year, 1, '2020-01-01')",
             write={
+                "tsql": "SELECT TIMESTAMP_ADD('2020-01-01', 1, YEAR)",
                 "databricks": "SELECT DATE_ADD(YEAR, 1, '2020-01-01')",
             },
         )

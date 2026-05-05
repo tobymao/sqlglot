@@ -669,9 +669,6 @@ class TypeAnnotator:
                 self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
             )
 
-        if not src_types:
-            return
-
         for col in pivot.find_all(exp.Column):
             self._set_type(col, src_types.get(col.name) or exp.DType.UNKNOWN)
 

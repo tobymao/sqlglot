@@ -559,6 +559,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.MD5Digest: rename_func("MD5_BINARY"),
         exp.MD5NumberLower64: rename_func("MD5_NUMBER_LOWER64"),
         exp.MD5NumberUpper64: rename_func("MD5_NUMBER_UPPER64"),
+        exp.Hex: rename_func("HEX_ENCODE"),
         exp.LowerHex: rename_func("TO_CHAR"),
         exp.Skewness: rename_func("SKEW"),
         exp.StarMap: rename_func("OBJECT_CONSTRUCT"),

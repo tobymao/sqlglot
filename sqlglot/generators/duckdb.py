@@ -1581,6 +1581,7 @@ class DuckDBGenerator(generator.Generator):
             f"CAST(STRFTIME({self.sql(e, 'this')}, {self.dialect.DATEINT_FORMAT}) AS INT)"
         ),
         exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
+        exp.HexDecodeString: lambda self, e: self.sql(exp.Decode(this=exp.Unhex(this=e.this))),
         exp.DiToDate: lambda self, e: (
             f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {self.dialect.DATEINT_FORMAT}) AS DATE)"
         ),
@@ -3606,6 +3607,20 @@ class DuckDBGenerator(generator.Generator):
             )
 
         return self.sql(result)
+
+    def hex_sql(self, expression: exp.Hex) -> str:
+        case = expression.args.get("case")
+
+        if not case:
+            return self.func("HEX", expression.this)
+
+        hex_expr = exp.Hex(this=expression.this)
+        return self.sql(
+            exp.case()
+            .when(case.is_(exp.null()), exp.null())
+            .when(case.copy().eq(0), exp.Lower(this=hex_expr.copy()))
+            .else_(hex_expr)
+        )
 
     def replace_sql(self, expression: exp.Replace) -> str:
         result_sql = self.func(

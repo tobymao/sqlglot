@@ -3845,7 +3845,7 @@ class Parser:
             limit = self._parse_limit(top=True)
 
             # Some dialects (e.g. Redshift, T-SQL) allow SELECT TOP N DISTINCT ...
-            if limit and not matched_distinct:
+            if limit and not matched_distinct and not all_:
                 matched_distinct = self._match_set(self.DISTINCT_TOKENS)
                 if matched_distinct:
                     distinct = self.expression(
@@ -3855,6 +3855,8 @@ class Parser:
                             else None
                         )
                     )
+                else:
+                    all_ = self._match(TokenType.ALL)
 
             if all_ and distinct:
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")

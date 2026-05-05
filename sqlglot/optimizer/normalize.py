@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 import logging
 
 from sqlglot import exp
@@ -123,7 +124,9 @@ def normalization_distance(
     return total
 
 
-def _predicate_lengths(expression, dnf, max_=float("inf"), depth=0):
+def _predicate_lengths(
+    expression: exp.Expr, dnf: bool, max_: float = float("inf"), depth: int = 0
+) -> Iterator[int]:
     """
     Returns a list of predicate lengths when expanded to normalized form.
 
@@ -151,7 +154,9 @@ def _predicate_lengths(expression, dnf, max_=float("inf"), depth=0):
         yield from _predicate_lengths(right, dnf, max_, depth)
 
 
-def distributive_law(expression, dnf, max_distance, simplifier=None):
+def distributive_law(
+    expression: exp.Expr, dnf: bool, max_distance: float, simplifier: Simplifier | None = None
+):
     """
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
@@ -187,7 +192,13 @@ def distributive_law(expression, dnf, max_distance, simplifier=None):
     return expression
 
 
-def _distribute(a, b, from_func, to_func, simplifier):
+def _distribute(
+    a,
+    b,
+    from_func: Callable[..., exp.Condition],
+    to_func: Callable[..., exp.Condition],
+    simplifier: Simplifier,
+):
     if isinstance(a, exp.Connector):
         exp.replace_children(
             a,

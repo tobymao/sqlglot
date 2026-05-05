@@ -15,7 +15,7 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-    from collections.abc import Iterator, Iterable, Sequence
+    from collections.abc import Iterable
 
 
 def qualify_columns(
@@ -179,49 +179,6 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
 
     if has_pseudocolumns:
         scope.clear_cache()
-
-
-def _pivot_output_columns(pivot: exp.Pivot, pre_pivot_columns: Sequence[str]) -> list[str]:
-    """Compute the columns exposed after a (UN)PIVOT, given its pre-pivot source columns.
-
-    Returns an empty list for degenerate pivots (no IN-list or no output names) so callers
-    can fall through to their non-pivot handling.
-    """
-    if pivot.unpivot:
-        excluded = {
-            c.output_name
-            for field in pivot.fields
-            if isinstance(field, exp.In)
-            for e in field.expressions
-            for c in e.find_all(exp.Column)
-        }
-        outputs = [i.name for i in _unpivot_columns(pivot)]
-    else:
-        excluded = {c.output_name for c in pivot.find_all(exp.Column)}
-        outputs = [c.output_name for c in pivot.args.get("columns") or []]
-        if not outputs:
-            outputs = [c.alias_or_name for c in pivot.expressions]
-
-    if not excluded or not outputs:
-        return []
-
-    return [c for c in pre_pivot_columns if c not in excluded] + outputs
-
-
-def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
-    name_columns = [
-        field.this
-        for field in unpivot.fields
-        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
-    ]
-    value_columns = (
-        ident
-        for e in unpivot.expressions
-        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
-        if isinstance(ident, exp.Identifier)
-    )
-
-    return itertools.chain(name_columns, value_columns)
 
 
 def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
@@ -638,7 +595,7 @@ def _qualify_columns(
             if isinstance(column_source, exp.Table) and (
                 pivots := column_source.args.get("pivots")
             ):
-                source_columns = _pivot_output_columns(pivots[0], source_columns)
+                source_columns = pivots[0].output_columns(source_columns)
             if (
                 not allow_partial_qualification
                 and source_columns
@@ -879,7 +836,7 @@ def _expand_stars(
             replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
-                pivot_columns = pivot.alias_column_names or _pivot_output_columns(pivot, columns)
+                pivot_columns = pivot.alias_column_names or pivot.output_columns(columns)
 
                 if pivot_columns:
                     new_selections.extend(

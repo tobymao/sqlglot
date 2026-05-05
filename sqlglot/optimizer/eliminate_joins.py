@@ -30,7 +30,7 @@ def eliminate_joins(expression: E) -> E:
         The optimized expression
     """
     for scope in traverse_scope(expression):
-        joins = scope.expression.args.get("joins", [])
+        joins: list[exp.Join] = scope.expression.args.get("joins", [])
         if not joins:
             continue
 
@@ -53,7 +53,7 @@ def eliminate_joins(expression: E) -> E:
     return expression
 
 
-def _should_eliminate_join(scope, join, alias):
+def _should_eliminate_join(scope: Scope, join: exp.Join, alias: str) -> bool:
     inner_source = scope.sources.get(alias)
     return (
         isinstance(inner_source, Scope)
@@ -65,12 +65,12 @@ def _should_eliminate_join(scope, join, alias):
     )
 
 
-def _join_is_used(scope, join, alias):
+def _join_is_used(scope: Scope, join: exp.Join, alias: str) -> bool:
     # We need to find all columns that reference this join.
     # But columns in the ON clause shouldn't count.
-    on = join.args.get("on")
-    if on:
-        on_clause_columns = {id(column) for column in on.find_all(exp.Column)}
+    on: exp.Expr | None = join.args.get("on")
+    if on is not None:
+        on_clause_columns: set[int] = {id(column) for column in on.find_all(exp.Column)}
     else:
         on_clause_columns = set()
     return any(
@@ -78,7 +78,7 @@ def _join_is_used(scope, join, alias):
     )
 
 
-def _is_joined_on_all_unique_outputs(scope, join):
+def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
     unique_outputs = _unique_outputs(scope)
     if not unique_outputs:
         return False
@@ -88,18 +88,19 @@ def _is_joined_on_all_unique_outputs(scope, join):
     return not remaining_unique_outputs
 
 
-def _unique_outputs(scope):
+def _unique_outputs(scope: Scope) -> set[str]:
     """Determine output columns of `scope` that must have a unique combination per row"""
-    if scope.expression.args.get("distinct"):
-        return set(scope.expression.named_selects)
+    expr = t.cast(exp.Query, scope.expression)
+    if expr.args.get("distinct") is not None:
+        return set(expr.named_selects)
 
-    group = scope.expression.args.get("group")
-    if group:
-        grouped_expressions = set(group.expressions)
-        grouped_outputs = set()
+    group: exp.Group | None = expr.args.get("group")
+    if group is not None:
+        grouped_expressions: set[exp.Expr] = set(group.expressions)
+        grouped_outputs: set[exp.Expr] = set()
 
-        unique_outputs = set()
-        for select in scope.expression.selects:
+        unique_outputs: set[str] = set()
+        for select in expr.selects:
             output = select.unalias()
             if output in grouped_expressions:
                 grouped_outputs.add(output)
@@ -112,12 +113,12 @@ def _unique_outputs(scope):
             return set()
 
     if _has_single_output_row(scope):
-        return set(scope.expression.named_selects)
+        return set(expr.named_selects)
 
     return set()
 
 
-def _has_single_output_row(scope):
+def _has_single_output_row(scope: Scope) -> bool:
     return isinstance(scope.expression, exp.Select) and (
         all(isinstance(e.unalias(), exp.AggFunc) for e in scope.expression.selects)
         or _is_limit_1(scope)
@@ -125,9 +126,9 @@ def _has_single_output_row(scope):
     )
 
 
-def _is_limit_1(scope):
-    limit = scope.expression.args.get("limit")
-    return limit and limit.expression.this == "1"
+def _is_limit_1(scope: Scope) -> bool:
+    limit: exp.Limit | None = scope.expression.args.get("limit")
+    return limit is not None and limit.expression.this == "1"
 
 
 def join_condition(join):

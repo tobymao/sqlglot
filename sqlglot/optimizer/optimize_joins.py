@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sqlglot import exp
+from sqlglot.errors import OptimizeError
 from sqlglot.helper import tsort
 
 JOIN_ATTRS = ("on", "side", "kind", "using", "method")
@@ -18,7 +19,7 @@ def optimize_joins(expression: exp.Expr) -> exp.Expr:
     """
 
     for select in expression.find_all(exp.Select):
-        joins = select.args.get("joins", [])
+        joins: list[exp.Join] = select.args.get("joins", [])
 
         if not _is_reorderable(joins):
             continue
@@ -57,13 +58,15 @@ def optimize_joins(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def reorder_joins(expression) -> exp.Expr:
+def reorder_joins(expression: exp.Expr) -> exp.Expr:
     """
     Reorder joins by topological sort order based on predicate references.
     """
     for from_ in expression.find_all(exp.From):
         parent = from_.parent
-        joins = parent.args.get("joins", [])
+        if parent is None:
+            raise OptimizeError("FROM clause without parent expression")
+        joins: list[exp.Join] = parent.args.get("joins", [])
 
         if not _is_reorderable(joins):
             continue

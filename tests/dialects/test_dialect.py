@@ -951,7 +951,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "SUBSTRING(CAST(x AS TEXT), 1, 10)",
                 "hive": "SUBSTRING(CAST(x AS STRING), 1, 10)",
-                "presto": "SUBSTRING(CAST(x AS VARCHAR), 1, 10)",
+                "presto": "SUBSTR(CAST(x AS VARCHAR), 1, 10)",
                 "doris": "SUBSTRING(CAST(x AS STRING), 1, 10)",
             },
         )
@@ -2403,7 +2403,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_POSITION(haystack, needle, position)",
             write={
-                "athena": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "athena": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "bigquery": "INSTR(haystack, needle, position)",
                 "clickhouse": "POSITION(haystack, needle, position)",
                 "databricks": "LOCATE(needle, haystack, position)",
@@ -2415,7 +2415,7 @@ class TestDialect(Validator):
                 "mysql": "LOCATE(needle, haystack, position)",
                 "oracle": "INSTR(haystack, needle, position)",
                 "postgres": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
-                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "presto": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "redshift": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
                 "risingwave": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
                 "snowflake": "CHARINDEX(needle, haystack, position)",
@@ -2424,7 +2424,7 @@ class TestDialect(Validator):
                 "sqlite": "IIF(INSTR(SUBSTRING(haystack, position), needle) = 0, 0, INSTR(SUBSTRING(haystack, position), needle) + position - 1)",
                 "tableau": "IF FIND(SUBSTRING(haystack, position), needle) = 0 THEN 0 ELSE FIND(SUBSTRING(haystack, position), needle) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position)",
-                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "trino": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "tsql": "CHARINDEX(needle, haystack, position)",
             },
         )
@@ -2438,10 +2438,10 @@ class TestDialect(Validator):
             write={
                 "bigquery": "INSTR(haystack, needle, position, occurrence)",
                 "oracle": "INSTR(haystack, needle, position, occurrence)",
-                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "presto": "IF(STRPOS(SUBSTR(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTR(haystack, position), needle, occurrence) + position - 1)",
                 "tableau": "IF FINDNTH(SUBSTRING(haystack, position), needle, occurrence) = 0 THEN 0 ELSE FINDNTH(SUBSTRING(haystack, position), needle, occurrence) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position, occurrence)",
-                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "trino": "IF(STRPOS(SUBSTR(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTR(haystack, position), needle, occurrence) + position - 1)",
             },
         )
         self.validate_all(

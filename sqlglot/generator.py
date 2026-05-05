@@ -1883,7 +1883,9 @@ class Generator:
             or lower in self.RESERVED_KEYWORDS
             or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
-            text = f"{self._identifier_start}{text}{self._identifier_end}"
+            text = (
+                f"{self._identifier_start}{self._replace_line_breaks(text)}{self._identifier_end}"
+            )
         return text
 
     def hex_sql(self, expression: exp.Hex) -> str:
@@ -3609,9 +3611,10 @@ class Generator:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
+        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
 
         ordinality = " FOR ORDINALITY" if expression.args.get("ordinality") else ""
-        return f"{this}{kind}{path}{ordinality}"
+        return f"{this}{kind}{format_json}{path}{ordinality}"
 
     def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
         return self.func("COLUMNS", *expression.expressions)

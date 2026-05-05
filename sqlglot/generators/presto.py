@@ -389,6 +389,7 @@ class PrestoGenerator(generator.Generator):
         exp.SHA1Digest: rename_func("SHA1"),
         exp.SHA2: sha256_sql,
         exp.SHA2Digest: sha2_digest_sql,
+        exp.Substring: rename_func("SUBSTR"),
     }
 
     RESERVED_KEYWORDS = {

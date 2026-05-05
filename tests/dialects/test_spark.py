@@ -875,7 +875,7 @@ TBLPROPERTIES (
             "SELECT LEFT(x, 2), RIGHT(x, 2)",
             write={
                 "duckdb": "SELECT LEFT(x, 2), RIGHT(x, 2)",
-                "presto": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - (2 - 1))",
+                "presto": "SELECT SUBSTR(x, 1, 2), SUBSTR(x, LENGTH(x) - (2 - 1))",
                 "hive": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - (2 - 1))",
                 "spark": "SELECT LEFT(x, 2), RIGHT(x, 2)",
             },

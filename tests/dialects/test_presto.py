@@ -328,7 +328,7 @@ class TestPresto(Validator):
             "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
             write={
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
-                "presto": "DATE_PARSE(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
+                "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
             },
@@ -337,7 +337,7 @@ class TestPresto(Validator):
             "DATE_PARSE(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
             write={
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
-                "presto": "DATE_PARSE(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
+                "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
             },
@@ -867,7 +867,7 @@ class TestPresto(Validator):
         self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEK"})
         self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEKS"})
         self.validate_all(
-            "SELECT SUBSTRING(a, 1, 3), SUBSTRING(a, LENGTH(a) - (3 - 1))",
+            "SELECT SUBSTR(a, 1, 3), SUBSTR(a, LENGTH(a) - (3 - 1))",
             read={
                 "redshift": "SELECT LEFT(a, 3), RIGHT(a, 3)",
             },

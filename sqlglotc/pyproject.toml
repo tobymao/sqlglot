@@ -7,7 +7,7 @@ license = "MIT"
 requires-python = ">= 3.10"
 
 [project.optional-dependencies]
-dev = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy >= 1.20.0.post4"]
+dev = ["setuptools >= 61.0", "setuptools_scm", "sqlglot-mypy >= 1.20.0.post6"]
 
 [project.urls]
 Homepage = "https://sqlglot.com/"
@@ -17,7 +17,7 @@ Repository = "https://github.com/tobymao/sqlglot"
 requires = [
     "setuptools >= 61.0",
     "setuptools_scm",
-    "sqlglot-mypy >= 1.20.0.post4",
+    "sqlglot-mypy >= 1.20.0.post6",
     "types-python-dateutil",
     "sqlglot",
 ]

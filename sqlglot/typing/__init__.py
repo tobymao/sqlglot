@@ -252,6 +252,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ArrayReverse,
             exp.ArraySlice,
             exp.Filter,
+            exp.FirstValue,
             exp.HavingMax,
             exp.LastValue,
             exp.Limit,

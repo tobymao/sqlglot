@@ -270,6 +270,14 @@ class RedshiftGenerator(PostgresGenerator):
         "without",
     }
 
+    def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+        return "APPROXIMATE " + self.sql(
+            exp.WithinGroup(
+                this=exp.PercentileDisc(this=expression.args["quantile"]),
+                expression=exp.Order(expressions=[exp.Ordered(this=expression.this)]),
+            )
+        )
+
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = expression.expressions
         num_args = len(args)

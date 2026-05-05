@@ -862,3 +862,166 @@ class TestLineage(unittest.TestCase):
         )
         downstream_names = sorted(d.name for d in node.downstream)
         self.assertEqual(downstream_names, ["s1.a", "s2.a"])
+
+    def test_lineage_all_columns(self) -> None:
+        # column=None returns dict[name, Node] for every top-level output column.
+        result = lineage(
+            None,
+            "SELECT a, b + 1 AS bp FROM x",
+            schema={"x": {"a": "int", "b": "int"}},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(set(result), {"a", "bp"})
+
+        # Each entry is a Node; same shape as single-column lineage().
+        single = lineage(
+            "a", "SELECT a, b + 1 AS bp FROM x", schema={"x": {"a": "int", "b": "int"}}
+        )
+        self.assertEqual(result["a"].name, single.name)
+        self.assertEqual(
+            [d.name for d in result["a"].downstream], [d.name for d in single.downstream]
+        )
+
+    def test_lineage_on_node_hook(self) -> None:
+        nodes_visited: list[str] = []
+
+        def hook(node):
+            nodes_visited.append(node.name)
+            node.payload["seen"] = True
+
+        result = lineage(
+            None,
+            "WITH t AS (SELECT a + 1 AS v FROM x) SELECT v FROM t",
+            schema={"x": {"a": "int"}},
+            on_node=hook,
+        )
+        # Top-level v + CTE-internal t.v + base leaf x.a => 3 fires minimum.
+        self.assertGreaterEqual(len(nodes_visited), 3)
+        self.assertTrue(result["v"].payload.get("seen"))
+
+        # Walk the chain: every node in the DAG has the payload set.
+        self.assertTrue(all(n.payload.get("seen") for n in result["v"].walk()))
+
+    def test_lineage_all_columns_shares_nodes_across_outputs(self) -> None:
+        # Different output columns referencing the same upstream column should
+        # share the same downstream Node — the per-call cache deduplicates
+        # repeated traversals of the same (scope, column, parent context).
+        result = lineage(
+            None,
+            "WITH t AS (SELECT a, b FROM x) SELECT a, a + b AS ab FROM t",
+            schema={"x": {"a": "int", "b": "int"}},
+        )
+        self.assertEqual(set(result), {"a", "ab"})
+
+        # `a` flows directly through t.a; `ab` references t.a too. The Node
+        # representing t.a should be the same Python object in both chains.
+        a_via_a = result["a"].downstream[0]
+        a_via_ab = next(d for d in result["ab"].downstream if d.name == "t.a")
+        self.assertIs(a_via_a, a_via_ab)
+
+        # And the deeper x.a leaf is shared as well.
+        self.assertIs(a_via_a.downstream[0], a_via_ab.downstream[0])
+
+    def test_lineage_all_columns_set_operation(self) -> None:
+        # UNION CTE referenced from a top-level select. Each output column
+        # should fan out to one downstream per branch of the UNION.
+        result = lineage(
+            None,
+            """
+            WITH u AS (SELECT a, b FROM x UNION ALL SELECT a, b FROM y)
+            SELECT a, b FROM u
+            """,
+            schema={"x": {"a": "int", "b": "int"}, "y": {"a": "int", "b": "int"}},
+        )
+        self.assertEqual(set(result), {"a", "b"})
+
+        for col in ("a", "b"):
+            branches = result[col].downstream
+            self.assertEqual(len(branches), 2)
+            sources = sorted(
+                leaf.expression.sql()
+                for branch in branches
+                for leaf in branch.walk()
+                if leaf.expression.sql().endswith("AS x") or leaf.expression.sql().endswith("AS y")
+            )
+            self.assertEqual(sources, ["x AS x", "y AS y"])
+
+    def test_lineage_all_columns_with_prebuilt_scope(self) -> None:
+        # When a pre-qualified scope is passed, lineage must not re-qualify;
+        # results should match the no-scope path.
+        from sqlglot.optimizer import qualify
+        from sqlglot.optimizer.scope import build_scope
+
+        sql = "SELECT a, b + 1 AS bp FROM x"
+        schema = {"x": {"a": "int", "b": "int"}}
+
+        # Mirror lineage()'s internal qualify defaults so the two paths
+        # produce structurally identical Node trees.
+        qualified = qualify.qualify(
+            sqlglot.parse_one(sql),
+            schema=schema,
+            validate_qualify_columns=False,
+            identify=False,
+        )
+        scope = build_scope(qualified)
+
+        from_scope = lineage(None, qualified, scope=scope)
+        from_sql = lineage(None, sql, schema=schema)
+
+        self.assertEqual(set(from_scope), set(from_sql))
+        for name in from_scope:
+            self.assertEqual(from_scope[name].name, from_sql[name].name)
+            self.assertEqual(
+                [d.name for d in from_scope[name].downstream],
+                [d.name for d in from_sql[name].downstream],
+            )
+
+    def test_lineage_on_node_orders_children_before_parents(self) -> None:
+        # The on_node callback must fire on a Node only after its downstream
+        # has been fully populated — i.e. all of its children have already
+        # received their on_node call. This is the invariant that lets
+        # callers populate payload bottom-up from already-finalized children.
+        order: list[int] = []
+
+        def hook(node):
+            order.append(id(node))
+
+        result = lineage(
+            None,
+            "WITH t AS (SELECT a + 1 AS v FROM x) SELECT v FROM t",
+            schema={"x": {"a": "int"}},
+            on_node=hook,
+        )
+
+        position = {nid: i for i, nid in enumerate(order)}
+        for node in result["v"].walk():
+            for child in node.downstream:
+                self.assertLess(
+                    position[id(child)],
+                    position[id(node)],
+                    f"{child.name!r} fired after parent {node.name!r}",
+                )
+
+    def test_lineage_on_node_fires_once_per_node(self) -> None:
+        # Caching means each Node is created exactly once even if reached
+        # from multiple parents; the on_node callback must reflect that.
+        counts: dict[int, int] = {}
+
+        def hook(node):
+            counts[id(node)] = counts.get(id(node), 0) + 1
+
+        result = lineage(
+            None,
+            "WITH t AS (SELECT a, b FROM x) SELECT a, a + b AS ab FROM t",
+            schema={"x": {"a": "int", "b": "int"}},
+            on_node=hook,
+        )
+
+        # Walk every reachable Node from both output columns; each should
+        # have been emitted to the hook exactly once.
+        seen: set[int] = set()
+        for top in result.values():
+            for node in top.walk():
+                seen.add(id(node))
+        for nid in seen:
+            self.assertEqual(counts.get(nid, 0), 1)

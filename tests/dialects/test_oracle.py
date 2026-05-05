@@ -580,6 +580,9 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
 )) src""",
             pretty=True,
         )
+        self.validate_identity(
+            "SELECT * FROM JSON_TABLE(my_doc, '$.data[*]' COLUMNS(NAME VARCHAR2(200) PATH '$.name', DATA CLOB FORMAT JSON PATH '$.data')) j"
+        )
         self.validate_identity("CONVERT('foo', 'dst')")
         self.validate_identity("CONVERT('foo', 'dst', 'src')")
 

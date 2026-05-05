@@ -12,6 +12,10 @@ if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
 
 
+class SqlHandler(t.Protocol):
+    def __call__(self, expression: exp.Expr, *args: t.Any, **kwargs: t.Any) -> str: ...
+
+
 def preprocess(
     transforms: list[t.Callable[[exp.Expr], exp.Expr]],
     generator: t.Callable[[Generator, exp.Expr], str] | None = None,
@@ -41,9 +45,7 @@ def preprocess(
         if generator:
             return generator(self, expression)
 
-        _sql_handler: t.Callable[[exp.Expr], str] | None = getattr(
-            self, expression.key + "_sql", None
-        )
+        _sql_handler: SqlHandler | None = getattr(self, expression.key + "_sql", None)
         if _sql_handler:
             return _sql_handler(expression)
 

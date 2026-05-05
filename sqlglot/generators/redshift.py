@@ -282,6 +282,9 @@ class RedshiftGenerator(PostgresGenerator):
             )
         return self.func("ST_POINT", expression.this, expression.expression)
 
+    def arraycontains_sql(self, expression: exp.ArrayContains) -> str:
+        return self.func("ARRAY_CONTAINS", expression.this, expression.expression)
+
     def objecttransform_sql(self, expression: exp.ObjectTransform) -> str:
         this = self.sql(expression, "this")
         keep = self.expressions(expression, key="keep", flat=True)

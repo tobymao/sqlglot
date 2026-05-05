@@ -89,7 +89,7 @@ def load(
     nodes: list[object] = [root]
     for payload in tail:
         if CLASS in payload:
-            node: t.Any = _load(payload)
+            node: object = _load(payload)
         else:
             node = payload[VALUE]
 

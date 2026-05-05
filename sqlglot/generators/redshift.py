@@ -272,12 +272,12 @@ class RedshiftGenerator(PostgresGenerator):
 
     def stpoint_sql(self, expression: exp.StPoint) -> str:
         # ST_POINT only accepts 2 args in Redshift; use ST_MAKEPOINT for 3 or 4 args
-        if expression.args.get("null") or expression.args.get("m"):
+        if expression.args.get("z") or expression.args.get("m"):
             return self.func(
                 "ST_MAKEPOINT",
                 expression.this,
                 expression.expression,
-                expression.args.get("null"),
+                expression.args.get("z"),
                 expression.args.get("m"),
             )
         return self.func("ST_POINT", expression.this, expression.expression)

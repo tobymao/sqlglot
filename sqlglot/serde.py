@@ -58,12 +58,12 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
                 payload[META] = node._meta
             if node.args:
                 for k, vs in reversed(node.args.items()):
-                    if type(vs) == list:
+                    if type(vs) is list:
                         for v in reversed(vs):
                             stack.append((v, i, k, True))
                     elif vs is not None:
                         stack.append((vs, i, k, False))
-        elif type(node) == exp.DType:
+        elif type(node) is exp.DType:
             payload[CLASS] = DATA_TYPE
             payload[VALUE] = node.value
         else:

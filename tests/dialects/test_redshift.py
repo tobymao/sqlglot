@@ -385,10 +385,7 @@ class TestRedshift(Validator):
             'DATE_PART(year, "somecol")',
             'EXTRACT(year FROM "somecol")',
         ).this.assert_is(exp.Var)
-        self.validate_identity(
-            "SELECT CONCAT('abc', 'def')",
-            "SELECT 'abc' || 'def'",
-        )
+        self.validate_identity("SELECT CONCAT('abc', 'def')")
         self.validate_identity(
             "SELECT CONCAT_WS('DELIM', 'abc', 'def', 'ghi')",
             "SELECT 'abc' || 'DELIM' || 'def' || 'DELIM' || 'ghi'",

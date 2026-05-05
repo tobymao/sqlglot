@@ -4,7 +4,6 @@ from __future__ import annotations
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     array_concat_sql,
-    concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -70,7 +69,6 @@ class RedshiftGenerator(PostgresGenerator):
             }
         },
         exp.ArrayConcat: array_concat_sql("ARRAY_CONCAT"),
-        exp.Concat: concat_to_dpipe_sql,
         exp.ConcatWs: concat_ws_to_dpipe_sql,
         exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
         exp.CurrentTimestamp: lambda self, e: "SYSDATE" if e.args.get("sysdate") else "GETDATE()",

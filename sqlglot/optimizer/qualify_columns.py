@@ -836,7 +836,7 @@ def _expand_stars(
             replaced_columns = replace_columns.get(table_id, {})
 
             if pivot:
-                pivot_columns = pivot.alias_column_names or pivot.output_columns(columns)
+                pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
 
                 if pivot_columns:
                     new_selections.extend(

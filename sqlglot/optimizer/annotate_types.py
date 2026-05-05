@@ -13,6 +13,7 @@ from sqlglot.helper import (
     is_iso_datetime,
     seq_get,
 )
+from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
@@ -374,6 +375,9 @@ class TypeAnnotator:
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
 
+        for pivot in scope.pivots:
+            self._annotate_pivot_source_columns(pivot, scope)
+
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
@@ -640,17 +644,41 @@ class TypeAnnotator:
             val_expr = seq_get(pivot.expressions, 0)
             val_cols = val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
             for val_col, in_col in zip(val_cols, in_cols):
-                new_types[val_col.output_name] = (
-                    src_types.get(in_col.output_name)
-                    if in_col.is_type(exp.DType.UNKNOWN)
-                    else in_col.type
-                )
+                new_types[val_col.output_name] = in_col.type
 
         return {
             name: type_
             for name in pivot.output_columns(src_types)
             if (type_ := new_types.get(name) or src_types.get(name))
         }
+
+    def _annotate_pivot_source_columns(self, pivot: exp.Pivot, scope: Scope) -> None:
+        parent = pivot.parent
+        if not parent:
+            return
+
+        source = scope.cte_sources.get(parent.alias_or_name) or scope.sources.get(
+            parent.alias_or_name
+        )
+
+        src_types: dict[str, t.Any] = {}
+        if isinstance(source, Scope) and isinstance(source.expression, exp.Query):
+            src_types = {s.alias_or_name: s.type for s in source.expression.selects if s.type}
+        elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
+            src_types = (
+                self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
+            )
+
+        if not src_types:
+            return
+
+        for col in pivot.find_all(exp.Column):
+            self._set_type(col, src_types.get(col.name) or exp.DType.UNKNOWN)
+
+        if not pivot.unpivot:
+            for expr in pivot.expressions:
+                agg = expr.this if isinstance(expr, exp.Alias) else expr
+                self._annotate_expression(agg, scope)
 
     def _get_pivot_column_types(
         self, pivot: exp.Pivot, selects: dict[str, dict[str, t.Any]]
@@ -666,21 +694,22 @@ class TypeAnnotator:
                 self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
             )
 
+        first_field = seq_get(pivot.fields, 0)
+        if not isinstance(first_field, exp.In):
+            raise OptimizeError(f"Expected In expression for pivot field, got {type(first_field)}")
+
+        pivot_constants = first_field.expressions
+
+        # The first agg_cols_offset entries are source columns that pass through the PIVOT unchanged;
+        # the rest are the aggregated columns, one per combination of IN value and aggregate function.
+        output_to_src = pivot.output_columns(src_types)
+
         agg_types = [
             agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions
         ]
-
-        first_field = seq_get(pivot.fields, 0)
-        assert isinstance(first_field, exp.In)
-        pivot_constants = first_field.expressions
-
-        # output_columns() returns {post_rename: pre_rename}; the trailing pivoted
-        # slice is typed by the (constants x aggs) cross-product, while leading
-        # passthroughs (possibly renamed by `AS alias(...)`) look up their types
-        # via the pre-rename source name.
-        output_to_src = pivot.output_columns(src_types)
         agg_cols_offset = len(output_to_src) - len(pivot_constants) * len(agg_types)
-        assert agg_cols_offset >= 0
+        if agg_cols_offset < 0:
+            raise OptimizeError(f"Negative pivot column offset: {agg_cols_offset}")
 
         output_names = list(output_to_src)
         new_types: dict[str, t.Any] = {}

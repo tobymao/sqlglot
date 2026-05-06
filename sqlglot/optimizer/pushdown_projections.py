@@ -113,8 +113,13 @@ def pushdown_projections(
             for name, (node, source) in scope.selected_sources.items():
                 if isinstance(source, Scope) and isinstance(source.expression, exp.Selectable):
                     select = seq_get(source.expression.selects, 0)
-
-                    if scope.pivots or isinstance(select, exp.QueryTransform):
+                    if (
+                        scope.pivots
+                        or isinstance(select, exp.QueryTransform)
+                        or any(
+                            isinstance(s.unalias(), exp.StarMap) for s in scope.expression.selects
+                        )
+                    ):
                         columns: set[object] = {SELECT_ALL}
                     else:
                         columns = selects.get(name) or set()

@@ -481,6 +481,9 @@ class PostgresGenerator(generator.Generator):
                 return f"{self.expressions(expression, flat=True)}[{values}]"
             return "ARRAY"
 
+        if expression.is_type(exp.DType.ENUM) and expression.expressions:
+            return f"ENUM ({self.expressions(expression, flat=True)})"
+
         if expression.is_type(exp.DType.DOUBLE, exp.DType.FLOAT) and expression.expressions:
             # Postgres doesn't support precision for REAL and DOUBLE PRECISION types
             return f"FLOAT({self.expressions(expression, flat=True)})"

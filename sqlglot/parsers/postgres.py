@@ -202,6 +202,26 @@ class PostgresParser(parser.Parser):
 
     ARG_MODE_TOKENS: t.ClassVar = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
 
+    def _parse_create(self) -> exp.Create | exp.Command:
+        start = self._prev
+
+        if not self._match_text_seq("TYPE"):
+            return super()._parse_create()
+
+        this = self._parse_table_parts(schema=True)
+        if not this or not self._match(TokenType.ALIAS):
+            return self._parse_as_command(start)
+
+        if self._match(TokenType.ENUM, advance=False):
+            expression = self._parse_types()
+        else:
+            expression = self._parse_schema()
+
+        if not expression or self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(exp.Create(this=this, kind="TYPE", expression=expression))
+
     def _parse_parameter_mode(self) -> TokenType | None:
         """
         Parse PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).

@@ -19,14 +19,14 @@ if t.TYPE_CHECKING:
 
 
 def qualify_columns(
-    expression: exp.Expr,
+    expression: E,
     schema: dict[str, object] | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
     infer_schema: bool | None = None,
     allow_partial_qualification: bool = False,
     dialect: DialectType = None,
-) -> exp.Expr:
+) -> E:
     """
     Rewrite sqlglot AST to have fully qualified columns.
 

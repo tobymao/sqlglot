@@ -3,12 +3,13 @@ from collections.abc import Iterable
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
+from sqlglot._typing import E
 from sqlglot.helper import tsort
 
 JOIN_ATTRS = ("on", "side", "kind", "using", "method")
 
 
-def optimize_joins(expression: exp.Expr) -> exp.Expr:
+def optimize_joins(expression: E) -> E:
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
 
@@ -58,7 +59,7 @@ def optimize_joins(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def reorder_joins(expression: exp.Expr) -> exp.Expr:
+def reorder_joins(expression: E) -> E:
     """
     Reorder joins by topological sort order based on predicate references.
     """
@@ -84,7 +85,7 @@ def reorder_joins(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def normalize(expression: exp.Expr) -> exp.Expr:
+def normalize(expression: E) -> E:
     """
     Remove INNER and OUTER from joins as they are optional.
     """

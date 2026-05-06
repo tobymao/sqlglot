@@ -13,10 +13,11 @@ from sqlglot.optimizer.qualify_columns import (
 )
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.schema import Schema, ensure_schema
+from sqlglot._typing import E
 
 
 def qualify(
-    expression: exp.Expr,
+    expression: E,
     dialect: DialectType = None,
     db: str | None = None,
     catalog: str | None = None,
@@ -33,7 +34,7 @@ def qualify(
     canonicalize_table_aliases: bool = False,
     on_qualify: t.Callable[[exp.Expr], None] | None = None,
     sql: str | None = None,
-) -> exp.Expr:
+) -> E:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
 

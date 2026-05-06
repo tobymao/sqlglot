@@ -4185,6 +4185,24 @@ FROM subquery2""",
                     },
                 )
 
+            with self.subTest(f"Testing NOT LIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col NOT LIKE {quantifier} (x, y, z)",
+                    write={
+                        "": f"SELECT col NOT LIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col NOT LIKE x {connector} col NOT LIKE y) {connector} col NOT LIKE z",
+                    },
+                )
+
+            with self.subTest(f"Testing NOT ILIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col NOT ILIKE {quantifier} (x, y, z)",
+                    write={
+                        "": f"SELECT col NOT ILIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col NOT ILIKE x {connector} col NOT ILIKE y) {connector} col NOT ILIKE z",
+                    },
+                )
+
         self.validate_all(
             "SELECT 'foo' LIKE ANY((('bar', 'fo%')))",
             write={

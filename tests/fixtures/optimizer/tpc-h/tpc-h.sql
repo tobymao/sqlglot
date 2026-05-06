@@ -781,7 +781,7 @@ WITH "orders_2" AS (
     "orders"."o_comment" AS "o_comment"
   FROM "orders" AS "orders"
   WHERE
-    NOT "orders"."o_comment" LIKE '%special%requests%'
+    "orders"."o_comment" NOT LIKE '%special%requests%'
 ), "c_orders" AS (
   SELECT
     COUNT("orders"."o_orderkey") AS "c_count"
@@ -952,7 +952,7 @@ JOIN "part" AS "part"
   ON "part"."p_brand" <> 'Brand#45'
   AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
-  AND NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
+  AND "part"."p_type" NOT LIKE 'MEDIUM POLISHED%'
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."s_suppkey" = "partsupp"."ps_suppkey"
 WHERE

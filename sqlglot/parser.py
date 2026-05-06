@@ -5768,6 +5768,11 @@ class Parser:
         if not this:
             return this
 
+        expression = this.this if isinstance(this, exp.Escape) else this
+        if isinstance(expression, (exp.Like, exp.ILike)):
+            expression.set("negate", True)
+            return this
+
         return self.expression(exp.Not(this=this))
 
     def _parse_is(self, this: exp.Expr | None) -> exp.Expr | None:

@@ -261,12 +261,32 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "x !~~ 'y'",
-            "NOT x LIKE 'y'",
+            "x NOT LIKE 'y'",
         )
         self.validate_identity(
             "x !~~* 'y'",
-            "NOT x ILIKE 'y'",
+            "x NOT ILIKE 'y'",
         )
+        self.validate_identity("SELECT 'testa 1' NOT LIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity(
+            "SELECT 'testa 1' NOT LIKE ANY (ARRAY['testa%', 'testb%'])",
+            "SELECT 'testa 1' NOT LIKE ANY(ARRAY['testa%', 'testb%'])",
+        )
+        self.validate_identity("SELECT 'testa 1' NOT ILIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity(
+            "SELECT 'testa 1' NOT ILIKE ANY (ARRAY['testa%', 'testb%'])",
+            "SELECT 'testa 1' NOT ILIKE ANY(ARRAY['testa%', 'testb%'])",
+        )
+        self.validate_identity("SELECT NOT 'testa 1' LIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT NOT ('testa 1' LIKE ALL (ARRAY['testa%', 'testb%']))")
+        infix_not_like = self.parse_one("SELECT a NOT LIKE ALL (b)").expressions[0]
+        prefix_not_like = self.parse_one("SELECT NOT a LIKE ALL (b)").expressions[0]
+        self.assertIsInstance(infix_not_like, exp.Like)
+        self.assertTrue(infix_not_like.args.get("negate"))
+        self.assertIsInstance(prefix_not_like, exp.Not)
+        self.assertIsInstance(prefix_not_like.this, exp.Like)
+        self.assertFalse(prefix_not_like.this.args.get("negate"))
+        self.assertNotEqual(infix_not_like, prefix_not_like)
         self.validate_identity(
             "'45 days'::interval day",
             "CAST('45 days' AS INTERVAL DAY)",

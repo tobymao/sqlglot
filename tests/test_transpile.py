@@ -678,7 +678,7 @@ ORDER BY
             transpile("x::z", read="clickhouse")
 
     def test_not_range(self):
-        self.validate("a NOT LIKE b", "NOT a LIKE b")
+        self.validate("a NOT LIKE b", "a NOT LIKE b")
         self.validate("a NOT BETWEEN b AND c", "NOT a BETWEEN b AND c")
         self.validate("a NOT IN (1, 2)", "NOT a IN (1, 2)")
         self.validate("a IS NOT NULL", "NOT a IS NULL")

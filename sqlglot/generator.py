@@ -4193,6 +4193,9 @@ class Generator:
             exp_class = exp.ILike
             op = "ILIKE"
 
+        if expression.args.get("negate"):
+            op = f"NOT {op}"
+
         if isinstance(rhs, (exp.All, exp.Any)) and not self.SUPPORTS_LIKE_QUANTIFIERS:
             exprs = rhs.this.unnest()
 
@@ -4204,7 +4207,9 @@ class Generator:
             connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
 
             def _make_like(expr: exp.Expression) -> exp.Expression:
-                like: exp.Expression = exp_class(this=this, expression=expr)
+                like: exp.Expression = exp_class(
+                    this=this, expression=expr, negate=expression.args.get("negate")
+                )
                 if escape:
                     like = exp.Escape(this=like, expression=escape.expression.copy())
                 return like

@@ -1219,7 +1219,9 @@ def inline_array_unless_query(self: Generator, expression: exp.Expr) -> str:
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
         exp.Like(
-            this=exp.Lower(this=expression.this), expression=exp.Lower(this=expression.expression)
+            this=exp.Lower(this=expression.this),
+            expression=exp.Lower(this=expression.expression),
+            negate=expression.args.get("negate"),
         )
     )
 

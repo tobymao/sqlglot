@@ -1351,11 +1351,11 @@ class TestDuckDB(Validator):
         self.validate_identity("a ^@ b", "STARTS_WITH(a, b)")
         self.validate_identity(
             "a !~~ b",
-            "NOT a LIKE b",
+            "a NOT LIKE b",
         )
         self.validate_identity(
             "a !~~* b",
-            "NOT a ILIKE b",
+            "a NOT ILIKE b",
         )
 
         self.validate_all(

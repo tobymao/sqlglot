@@ -2135,7 +2135,7 @@ class GTE(Expression, Binary, Predicate):
 
 
 class ILike(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "negate": False}
 
 
 class IntDiv(Expression, Binary):
@@ -2147,7 +2147,7 @@ class Is(Expression, Binary, Predicate):
 
 
 class Like(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "negate": False}
 
 
 class Match(Expression, Binary, Predicate):

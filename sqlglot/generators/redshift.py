@@ -287,7 +287,7 @@ class RedshiftGenerator(PostgresGenerator):
             "ARRAY_CONTAINS",
             expression.this,
             expression.expression,
-            expression.args.get("ensure_variant"),
+            expression.args.get("check_null"),
         )
 
     def objecttransform_sql(self, expression: exp.ObjectTransform) -> str:

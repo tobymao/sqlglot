@@ -6,13 +6,14 @@ import typing as t
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
 from sqlglot.optimizer.scope import Scope, build_scope
+from sqlglot._typing import E
 
 if t.TYPE_CHECKING:
     ExistingCTEsMapping = dict[exp.Expr, str]
     TakenNameMapping = dict[str, t.Union[Scope, exp.Expr]]
 
 
-def eliminate_subqueries(expression: exp.Expr) -> exp.Expr:
+def eliminate_subqueries(expression: E) -> E:
     """
     Rewrite derived tables as CTES, deduplicating if possible.
 

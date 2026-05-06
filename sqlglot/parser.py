@@ -3838,14 +3838,29 @@ class Parser:
                 else None
             )
 
-            if all_ and distinct:
-                self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
-
             operation_modifiers = []
             while self._curr and self._match_texts(self.OPERATION_MODIFIERS):
                 operation_modifiers.append(exp.var(self._prev.text.upper()))
 
             limit = self._parse_limit(top=True)
+
+            # Some dialects (e.g. Redshift, T-SQL) allow SELECT TOP N DISTINCT ...
+            if limit and not matched_distinct and not all_:
+                matched_distinct = self._match_set(self.DISTINCT_TOKENS)
+                if matched_distinct:
+                    distinct = self.expression(
+                        exp.Distinct(
+                            on=self._parse_value(values=False)
+                            if self._match(TokenType.ON)
+                            else None
+                        )
+                    )
+                else:
+                    all_ = self._match(TokenType.ALL)
+
+            if all_ and distinct:
+                self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
+
             projections, exclude = self._parse_projections()
 
             this = self.expression(

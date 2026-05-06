@@ -2,9 +2,10 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
+from sqlglot._typing import E
 
 
-def unnest_subqueries(expression: exp.Expr) -> exp.Expr:
+def unnest_subqueries(expression: E) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
 

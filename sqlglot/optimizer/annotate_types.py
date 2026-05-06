@@ -657,9 +657,7 @@ class TypeAnnotator:
         if not parent:
             return
 
-        source = scope.cte_sources.get(parent.alias_or_name) or scope.sources.get(
-            parent.alias_or_name
-        )
+        source = scope.sources.get(parent.alias_or_name)
 
         src_types: dict[str, t.Any] = {}
         if isinstance(source, Scope) and isinstance(source.expression, exp.Query):

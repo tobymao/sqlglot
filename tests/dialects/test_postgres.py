@@ -1076,6 +1076,39 @@ FROM json_data, field_ids""",
             exp.DataType
         )
 
+        create_type = self.parse_one("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
+        self.assertIsInstance(create_type, exp.Create)
+        self.assertEqual(create_type.kind, "TYPE")
+        self.assertEqual(create_type.this, exp.to_table("mood"))
+
+        enum_type = create_type.expression
+        self.assertIsInstance(enum_type, exp.DataType)
+        self.assertTrue(enum_type.is_type(exp.DType.ENUM))
+        self.assertEqual([value.name for value in enum_type.expressions], ["sad", "ok", "happy"])
+        self.validate_identity("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
+
+        create_type = self.parse_one(
+            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
+        )
+        self.assertIsInstance(create_type, exp.Create)
+        self.assertEqual(create_type.kind, "TYPE")
+
+        composite_type = create_type.expression
+        self.assertIsInstance(composite_type, exp.Schema)
+        columns = composite_type.expressions
+        self.assertEqual([column.this.name for column in columns], ["name", "supplier_id", "price"])
+        self.assertEqual(
+            [column.kind.this for column in columns],
+            [exp.DType.TEXT, exp.DType.INT, exp.DType.DECIMAL],
+        )
+        self.validate_identity(
+            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
+        )
+
+        create_type = self.parse_one("CREATE TYPE public.mood AS ENUM ('sad', 'ok')")
+        self.assertEqual(create_type.this.sql(dialect="postgres"), "public.mood")
+        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok')")
+
         # Checks that OID is parsed into a DataType (ObjectIdentifier)
         self.assertIsInstance(
             self.parse_one("CREATE TABLE p.t (c oid)").find(exp.DataType), exp.ObjectIdentifier

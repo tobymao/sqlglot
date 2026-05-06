@@ -1745,16 +1745,10 @@ class DuckDBGenerator(generator.Generator):
         exp.DType.BIGDECIMAL: "DECIMAL",
     }
 
-    TYPE_DEFAULT_PARAMS = {
-        **generator.Generator.TYPE_DEFAULT_PARAMS,
-        exp.DType.BIGDECIMAL: (38, 5),
-        exp.DType.DECFLOAT: (38, 5),
-    }
-
-    TYPE_PARAM_BOUNDS = {
-        **generator.Generator.TYPE_PARAM_BOUNDS,
-        exp.DType.BIGDECIMAL: (38, 38),
-        exp.DType.DECFLOAT: (38, 38),
+    TYPE_PARAM_SETTINGS = {
+        **generator.Generator.TYPE_PARAM_SETTINGS,
+        exp.DType.BIGDECIMAL: ((38, 5), (38, 38)),
+        exp.DType.DECFLOAT: ((38, 5), (38, 38)),
     }
 
     # https://github.com/duckdb/duckdb/blob/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords/reserved_keywords.list#L1-L77

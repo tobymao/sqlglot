@@ -83,10 +83,10 @@ class SparkGenerator(Spark2Generator):
         exp.DType.TIMESTAMPNTZ: "TIMESTAMP_NTZ",
     }
 
-    TYPE_DEFAULT_PARAMS = {
-        **Spark2Generator.TYPE_DEFAULT_PARAMS,
-        exp.DType.MONEY: (15, 4),
-        exp.DType.SMALLMONEY: (6, 4),
+    TYPE_PARAM_SETTINGS = {
+        **Spark2Generator.TYPE_PARAM_SETTINGS,
+        exp.DType.MONEY: ((15, 4), ()),
+        exp.DType.SMALLMONEY: ((6, 4), ()),
     }
 
     TRANSFORMS = {

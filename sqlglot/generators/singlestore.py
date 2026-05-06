@@ -364,9 +364,9 @@ class SingleStoreGenerator(MySQLGenerator):
         exp.DType.TIMESTAMP_MS: "TIMESTAMP",
     }
 
-    TYPE_DEFAULT_PARAMS = {
-        **MySQLGenerator.TYPE_DEFAULT_PARAMS,
-        exp.DType.TIMESTAMP_MS: (6,),
+    TYPE_PARAM_SETTINGS = {
+        **MySQLGenerator.TYPE_PARAM_SETTINGS,
+        exp.DType.TIMESTAMP_MS: ((6,), ()),
     }
 
     # https://docs.singlestore.com/cloud/reference/sql-reference/restricted-keywords/list-of-restricted-keywords/

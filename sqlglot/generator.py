@@ -623,8 +623,10 @@ class Generator:
 
     UNSUPPORTED_TYPES: t.ClassVar[set[exp.DType]] = set()
 
-    TYPE_DEFAULT_PARAMS: t.ClassVar[dict[exp.DType, tuple[int, ...]]] = {}
-    TYPE_PARAM_BOUNDS: t.ClassVar[dict[exp.DType, tuple[int | None, ...]]] = {}
+    # mapping of DType to its default parameters, bounds
+    TYPE_PARAM_SETTINGS: t.ClassVar[
+        dict[exp.DType, tuple[tuple[int, ...], tuple[int | None, ...]]]
+    ] = {}
 
     TIME_PART_SINGULARS: t.ClassVar = {
         "MICROSECONDS": "MICROSECOND",
@@ -1640,12 +1642,16 @@ class Generator:
         return f"{this}{specifier}"
 
     def datatype_param_bound_limiter(
-        self, expression: exp.DataType, type_value: exp.DType
+        self,
+        expression: exp.DataType,
+        type_value: exp.DType,
+        defaults: tuple[int, ...],
+        bounds: tuple[int | None, ...],
     ) -> exp.DataType:
         params = expression.expressions
 
         if not params:
-            if defaults := self.TYPE_DEFAULT_PARAMS.get(type_value):
+            if defaults:
                 expression = expression.copy()
                 expression.set(
                     "expressions",
@@ -1653,7 +1659,6 @@ class Generator:
                 )
             return expression
 
-        bounds = self.TYPE_PARAM_BOUNDS.get(type_value)
         if not bounds:
             return expression
 
@@ -1671,16 +1676,10 @@ class Generator:
                 and int(param_value.to_py()) > bound
             ):
                 self.unsupported(
-                    f"{type_value.value} parameter ({int(param_value.to_py())}) "
-                    f"exceeds {self.dialect.__class__.__name__}'s maximum capping to {bound}"
+                    f"{type_value.value} parameter {param_value.name} exceeds "
+                    f"{self.dialect.__class__.__name__}'s maximum of {bound}; capping"
                 )
-                new_param = param.copy()
-                capped = exp.Literal.number(bound)
-                if isinstance(new_param, exp.DataTypeParam):
-                    new_param.set("this", capped)
-                else:
-                    new_param = capped
-                new_params[i] = new_param
+                new_params[i] = exp.DataTypeParam(this=exp.Literal.number(bound))
                 changed = True
 
         if changed:
@@ -1695,8 +1694,12 @@ class Generator:
         expr_nested = expression.args.get("nested")
         type_value = expression.this
 
-        if not expr_nested and isinstance(type_value, exp.DType):
-            expression = self.datatype_param_bound_limiter(expression, type_value)
+        if (
+            not expr_nested
+            and isinstance(type_value, exp.DType)
+            and (settings := self.TYPE_PARAM_SETTINGS.get(type_value))
+        ):
+            expression = self.datatype_param_bound_limiter(expression, type_value, *settings)
 
         interior = (
             self.expressions(

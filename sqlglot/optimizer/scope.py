@@ -19,7 +19,7 @@ if t.TYPE_CHECKING:
 
 TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
 
-SAFE_AGGS_WITH_STAR = (exp.Count,)
+ROW_LEVEL_AGG_FUNCS = (exp.Count,)
 
 
 class ScopeType(Enum):
@@ -115,7 +115,7 @@ class Scope:
 
     def clear_cache(self) -> None:
         self._collected = False
-        self._scans_subscope_columns = False
+        self._scans_all_subscope_columns = False
         self._raw_columns = []
         self._table_columns = []
         self._stars = []
@@ -173,11 +173,7 @@ class Scope:
             if node is self.expression:
                 continue
 
-            if isinstance(node, exp.Star) and (
-                node.args.get("except_") or not isinstance(node.parent, SAFE_AGGS_WITH_STAR)
-            ):
-                self._scans_subscope_columns = True
-            elif isinstance(node, exp.Dot) and node.is_star:
+            if isinstance(node, exp.Dot) and node.is_star:
                 self._stars.append(node)
             elif type(node) is exp.Column:
                 self._column_index.add(id(node))
@@ -206,6 +202,10 @@ class Scope:
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
+            elif isinstance(node, exp.Star) and (
+                node.args.get("except_") or not isinstance(node.parent, ROW_LEVEL_AGG_FUNCS)
+            ):
+                self._scans_all_subscope_columns = True
 
         self._collected = True
 
@@ -297,9 +297,9 @@ class Scope:
         return self._subqueries
 
     @property
-    def scans_subscope_columns(self) -> bool:
+    def scans_all_subscope_columns(self) -> bool:
         self._ensure_collected()
-        return self._scans_subscope_columns
+        return self._scans_all_subscope_columns
 
     @property
     def stars(self) -> list[exp.Column | exp.Dot]:

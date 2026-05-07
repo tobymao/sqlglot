@@ -1652,7 +1652,6 @@ class Generator:
 
         if not params:
             if defaults:
-                expression = expression.copy()
                 expression.set(
                     "expressions",
                     [exp.DataTypeParam(this=exp.Literal.number(d)) for d in defaults],
@@ -1662,8 +1661,6 @@ class Generator:
         if not bounds:
             return expression
 
-        new_params = list(params)
-        changed = False
         for i, param in enumerate(params):
             bound = bounds[i] if i < len(bounds) else None
             if bound is None:
@@ -1679,12 +1676,8 @@ class Generator:
                     f"{type_value.value} parameter {param_value.name} exceeds "
                     f"{self.dialect.__class__.__name__}'s maximum of {bound}; capping"
                 )
-                new_params[i] = exp.DataTypeParam(this=exp.Literal.number(bound))
-                changed = True
+                params[i] = exp.DataTypeParam(this=exp.Literal.number(bound))
 
-        if changed:
-            expression = expression.copy()
-            expression.set("expressions", new_params)
         return expression
 
     def datatype_sql(self, expression: exp.DataType) -> str:

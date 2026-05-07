@@ -132,5 +132,17 @@ WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT OBJECT_INSERT(OBJECT
 WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT obj:A, obj:B FROM (SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) AS obj, a FROM base) AS t;
 WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT GET_PATH(t.obj, 'A') AS A, GET_PATH(t.obj, 'B') AS B FROM (SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) AS obj FROM base AS base) AS t;
 
+# dialect: snowflake
+WITH cte AS (SELECT 1 AS a, 2 as b) SELECT HASH_AGG(*) FROM cte;
+WITH cte AS (SELECT 1 AS a, 2 AS b) SELECT HASH_AGG(*) AS _col_0 FROM cte AS cte;
+
+# dialect: snowflake
+WITH cte AS (SELECT a, b FROM x) SELECT COUNT(* EXCLUDE a) FROM cte;
+WITH cte AS (SELECT a AS a, b AS b FROM x AS x) SELECT COUNT(* EXCLUDE (a)) AS _col_0 FROM cte AS cte;
+
 WITH cte1 AS (SELECT a, SUM(b) AS sale FROM x GROUP BY a), cte2 AS (SELECT cte1.a, COUNT(*) AS cnt FROM cte1 GROUP BY cte1.a) SELECT a, cnt FROM cte2;
 WITH cte1 AS (SELECT x.a AS a FROM x AS x GROUP BY x.a), cte2 AS (SELECT cte1.a AS a, COUNT(*) AS cnt FROM cte1 AS cte1 GROUP BY cte1.a) SELECT cte2.a AS a, cte2.cnt AS cnt FROM cte2 AS cte2;
+
+# dialect: snowflake
+WITH cte1 AS (SELECT a, SUM(b) AS sale FROM x GROUP BY a), cte2 AS (SELECT cte1.a, APPROX_COUNT_DISTINCT(*) AS cnt FROM cte1 GROUP BY cte1.a) SELECT a, cnt FROM cte2;
+WITH cte1 AS (SELECT a AS a FROM x AS x GROUP BY a), cte2 AS (SELECT cte1.a AS a, APPROX_COUNT_DISTINCT(*) AS cnt FROM cte1 AS cte1 GROUP BY cte1.a) SELECT cte2.a AS a, cte2.cnt AS cnt FROM cte2 AS cte2;

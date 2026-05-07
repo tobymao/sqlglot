@@ -6843,13 +6843,19 @@ class Parser:
         this: str | exp.Expr = self._curr.text
         upper = self._curr.text.upper()
 
+        after_dot = prev.token_type == TokenType.DOT
         parser = self.NO_PAREN_FUNCTION_PARSERS.get(upper)
-        if optional_parens and parser and token_type not in self.INVALID_FUNC_NAME_TOKENS:
+        if (
+            optional_parens
+            and parser
+            and token_type not in self.INVALID_FUNC_NAME_TOKENS
+            and not after_dot
+        ):
             self._advance()
             return self._parse_window(parser(self))
 
         if self._next.token_type != TokenType.L_PAREN:
-            if optional_parens and token_type in self.NO_PAREN_FUNCTIONS:
+            if optional_parens and token_type in self.NO_PAREN_FUNCTIONS and not after_dot:
                 self._advance()
                 return self.expression(self.NO_PAREN_FUNCTIONS[token_type]())
 

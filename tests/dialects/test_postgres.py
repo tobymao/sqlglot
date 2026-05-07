@@ -268,10 +268,7 @@ class TestPostgres(Validator):
             "x NOT ILIKE 'y'",
         )
         self.validate_identity("SELECT 'testa 1' NOT LIKE ALL (ARRAY['testa%', 'testb%'])")
-        self.validate_identity(
-            "SELECT 'testa 1' NOT LIKE ANY (ARRAY['testa%', 'testb%'])",
-            "SELECT 'testa 1' NOT LIKE ANY(ARRAY['testa%', 'testb%'])",
-        )
+        self.validate_identity("SELECT 'testa 1' NOT LIKE ANY(ARRAY['testa%', 'testb%'])")
         self.validate_identity("SELECT 'testa 1' NOT ILIKE ALL (ARRAY['testa%', 'testb%'])")
         self.validate_identity(
             "SELECT 'testa 1' NOT ILIKE ANY (ARRAY['testa%', 'testb%'])",

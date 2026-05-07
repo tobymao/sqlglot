@@ -67,6 +67,7 @@ class RedshiftGenerator(PostgresGenerator):
                 exp.SHA2,
                 exp.Getbit,
                 exp.Round,
+                exp.TryCast,
             }
         },
         exp.ArrayConcat: array_concat_sql("ARRAY_CONCAT"),

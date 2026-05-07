@@ -42,7 +42,7 @@ EXPRESSION_METADATA = {
     exp.ToBinary: {"returns": exp.DType.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DType.DATE},
     # 2-arg `date_add(startDate, numDays)` / `date_sub` are routed to
-    # TsOrDsAdd by Hive/Databricks parsers; both return DATE per the Spark
+    # TsOrDsAdd by Hive/Spark parsers; both return DATE per the Spark
     # and Databricks contracts.
     exp.TsOrDsAdd: {"returns": exp.DType.DATE},
 }

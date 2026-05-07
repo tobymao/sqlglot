@@ -389,6 +389,22 @@ BINARY;
 LOCALTIMESTAMP();
 TIMESTAMPNTZ;
 
+# dialect: spark, databricks
+DATE_ADD(tbl.date_col, 1);
+DATE;
+
+# dialect: spark, databricks
+DATE_ADD(tbl.timestamp_col, 1);
+DATE;
+
+# dialect: spark, databricks
+DATE_ADD(MONTH, 1, tbl.date_col);
+TIMESTAMP;
+
+# dialect: spark, databricks
+DATE_ADD(MONTH, 1, tbl.timestamp_col);
+TIMESTAMP;
+
 # dialect: hive, spark2, spark, databricks
 ENCODE(tbl.str_col, tbl.str_col);
 BINARY;

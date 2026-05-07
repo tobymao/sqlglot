@@ -3825,6 +3825,22 @@ OPTIONS (
                 )
 
                 self.validate_all(
+                    f"DECLARE x {type_}(20, 4)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(20, 4)",
+                        "duckdb": "DECLARE x DECIMAL(20, 4)",
+                    },
+                )
+
+                self.validate_all(
+                    f"DECLARE x {type_}(76, 38)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(76, 38)",
+                        "duckdb": "DECLARE x DECIMAL(38, 38)",
+                    },
+                )
+
+                self.validate_all(
                     f"SELECT CAST(1 AS {type_})",
                     write={
                         "bigquery": "SELECT CAST(1 AS BIGNUMERIC)",

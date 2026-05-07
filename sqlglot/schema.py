@@ -317,6 +317,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         self._type_mapping_cache: dict[str, exp.DataType] = {}
         self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
+        self._find_cache: dict[tuple[exp.Table, bool], dict[str, object] | None] = {}
         self._depth: int = 0
         schema = {} if schema is None else schema
         udf_mapping = {} if udf_mapping is None else udf_mapping
@@ -344,14 +345,17 @@ class MappingSchema(AbstractMappingSchema, Schema):
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
     ) -> t.Any | None:
-        schema: dict[str, object] | None = super().find(
-            table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
-        )
-        if ensure_data_types and isinstance(schema, dict):
-            schema = {
-                col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
-                for col, dtype in schema.items()
-            }
+        cache_key = (table, ensure_data_types)
+        schema = self._find_cache.get(cache_key)
+
+        if schema is None:
+            schema = super().find(table, raise_on_missing=raise_on_missing)
+            if ensure_data_types and isinstance(schema, dict):
+                schema = {
+                    col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
+                    for col, dtype in schema.items()
+                }
+            self._find_cache[cache_key] = schema
 
         return schema
 
@@ -407,6 +411,8 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
         new_trie([parts], self.mapping_trie)
+        self._find_cache.pop((normalized_table, True), None)
+        self._find_cache.pop((normalized_table, False), None)
 
     def column_names(
         self,

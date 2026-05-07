@@ -1728,7 +1728,7 @@ class DuckDBGenerator(generator.Generator):
         exp.DType.BPCHAR: "TEXT",
         exp.DType.CHAR: "TEXT",
         exp.DType.DATETIME: "TIMESTAMP",
-        exp.DType.DECFLOAT: "DECIMAL(38, 5)",
+        exp.DType.DECFLOAT: "DECIMAL",
         exp.DType.FLOAT: "REAL",
         exp.DType.JSONB: "JSON",
         exp.DType.NCHAR: "TEXT",
@@ -1742,7 +1742,13 @@ class DuckDBGenerator(generator.Generator):
         exp.DType.TIMESTAMP_S: "TIMESTAMP_S",
         exp.DType.TIMESTAMP_MS: "TIMESTAMP_MS",
         exp.DType.TIMESTAMP_NS: "TIMESTAMP_NS",
-        exp.DType.BIGDECIMAL: "DECIMAL(38, 5)",
+        exp.DType.BIGDECIMAL: "DECIMAL",
+    }
+
+    TYPE_PARAM_SETTINGS = {
+        **generator.Generator.TYPE_PARAM_SETTINGS,
+        exp.DType.BIGDECIMAL: ((38, 5), (38, 38)),
+        exp.DType.DECFLOAT: ((38, 5), (38, 38)),
     }
 
     # https://github.com/duckdb/duckdb/blob/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords/reserved_keywords.list#L1-L77

@@ -232,6 +232,7 @@ class BigQueryGenerator(generator.Generator):
     COLLATE_IS_FUNC = True
     LIMIT_ONLY_LITERALS = True
     SUPPORTS_TABLE_ALIAS_COLUMNS = False
+    SUPPORTS_NAMED_CTE_COLUMNS = False
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
     JSON_KEY_VALUE_PAIR_SEP = ","
     NULL_ORDERING_SUPPORTED: bool | None = False

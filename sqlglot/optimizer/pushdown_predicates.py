@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 import typing as t
 
 from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import build_scope, find_in_scope
+from sqlglot.optimizer.scope import build_scope, find_in_scope, Scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from sqlglot.dialects.dialect import DialectType
+
+    Sources = Mapping[str, tuple[exp.Expr, t.Union[exp.Expr, Scope]]]
 
 
 def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
@@ -43,12 +45,11 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
         for scope in reversed(list(root.traverse())):
             select = scope.expression
-            where = select.args.get("where")
+            where: exp.Expr | None = select.args.get("where")
+            joins: list[exp.Expr] = select.args.get("joins") or []
             if where:
-                selected_sources = scope.selected_sources
-                join_index = {
-                    join.alias_or_name: i for i, join in enumerate(select.args.get("joins") or [])
-                }
+                selected_sources: Sources = scope.selected_sources
+                join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
 
                 # a right join can only push down to itself and not the source FROM table
                 # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
@@ -68,7 +69,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
             # joins should only pushdown into itself, not to other joins
             # so we limit the selected sources to only itself
-            for join in select.args.get("joins") or []:
+            for join in joins:
                 name = join.alias_or_name
                 if name in scope.selected_sources:
                     pushdown(
@@ -83,11 +84,11 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
 def pushdown(
     condition: exp.Expr | None,
-    sources,
-    scope_ref_count,
+    sources: Sources,
+    scope_ref_count: Mapping[int, int],
     dialect: DialectType,
     join_index: Mapping[str, int] | None = None,
-):
+) -> None:
     if not condition:
         return
 
@@ -106,7 +107,12 @@ def pushdown(
         pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
 
 
-def pushdown_cnf(predicates, sources, scope_ref_count, join_index: Mapping[str, int] | None = None):
+def pushdown_cnf(
+    predicates: Iterable[exp.Expr],
+    sources: Sources,
+    scope_ref_count: Mapping[int, int],
+    join_index: Mapping[str, int] | None = None,
+) -> None:
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
     """
@@ -132,7 +138,12 @@ def pushdown_cnf(predicates, sources, scope_ref_count, join_index: Mapping[str, 
                     node.where(inner_predicate, copy=False)
 
 
-def pushdown_dnf(predicates, sources, scope_ref_count, join_index=None):
+def pushdown_dnf(
+    predicates: Iterable[exp.Expr],
+    sources: Sources,
+    scope_ref_count: Mapping[int, int],
+    join_index: Mapping[str, int] | None = None,
+) -> None:
     """
     If the predicates are in DNF form, we can only push down conditions that are in all blocks.
     Additionally, we can't remove predicates from their original form.
@@ -141,7 +152,7 @@ def pushdown_dnf(predicates, sources, scope_ref_count, join_index=None):
     # these are tables that are referenced in all blocks of a DNF
     # (a.x AND b.x) OR (a.y AND c.y)
     # only table a can be push down
-    pushdown_tables = set()
+    pushdown_tables: set[str] = set()
 
     for a in predicates:
         a_tables = exp.column_table_names(a)
@@ -151,7 +162,7 @@ def pushdown_dnf(predicates, sources, scope_ref_count, join_index=None):
 
         pushdown_tables.update(a_tables)
 
-    conditions = {}
+    conditions: dict[str, exp.Expr] = {}
 
     # pushdown all predicates to their respective nodes
     for table in sorted(pushdown_tables):
@@ -186,8 +197,12 @@ def pushdown_dnf(predicates, sources, scope_ref_count, join_index=None):
                     node.where(inner_predicate, copy=False)
 
 
-def nodes_for_predicate(predicate, sources, scope_ref_count):
-    nodes = {}
+def nodes_for_predicate(
+    predicate: exp.Expr,
+    sources: Sources,
+    scope_ref_count: Mapping[int, int],
+) -> dict[str, exp.Expr]:
+    nodes: dict[str, exp.Expr] = {}
     tables = exp.column_table_names(predicate)
     where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
@@ -200,8 +215,12 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
             node = node.find_ancestor(exp.Join, exp.From)
 
         # a node can reference a CTE which should be pushed down
-        if isinstance(node, exp.From) and not isinstance(source, exp.Table):
-            with_ = source.parent.expression.args.get("with_")
+
+        if isinstance(node, exp.From) and not isinstance(source, exp.Table) and source is not None:
+            parent = source.parent
+            if parent is None:
+                raise ValueError("Source node has no parent")
+            with_: exp.With | None = parent.expression.args.get("with_")
             if with_ and with_.recursive:
                 return {}
             node = source.expression

@@ -365,5 +365,5 @@ class StDistance(Expression, Func):
 
 
 class StPoint(Expression, Func):
-    arg_types = {"this": True, "expression": True, "null": False}
+    arg_types = {"this": True, "expression": True, "z": False, "m": False}
     _sql_names = ["ST_POINT", "ST_MAKEPOINT"]

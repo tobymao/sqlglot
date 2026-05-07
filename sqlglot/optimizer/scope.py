@@ -63,6 +63,7 @@ class Scope:
     """
 
     _collected: bool
+    _has_star: bool
     _raw_columns: list[exp.Column]
     _table_columns: list[exp.TableColumn]
     _stars: list[exp.Column | exp.Dot]
@@ -112,6 +113,7 @@ class Scope:
 
     def clear_cache(self) -> None:
         self._collected = False
+        self._has_star = False
         self._raw_columns = []
         self._table_columns = []
         self._stars = []
@@ -169,7 +171,9 @@ class Scope:
             if node is self.expression:
                 continue
 
-            if isinstance(node, exp.Dot) and node.is_star:
+            if isinstance(node, exp.Star) and not isinstance(node.parent, exp.AggFunc):
+                self._has_star = True
+            elif isinstance(node, exp.Dot) and node.is_star:
                 self._stars.append(node)
             elif type(node) is exp.Column:
                 self._column_index.add(id(node))
@@ -287,6 +291,11 @@ class Scope:
         """
         self._ensure_collected()
         return self._subqueries
+
+    @property
+    def has_star(self) -> bool:
+        self._ensure_collected()
+        return self._has_star
 
     @property
     def stars(self) -> list[exp.Column | exp.Dot]:

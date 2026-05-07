@@ -99,7 +99,7 @@ def pushdown_projections(
             if remove_unused_selections:
                 _remove_unused_selections(scope, parent_selections, schema, alias_count)
 
-            if scope.expression.is_star:
+            if scope.has_star:
                 continue
 
             # Group columns by source name
@@ -113,13 +113,7 @@ def pushdown_projections(
             for name, (node, source) in scope.selected_sources.items():
                 if isinstance(source, Scope) and isinstance(source.expression, exp.Selectable):
                     select = seq_get(source.expression.selects, 0)
-                    if (
-                        scope.pivots
-                        or isinstance(select, exp.QueryTransform)
-                        or any(
-                            isinstance(s.unalias(), exp.StarMap) for s in scope.expression.selects
-                        )
-                    ):
+                    if scope.pivots or isinstance(select, exp.QueryTransform):
                         columns: set[object] = {SELECT_ALL}
                     else:
                         columns = selects.get(name) or set()

@@ -682,7 +682,7 @@ def _expand_struct_stars_no_parens(
         taken_names.add(name)
 
         this = field.this.copy()
-        root, *parts = (part.copy() for part in itertools.chain(dot_parts, [this]))
+        root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
         new_column = exp.column(
             t.cast(exp.Identifier, root),
             table=dot_column.args.get("table"),

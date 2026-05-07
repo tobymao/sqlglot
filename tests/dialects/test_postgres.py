@@ -270,10 +270,7 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT 'testa 1' NOT LIKE ALL (ARRAY['testa%', 'testb%'])")
         self.validate_identity("SELECT 'testa 1' NOT LIKE ANY(ARRAY['testa%', 'testb%'])")
         self.validate_identity("SELECT 'testa 1' NOT ILIKE ALL (ARRAY['testa%', 'testb%'])")
-        self.validate_identity(
-            "SELECT 'testa 1' NOT ILIKE ANY (ARRAY['testa%', 'testb%'])",
-            "SELECT 'testa 1' NOT ILIKE ANY(ARRAY['testa%', 'testb%'])",
-        )
+        self.validate_identity("SELECT 'testa 1' NOT ILIKE ANY(ARRAY['testa%', 'testb%'])")
         self.validate_identity("SELECT NOT 'testa 1' LIKE ALL (ARRAY['testa%', 'testb%'])")
         self.validate_identity("SELECT NOT ('testa 1' LIKE ALL (ARRAY['testa%', 'testb%']))")
         infix_not_like = self.parse_one("SELECT a NOT LIKE ALL (b)").expressions[0]

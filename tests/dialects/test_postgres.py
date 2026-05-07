@@ -1076,38 +1076,29 @@ FROM json_data, field_ids""",
             exp.DataType
         )
 
-        create_type = self.parse_one("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
-        self.assertIsInstance(create_type, exp.Create)
-        self.assertEqual(create_type.kind, "TYPE")
-        self.assertEqual(create_type.this, exp.to_table("mood"))
+        create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+        self.assertTrue(create_type.expression.assert_is(exp.DataType).is_type(exp.DType.ENUM))
 
-        enum_type = create_type.expression
-        self.assertIsInstance(enum_type, exp.DataType)
-        self.assertTrue(enum_type.is_type(exp.DType.ENUM))
-        self.assertEqual([value.name for value in enum_type.expressions], ["sad", "ok", "happy"])
-        self.validate_identity("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
+        self.validate_identity("CREATE TYPE mood AS ENUM ()").assert_is(exp.Create)
 
-        create_type = self.parse_one(
+        create_type = self.validate_identity(
             "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
-        )
-        self.assertIsInstance(create_type, exp.Create)
-        self.assertEqual(create_type.kind, "TYPE")
+        ).assert_is(exp.Create)
+        create_type.expression.assert_is(exp.Schema)
 
-        composite_type = create_type.expression
-        self.assertIsInstance(composite_type, exp.Schema)
-        columns = composite_type.expressions
-        self.assertEqual([column.this.name for column in columns], ["name", "supplier_id", "price"])
-        self.assertEqual(
-            [column.kind.this for column in columns],
-            [exp.DType.TEXT, exp.DType.INT, exp.DType.DECIMAL],
+        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok')").assert_is(
+            exp.Create
+        )
+
+        self.validate_identity("CREATE TYPE widget", check_command_warning=True).assert_is(
+            exp.Command
         )
         self.validate_identity(
-            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
-        )
-
-        create_type = self.parse_one("CREATE TYPE public.mood AS ENUM ('sad', 'ok')")
-        self.assertEqual(create_type.this.sql(dialect="postgres"), "public.mood")
-        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok')")
+            "CREATE TYPE float8range AS RANGE (subtype = float8, subtype_diff = float8mi)",
+            check_command_warning=True,
+        ).assert_is(exp.Command)
 
         # Checks that OID is parsed into a DataType (ObjectIdentifier)
         self.assertIsInstance(

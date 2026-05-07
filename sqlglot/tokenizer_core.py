@@ -427,6 +427,7 @@ class TokenType(IntEnum):
     TRUE = auto()
     TRUNCATE = auto()
     TRIGGER = auto()
+    TYPE = auto()
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()

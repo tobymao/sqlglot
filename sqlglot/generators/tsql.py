@@ -234,6 +234,7 @@ class TSQLGenerator(generator.Generator):
         exp.TemporaryProperty: lambda self, e: "",
         exp.TimeStrToTime: _timestrtotime_sql,
         exp.TimeToStr: _format_sql,
+        exp.TimestampAdd: date_delta_sql("DATEADD"),
         exp.Trim: trim_sql,
         exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
         exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),

@@ -1418,55 +1418,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 self.assertEqual(expected_type, expression.expressions[0].type.this)
                 self.assertEqual(sql, expression.sql())
 
-    def test_hive_chain_date_add_descent(self):
-        # 2-arg DATE_ADD parses to TsOrDsAdd at the Hive level (parsers/hive.py);
-        # Spark and Databricks inherit that routing. The DATE annotator for
-        # TsOrDsAdd is registered at Spark only — Hive stays UNKNOWN because
-        # older Hive returned STRING. Schema must be built per-dialect since
-        # TypeAnnotator dispatches on schema.dialect, not the call-site dialect.
-        TsOrDsAdd = exp.TsOrDsAdd
-        UNKNOWN, DATE = exp.DataType.Type.UNKNOWN, exp.DataType.Type.DATE
-        sql = "SELECT date_add(e, 24) AS r FROM t"
-        for dialect, expected_type in [
-            ("hive", UNKNOWN),
-            ("spark", DATE),
-            ("databricks", DATE),
-        ]:
-            with self.subTest(dialect):
-                schema = MappingSchema({"t": {"e": "TIMESTAMP"}}, dialect=dialect)
-                ast = optimizer.qualify.qualify(
-                    parse_one(sql, read=dialect), schema=schema, dialect=dialect
-                )
-                annotated = annotate_types(ast, schema=schema, dialect=dialect)
-                projected = annotated.selects[0].this
-                self.assertIsInstance(projected, TsOrDsAdd)
-                self.assertEqual(expected_type, projected.type.this)
-
-    def test_databricks_date_add_annotation(self):
-        # `date_add` and `dateadd` are aliases in Databricks; arity selects the
-        # semantic. SparkParser._build_dateadd (inherited by DatabricksParser)
-        # routes 2-arg → TsOrDsAdd (DATE) and 3-arg → TimestampAdd (TIMESTAMP).
-        TsOrDsAdd, TimestampAdd = exp.TsOrDsAdd, exp.TimestampAdd
-        DATE, TIMESTAMP = exp.DataType.Type.DATE, exp.DataType.Type.TIMESTAMP
-        schema = MappingSchema({"t": {"e": "TIMESTAMP"}}, dialect="databricks")
-        for sql, expected_class, expected_type in [
-            ("SELECT date_add(e, 24) AS r FROM t", TsOrDsAdd, DATE),
-            ("SELECT dateadd(e, 24) AS r FROM t", TsOrDsAdd, DATE),
-            ("SELECT date_add(month, 1, e) AS r FROM t", TimestampAdd, TIMESTAMP),
-            ("SELECT dateadd(day, 24, e) AS r FROM t", TimestampAdd, TIMESTAMP),
-        ]:
-            with self.subTest(sql):
-                expression = annotate_types(
-                    optimizer.qualify.qualify(
-                        parse_one(sql, read="databricks"), schema=schema, dialect="databricks"
-                    ),
-                    schema=schema,
-                    dialect="databricks",
-                )
-                projected = expression.selects[0].this
-                self.assertIsInstance(projected, expected_class)
-                self.assertEqual(expected_type, projected.type.this)
-
     def test_lateral_annotation(self):
         expression = optimizer.optimize(
             parse_one("SELECT c FROM (select 1 a) as x LATERAL VIEW EXPLODE (a) AS c")

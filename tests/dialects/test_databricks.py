@@ -382,14 +382,10 @@ class TestDatabricks(Validator):
         )
 
     def test_add_date(self):
-        # 3-arg form (Databricks extension; Spark OSS uses TIMESTAMPADD instead).
-        # Parses to TimestampAdd via inherited SparkParser._build_dateadd; round-trips
-        # as DATE_ADD. T-SQL has no TimestampAdd handler, so it falls back to
-        # TIMESTAMP_ADD — a pre-existing gap in the Spark→T-SQL path.
         self.validate_all(
             "SELECT DATEADD(year, 1, '2020-01-01')",
             write={
-                "tsql": "SELECT TIMESTAMP_ADD('2020-01-01', 1, YEAR)",
+                "tsql": "SELECT DATEADD(YEAR, 1, '2020-01-01')",
                 "databricks": "SELECT DATE_ADD(YEAR, 1, '2020-01-01')",
             },
         )
@@ -397,8 +393,6 @@ class TestDatabricks(Validator):
             "SELECT DATEDIFF('end', 'start')",
             write={"databricks": "SELECT DATEDIFF(DAY, 'start', 'end')"},
         )
-        # 2-arg DATE_ADD returns DATE in Databricks regardless of input type;
-        # tsql output wraps the operand with a DATE cast to preserve that contract.
         self.validate_all(
             "SELECT DATE_ADD('2020-01-01', 1)",
             write={
@@ -406,19 +400,10 @@ class TestDatabricks(Validator):
                 "databricks": "SELECT DATE_ADD('2020-01-01', 1)",
             },
         )
-        # 3-arg form round-trips as DATE_ADD under Databricks (both names are aliases).
-        self.validate_all(
-            "SELECT DATE_ADD(MONTH, 1, '2020-01-01')",
-            write={
-                "databricks": "SELECT DATE_ADD(MONTH, 1, '2020-01-01')",
-            },
-        )
-        # `dateadd` is a full alias for `date_add`; arity selects the semantic.
-        self.validate_all(
+        self.validate_identity("SELECT DATE_ADD(MONTH, 1, '2020-01-01')")
+        self.validate_identity(
             "SELECT DATEADD(e, 24) FROM t",
-            write={
-                "databricks": "SELECT DATE_ADD(e, 24) FROM t",
-            },
+            "SELECT DATE_ADD(e, 24) FROM t",
         )
 
     def test_without_as(self):

@@ -68,13 +68,14 @@ def eliminate_subqueries(expression: E) -> E:
     # Existing CTES in the root expression. We'll use this for deduplication.
     existing_ctes: ExistingCTEsMapping = {}
 
-    with_ = root.expression.args.get("with_")
-    recursive = False
+    with_: exp.With | None = root.expression.args.get("with_")
+    recursive: bool | None = False
     if with_:
         recursive = with_.args.get("recursive")
-        for cte in with_.expressions:
+        with_exprs: list[exp.CTE] = with_.expressions
+        for cte in with_exprs:
             existing_ctes[cte.this] = cte.alias
-    new_ctes = []
+    new_ctes: list[exp.Expr] = []
 
     # We're adding more CTEs, but we want to maintain the DAG order.
     # Derived tables within an existing CTE need to come before the existing CTE.

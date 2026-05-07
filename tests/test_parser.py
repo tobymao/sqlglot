@@ -97,6 +97,22 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_no_paren_functions_after_dot(self):
+        # NO_PAREN_FUNCTIONS (token-type-based): should be identifiers after a dot
+        col = parse_one("SELECT t.current_date FROM t").find(exp.Column)
+        self.assertEqual(col.table, "t")
+        self.assertEqual(col.name, "current_date")
+
+        # Bare usage should still produce function expressions
+        self.assertIsInstance(
+            parse_one("SELECT CURRENT_DATE").find(exp.CurrentDate), exp.CurrentDate
+        )
+
+        # Slow path via :: cast
+        cast = parse_one("SELECT t.current_user::TEXT FROM t", dialect="postgres").find(exp.Cast)
+        self.assertIsInstance(cast.this, exp.Column)
+        self.assertEqual(cast.this.name, "current_user")
+
     def test_tuple(self):
         parse_one("(a,)").assert_is(exp.Tuple)
 

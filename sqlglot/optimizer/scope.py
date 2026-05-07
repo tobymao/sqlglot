@@ -19,7 +19,7 @@ if t.TYPE_CHECKING:
 
 TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
 
-SAFE_AGGS_WITH_STAR = (exp.ApproxDistinct, exp.Count)
+SAFE_AGGS_WITH_STAR = (exp.Count,)
 
 
 class ScopeType(Enum):

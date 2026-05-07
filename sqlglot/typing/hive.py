@@ -53,6 +53,8 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ArrayDistinct,
             exp.ArrayExcept,
+            exp.First,
+            exp.Last,
             exp.Reverse,
         }
     },

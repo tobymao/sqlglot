@@ -205,6 +205,22 @@ STRING;
 SUBSTRING(tbl.bin_col, 0, 0);
 BINARY;
 
+# dialect: hive, spark2, spark, databricks
+FIRST(tbl.str_col);
+TEXT;
+
+# dialect: hive, spark2, spark, databricks
+FIRST(tbl.bigint_col);
+BIGINT;
+
+# dialect: hive, spark2, spark, databricks
+LAST(tbl.str_col);
+TEXT;
+
+# dialect: hive, spark2, spark, databricks
+LAST(tbl.bigint_col);
+BIGINT;
+
 # dialect: spark2, spark, databricks
 REGEXP_EXTRACT(tbl.str_col, pattern, 0);
 STRING;

@@ -468,12 +468,14 @@ class TypeAnnotator:
                         self._set_type(expr, source.expression.type)
                     else:
                         self._set_type(expr, exp.DType.UNKNOWN)
-                elif not source and scope.pivots:
-                    self._set_type(
-                        expr,
-                        self._get_scope_source_selects(scope, expr.table).get(expr.name)
-                        or exp.DType.UNKNOWN,
+                elif (
+                    not source
+                    and scope.pivots
+                    and (
+                        col_type := self._get_scope_source_selects(scope, expr.table).get(expr.name)
                     )
+                ):
+                    self._set_type(expr, col_type)
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
 

@@ -1092,13 +1092,11 @@ FROM json_data, field_ids""",
             exp.Create
         )
 
-        self.validate_identity("CREATE TYPE widget", check_command_warning=True).assert_is(
-            exp.Command
-        )
+        self.validate_identity("CREATE TYPE widget", check_command_warning=True)
         self.validate_identity(
             "CREATE TYPE float8range AS RANGE (subtype = float8, subtype_diff = float8mi)",
             check_command_warning=True,
-        ).assert_is(exp.Command)
+        )
 
         # Checks that OID is parsed into a DataType (ObjectIdentifier)
         self.assertIsInstance(

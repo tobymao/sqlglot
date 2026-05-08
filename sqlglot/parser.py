@@ -644,6 +644,7 @@ class Parser:
         TokenType.INDEX,
         TokenType.PROCEDURE,
         TokenType.TRIGGER,
+        TokenType.TYPE,
         *DB_CREATABLES,
     }
 
@@ -2492,25 +2493,10 @@ class Parser:
                 return self._parse_as_command(start)
 
             if self._match(TokenType.ENUM):
-                if not self._match(TokenType.L_PAREN):
-                    return self._parse_as_command(start)
-
-                expressions = []
-                if not self._match(TokenType.R_PAREN):
-                    while True:
-                        enum_label = self._parse_string()
-                        if not enum_label or not enum_label.is_string:
-                            return self._parse_as_command(start)
-
-                        expressions.append(enum_label)
-
-                        if not self._match(TokenType.COMMA):
-                            break
-
-                    if not self._match(TokenType.R_PAREN):
-                        return self._parse_as_command(start)
-
-                expression = exp.DataType(this=exp.DType.ENUM, expressions=expressions)
+                expression = exp.DataType(
+                    this=exp.DType.ENUM,
+                    expressions=self._parse_wrapped_csv(self._parse_string),
+                )
             elif self._match(TokenType.L_PAREN, advance=False):
                 expression = self._parse_schema()
             else:

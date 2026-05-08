@@ -202,8 +202,6 @@ class PostgresParser(parser.Parser):
 
     ARG_MODE_TOKENS: t.ClassVar = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
 
-    CREATABLES: t.ClassVar = {*parser.Parser.CREATABLES, TokenType.TYPE}
-
     def _parse_parameter_mode(self) -> TokenType | None:
         """
         Parse PostgreSQL function parameter mode (IN, OUT, INOUT, VARIADIC).

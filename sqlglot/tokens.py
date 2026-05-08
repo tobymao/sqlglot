@@ -394,7 +394,6 @@ class Tokenizer(_TokenizerBase):
         "TRUE": TokenType.TRUE,
         "TRUNCATE": TokenType.TRUNCATE,
         "TRIGGER": TokenType.TRIGGER,
-        "TYPE": TokenType.TYPE,
         "UNION": TokenType.UNION,
         "UNKNOWN": TokenType.UNKNOWN,
         "UNNEST": TokenType.UNNEST,

@@ -25,6 +25,7 @@ class Redshift(Postgres):
     # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TIME_MAPPING = {**Postgres.TIME_MAPPING, "MON": "%b", "HH24": "%H", "HH": "%I"}
+    INVERSE_TIME_MAPPING = {**Postgres.INVERSE_TIME_MAPPING, "%I": "HH12", "%H": "HH24"}
 
     Parser = RedshiftParser
 

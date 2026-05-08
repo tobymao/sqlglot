@@ -755,7 +755,6 @@ class Parser:
         TokenType.UNPIVOT,
         TokenType.UPDATE,
         TokenType.USE,
-        TokenType.TYPE,
         TokenType.VOLATILE,
         TokenType.WINDOW,
         TokenType.CURRENT_CATALOG,

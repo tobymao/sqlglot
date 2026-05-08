@@ -284,8 +284,8 @@ class RedshiftGenerator(PostgresGenerator):
 
     def trim_sql(self, expression: exp.Trim) -> str:
         trim_type = self.sql(expression, "position")
-        if trim_type and not expression.args.get("expression"):
-            return f"TRIM({trim_type} FROM {self.sql(expression, 'this')})"
+        if trim_type == "BOTH" and not expression.args.get("expression"):
+            return f"TRIM(BOTH FROM {self.sql(expression, 'this')})"
         return super().trim_sql(expression)
 
     def arraycontains_sql(self, expression: exp.ArrayContains) -> str:

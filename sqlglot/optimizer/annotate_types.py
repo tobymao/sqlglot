@@ -225,8 +225,8 @@ class TypeAnnotator:
         # When set to False, this enables partial annotation by skipping already-annotated nodes
         self._overwrite_types = overwrite_types
 
-        # Maps Scope to its corresponding selected sources
-        self._scope_selects: dict[Scope, dict[str, dict[str, t.Any]]] = {}
+        # Maps (Scope, source_name) to its column projections and types
+        self._scope_selects: dict[tuple[Scope, str], dict[str, t.Any]] = {}
 
     def clear(self) -> None:
         self._visited.clear()
@@ -278,14 +278,14 @@ class TypeAnnotator:
 
         return expression
 
-    def _get_scope_selects(self, scope: Scope) -> dict[str, dict[str, t.Any]]:
-        if scope not in self._scope_selects:
+    def _get_scope_source_selects(self, scope: Scope, source_name: str) -> dict[str, t.Any]:
+        if (scope, source_name) not in self._scope_selects:
             selects = {}
-            for name, source in scope.sources.items():
-                if not isinstance(source, Scope):
-                    continue
+            source = scope.sources.get(source_name)
 
+            if isinstance(source, Scope):
                 expression = source.expression
+
                 if isinstance(expression, exp.UDTF):
                     values = []
 
@@ -297,53 +297,72 @@ class TypeAnnotator:
                     elif not isinstance(expression, exp.TableFromRows):
                         values = expression.expressions[0].expressions
 
-                    if not values:
-                        continue
+                    if values:
+                        alias_column_names = expression.alias_column_names
 
-                    alias_column_names = expression.alias_column_names
+                        if isinstance(expression, exp.Unnest):
+                            exp_type = expression.type
+                        elif isinstance(expression, exp.Lateral) and isinstance(
+                            expression.this, exp.Explode
+                        ):
+                            exp_type = expression.this.type
+                        else:
+                            exp_type = None
 
-                    if isinstance(expression, exp.Unnest):
-                        exp_type = expression.type
-                    elif isinstance(expression, exp.Lateral) and isinstance(
-                        expression.this, exp.Explode
-                    ):
-                        exp_type = expression.this.type
-                    else:
-                        exp_type = None
+                        struct_type = (
+                            exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
+                        )
 
-                    struct_type = (
-                        exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
-                    )
+                        if struct_type:
+                            selects = {
+                                col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
+                                for col_def in struct_type.expressions
+                                if isinstance(col_def, exp.ColumnDef) and col_def.kind
+                            }
+                        else:
+                            selects = {
+                                alias: column.type
+                                for alias, column in zip(alias_column_names, values)
+                            }
 
-                    if struct_type:
-                        selects[name] = {
-                            col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
-                            for col_def in struct_type.expressions
-                            if isinstance(col_def, exp.ColumnDef) and col_def.kind
-                        }
-                    else:
-                        selects[name] = {
-                            alias: column.type for alias, column in zip(alias_column_names, values)
-                        }
                 elif isinstance(expression, exp.SetOperation) and len(
                     expression.left.selects
                 ) == len(expression.right.selects):
-                    selects[name] = self._get_setop_column_types(expression)
+                    selects = self._get_setop_column_types(expression)
+
                 elif isinstance(expression, exp.Selectable):
-                    selects[name] = {s.alias_or_name: s.type for s in expression.selects if s.type}
+                    selects = {s.alias_or_name: s.type for s in expression.selects if s.type}
 
-            for pivot in scope.pivots:
-                col_types = (
-                    self._get_unpivot_column_types(pivot, selects)
-                    if pivot.unpivot
-                    else self._get_pivot_column_types(pivot, selects)
-                )
-                if col_types:
-                    selects[pivot.alias] = col_types
+            else:
+                for pivot in scope.pivots:
+                    if pivot.alias == source_name:
+                        parent = pivot.parent
+                        parent_source = scope.sources.get(parent.alias_or_name) if parent else None
 
-            self._scope_selects[scope] = selects
+                        if parent and isinstance(parent_source, Scope):
+                            src_types = self._get_scope_source_selects(scope, parent.alias_or_name)
+                        elif isinstance(parent, exp.Table) and isinstance(
+                            self.schema, MappingSchema
+                        ):
+                            src_types = (
+                                self.schema.find(
+                                    parent, raise_on_missing=False, ensure_data_types=True
+                                )
+                                or {}
+                            )
+                        else:
+                            src_types = {}
 
-        return self._scope_selects[scope]
+                        selects = (
+                            self._get_unpivot_column_types(pivot, src_types)
+                            if pivot.unpivot
+                            else self._get_pivot_column_types(pivot, src_types)
+                        )
+                        break
+
+            self._scope_selects[(scope, source_name)] = selects
+
+        return self._scope_selects[(scope, source_name)]
 
     def annotate_scope(self, scope: Scope) -> None:
         if isinstance(self.schema, MappingSchema):
@@ -374,9 +393,6 @@ class TypeAnnotator:
                     ).is_type(exp.DType.STRUCT)
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
-
-        for pivot in scope.pivots:
-            self._annotate_pivot_source_columns(pivot, scope)
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)
@@ -436,15 +452,15 @@ class TypeAnnotator:
                     table_col_type = self.schema.get_column_type(source, expr)
                     if table_col_type.is_type(exp.DType.UNKNOWN) and source.args.get("pivots"):
                         table_col_type = (
-                            self._get_scope_selects(source_scope or scope)
-                            .get(expr.table, {})
-                            .get(expr.name)
+                            self._get_scope_source_selects(source_scope or scope, expr.table).get(
+                                expr.name
+                            )
                             or table_col_type
                         )
                     self._set_type(expr, table_col_type)
                 elif source and source_scope:
-                    col_type = (
-                        self._get_scope_selects(source_scope).get(expr.table, {}).get(expr.name)
+                    col_type = self._get_scope_source_selects(source_scope, expr.table).get(
+                        expr.name
                     )
                     if col_type:
                         self._set_type(expr, col_type)
@@ -452,16 +468,12 @@ class TypeAnnotator:
                         self._set_type(expr, source.expression.type)
                     else:
                         self._set_type(expr, exp.DType.UNKNOWN)
-                elif (
-                    not source
-                    and scope.pivots
-                    and (
-                        pivot_type := self._get_scope_selects(scope)
-                        .get(expr.table, {})
-                        .get(expr.name)
+                elif not source and scope.pivots:
+                    self._set_type(
+                        expr,
+                        self._get_scope_source_selects(scope, expr.table).get(expr.name)
+                        or exp.DType.UNKNOWN,
                     )
-                ):
-                    self._set_type(expr, pivot_type)
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
 
@@ -624,9 +636,8 @@ class TypeAnnotator:
         return col_types
 
     def _get_unpivot_column_types(
-        self, pivot: exp.Pivot, selects: dict[str, dict[str, t.Any]]
+        self, pivot: exp.Pivot, src_types: dict[str, t.Any]
     ) -> dict[str, t.Any]:
-        src_types = selects.get(parent.alias_or_name, {}) if (parent := pivot.parent) else {}
         new_types: dict[str, t.Any] = {}
 
         for field in pivot.fields:
@@ -652,43 +663,9 @@ class TypeAnnotator:
             if (type_ := new_types.get(name) or src_types.get(name))
         }
 
-    def _annotate_pivot_source_columns(self, pivot: exp.Pivot, scope: Scope) -> None:
-        parent = pivot.parent
-        if not parent:
-            return
-
-        source = scope.sources.get(parent.alias_or_name)
-
-        src_types: dict[str, t.Any] = {}
-        if isinstance(source, Scope) and isinstance(source.expression, exp.Query):
-            src_types = {s.alias_or_name: s.type for s in source.expression.selects if s.type}
-        elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
-            src_types = (
-                self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
-            )
-
-        for col in pivot.find_all(exp.Column):
-            self._set_type(col, src_types.get(col.name) or exp.DType.UNKNOWN)
-
-        if not pivot.unpivot:
-            for expr in pivot.expressions:
-                agg = expr.this if isinstance(expr, exp.Alias) else expr
-                self._annotate_expression(agg, scope)
-
     def _get_pivot_column_types(
-        self, pivot: exp.Pivot, selects: dict[str, dict[str, t.Any]]
+        self, pivot: exp.Pivot, src_types: dict[str, t.Any]
     ) -> dict[str, t.Any]:
-        parent = pivot.parent
-        src_types = selects.get(parent.alias_or_name, {}) if parent else {}
-        if (
-            not src_types
-            and isinstance(parent, exp.Table)
-            and isinstance(self.schema, MappingSchema)
-        ):
-            src_types = (
-                self.schema.find(parent, raise_on_missing=False, ensure_data_types=True) or {}
-            )
-
         first_field = seq_get(pivot.fields, 0)
         if not isinstance(first_field, exp.In):
             raise OptimizeError(f"Expected In expression for pivot field, got {type(first_field)}")

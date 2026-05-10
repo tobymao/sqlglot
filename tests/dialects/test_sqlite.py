@@ -56,6 +56,7 @@ class TestSQLite(Validator):
             "ALTER TABLE t RENAME a TO b",
             "ALTER TABLE t RENAME COLUMN a TO b",
         )
+        self.validate_identity("ALTER TABLE t1 RENAME TO t2")
 
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
         self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})

@@ -8681,7 +8681,9 @@ class Parser:
         return self._parse_csv(self._parse_alter_drop_action)
 
     def _parse_alter_table_rename(self) -> exp.AlterRename | exp.RenameColumn | None:
-        if self._match(TokenType.COLUMN) or not self.ALTER_RENAME_REQUIRES_COLUMN:
+        if self._match(TokenType.COLUMN) or (
+            not self.ALTER_RENAME_REQUIRES_COLUMN and not self._match_text_seq("TO", advance=False)
+        ):
             exists = self._parse_exists()
             old_column = self._parse_column()
             to = self._match_text_seq("TO")

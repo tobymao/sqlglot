@@ -37,13 +37,15 @@ class Redshift(Postgres):
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
+            "BINARY VARYING": TokenType.VARBINARY,
+            "CURRENT_USER_ID": TokenType.CURRENT_USER_ID,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "MINUS": TokenType.EXCEPT,
             "SUPER": TokenType.SUPER,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
+            "USER": TokenType.USER,
             "VARBYTE": TokenType.VARBINARY,
-            "BINARY VARYING": TokenType.VARBINARY,
         }
         KEYWORDS.pop("VALUES")
 

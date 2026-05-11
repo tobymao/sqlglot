@@ -224,14 +224,14 @@ class HiveParser(parser.Parser):
         )
 
         if this and not schema:
-            return this.transform(
-                lambda node: (
-                    node.replace(exp.DType.TEXT.into_expr())
-                    if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
-                    else node
-                ),
-                copy=False,
-            )
+
+            def _to_text(node: exp.Expr) -> exp.Expr:
+                if isinstance(node, exp.DataType) and node.is_type("char", "varchar"):
+                    node.set("this", exp.DType.TEXT)
+                    node.set("expressions", None)
+                return node
+
+            return this.transform(_to_text, copy=False)
 
         return this
 

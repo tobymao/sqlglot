@@ -271,6 +271,20 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        # COLLATE on CHAR/VARCHAR should be preserved when the type is rewritten to STRING
+        self.validate_identity(
+            "SELECT CAST('a' AS CHAR(10) COLLATE UTF8_BINARY)",
+            "SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)",
+        )
+        self.validate_identity(
+            "SELECT CAST('a' AS VARCHAR(10) COLLATE UTF8_BINARY)",
+            "SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)",
+        )
+        self.validate_all(
+            "SELECT CAST('a' AS STRING COLLATE foo)",
+            read={"postgres": "SELECT CAST('a' AS VARCHAR COLLATE foo)"},
+        )
+
         self.assertEqual(
             parse_one("REFRESH TABLE t", read="spark").assert_is(exp.Refresh).sql(dialect="spark"),
             "REFRESH TABLE t",

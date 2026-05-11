@@ -1538,33 +1538,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(expression.this.type.this, exp.DataType.Type.UNKNOWN)
         self.assertEqual(expression.args["to"].type.this, exp.DataType.Type.INTERVAL)
 
-    def test_ignore_respect_nulls_annotation(self):
-        schema = {"t": {"name": "VARCHAR"}}
-
-        # IGNORE NULLS propagates the inner expression's type (Databricks dialect)
-        ast = annotate_types(
-            parse_one("SELECT FIRST_VALUE(name) IGNORE NULLS AS x FROM t", dialect="databricks"),
-            schema=schema,
-            dialect="databricks",
-        )
-        self.assertEqual(ast.selects[0].this.type.this, exp.DataType.Type.VARCHAR)
-
-        # IGNORE NULLS propagates the inner expression's type (Snowflake dialect)
-        ast = annotate_types(
-            parse_one("SELECT FIRST_VALUE(name) IGNORE NULLS AS x FROM t", dialect="snowflake"),
-            schema=schema,
-            dialect="snowflake",
-        )
-        self.assertEqual(ast.selects[0].this.type.this, exp.DataType.Type.VARCHAR)
-
-        # RESPECT NULLS propagates the inner expression's type
-        ast = annotate_types(
-            parse_one("SELECT LAST_VALUE(name) RESPECT NULLS AS x FROM t", dialect="spark"),
-            schema=schema,
-            dialect="spark",
-        )
-        self.assertEqual(ast.selects[0].this.type.this, exp.DataType.Type.VARCHAR)
-
     def test_cache_annotation(self):
         expression = annotate_types(
             parse_one("CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1")

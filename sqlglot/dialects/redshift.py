@@ -44,7 +44,7 @@ class Redshift(Postgres):
             "SUPER": TokenType.SUPER,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
-            "USER": TokenType.USER,
+            "USER": TokenType.CURRENT_USER,
             "VARBYTE": TokenType.VARBINARY,
         }
         KEYWORDS.pop("VALUES")

@@ -75,10 +75,12 @@ class RedshiftParser(PostgresParser):
     NO_PAREN_FUNCTIONS = {
         **PostgresParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_USER_ID: exp.CurrentUserId,
-        TokenType.USER: exp.User,
     }
 
-    ID_VAR_TOKENS = PostgresParser.ID_VAR_TOKENS | {TokenType.USER, TokenType.CURRENT_USER_ID}
+    ID_VAR_TOKENS = PostgresParser.ID_VAR_TOKENS | {
+        TokenType.CURRENT_USER,
+        TokenType.CURRENT_USER_ID,
+    }
 
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,

@@ -435,7 +435,6 @@ class TokenType(IntEnum):
     UNPIVOT = auto()
     UPDATE = auto()
     USE = auto()
-    USER = auto()
     USING = auto()
     VALUES = auto()
     VARIADIC = auto()

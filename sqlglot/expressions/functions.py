@@ -321,10 +321,6 @@ class SessionUser(Expression, Func):
     arg_types = {}
 
 
-class User(Expression, Func):
-    arg_types = {}
-
-
 # ML / AI
 
 

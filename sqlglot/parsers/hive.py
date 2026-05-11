@@ -192,7 +192,11 @@ class HiveParser(parser.Parser):
         return func.from_arg_list(args)
 
     def _parse_types(
-        self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+        self,
+        check_func: bool = False,
+        schema: bool = False,
+        allow_identifiers: bool = True,
+        with_collation: bool = False,
     ) -> exp.Expr | None:
         """
         Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
@@ -213,7 +217,10 @@ class HiveParser(parser.Parser):
         Reference: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
         """
         this = super()._parse_types(
-            check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            check_func=check_func,
+            schema=schema,
+            allow_identifiers=allow_identifiers,
+            with_collation=with_collation,
         )
 
         if this and not schema:

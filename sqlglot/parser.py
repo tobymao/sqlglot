@@ -6134,7 +6134,11 @@ class Parser:
         return exp.DataType.from_str(type_name, dialect=self.dialect, udt=True)
 
     def _parse_types(
-        self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+        self,
+        check_func: bool = False,
+        schema: bool = False,
+        allow_identifiers: bool = True,
+        with_collation: bool = False,
     ) -> exp.Expr | None:
         index = self._index
         this: exp.Expr | None = None
@@ -6255,7 +6259,10 @@ class Parser:
             else:
                 expressions = self._parse_csv(
                     lambda: self._parse_types(
-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                        check_func=check_func,
+                        schema=schema,
+                        allow_identifiers=allow_identifiers,
+                        with_collation=True,
                     )
                 )
 
@@ -6375,6 +6382,9 @@ class Parser:
             converter = self.TYPE_CONVERTERS.get(this.this)
             if converter:
                 this = converter(t.cast(exp.DataType, this))
+
+        if with_collation and isinstance(this, exp.DataType) and self._match(TokenType.COLLATE):
+            this.set("collate", self._parse_identifier() or self._parse_column())
 
         return this
 
@@ -7696,7 +7706,7 @@ class Parser:
             self.raise_error("Expected AS after CAST")
 
         fmt = None
-        to = self._parse_types()
+        to = self._parse_types(with_collation=True)
 
         default = None
         if self._match(TokenType.DEFAULT):

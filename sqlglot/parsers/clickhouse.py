@@ -487,10 +487,17 @@ class ClickHouseParser(parser.Parser):
         return self._parse_lambda()
 
     def _parse_types(
-        self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+        self,
+        check_func: bool = False,
+        schema: bool = False,
+        allow_identifiers: bool = True,
+        with_collation: bool = False,
     ) -> exp.Expr | None:
         dtype = super()._parse_types(
-            check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            check_func=check_func,
+            schema=schema,
+            allow_identifiers=allow_identifiers,
+            with_collation=with_collation,
         )
         if isinstance(dtype, exp.DataType) and dtype.args.get("nullable") is not True:
             # Mark every type as non-nullable which is ClickHouse's default, unless it's

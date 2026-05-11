@@ -178,6 +178,7 @@ class DataType(Expression):
         "values": False,
         "kind": False,
         "nullable": False,
+        "collate": False,
     }
 
     Type: t.ClassVar[Type[DType]] = DType

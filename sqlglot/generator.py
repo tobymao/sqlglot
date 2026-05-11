@@ -1738,6 +1738,10 @@ class Generator:
         ):
             type_sql = f"{type_sql} WITH TIME ZONE"
 
+        collate = self.sql(expression, "collate")
+        if collate:
+            type_sql = f"{type_sql} COLLATE {collate}"
+
         return type_sql
 
     def directory_sql(self, expression: exp.Directory) -> str:

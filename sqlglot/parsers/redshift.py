@@ -7,7 +7,7 @@ from sqlglot.helper import seq_get
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.parser import build_convert_timezone
 from sqlglot.tokens import TokenType
-from sqlglot.dialects.dialect import map_date_part
+from sqlglot.dialects.dialect import build_formatted_time, map_date_part
 from builtins import type as Type
 
 if t.TYPE_CHECKING:
@@ -63,6 +63,13 @@ class RedshiftParser(PostgresParser):
         ),
         "STRTOL": exp.FromBase.from_arg_list,
         "TEXTLEN": exp.Length.from_arg_list,
+        "TO_CHAR": build_formatted_time(exp.TimeToStr, "redshift"),
+        "TO_DATE": build_formatted_time(exp.StrToDate, "redshift"),
+        "TO_TIMESTAMP": lambda args: (
+            exp.UnixToTime.from_arg_list(args)
+            if len(args) == 1
+            else build_formatted_time(exp.StrToTime, "redshift")(args)
+        ),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

@@ -78,9 +78,8 @@ def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp
                 inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
                 sel.set("this", inner)
 
-                alias_node = sel.args.get("alias")
-
-                seen_aliases[_key(alias_node)] = alias_node
+                if alias_node := sel.args.get("alias"):
+                    seen_aliases[_key(alias_node)] = alias_node
                 new_selects.append(sel)
             else:
                 new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
@@ -309,10 +308,10 @@ class ExasolGenerator(generator.Generator):
     }
 
     def select_sql(self, expression: exp.Select) -> str:
-        expression = _qualify_unscoped_star(expression)
-        expression = _add_local_prefix_for_aliases(expression, self.dialect)
-        expression = _group_by_all(expression)
-        return super().select_sql(expression)
+        processed = _qualify_unscoped_star(expression)
+        processed = _add_local_prefix_for_aliases(processed, self.dialect)
+        processed = _group_by_all(processed)
+        return super().select_sql(t.cast(exp.Select, processed))
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE

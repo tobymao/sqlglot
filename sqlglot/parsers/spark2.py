@@ -59,10 +59,10 @@ class Spark2Parser(HiveParser):
         "STRING": build_as_cast("string"),
         "SLICE": exp.ArraySlice.from_arg_list,
         "TIMESTAMP": build_as_cast("timestamp"),
-        "TO_TIMESTAMP": lambda args: (
+        "TO_TIMESTAMP": lambda args, dialect: (
             build_as_cast("timestamp")(args)
             if len(args) == 1
-            else build_formatted_time(exp.StrToTime, "spark")(args)
+            else build_formatted_time(exp.StrToTime)(args, dialect)
         ),
         "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
         "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(

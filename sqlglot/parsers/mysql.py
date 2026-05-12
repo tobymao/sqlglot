@@ -122,7 +122,7 @@ class MySQLParser(parser.Parser):
         "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "FORMAT": exp.NumberToStr.from_arg_list,
-        "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime, "mysql"),
+        "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime),
         "ISNULL": isnull_to_is_null,
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "MAKETIME": exp.TimeFromParts.from_arg_list,

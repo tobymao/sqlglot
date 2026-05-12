@@ -22,9 +22,9 @@ if t.TYPE_CHECKING:
 
 def _build_datetime_format(
     expr_type: Type[E],
-) -> t.Callable[[list], E]:
-    def _builder(args: list) -> E:
-        expr = build_formatted_time(expr_type, "clickhouse")(args)
+) -> t.Callable:
+    def _builder(args: list, dialect: t.Any) -> E:
+        expr = build_formatted_time(expr_type)(args, dialect)
 
         timezone = seq_get(args, 2)
         if timezone:

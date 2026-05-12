@@ -17,7 +17,7 @@ class DrillParser(parser.Parser):
         **parser.Parser.FUNCTIONS,
         "REPEATED_COUNT": exp.ArraySize.from_arg_list,
         "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
-        "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
+        "TO_CHAR": build_formatted_time(exp.TimeToStr),
         "LEVENSHTEIN_DISTANCE": exp.Levenshtein.from_arg_list,
     }
 

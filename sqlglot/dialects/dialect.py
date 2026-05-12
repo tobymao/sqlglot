@@ -1540,27 +1540,31 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
 
 
 def build_formatted_time(
-    exp_class: Type[E], dialect: str, default: bool | str | None = None
-) -> t.Callable[[BuilderArgs], E]:
+    exp_class: Type[E], dialect_override: str | None = None, default: bool | str | None = None
+) -> t.Callable[[BuilderArgs, Dialect], E]:
     """Helper used for time expressions.
 
     Args:
         exp_class: the expression class to instantiate.
-        dialect: target sql dialect.
+        dialect_override: optional sql dialect to override the parser's one.
         default: the default format, True being time.
 
     Returns:
         A callable that can be used to return the appropriately formatted time expression.
     """
 
-    def _builder(args: BuilderArgs) -> E:
-        return exp_class(
-            this=seq_get(args, 0),
-            format=Dialect[dialect].format_time(
-                seq_get(args, 1)
-                or (Dialect[dialect].TIME_FORMAT if default is True else default or None)
-            ),
+    def _builder(args: BuilderArgs, dialect: Dialect) -> E:
+        target_dialect = (
+            t.cast(Dialect, Dialect[dialect_override])
+            if isinstance(dialect_override, str)
+            else dialect
         )
+
+        fmt = seq_get(args, 1)
+        if not fmt:
+            fmt = target_dialect.TIME_FORMAT if default is True else default or None
+
+        return exp_class(this=seq_get(args, 0), format=target_dialect.format_time(fmt))
 
     return _builder
 
@@ -2465,8 +2469,7 @@ def build_timetostr_or_tochar(
             annotate_types(this, dialect=dialect)
 
         if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            dialect_name = dialect.__class__.__name__.lower()
-            return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
+            return build_formatted_time(exp.TimeToStr, default=True)(args, t.cast(Dialect, dialect))
 
     return exp.ToChar.from_arg_list(args)
 

@@ -23,8 +23,8 @@ def build_with_ignore_nulls(
     return _parse
 
 
-def _build_to_date(args: list) -> exp.TsOrDsToDate:
-    expr = build_formatted_time(exp.TsOrDsToDate, "hive")(args)
+def _build_to_date(args: list, dialect: t.Any) -> exp.TsOrDsToDate:
+    expr = build_formatted_time(exp.TsOrDsToDate)(args, dialect)
     expr.set("safe", True)
     return expr
 
@@ -74,11 +74,12 @@ class HiveParser(parser.Parser):
         "DATE_ADD": lambda args: exp.TsOrDsAdd(
             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
         ),
-        "DATE_FORMAT": lambda args: build_formatted_time(exp.TimeToStr, "hive")(
+        "DATE_FORMAT": lambda args, dialect: build_formatted_time(exp.TimeToStr)(
             [
                 exp.TimeStrToTime(this=seq_get(args, 0)),
                 seq_get(args, 1),
-            ]
+            ],
+            dialect,
         ),
         "DATE_SUB": _build_date_add,
         "DATEDIFF": lambda args: exp.DateDiff(
@@ -88,7 +89,7 @@ class HiveParser(parser.Parser):
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "FIRST": build_with_ignore_nulls(exp.First),
         "FIRST_VALUE": build_with_ignore_nulls(exp.FirstValue),
-        "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, "hive", True),
+        "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, default=True),
         "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
             this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         ),
@@ -111,8 +112,8 @@ class HiveParser(parser.Parser):
         "TO_JSON": exp.JSONFormat.from_arg_list,
         "TRUNC": exp.TimestampTrunc.from_arg_list,
         "UNBASE64": exp.FromBase64.from_arg_list,
-        "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
-            args or [exp.CurrentTimestamp()]
+        "UNIX_TIMESTAMP": lambda args, dialect: build_formatted_time(exp.StrToUnix, default=True)(
+            args or [exp.CurrentTimestamp()], dialect
         ),
         "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
     }

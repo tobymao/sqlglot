@@ -12,11 +12,11 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _build_to_timestamp(args: list) -> exp.StrToTime | exp.Anonymous:
+def _build_to_timestamp(args: list, dialect: t.Any) -> exp.StrToTime | exp.Anonymous:
     if len(args) == 1:
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 
-    return build_formatted_time(exp.StrToTime, "oracle")(args)
+    return build_formatted_time(exp.StrToTime)(args, dialect)
 
 
 class OracleParser(parser.Parser):
@@ -31,7 +31,7 @@ class OracleParser(parser.Parser):
         "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_TIMESTAMP": _build_to_timestamp,
-        "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
+        "TO_DATE": build_formatted_time(exp.StrToDate),
         "TRUNC": lambda args, dialect: build_trunc(
             args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
         ),
@@ -82,7 +82,7 @@ class OracleParser(parser.Parser):
         exp.DType.DATE: lambda self, this, _: self.expression(exp.DateStrToDate(this=this)),
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/NLS_TIMESTAMP_FORMAT.html
         exp.DType.TIMESTAMP: lambda self, this, _: _build_to_timestamp(
-            [this, '"%Y-%m-%d %H:%M:%S.%f"']
+            [this, '"%Y-%m-%d %H:%M:%S.%f"'], self.dialect
         ),
     }
 

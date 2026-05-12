@@ -77,8 +77,8 @@ TIMESTAMP_TYPES = {
 }
 
 
-def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callable[[list], exp.Func]:
-    def _builder(args: list) -> exp.Func:
+def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callable:
+    def _builder(args: list, dialect: t.Any) -> exp.Func:
         value = seq_get(args, 0)
         scale_or_fmt = seq_get(args, 1)
 
@@ -107,7 +107,7 @@ def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callabl
                     return unix_expr
                 if scale_or_fmt and not int_scale_or_fmt:
                     # Format string provided (e.g., 'YYYY-MM-DD'), use StrToTime
-                    strtotime_expr = build_formatted_time(exp.StrToTime, "snowflake")(args)
+                    strtotime_expr = build_formatted_time(exp.StrToTime)(args, dialect)
                     strtotime_expr.set("safe", safe)
                     strtotime_expr.set("target_type", kind.into_expr())
                     return strtotime_expr
@@ -116,7 +116,7 @@ def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callabl
         has_format_string = scale_or_fmt and not int_scale_or_fmt
         if kind in (exp.DType.DATE, exp.DType.TIME) and (not int_value or has_format_string):
             klass = exp.TsOrDsToDate if kind == exp.DType.DATE else exp.TsOrDsToTime
-            formatted_exp = build_formatted_time(klass, "snowflake")(args)
+            formatted_exp = build_formatted_time(klass)(args, dialect)
             formatted_exp.set("safe", safe)
             return formatted_exp
 

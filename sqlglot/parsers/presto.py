@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import (
@@ -41,7 +42,7 @@ def _build_from_unixtime(args: list) -> exp.Expr:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _build_to_char(args: list) -> exp.TimeToStr:
+def _build_to_char(args: list, dialect: t.Any) -> exp.TimeToStr:
     fmt = seq_get(args, 1)
     if isinstance(fmt, exp.Literal):
         # We uppercase this to match Teradata's format mapping keys
@@ -49,7 +50,7 @@ def _build_to_char(args: list) -> exp.TimeToStr:
 
     # We use "teradata" on purpose here, because the time formats are different in Presto.
     # See https://prestodb.io/docs/current/functions/teradata.html?highlight=to_char#to_char
-    return build_formatted_time(exp.TimeToStr, "teradata")(args)
+    return build_formatted_time(exp.TimeToStr, "teradata")(args, dialect)
 
 
 class PrestoParser(parser.Parser):
@@ -84,8 +85,8 @@ class PrestoParser(parser.Parser):
         "DATE_DIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
         ),
-        "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "presto"),
-        "DATE_PARSE": build_formatted_time(exp.StrToTime, "presto"),
+        "DATE_FORMAT": build_formatted_time(exp.TimeToStr),
+        "DATE_PARSE": build_formatted_time(exp.StrToTime),
         "DATE_TRUNC": date_trunc_to_time,
         "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
         "DOW": exp.DayOfWeekIso.from_arg_list,

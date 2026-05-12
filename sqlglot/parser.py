@@ -5559,6 +5559,23 @@ class Parser:
 
         return result
 
+    def _can_parse_named_window(self) -> bool:
+        # `WINDOW` is in ID_VAR_TOKENS so it could be mistakenly consumed as an implicit alias.
+        # Refuse only when the following tokens look like a named-window clause: `WINDOW <id> AS (`.
+        if not self._match(TokenType.WINDOW, advance=False):
+            return False
+
+        name = self._tokens[self._index + 1] if self._index + 1 < len(self._tokens) else None
+        if name is None or name.token_type not in self.ID_VAR_TOKENS:
+            return False
+
+        alias_tok = self._tokens[self._index + 2] if self._index + 2 < len(self._tokens) else None
+        if alias_tok is None or alias_tok.token_type != TokenType.ALIAS:
+            return False
+
+        body = self._tokens[self._index + 3] if self._index + 3 < len(self._tokens) else None
+        return body is not None and body.token_type == TokenType.L_PAREN
+
     def _parse_limit_by(self) -> list[exp.Expr] | None:
         return self._parse_csv(self._parse_bitwise) if self._match_text_seq("BY") else None
 
@@ -8310,6 +8327,11 @@ class Parser:
         # so this section tries to parse the clause version and if it fails, it treats the token
         # as an identifier (alias)
         if self._can_parse_limit_or_offset():
+            return this
+
+        # WINDOW is in ID_VAR_TOKENS, so it can be consumed as an implicit alias. Detect the
+        # named-window clause shape (`WINDOW <ident> AS (...)`) and avoid swallowing it.
+        if self._can_parse_named_window():
             return this
 
         any_token = self._match(TokenType.ALIAS)

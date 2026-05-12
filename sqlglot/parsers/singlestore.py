@@ -23,9 +23,9 @@ def cast_to_time6(expression: exp.Expr | None, time_type: exp.DType = exp.DType.
 class SingleStoreParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
-        "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "singlestore"),
-        "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "singlestore"),
-        "TO_CHAR": build_formatted_time(exp.ToChar, "singlestore"),
+        "TO_DATE": build_formatted_time(exp.TsOrDsToDate),
+        "TO_TIMESTAMP": build_formatted_time(exp.StrToTime),
+        "TO_CHAR": build_formatted_time(exp.ToChar),
         "STR_TO_DATE": build_formatted_time(exp.StrToDate, "mysql"),
         "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "mysql"),
         # The first argument of following functions is converted to TIME(6)

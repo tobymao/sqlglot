@@ -14,6 +14,9 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import Dialect
+
 
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
@@ -28,14 +31,14 @@ def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     return exp.ExplodingGenerateSeries.from_arg_list(args)
 
 
-def _build_to_timestamp(args: list) -> exp.UnixToTime | exp.StrToTime:
+def _build_to_timestamp(args: list, dialect: Dialect) -> exp.UnixToTime | exp.StrToTime:
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
         return exp.UnixToTime.from_arg_list(args)
 
     # https://www.postgresql.org/docs/current/functions-formatting.html
-    return build_formatted_time(exp.StrToTime, "postgres")(args)
+    return build_formatted_time(exp.StrToTime)(args, dialect)
 
 
 def _build_regexp_replace(args: list, dialect: DialectType = None) -> exp.RegexpReplace:
@@ -116,8 +119,8 @@ class PostgresParser(parser.Parser):
         "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
         "NOW": exp.CurrentTimestamp.from_arg_list,
         "REGEXP_REPLACE": _build_regexp_replace,
-        "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
-        "TO_DATE": build_formatted_time(exp.StrToDate, "postgres"),
+        "TO_CHAR": build_formatted_time(exp.TimeToStr),
+        "TO_DATE": build_formatted_time(exp.StrToDate),
         "TO_TIMESTAMP": _build_to_timestamp,
         "UNNEST": exp.Explode.from_arg_list,
         "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),

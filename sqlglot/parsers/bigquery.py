@@ -14,6 +14,7 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from sqlglot.dialects.dialect import Dialect
 
 
 def _build_contains_substring(args: list) -> exp.Contains:
@@ -53,7 +54,7 @@ def _build_datetime(args: list) -> exp.Func:
 def _build_extract_json_with_default_path(
     expr_type: type[E],
 ) -> t.Callable:
-    def _builder(args: list, dialect: t.Any) -> E:
+    def _builder(args: list, dialect: Dialect) -> E:
         if len(args) == 1:
             args.append(exp.Literal.string("$"))
         return parser.build_extract_json_with_path(expr_type)(args, dialect)
@@ -61,10 +62,10 @@ def _build_extract_json_with_default_path(
     return _builder
 
 
-def _build_format_time(expr_type: type[exp.Expr]) -> t.Callable[[list], exp.TimeToStr]:
-    def _builder(args: list) -> exp.TimeToStr:
-        formatted_time = build_formatted_time(exp.TimeToStr, "bigquery")(
-            [expr_type(this=seq_get(args, 1)), seq_get(args, 0)]
+def _build_format_time(expr_type: type[exp.Expr]) -> t.Callable[[list, Dialect], exp.TimeToStr]:
+    def _builder(args: list, dialect: Dialect) -> exp.TimeToStr:
+        formatted_time = build_formatted_time(exp.TimeToStr)(
+            [expr_type(this=seq_get(args, 1)), seq_get(args, 0)], dialect
         )
         formatted_time.set("zone", seq_get(args, 2))
         return formatted_time
@@ -91,14 +92,14 @@ def _build_levenshtein(args: list) -> exp.Levenshtein:
     )
 
 
-def _build_parse_timestamp(args: list) -> exp.StrToTime:
-    this = build_formatted_time(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
+def _build_parse_timestamp(args: list, dialect: Dialect) -> exp.StrToTime:
+    this = build_formatted_time(exp.StrToTime)([seq_get(args, 1), seq_get(args, 0)], dialect)
     this.set("zone", seq_get(args, 2))
     return this
 
 
 def _build_regexp_extract(expr_type: type[E], default_group: exp.Expr | None = None) -> t.Callable:
-    def _builder(args: list, dialect: t.Any) -> E:
+    def _builder(args: list, dialect: Dialect) -> E:
         try:
             group = re.compile(args[1].name).groups == 1
         except re.error:
@@ -220,15 +221,15 @@ class BigQueryParser(parser.Parser):
         ),
         "OCTET_LENGTH": exp.ByteLength.from_arg_list,
         "TO_HEX": _build_to_hex,
-        "PARSE_DATE": lambda args: build_formatted_time(exp.StrToDate, "bigquery")(
-            [seq_get(args, 1), seq_get(args, 0)]
+        "PARSE_DATE": lambda args, dialect: build_formatted_time(exp.StrToDate)(
+            [seq_get(args, 1), seq_get(args, 0)], dialect
         ),
-        "PARSE_TIME": lambda args: build_formatted_time(exp.ParseTime, "bigquery")(
-            [seq_get(args, 1), seq_get(args, 0)]
+        "PARSE_TIME": lambda args, dialect: build_formatted_time(exp.ParseTime)(
+            [seq_get(args, 1), seq_get(args, 0)], dialect
         ),
         "PARSE_TIMESTAMP": _build_parse_timestamp,
-        "PARSE_DATETIME": lambda args: build_formatted_time(exp.ParseDatetime, "bigquery")(
-            [seq_get(args, 1), seq_get(args, 0)]
+        "PARSE_DATETIME": lambda args, dialect: build_formatted_time(exp.ParseDatetime)(
+            [seq_get(args, 1), seq_get(args, 0)], dialect
         ),
         "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
         "REGEXP_EXTRACT": _build_regexp_extract(exp.RegexpExtract),

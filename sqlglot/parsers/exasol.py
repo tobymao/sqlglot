@@ -86,7 +86,7 @@ class ExasolParser(parser.Parser):
         "TRUNC": build_trunc,
         "TRUNCATE": build_trunc,
         "TO_CHAR": build_timetostr_or_tochar,
-        "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
+        "TO_DATE": build_formatted_time(exp.TsOrDsToDate),
         "USER": exp.CurrentUser.from_arg_list,
         "VAR_POP": exp.VariancePop.from_arg_list,
         "ZEROIFNULL": _build_zeroifnull,

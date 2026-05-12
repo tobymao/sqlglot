@@ -6376,3 +6376,14 @@ VARCHAR;
 # dialect: clickhouse
 MD5(tbl.str_col);
 FIXEDSTRING(16);
+--------------------------------------
+-- IGNORE NULLS / RESPECT NULLS
+--------------------------------------
+
+# dialect: spark, databricks, snowflake, bigquery, trino, redshift
+FIRST_VALUE(tbl.str_col) IGNORE NULLS;
+TEXT;
+
+# dialect: spark, databricks, snowflake, bigquery, trino, redshift
+LAST_VALUE(tbl.str_col) RESPECT NULLS;
+TEXT;

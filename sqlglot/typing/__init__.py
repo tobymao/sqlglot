@@ -22,7 +22,9 @@ EXPRESSION_METADATA: ExprMetadataType = {
     },
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_unary(e)}
-        for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))
+        for expr_type in subclasses(
+            exp.__name__, (exp.Unary, exp.Alias, exp.IgnoreNulls, exp.RespectNulls)
+        )
     },
     **{
         expr_type: {"returns": exp.DType.BIGINT}

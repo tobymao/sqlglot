@@ -268,6 +268,7 @@ class TokenType(IntEnum):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
+    CURRENT_USER_ID = auto()
     CURRENT_ROLE = auto()
     CURRENT_CATALOG = auto()
     DECLARE = auto()

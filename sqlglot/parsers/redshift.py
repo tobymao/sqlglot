@@ -72,6 +72,11 @@ class RedshiftParser(PostgresParser):
         ),
     }
 
+    NO_PAREN_FUNCTIONS = {
+        **PostgresParser.NO_PAREN_FUNCTIONS,
+        TokenType.CURRENT_USER_ID: exp.CurrentUserId,
+    }
+
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,
         "APPROXIMATE": lambda self: self._parse_approximate_count(),

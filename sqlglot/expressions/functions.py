@@ -305,6 +305,10 @@ class CurrentUser(Expression, Func):
     arg_types = {"this": False}
 
 
+class CurrentUserId(Expression, Func):
+    arg_types = {}
+
+
 class CurrentVersion(Expression, Func):
     arg_types = {}
 

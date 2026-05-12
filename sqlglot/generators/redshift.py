@@ -75,6 +75,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.ConcatWs: concat_ws_to_dpipe_sql,
         exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
         exp.CurrentTimestamp: lambda self, e: "SYSDATE" if e.args.get("sysdate") else "GETDATE()",
+        exp.CurrentUserId: lambda *_: "CURRENT_USER_ID",
         exp.DateAdd: date_delta_sql("DATEADD"),
         exp.DateDiff: date_delta_sql("DATEDIFF"),
         exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),

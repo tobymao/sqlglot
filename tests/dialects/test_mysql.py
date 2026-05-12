@@ -50,6 +50,17 @@ class TestMySQL(Validator):
             "ALTER TABLE t MODIFY c INT NOT NULL",
             "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
         )
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b BIGINT NOT NULL")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN b b INT NOT NULL")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN c d VARCHAR(50) DEFAULT 'x'")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN c d INT COMMENT 'hi'")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN c d INT FIRST")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN c d INT AFTER e")
+        self.validate_identity("ALTER TABLE t CHANGE COLUMN c d INT NOT NULL AFTER e")
+        self.validate_identity(
+            "ALTER TABLE t CHANGE a b BIGINT NOT NULL",
+            "ALTER TABLE t CHANGE COLUMN a b BIGINT NOT NULL",
+        )
         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

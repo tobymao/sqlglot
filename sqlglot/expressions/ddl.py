@@ -246,7 +246,7 @@ class AlterColumn(Expression):
 
 
 class ModifyColumn(Expression):
-    pass
+    arg_types = {"this": True, "rename_from": False}
 
 
 class AlterIndex(Expression):

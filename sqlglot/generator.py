@@ -470,6 +470,9 @@ class Generator:
     # Whether ALTER TABLE ... MODIFY COLUMN column-redefinition syntax is supported
     SUPPORTS_MODIFY_COLUMN = False
 
+    # Whether ALTER TABLE ... CHANGE COLUMN column-rename-and-redefine syntax is supported
+    SUPPORTS_CHANGE_COLUMN = False
+
     # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
@@ -4007,9 +4010,15 @@ class Generator:
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
     def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
+        this = self.sql(expression, "this")
+        rename_from = self.sql(expression, "rename_from")
+        if rename_from:
+            if not self.SUPPORTS_CHANGE_COLUMN:
+                self.unsupported("CHANGE COLUMN is not supported in this dialect")
+            return f"CHANGE COLUMN {rename_from} {this}"
         if not self.SUPPORTS_MODIFY_COLUMN:
             self.unsupported("MODIFY COLUMN is not supported in this dialect")
-        return f"MODIFY COLUMN {self.sql(expression, 'this')}"
+        return f"MODIFY COLUMN {this}"
 
     def alterindex_sql(self, expression: exp.AlterIndex) -> str:
         this = self.sql(expression, "this")

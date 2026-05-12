@@ -9,6 +9,7 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import F
+    from sqlglot.dialects.dialect import Dialect
 
 
 def build_with_ignore_nulls(
@@ -23,7 +24,7 @@ def build_with_ignore_nulls(
     return _parse
 
 
-def _build_to_date(args: list, dialect: t.Any) -> exp.TsOrDsToDate:
+def _build_to_date(args: list, dialect: Dialect) -> exp.TsOrDsToDate:
     expr = build_formatted_time(exp.TsOrDsToDate)(args, dialect)
     expr.set("safe", True)
     return expr

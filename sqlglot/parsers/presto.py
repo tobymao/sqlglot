@@ -13,6 +13,9 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import Dialect
+
 
 def _build_approx_percentile(args: list) -> exp.Expr:
     if len(args) == 4:
@@ -42,7 +45,7 @@ def _build_from_unixtime(args: list) -> exp.Expr:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _build_to_char(args: list, dialect: t.Any) -> exp.TimeToStr:
+def _build_to_char(args: list, dialect: Dialect) -> exp.TimeToStr:
     fmt = seq_get(args, 1)
     if isinstance(fmt, exp.Literal):
         # We uppercase this to match Teradata's format mapping keys

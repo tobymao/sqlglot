@@ -20,8 +20,9 @@ from sqlglot.helper import is_date_unit, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import B, E
     from collections.abc import Collection
+    from sqlglot._typing import B, E
+    from sqlglot.dialects.dialect import Dialect
 
 
 def _build_approx_top_k(args: list) -> exp.ApproxTopK:
@@ -78,7 +79,7 @@ TIMESTAMP_TYPES = {
 
 
 def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callable:
-    def _builder(args: list, dialect: t.Any) -> exp.Func:
+    def _builder(args: list, dialect: Dialect) -> exp.Func:
         value = seq_get(args, 0)
         scale_or_fmt = seq_get(args, 1)
 

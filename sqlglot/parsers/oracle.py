@@ -10,9 +10,10 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from sqlglot.dialects.dialect import Dialect
 
 
-def _build_to_timestamp(args: list, dialect: t.Any) -> exp.StrToTime | exp.Anonymous:
+def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Anonymous:
     if len(args) == 1:
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 

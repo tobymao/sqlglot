@@ -14,6 +14,9 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import Dialect
+
 
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
@@ -28,7 +31,7 @@ def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     return exp.ExplodingGenerateSeries.from_arg_list(args)
 
 
-def _build_to_timestamp(args: list, dialect: t.Any) -> exp.UnixToTime | exp.StrToTime:
+def _build_to_timestamp(args: list, dialect: Dialect) -> exp.UnixToTime | exp.StrToTime:
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE

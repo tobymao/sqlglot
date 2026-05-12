@@ -1760,6 +1760,51 @@ COMMENT='客户账户表'"""
             },
         )
 
+    def test_null_ordering_simulation_qualifies_ambiguous_columns(self):
+        # When transpiling from a NULLS-LAST default dialect (e.g. DuckDB) to MySQL,
+        # the CASE WHEN <col> IS NULL THEN ... END simulation is evaluated in the
+        # FROM-clause column scope, so an unqualified column reference can be
+        # ambiguous when the same column name exists in multiple joined tables
+        # (MySQL error 1052). Resolve the bare column against the enclosing
+        # SELECT projection and substitute the qualified source.
+        self.validate_all(
+            "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep"
+            " ON e.employee_id = ep.employee_id"
+            " ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
+            read={
+                "duckdb": (
+                    "SELECT e.employee_id FROM employees e"
+                    " LEFT JOIN employee_positions ep ON e.employee_id = ep.employee_id"
+                    " ORDER BY employee_id"
+                ),
+            },
+        )
+
+        # Aliased projection: ORDER BY references the alias, which resolves to the
+        # underlying qualified column inside the simulated CASE.
+        self.validate_all(
+            "SELECT e.employee_id AS emp FROM employees AS e LEFT JOIN employee_positions AS ep"
+            " ON TRUE ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
+            read={
+                "duckdb": (
+                    "SELECT e.employee_id AS emp FROM employees e"
+                    " LEFT JOIN employee_positions ep ON TRUE ORDER BY emp"
+                ),
+            },
+        )
+
+        # Already-qualified ORDER BY references are preserved as-is.
+        self.validate_all(
+            "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep ON TRUE"
+            " ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
+            read={
+                "duckdb": (
+                    "SELECT e.employee_id FROM employees e"
+                    " LEFT JOIN employee_positions ep ON TRUE ORDER BY e.employee_id"
+                ),
+            },
+        )
+
     def test_invisible_column(self):
         expr = self.parse_one("CREATE TABLE t (c INT INVISIBLE)")
         self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))

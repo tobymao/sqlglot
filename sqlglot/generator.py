@@ -2955,6 +2955,41 @@ class Generator:
     def sort_sql(self, expression: exp.Sort) -> str:
         return self.op_expressions("SORT BY", expression)
 
+    def _qualified_for_null_ordering_simulation(self, expression: exp.Ordered) -> exp.Column | None:
+        """Resolve an ORDER BY column against the enclosing SELECT projection.
+
+        The CASE WHEN <col> IS NULL THEN ... END simulation used to emulate
+        NULLS FIRST/LAST in dialects without native support (e.g. MySQL) is
+        evaluated in the FROM-clause column scope, not the SELECT-alias scope,
+        so bare references can be ambiguous when the same column name exists in
+        multiple joined tables (MySQL error 1052). When the ORDER BY references
+        an unqualified column whose name uniquely matches a qualified projection
+        in the enclosing SELECT, return that qualified column so the caller can
+        substitute it inside the simulation. Returns None when no safe
+        substitution is available, leaving the original expression unchanged.
+        """
+        this = expression.this
+        if not (isinstance(this, exp.Column) and not this.table):
+            return None
+
+        ancestor = expression.find_ancestor(exp.Window, exp.Select)
+        if not isinstance(ancestor, exp.Select):
+            return None
+
+        column_name = this.name
+        match: exp.Column | None = None
+        for projection in ancestor.selects:
+            if projection.output_name != column_name:
+                continue
+            candidate = projection.this if isinstance(projection, exp.Alias) else projection
+            if not (isinstance(candidate, exp.Column) and candidate.table):
+                return None
+            if match is not None:
+                return None
+            match = candidate
+
+        return match
+
     def ordered_sql(self, expression: exp.Ordered) -> str:
         desc = expression.args.get("desc")
         asc = not desc
@@ -3025,10 +3060,10 @@ class Generator:
                             f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
                         )
                     elif not isinstance(expression.this, exp.Rand):
+                        qualified_column = self._qualified_for_null_ordering_simulation(expression)
+                        qualified = self.sql(qualified_column) if qualified_column else this
                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-                        this = (
-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
-                        )
+                        this = f"CASE WHEN {qualified} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {qualified}"
                     nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")

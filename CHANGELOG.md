@@ -1,6 +1,109 @@
 Changelog
 =========
 
+## [v30.8.0] - 2026-05-13
+### :boom: BREAKING CHANGES
+- due to [`6944a6c`](https://github.com/tobymao/sqlglot/commit/6944a6c3ff5a9d18f31ddab53239cbce2e702055) - Improve typing annotations for planner, schema, serde, and transforms modules *(PR [#7579](https://github.com/tobymao/sqlglot/pull/7579) by [@OutSquareCapital](https://github.com/OutSquareCapital))*:
+
+  Improve typing annotations for planner, schema, serde, and transforms modules (#7579)
+
+- due to [`9d84348`](https://github.com/tobymao/sqlglot/commit/9d843482f1765f449dd21a4dcccff14aa0837ffe) - annotate MD5 for clickhouse *(PR [#7602](https://github.com/tobymao/sqlglot/pull/7602) by [@AbhishekASLK](https://github.com/AbhishekASLK))*:
+
+  annotate MD5 for clickhouse (#7602)
+
+- due to [`d1147b6`](https://github.com/tobymao/sqlglot/commit/d1147b6ec3e97c55ee27fa8dc8079175328b16e3) - roundtrip for ST_MAKEPOINT / 4 parameters *(PR [#7605](https://github.com/tobymao/sqlglot/pull/7605) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  roundtrip for ST_MAKEPOINT / 4 parameters (#7605)
+
+- due to [`4bd7d1d`](https://github.com/tobymao/sqlglot/commit/4bd7d1d02d35cc83a94d8a7ed5edbbff1d409483) - preserve NOT LIKE quantifiers during generation *(PR [#7611](https://github.com/tobymao/sqlglot/pull/7611) by [@bialkou](https://github.com/bialkou))*:
+
+  preserve NOT LIKE quantifiers during generation (#7611)
+
+- due to [`fc6b87a`](https://github.com/tobymao/sqlglot/commit/fc6b87a3a533ab105f38f9f43abea4949de4e24e) - parse `CONVERT` into `Cast` instead of `TryCast` *(PR [#7609](https://github.com/tobymao/sqlglot/pull/7609) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  parse `CONVERT` into `Cast` instead of `TryCast` (#7609)
+
+- due to [`b6d2c76`](https://github.com/tobymao/sqlglot/commit/b6d2c760b7cf3d965fef6d5809d87d07a1cc230a) - avoid pushdown projections for column dependent funcs *(PR [#7614](https://github.com/tobymao/sqlglot/pull/7614) by [@geooo109](https://github.com/geooo109))*:
+
+  avoid pushdown projections for column dependent funcs (#7614)
+
+- due to [`a16f7d0`](https://github.com/tobymao/sqlglot/commit/a16f7d0aa2b5b6a505b65788d0a84bcfef4d3c8c) - disambiguate 2-arg date_add from 3-arg dateadd [CLAUDE] *(PR [#7588](https://github.com/tobymao/sqlglot/pull/7588) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*:
+
+  disambiguate 2-arg date_add from 3-arg dateadd [CLAUDE] (#7588)
+
+- due to [`ae58fd1`](https://github.com/tobymao/sqlglot/commit/ae58fd10c33b05f4f5ae631d6b1ee0b88ba64e0a) - parse CREATE TYPE statements *(PR [#7616](https://github.com/tobymao/sqlglot/pull/7616) by [@devfros](https://github.com/devfros))*:
+
+  parse CREATE TYPE statements (#7616)
+
+- due to [`8dcb2d3`](https://github.com/tobymao/sqlglot/commit/8dcb2d3599c5637dfa6a8438df8148d6706a5217) - register First and Last in Hive typing *(PR [#7623](https://github.com/tobymao/sqlglot/pull/7623) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*:
+
+  register First and Last in Hive typing (#7623)
+
+- due to [`8ce7d78`](https://github.com/tobymao/sqlglot/commit/8ce7d78901994870b6569361dffaa4b9fd6dec54) - PIVOT qualify with alias + type annotation *(PR [#7586](https://github.com/tobymao/sqlglot/pull/7586) by [@geooo109](https://github.com/geooo109))*:
+
+  PIVOT qualify with alias + type annotation (#7586)
+
+- due to [`c876570`](https://github.com/tobymao/sqlglot/commit/c8765701e0d4c87293409e5e0fe5d605f2286b3c) - roundtrip for HH12 time mapping *(PR [#7626](https://github.com/tobymao/sqlglot/pull/7626) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  roundtrip for HH12 time mapping (#7626)
+
+- due to [`87cc106`](https://github.com/tobymao/sqlglot/commit/87cc1069e7703b77a5adde652154fcade16b8c26) - roundtrip support for CURRENT_USER_ID and USER *(PR [#7633](https://github.com/tobymao/sqlglot/pull/7633) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*:
+
+  roundtrip support for CURRENT_USER_ID and USER (#7633)
+
+- due to [`c6615a9`](https://github.com/tobymao/sqlglot/commit/c6615a910953f8e07a9d4ec2269bb537c83f40ea) - propagate type through IgnoreNulls/RespectNulls wrappers [CLAUDE] *(PR [#7636](https://github.com/tobymao/sqlglot/pull/7636) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*:
+
+  propagate type through IgnoreNulls/RespectNulls wrappers [CLAUDE] (#7636)
+
+- due to [`9e37283`](https://github.com/tobymao/sqlglot/commit/9e37283ab01b089c9b50b5cd59b3a1eaf24e98a1) - case-insensitive alias matching for LOCAL. prefix  *(PR [#7631](https://github.com/tobymao/sqlglot/pull/7631) by [@antonireus](https://github.com/antonireus))*:
+
+  case-insensitive alias matching for LOCAL. prefix  (#7631)
+
+
+### :sparkles: New Features
+- [`af5dc38`](https://github.com/tobymao/sqlglot/commit/af5dc38762552e7627e6f85e86345a5242855ed3) - **duckdb**: Add transpilation support for HEX_DECODE_STRING *(PR [#7590](https://github.com/tobymao/sqlglot/pull/7590) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`9507aad`](https://github.com/tobymao/sqlglot/commit/9507aad7ba8ddef02adbe7fdf3098ead9c7ba1d6) - **duckdb**: Consolidate HEX_ENCODE_ into HEX function *(PR [#7603](https://github.com/tobymao/sqlglot/pull/7603) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`9d84348`](https://github.com/tobymao/sqlglot/commit/9d843482f1765f449dd21a4dcccff14aa0837ffe) - **optimizer**: annotate MD5 for clickhouse *(PR [#7602](https://github.com/tobymao/sqlglot/pull/7602) by [@AbhishekASLK](https://github.com/AbhishekASLK))*
+- [`ae58fd1`](https://github.com/tobymao/sqlglot/commit/ae58fd10c33b05f4f5ae631d6b1ee0b88ba64e0a) - **postgres**: parse CREATE TYPE statements *(PR [#7616](https://github.com/tobymao/sqlglot/pull/7616) by [@devfros](https://github.com/devfros))*
+  - :arrow_lower_right: *addresses issue [#7612](https://github.com/tobymao/sqlglot/issues/7612) opened by [@devfros](https://github.com/devfros)*
+- [`80e0929`](https://github.com/tobymao/sqlglot/commit/80e0929cc1f105fbd060493ed094d4308e946063) - **parser**: handle `COLLATE` in nested types and `CAST` closes [#7624](https://github.com/tobymao/sqlglot/pull/7624) *(PR [#7630](https://github.com/tobymao/sqlglot/pull/7630) by [@georgesittas](https://github.com/georgesittas))*
+- [`8ce7d78`](https://github.com/tobymao/sqlglot/commit/8ce7d78901994870b6569361dffaa4b9fd6dec54) - **optimizer**: PIVOT qualify with alias + type annotation *(PR [#7586](https://github.com/tobymao/sqlglot/pull/7586) by [@geooo109](https://github.com/geooo109))*
+- [`cbd3576`](https://github.com/tobymao/sqlglot/commit/cbd3576a4b93e37148da4b93bcabe84fdd9f31c0) - **mysql**: Support `CHANGE COLUMN`. *(PR [#7638](https://github.com/tobymao/sqlglot/pull/7638) by [@burnison](https://github.com/burnison))*
+
+### :bug: Bug Fixes
+- [`593d5a3`](https://github.com/tobymao/sqlglot/commit/593d5a3691990182d69f2c790c8d1b3d23635502) - **redshift**: support ALL in aggregate funcs *(PR [#7592](https://github.com/tobymao/sqlglot/pull/7592) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b8bf13e`](https://github.com/tobymao/sqlglot/commit/b8bf13ef775551ebd1c5e4a46ca4f21bb3689679) - **redshift**: support OBJECT_TRANSFORM function *(PR [#7601](https://github.com/tobymao/sqlglot/pull/7601) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`1206bea`](https://github.com/tobymao/sqlglot/commit/1206bea7715f3af8c6e65dbe8641002720217782) - **redshift**: parser issue for TOP N DISTINCT *(PR [#7594](https://github.com/tobymao/sqlglot/pull/7594) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`d1147b6`](https://github.com/tobymao/sqlglot/commit/d1147b6ec3e97c55ee27fa8dc8079175328b16e3) - **redshift**: roundtrip for ST_MAKEPOINT / 4 parameters *(PR [#7605](https://github.com/tobymao/sqlglot/pull/7605) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b9f18ee`](https://github.com/tobymao/sqlglot/commit/b9f18eea6762f8ce03ff5a426db8195db375f455) - **sqlite**: support named CTE columns closes [#7617](https://github.com/tobymao/sqlglot/pull/7617) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`c8b19aa`](https://github.com/tobymao/sqlglot/commit/c8b19aafe3e8b90ae7c67d816c1bedca86300192) - Parametrized bigdecimal mapping was being concatenated with params *(PR [#7584](https://github.com/tobymao/sqlglot/pull/7584) by [@themisvaltinos](https://github.com/themisvaltinos))*
+- [`4bd7d1d`](https://github.com/tobymao/sqlglot/commit/4bd7d1d02d35cc83a94d8a7ed5edbbff1d409483) - **postgres**: preserve NOT LIKE quantifiers during generation *(PR [#7611](https://github.com/tobymao/sqlglot/pull/7611) by [@bialkou](https://github.com/bialkou))*
+- [`fc6b87a`](https://github.com/tobymao/sqlglot/commit/fc6b87a3a533ab105f38f9f43abea4949de4e24e) - **redshift**: parse `CONVERT` into `Cast` instead of `TryCast` *(PR [#7609](https://github.com/tobymao/sqlglot/pull/7609) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b6d2c76`](https://github.com/tobymao/sqlglot/commit/b6d2c760b7cf3d965fef6d5809d87d07a1cc230a) - **optimizer**: avoid pushdown projections for column dependent funcs *(PR [#7614](https://github.com/tobymao/sqlglot/pull/7614) by [@geooo109](https://github.com/geooo109))*
+  - :arrow_lower_right: *fixes issue [#7607](https://github.com/tobymao/sqlglot/issues/7607) opened by [@ligfx](https://github.com/ligfx)*
+- [`a16f7d0`](https://github.com/tobymao/sqlglot/commit/a16f7d0aa2b5b6a505b65788d0a84bcfef4d3c8c) - **databricks**: disambiguate 2-arg date_add from 3-arg dateadd [CLAUDE] *(PR [#7588](https://github.com/tobymao/sqlglot/pull/7588) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*
+- [`6931eec`](https://github.com/tobymao/sqlglot/commit/6931eece4ec56f8b31d2026be41ebb071804adc9) - **redshift**: roundtrip fix ARRAY_CONTAINS  *(PR [#7606](https://github.com/tobymao/sqlglot/pull/7606) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`8dcb2d3`](https://github.com/tobymao/sqlglot/commit/8dcb2d3599c5637dfa6a8438df8148d6706a5217) - **annotate**: register First and Last in Hive typing *(PR [#7623](https://github.com/tobymao/sqlglot/pull/7623) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*
+- [`a1fa154`](https://github.com/tobymao/sqlglot/commit/a1fa1546c926b2858cfc5adcfbd186731de40eba) - **parser**: from-first duckdb syntax improvement for pivot fixes [#7628](https://github.com/tobymao/sqlglot/pull/7628) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`e7e1fb0`](https://github.com/tobymao/sqlglot/commit/e7e1fb0d3d16054c1076e9f0570b336643b371d8) - **parser**: issue with no parenthesis functions *(PR [#7621](https://github.com/tobymao/sqlglot/pull/7621) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`b1aa0c5`](https://github.com/tobymao/sqlglot/commit/b1aa0c5fe951a6a2efb7f90c4ef2ed7a4c5ac200) - **redshift**: try_cast roundtrip *(PR [#7622](https://github.com/tobymao/sqlglot/pull/7622) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`5525f3f`](https://github.com/tobymao/sqlglot/commit/5525f3fdec3c68ad374f39e8c30cdd38ee9b573b) - **sqlite**: prevent ALTER TABLE RENAME TO from falling back to Command *(PR [#7629](https://github.com/tobymao/sqlglot/pull/7629) by [@dedyoc](https://github.com/dedyoc))*
+  - :arrow_lower_right: *fixes issue [#7427](https://github.com/tobymao/sqlglot/issues/7427) opened by [@ppacac](https://github.com/ppacac)*
+- [`c876570`](https://github.com/tobymao/sqlglot/commit/c8765701e0d4c87293409e5e0fe5d605f2286b3c) - **redshift**: roundtrip for HH12 time mapping *(PR [#7626](https://github.com/tobymao/sqlglot/pull/7626) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`87cc106`](https://github.com/tobymao/sqlglot/commit/87cc1069e7703b77a5adde652154fcade16b8c26) - **redshift**: roundtrip support for CURRENT_USER_ID and USER *(PR [#7633](https://github.com/tobymao/sqlglot/pull/7633) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`6329684`](https://github.com/tobymao/sqlglot/commit/63296846f6a7a683af21683acb24aad7a63bb3f5) - **parser**: allow WINDOW clause without FROM *(PR [#7640](https://github.com/tobymao/sqlglot/pull/7640) by [@1fanwang](https://github.com/1fanwang))*
+  - :arrow_lower_right: *fixes issue [#7438](https://github.com/tobymao/sqlglot/issues/7438) opened by [@ppacac](https://github.com/ppacac)*
+- [`c6615a9`](https://github.com/tobymao/sqlglot/commit/c6615a910953f8e07a9d4ec2269bb537c83f40ea) - **annotate_types**: propagate type through IgnoreNulls/RespectNulls wrappers [CLAUDE] *(PR [#7636](https://github.com/tobymao/sqlglot/pull/7636) by [@RichardHughes-amp](https://github.com/RichardHughes-amp))*
+- [`9e37283`](https://github.com/tobymao/sqlglot/commit/9e37283ab01b089c9b50b5cd59b3a1eaf24e98a1) - **exasol**: case-insensitive alias matching for LOCAL. prefix  *(PR [#7631](https://github.com/tobymao/sqlglot/pull/7631) by [@antonireus](https://github.com/antonireus))*
+
+### :recycle: Refactors
+- [`6944a6c`](https://github.com/tobymao/sqlglot/commit/6944a6c3ff5a9d18f31ddab53239cbce2e702055) - Improve typing annotations for planner, schema, serde, and transforms modules *(PR [#7579](https://github.com/tobymao/sqlglot/pull/7579) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`a2a9ba5`](https://github.com/tobymao/sqlglot/commit/a2a9ba59c15f63b6831674481af1ceb8420dc4de) - **schema**: cache `find` lookups in schema *(PR [#7615](https://github.com/tobymao/sqlglot/pull/7615) by [@georgesittas](https://github.com/georgesittas))*
+- [`958b27d`](https://github.com/tobymao/sqlglot/commit/958b27d0f8f983326a5a480be3962d066f7639f3) - improve `optimizer::pushdown_predicates` typing *(PR [#7613](https://github.com/tobymao/sqlglot/pull/7613) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`96716a6`](https://github.com/tobymao/sqlglot/commit/96716a6a2a2db13deed0749266ce449de5f9153d) - improve `optimizer::{eliminate_joins, eliminate_subqueries}` typing *(PR [#7618](https://github.com/tobymao/sqlglot/pull/7618) by [@OutSquareCapital](https://github.com/OutSquareCapital))*
+- [`7e7cf8b`](https://github.com/tobymao/sqlglot/commit/7e7cf8b06397ed440921d079a39112e073bcfa80) - make dialect in build_formatted_time optional, fetch it from parser *(PR [#7639](https://github.com/tobymao/sqlglot/pull/7639) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.7.0] - 2026-05-04
 ### :boom: BREAKING CHANGES
 - due to [`68861d9`](https://github.com/tobymao/sqlglot/commit/68861d9f3aaa6c9ae405dacfa22117fb64a1d803) - support `DROP PRIMARY KEY`. *(PR [#7530](https://github.com/tobymao/sqlglot/pull/7530) by [@burnison](https://github.com/burnison))*:
@@ -14363,3 +14466,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.5.0]: https://github.com/tobymao/sqlglot/compare/v30.4.3...v30.5.0
 [v30.6.0]: https://github.com/tobymao/sqlglot/compare/v30.5.0...v30.6.0
 [v30.7.0]: https://github.com/tobymao/sqlglot/compare/v30.6.0...v30.7.0
+[v30.8.0]: https://github.com/tobymao/sqlglot/compare/v30.7.0...v30.8.0

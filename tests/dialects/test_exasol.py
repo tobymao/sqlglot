@@ -820,6 +820,14 @@ class TestExasol(Validator):
         self.validate_identity(
             'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
         )
+        self.validate_identity(
+            "SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE a_year > 2020",
+            "SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.A_YEAR > 2020",
+        )
+        self.validate_identity(
+            "SELECT SUM(amount) AS Total FROM my_table HAVING TOTAL > 10000",
+            "SELECT SUM(amount) AS Total FROM my_table HAVING LOCAL.Total > 10000",
+        )
 
         test_cases = [
             (

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, transforms
+from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
+    Dialect,
     groupconcat_sql,
     no_last_day_sql,
     rename_func,
@@ -35,10 +36,13 @@ def _date_diff_sql(self: ExasolGenerator, expression: exp.DateDiff | exp.TsOrDsD
 
 
 # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
-def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp.Expr:
+    def _key(ident: exp.Identifier) -> str:
+        return dialect.normalize_identifier(ident.copy()).this
+
     if isinstance(expression, exp.Select):
-        aliases: dict[str, bool] = {
-            alias.name: bool(alias.args.get("quoted"))
+        aliases: dict[str, exp.Identifier] = {
+            _key(alias): alias
             for sel in expression.selects
             if isinstance(sel, exp.Alias) and (alias := sel.args.get("alias"))
         }
@@ -53,11 +57,12 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
         ):
             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
 
-        def prefix_local(node: exp.Expr, visible_aliases: dict[str, bool]) -> exp.Expr:
+        def prefix_local(node: exp.Expr, visible_aliases: dict[str, exp.Identifier]) -> exp.Expr:
             if isinstance(node, exp.Column) and not node.table:
-                if node.name in visible_aliases:
+                alias = visible_aliases.get(_key(node.this))
+                if alias is not None:
                     return exp.Column(
-                        this=exp.to_identifier(node.name, quoted=visible_aliases[node.name]),
+                        this=alias,
                         table=exp.to_identifier("LOCAL", quoted=False),
                     )
             return node
@@ -66,16 +71,15 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
             if arg := expression.args.get(key):
                 expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
 
-        seen_aliases: dict[str, bool] = {}
+        seen_aliases: dict[str, exp.Identifier] = {}
         new_selects: list[exp.Expr] = []
         for sel in expression.selects:
             if isinstance(sel, exp.Alias):
                 inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
                 sel.set("this", inner)
 
-                alias_node = sel.args.get("alias")
-
-                seen_aliases[sel.alias] = bool(alias_node and getattr(alias_node, "quoted", False))
+                if alias_node := sel.args.get("alias"):
+                    seen_aliases[_key(alias_node)] = alias_node
                 new_selects.append(sel)
             else:
                 new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
@@ -303,6 +307,12 @@ class ExasolGenerator(generator.Generator):
         exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
     }
 
+    def select_sql(self, expression: exp.Select) -> str:
+        processed = _qualify_unscoped_star(expression)
+        processed = _add_local_prefix_for_aliases(processed, self.dialect)
+        processed = _group_by_all(processed)
+        return super().select_sql(t.cast(exp.Select, processed))
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
         # and does not allow specifying a different custom precision
@@ -390,13 +400,6 @@ class ExasolGenerator(generator.Generator):
         exp.MD5Digest: rename_func("HASHTYPE_MD5"),
         # https://docs.exasol.com/db/latest/sql/create_view.htm
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT IS {self.sql(e, 'this')}",
-        exp.Select: transforms.preprocess(
-            [
-                _qualify_unscoped_star,
-                _add_local_prefix_for_aliases,
-                _group_by_all,
-            ]
-        ),
         exp.SubstringIndex: _substring_index_sql,
         exp.WeekOfYear: rename_func("WEEK"),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/to_date.htm

@@ -62,7 +62,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp
                 alias = visible_aliases.get(_key(node.this))
                 if alias is not None:
                     return exp.Column(
-                        this=alias.copy(),
+                        this=alias,
                         table=exp.to_identifier("LOCAL", quoted=False),
                     )
             return node

@@ -2285,6 +2285,10 @@ class DuckDBGenerator(generator.Generator):
             f"({self.sql(exp.replace_placeholders(self.BITMAP_CONSTRUCT_AGG_TEMPLATE, arg=arg))})"
         )
 
+    def getignorecase_sql(self, expression: exp.GetIgnoreCase) -> str:
+        self.unsupported("DuckDB does not support the GET_IGNORE_CASE() function")
+        return self.function_fallback_sql(expression)
+
     def compress_sql(self, expression: exp.Compress) -> str:
         self.unsupported("DuckDB does not support the COMPRESS() function")
         return self.function_fallback_sql(expression)

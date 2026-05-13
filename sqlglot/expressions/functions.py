@@ -436,6 +436,10 @@ class XMLElement(Expression, Func):
     arg_types = {"this": True, "expressions": False, "evalname": False}
 
 
+class GetIgnoreCase(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class XMLGet(Expression, Func):
     _sql_names = ["XMLGET"]
     arg_types = {"this": True, "expression": True, "instance": False}

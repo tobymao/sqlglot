@@ -453,6 +453,27 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_all(
+            "SELECT CAST('2025-02-01 00:00:00' AS TIMESTAMP) - MAKE_INTERVAL(years => 1)",
+            write={
+                "mysql": "SELECT CAST('2025-02-01 00:00:00' AS DATETIME) - INTERVAL 1 YEAR",
+                "postgres": "SELECT CAST('2025-02-01 00:00:00' AS TIMESTAMP) - MAKE_INTERVAL(years => 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT NOW() + MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            write={
+                "mysql": "SELECT CURRENT_TIMESTAMP() + INTERVAL 1 YEAR + INTERVAL 2 MONTH + INTERVAL 3 DAY",
+                "postgres": "SELECT CURRENT_TIMESTAMP + MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            },
+        )
+        self.validate_all(
+            "SELECT NOW() - MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            write={
+                "mysql": "SELECT CURRENT_TIMESTAMP() - INTERVAL 1 YEAR - INTERVAL 2 MONTH - INTERVAL 3 DAY",
+                "postgres": "SELECT CURRENT_TIMESTAMP - MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            },
+        )
+        self.validate_all(
             "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
             read={
                 "mysql": "SELECT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL -1 QUARTER)",

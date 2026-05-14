@@ -3847,3 +3847,76 @@ OPTIONS (
                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
                     },
                 )
+
+    def test_chained_functions(self):
+        # Single chain: func().method()
+        self.validate_all(
+            "SELECT LOWER(text).UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(LOWER(text))",
+                "duckdb": "SELECT UPPER(LOWER(text))",
+            },
+        )
+
+        # Single chain with explicit args on the method
+        self.validate_all(
+            "SELECT LOWER(text).REPLACE('a', 'b')",
+            write={
+                "bigquery": "SELECT REPLACE(LOWER(text), 'a', 'b')",
+                "duckdb": "SELECT REPLACE(LOWER(text), 'a', 'b')",
+            },
+        )
+
+        # Multi-level chain: a().b().c()
+        self.validate_all(
+            "SELECT LOWER(text).TRIM().UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(TRIM(LOWER(text)))",
+                "duckdb": "SELECT UPPER(TRIM(LOWER(text)))",
+            },
+        )
+
+        # Paren receiver: (col).method()
+        self.validate_all(
+            "SELECT (text).UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(text)",
+                "duckdb": "SELECT UPPER(text)",
+            },
+        )
+
+        # Paren receiver with extra args
+        self.validate_all(
+            "SELECT (text).REPLACE('a', 'b')",
+            write={
+                "bigquery": "SELECT REPLACE(text, 'a', 'b')",
+                "duckdb": "SELECT REPLACE(text, 'a', 'b')",
+            },
+        )
+
+        # Paren receiver multi-level chain
+        self.validate_all(
+            "SELECT (text).LOWER().UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(LOWER(text))",
+                "duckdb": "SELECT UPPER(LOWER(text))",
+            },
+        )
+
+        # Qualified column receiver wrapped in parens: (table.col).method()
+        self.validate_all(
+            "SELECT (n.text).UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(n.text)",
+                "duckdb": "SELECT UPPER(n.text)",
+            },
+        )
+
+        # Qualified column receiver multi-level chain
+        self.validate_all(
+            "SELECT (n.text).LOWER().UPPER()",
+            write={
+                "bigquery": "SELECT UPPER(LOWER(n.text))",
+                "duckdb": "SELECT UPPER(LOWER(n.text))",
+            },
+        )

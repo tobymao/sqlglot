@@ -710,7 +710,58 @@ class BigQueryParser(parser.Parser):
             )
         )
 
+    def _parse_chained_call(self, receiver: exp.Expr) -> exp.Expr | None:
+        saved = self._index
+        self._advance()
+
+        if self._curr.token_type not in self.ID_VAR_TOKENS:
+            self._retreat(saved)
+            return None
+
+        method_name = self._curr.text.upper()
+        self._advance()
+
+        if not self._match(TokenType.L_PAREN):
+            self._retreat(saved)
+            return None
+
+        if isinstance(receiver, exp.Paren):
+            inner = receiver.this
+            if isinstance(inner, exp.Dot):
+                parts: list[exp.Expr] = []
+                node: exp.Expr = inner
+                while isinstance(node, exp.Dot):
+                    parts.append(node.expression)
+                    node = node.this
+                parts.append(node)
+                parts.reverse()
+                keys = ("catalog", "db", "table", "this")
+                receiver = exp.Column(**{k: v for k, v in zip(reversed(keys), reversed(parts))})
+            elif isinstance(inner, exp.Identifier):
+                receiver = exp.Column(this=inner)
+            else:
+                receiver = inner
+
+        args = [receiver] + self._parse_function_args()
+        self._match_r_paren()
+
+        func_builder = self.FUNCTIONS.get(method_name)
+        if func_builder:
+            try:
+                return func_builder(args)
+            except TypeError:
+                return func_builder(args, dialect=self.dialect)
+        else:
+            return self.expression(exp.Anonymous(this=method_name, expressions=args))
+
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
+        # parse BigQuery chained functions first
+        while isinstance(this, (exp.Func, exp.Paren)) and self._curr.token_type == TokenType.DOT:
+            result = self._parse_chained_call(this)
+            if result is None:
+                break
+            this = result
+
         func_index = self._index + 1
         this = super()._parse_column_ops(this)
 

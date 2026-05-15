@@ -107,6 +107,20 @@ XML_OPTIONS: parser.OPTIONS_TYPE = {
 }
 
 
+# FOR JSON { AUTO | PATH } [, ROOT [ ( 'name' ) ] ] [, INCLUDE_NULL_VALUES ]
+#                          [, WITHOUT_ARRAY_WRAPPER ]
+# https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
+JSON_OPTIONS: parser.OPTIONS_TYPE = dict.fromkeys(
+    (
+        "AUTO",
+        "PATH",
+        "INCLUDE_NULL_VALUES",
+        "WITHOUT_ARRAY_WRAPPER",
+    ),
+    tuple(),
+)
+
+
 OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
 
 
@@ -318,7 +332,7 @@ class TSQLParser(parser.Parser):
     QUERY_MODIFIER_PARSERS = {
         **parser.Parser.QUERY_MODIFIER_PARSERS,
         TokenType.OPTION: lambda self: ("options", self._parse_options()),
-        TokenType.FOR: lambda self: ("for_", self._parse_for()),
+        TokenType.FOR: lambda self: self._parse_for(),
     }
 
     # T-SQL does not allow BEGIN to be used as an identifier
@@ -492,7 +506,7 @@ class TSQLParser(parser.Parser):
 
         return self._parse_wrapped_csv(_parse_option)
 
-    def _parse_xml_key_value_option(self) -> exp.XMLKeyValueOption:
+    def _parse_key_value_option(self) -> exp.XMLKeyValueOption:
         this = self._parse_primary_or_var()
         if self._match(TokenType.L_PAREN, advance=False):
             expression = self._parse_wrapped(self._parse_string)
@@ -501,19 +515,23 @@ class TSQLParser(parser.Parser):
 
         return exp.XMLKeyValueOption(this=this, expression=expression)
 
-    def _parse_for(self) -> list[exp.Expr] | None:
-        if not self._match_pair(TokenType.FOR, TokenType.XML):
-            return None
-
-        def _parse_for_xml() -> exp.Expr | None:
-            return self.expression(
-                exp.QueryOption(
-                    this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
-                    or self._parse_xml_key_value_option()
-                )
+    def _parse_for_clause_option(self, options: parser.OPTIONS_TYPE) -> exp.Expr | None:
+        return self.expression(
+            exp.QueryOption(
+                this=self._parse_var_from_options(options, raise_unmatched=False)
+                or self._parse_key_value_option()
             )
+        )
 
-        return self._parse_csv(_parse_for_xml)
+    def _parse_for(self) -> tuple[str | None, list[exp.Expr] | None]:
+        # Returns (None, None) when the FOR token isn't ours, leaving the cursor untouched.
+        if self._match_pair(TokenType.FOR, TokenType.XML):
+            return "for_", self._parse_csv(lambda: self._parse_for_clause_option(XML_OPTIONS))
+
+        if self._match_pair(TokenType.FOR, TokenType.JSON):
+            return "for_json_", self._parse_csv(lambda: self._parse_for_clause_option(JSON_OPTIONS))
+
+        return None, None
 
     def _parse_projections(
         self,

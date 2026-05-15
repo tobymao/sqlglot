@@ -3108,8 +3108,15 @@ class Generator:
         return f" {options}" if options else ""
 
     def for_modifiers(self, expression: exp.Expr) -> str:
-        for_modifiers = self.expressions(expression, key="for_")
-        return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
+        for_xml = self.expressions(expression, key="for_")
+        if for_xml:
+            return f"{self.sep()}FOR XML{self.seg(for_xml)}"
+
+        for_json = self.expressions(expression, key="for_json_")
+        if for_json:
+            return f"{self.sep()}FOR JSON{self.seg(for_json)}"
+
+        return ""
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         self.unsupported("Unsupported query option.")

@@ -1290,6 +1290,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
         )
 
+        # DateDiff args without inferred types should not crash _coerce_datediff_args.
+        # Callers that run canonicalize without annotate_types (or whose args fall outside
+        # the schema) used to hit AttributeError: 'NoneType' object has no attribute 'this'.
+        self.assertEqual(
+            optimizer.canonicalize.canonicalize(parse_one("SELECT DATEDIFF(a, b) FROM t")).sql(),
+            "SELECT DATEDIFF(CAST(a AS DATETIME), CAST(b AS DATETIME)) FROM t",
+        )
+
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
 

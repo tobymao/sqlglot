@@ -2428,6 +2428,7 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
+    "for_": False,
 }
 
 

@@ -311,7 +311,11 @@ def _make_workload(top, pattern):
     the same suite object can be replayed N times.
     """
     unittest.BaseTestSuite._cleanup = False
-    suite = unittest.TestLoader().discover(top, pattern=pattern)
+    # Explicit top_level_dir prevents Python 3.14's discover() from prepending
+    # the tests/ directory to sys.path ahead of the project root, which would
+    # let tests/sqlglot/ shadow the real sqlglot package in multiprocessing workers.
+    top_level = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+    suite = unittest.TestLoader().discover(top, pattern=pattern, top_level_dir=top_level)
 
     def run():
         unittest.TextTestRunner(stream=_NULL_STREAM, verbosity=0).run(suite)

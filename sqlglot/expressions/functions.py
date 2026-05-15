@@ -526,6 +526,10 @@ class Uniform(Expression, Func):
     arg_types = {"this": True, "expression": True, "gen": False, "seed": False}
 
 
+class UniformSample(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Uuid(Expression, Func):
     _sql_names = ["UUID", "GEN_RANDOM_UUID", "GENERATE_UUID", "UUID_STRING"]
 

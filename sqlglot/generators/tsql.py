@@ -293,6 +293,12 @@ class TSQLGenerator(generator.Generator):
             return f"{option} {optional_equal_sign}{value}"
         return option
 
+    def forclause_sql(self, expression: exp.ForClause) -> str:
+        # FOR BROWSE has no options; the base implementation would drop it.
+        if expression.args["kind"] == "BROWSE":
+            return f"{self.sep()}FOR BROWSE"
+        return super().forclause_sql(expression)
+
     def lateral_op(self, expression: exp.Lateral) -> str:
         cross_apply = expression.args.get("cross_apply")
         if cross_apply is True:

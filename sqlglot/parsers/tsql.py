@@ -90,7 +90,7 @@ OPTIONS: parser.OPTIONS_TYPE = {
 }
 
 
-XML_OPTIONS: parser.OPTIONS_TYPE = {
+FOR_XML_OPTIONS: parser.OPTIONS_TYPE = {
     **dict.fromkeys(
         (
             "AUTO",
@@ -110,7 +110,7 @@ XML_OPTIONS: parser.OPTIONS_TYPE = {
 # FOR JSON { AUTO | PATH } [, ROOT [ ( 'name' ) ] ] [, INCLUDE_NULL_VALUES ]
 #                          [, WITHOUT_ARRAY_WRAPPER ]
 # https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
-JSON_OPTIONS: parser.OPTIONS_TYPE = dict.fromkeys(
+FOR_JSON_OPTIONS: parser.OPTIONS_TYPE = dict.fromkeys(
     (
         "AUTO",
         "PATH",
@@ -528,7 +528,9 @@ class TSQLParser(parser.Parser):
             return self.expression(
                 exp.ForClause(
                     kind="XML",
-                    expressions=self._parse_csv(lambda: self._parse_for_clause_option(XML_OPTIONS)),
+                    expressions=self._parse_csv(
+                        lambda: self._parse_for_clause_option(FOR_XML_OPTIONS)
+                    ),
                 )
             )
 
@@ -537,10 +539,14 @@ class TSQLParser(parser.Parser):
                 exp.ForClause(
                     kind="JSON",
                     expressions=self._parse_csv(
-                        lambda: self._parse_for_clause_option(JSON_OPTIONS)
+                        lambda: self._parse_for_clause_option(FOR_JSON_OPTIONS)
                     ),
                 )
             )
+
+        # FOR BROWSE — bare keyword, no options. BROWSE has no dedicated TokenType.
+        if self._match_text_seq("FOR", "BROWSE"):
+            return self.expression(exp.ForClause(kind="BROWSE"))
 
         return None
 

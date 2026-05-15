@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
 
 def _coerce_datediff_args(node: exp.DateDiff) -> None:
     for e in (node.this, node.expression):
-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
+        if e.type is None or e.type.this not in exp.DataType.TEMPORAL_TYPES:
             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
 
 

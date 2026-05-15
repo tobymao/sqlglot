@@ -528,9 +528,7 @@ class TSQLParser(parser.Parser):
             return self.expression(
                 exp.ForClause(
                     kind="XML",
-                    expressions=self._parse_csv(
-                        lambda: self._parse_for_clause_option(XML_OPTIONS)
-                    ),
+                    expressions=self._parse_csv(lambda: self._parse_for_clause_option(XML_OPTIONS)),
                 )
             )
 

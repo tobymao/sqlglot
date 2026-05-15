@@ -6387,3 +6387,25 @@ TEXT;
 # dialect: spark, databricks, snowflake, bigquery, trino, redshift
 LAST_VALUE(tbl.str_col) RESPECT NULLS;
 TEXT;
+
+--------------------------------------
+-- Ranking window functions
+--------------------------------------
+
+RANK() OVER (ORDER BY 1);
+BIGINT;
+
+DENSE_RANK() OVER (ORDER BY 1);
+BIGINT;
+
+ROW_NUMBER() OVER (ORDER BY 1);
+BIGINT;
+
+NTILE(4) OVER (ORDER BY 1);
+BIGINT;
+
+PERCENT_RANK() OVER (ORDER BY 1);
+DOUBLE;
+
+CUME_DIST() OVER (ORDER BY 1);
+DOUBLE;

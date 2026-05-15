@@ -32,7 +32,11 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ApproxDistinct,
             exp.ArraySize,
             exp.CountIf,
+            exp.DenseRank,
             exp.Int64,
+            exp.Ntile,
+            exp.Rank,
+            exp.RowNumber,
             exp.UnixSeconds,
             exp.UnixMicros,
             exp.UnixMillis,
@@ -92,6 +96,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
         expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.Asin,
+            exp.CumeDist,
+            exp.PercentRank,
             exp.Asinh,
             exp.Acos,
             exp.Acosh,

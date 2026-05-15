@@ -2890,3 +2890,4 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema_ext = {"t": {"_col": "INT"}}
         query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
         optimizer.annotate_types.annotate_types(query, schema=schema_ext)
+

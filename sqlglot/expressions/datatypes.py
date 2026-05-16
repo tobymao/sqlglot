@@ -430,7 +430,6 @@ class DataType(Expression):
         return False
 
 
-
 class PseudoType(DataType):
     arg_types = {"this": True}
 

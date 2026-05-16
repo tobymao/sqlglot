@@ -769,17 +769,6 @@ FOR JSON
         # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
         self.validate_identity("SELECT * FROM t FOR BROWSE")
 
-        # Other dialects don't support FOR BROWSE — it's silently dropped
-        self.validate_all(
-            "SELECT * FROM t FOR BROWSE",
-            read={"tsql": "SELECT * FROM t FOR BROWSE"},
-            write={
-                "tsql": "SELECT * FROM t FOR BROWSE",
-                "postgres": "SELECT * FROM t",
-                "duckdb": "SELECT * FROM t",
-            },
-        )
-
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")

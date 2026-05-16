@@ -6387,3 +6387,16 @@ TEXT;
 # dialect: spark, databricks, snowflake, bigquery, trino, redshift
 LAST_VALUE(tbl.str_col) RESPECT NULLS;
 TEXT;
+
+--------------------------------------
+-- Offset window functions
+--------------------------------------
+
+LAG(tbl.bigint_col) OVER (ORDER BY tbl.int_col);
+BIGINT;
+
+LEAD(tbl.double_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY tbl.int_col);
+TEXT;

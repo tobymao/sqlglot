@@ -6470,3 +6470,26 @@ DOUBLE;
 
 NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY tbl.int_col);
 TEXT;
+
+--------------------------------------
+-- Aggregate functions
+--------------------------------------
+
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+--------------------------------------
+-- Ordered-set aggregate functions
+--------------------------------------
+
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.bigint_col);
+BIGINT;

@@ -4,17 +4,16 @@ import typing as t
 from collections.abc import Mapping, Sequence
 
 if t.TYPE_CHECKING:
+    from sqlglot import exp
     from typing_extensions import ParamSpec
-
-    import sqlglot
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel
 
     P = ParamSpec("P")
 
-B = t.TypeVar("B", bound="sqlglot.exp.Binary")
-E = t.TypeVar("E", bound="sqlglot.exp.Expr")
-F = t.TypeVar("F", bound="sqlglot.exp.Func")
+B = t.TypeVar("B", bound=exp.Binary)
+E = t.TypeVar("E", bound=exp.Expr)
+F = t.TypeVar("F", bound=exp.Func)
 T = t.TypeVar("T")
 
 BuilderArgs = Sequence[t.Any]
@@ -30,6 +29,11 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
     error_message_context: int
     max_errors: int
     max_nodes: int
+
+
+class DataTypeArgs(ParserNoDialectArgs, total=False):
+    expressions: list[exp.Literal | exp.Neg | exp.DataTypeParam | exp.ColumnDef]
+    nested: bool
 
 
 class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):

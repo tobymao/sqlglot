@@ -199,7 +199,10 @@ def _distribute(
     to_func: Callable[..., exp.Condition],
     simplifier: Simplifier,
 ):
-    if isinstance(a, exp.Connector):
+    # When `a` and `b` are connectors of the SAME polarity (e.g. both AND in
+    # CNF mode), `b` is distributed across `a`'s children so the existing
+    # cross-product handling can simplify them.
+    if isinstance(a, exp.Connector) and isinstance(a, type(b)):
         exp.replace_children(
             a,
             lambda c: to_func(
@@ -208,11 +211,18 @@ def _distribute(
                 copy=False,
             ),
         )
-    else:
-        a = to_func(
-            simplifier.uniq_sort(flatten(from_func(a, b.left))),
-            simplifier.uniq_sort(flatten(from_func(a, b.right))),
-            copy=False,
-        )
+        return a
 
-    return a
+    # Otherwise apply the textbook rule
+    # ``a OR (b.left AND b.right) -> (a OR b.left) AND (a OR b.right)`` (or
+    # the AND/OR dual). When `a` is a connector of the OPPOSITE polarity to
+    # `b` (e.g. `Or(...) ∨ And(...)` in CNF mode) the previous behaviour was
+    # to push `b` into each child of `a`, leaving an intermediate
+    # ``Or(And, And)`` that `while_changing` would later cross-product into
+    # redundant superset and duplicate clauses. Returning the direct rewrite
+    # avoids that detour.
+    return to_func(
+        simplifier.uniq_sort(flatten(from_func(a, b.left))),
+        simplifier.uniq_sort(flatten(from_func(a, b.right))),
+        copy=False,
+    )

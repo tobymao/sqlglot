@@ -429,9 +429,6 @@ class DataType(Expression):
                 return True
         return False
 
-    @property
-    def this(self) -> DType:
-        return self.args["this"]
 
 
 class PseudoType(DataType):

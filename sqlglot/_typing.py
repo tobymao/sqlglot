@@ -11,9 +11,9 @@ if t.TYPE_CHECKING:
 
     P = ParamSpec("P")
 
-B = t.TypeVar("B", bound=exp.Binary)
-E = t.TypeVar("E", bound=exp.Expr)
-F = t.TypeVar("F", bound=exp.Func)
+B = t.TypeVar("B", bound="exp.Binary")
+E = t.TypeVar("E", bound="exp.Expr")
+F = t.TypeVar("F", bound="exp.Func")
 T = t.TypeVar("T")
 
 BuilderArgs = Sequence[t.Any]

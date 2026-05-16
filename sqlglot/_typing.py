@@ -4,6 +4,7 @@ import typing as t
 from collections.abc import Mapping, Sequence
 
 if t.TYPE_CHECKING:
+    import sqlglot
     from sqlglot import exp
     from typing_extensions import ParamSpec
     from sqlglot.dialects.dialect import DialectType
@@ -11,9 +12,9 @@ if t.TYPE_CHECKING:
 
     P = ParamSpec("P")
 
-B = t.TypeVar("B", bound="exp.Binary")
-E = t.TypeVar("E", bound="exp.Expr")
-F = t.TypeVar("F", bound="exp.Func")
+B = t.TypeVar("B", bound="sqlglot.exp.Binary")
+E = t.TypeVar("E", bound="sqlglot.exp.Expr")
+F = t.TypeVar("F", bound="sqlglot.exp.Func")
 T = t.TypeVar("T")
 
 BuilderArgs = Sequence[t.Any]

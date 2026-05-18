@@ -710,6 +710,64 @@ FOR XML
             pretty=True,
         )
 
+    def test_for_modifiers(self):
+        # https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
+        json_possible_options = [
+            "AUTO",
+            "PATH",
+            "AUTO, ROOT('RootName')",
+            "PATH, ROOT('RootName')",
+            "AUTO, INCLUDE_NULL_VALUES",
+            "PATH, INCLUDE_NULL_VALUES",
+            "AUTO, WITHOUT_ARRAY_WRAPPER",
+            "PATH, WITHOUT_ARRAY_WRAPPER",
+            "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES",
+            "PATH, ROOT('RootName'), WITHOUT_ARRAY_WRAPPER",
+            "PATH, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+            "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+            # SQL Server accepts the modifiers in any order after the mode
+            "PATH, WITHOUT_ARRAY_WRAPPER, ROOT('Root'), INCLUDE_NULL_VALUES",
+        ]
+
+        for json_option in json_possible_options:
+            with self.subTest(f"Testing FOR JSON option: {json_option}"):
+                self.validate_identity(f"SELECT * FROM t FOR JSON {json_option}")
+
+        # Correlated subquery — the canonical SQL Server JSON shaping pattern
+        self.validate_identity(
+            "SELECT (SELECT TOP 5 a, b FROM t ORDER BY b DESC FOR JSON PATH) AS j FROM x"
+        )
+
+        # Inside a derived table
+        self.validate_identity("SELECT j FROM (SELECT a AS j FROM t FOR JSON PATH) AS x")
+
+        self.validate_identity(
+            "SELECT * FROM t FOR JSON PATH, ROOT('Root'), INCLUDE_NULL_VALUES",
+            """SELECT
+  *
+FROM t
+FOR JSON
+  PATH,
+  ROOT('Root'),
+  INCLUDE_NULL_VALUES""",
+            pretty=True,
+        )
+
+        # Other dialects don't support FOR JSON — it's silently dropped
+        self.validate_all(
+            "SELECT * FROM t FOR JSON AUTO",
+            read={"tsql": "SELECT * FROM t FOR JSON AUTO"},
+            write={
+                "tsql": "SELECT * FROM t FOR JSON AUTO",
+                "postgres": "SELECT * FROM t",
+                "duckdb": "SELECT * FROM t",
+            },
+        )
+
+        # FOR BROWSE is a bare keyword — no options follow.
+        # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+        self.validate_identity("SELECT * FROM t FOR BROWSE")
+
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")

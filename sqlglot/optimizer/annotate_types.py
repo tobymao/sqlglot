@@ -1036,8 +1036,6 @@ class TypeAnnotator:
         return None
 
     def _annotate_within_group(self, expression: exp.WithinGroup) -> exp.WithinGroup:
-        # PERCENTILE_DISC returns the type of the sort expression (it picks an existing row),
-        # whereas PERCENTILE_CONT always interpolates and its DOUBLE return propagates via "this".
         if isinstance(expression.this, exp.PercentileDisc):
             self._set_type(expression, self._type_from_order(expression) or exp.DType.UNKNOWN)
             return expression

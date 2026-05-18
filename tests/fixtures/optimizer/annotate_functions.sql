@@ -6410,18 +6410,38 @@ DOUBLE;
 CUME_DIST() OVER (ORDER BY 1);
 DOUBLE;
 
-# dialect: hive, spark2, spark, databricks, snowflake
+# dialect: hive, spark2, spark, databricks, snowflake, mysql, oracle, sqlite, singlestore
 RANK() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks, snowflake
+# dialect: hive, spark2, spark, databricks, snowflake, mysql, oracle, sqlite, singlestore
 DENSE_RANK() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks, snowflake
+# dialect: hive, spark2, spark, databricks, snowflake, mysql, oracle, sqlite, singlestore
 ROW_NUMBER() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks, snowflake
+# dialect: hive, spark2, spark, databricks, snowflake, mysql, oracle, sqlite, singlestore
 NTILE(4) OVER (ORDER BY 1);
+INT;
+
+# dialect: postgres, drill
+NTILE(4) OVER (ORDER BY 1);
+INT;
+
+# dialect: risingwave, materialize
+RANK() OVER (ORDER BY 1);
+INT;
+
+# dialect: risingwave, materialize
+DENSE_RANK() OVER (ORDER BY 1);
+INT;
+
+# dialect: risingwave, materialize
+ROW_NUMBER() OVER (ORDER BY 1);
+INT;
+
+# dialect: redshift
+RANK() OVER (ORDER BY 1);
 INT;

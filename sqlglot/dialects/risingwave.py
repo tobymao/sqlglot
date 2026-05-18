@@ -4,9 +4,11 @@ from sqlglot.dialects.postgres import Postgres
 from sqlglot.generators.risingwave import RisingWaveGenerator
 from sqlglot.parsers.risingwave import RisingWaveParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.risingwave import EXPRESSION_METADATA
 
 
 class RisingWave(Postgres):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     REQUIRES_PARENTHESIZED_STRUCT_ACCESS = True
     SUPPORTS_STRUCT_STAR_EXPANSION = True
 

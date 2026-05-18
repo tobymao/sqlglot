@@ -5,9 +5,11 @@ from sqlglot import tokens
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.generators.drill import DrillGenerator
 from sqlglot.parsers.drill import DrillParser
+from sqlglot.typing.drill import EXPRESSION_METADATA
 
 
 class Drill(Dialect):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     NORMALIZE_FUNCTIONS: bool | str = False
     PRESERVE_ORIGINAL_NAMES = True
     NULL_ORDERING = "nulls_are_last"

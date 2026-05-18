@@ -2,9 +2,11 @@ from sqlglot import TokenType
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.singlestore import SingleStoreGenerator
 from sqlglot.parsers.singlestore import SingleStoreParser, cast_to_time6
+from sqlglot.typing.singlestore import EXPRESSION_METADATA
 
 
 class SingleStore(MySQL):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     SUPPORTS_ORDER_BY_ALL = True
 
     MYSQL_INVERSE_TIME_MAPPING = MySQL.INVERSE_TIME_MAPPING

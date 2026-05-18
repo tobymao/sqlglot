@@ -27,7 +27,11 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DType.INT}
         for expr_type in {
+            exp.DenseRank,
             exp.Month,
+            exp.Ntile,
+            exp.Rank,
+            exp.RowNumber,
             exp.Second,
             exp.Week,
         }

@@ -10,9 +10,11 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.oracle import OracleGenerator
 from sqlglot.parsers.oracle import OracleParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.oracle import EXPRESSION_METADATA
 
 
 class Oracle(Dialect):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True

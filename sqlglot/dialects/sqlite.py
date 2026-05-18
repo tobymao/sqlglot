@@ -8,9 +8,11 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.sqlite import SQLiteGenerator
 from sqlglot.parsers.sqlite import SQLiteParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.sqlite import EXPRESSION_METADATA
 
 
 class SQLite(Dialect):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TYPED_DIVISION = True

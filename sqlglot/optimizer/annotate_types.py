@@ -1041,10 +1041,8 @@ class TypeAnnotator:
         # PERCENTILE_DISC returns the type of the sort expression (it picks an existing row),
         # whereas PERCENTILE_CONT always interpolates and its DOUBLE return propagates via "this".
         if isinstance(expression.this, exp.PercentileDisc):
-            sort_type = self._type_from_order(expression)
-            if sort_type is not None:
-                self._set_type(expression, sort_type)
-                return expression
+            self._set_type(expression, self._type_from_order(expression) or exp.DType.UNKNOWN)
+            return expression
         return self._annotate_by_args(expression, "this")
 
     def _annotate_by_array_element(self, expression: exp.Expr) -> exp.Expr:

@@ -6478,7 +6478,13 @@ TEXT;
 COVAR_POP(tbl.double_col, tbl.double_col);
 DOUBLE;
 
+COVAR_POP(tbl.int_col, tbl.int_col);
+DOUBLE;
+
 COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+COVAR_SAMP(tbl.int_col, tbl.int_col);
 DOUBLE;
 
 --------------------------------------

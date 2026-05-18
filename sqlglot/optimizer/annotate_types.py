@@ -1043,7 +1043,8 @@ class TypeAnnotator:
         if isinstance(expression.this, exp.PercentileDisc):
             sort_type = self._type_from_order(expression)
             if sort_type is not None:
-                return self._set_type(expression, sort_type)
+                self._set_type(expression, sort_type)
+                return expression
         return self._annotate_by_args(expression, "this")
 
     def _annotate_by_array_element(self, expression: exp.Expr) -> exp.Expr:

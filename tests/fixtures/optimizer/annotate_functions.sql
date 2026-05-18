@@ -6409,3 +6409,19 @@ DOUBLE;
 
 CUME_DIST() OVER (ORDER BY 1);
 DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+RANK() OVER (ORDER BY 1);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+DENSE_RANK() OVER (ORDER BY 1);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+ROW_NUMBER() OVER (ORDER BY 1);
+INT;
+
+# dialect: hive, spark2, spark, databricks
+NTILE(4) OVER (ORDER BY 1);
+INT;

@@ -1760,13 +1760,9 @@ COMMENT='客户账户表'"""
             },
         )
 
-    def test_null_ordering_simulation_qualifies_ambiguous_columns(self):
-        # When transpiling from a NULLS-LAST default dialect (e.g. DuckDB) to MySQL,
-        # the CASE WHEN <col> IS NULL THEN ... END simulation is evaluated in the
-        # FROM-clause column scope, so an unqualified column reference can be
-        # ambiguous when the same column name exists in multiple joined tables
-        # (MySQL error 1052). Resolve the bare column against the enclosing
-        # SELECT projection and substitute the qualified source.
+    def test_null_ordering_simulation_resolves_ordered_against_projection(self):
+        # NULLS LAST simulation substitutes the matching projection's sub-AST
+        # into the CASE so it resolves in FROM-clause scope (MySQL error 1052).
         self.validate_all(
             "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep"
             " ON e.employee_id = ep.employee_id"
@@ -1779,9 +1775,6 @@ COMMENT='客户账户表'"""
                 ),
             },
         )
-
-        # Aliased projection: ORDER BY references the alias, which resolves to the
-        # underlying qualified column inside the simulated CASE.
         self.validate_all(
             "SELECT e.employee_id AS emp FROM employees AS e LEFT JOIN employee_positions AS ep"
             " ON TRUE ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
@@ -1792,8 +1785,6 @@ COMMENT='客户账户表'"""
                 ),
             },
         )
-
-        # Already-qualified ORDER BY references are preserved as-is.
         self.validate_all(
             "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep ON TRUE"
             " ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
@@ -1802,6 +1793,20 @@ COMMENT='客户账户表'"""
                     "SELECT e.employee_id FROM employees e"
                     " LEFT JOIN employee_positions ep ON TRUE ORDER BY e.employee_id"
                 ),
+            },
+        )
+        self.validate_all(
+            "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING (id)"
+            " ORDER BY CASE WHEN (-1) * col IS NULL THEN 1 ELSE 0 END, (-1) * col",
+            read={
+                "duckdb": "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING(id) ORDER BY col",
+            },
+        )
+        self.validate_all(
+            "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id"
+            " ORDER BY CASE WHEN t1.x + t2.y IS NULL THEN 1 ELSE 0 END, t1.x + t2.y",
+            read={
+                "duckdb": "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id ORDER BY s",
             },
         )
 

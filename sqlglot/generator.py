@@ -2955,18 +2955,16 @@ class Generator:
     def sort_sql(self, expression: exp.Sort) -> str:
         return self.op_expressions("SORT BY", expression)
 
-    def _qualified_for_null_ordering_simulation(self, expression: exp.Ordered) -> exp.Column | None:
-        """Resolve an ORDER BY column against the enclosing SELECT projection.
+    def _resolve_ordered_for_null_ordering_simulation(
+        self, expression: exp.Ordered
+    ) -> exp.Expr | None:
+        """Resolve a bare ORDER BY name against the enclosing SELECT projection.
 
-        The CASE WHEN <col> IS NULL THEN ... END simulation used to emulate
-        NULLS FIRST/LAST in dialects without native support (e.g. MySQL) is
-        evaluated in the FROM-clause column scope, not the SELECT-alias scope,
-        so bare references can be ambiguous when the same column name exists in
-        multiple joined tables (MySQL error 1052). When the ORDER BY references
-        an unqualified column whose name uniquely matches a qualified projection
-        in the enclosing SELECT, return that qualified column so the caller can
-        substitute it inside the simulation. Returns None when no safe
-        substitution is available, leaving the original expression unchanged.
+        Returns the underlying expression of the uniquely-matching projection
+        (Alias-stripped) for substitution into the NULLS FIRST/LAST CASE
+        simulation, since the CASE is evaluated in FROM-clause scope rather
+        than alias scope (MySQL error 1052). Returns None if no safe
+        substitution applies, leaving the original behaviour unchanged.
         """
         this = expression.this
         if not (isinstance(this, exp.Column) and not this.table):
@@ -2977,16 +2975,19 @@ class Generator:
             return None
 
         column_name = this.name
-        match: exp.Column | None = None
+        match: exp.Expr | None = None
         for projection in ancestor.selects:
             if projection.output_name != column_name:
                 continue
-            candidate = projection.this if isinstance(projection, exp.Alias) else projection
-            if not (isinstance(candidate, exp.Column) and candidate.table):
-                return None
             if match is not None:
+                # Multiple projections share this output name; not safe to pick one.
                 return None
-            match = candidate
+            match = projection.this if isinstance(projection, exp.Alias) else projection
+
+        # Skip the substitution when it would be identical to the existing
+        # reference (e.g. ``SELECT col FROM t ORDER BY col``).
+        if isinstance(match, exp.Column) and not match.table and match.name == column_name:
+            return None
 
         return match
 
@@ -3060,10 +3061,10 @@ class Generator:
                             f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
                         )
                     elif not isinstance(expression.this, exp.Rand):
-                        qualified_column = self._qualified_for_null_ordering_simulation(expression)
-                        qualified = self.sql(qualified_column) if qualified_column else this
+                        resolved = self._resolve_ordered_for_null_ordering_simulation(expression)
+                        target = self.sql(resolved) if resolved is not None else this
                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-                        this = f"CASE WHEN {qualified} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {qualified}"
+                        this = f"CASE WHEN {target} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {target}"
                     nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")

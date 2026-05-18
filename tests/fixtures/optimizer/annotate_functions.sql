@@ -6410,18 +6410,18 @@ DOUBLE;
 CUME_DIST() OVER (ORDER BY 1);
 DOUBLE;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks, snowflake
 RANK() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks, snowflake
 DENSE_RANK() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks, snowflake
 ROW_NUMBER() OVER (ORDER BY 1);
 INT;
 
-# dialect: hive, spark2, spark, databricks
+# dialect: hive, spark2, spark, databricks, snowflake
 NTILE(4) OVER (ORDER BY 1);
 INT;

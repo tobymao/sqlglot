@@ -1032,9 +1032,7 @@ class TypeAnnotator:
     def _type_from_order(self, expression: exp.Expression) -> exp.DataType | None:
         order = expression.args.get("expression")
         if order and order.expressions:
-            sort_type = order.expressions[0].this.type
-            if sort_type and not sort_type.is_type(exp.DType.UNKNOWN):
-                return sort_type
+            return order.expressions[0].this.type
         return None
 
     def _annotate_within_group(self, expression: exp.WithinGroup) -> exp.WithinGroup:

@@ -1029,15 +1029,21 @@ class TypeAnnotator:
             self._set_type(expression, exp.DType.INT)
         return expression
 
+    def _type_from_order(self, expression: exp.Expression) -> exp.DataType | None:
+        order = expression.args.get("expression")
+        if order and order.expressions:
+            sort_type = order.expressions[0].this.type
+            if sort_type and not sort_type.is_type(exp.DType.UNKNOWN):
+                return sort_type
+        return None
+
     def _annotate_within_group(self, expression: exp.WithinGroup) -> exp.WithinGroup:
         # PERCENTILE_DISC returns the type of the sort expression (it picks an existing row),
         # whereas PERCENTILE_CONT always interpolates and its DOUBLE return propagates via "this".
         if isinstance(expression.this, exp.PercentileDisc):
-            order = expression.args.get("expression")
-            if order and order.expressions:
-                sort_type = order.expressions[0].this.type
-                if sort_type and not sort_type.is_type(exp.DType.UNKNOWN):
-                    return self._set_type(expression, sort_type)
+            sort_type = self._type_from_order(expression)
+            if sort_type is not None:
+                return self._set_type(expression, sort_type)
         return self._annotate_by_args(expression, "this")
 
     def _annotate_by_array_element(self, expression: exp.Expr) -> exp.Expr:

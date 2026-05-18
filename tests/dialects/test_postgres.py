@@ -1927,3 +1927,11 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity(
             'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION MYFUNCTION()'
         )
+
+    def test_postgis_distance_3d(self):
+        self.validate_all(
+            "SELECT a <<->> b",
+            write={
+                "postgres": "SELECT a <<->> b",
+            },
+        )

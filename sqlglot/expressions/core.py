@@ -2117,6 +2117,8 @@ class PropertyEQ(Expression, Binary):
 class Distance(Expression, Binary):
     pass
 
+class Distance3d(Expression, Binary):
+    pass
 
 class Escape(Expression, Binary):
     pass

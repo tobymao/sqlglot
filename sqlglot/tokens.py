@@ -236,6 +236,7 @@ class Tokenizer(_TokenizerBase):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
+        "<<->>": TokenType.DISTANCE3D,
         "&&": TokenType.DAMP,
         "??": TokenType.DQMARK,
         "~~~": TokenType.GLOB,

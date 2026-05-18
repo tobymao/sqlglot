@@ -6497,5 +6497,12 @@ DOUBLE;
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
 
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.bigint_col);
 BIGINT;
+
+# dialect: duckdb
+QUANTILE_DISC(tbl.int_col, 0.5);
+INT;

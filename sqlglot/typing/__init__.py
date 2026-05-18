@@ -117,7 +117,6 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Pi,
             exp.Pow,
             exp.PercentileCont,
-            exp.PercentileDisc,
             exp.Quantile,
             exp.Radians,
             exp.Round,

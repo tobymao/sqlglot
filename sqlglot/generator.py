@@ -3111,6 +3111,8 @@ class Generator:
         kind = expression.args["kind"]
         if kind == "BROWSE":
             return f"{self.sep()}FOR BROWSE"
+        # FOR XML/JSON always carry at least AUTO/PATH. An empty rendering means
+        # the target dialect doesn't support QueryOption, so we drop the clause.
         options = self.expressions(expression, key="expressions")
         if not options:
             return ""

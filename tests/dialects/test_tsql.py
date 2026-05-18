@@ -710,7 +710,7 @@ FOR XML
             pretty=True,
         )
 
-    def test_for_json(self):
+    def test_for_modifiers(self):
         # https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
         json_possible_options = [
             "AUTO",
@@ -764,7 +764,6 @@ FOR JSON
             },
         )
 
-    def test_for_browse(self):
         # FOR BROWSE is a bare keyword — no options follow.
         # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
         self.validate_identity("SELECT * FROM t FOR BROWSE")

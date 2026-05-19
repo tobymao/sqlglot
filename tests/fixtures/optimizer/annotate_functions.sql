@@ -6429,3 +6429,19 @@ INT;
 # dialect: postgres
 NTILE(4) OVER (ORDER BY 1);
 INT;
+
+# dialect: redshift
+RANK() OVER (ORDER BY 1);
+INT;
+
+# dialect: redshift
+DENSE_RANK() OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: redshift
+ROW_NUMBER() OVER (ORDER BY 1);
+BIGINT;
+
+# dialect: redshift
+NTILE(4) OVER (ORDER BY 1);
+BIGINT;

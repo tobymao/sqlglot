@@ -916,6 +916,7 @@ class Parser:
     FACTOR: t.ClassVar = {
         TokenType.DIV: exp.IntDiv,
         TokenType.LR_ARROW: exp.Distance,
+        TokenType.LLRR_ARROW: exp.Distance3d,
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }

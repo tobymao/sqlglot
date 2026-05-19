@@ -370,7 +370,11 @@ class DataType(Expression):
 
     @classmethod
     def from_str(
-        cls, dtype: str, dialect: DialectType = None, udt: bool = False, **kwargs: object
+        cls,
+        dtype: str,
+        dialect: DialectType = None,
+        udt: bool = False,
+        **kwargs: Unpack[DataTypeArgs],
     ) -> Self:
         """
         Constructs a `DataType` object from a `str` representation.

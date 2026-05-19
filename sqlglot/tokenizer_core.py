@@ -62,7 +62,7 @@ class TokenType(IntEnum):
     HASH_ARROW = auto()
     DHASH_ARROW = auto()
     LR_ARROW = auto()
-    DISTANCE3D = auto()
+    LLRR_ARROW = auto()
     DAT = auto()
     LT_AT = auto()
     AT_GT = auto()

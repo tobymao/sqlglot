@@ -1929,9 +1929,4 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         )
 
     def test_postgis_distance_3d(self):
-        self.validate_all(
-            "SELECT a <<->> b",
-            write={
-                "postgres": "SELECT a <<->> b",
-            },
-        )
+        self.validate_identity("SELECT a <<->> b")

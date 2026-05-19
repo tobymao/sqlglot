@@ -40,6 +40,7 @@ class DataTypeArgs(ParserNoDialectArgs, total=False):
     nullable: bool
     collate: exp.Identifier | exp.Column
 
+
 class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
     pass
 

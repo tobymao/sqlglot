@@ -558,6 +558,37 @@ class TestTSQL(Validator):
         self.validate_identity("OBJECT_ID('foo')")
         self.validate_identity("OBJECT_ID('foo', 'U')")
 
+    def test_null_ordering_simulation_resolves_ordered_against_projection(self):
+        # T-SQL hits the same NULLS FIRST/LAST CASE simulation as MySQL
+        # (NULL_ORDERING_SUPPORTED is None), so a bare ORDER BY name needs the
+        # matching projection's full sub-AST substituted in.
+        self.validate_all(
+            "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep"
+            " ON e.employee_id = ep.employee_id"
+            " ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
+            read={
+                "duckdb": (
+                    "SELECT e.employee_id FROM employees e"
+                    " LEFT JOIN employee_positions ep ON e.employee_id = ep.employee_id"
+                    " ORDER BY employee_id"
+                ),
+            },
+        )
+        self.validate_all(
+            "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING (id)"
+            " ORDER BY CASE WHEN (-1) * col IS NULL THEN 1 ELSE 0 END, (-1) * col",
+            read={
+                "duckdb": "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING(id) ORDER BY col",
+            },
+        )
+        self.validate_all(
+            "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id"
+            " ORDER BY CASE WHEN t1.x + t2.y IS NULL THEN 1 ELSE 0 END, t1.x + t2.y",
+            read={
+                "duckdb": "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id ORDER BY s",
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

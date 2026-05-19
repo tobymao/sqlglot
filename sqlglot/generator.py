@@ -2970,19 +2970,17 @@ class Generator:
         if not (isinstance(this, exp.Column) and not this.table):
             return None
 
-        ancestor = expression.find_ancestor(exp.Window, exp.Select)
-        if not isinstance(ancestor, exp.Select):
+        ancestor = expression.find_ancestor(exp.Select)
+        if ancestor is None:
             return None
 
         column_name = this.name
-        match: exp.Expr | None = None
-        for projection in ancestor.selects:
-            if projection.output_name != column_name:
-                continue
-            if match is not None:
-                # Multiple projections share this output name; not safe to pick one.
-                return None
-            match = projection.this if isinstance(projection, exp.Alias) else projection
+        matched: list[exp.Expr] = [
+            p.this if isinstance(p, exp.Alias) else p
+            for p in ancestor.selects
+            if p.output_name == column_name
+        ]
+        match = matched[0] if len(matched) == 1 else None
 
         # Skip the substitution when it would be identical to the existing
         # reference (e.g. ``SELECT col FROM t ORDER BY col``).

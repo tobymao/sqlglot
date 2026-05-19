@@ -33,7 +33,7 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
 
 
 class DataTypeArgs(ParserNoDialectArgs, total=False):
-    expressions: list[exp.Literal | exp.Neg | exp.DataTypeParam | exp.ColumnDef] | None
+    expressions: list[exp.Expr] | None
     nested: bool
     values: list[exp.Expr] | None
     kind: exp.Expr | str

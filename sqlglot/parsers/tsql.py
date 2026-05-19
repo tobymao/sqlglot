@@ -696,6 +696,33 @@ class TSQLParser(parser.Parser):
 
         return this
 
+    def _parse_table_parts(
+        self,
+        schema: bool = False,
+        is_db_reference: bool = False,
+        wildcard: bool = False,
+        fast: bool = False,
+    ) -> exp.Table | exp.Dot | None:
+        table = super()._parse_table_parts(
+            schema=schema,
+            is_db_reference=is_db_reference,
+            wildcard=wildcard,
+            fast=fast,
+        )
+        if (
+            isinstance(table, exp.Table)
+            and isinstance(table.this, exp.Identifier)
+            and (table_name := table.name).startswith("#")
+        ):
+            if table_name.startswith("##"):
+                table.this.set("this", table_name[2:])
+                table.this.set("global_", True)
+            else:
+                table.this.set("this", table_name[1:])
+                table.this.set("temporary", True)
+
+        return table
+
     def _parse_create(self) -> exp.Create | exp.Command:
         create = super()._parse_create()
 

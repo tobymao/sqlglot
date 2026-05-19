@@ -2067,6 +2067,37 @@ WHERE
             .args.get("global_")
         )
 
+        # Quoted bracket form: the # must live inside the brackets in T-SQL
+        temp_ident = (
+            self.validate_identity("SELECT * FROM [#temp_table]")
+            .args["from_"]
+            .this.assert_is(exp.Table)
+            .this.assert_is(exp.Identifier)
+        )
+        self.assertTrue(temp_ident.args.get("temporary"))
+        self.assertEqual(temp_ident.name, "temp_table")
+
+        global_ident = (
+            self.validate_identity("SELECT * FROM [##temp_table]")
+            .args["from_"]
+            .this.assert_is(exp.Table)
+            .this.assert_is(exp.Identifier)
+        )
+        self.assertTrue(global_ident.args.get("global_"))
+        self.assertEqual(global_ident.name, "temp_table")
+
+        # duckdb -> tsql -> duckdb round-trip preserves TEMPORARY
+        self.validate_all(
+            "CREATE TABLE [#temptest] (name INTEGER)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name INTEGER)",
+            },
+            write={
+                "tsql": "CREATE TABLE [#temptest] (name INTEGER)",
+                "duckdb": 'CREATE TEMPORARY TABLE "temptest" (name INT)',
+            },
+        )
+
         self.validate_identity("@x").assert_is(exp.Parameter).this.assert_is(exp.Var)
         self.validate_identity("SELECT * FROM @x").args["from_"].this.assert_is(
             exp.Table

@@ -63,6 +63,7 @@ EXPRESSION_METADATA = {
         }
     },
     exp.ApproxQuantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
+    exp.WithinGroup: {"returns": exp.DType.DOUBLE},
     exp.ArrayIntersect: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)

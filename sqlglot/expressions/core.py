@@ -2118,7 +2118,7 @@ class Distance(Expression, Binary):
     pass
 
 
-class Distance3d(Expression, Binary):
+class DistanceNd(Expression, Binary):
     pass
 
 

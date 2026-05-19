@@ -4222,7 +4222,7 @@ class Generator:
     def distance_sql(self, expression: exp.Distance) -> str:
         return self.binary(expression, "<->")
 
-    def distance3d_sql(self, expression: exp.Distance3d) -> str:
+    def distancend_sql(self, expression: exp.DistanceNd) -> str:
         return self.binary(expression, "<<->>")
 
     def dot_sql(self, expression: exp.Dot) -> str:

@@ -6395,7 +6395,19 @@ TEXT;
 LAG(tbl.bigint_col) OVER (ORDER BY tbl.int_col);
 BIGINT;
 
-LEAD(tbl.double_col) OVER (ORDER BY tbl.int_col);
+LAG(tbl.bigint_col, 1, tbl.double_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+LAG(tbl.double_col, 1, tbl.bigint_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+LEAD(tbl.bigint_col) OVER (ORDER BY tbl.int_col);
+BIGINT;
+
+LEAD(tbl.bigint_col, 1, tbl.double_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+LEAD(tbl.double_col, 1, tbl.bigint_col) OVER (ORDER BY tbl.int_col);
 DOUBLE;
 
 NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY tbl.int_col);

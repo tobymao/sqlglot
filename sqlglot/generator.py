@@ -2970,8 +2970,8 @@ class Generator:
         if not (isinstance(this, exp.Column) and not this.table):
             return None
 
-        ancestor = expression.find_ancestor(exp.Select)
-        if ancestor is None:
+        ancestor = expression.find_ancestor(exp.Select, exp.Window)
+        if not isinstance(ancestor, exp.Select):
             return None
 
         column_name = this.name

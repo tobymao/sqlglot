@@ -8,6 +8,7 @@ from enum import auto
 from sqlglot.helper import AutoName
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.expressions.core import (
+    Expr,
     Expression,
     _TimeUnit,
     Identifier,
@@ -17,12 +18,17 @@ from sqlglot.expressions.core import (
 from builtins import type as Type
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import DataTypeArgs
     from sqlglot.dialects.dialect import DialectType
-    from typing_extensions import Self
+    from typing_extensions import Self, Unpack
 
 
 class DataTypeParam(Expression):
     arg_types = {"this": True, "expression": False}
+
+    @property
+    def this(self) -> Expr:
+        return self.args["this"]
 
     @property
     def name(self) -> str:
@@ -331,7 +337,7 @@ class DataType(Expression):
         dialect: DialectType = None,
         udt: bool = False,
         copy: bool = True,
-        **kwargs: object,
+        **kwargs: Unpack[DataTypeArgs],
     ) -> Self:
         """
         Constructs a DataType object.
@@ -364,7 +370,11 @@ class DataType(Expression):
 
     @classmethod
     def from_str(
-        cls, dtype: str, dialect: DialectType = None, udt: bool = False, **kwargs: object
+        cls,
+        dtype: str,
+        dialect: DialectType = None,
+        udt: bool = False,
+        **kwargs: Unpack[DataTypeArgs],
     ) -> Self:
         """
         Constructs a `DataType` object from a `str` representation.
@@ -405,10 +415,10 @@ class DataType(Expression):
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
-        self_is_nullable = self.args.get("nullable")
+        self_is_nullable: bool | None = self.args.get("nullable")
         for dtype in dtypes:
             other_type = DataType.build(dtype, copy=False, udt=True)
-            other_is_nullable = other_type.args.get("nullable")
+            other_is_nullable: bool | None = other_type.args.get("nullable")
             if (
                 other_type.expressions
                 or (check_nullable and (self_is_nullable or other_is_nullable))

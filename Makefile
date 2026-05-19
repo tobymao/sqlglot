@@ -79,13 +79,13 @@ bench-transpile:
 bench-optimize:
 	python -m benchmarks.optimize
 
+BRANCH_BASE ?= main
+
 test: hidec
 	trap '$(MAKE) showc' EXIT; python -m unittest
 
 test-fast:
 	python -m unittest --failfast
-
-BRANCH_BASE ?= main
 
 test-branch:
 	@changed_main=$$({ git diff origin/$(BRANCH_BASE)...HEAD --name-only 2>/dev/null; git diff HEAD --name-only; git diff --cached --name-only; } \

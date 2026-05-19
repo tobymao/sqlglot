@@ -6510,3 +6510,15 @@ DOUBLE;
 # dialect: duckdb
 QUANTILE_DISC(tbl.int_col, 0.5);
 INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(tbl.int_col, 0.5);
+INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;

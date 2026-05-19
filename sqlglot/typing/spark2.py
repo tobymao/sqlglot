@@ -13,13 +13,20 @@ if t.TYPE_CHECKING:
 
 
 def _annotate_by_similar_args(
-    self: TypeAnnotator, expression: E, *args: str, target_type: exp.DataType | exp.DType
+    self: TypeAnnotator,
+    expression: E,
+    *args: str,
+    target_type: exp.DataType | exp.DType | tuple[exp.DataType | exp.DType, ...],
 ) -> E:
     """
     Infers the type of the expression according to the following rules:
-    - If all args are of the same type OR any arg is of target_type, the expr is inferred as such
-    - If any arg is of UNKNOWN type and none of target_type, the expr is inferred as UNKNOWN
+    - If any arg matches a target_type, the expr is inferred as the first target_type
+    - If any arg is of UNKNOWN type and none match target_type, the expr is inferred as UNKNOWN.
+    - Otherwise the expr is inferred as the type of the last non-matching arg.
     """
+    target_types = target_type if isinstance(target_type, tuple) else (target_type,)
+    result_type = target_types[0]
+
     expressions: list[exp.Expr] = []
     for arg in args:
         arg_expr = expression.args.get(arg)
@@ -31,9 +38,9 @@ def _annotate_by_similar_args(
     for expr in expressions:
         if expr.is_type(exp.DType.UNKNOWN):
             has_unknown = True
-        elif expr.is_type(target_type):
+        elif expr.is_type(*target_types):
             has_unknown = False
-            last_datatype = target_type
+            last_datatype = result_type
             break
         else:
             last_datatype = expr.type
@@ -74,13 +81,13 @@ EXPRESSION_METADATA: ExprMetadataType = {
     exp.AtTimeZone: {"returns": exp.DType.TIMESTAMP},
     exp.Concat: {
         "annotator": lambda self, e: _annotate_by_similar_args(
-            self, e, "expressions", target_type=exp.DType.TEXT
+            self, e, "expressions", target_type=(exp.DType.TEXT, *exp.DataType.TEXT_TYPES)
         )
     },
     exp.NextDay: {"returns": exp.DType.DATE},
     exp.Pad: {
         "annotator": lambda self, e: _annotate_by_similar_args(
-            self, e, "this", "fill_pattern", target_type=exp.DType.TEXT
+            self, e, "this", "fill_pattern", target_type=(exp.DType.TEXT, *exp.DataType.TEXT_TYPES)
         )
     },
 }

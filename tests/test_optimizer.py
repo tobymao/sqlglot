@@ -1489,6 +1489,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "tbl": {
                 "bin_col": "BINARY",
                 "str_col": "STRING",
+                "varchar_col": "VARCHAR",
                 "bignum_col": "BIGNUMERIC",
                 "date_col": "DATE",
                 "decfloat_col": "DECFLOAT",

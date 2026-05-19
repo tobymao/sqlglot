@@ -1032,7 +1032,9 @@ class TypeAnnotator:
     def _annotate_within_group(self, expression: exp.WithinGroup) -> exp.WithinGroup:
         if isinstance(expression.this, exp.PercentileDisc):
             order = expression.args.get("expression")
-            sort_type = order.expressions[0].this.type if order and order.expressions else exp.DType.UNKNOWN
+            sort_type = (
+                order.expressions[0].this.type if order and order.expressions else exp.DType.UNKNOWN
+            )
             self._set_type(expression, sort_type)
             return expression
         return self._annotate_by_args(expression, "this")

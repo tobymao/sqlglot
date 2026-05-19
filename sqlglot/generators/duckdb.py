@@ -1452,26 +1452,6 @@ def _sha_sql(
     return self.func("UNHEX", result) if is_binary else result
 
 
-def _fix_pivot_string_column_names(expression: exp.Expr) -> exp.Expr:
-    """Fix Snowflake-style quoted pivot column identifiers for DuckDB.
-    Snowflake PIVOT IN-list string literals include quotes: "'JAN'", whereas DuckDB does not.
-
-    The fix is needed after qualify() expands SELECT *, columns and aliases must be updated.
-    """
-    for node in expression.walk():
-        ident = None
-        if isinstance(node, exp.Column):
-            ident = node.this
-        elif isinstance(node, exp.Alias):
-            ident = node.args.get("alias")
-        if isinstance(ident, exp.Identifier):
-            name = ident.name
-            if len(name) >= 2 and name[0] == "'" and name[-1] == "'":
-                ident.set("this", name[1:-1])
-
-    return expression
-
-
 class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
@@ -2201,8 +2181,33 @@ class DuckDBGenerator(generator.Generator):
         """
     )
 
-    def preprocess(self, expression: exp.Expr) -> exp.Expr:
-        return _fix_pivot_string_column_names(super().preprocess(expression))
+    def pivot_sql(self, expression: exp.Pivot) -> str:
+        # Snowflake PIVOT with string-literal IN-list values names output columns with quotes included (e.g. "'JAN'").
+        # DuckDB defaults to unquoted names, so after qualify() expands SELECT *, we inject an explicit
+        # column alias list on the PIVOT alias so DuckDB uses the same column names as Snowflake.
+        pivot_cols = expression.args.get("columns") or []
+        if not any(c.name.startswith("'") and c.name.endswith("'") for c in pivot_cols):
+            return super().pivot_sql(expression)
+
+        alias_node = expression.args.get("alias")
+        parent_select = expression.find_ancestor(exp.Select)
+        if not alias_node or not parent_select:
+            return super().pivot_sql(expression)
+
+        pivot_alias = alias_node.name
+        all_cols = [
+            e.alias_or_name
+            for e in parent_select.expressions
+            if isinstance(e, exp.Alias)
+            and isinstance(e.this, exp.Column)
+            and e.this.table == pivot_alias
+        ]
+
+        if not all_cols:
+            return super().pivot_sql(expression)
+
+        alias_node.set("columns", [exp.to_identifier(name, quoted=True) for name in all_cols])
+        return super().pivot_sql(expression)
 
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))

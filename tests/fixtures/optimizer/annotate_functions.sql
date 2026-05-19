@@ -6425,3 +6425,7 @@ INT;
 # dialect: hive, spark2, spark, databricks, snowflake
 NTILE(4) OVER (ORDER BY 1);
 INT;
+
+# dialect: postgres
+NTILE(4) OVER (ORDER BY 1);
+INT;

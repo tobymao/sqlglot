@@ -2181,34 +2181,6 @@ class DuckDBGenerator(generator.Generator):
         """
     )
 
-    def pivot_sql(self, expression: exp.Pivot) -> str:
-        # Snowflake PIVOT with string-literal IN-list values names output columns with quotes included (e.g. "'JAN'").
-        # DuckDB defaults to unquoted names, so after qualify() expands SELECT *, we inject an explicit
-        # column alias list on the PIVOT alias so DuckDB uses the same column names as Snowflake.
-        pivot_cols = expression.args.get("columns") or []
-        if not any(c.name.startswith("'") and c.name.endswith("'") for c in pivot_cols):
-            return super().pivot_sql(expression)
-
-        alias_node = expression.args.get("alias")
-        parent_select = expression.find_ancestor(exp.Select)
-        if not alias_node or not parent_select:
-            return super().pivot_sql(expression)
-
-        pivot_alias = alias_node.name
-        all_cols = [
-            e.alias_or_name
-            for e in parent_select.expressions
-            if isinstance(e, exp.Alias)
-            and isinstance(e.this, exp.Column)
-            and e.this.table == pivot_alias
-        ]
-
-        if not all_cols:
-            return super().pivot_sql(expression)
-
-        alias_node.set("columns", [exp.to_identifier(name, quoted=True) for name in all_cols])
-        return super().pivot_sql(expression)
-
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
         return self.sql(

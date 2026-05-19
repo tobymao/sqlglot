@@ -75,6 +75,14 @@ class TestPipeSyntax(Validator):
             "(SELECT 1 AS col1) |> EXTEND col1 + 1 AS col2",
             "WITH __tmp1 AS (SELECT *, col1 + 1 AS col2 FROM (SELECT 1 AS col1)) SELECT * FROM __tmp1",
         )
+        self.validate_identity(
+            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1, 2 AS x2",
+            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "WITH RECURSIVE x AS (SELECT 1 AS x1 UNION ALL SELECT x1 + 1 FROM x WHERE x1 < 5) FROM x |> SELECT x1, 2 AS x2",
+            "WITH RECURSIVE x AS (SELECT 1 AS x1 UNION ALL SELECT x1 + 1 FROM x WHERE x1 < 5), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
+        )
 
     def test_order_by(self):
         self.validate_identity("FROM x |> ORDER BY x1", "SELECT * FROM x ORDER BY x1")

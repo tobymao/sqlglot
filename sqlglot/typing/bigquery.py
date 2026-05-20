@@ -181,11 +181,9 @@ EXPRESSION_METADATA = {
             exp.GroupConcat,
             exp.IgnoreNulls,
             exp.JSONExtract,
-            exp.Lead,
             exp.Left,
             exp.Lower,
             exp.NetFunc,
-            exp.NthValue,
             exp.Pad,
             exp.PercentileDisc,
             exp.RegexpExtract,
@@ -356,7 +354,6 @@ EXPRESSION_METADATA = {
             e, exp.DataType.from_str("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
-    exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
     exp.ParseBignumeric: {"returns": exp.DType.BIGDECIMAL},
     exp.ParseNumeric: {"returns": exp.DType.DECIMAL},
     exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},

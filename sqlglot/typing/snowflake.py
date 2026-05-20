@@ -416,10 +416,14 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.INT}
         for expr_type in {
             exp.ByteLength,
+            exp.DenseRank,
             exp.Grouping,
             exp.JarowinklerSimilarity,
             exp.MapSize,
             exp.Minute,
+            exp.Ntile,
+            exp.Rank,
+            exp.RowNumber,
             exp.RtrimmedLength,
             exp.Second,
             exp.Seq1,

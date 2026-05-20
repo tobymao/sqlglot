@@ -5,9 +5,11 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.generators.postgres import PostgresGenerator
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.postgres import EXPRESSION_METADATA
 
 
 class Postgres(Dialect):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
     CONCAT_COALESCE = True

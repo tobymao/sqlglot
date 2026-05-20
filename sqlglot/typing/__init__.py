@@ -264,6 +264,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.HavingMax,
             exp.LastValue,
             exp.Limit,
+            exp.NthValue,
             exp.Order,
             exp.SortArray,
             exp.Window,
@@ -350,6 +351,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
         "annotator": lambda self, e: self._set_type(e, exp.DataType.from_str("ARRAY<TIMESTAMP>"))
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false")},
+    exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
+    exp.Lead: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
     exp.Literal: {"annotator": lambda self, e: self._annotate_literal(e)},
     exp.Null: {"returns": exp.DType.NULL},
     exp.Nullif: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "expression")},

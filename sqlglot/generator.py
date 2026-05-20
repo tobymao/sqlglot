@@ -2955,6 +2955,40 @@ class Generator:
     def sort_sql(self, expression: exp.Sort) -> str:
         return self.op_expressions("SORT BY", expression)
 
+    def _resolve_ordered_for_null_ordering_simulation(
+        self, expression: exp.Ordered
+    ) -> exp.Expr | None:
+        """Resolve a bare ORDER BY name against the enclosing SELECT projection.
+
+        Returns the underlying expression of the uniquely-matching projection
+        (Alias-stripped) for substitution into the NULLS FIRST/LAST CASE
+        simulation, since the CASE is evaluated in FROM-clause scope rather
+        than alias scope (MySQL error 1052). Returns None if no safe
+        substitution applies, leaving the original behaviour unchanged.
+        """
+        this = expression.this
+        if not (isinstance(this, exp.Column) and not this.table):
+            return None
+
+        ancestor = expression.find_ancestor(exp.Select, exp.Window)
+        if not isinstance(ancestor, exp.Select):
+            return None
+
+        column_name = this.name
+        matched: list[exp.Expr] = [
+            p.this if isinstance(p, exp.Alias) else p
+            for p in ancestor.selects
+            if p.output_name == column_name
+        ]
+        match = matched[0] if len(matched) == 1 else None
+
+        # Skip the substitution when it would be identical to the existing
+        # reference (e.g. ``SELECT col FROM t ORDER BY col``).
+        if isinstance(match, exp.Column) and not match.table and match.name == column_name:
+            return None
+
+        return match
+
     def ordered_sql(self, expression: exp.Ordered) -> str:
         desc = expression.args.get("desc")
         asc = not desc
@@ -3025,10 +3059,10 @@ class Generator:
                             f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
                         )
                     elif not isinstance(expression.this, exp.Rand):
+                        resolved = self._resolve_ordered_for_null_ordering_simulation(expression)
+                        target = self.sql(resolved) if resolved is not None else this
                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-                        this = (
-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
-                        )
+                        this = f"CASE WHEN {target} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {target}"
                     nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")
@@ -3099,7 +3133,7 @@ class Generator:
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             self.options_modifier(expression),
-            self.for_modifiers(expression),
+            self.sql(expression, "for_"),
             sep="",
         )
 
@@ -3107,9 +3141,16 @@ class Generator:
         options = self.expressions(expression, key="options")
         return f" {options}" if options else ""
 
-    def for_modifiers(self, expression: exp.Expr) -> str:
-        for_modifiers = self.expressions(expression, key="for_")
-        return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
+    def forclause_sql(self, expression: exp.ForClause) -> str:
+        kind = expression.args["kind"]
+        if kind == "BROWSE":
+            return f"{self.sep()}FOR BROWSE"
+        # FOR XML/JSON always carry at least AUTO/PATH. An empty rendering means
+        # the target dialect doesn't support QueryOption, so we drop the clause.
+        options = self.expressions(expression, key="expressions")
+        if not options:
+            return ""
+        return f"{self.sep()}FOR {kind}{self.seg(options)}"
 
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         self.unsupported("Unsupported query option.")
@@ -4214,6 +4255,9 @@ class Generator:
 
     def distance_sql(self, expression: exp.Distance) -> str:
         return self.binary(expression, "<->")
+
+    def distancend_sql(self, expression: exp.DistanceNd) -> str:
+        return self.binary(expression, "<<->>")
 
     def dot_sql(self, expression: exp.Dot) -> str:
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"

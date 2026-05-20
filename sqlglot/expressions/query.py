@@ -915,6 +915,11 @@ class QueryOption(Expression):
     arg_types = {"this": True, "expression": False}
 
 
+# FOR { XML | JSON } query modifier; `kind` is the discriminant ("XML" or "JSON").
+class ForClause(Expression):
+    arg_types = {"kind": True, "expressions": False}
+
+
 class WithTableHint(Expression):
     arg_types = {"expressions": True}
 

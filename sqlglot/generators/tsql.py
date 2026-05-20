@@ -385,11 +385,16 @@ class TSQLGenerator(generator.Generator):
         sql = self.sql(expression, "this")
         properties = expression.args.get("properties")
 
-        if sql[:1] != "#" and any(
-            isinstance(prop, exp.TemporaryProperty)
-            for prop in (properties.expressions if properties else [])
+        start = self._identifier_start
+        if (
+            not sql.startswith("#")
+            and not sql.startswith(f"{start}#")
+            and any(
+                isinstance(prop, exp.TemporaryProperty)
+                for prop in (properties.expressions if properties else [])
+            )
         ):
-            sql = f"[#{sql[1:]}" if sql.startswith("[") else f"#{sql}"
+            sql = f"{start}#{sql[len(start) :]}" if sql.startswith(start) else f"#{sql}"
 
         return sql
 
@@ -528,11 +533,17 @@ class TSQLGenerator(generator.Generator):
         identifier = super().identifier_sql(expression)
 
         if expression.args.get("global_"):
-            identifier = f"##{identifier}"
+            prefix = "##"
         elif expression.args.get("temporary"):
-            identifier = f"#{identifier}"
+            prefix = "#"
+        else:
+            return identifier
 
-        return identifier
+        start = self._identifier_start
+        if expression.quoted and identifier.startswith(start):
+            return f"{start}{prefix}{identifier[len(start) :]}"
+
+        return f"{prefix}{identifier}"
 
     def constraint_sql(self, expression: exp.Constraint) -> str:
         this = self.sql(expression, "this")

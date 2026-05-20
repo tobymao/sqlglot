@@ -2118,6 +2118,10 @@ class Distance(Expression, Binary):
     pass
 
 
+class DistanceNd(Expression, Binary):
+    pass
+
+
 class Escape(Expression, Binary):
     pass
 
@@ -2428,6 +2432,7 @@ QUERY_MODIFIERS = {
     "settings": False,
     "format": False,
     "options": False,
+    "for_": False,
 }
 
 

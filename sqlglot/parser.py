@@ -916,6 +916,7 @@ class Parser:
     FACTOR: t.ClassVar = {
         TokenType.DIV: exp.IntDiv,
         TokenType.LR_ARROW: exp.Distance,
+        TokenType.LLRR_ARROW: exp.DistanceNd,
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }
@@ -3812,6 +3813,10 @@ class Parser:
 
             assert this is not None
             if "with_" in this.arg_types:
+                if inner_cte := this.args.get("with_"):
+                    cte.set("expressions", cte.expressions + inner_cte.expressions)
+                    if inner_cte.args.get("recursive"):
+                        cte.set("recursive", True)
                 this.set("with_", cte)
             else:
                 self.raise_error(f"{this.key} does not support CTE")

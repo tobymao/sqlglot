@@ -258,11 +258,23 @@ CONCAT(unknown, unknown);
 UNKNOWN;
 
 # dialect: spark2, spark, databricks
-CONCAT(tbl.varchar_col, '-', tbl.date_col);
+CONCAT('x', tbl.str_col);
 STRING;
 
 # dialect: spark2, spark, databricks
-CONCAT(tbl.date_col, tbl.varchar_col);
+CONCAT('x', '-', tbl.str_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT('x', tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.str_col, tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.date_col, 'x');
 STRING;
 
 # dialect: spark2, spark, databricks
@@ -274,7 +286,35 @@ CONCAT(tbl.str_col, tbl.int_col);
 STRING;
 
 # dialect: spark2, spark, databricks
-LPAD(tbl.varchar_col, 10, '0');
+CONCAT('x', tbl.bin_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.array_col, tbl.array_col);
+ARRAY<STRING>;
+
+# dialect: spark2, spark, databricks
+CONCAT(array(1, 2), array(3, 4));
+ARRAY<INT>;
+
+# dialect: spark2, spark, databricks
+CONCAT(array(unhex('aa')), array(unhex('bb')));
+ARRAY<BINARY>;
+
+# dialect: spark2, spark, databricks
+LPAD(tbl.str_col, 10, '0');
+STRING;
+
+# dialect: spark2, spark, databricks
+LPAD('x', 10, tbl.str_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+LPAD('x', 10, tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+LPAD(tbl.date_col, 10, 'x');
 STRING;
 
 # dialect: spark2, spark, databricks

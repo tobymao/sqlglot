@@ -39,16 +39,25 @@ def _transform_create(expression: exp.Expr) -> exp.Expr:
                 "constraints", exp.ColumnConstraint(kind=exp.PrimaryKeyColumnConstraint())
             )
             schema.expressions.remove(primary_key)
-        else:
-            for column in defs.values():
-                auto_increment = None
-                for constraint in column.constraints:
-                    if isinstance(constraint.kind, exp.PrimaryKeyColumnConstraint):
-                        break
-                    if isinstance(constraint.kind, exp.AutoIncrementColumnConstraint):
-                        auto_increment = constraint
-                if auto_increment:
-                    column.constraints.remove(auto_increment)
+
+        for column in defs.values():
+            primary_key_index = -1
+            auto_increment = None
+            auto_increment_index = -1
+
+            for i, constraint in enumerate(column.constraints):
+                if isinstance(constraint.kind, exp.PrimaryKeyColumnConstraint):
+                    primary_key_index = i
+                elif isinstance(constraint.kind, exp.AutoIncrementColumnConstraint):
+                    auto_increment = constraint
+                    auto_increment_index = i
+
+            if auto_increment is not None and (
+                primary_key_index == -1 or auto_increment_index < primary_key_index
+            ):
+                column.constraints.remove(auto_increment)
+                if primary_key_index != -1:
+                    column.constraints.insert(primary_key_index, auto_increment)
 
     return expression
 

@@ -229,7 +229,7 @@ class TestMySQL(Validator):
             "CREATE TABLE x (id int not null auto_increment, primary key (id))",
             write={
                 "mysql": "CREATE TABLE x (id INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (id))",
-                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL AUTOINCREMENT PRIMARY KEY)",
+                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)",
             },
         )
         self.validate_identity("ALTER TABLE t ALTER INDEX i INVISIBLE")

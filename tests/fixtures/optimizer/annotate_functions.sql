@@ -302,6 +302,30 @@ CONCAT(array(unhex('aa')), array(unhex('bb')));
 ARRAY<BINARY>;
 
 # dialect: spark2, spark, databricks
+CONCAT(tbl.array_col, tbl.str_col);
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.str_col, tbl.array_col);
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.array_col, tbl.bin_col);
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.bin_col, tbl.array_col);
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.array_col, 'x');
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
+CONCAT('x', tbl.array_col);
+UNKNOWN;
+
+# dialect: spark2, spark, databricks
 LPAD(tbl.str_col, 10, '0');
 STRING;
 

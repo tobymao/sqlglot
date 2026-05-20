@@ -70,6 +70,8 @@ class Oracle(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
+            # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Comparison-Conditions.html
+            "^=": TokenType.NEQ,
             "BINARY_DOUBLE": TokenType.DOUBLE,
             "BINARY_FLOAT": TokenType.FLOAT,
             "BULK COLLECT INTO": TokenType.BULK_COLLECT_INTO,

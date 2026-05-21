@@ -103,7 +103,12 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
                 _advance()
 
             expr_type = exp.JSONPathScript if script else exp.JSONPathFilter
-            return expr_type(this=path[tokens[start].start : tokens[i].end])
+            # The loop above also stops at the end of the token stream, where
+            # `i == size`; fall back to the last token so an unclosed filter
+            # surfaces as a ParseError (from the unmatched `]` below) instead
+            # of an IndexError.
+            end = tokens[i].end if i < size else tokens[-1].end
+            return expr_type(this=path[tokens[start].start : end])
 
         number = "-" if _match(TokenType.DASH) else ""
 

@@ -6507,6 +6507,18 @@ BIGINT;
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
 DOUBLE;
 
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.bigint_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+DOUBLE;
+
 # dialect: duckdb
 QUANTILE_DISC(tbl.int_col, 0.5);
 INT;

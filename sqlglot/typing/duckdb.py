@@ -49,6 +49,7 @@ EXPRESSION_METADATA = {
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
+    exp.PercentileDisc: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},
     exp.ToDays: {"returns": exp.DType.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DType.TIME},

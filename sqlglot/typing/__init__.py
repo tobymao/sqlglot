@@ -98,6 +98,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Asin,
             exp.Asinh,
             exp.Acos,
+            exp.CovarPop,
+            exp.CovarSamp,
             exp.Acosh,
             exp.ApproxQuantile,
             exp.Atan,
@@ -114,6 +116,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Log,
             exp.Pi,
             exp.Pow,
+            exp.PercentileCont,
             exp.Quantile,
             exp.Radians,
             exp.Round,
@@ -369,5 +372,6 @@ EXPRESSION_METADATA: ExprMetadataType = {
     },
     exp.ToMap: {"annotator": lambda self, e: self._annotate_to_map(e)},
     exp.Unnest: {"annotator": lambda self, e: self._annotate_unnest(e)},
+    exp.WithinGroup: {"annotator": lambda self, e: self._annotate_within_group(e)},
     exp.Subquery: {"annotator": lambda self, e: self._annotate_subquery(e)},
 }

@@ -6470,3 +6470,67 @@ DOUBLE;
 
 NTH_VALUE(tbl.str_col, 2) OVER (ORDER BY tbl.int_col);
 TEXT;
+
+--------------------------------------
+-- Aggregate functions
+--------------------------------------
+
+COVAR_POP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+COVAR_POP(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+COVAR_SAMP(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+COVAR_SAMP(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+--------------------------------------
+-- Ordered-set aggregate functions
+--------------------------------------
+
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.bigint_col);
+BIGINT;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.bigint_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+DOUBLE;
+
+# dialect: duckdb
+QUANTILE_DISC(tbl.int_col, 0.5);
+INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(tbl.int_col, 0.5);
+INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
+INT;
+
+# dialect: duckdb
+PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
+DOUBLE;

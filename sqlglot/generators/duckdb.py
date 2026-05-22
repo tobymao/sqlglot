@@ -1834,6 +1834,28 @@ class DuckDBGenerator(generator.Generator):
 
     UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
 
+    # Snowflake AUTO date/time formats not handled by DuckDB's ISO-only TRY_CAST
+    # Ref: https://docs.snowflake.com/en/sql-reference/date-time-input-output.html
+    _TRYCAST_DATE_FORMATS = ("%m/%d/%Y", "%d-%b-%Y")
+    _TRYCAST_TIMESTAMP_FORMATS = ("%d-%b-%Y", "%d-%b-%Y %H:%M:%S", "%m/%d/%Y", "%m/%d/%Y %H:%M:%S")
+    _TRYCAST_TIMESTAMP_TYPES = frozenset(
+        (exp.DType.TIMESTAMP, exp.DType.TIMESTAMPLTZ, exp.DType.TIMESTAMPNTZ, exp.DType.TIMESTAMPTZ)
+    )
+
+    # Maps Snowflake INTERVAL units to DuckDB to_*() functions
+    # Ref: https://docs.snowflake.com/en/sql-reference/data-types-datetime.html#interval-constants
+    _INTERVAL_UNIT_TO_FUNC = {
+        "YEAR": "TO_YEARS",
+        "MONTH": "TO_MONTHS",
+        "WEEK": "TO_WEEKS",
+        "DAY": "TO_DAYS",
+        "HOUR": "TO_HOURS",
+        "MINUTE": "TO_MINUTES",
+        "SECOND": "TO_SECONDS",
+        "MILLISECOND": "TO_MILLISECONDS",
+        "MICROSECOND": "TO_MICROSECONDS",
+    }
+
     # DuckDB doesn't generally support CREATE TABLE .. properties
     # https://duckdb.org/docs/sql/statements/create_table.html
     # There are a few exceptions (e.g. temporary tables) which are supported or
@@ -4316,6 +4338,78 @@ class DuckDBGenerator(generator.Generator):
                 truncate = None
 
         return self.func(func, this, decimals, truncate)
+
+    def trycast_sql(self, expression: exp.TryCast) -> str:
+        # Only Snowflake-origin TryCast nodes carry requires_string; DuckDB-native nodes pass through unchanged.
+        if not expression.args.get("requires_string"):
+            return super().trycast_sql(expression)
+
+        src, to, to_type = expression.this, expression.to, expression.to.this
+
+        # INTERVAL: TRY_CAST to INT first (preserves NULL for non-numeric input), then call to_*().
+        if isinstance(to_type, exp.Interval):
+            unit = to_type.unit.name.upper() if to_type.unit else ""
+            int_src = exp.TryCast(this=src.copy(), to=exp.DataType.build("INT"))
+
+            # No TO_QUARTERS in DuckDB; 1 quarter = 3 months
+            if unit == "QUARTER":
+                return self.func(
+                    "TO_MONTHS", exp.Mul(this=int_src, expression=exp.Literal.number(3))
+                )
+
+            if duckdb_func := self._INTERVAL_UNIT_TO_FUNC.get(unit):
+                return self.func(duckdb_func, int_src)
+
+            self.unsupported(f"DuckDB does not support TRY_CAST of strings to INTERVAL {unit}")
+            return super().trycast_sql(expression)
+
+        # DATE: DuckDB TRY_CAST only handles ISO-8601; COALESCE adds non-ISO format fallbacks.
+        if to_type == exp.DType.DATE:
+            return self.sql(
+                exp.Coalesce(
+                    this=exp.TryCast(this=src.copy(), to=to),
+                    expressions=[
+                        exp.cast(
+                            exp.func("TRY_STRPTIME", src.copy(), exp.Literal.string(f)), "DATE"
+                        )
+                        for f in self._TRYCAST_DATE_FORMATS
+                    ],
+                )
+            )
+
+        # TIMESTAMP variants: same ISO-only gap; four formats cover date-only and datetime non-ISO inputs.
+        if to_type in self._TRYCAST_TIMESTAMP_TYPES:
+            return self.sql(
+                exp.Coalesce(
+                    this=exp.TryCast(this=src.copy(), to=to),
+                    expressions=[
+                        exp.func("TRY_STRPTIME", src.copy(), exp.Literal.string(f))
+                        for f in self._TRYCAST_TIMESTAMP_FORMATS
+                    ],
+                )
+            )
+
+        # TEXT(n): DuckDB ignores the length constraint — enforce Snowflake's NULL-on-overflow via LENGTH check.
+        if to_type in exp.DataType.TEXT_TYPES and to.expressions:
+            return self.sql(
+                exp.case()
+                .when(
+                    exp.LTE(this=exp.func("LENGTH", src.copy()), expression=to.expressions[0].this),
+                    exp.cast(src.copy(), "TEXT"),
+                )
+                .else_(exp.Null())
+            )
+
+        # BOOLEAN: DuckDB rejects 'on'/'off' (returns NULL); patch those two values, delegate the rest natively.
+        if to_type == exp.DType.BOOLEAN:
+            return self.sql(
+                exp.case(exp.func("LOWER", src.copy()))
+                .when(exp.Literal.string("on"), exp.true())
+                .when(exp.Literal.string("off"), exp.false())
+                .else_(exp.TryCast(this=src.copy(), to=to))
+            )
+
+        return super().trycast_sql(expression)
 
     def strtok_sql(self, expression: exp.Strtok) -> str:
         string_arg = expression.this

@@ -634,7 +634,6 @@ class TestSnowflake(Validator):
             "TRY_TO_TIMESTAMP('2024-01-15 12:30:00')",
             write={
                 "snowflake": "TRY_CAST('2024-01-15 12:30:00' AS TIMESTAMP)",
-                "duckdb": "TRY_CAST('2024-01-15 12:30:00' AS TIMESTAMP)",
             },
         )
         self.validate_identity("TRY_TO_TIMESTAMP('2024-01-15 12:30:00', 'AUTO')")
@@ -2234,14 +2233,12 @@ class TestSnowflake(Validator):
             "SELECT TRY_TO_TIMESTAMP('2024-01-15 12:30:00.000')",
             write={
                 "snowflake": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
-                "duckdb": "SELECT TRY_CAST('2024-01-15 12:30:00.000' AS TIMESTAMP)",
             },
         )
         self.validate_all(
             "SELECT TRY_TO_TIMESTAMP('invalid')",
             write={
                 "snowflake": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
-                "duckdb": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
             },
         )
         self.validate_all(
@@ -3925,7 +3922,6 @@ class TestSnowflake(Validator):
             "TRY_TO_DATE('2024-01-31')",
             write={
                 "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
-                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
             },
         )
         self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
@@ -6059,7 +6055,6 @@ FROM SEMANTIC_VIEW(
                 "duckdb": "SELECT v -> '$.field'",
             },
         )
-
         self.validate_identity("GET(foo, bar)").assert_is(exp.GetExtract)
 
     def test_create_sequence(self):

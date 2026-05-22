@@ -113,3 +113,7 @@ SELECT t1.c1 > _u_0.b FROM x JOIN GENERATE_SERIES((SELECT MAX(x.a) FROM x AS x),
 # title: correlated scalar subquery with EQ + range predicates inside a function in SELECT should not crash (issue #7295)
 SELECT COALESCE((SELECT MAX(b.val) FROM t b WHERE b.val < a.val AND b.id = a.id), a.val) AS result FROM t a;
 SELECT COALESCE((SELECT MAX(b.val) FROM t AS b WHERE b.val < a.val AND b.id = a.id), a.val) AS result FROM t AS a;
+
+# title: IN with UNION ALL subquery should use derived alias in wrapper SELECT
+SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);
+SELECT * FROM x LEFT JOIN (SELECT _u_0.a AS a FROM (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z) AS _u_0 GROUP BY _u_0.a) AS _u_1 ON x.a = _u_1.a WHERE NOT _u_1.a IS NULL;

@@ -53,6 +53,9 @@ def unnest(select, parent_select, next_alias_name):
         )
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
+        # NOT IN has three-valued semantics that the LEFT-JOIN-anti rewrite doesn't preserve:
+        # a NULL in the subquery makes NOT IN evaluate to NULL for every outer row.
+        or (isinstance(predicate, exp.In) and isinstance(predicate.parent, exp.Not))
     ):
         return
 

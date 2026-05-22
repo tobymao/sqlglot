@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     build_like,
 )
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.trie import new_trie
 from sqlglot.tokens import Token, TokenType
 from builtins import type as Type
@@ -832,6 +832,7 @@ class ClickHouseParser(parser.Parser):
         expressions = []
 
         while True:
+            expression: exp.Expr | list[exp.Expr] | None
             if self._match_text_seq("COLUMNS"):
                 expression = self._parse_schema(this=exp.var("COLUMNS"))
             elif self._match_texts(
@@ -844,7 +845,7 @@ class ClickHouseParser(parser.Parser):
             if not expression:
                 break
 
-            expressions.append(expression)
+            expressions.extend(ensure_list(expression))
 
         return expressions
 
@@ -886,7 +887,7 @@ class ClickHouseParser(parser.Parser):
 
         return self.expression(exp.Properties(expressions=properties)) if properties else None
 
-    def _parse_describe(self) -> exp.Describe | exp.Command:
+    def _parse_describe(self) -> exp.Describe | exp.Command:  # type: ignore[override]
         if self._prev.text.upper() != "EXPLAIN":
             return super()._parse_describe()
 
@@ -901,6 +902,8 @@ class ClickHouseParser(parser.Parser):
             style = self._prev.text.upper()
 
         properties = None if style == "TABLE OVERRIDE" else self._parse_explain_settings()
+
+        this: exp.Expr | None
 
         if style == "TABLE OVERRIDE":
             this = self._parse_table_parts()

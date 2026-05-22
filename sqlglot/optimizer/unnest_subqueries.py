@@ -58,13 +58,12 @@ def unnest(select, parent_select, next_alias_name):
 
     if isinstance(select, exp.SetOperation):
         inner_alias = next_alias_name()
-        select = (
-            exp.select(*(
+        select = exp.select(
+            *(
                 exp.alias_(exp.column(s.alias_or_name, inner_alias), s.alias_or_name)
                 for s in select.selects
-            ))
-            .from_(select.subquery(inner_alias))
-        )
+            )
+        ).from_(select.subquery(inner_alias))
 
     alias = next_alias_name()
     clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)

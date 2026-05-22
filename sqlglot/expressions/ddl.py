@@ -191,6 +191,7 @@ class SetItem(Expression):
 class Show(Expression):
     arg_types = {
         "this": True,
+        "expressions": False,
         "history": False,
         "terse": False,
         "target": False,
@@ -199,6 +200,8 @@ class Show(Expression):
         "limit": False,
         "from_": False,
         "like": False,
+        "ilike": False,
+        "not_": False,
         "where": False,
         "db": False,
         "scope": False,
@@ -217,6 +220,9 @@ class Show(Expression):
         "for_user": False,
         "for_role": False,
         "into_outfile": False,
+        "format": False,
+        "implicit": False,
+        "final": False,
         "json": False,
         "iceberg": False,
     }

@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     build_like,
 )
 from sqlglot.helper import seq_get
+from sqlglot.trie import new_trie
 from sqlglot.tokens import Token, TokenType
 from builtins import type as Type
 
@@ -70,6 +71,15 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
     )
+
+
+def _show_parser(
+    name: str, *args: t.Any, **kwargs: t.Any
+) -> t.Callable[[ClickHouseParser], exp.Show | None]:
+    def _parse(self: ClickHouseParser) -> exp.Show | None:
+        return getattr(self, name)(*args, **kwargs)
+
+    return _parse
 
 
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
@@ -459,7 +469,473 @@ class ClickHouseParser(parser.Parser):
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.DETACH: lambda self: self._parse_detach(),
+        TokenType.SHOW: lambda self: self._parse_show(),
     }
+
+    SHOW_PARSERS = {
+        "CREATE TABLE": _show_parser(
+            "_parse_show_target", "CREATE TABLE", allow_into_outfile=True, allow_format=True
+        ),
+        "CREATE TEMPORARY TABLE": _show_parser(
+            "_parse_show_target",
+            "CREATE TEMPORARY TABLE",
+            allow_into_outfile=True,
+            allow_format=True,
+        ),
+        "CREATE DICTIONARY": _show_parser(
+            "_parse_show_target", "CREATE DICTIONARY", allow_into_outfile=True, allow_format=True
+        ),
+        "CREATE VIEW": _show_parser(
+            "_parse_show_target", "CREATE VIEW", allow_into_outfile=True, allow_format=True
+        ),
+        "CREATE DATABASE": _show_parser(
+            "_parse_show_target", "CREATE DATABASE", allow_into_outfile=True, allow_format=True
+        ),
+        "CREATE POLICY": _show_parser("_parse_show_on_expressions", "CREATE POLICY"),
+        "CREATE ROW POLICY": _show_parser("_parse_show_on_expressions", "CREATE ROW POLICY"),
+        "CREATE MASKING POLICY": _show_parser(
+            "_parse_show_on_expressions", "CREATE MASKING POLICY"
+        ),
+        "CREATE USER": _show_parser("_parse_show_expressions", "CREATE USER"),
+        "CREATE ROLE": _show_parser("_parse_show_expressions", "CREATE ROLE"),
+        "CREATE QUOTA": _show_parser("_parse_show_expressions", "CREATE QUOTA"),
+        "CREATE PROFILE": _show_parser("_parse_show_expressions", "CREATE PROFILE"),
+        "CREATE SETTINGS PROFILE": _show_parser(
+            "_parse_show_expressions", "CREATE SETTINGS PROFILE"
+        ),
+        "DATABASES": _show_parser("_parse_show_databases"),
+        "FULL TEMPORARY TABLES": _show_parser("_parse_show_tables", "FULL TEMPORARY TABLES"),
+        "FULL TABLES": _show_parser("_parse_show_tables", "FULL TABLES"),
+        "TEMPORARY TABLES": _show_parser("_parse_show_tables", "TEMPORARY TABLES"),
+        "TABLES": _show_parser("_parse_show_tables", "TABLES"),
+        "EXTENDED FULL COLUMNS": _show_parser("_parse_show_columns", "EXTENDED FULL COLUMNS"),
+        "EXTENDED COLUMNS": _show_parser("_parse_show_columns", "EXTENDED COLUMNS"),
+        "FULL COLUMNS": _show_parser("_parse_show_columns", "FULL COLUMNS"),
+        "COLUMNS": _show_parser("_parse_show_columns", "COLUMNS"),
+        "DICTIONARIES": _show_parser("_parse_show_dictionaries"),
+        "EXTENDED INDEX": _show_parser("_parse_show_indexes", "EXTENDED INDEX"),
+        "EXTENDED INDEXES": _show_parser("_parse_show_indexes", "EXTENDED INDEXES"),
+        "EXTENDED INDICES": _show_parser("_parse_show_indexes", "EXTENDED INDICES"),
+        "EXTENDED KEYS": _show_parser("_parse_show_indexes", "EXTENDED KEYS"),
+        "INDEX": _show_parser("_parse_show_indexes", "INDEX"),
+        "INDEXES": _show_parser("_parse_show_indexes", "INDEXES"),
+        "INDICES": _show_parser("_parse_show_indexes", "INDICES"),
+        "KEYS": _show_parser("_parse_show_indexes", "KEYS"),
+        "PROCESSLIST": _show_parser(
+            "_parse_show_output_only", "PROCESSLIST", allow_into_outfile=True, allow_format=True
+        ),
+        "GRANTS": _show_parser("_parse_show_grants"),
+        "TABLE": _show_parser(
+            "_parse_show_target", "TABLE", allow_into_outfile=True, allow_format=True
+        ),
+        "TEMPORARY TABLE": _show_parser(
+            "_parse_show_target", "TEMPORARY TABLE", allow_into_outfile=True, allow_format=True
+        ),
+        "DICTIONARY": _show_parser(
+            "_parse_show_target", "DICTIONARY", allow_into_outfile=True, allow_format=True
+        ),
+        "VIEW": _show_parser(
+            "_parse_show_target", "VIEW", allow_into_outfile=True, allow_format=True
+        ),
+        "DATABASE": _show_parser(
+            "_parse_show_target", "DATABASE", allow_into_outfile=True, allow_format=True
+        ),
+        "USERS": _show_parser("_parse_show_simple", "USERS"),
+        "CURRENT ROLES": _show_parser("_parse_show_simple", "CURRENT ROLES"),
+        "ENABLED ROLES": _show_parser("_parse_show_simple", "ENABLED ROLES"),
+        "ROLES": _show_parser("_parse_show_simple", "ROLES"),
+        "PROFILES": _show_parser("_parse_show_simple", "PROFILES"),
+        "ROW POLICIES": _show_parser("_parse_show_policies", "ROW POLICIES"),
+        "POLICIES": _show_parser("_parse_show_policies", "POLICIES"),
+        "QUOTAS": _show_parser("_parse_show_simple", "QUOTAS"),
+        "CURRENT QUOTA": _show_parser("_parse_show_simple", "CURRENT QUOTA"),
+        "QUOTA": _show_parser("_parse_show_simple", "QUOTA"),
+        "ACCESS": _show_parser("_parse_show_simple", "ACCESS"),
+        "CLUSTER": _show_parser("_parse_show_target", "CLUSTER", allow_format=True),
+        "CLUSTERS": _show_parser("_parse_show_clusters"),
+        "CHANGED SETTINGS": _show_parser("_parse_show_settings", "CHANGED SETTINGS"),
+        "SETTINGS": _show_parser("_parse_show_settings_or_profiles"),
+        "SETTING": _show_parser("_parse_show_target", "SETTING"),
+        "FILESYSTEM CACHES": _show_parser("_parse_show_simple", "FILESYSTEM CACHES"),
+        "ENGINES": _show_parser(
+            "_parse_show_output_only", "ENGINES", allow_into_outfile=True, allow_format=True
+        ),
+        "FUNCTIONS": _show_parser("_parse_show_functions"),
+        "MERGES": _show_parser("_parse_show_merges"),
+    }
+
+    SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+
+    def _show(self, this: str, **kwargs: t.Any) -> exp.Show:
+        return self.expression(exp.Show(this=this, **kwargs))
+
+    def _parse_show_expression(self) -> exp.Expr | None:
+        return (
+            self._parse_string()
+            or self._parse_primary()
+            or self._parse_table_parts()
+            or self._parse_var(any_token=True)
+        )
+
+    def _parse_show_expression_list(self) -> list[exp.Expr]:
+        return self._parse_csv(self._parse_show_expression)
+
+    def _parse_show_like(
+        self, allow_not: bool = True
+    ) -> tuple[exp.Expr | None, bool | None, bool | None]:
+        index = self._index
+        not_ = self._match(TokenType.NOT) if allow_not else False
+
+        if self._match_set((TokenType.LIKE, TokenType.ILIKE)):
+            ilike = self._prev.token_type == TokenType.ILIKE
+            like = self._parse_string() or self._parse_var(any_token=True)
+            if like:
+                return like, ilike, not_ or None
+
+        self._retreat(index)
+        return None, None, None
+
+    def _parse_show_output(
+        self, allow_into_outfile: bool = False, allow_format: bool = False
+    ) -> tuple[exp.Expr | None, exp.Expr | None] | None:
+        index = self._index
+        into_outfile = None
+        format = None
+
+        if allow_into_outfile and self._match_text_seq("INTO", "OUTFILE"):
+            into_outfile = self._parse_string() or self._parse_var(any_token=True)
+            if not into_outfile:
+                self._retreat(index)
+                return None
+
+        if allow_format and self._match(TokenType.FORMAT):
+            format = self._parse_id_var(any_token=True) or self._parse_string()
+            if not format:
+                self._retreat(index)
+                return None
+
+        return into_outfile, format
+
+    def _parse_show(self) -> exp.Show | exp.Command:
+        start = self._prev
+        parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)
+
+        if not parser:
+            return self._parse_as_command(start)
+
+        expression = parser(self)
+        return expression if expression and not self._curr else self._parse_as_command(start)
+
+    def _parse_show_simple(self, this: str) -> exp.Show:
+        return self._show(this)
+
+    def _parse_show_target(
+        self, this: str, allow_into_outfile: bool = False, allow_format: bool = False
+    ) -> exp.Show | None:
+        target = self._parse_show_expression()
+        if not target:
+            return None
+
+        output = self._parse_show_output(
+            allow_into_outfile=allow_into_outfile, allow_format=allow_format
+        )
+        if output is None:
+            return None
+
+        into_outfile, format = output
+        return self._show(this, target=target, into_outfile=into_outfile, format=format)
+
+    def _parse_show_expressions(self, this: str) -> exp.Show | None:
+        expressions = self._parse_show_expression_list()
+        return self._show(this, expressions=expressions) if expressions else None
+
+    def _parse_show_on_expressions(self, this: str) -> exp.Show | None:
+        target = self._parse_show_expression()
+        if not target or not self._match(TokenType.ON):
+            return None
+
+        expressions = self._parse_show_expression_list()
+        return self._show(this, target=target, expressions=expressions) if expressions else None
+
+    def _parse_show_like_limit_output(
+        self,
+        this: str,
+        allow_not: bool = True,
+        allow_limit: bool = True,
+        allow_into_outfile: bool = False,
+        allow_format: bool = False,
+        **kwargs: t.Any,
+    ) -> exp.Show | None:
+        like, ilike, not_ = self._parse_show_like(allow_not=allow_not)
+        limit = self._parse_limit() if allow_limit else None
+        output = self._parse_show_output(
+            allow_into_outfile=allow_into_outfile, allow_format=allow_format
+        )
+        if output is None:
+            return None
+
+        into_outfile, format = output
+        return self._show(
+            this,
+            like=like,
+            ilike=ilike,
+            not_=not_,
+            limit=limit,
+            into_outfile=into_outfile,
+            format=format,
+            **kwargs,
+        )
+
+    def _parse_show_output_only(
+        self, this: str, allow_into_outfile: bool = False, allow_format: bool = False
+    ) -> exp.Show | None:
+        output = self._parse_show_output(
+            allow_into_outfile=allow_into_outfile, allow_format=allow_format
+        )
+        if output is None:
+            return None
+
+        into_outfile, format = output
+        return self._show(this, into_outfile=into_outfile, format=format)
+
+    def _parse_show_databases(self) -> exp.Show | None:
+        return self._parse_show_like_limit_output(
+            "DATABASES", allow_into_outfile=True, allow_format=True
+        )
+
+    def _parse_show_tables(self, this: str) -> exp.Show | None:
+        db = (
+            self._parse_show_expression()
+            if self._match_set((TokenType.FROM, TokenType.IN))
+            else None
+        )
+        return self._parse_show_like_limit_output(
+            this,
+            allow_into_outfile=True,
+            allow_format=True,
+            db=db,
+        )
+
+    def _parse_show_columns(self, this: str) -> exp.Show | None:
+        if not self._match_set((TokenType.FROM, TokenType.IN)):
+            return None
+
+        target = self._parse_show_expression()
+        if not target:
+            return None
+
+        db = (
+            self._parse_show_expression()
+            if self._match_set((TokenType.FROM, TokenType.IN))
+            else None
+        )
+        like, ilike, not_ = self._parse_show_like()
+        where = None if like is not None else self._parse_where()
+        limit = self._parse_limit()
+        output = self._parse_show_output(allow_into_outfile=True, allow_format=True)
+        if output is None:
+            return None
+
+        into_outfile, format = output
+        return self._show(
+            this,
+            target=target,
+            db=db,
+            like=like,
+            ilike=ilike,
+            not_=not_,
+            where=where,
+            limit=limit,
+            into_outfile=into_outfile,
+            format=format,
+        )
+
+    def _parse_show_dictionaries(self) -> exp.Show | None:
+        db = self._parse_show_expression() if self._match(TokenType.FROM) else None
+        return self._parse_show_like_limit_output(
+            "DICTIONARIES",
+            allow_into_outfile=True,
+            allow_format=True,
+            db=db,
+        )
+
+    def _parse_show_indexes(self, this: str) -> exp.Show | None:
+        if not self._match_set((TokenType.FROM, TokenType.IN)):
+            return None
+
+        target = self._parse_show_expression()
+        if not target:
+            return None
+
+        db = (
+            self._parse_show_expression()
+            if self._match_set((TokenType.FROM, TokenType.IN))
+            else None
+        )
+        where = self._parse_where()
+        output = self._parse_show_output(allow_into_outfile=True, allow_format=True)
+        if output is None:
+            return None
+
+        into_outfile, format = output
+        return self._show(
+            this,
+            target=target,
+            db=db,
+            where=where,
+            into_outfile=into_outfile,
+            format=format,
+        )
+
+    def _parse_show_grants(self) -> exp.Show | None:
+        expressions = None
+        if self._match(TokenType.FOR):
+            expressions = self._parse_show_expression_list()
+            if not expressions:
+                return None
+
+        return self._show(
+            "GRANTS",
+            expressions=expressions,
+            implicit=self._match_text_seq("WITH", "IMPLICIT"),
+            final=self._match_text_seq("FINAL"),
+        )
+
+    def _parse_show_policies(self, this: str) -> exp.Show | None:
+        target = None
+        if self._match(TokenType.ON):
+            target = self._parse_show_expression()
+            if not target:
+                return None
+
+        return self._show(this, target=target)
+
+    def _parse_show_clusters(self) -> exp.Show | None:
+        return self._parse_show_like_limit_output("CLUSTERS")
+
+    def _parse_show_settings(self, this: str) -> exp.Show | None:
+        return self._parse_show_like_limit_output(this, allow_not=False, allow_limit=False)
+
+    def _parse_show_settings_or_profiles(self) -> exp.Show | None:
+        if self._match_text_seq("PROFILES"):
+            return self._show("SETTINGS PROFILES")
+
+        return self._parse_show_settings("SETTINGS")
+
+    def _parse_show_functions(self) -> exp.Show | None:
+        return self._parse_show_like_limit_output("FUNCTIONS", allow_not=False, allow_limit=False)
+
+    def _parse_show_merges(self) -> exp.Show | None:
+        return self._parse_show_like_limit_output("MERGES")
+
+    def _parse_explain_table_override_expressions(self) -> list[exp.Expr]:
+        expressions = []
+
+        while True:
+            if self._match_text_seq("COLUMNS"):
+                expression = self._parse_schema(this=exp.var("COLUMNS"))
+            elif self._match_texts(
+                ("ORDER BY", "PARTITION BY", "PRIMARY KEY", "SAMPLE", "TTL"), advance=False
+            ):
+                expression = self._parse_property()
+            else:
+                break
+
+            if not expression:
+                break
+
+            expressions.append(expression)
+
+        return expressions
+
+    def _parse_explain_setting(self) -> exp.Property | None:
+        index = self._index
+        key = self._parse_column() or self._parse_var(any_token=True)
+
+        if not key or not self._match(TokenType.EQ):
+            self._retreat(index)
+            return None
+
+        if isinstance(key, exp.Column):
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
+
+        value = self._parse_bitwise() or self._parse_var(any_token=True)
+        if isinstance(value, exp.Column):
+            value = exp.var(value.name)
+
+        if value is None:
+            self._retreat(index)
+            return None
+
+        return self.expression(exp.Property(this=key, value=value))
+
+    def _parse_explain_settings(self) -> exp.Properties | None:
+        properties = []
+
+        while not self._match_set(
+            {*self.STATEMENT_PARSERS, *self.SELECT_START_TOKENS}, advance=False
+        ):
+            property = self._parse_explain_setting()
+            if not property:
+                break
+
+            properties.append(property)
+
+            if not self._match(TokenType.COMMA):
+                break
+
+        return self.expression(exp.Properties(expressions=properties)) if properties else None
+
+    def _parse_describe(self) -> exp.Describe | exp.Command:
+        if self._prev.text.upper() != "EXPLAIN":
+            return super()._parse_describe()
+
+        start = self._prev
+        style = None
+
+        if self._match_text_seq("QUERY", "TREE"):
+            style = "QUERY TREE"
+        elif self._match_text_seq("TABLE", "OVERRIDE"):
+            style = "TABLE OVERRIDE"
+        elif self._match_texts(("AST", "SYNTAX", "PLAN", "PIPELINE", "ESTIMATE")):
+            style = self._prev.text.upper()
+
+        properties = None if style == "TABLE OVERRIDE" else self._parse_explain_settings()
+
+        if style == "TABLE OVERRIDE":
+            this = self._parse_table_parts()
+            expressions = self._parse_explain_table_override_expressions()
+        else:
+            if not self._match_set(
+                {*self.STATEMENT_PARSERS, *self.SELECT_START_TOKENS}, advance=False
+            ):
+                return self._parse_as_command(start)
+            this = self._parse_statement()
+            expressions = None
+
+        if not this:
+            return self._parse_as_command(start)
+
+        format = None
+        if isinstance(this, exp.Query):
+            format = this.args.pop("format", None)
+
+        if format is None and self._match(TokenType.FORMAT):
+            format = self._parse_id_var(any_token=True) or self._parse_string()
+            if format is None:
+                return self._parse_as_command(start)
+
+        expression = self.expression(
+            exp.Describe(
+                this=this,
+                kind="EXPLAIN",
+                style=style,
+                properties=properties,
+                expressions=expressions,
+                format=format,
+            )
+        )
+        return expression if not self._curr else self._parse_as_command(start)
 
     def _parse_wrapped_select_or_assignment(self) -> exp.Expr | None:
         return self._parse_wrapped(

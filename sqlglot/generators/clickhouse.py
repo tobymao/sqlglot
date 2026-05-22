@@ -416,6 +416,119 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
+    SHOW_SPACE_TARGET_KINDS = {
+        "TABLE",
+        "TEMPORARY TABLE",
+        "DICTIONARY",
+        "VIEW",
+        "DATABASE",
+        "CREATE TABLE",
+        "CREATE TEMPORARY TABLE",
+        "CREATE DICTIONARY",
+        "CREATE VIEW",
+        "CREATE DATABASE",
+        "CREATE POLICY",
+        "CREATE ROW POLICY",
+        "CREATE MASKING POLICY",
+        "CLUSTER",
+        "SETTING",
+    }
+
+    SHOW_SPACE_EXPRESSIONS_KINDS = {
+        "CREATE USER",
+        "CREATE ROLE",
+        "CREATE QUOTA",
+        "CREATE PROFILE",
+        "CREATE SETTINGS PROFILE",
+    }
+
+    SHOW_ON_TARGET_KINDS = {"POLICIES", "ROW POLICIES"}
+
+    SHOW_ON_EXPRESSIONS_KINDS = {
+        "CREATE POLICY",
+        "CREATE ROW POLICY",
+        "CREATE MASKING POLICY",
+    }
+
+    def _show_like_sql(self, expression: exp.Show) -> str:
+        like = self.sql(expression, "like")
+        if not like:
+            return ""
+
+        not_ = " NOT" if expression.args.get("not_") else ""
+        operator = "ILIKE" if expression.args.get("ilike") else "LIKE"
+        return f"{not_} {operator} {like}"
+
+    def show_sql(self, expression: exp.Show) -> str:
+        name = expression.name
+        sql = f"SHOW {name}"
+
+        target = self.sql(expression, "target")
+        if target:
+            if name.endswith("COLUMNS") or name.endswith(("INDEX", "INDEXES", "INDICES", "KEYS")):
+                sql = f"{sql} FROM {target}"
+            elif name in self.SHOW_ON_TARGET_KINDS:
+                sql = f"{sql} ON {target}"
+            elif name in self.SHOW_SPACE_TARGET_KINDS:
+                sql = f"{sql} {target}"
+
+        expressions = self.expressions(expression, flat=True)
+        if expressions:
+            if name == "GRANTS":
+                sql = f"{sql} FOR {expressions}"
+            elif name in self.SHOW_ON_EXPRESSIONS_KINDS:
+                sql = f"{sql} ON {expressions}"
+            elif name in self.SHOW_SPACE_EXPRESSIONS_KINDS:
+                sql = f"{sql} {expressions}"
+
+        db = self.sql(expression, "db")
+        if db:
+            sql = f"{sql} FROM {db}"
+
+        like = self._show_like_sql(expression)
+        like = f"{like}" if like else ""
+
+        where = self.sql(expression, "where")
+
+        limit = self.sql(expression, "limit")
+
+        into_outfile = self.sql(expression, "into_outfile")
+        into_outfile = f" INTO OUTFILE {into_outfile}" if into_outfile else ""
+
+        format = self.sql(expression, "format")
+        format = f" FORMAT {format}" if format else ""
+
+        implicit = " WITH IMPLICIT" if expression.args.get("implicit") else ""
+        final = " FINAL" if expression.args.get("final") else ""
+
+        return f"{sql}{like}{where}{limit}{into_outfile}{format}{implicit}{final}"
+
+    def describe_sql(self, expression: exp.Describe) -> str:
+        if expression.args.get("kind") != "EXPLAIN":
+            return super().describe_sql(expression)
+
+        style = expression.args.get("style")
+        style = f" {style}" if style else ""
+
+        properties = ""
+        if props := expression.args.get("properties"):
+            properties = ", ".join(
+                f"{self.sql(prop, 'this')} = {self.sql(prop, 'value')}"
+                for prop in props.expressions
+            )
+            properties = f" {properties}" if properties else ""
+
+        this = self.sql(expression, "this")
+
+        expression_parts = [self.sql(e).strip() for e in expression.args.get("expressions") or []]
+        expression_parts = [part for part in expression_parts if part]
+        expressions = f" {' '.join(expression_parts)}" if expression_parts else ""
+
+        format = self.sql(expression, "format")
+        format = f" FORMAT {format}" if format else ""
+
+        return f"EXPLAIN{style}{properties} {this}{expressions}{format}"
+
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this
         separator = expression.args.get("separator")

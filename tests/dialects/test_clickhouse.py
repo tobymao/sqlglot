@@ -1760,6 +1760,124 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
 
+    def test_show_and_explain(self):
+        show_identity = (
+            "SHOW DATABASES",
+            "SHOW DATABASES NOT ILIKE '%de%' LIMIT 2 INTO OUTFILE 'dbs.txt' FORMAT TSVRaw",
+            "SHOW FULL TEMPORARY TABLES FROM system ILIKE '%USER%' LIMIT 2 INTO OUTFILE 'tables.txt' FORMAT TSVRaw",
+            "SHOW EXTENDED FULL COLUMNS FROM system.numbers LIKE 'number%' LIMIT 1 INTO OUTFILE 'columns.txt' FORMAT TSVRaw",
+            "SHOW DICTIONARIES FROM db LIKE '%reg%' LIMIT 2 INTO OUTFILE 'dicts.txt' FORMAT TSVRaw",
+            "SHOW EXTENDED INDEXES FROM 'tbl' WHERE visible = 'YES' INTO OUTFILE 'indexes.txt' FORMAT TSVRaw",
+            "SHOW PROCESSLIST INTO OUTFILE 'processes.txt' FORMAT TSVRaw",
+            "SHOW GRANTS FOR user1, user2 WITH IMPLICIT FINAL",
+            "SHOW CREATE USER CURRENT_USER",
+            "SHOW CREATE ROLE role1, role2",
+            "SHOW CREATE ROW POLICY policy1 ON db.table1, table2",
+            "SHOW CREATE QUOTA CURRENT",
+            "SHOW CREATE SETTINGS PROFILE profile1, profile2",
+            "SHOW USERS",
+            "SHOW CURRENT ROLES",
+            "SHOW ENABLED ROLES",
+            "SHOW SETTINGS PROFILES",
+            "SHOW ROW POLICIES ON db.table",
+            "SHOW QUOTAS",
+            "SHOW CURRENT QUOTA",
+            "SHOW ACCESS",
+            "SHOW CLUSTER 'test_shard_localhost' FORMAT Vertical",
+            "SHOW CLUSTERS LIKE 'test%' LIMIT 1",
+            "SHOW CHANGED SETTINGS ILIKE '%MEMORY%'",
+            "SHOW SETTING send_timeout",
+            "SHOW FILESYSTEM CACHES",
+            "SHOW ENGINES INTO OUTFILE 'engines.txt' FORMAT TSVRaw",
+            "SHOW FUNCTIONS ILIKE '%connect_%'",
+            "SHOW MERGES NOT LIKE 'your_t%' LIMIT 1",
+            "SHOW CREATE MASKING POLICY mask1 ON db.table1",
+            "SHOW CREATE TEMPORARY TABLE t",
+            "SHOW TABLE t",
+            "SHOW CREATE DATABASE db1",
+        )
+
+        for sql in show_identity:
+            with self.subTest(sql):
+                self.validate_identity(sql).assert_is(exp.Show)
+
+        show_normalized = {
+            "SHOW TABLES IN system": "SHOW TABLES FROM system",
+            "SHOW COLUMNS IN tab IN db": "SHOW COLUMNS FROM tab FROM db",
+            "SHOW INDICES IN tab IN db WHERE visible = 'YES'": "SHOW INDICES FROM tab FROM db WHERE visible = 'YES'",
+        }
+
+        for sql, expected in show_normalized.items():
+            with self.subTest(sql):
+                self.validate_identity(sql, expected).assert_is(exp.Show)
+
+        explain_identity = (
+            "EXPLAIN SELECT 1",
+            "EXPLAIN SELECT 1 FORMAT TSVRaw",
+            "EXPLAIN AST SELECT 1",
+            "EXPLAIN AST ALTER TABLE t1 DELETE WHERE date = today()",
+            "EXPLAIN QUERY TREE dump_ast = 1 SELECT id, value FROM test_table",
+            "EXPLAIN PLAN json = 1, description = 0 SELECT * FROM t FORMAT TSVRaw",
+            "EXPLAIN PIPELINE graph = 1, compact = 0 SELECT sum(number) FROM numbers_mt(100000) GROUP BY number % 4",
+            "EXPLAIN ESTIMATE SELECT * FROM ttt",
+        )
+
+        for sql in explain_identity:
+            with self.subTest(sql):
+                self.validate_identity(sql).assert_is(exp.Describe)
+
+        explain_normalized = {
+            "EXPLAIN SYNTAX run_query_tree_passes = 1 SELECT * FROM system.numbers AS a, system.numbers AS b WHERE a.number = b.number": "EXPLAIN SYNTAX run_query_tree_passes = 1 SELECT * FROM system.numbers AS a CROSS JOIN system.numbers AS b WHERE a.number = b.number",
+            "EXPLAIN TABLE OVERRIDE mysql('127.0.0.1:3306', 'db', 'tbl', 'root', 'clickhouse') COLUMNS (id Int64, created Nullable(DateTime)) ORDER BY id PARTITION BY toYYYYMM(created) PRIMARY KEY id SAMPLE BY id TTL created + INTERVAL 1 DAY": "EXPLAIN TABLE OVERRIDE mysql('127.0.0.1:3306', 'db', 'tbl', 'root', 'clickhouse') COLUMNS (id Int64, created Nullable(DateTime)) ORDER BY id PARTITION BY toYYYYMM(created) PRIMARY KEY (id) SAMPLE BY id TTL created + INTERVAL '1' DAY",
+        }
+
+        for sql, expected in explain_normalized.items():
+            with self.subTest(sql):
+                self.validate_identity(sql, expected).assert_is(exp.Describe)
+
+        explain = self.validate_identity(
+            "EXPLAIN PLAN json = 1, description = 0 SELECT * FROM t FORMAT TSVRaw"
+        )
+        explain.assert_is(exp.Describe)
+        self.assertEqual(explain.args["kind"], "EXPLAIN")
+        self.assertEqual(explain.args["style"], "PLAN")
+        self.assertIsInstance(explain.args["properties"], exp.Properties)
+        self.assertEqual(len(explain.args["properties"].expressions), 2)
+        self.assertTrue(
+            all(
+                isinstance(property, exp.Property)
+                for property in explain.args["properties"].expressions
+            )
+        )
+        self.assertIsInstance(explain.args["format"], exp.Identifier)
+        self.assertIsNone(explain.this.args.get("format"))
+
+        show = self.validate_identity(
+            "SHOW FULL TEMPORARY TABLES FROM system ILIKE '%USER%' LIMIT 2 INTO OUTFILE 'tables.txt' FORMAT TSVRaw"
+        )
+        show.assert_is(exp.Show)
+        self.assertEqual(show.name, "FULL TEMPORARY TABLES")
+        self.assertIsNotNone(show.args["db"])
+        self.assertIsNotNone(show.args["like"])
+        self.assertIsNotNone(show.args["limit"])
+        self.assertIsNotNone(show.args["into_outfile"])
+        self.assertIsNotNone(show.args["format"])
+
+        grants = self.validate_identity("SHOW GRANTS FOR user1, user2 WITH IMPLICIT FINAL")
+        grants.assert_is(exp.Show)
+        self.assertTrue(grants.args["implicit"])
+        self.assertTrue(grants.args["final"])
+
+        for sql in (
+            "SHOW FOO BAR",
+            "SHOW SETTINGS max_threads",
+            "SHOW FUNCTIONS NOT LIKE 'to%'",
+            "EXPLAIN FOO BAR",
+            "EXPLAIN SELECT 1 FOO BAR",
+        ):
+            with self.subTest(sql):
+                self.assertIsInstance(parse_one(sql, dialect="clickhouse"), exp.Command)
+
     def test_functions(self):
         self.validate_identity("SELECT TRANSFORM(foo, [1, 2], ['first', 'second']) FROM table")
         self.validate_identity(

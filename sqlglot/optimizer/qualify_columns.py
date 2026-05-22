@@ -839,21 +839,6 @@ def _expand_stars(
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
 
                 if pivot_columns:
-                    names = list(pivot_columns)
-                    # When the source dialect uses IDENTIFY_PIVOT_STRINGS (e.g. Snowflake), string
-                    # literals in the PIVOT IN-list become output column names with embedded quotes
-                    # (e.g. 'JAN'). Record the full alias list on the PIVOT alias so generators can
-                    # emit it and produce columns that match these qualified references.
-                    if not pivot.unpivot and getattr(
-                        dialect.parser_class, "IDENTIFY_PIVOT_STRINGS", False
-                    ):
-                        pivot_alias = pivot.args.get("alias")
-                        if pivot_alias and not pivot_alias.args.get("columns"):
-                            pivot_alias.set(
-                                "columns",
-                                [exp.to_identifier(name, quoted=True) for name in names],
-                            )
-
                     new_selections.extend(
                         alias(exp.column(name, table=pivot.alias), name, copy=False)
                         for name in pivot_columns

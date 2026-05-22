@@ -642,7 +642,7 @@ SELECT
   "_0"."'x'" AS "'x'",
   "_0"."'y'" AS "'y'"
 FROM "U" AS "U"
-PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_0"("G", "'x'", "'y'");
+PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_0";
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)

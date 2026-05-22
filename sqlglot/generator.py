@@ -2461,6 +2461,42 @@ class Generator:
 
         return f" {tablesample_keyword or self.TABLESAMPLE_KEYWORDS} {method}{expr}{seed}"
 
+    def _pivot_in_value_aliases(self, expression: exp.Pivot) -> list[exp.Expression] | None:
+        # Returns the rewritten field.expressions list with PivotAlias wrappers injected where the
+        # stored column name (from pivot.args["columns"]) differs from the target dialect's natural
+        # name. Returns None if no rewrite is needed or applicable.
+        stored = expression.args.get("columns", [])
+        if not stored or len(expression.fields) != 1:
+            return None
+
+        # Only inject when SELECT * has already been expanded by qualify()
+        parent_select = expression.find_ancestor(exp.Select)
+        if not parent_select or any(isinstance(e, exp.Star) for e in parent_select.expressions):
+            return None
+
+        agg_aliases = [agg.alias for agg in expression.expressions if agg.alias]
+        step = len(agg_aliases) or 1
+        suffix = ("_" + agg_aliases[0]) if agg_aliases else ""
+
+        new_exprs: list[exp.Expression] = []
+        modified = False
+        i = 0
+        for e in expression.fields[0].expressions:
+            if not isinstance(e, (exp.Literal, exp.PivotAlias)):
+                return None
+            if i >= len(stored) or (suffix and not stored[i].name.endswith(suffix)):
+                return None
+            stored_name = stored[i].name[: -len(suffix)] if suffix else stored[i].name
+            if not isinstance(e, exp.PivotAlias) and stored_name.lower() != e.alias_or_name.lower():
+                new_exprs.append(
+                    exp.PivotAlias(this=e, alias=exp.to_identifier(stored_name, quoted=True))
+                )
+                modified = True
+            else:
+                new_exprs.append(e)
+            i += step
+        return new_exprs if modified else None
+
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)
         direction = "UNPIVOT" if expression.unpivot else "PIVOT"
@@ -2479,6 +2515,14 @@ class Generator:
                 using = f"{self.seg('USING')} {using}" if using else ""
                 sql = f"{direction} {this}{on}{into}{using}{group}"
             return self.prepend_ctes(expression, sql)
+
+        if not expression.unpivot:
+            # Wrap IN-list values with explicit aliases where the target dialect's natural column
+            # name would differ from the stored name recorded by the source dialect's parser.
+            new_field_exprs = self._pivot_in_value_aliases(expression)
+            if new_field_exprs is not None:
+                expression = expression.copy()
+                expression.fields[0].set("expressions", new_field_exprs)
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
@@ -3857,14 +3901,24 @@ class Generator:
         parent = expression.parent
         pivot = parent and parent.parent
 
-        if isinstance(pivot, exp.Pivot) and pivot.unpivot:
-            identifier_alias = isinstance(alias, exp.Identifier)
-            literal_alias = isinstance(alias, exp.Literal)
+        if isinstance(pivot, exp.Pivot):
+            if pivot.unpivot:
+                identifier_alias = isinstance(alias, exp.Identifier)
+                literal_alias = isinstance(alias, exp.Literal)
 
-            if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
-                alias.replace(exp.Literal.string(alias.output_name))
-            elif not identifier_alias and literal_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
-                alias.replace(exp.to_identifier(alias.output_name))
+                if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+                    alias.replace(exp.Literal.string(alias.output_name))
+                elif (
+                    not identifier_alias and literal_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS
+                ):
+                    alias.replace(exp.to_identifier(alias.output_name))
+            elif getattr(
+                getattr(self.dialect, "parser_class", None), "IDENTIFY_PIVOT_STRINGS", False
+            ):
+                # For IDENTIFY_PIVOT_STRINGS targets (e.g. Snowflake), string literals in the
+                # IN-list already produce the correct column names natively, so strip any alias
+                # that _pivot_in_value_aliases may have injected for other dialects.
+                return self.sql(expression, "this")
 
         return self.alias_sql(expression)
 

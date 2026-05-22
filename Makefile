@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast unit testc unitc leakcheck style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast test-branch unit testc unitc leakcheck style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
 
 ifdef UV
     PIP := uv pip
@@ -80,6 +80,25 @@ test: hidec
 
 test-fast:
 	python -m unittest --failfast
+
+BRANCH_BASE ?= main
+
+test-branch:
+	@changed_main=$$({ git diff origin/$(BRANCH_BASE)...HEAD --name-only 2>/dev/null; git diff HEAD --name-only; git diff --cached --name-only; } \
+	  | sort -u | grep '^tests/.*\.py$$' | grep -v '__init__' | sed 's/\.py$$//' | tr '/' '.'); \
+	changed_int=$$({ git -C sqlglot-integration-tests log --name-only --format='' origin/HEAD..HEAD 2>/dev/null; git -C sqlglot-integration-tests diff HEAD --name-only 2>/dev/null; } \
+	  | sort -u | grep '^tests/sqlglot/.*\.py$$' | grep -v '__init__'); \
+	if [ -z "$$changed_main" ] && [ -z "$$changed_int" ]; then \
+	  echo "No test files changed vs $(BRANCH_BASE)"; exit 0; \
+	fi; \
+	if [ -n "$$changed_main" ]; then \
+	  echo "Main tests:"; echo "$$changed_main" | tr ' ' '\n' | sed 's/^/  /'; \
+	  python -m unittest $$changed_main || exit 1; \
+	fi; \
+	if [ -n "$$changed_int" ]; then \
+	  echo "Integration tests:"; echo "$$changed_int" | tr ' ' '\n' | sed 's/^/  /'; \
+	  cd sqlglot-integration-tests && PYTHONPATH=. pytest $$changed_int; \
+	fi
 
 unit: hidec
 	trap '$(MAKE) showc' EXIT; SKIP_INTEGRATION=1 python -m unittest

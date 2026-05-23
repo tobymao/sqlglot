@@ -98,6 +98,37 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)",
+            read={
+                "mysql": "INSERT IGNORE INTO foo (x, y) VALUES (1, 2)",
+                "sqlite": "INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y",
+            read={
+                "postgres": "SELECT x FROM y LIMIT ALL",
+            },
+            write={
+                "postgres": "SELECT x FROM y",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y LIMIT -1 OFFSET 10",
+            read={
+                "postgres": "SELECT x FROM y OFFSET 10",
+            },
+            write={
+                "postgres": "SELECT x FROM y LIMIT -1 OFFSET 10",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM y LIMIT -1 OFFSET 10",
+            read={
+                "postgres": "SELECT x FROM y LIMIT ALL OFFSET 10",
+            },
+        )
+        self.validate_all(
             "CURRENT_DATE",
             read={
                 "": "CURRENT_DATE",

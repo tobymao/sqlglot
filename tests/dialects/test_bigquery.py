@@ -217,6 +217,7 @@ class TestBigQuery(Validator):
         for load_data_sql in (
             "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
             "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
         ):
             with self.subTest(load_data_sql=load_data_sql):
                 self.validate_identity(load_data_sql).assert_is(exp.LoadData)

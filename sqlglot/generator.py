@@ -1605,7 +1605,9 @@ class Generator:
                 )
 
             return delimited_byte_string
-        return this
+
+        # The target dialect has no byte string syntax, so fall back to a regular string literal
+        return self.sql(exp.Literal.string(this))
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         this = self.sql(expression, "this")

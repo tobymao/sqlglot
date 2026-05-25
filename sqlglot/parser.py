@@ -3592,13 +3592,17 @@ class Parser:
             self._match_text_seq("INPATH")
             inpath = self._parse_string()
             overwrite = self._match(TokenType.OVERWRITE)
-            self._match_pair(TokenType.INTO, TokenType.TABLE)
+            temp = False
+            if self._match(TokenType.INTO):
+                temp = self._match(TokenType.TEMPORARY)
+                self._match(TokenType.TABLE)
 
             return self.expression(
                 exp.LoadData(
                     this=self._parse_table(schema=True),
                     local=local,
                     overwrite=overwrite,
+                    temp=temp,
                     inpath=inpath,
                     files=self._match_text_seq("FROM", "FILES")
                     and exp.Properties(expressions=self._parse_wrapped_properties()),

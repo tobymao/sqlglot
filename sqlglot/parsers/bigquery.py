@@ -334,7 +334,6 @@ class BigQueryParser(parser.Parser):
         TokenType.END: lambda self: self._parse_as_command(self._prev),
         TokenType.FOR: lambda self: self._parse_for_in(),
         TokenType.EXPORT: lambda self: self._parse_export_data(),
-        TokenType.LOAD: lambda self: self._parse_load_data(),
         TokenType.DECLARE: lambda self: self._parse_declare(),
     }
 
@@ -710,25 +709,6 @@ class BigQueryParser(parser.Parser):
                 this=self._match_text_seq("AS") and self._parse_select(nested=True),
             )
         )
-
-    def _parse_load_data(self) -> exp.LoadData | exp.Command:
-        if self._match_text_seq("DATA"):
-            overwrite = self._match(TokenType.OVERWRITE)
-            temp = False
-            if self._match(TokenType.INTO):
-                temp = self._match(TokenType.TEMPORARY)
-                self._match(TokenType.TABLE)
-
-            return self.expression(
-                exp.LoadData(
-                    this=self._parse_table(schema=True),
-                    overwrite=overwrite,
-                    temp=temp,
-                    files=self._match_text_seq("FROM", "FILES")
-                    and exp.Properties(expressions=self._parse_wrapped_properties()),
-                )
-            )
-        return self._parse_as_command(self._prev)
 
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         func_index = self._index + 1

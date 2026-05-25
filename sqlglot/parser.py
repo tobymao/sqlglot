@@ -3592,7 +3592,7 @@ class Parser:
             self._match_text_seq("INPATH")
             inpath = self._parse_string()
             overwrite = self._match(TokenType.OVERWRITE)
-            temp: t.Optional[bool] = None
+            temp: bool | None = None
             if self._match(TokenType.INTO):
                 temp = self._match(TokenType.TEMPORARY)
                 self._match(TokenType.TABLE)

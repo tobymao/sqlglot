@@ -1605,7 +1605,12 @@ class Generator:
                 )
 
             return delimited_byte_string
-        return this
+
+        if "\\" in self.dialect.tokenizer_class.STRING_ESCAPES:
+            return self.sql(exp.Literal.string(this))
+
+        self.unsupported(f"Byte strings are not supported for {self.dialect.__class__.__name__}")
+        return ""
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         this = self.sql(expression, "this")

@@ -453,6 +453,14 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_all(
+            "SELECT E'a\\tb'",
+            write={
+                "postgres": "SELECT e'a\\tb'",
+                "mysql": "SELECT 'a\\tb'",
+                "sqlite": UnsupportedError,
+            },
+        )
+        self.validate_all(
             "SELECT CAST('2025-02-01 00:00:00' AS TIMESTAMP) - MAKE_INTERVAL(years => 1)",
             write={
                 "mysql": "SELECT CAST('2025-02-01 00:00:00' AS DATETIME) - INTERVAL 1 YEAR",
@@ -642,7 +650,9 @@ FROM json_data, field_ids""",
         self.validate_all(
             "e'x'",
             write={
-                "mysql": "x",
+                "postgres": "e'x'",
+                "mysql": "'x'",
+                "sqlite": UnsupportedError,
             },
         )
         self.validate_all(

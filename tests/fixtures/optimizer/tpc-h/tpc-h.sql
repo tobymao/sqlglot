@@ -933,15 +933,6 @@ order by
         p_brand,
         p_type,
         p_size;
-WITH "_u_0" AS (
-  SELECT
-    "supplier"."s_suppkey" AS "s_suppkey"
-  FROM "supplier" AS "supplier"
-  WHERE
-    "supplier"."s_comment" LIKE '%Customer%Complaints%'
-  GROUP BY
-    "supplier"."s_suppkey"
-)
 SELECT
   "part"."p_brand" AS "p_brand",
   "part"."p_type" AS "p_type",
@@ -953,10 +944,14 @@ JOIN "part" AS "part"
   AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
   AND "part"."p_type" NOT LIKE 'MEDIUM POLISHED%'
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."s_suppkey" = "partsupp"."ps_suppkey"
 WHERE
-  "_u_0"."s_suppkey" IS NULL
+  NOT "partsupp"."ps_suppkey" IN (
+    SELECT
+      "supplier"."s_suppkey" AS "s_suppkey"
+    FROM "supplier" AS "supplier"
+    WHERE
+      "supplier"."s_comment" LIKE '%Customer%Complaints%'
+  )
 GROUP BY
   "part"."p_brand",
   "part"."p_type",

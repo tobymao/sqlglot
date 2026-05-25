@@ -1829,6 +1829,10 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')"},
         )
         self.validate_all(
+            "SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)",
+            read={"bigquery": "SELECT PARSE_TIME('%H:%M:%E6S', '15:30:00.123456')"},
+        )
+        self.validate_all(
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
             read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
         )

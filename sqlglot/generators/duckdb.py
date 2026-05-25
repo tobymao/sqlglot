@@ -2653,10 +2653,9 @@ class DuckDBGenerator(generator.Generator):
 
     def parsetime_sql(self, expression: exp.ParseTime) -> str:
         formatted_time = self.format_time(expression)
-        function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
         return self.sql(
             exp.cast(
-                self.func(function_name, expression.this, formatted_time),
+                self.func("STRPTIME", expression.this, formatted_time),
                 exp.DataType(this=exp.DType.TIME),
             )
         )

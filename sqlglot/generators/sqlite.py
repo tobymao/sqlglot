@@ -73,29 +73,14 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _limit_all_to_no_limit(expression: exp.Expr) -> exp.Expr:
-    limit = expression.args.get("limit")
-
-    if isinstance(limit, exp.Limit) and limit.expression and limit.expression.name.upper() == "ALL":
-        if expression.args.get("offset"):
-            limit.set("expression", exp.Literal.number(-1))
-        else:
-            expression.set("limit", None)
-
-    return expression
-
-
 def _offset_to_limit(expression: exp.Expr) -> exp.Expr:
+    if not isinstance(expression, exp.Select):
+        return expression
+
     offset = expression.args.get("offset")
 
     if offset and not expression.args.get("limit"):
-        expression.set(
-            "limit",
-            exp.Limit(
-                expression=exp.Literal.number(-1),
-                comments=offset.comments,
-            ),
-        )
+        expression.limit(-1, copy=False)
 
     return expression
 
@@ -179,7 +164,6 @@ class SQLiteGenerator(generator.Generator):
         exp.Rand: rename_func("RANDOM"),
         exp.Select: transforms.preprocess(
             [
-                _limit_all_to_no_limit,
                 _offset_to_limit,
                 transforms.eliminate_distinct_on,
                 transforms.eliminate_qualify,

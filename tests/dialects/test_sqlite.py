@@ -129,6 +129,12 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            'SELECT x FROM y LIMIT "all"',
+            read={
+                "postgres": 'SELECT x FROM y LIMIT "all"',
+            },
+        )
+        self.validate_all(
             "CURRENT_DATE",
             read={
                 "": "CURRENT_DATE",

@@ -283,6 +283,7 @@ class LoadData(Expression):
         "this": True,
         "local": False,
         "overwrite": False,
+        "temp": False,
         "inpath": False,
         "files": False,
         "partition": False,

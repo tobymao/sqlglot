@@ -2901,7 +2901,12 @@ class Generator:
         if files:
             files_sql = self.expressions(files, flat=True)
             files_sql = f"FILES{self.wrap(files_sql)}"
-            this = f" {this}" if is_overwrite else f" INTO TABLE {this}"
+            if is_overwrite:
+                this = f" {this}"
+            elif expression.args.get("temp"):
+                this = f" INTO TEMP TABLE {this}"
+            else:
+                this = f" INTO TABLE {this}"
             return f"LOAD DATA{overwrite}{this} FROM {files_sql}"
 
         local = " LOCAL" if expression.args.get("local") else ""

@@ -15,6 +15,7 @@ class Postgres(Dialect):
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
+    SUPPORTS_LIMIT_ALL = True
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True

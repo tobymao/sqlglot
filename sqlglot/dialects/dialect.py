@@ -525,6 +525,11 @@ class Dialect(metaclass=_Dialect):
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
     """
 
+    SUPPORTS_LIMIT_ALL = False
+    """
+    Whether LIMIT ALL is supported (equivalent to no limit) as in Postgres.
+    """
+
     PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = False
     """
     Whether projection alias names can shadow table/source names in GROUP BY and HAVING clauses.

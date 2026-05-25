@@ -5488,7 +5488,7 @@ class Parser:
                     self._match_r_paren()
 
             else:
-                if self._match(TokenType.ALL):
+                if self.dialect.SUPPORTS_LIMIT_ALL and self._match(TokenType.ALL):
                     return this
 
                 # Parsing LIMIT x% (i.e x PERCENT) as a term leads to an error, since

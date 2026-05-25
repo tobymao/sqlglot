@@ -2747,6 +2747,17 @@ class TestDialect(Validator):
         )
 
     def test_limit(self):
+        limit_all_identifier = "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all"
+        self.assertEqual(parse_one(limit_all_identifier).sql(), limit_all_identifier)
+        self.assertEqual(
+            parse_one(limit_all_identifier, read="postgres").sql("postgres"),
+            "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t",
+        )
+        self.assertEqual(
+            parse_one(limit_all_identifier, read="mysql").sql("mysql"),
+            "WITH t AS (SELECT 1 AS `all`) SELECT 1 FROM t LIMIT `all`",
+        )
+
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",
             write={"sqlite": "SELECT * FROM data LIMIT 20 OFFSET 10"},

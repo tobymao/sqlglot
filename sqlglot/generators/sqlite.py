@@ -82,6 +82,10 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def bytestring_to_text_sql(self: SQLiteGenerator, expression: exp.ByteString) -> str:
+    return self.sql(exp.Literal.string(expression.this))
+
+
 class SQLiteGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -135,6 +139,7 @@ class SQLiteGenerator(generator.Generator):
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
         exp.AnyValue: any_value_to_max_sql,
+        exp.ByteString: bytestring_to_text_sql,
         exp.Chr: rename_func("CHAR"),
         exp.Concat: concat_to_dpipe_sql,
         exp.CountIf: count_if_to_sum,

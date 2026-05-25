@@ -456,7 +456,8 @@ FROM json_data, field_ids""",
             "SELECT E'a\\tb'",
             write={
                 "postgres": "SELECT e'a\\tb'",
-                "sqlite": "SELECT 'a\tb'",
+                "mysql": "SELECT 'a\\tb'",
+                "sqlite": UnsupportedError,
             },
         )
         self.validate_all(
@@ -651,7 +652,7 @@ FROM json_data, field_ids""",
             write={
                 "postgres": "e'x'",
                 "mysql": "'x'",
-                "sqlite": "'x'",
+                "sqlite": UnsupportedError,
             },
         )
         self.validate_all(

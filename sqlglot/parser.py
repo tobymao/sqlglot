@@ -4400,10 +4400,13 @@ class Parser:
         return self._parse_wrapped_csv(_parse_column_as_identifier, optional=True)
 
     def _parse_join(
-        self, skip_join_token: bool = False, parse_bracket: bool = False
+        self,
+        skip_join_token: bool = False,
+        parse_bracket: bool = False,
+        alias_tokens: t.Collection[TokenType] | None = None,
     ) -> exp.Join | None:
         if self._match(TokenType.COMMA):
-            table = self._try_parse(self._parse_table)
+            table = self._try_parse(lambda: self._parse_table(alias_tokens=alias_tokens))
             cross_join = self.expression(exp.Join(this=table)) if table else None
 
             if cross_join and self.JOINS_HAVE_EQUAL_PRECEDENCE:
@@ -4430,10 +4433,12 @@ class Parser:
         if not skip_join_token and not join and not outer_apply and not cross_apply:
             return None
 
-        kwargs: dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
+        kwargs: dict[str, t.Any] = {
+            "this": self._parse_table(parse_bracket=parse_bracket, alias_tokens=alias_tokens)
+        }
         if kind and kind.token_type == TokenType.ARRAY and self._match(TokenType.COMMA):
             kwargs["expressions"] = self._parse_csv(
-                lambda: self._parse_table(parse_bracket=parse_bracket)
+                lambda: self._parse_table(parse_bracket=parse_bracket, alias_tokens=alias_tokens)
             )
 
         if method:
@@ -4459,7 +4464,7 @@ class Parser:
             and not (kind and kind.token_type in (TokenType.CROSS, TokenType.ARRAY))
         ):
             index = self._index
-            joins: list | None = list(self._parse_joins())
+            joins: list | None = list(self._parse_joins(alias_tokens=alias_tokens))
 
             if joins and self._match(TokenType.ON):
                 kwargs["on"] = self._parse_disjunction()
@@ -4860,7 +4865,7 @@ class Parser:
             this.set("version", self._parse_version())
 
         if joins:
-            for join in self._parse_joins():
+            for join in self._parse_joins(alias_tokens=alias_tokens):
                 this.append("joins", join)
 
         if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
@@ -5056,8 +5061,10 @@ class Parser:
             return None
         return list(iter(self._parse_pivot, None)) or None
 
-    def _parse_joins(self) -> t.Iterator[exp.Join]:
-        return iter(self._parse_join, None)
+    def _parse_joins(
+        self, alias_tokens: t.Collection[TokenType] | None = None
+    ) -> t.Iterator[exp.Join]:
+        return iter(lambda: self._parse_join(alias_tokens=alias_tokens), None)
 
     def _parse_unpivot_columns(self) -> exp.UnpivotColumns | None:
         if not self._match(TokenType.INTO):

@@ -663,9 +663,14 @@ class ClickHouseParser(parser.Parser):
         return is_global, side or kind, kind_pre or kind
 
     def _parse_join(
-        self, skip_join_token: bool = False, parse_bracket: bool = False
+        self,
+        skip_join_token: bool = False,
+        parse_bracket: bool = False,
+        alias_tokens: t.Collection[TokenType] | None = None,
     ) -> exp.Join | None:
-        join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
+        join = super()._parse_join(
+            skip_join_token=skip_join_token, parse_bracket=True, alias_tokens=alias_tokens
+        )
         if join:
             method = join.args.get("method")
             join.set("method", None)

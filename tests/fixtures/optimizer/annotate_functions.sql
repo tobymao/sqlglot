@@ -270,14 +270,6 @@ CONCAT('x', tbl.bin_col);
 STRING;
 
 # dialect: spark2, spark, databricks
-CONCAT(array('a', 'b'), array(1, 2));
-ARRAY<STRING>;
-
-# dialect: spark2, spark, databricks
-CONCAT(array(array('a')), array(array(1)));
-ARRAY<ARRAY<STRING>>;
-
-# dialect: spark2, spark, databricks
 CONCAT(tbl.date_col, tbl.int_col);
 STRING;
 

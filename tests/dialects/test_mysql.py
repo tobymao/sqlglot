@@ -244,6 +244,13 @@ class TestMySQL(Validator):
         self.validate_identity(
             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )
+        self.validate_identity(
+            "UPDATE items, month SET items.price = month.price WHERE items.id = month.id"
+        )
+        self.validate_identity("UPDATE a CROSS JOIN b SET a.x = 1")
+        self.validate_identity(
+            "UPDATE a, b LEFT JOIN c ON b.id = c.id SET a.x = 1, b.y = 2, c.z = 3"
+        )
 
         # PARTITION BY RANGE - simple column
         self.validate_identity(

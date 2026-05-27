@@ -258,6 +258,26 @@ CONCAT(unknown, unknown);
 UNKNOWN;
 
 # dialect: spark2, spark, databricks
+CONCAT('x', tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.date_col, tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT('x', tbl.bin_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+CONCAT(tbl.date_col, tbl.int_col);
+STRING;
+
+# dialect: spark2, spark, databricks
+LPAD('x', 10, tbl.date_col);
+STRING;
+
+# dialect: spark2, spark, databricks
 LPAD(tbl.bin_col, 1, tbl.bin_col);
 BINARY;
 

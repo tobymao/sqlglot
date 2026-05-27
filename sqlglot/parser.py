@@ -2188,6 +2188,8 @@ class Parser:
 
         if kind.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=kind.token_type)
+        elif kind.token_type == TokenType.TABLE:
+            this = self._parse_table(alias_tokens=self.COMMENT_TABLE_ALIAS_TOKENS)
         elif kind.token_type == TokenType.COLUMN:
             this = self._parse_column()
         else:

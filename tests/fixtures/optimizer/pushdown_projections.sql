@@ -142,3 +142,19 @@ WITH cte AS (SELECT a AS a, b AS b FROM x AS x) SELECT COUNT(* EXCLUDE (a)) AS _
 
 WITH cte1 AS (SELECT a, SUM(b) AS sale FROM x GROUP BY a), cte2 AS (SELECT cte1.a, COUNT(*) AS cnt FROM cte1 GROUP BY cte1.a) SELECT a, cnt FROM cte2;
 WITH cte1 AS (SELECT x.a AS a FROM x AS x GROUP BY x.a), cte2 AS (SELECT cte1.a AS a, COUNT(*) AS cnt FROM cte1 AS cte1 GROUP BY cte1.a) SELECT cte2.a AS a, cte2.cnt AS cnt FROM cte2 AS cte2;
+
+--------------------------------------
+-- Set-returning functions affect cardinality and are retained even when unused
+--------------------------------------
+SELECT d FROM (SELECT EXPLODE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT EXPLODE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+SELECT d FROM (SELECT POSEXPLODE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT POSEXPLODE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+SELECT d FROM (SELECT INLINE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT INLINE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+-- Window functions do not affect cardinality and stay prunable
+SELECT d FROM (SELECT d, ROW_NUMBER() OVER (PARTITION BY e ORDER BY d) AS rn FROM w);
+SELECT _0.d AS d FROM (SELECT w.d AS d FROM w AS w) AS _0;

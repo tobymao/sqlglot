@@ -5499,6 +5499,9 @@ class Parser:
                     self._match_r_paren()
 
             else:
+                if self.dialect.SUPPORTS_LIMIT_ALL and self._match(TokenType.ALL):
+                    return this
+
                 # Parsing LIMIT x% (i.e x PERCENT) as a term leads to an error, since
                 # we try to build an exp.Mod expr. For that matter, we backtrack and instead
                 # consume the factor plus parse the percentage separately

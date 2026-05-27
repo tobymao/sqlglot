@@ -98,6 +98,13 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)",
+            read={
+                "mysql": "INSERT IGNORE INTO foo (x, y) VALUES (1, 2)",
+                "sqlite": "INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)",
+            },
+        )
+        self.validate_all(
             "CURRENT_DATE",
             read={
                 "": "CURRENT_DATE",

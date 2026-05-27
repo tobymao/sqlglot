@@ -82,6 +82,18 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _offset_to_limit(expression: exp.Expr) -> exp.Expr:
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    offset = expression.args.get("offset")
+
+    if offset and not expression.args.get("limit"):
+        expression.limit(-1, copy=False)
+
+    return expression
+
+
 class SQLiteGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -161,6 +173,7 @@ class SQLiteGenerator(generator.Generator):
         exp.Rand: rename_func("RANDOM"),
         exp.Select: transforms.preprocess(
             [
+                _offset_to_limit,
                 transforms.eliminate_distinct_on,
                 transforms.eliminate_qualify,
                 transforms.eliminate_semi_and_anti_joins,
@@ -190,6 +203,13 @@ class SQLiteGenerator(generator.Generator):
     }
 
     LIMIT_FETCH = "LIMIT"
+
+    def insert_sql(self, expression: exp.Insert) -> str:
+        if expression.args.get("ignore"):
+            expression.set("ignore", False)
+            expression.set("alternative", "IGNORE")
+
+        return super().insert_sql(expression)
 
     def bitwiseandagg_sql(self, expression: exp.BitwiseAndAgg) -> str:
         self.unsupported("BITWISE_AND aggregation is not supported in SQLite")

@@ -74,6 +74,7 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON VIEW foo.bat IS 'x'")
         self.validate_identity("COMMENT ON MATERIALIZED VIEW foo.my_view IS 'x'")
         self.validate_identity("COMMENT ON SEQUENCE public.seq IS 'x'")
+        self.validate_identity("COMMENT ON INDEX public.idx IS 'x'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")

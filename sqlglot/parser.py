@@ -2193,7 +2193,7 @@ class Parser:
         elif kind.token_type == TokenType.COLUMN:
             this = self._parse_column()
         else:
-            this = self._parse_id_var()
+            this = self._parse_table_parts(schema=True)
 
         self._match(TokenType.IS)
 

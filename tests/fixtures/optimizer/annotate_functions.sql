@@ -307,11 +307,11 @@ STRING;
 
 # dialect: databricks
 IF(cond, tbl.str_col, tbl.double_col);
-DOUBLE;
+STRING;
 
 # dialect: databricks
 IF(cond, tbl.double_col, tbl.str_col);
-DOUBLE;
+STRING;
 
 # dialect: hive, spark2, spark
 IF(cond, tbl.date_col, tbl.str_col);
@@ -323,11 +323,11 @@ STRING;
 
 # dialect: databricks
 IF(cond, tbl.date_col, tbl.str_col);
-DATE;
+STRING;
 
 # dialect: databricks
 IF(cond, tbl.str_col, tbl.date_col);
-DATE;
+STRING;
 
 # dialect: hive, spark2, spark, databricks
 IF(cond, tbl.date_col, tbl.timestamp_col);
@@ -371,19 +371,19 @@ STRING;
 
 # dialect: databricks
 COALESCE(tbl.str_col, tbl.bigint_col);
-BIGINT;
+STRING;
 
 # dialect: databricks
 COALESCE(tbl.bigint_col, tbl.str_col);
-BIGINT;
+STRING;
 
 # dialect: databricks
 COALESCE(tbl.str_col, NULL, tbl.bigint_col);
-BIGINT;
+STRING;
 
 # dialect: databricks
 COALESCE(tbl.bigint_col, NULL, tbl.str_col);
-BIGINT;
+STRING;
 
 # dialect: databricks
 COALESCE(tbl.bool_col, tbl.str_col);
@@ -395,11 +395,27 @@ STRING;
 
 # dialect: databricks
 COALESCE(tbl.interval_col, tbl.str_col);
-INTERVAL;
+STRING;
 
 # dialect: databricks
 COALESCE(tbl.bin_col, tbl.str_col);
 BINARY;
+
+# dialect: databricks
+COALESCE(tbl.int_col, tbl.str_col);
+STRING;
+
+# dialect: databricks
+NVL(tbl.int_col, tbl.str_col);
+STRING;
+
+# dialect: databricks
+CASE WHEN cond THEN tbl.int_col ELSE tbl.str_col END;
+STRING;
+
+# dialect: databricks
+COALESCE(tbl.int_col, tbl.bigint_col);
+BIGINT;
 
 # dialect: spark, databricks
 LOCALTIMESTAMP();

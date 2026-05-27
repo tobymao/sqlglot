@@ -2192,6 +2192,8 @@ class Parser:
             this = self._parse_table(alias_tokens=self.COMMENT_TABLE_ALIAS_TOKENS)
         elif kind.token_type == TokenType.VIEW:
             this = self._parse_table(alias_tokens=self.COMMENT_TABLE_ALIAS_TOKENS)
+        elif kind.token_type == TokenType.SEQUENCE:
+            this = self._parse_table(alias_tokens=self.COMMENT_TABLE_ALIAS_TOKENS)
         elif kind.token_type == TokenType.COLUMN:
             this = self._parse_column()
         elif kind.token_type == TokenType.TYPE:

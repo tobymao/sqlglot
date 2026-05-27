@@ -2747,21 +2747,17 @@ class TestDialect(Validator):
         )
 
     def test_limit(self):
-        limit_all_identifier = "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all"
-        self.assertEqual(parse_one(limit_all_identifier).sql(), limit_all_identifier)
-        self.assertEqual(
-            parse_one(limit_all_identifier, read="postgres").sql("postgres"),
+        self.validate_identity("WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all")
+        self.validate_all(
             "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t",
+            read={
+                "databricks": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "duckdb": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "presto": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "postgres": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "spark": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+            },
         )
-        for dialect, expected in (
-            ("duckdb", 'WITH t AS (SELECT 1 AS "all") SELECT 1 FROM t'),
-            ("presto", "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t"),
-            ("spark", "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t"),
-        ):
-            self.assertEqual(
-                parse_one(limit_all_identifier, read=dialect).sql(dialect),
-                expected,
-            )
 
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",

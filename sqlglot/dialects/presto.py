@@ -22,6 +22,7 @@ class Presto(Dialect):
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: bool | None = None
+    SUPPORTS_LIMIT_ALL = True
     SUPPORTS_VALUES_DEFAULT = False
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = False

@@ -2753,10 +2753,15 @@ class TestDialect(Validator):
             parse_one(limit_all_identifier, read="postgres").sql("postgres"),
             "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t",
         )
-        self.assertEqual(
-            parse_one(limit_all_identifier, read="mysql").sql("mysql"),
-            "WITH t AS (SELECT 1 AS `all`) SELECT 1 FROM t LIMIT `all`",
-        )
+        for dialect, expected in (
+            ("duckdb", 'WITH t AS (SELECT 1 AS "all") SELECT 1 FROM t'),
+            ("presto", "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t"),
+            ("spark", "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t"),
+        ):
+            self.assertEqual(
+                parse_one(limit_all_identifier, read=dialect).sql(dialect),
+                expected,
+            )
 
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",

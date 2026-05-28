@@ -1303,6 +1303,22 @@ class SnowflakeParser(parser.Parser):
         result.set("zero_start", True)
         return result
 
+    def build_cast(self, strict: bool, **kwargs) -> exp.Cast:
+        to = kwargs.get("to")
+        if to and to.this == exp.DataType.Type.BOOLEAN:
+            return t.cast(
+                exp.Cast, self.expression(exp.ToBoolean(this=kwargs["this"], safe=not strict))
+            )
+        cast = super().build_cast(strict, **kwargs)
+        if (
+            isinstance(cast, exp.TryCast)
+            and to
+            and to.this in exp.DataType.TEXT_TYPES
+            and to.expressions
+        ):
+            cast.set("null_on_text_overflow", True)
+        return cast
+
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         if isinstance(this, exp.NthValue):
             if self._match_text_seq("FROM"):

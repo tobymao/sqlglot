@@ -226,6 +226,14 @@ class UserDefinedFunction(Expression):
     arg_types = {"this": True, "expressions": False, "wrapped": False}
 
 
+class MacroOverloads(Expression):
+    arg_types = {"expressions": True}
+
+
+class MacroOverload(Expression):
+    arg_types = {"this": True, "expressions": False, "is_table": False}
+
+
 class CharacterSet(Expression):
     arg_types = {"this": True, "default": False}
 

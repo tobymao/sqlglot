@@ -2608,6 +2608,29 @@ class TestDuckDB(Validator):
             },
         )
 
+        overloaded = self.validate_identity(
+            "CREATE MACRO add_x (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        overloads = overloaded.expression
+        self.assertIsInstance(overloads, exp.MacroOverloads)
+        self.assertEqual(len(overloads.expressions), 2)
+        self.assertIsNone(overloaded.this.args.get("expressions"))
+
+        self.validate_identity(
+            "CREATE OR REPLACE MACRO foo (a) AS a, (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        self.validate_identity("CREATE MACRO foo (a TINYINT) AS a + 1, (a INT) AS a + 2")
+        self.validate_identity("CREATE MACRO foo(a TINYINT) AS a = 127")
+        self.validate_identity(
+            "CREATE MACRO is_maximal (a TINYINT) AS a = 127, (a INT) AS a = 2147483647"
+        )
+        table_overloaded = self.validate_identity(
+            "CREATE MACRO tbl (a) AS TABLE (SELECT a AS x), (a, b) AS TABLE (SELECT a AS x, b AS y)"
+        )
+        table_overloads = table_overloaded.expression
+        self.assertIsInstance(table_overloads, exp.MacroOverloads)
+        self.assertTrue(all(o.args.get("is_table") for o in table_overloads.expressions))
+
     def test_bitwise_agg(self):
         self.validate_all(
             "SELECT BIT_OR(int_value) FROM t",

@@ -2404,6 +2404,30 @@ class Parser:
             extend_props(self._parse_properties())
 
             expression = self._parse_heredoc() if self._match(TokenType.ALIAS) else None
+
+            if (
+                not expression
+                and create_token_type == TokenType.FUNCTION
+                and isinstance(this, exp.UserDefinedFunction)
+                and this.args.get("wrapped")
+            ):
+                pre_table_index = self._index
+                is_table = self._match(TokenType.TABLE)
+
+                expression = self._parse_expression()
+                overload_mode = bool(
+                    expression
+                    and self._curr.token_type == TokenType.COMMA
+                    and self._next.token_type == TokenType.L_PAREN
+                )
+                if not overload_mode:
+                    self._retreat(pre_table_index)
+                    is_table = False
+                    expression = None
+            else:
+                is_table = False
+                overload_mode = False
+
             extend_props(self._parse_function_properties())
 
             if not expression:
@@ -2427,6 +2451,11 @@ class Parser:
 
                     if return_:
                         expression = self.expression(exp.Return(this=expression))
+
+            if overload_mode and expression:
+                expression = self._parse_macro_overloads(
+                    t.cast(exp.UserDefinedFunction, this), expression, is_table
+                )
         elif create_token_type == TokenType.INDEX:
             # Postgres allows anonymous indexes, eg. CREATE INDEX IF NOT EXISTS ON t(c)
             if not self._match(TokenType.ON):
@@ -7020,7 +7049,21 @@ class Parser:
         return transformed
 
     def _parse_function_properties(self) -> exp.Properties | None:
-        return self._parse_properties()
+        # Skip the generic `key = value` fallback in _parse_property since this
+        # runs post-AS where a function body like `name = expr` can be misread
+        # as a property.
+        properties = []
+        while True:
+            if self._match_texts(self.PROPERTY_PARSERS):
+                prop = self.PROPERTY_PARSERS[self._prev.text.upper()](self)
+            elif self._match(TokenType.DEFAULT) and self._match_texts(self.PROPERTY_PARSERS):
+                prop = self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
+            else:
+                break
+            for p in ensure_list(prop):
+                properties.append(p)
+
+        return self.expression(exp.Properties(expressions=properties)) if properties else None
 
     def _parse_user_defined_function_expression(self) -> exp.Expr | None:
         return self._parse_statement()
@@ -7039,6 +7082,41 @@ class Parser:
         return self.expression(
             exp.UserDefinedFunction(this=this, expressions=expressions, wrapped=True)
         )
+
+    def _parse_macro_overloads(
+        self,
+        this: exp.UserDefinedFunction,
+        first_body: exp.Expr,
+        first_is_table: bool = False,
+    ) -> exp.MacroOverloads:
+        overloads = [
+            self.expression(
+                exp.MacroOverload(
+                    this=first_body,
+                    expressions=this.expressions or None,
+                    is_table=first_is_table,
+                )
+            )
+        ]
+        this.set("expressions", None)
+        this.set("wrapped", False)
+
+        while self._match(TokenType.COMMA):
+            if not self._match(TokenType.L_PAREN):
+                break
+
+            params = self._parse_csv(self._parse_function_parameter)
+            self._match_r_paren()
+
+            if not self._match(TokenType.ALIAS):
+                break
+
+            is_table = self._match(TokenType.TABLE)
+            body = self._parse_expression()
+            macro = exp.MacroOverload(this=body, expressions=params, is_table=is_table)
+            overloads.append(self.expression(macro))
+
+        return self.expression(exp.MacroOverloads(expressions=overloads))
 
     def _parse_introducer(self, token: Token) -> exp.Introducer | exp.Identifier:
         literal = self._parse_primary()

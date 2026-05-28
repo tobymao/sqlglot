@@ -58,6 +58,7 @@ class OracleParser(parser.Parser):
         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
         "JSON_EXISTS": lambda self: self._parse_json_exists(),
         "LISTAGG": lambda self: self._parse_string_agg(),
+        "TO_NUMBER": lambda self: self._parse_to_number(),
     }
 
     PROPERTY_PARSERS = {
@@ -97,6 +98,26 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_to_number(self) -> exp.ToNumber:
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html
+        this = self._parse_bitwise()
+
+        default = None
+        if self._match(TokenType.DEFAULT):
+            default = self._parse_bitwise()
+            self._match_text_seq("ON", "CONVERSION", "ERROR")
+
+        fmt = None
+        nlsparam = None
+        if self._match(TokenType.COMMA):
+            fmt = self._parse_bitwise()
+            if self._match(TokenType.COMMA):
+                nlsparam = self._parse_bitwise()
+
+        return self.expression(
+            exp.ToNumber(this=this, format=fmt, nlsparam=nlsparam, default=default)
+        )
 
     def _parse_dbms_random(self) -> exp.Expr | None:
         if self._match_text_seq(".", "VALUE"):

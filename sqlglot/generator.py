@@ -4666,6 +4666,7 @@ class Generator:
     def tochar_sql(self, expression: exp.ToChar) -> str:
         return self.sql(exp.cast(expression.this, exp.DType.TEXT))
 
+    @unsupported_args("default")
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if not self.SUPPORTS_TO_NUMBER:
             self.unsupported("Unsupported TO_NUMBER function")

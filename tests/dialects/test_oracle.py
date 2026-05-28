@@ -255,6 +255,12 @@ class TestOracle(Validator):
                 "teradata": "TO_NUMBER(x, fmt)",
             },
         )
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html
+        self.validate_identity("TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR)")
+        self.validate_identity("TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR, '9999')")
+        self.validate_identity(
+            "TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR, '9999', 'NLS_NUMERIC_CHARACTERS = ''.,''')"
+        )
         self.validate_all(
             "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
             write={

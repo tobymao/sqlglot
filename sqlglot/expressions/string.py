@@ -375,6 +375,7 @@ class ToNumber(Expression, Func):
         "scale": False,
         "safe": False,
         "safe_name": False,
+        "default": False,
     }
 
 

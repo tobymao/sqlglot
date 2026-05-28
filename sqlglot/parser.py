@@ -9777,7 +9777,9 @@ class Parser:
             aggregates_or_groups.append(this)
 
         if group_by_exists:
-            query.select(*aggregates_or_groups, copy=False).group_by(
+            query.select(
+                *aggregates_or_groups, *query.expressions, append=False, copy=False
+            ).group_by(
                 *[projection.args.get("alias", projection) for projection in aggregates_or_groups],
                 copy=False,
             )

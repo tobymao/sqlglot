@@ -1328,10 +1328,8 @@ class Generator:
         if expression_sql:
             expression_sql = f"{begin}{self.sep()}{expression_sql}"
 
-            if isinstance(expression.expression, exp.MacroOverloads):
-                pass
-            elif self.CREATE_FUNCTION_RETURN_AS or not isinstance(
-                expression.expression, exp.Return
+            if not isinstance(expression.expression, exp.MacroOverloads) and (
+                self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return)
             ):
                 postalias_props_sql = ""
                 if properties_locs.get(exp.Properties.Location.POST_ALIAS):

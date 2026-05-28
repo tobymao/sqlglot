@@ -526,6 +526,10 @@ class Simplifier:
         exp.Is,
     )
 
+    # Operand types that allow a connector pair to combine in _flat_simplify: constants
+    # (matched by the is_false/is_null/is_zero/always_true checks) and comparisons.
+    CONNECTOR_COMBINABLE: t.ClassVar = (exp.Boolean, exp.Literal, exp.Null, *COMPARISONS)
+
     INVERSE_COMPARISONS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {
         exp.LT: exp.GT,
         exp.GT: exp.LT,
@@ -1466,6 +1470,16 @@ class Simplifier:
             operands = []
             queue = deque(expression.flatten(unnest=False))
             size = len(queue)
+
+            # The pairwise scan below is O(n^2). For connectors, a pair only combines if one side
+            # is a constant or both are comparisons (see _simplify_connectors / _simplify_comparison);
+            # if no operand is combinable the scan is a guaranteed no-op, so return early. This
+            # avoids the quadratic blowup on large connectors of inert operands (e.g. a 1000-way OR
+            # of ANDs). Non-connector callers (simplify_equality) are unaffected by the type guard.
+            if isinstance(expression, exp.Connector) and not any(
+                isinstance(op, self.CONNECTOR_COMBINABLE) for op in queue
+            ):
+                return expression
 
             while queue:
                 a = queue.popleft()

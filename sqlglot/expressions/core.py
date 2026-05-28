@@ -1039,6 +1039,11 @@ class Expression(Expr):
         return comments
 
     def append(self, arg_key: str, value: t.Any) -> None:
+        node: Expr | None = self
+        while node and node._hash is not None:
+            node._hash = None
+            node = node.parent
+
         if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
         self._set_parent(arg_key, value)

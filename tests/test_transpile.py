@@ -639,6 +639,49 @@ ORDER BY
             pretty=True,
         )
 
+        self.validate(
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1 AND /*
+  hello
+  world
+*/ 1 = 0""",
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1 AND /*
+  hello
+  world
+*/ 1 = 0""",
+            pretty=True,
+        )
+        self.validate(
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1
+  AND /*
+  line1
+
+  line3
+*/ b = 2""",
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1
+  AND /*
+  line1
+
+  line3
+*/ b = 2""",
+            pretty=True,
+        )
+
     def test_comment_single_line_with_block_close(self):
         # Single-line comments containing */ must be escaped when converted to block comments,
         # otherwise the */ prematurely closes the block comment and turns comment text into SQL.

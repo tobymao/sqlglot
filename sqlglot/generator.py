@@ -2469,11 +2469,15 @@ class Generator:
             return None
 
         parser_cls = self.dialect.parser_class
-        # if the source and target emit identical values, exit early
+
+        # If the source and target emit identical values (or source is missing), exit early
         if (
-            expression.args.get("identify_pivot_strings") == parser_cls.IDENTIFY_PIVOT_STRINGS
-            and expression.args.get("prefixed_pivot_columns") == parser_cls.PREFIXED_PIVOT_COLUMNS
-            and expression.args.get("pivot_column_naming") == parser_cls.PIVOT_COLUMN_NAMING
+            expression.args.get("identify_pivot_strings", parser_cls.IDENTIFY_PIVOT_STRINGS)
+            == parser_cls.IDENTIFY_PIVOT_STRINGS
+            and expression.args.get("prefixed_pivot_columns", parser_cls.PREFIXED_PIVOT_COLUMNS)
+            == parser_cls.PREFIXED_PIVOT_COLUMNS
+            and expression.args.get("pivot_column_naming", parser_cls.PIVOT_COLUMN_NAMING)
+            == parser_cls.PIVOT_COLUMN_NAMING
         ):
             return None
 
@@ -2487,8 +2491,7 @@ class Generator:
         first_stored = columns[0].name
 
         # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)
-        if not first_stored.lower().startswith(first_base.lower()):
-            # Should we emit an unsupported here?
+        if not first_stored.startswith(first_base):
             return None
         suffix = first_stored[len(first_base) :]
 
@@ -2498,32 +2501,30 @@ class Generator:
         # Whether the target dialect would append an agg-name suffix for this pivot.
         # Spark single-agg uniquely drops the agg alias entirely.
         target_has_suffix = (len(expression.expressions) > 1 or target_naming != "spark") and any(
-            getattr(a, "alias", None) for a in expression.expressions
+            a.alias for a in expression.expressions
         )
         source_has_suffix = suffix != ""
 
         new_exprs: list[exp.Expression] = []
         modified = False
         for val_idx, e in enumerate(in_exprs):
+            if isinstance(e, exp.PivotAlias):
+                new_exprs.append(e)
+                continue
+
             i = val_idx * step
             stored_full = columns[i].name
             stored_value = stored_full[: -len(suffix)] if suffix else stored_full
             target_value = e.sql() if target_identify else e.alias_or_name
 
-            if isinstance(e, exp.PivotAlias):
-                new_exprs.append(e)
-                continue
-
-            # Source had a suffix, target won't apply one (e.g. DuckDB→Spark single-agg
-            # aliased): inject the full stored column name as the IN-list alias so the
-            # target uses it verbatim as the column name.
+            # Source had a suffix, but target won't apply one
             if source_has_suffix and not target_has_suffix:
                 new_exprs.append(
                     exp.PivotAlias(this=e, alias=exp.to_identifier(stored_full, quoted=True))
                 )
                 modified = True
             # Value-part mismatch (e.g. Snowflake's literal-style values vs others).
-            elif stored_value.lower() != target_value.lower():
+            elif stored_value != target_value:
                 new_exprs.append(
                     exp.PivotAlias(this=e, alias=exp.to_identifier(stored_value, quoted=True))
                 )

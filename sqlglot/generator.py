@@ -3908,9 +3908,7 @@ class Generator:
             else:
                 stack.append(expression.right)
                 if expression.comments and self.comments:
-                    for comment in expression.comments:
-                        if comment:
-                            op += f" /*{self.sanitize_comment(comment)}*/"
+                    op = self.maybe_comment(op, comments=expression.comments)
                 stack.extend((op, expression.left))
             return op
 

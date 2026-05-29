@@ -1328,7 +1328,9 @@ class Generator:
         if expression_sql:
             expression_sql = f"{begin}{self.sep()}{expression_sql}"
 
-            if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
+            if not isinstance(expression.expression, exp.MacroOverloads) and (
+                self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return)
+            ):
                 postalias_props_sql = ""
                 if properties_locs.get(exp.Properties.Location.POST_ALIAS):
                     postalias_props_sql = self.properties(
@@ -4589,6 +4591,15 @@ class Generator:
             self.wrap(expressions) if expression.args.get("wrapped") else f" {expressions}"
         )
         return f"{this}{expressions}" if expressions.strip() != "" else this
+
+    def macrooverloads_sql(self, expression: exp.MacroOverloads) -> str:
+        return self.expressions(expression, flat=True)
+
+    def macrooverload_sql(self, expression: exp.MacroOverload) -> str:
+        params = self.no_identify(self.expressions, expression, flat=True)
+        body = self.sql(expression, "this")
+        prefix = "TABLE " if expression.args.get("is_table") else ""
+        return f"({params}) AS {prefix}{body}"
 
     def joinhint_sql(self, expression: exp.JoinHint) -> str:
         this = self.sql(expression, "this")

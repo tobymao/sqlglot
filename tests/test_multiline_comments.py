@@ -1,6 +1,7 @@
 import unittest
 from sqlglot import transpile
 
+
 class TestMultilineComments(unittest.TestCase):
     def test_connector_multiline_comment_idempotency(self):
         scenarios = [

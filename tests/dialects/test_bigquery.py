@@ -42,6 +42,69 @@ class TestBigQuery(Validator):
         self.assertEqual(table.db, "x-0")
         self.assertEqual(table.name, "_y")
 
+        # Domain-scoped (legacy) project IDs (`domain.com:project-id`) contain dots in
+        # the domain that must not be treated as path separators, otherwise the domain
+        # prefix is dropped and the project ID becomes invalid.
+        table = self.parse_one(
+            "`domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`", into=exp.Table
+        )
+        self.assertEqual(table.catalog, "domain.com:project-id")
+        self.assertEqual(table.db, "region-us")
+        self.assertEqual(table.name, "INFORMATION_SCHEMA.JOBS")
+
+        table = self.parse_one("`domain.com:project-id.mydataset.mytable`", into=exp.Table)
+        self.assertEqual(table.catalog, "domain.com:project-id")
+        self.assertEqual(table.db, "mydataset")
+        self.assertEqual(table.name, "mytable")
+
+        # A domain-scoped project with no dataset/table must stay in the name position
+        # (like any bare identifier), not be promoted to catalog — otherwise consumers
+        # that read the identifier's name (e.g. macro interpolation) lose the project.
+        table = self.parse_one("`domain.com:project-id`", into=exp.Table)
+        self.assertEqual(table.name, "domain.com:project-id")
+        self.assertIsNone(table.args.get("catalog"))
+        self.assertIsNone(table.args.get("db"))
+
+        # A colon without a domain (no dot before it) is not a domain-scoped project,
+        # so the reference splits on dots as usual.
+        table = self.parse_one("`proj:weird.ds.tbl`", into=exp.Table)
+        self.assertEqual(table.catalog, "proj:weird")
+        self.assertEqual(table.db, "ds")
+        self.assertEqual(table.name, "tbl")
+
+        # Domains with multiple dots (e.g. `a.b.com:`) are kept intact too.
+        table = self.parse_one("`a.b.com:project-id.mydataset.mytable`", into=exp.Table)
+        self.assertEqual(table.catalog, "a.b.com:project-id")
+        self.assertEqual(table.db, "mydataset")
+        self.assertEqual(table.name, "mytable")
+
+        table = self.parse_one(
+            "`a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`", into=exp.Table
+        )
+        self.assertEqual(table.catalog, "a.b.com:project-id")
+        self.assertEqual(table.db, "region-us")
+        self.assertEqual(table.name, "INFORMATION_SCHEMA.JOBS")
+
+        table = self.parse_one("`a.b.com:project-id`", into=exp.Table)
+        self.assertEqual(table.name, "a.b.com:project-id")
+        self.assertIsNone(table.args.get("catalog"))
+        self.assertIsNone(table.args.get("db"))
+
+        self.validate_identity("SELECT * FROM `domain.com:project-id.mydataset.mytable`")
+        self.validate_identity(
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA`.JOBS",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS JOBS",
+        )
+        self.validate_identity(
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+        )
+        self.validate_identity("SELECT * FROM `a.b.com:project-id.mydataset.mytable`")
+        self.validate_identity(
+            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+        )
+
         self.validate_identity("SAFE.SOME_RANDOM_FUNC(a, b, c)").assert_is(exp.SafeFunc)
         self.validate_identity(
             "SAFE.SUBSTR('foo', 0, -2)",

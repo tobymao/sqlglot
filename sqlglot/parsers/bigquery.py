@@ -140,6 +140,29 @@ def _build_to_hex(args: list) -> exp.Hex | exp.MD5:
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
 
 
+def _split_name_parts(name: str, min_num_words: int) -> list[str | None]:
+    # A dotted reference (e.g. `project.dataset.table`) is split into a fixed number of
+    # parts, the first of which is the project. Domain-scoped (legacy) project IDs have the
+    # form `domain.com:project-id`, where the dots in the domain are part of the project
+    # identifier, not path separators. We isolate that leading project segment so it isn't
+    # split apart, which would drop the domain prefix and corrupt the project ID.
+    # See: https://docs.cloud.google.com/artifact-registry/docs/docker/names#domain
+    colon = name.find(":")
+    if colon != -1 and "." in name[:colon]:
+        project_end = name.find(".", colon)
+        if project_end == -1:
+            # The domain-scoped project is the whole reference (no dataset/table follows),
+            # so keep it in the last (name) position like any bare identifier. This mirrors
+            # `split_num_words`' default `fill_from_start=True` ordering (`None`s first, value last).
+            return [*([None] * (min_num_words - 1)), name]
+
+        project = name[:project_end]
+        rest = split_num_words(name[project_end + 1 :], ".", min_num_words - 1)
+        return [project, *rest]
+
+    return split_num_words(name, ".", min_num_words)
+
+
 MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
@@ -419,7 +442,7 @@ class BigQueryParser(parser.Parser):
             alias = table.this
             catalog, db, this_id, *rest = (
                 exp.to_identifier(p, quoted=True)
-                for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
+                for p in _split_name_parts(".".join(p.name for p in table.parts), 3)
             )
 
             for part in (catalog, db, this_id):
@@ -478,7 +501,7 @@ class BigQueryParser(parser.Parser):
             if any("." in p.name for p in parts):
                 catalog, db, table, this, *rest = (
                     exp.to_identifier(p, quoted=True)
-                    for p in split_num_words(".".join(p.name for p in parts), ".", 4)
+                    for p in _split_name_parts(".".join(p.name for p in parts), 4)
                 )
 
                 if rest and this:

@@ -3,7 +3,8 @@ from __future__ import annotations
 import unittest
 
 import sqlglot
-from sqlglot.lineage import lineage
+from sqlglot import exp
+from sqlglot.lineage import lineage, references
 from sqlglot.schema import MappingSchema
 
 
@@ -1025,3 +1026,72 @@ class TestLineage(unittest.TestCase):
                 seen.add(id(node))
         for nid in seen:
             self.assertEqual(counts.get(nid, 0), 1)
+
+
+class TestReferences(unittest.TestCase):
+    maxDiff = None
+
+    @classmethod
+    def setUpClass(cls):
+        sqlglot.schema = MappingSchema()
+
+    def test_where(self) -> None:
+        result = references("SELECT a FROM t WHERE b = 1")
+        self.assertIn("where", result)
+        self.assertNotIn("join", result)
+        self.assertEqual(len(result["where"]), 1)
+        node = result["where"][0]
+        self.assertEqual(node.name, "t.b")
+        # leaf traces back to the base table
+        self.assertEqual(len(node.downstream), 1)
+        self.assertIsInstance(node.downstream[0].source, exp.Table)
+
+    def test_join(self) -> None:
+        result = references("SELECT t1.a FROM t1 JOIN t2 ON t1.id = t2.id")
+        self.assertNotIn("where", result)
+        self.assertIn("join", result)
+        names = {n.name for n in result["join"]}
+        self.assertEqual(names, {"t1.id", "t2.id"})
+
+    def test_where_and_order(self) -> None:
+        result = references("SELECT a FROM t WHERE b > 0 ORDER BY c")
+        self.assertIn("where", result)
+        self.assertIn("order", result)
+        self.assertEqual(result["where"][0].name, "t.b")
+        self.assertEqual(result["order"][0].name, "t.c")
+
+    def test_where_through_cte(self) -> None:
+        result = references("WITH cte AS (SELECT a, b FROM x) SELECT a FROM cte WHERE cte.b = 1")
+        self.assertIn("where", result)
+        node = result["where"][0]
+        self.assertEqual(node.name, "cte.b")
+        # traces through the CTE down to the base table column
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "cte.b")
+        self.assertIsInstance(downstream.downstream[0].source, exp.Table)
+
+    def test_group_and_having(self) -> None:
+        result = references(
+            "SELECT dept, SUM(salary) FROM emp GROUP BY dept HAVING SUM(salary) > 1000"
+        )
+        self.assertIn("group", result)
+        self.assertIn("having", result)
+        self.assertEqual(result["group"][0].name, "emp.dept")
+        self.assertEqual(result["having"][0].name, "emp.salary")
+
+    def test_deduplication(self) -> None:
+        # same column appearing twice in WHERE should produce one node
+        result = references("SELECT a FROM t WHERE b = 1 AND b < 10")
+        self.assertIn("where", result)
+        self.assertEqual(len(result["where"]), 1)
+        self.assertEqual(result["where"][0].name, "t.b")
+
+    def test_where_both_sides(self) -> None:
+        result = references("SELECT t1.a FROM t1, t2 WHERE t1.id = t2.id")
+        self.assertIn("where", result)
+        names = {n.name for n in result["where"]}
+        self.assertEqual(names, {"t1.id", "t2.id"})
+
+    def test_no_clauses(self) -> None:
+        result = references("SELECT a FROM t")
+        self.assertEqual(result, {})

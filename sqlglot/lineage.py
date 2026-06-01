@@ -395,28 +395,18 @@ def to_node(
     for c in source_columns:
         table = c.table
         col_source: exp.Table | Scope | None = scope.sources.get(table)
-
         if isinstance(col_source, Scope):
-            reference_node_name = None
-            if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
-                reference_node_name = table
-            elif col_source.scope_type == ScopeType.CTE:
-                selected_node, _ = scope.selected_sources.get(table, (None, None))
-                reference_node_name = selected_node.name if selected_node else None
-
-            # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
-            to_node(
-                c.name,
-                scope=col_source,
-                dialect=dialect,
-                scope_name=table,
-                upstream=node,
-                source_name=source_names.get(table) or source_name,
-                reference_node_name=reference_node_name,
-                trim_selects=trim_selects,
-                _cache=_cache,
-                _scope_meta=_scope_meta,
-                on_node=on_node,
+            _trace_source(
+                c,
+                scope,
+                node,
+                dialect,
+                source_names,
+                source_name,
+                trim_selects,
+                _cache,
+                _scope_meta,
+                on_node,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
@@ -460,15 +450,18 @@ def to_node(
                     if on_node:
                         on_node(pivot_leaf)
         else:
-            # The source is not a scope and the column is not in any pivot - we've reached the end
-            # of the line. At this point, if a source is not found it means this column's lineage
-            # is unknown. This can happen if the definition of a source used in a query is not
-            # passed into the `sources` map.
-            col_expr = col_source or exp.Placeholder()
-            leaf = Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
-            node.downstream.append(leaf)
-            if on_node:
-                on_node(leaf)
+            _trace_source(
+                c,
+                scope,
+                node,
+                dialect,
+                source_names,
+                source_name,
+                trim_selects,
+                _cache,
+                _scope_meta,
+                on_node,
+            )
 
     if _cache is not None:
         _cache[cache_key] = node
@@ -477,6 +470,185 @@ def to_node(
         on_node(node)
 
     return node
+
+
+def _trace_source(
+    c: exp.Column,
+    scope: Scope,
+    node: Node,
+    dialect: DialectType,
+    source_names: dict[str, str],
+    source_name: str | None,
+    trim_selects: bool,
+    _cache: dict[tuple, Node] | None,
+    _scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] | None,
+    on_node: t.Callable[[Node], None] | None,
+) -> None:
+    """Trace a single column reference back to its source and attach it to node.downstream."""
+    table = c.table
+    col_source: exp.Table | Scope | None = scope.sources.get(table)
+
+    if isinstance(col_source, Scope):
+        reference_node_name = None
+        if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
+            reference_node_name = table
+        elif col_source.scope_type == ScopeType.CTE:
+            selected_node, _ = scope.selected_sources.get(table, (None, None))
+            reference_node_name = selected_node.name if selected_node else None
+
+        # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
+        to_node(
+            c.name,
+            scope=col_source,
+            dialect=dialect,
+            scope_name=table,
+            upstream=node,
+            source_name=source_names.get(table) or source_name,
+            reference_node_name=reference_node_name,
+            trim_selects=trim_selects,
+            _cache=_cache,
+            _scope_meta=_scope_meta,
+            on_node=on_node,
+        )
+    else:
+        # The source is not a scope - we've reached the end of the line. At this point, if a source
+        # is not found it means this column's lineage is unknown. This can happen if the definition
+        # of a source used in a query is not passed into the `sources` map.
+        col_expr = col_source or exp.Placeholder()
+        leaf = Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
+        node.downstream.append(leaf)
+        if on_node:
+            on_node(leaf)
+
+
+def references(
+    sql: str | exp.Expr,
+    schema: dict | Schema | None = None,
+    sources: Mapping[str, str | exp.Query] | None = None,
+    dialect: DialectType = None,
+    trim_selects: bool = True,
+    copy: bool = True,
+    on_node: t.Callable[[Node], None] | None = None,
+    **kwargs,
+) -> dict[str, list[Node]]:
+    """Find columns referenced in non-projected clauses (WHERE, JOIN ON, HAVING, GROUP BY, ORDER BY).
+
+    Args:
+        sql: The SQL string or expression.
+        schema: The schema of tables.
+        sources: A mapping of queries which will be used to continue building lineage.
+        dialect: The dialect of input SQL.
+        trim_selects: Whether to clean up selects by trimming to only relevant columns.
+        copy: Whether to copy the Expr arguments.
+        on_node: Optional callback invoked for every Node created during the walk.
+        **kwargs: Qualification optimizer kwargs.
+
+    Returns:
+        A dict mapping clause key ("where", "join", "having", "group", "order") to a list
+        of Nodes, each tracing a referenced column back to its source table(s).
+    """
+    expression = maybe_parse(sql, copy=copy, dialect=dialect)
+
+    if sources:
+        expression = exp.expand(
+            expression,
+            {
+                k: t.cast(exp.Query, maybe_parse(v, copy=copy, dialect=dialect))
+                for k, v in sources.items()
+            },
+            dialect=dialect,
+            copy=copy,
+        )
+
+    expression = qualify.qualify(
+        expression,
+        dialect=dialect,
+        schema=schema,
+        **{"validate_qualify_columns": False, "identify": False, **kwargs},
+    )
+    scope = build_scope(expression)
+
+    if not scope:
+        raise SqlglotError("Cannot build references, sql must be SELECT")
+    if not isinstance(scope.expression, exp.Selectable):
+        raise SqlglotError("Cannot build references, sql must be a query")
+
+    cache: dict[tuple, Node] = {}
+    scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] = {}
+    select_expr = scope.expression
+
+    derived_tables = scope.derived_tables
+    source_names = {
+        dt.alias: dt.comments[0].split()[1]
+        for dt in derived_tables
+        if dt.comments and dt.comments[0].startswith("source: ")
+    }
+
+    result: dict[str, list[Node]] = {}
+
+    for key in ("where", "having", "group", "order"):
+        clause = select_expr.args.get(key)
+        if not clause:
+            continue
+        seen: set[str] = set()
+        nodes: list[Node] = []
+        for c in find_all_in_scope(clause, exp.Column):
+            col_sql = c.sql(comments=False)
+            if col_sql in seen:
+                continue
+            seen.add(col_sql)
+            node = Node(name=col_sql, expression=c, source=select_expr)
+            _trace_source(
+                c,
+                scope,
+                node,
+                dialect,
+                source_names,
+                None,
+                trim_selects,
+                cache,
+                scope_meta,
+                on_node,
+            )
+            if on_node:
+                on_node(node)
+            nodes.append(node)
+        if nodes:
+            result[key] = nodes
+
+    joins = select_expr.args.get("joins") or []
+    if joins:
+        seen = set()
+        join_nodes: list[Node] = []
+        for join in joins:
+            on = join.args.get("on")
+            if not on:
+                continue
+            for c in find_all_in_scope(on, exp.Column):
+                col_sql = c.sql(comments=False)
+                if col_sql in seen:
+                    continue
+                seen.add(col_sql)
+                node = Node(name=col_sql, expression=c, source=select_expr)
+                _trace_source(
+                    c,
+                    scope,
+                    node,
+                    dialect,
+                    source_names,
+                    None,
+                    trim_selects,
+                    cache,
+                    scope_meta,
+                    on_node,
+                )
+                if on_node:
+                    on_node(node)
+                join_nodes.append(node)
+        if join_nodes:
+            result["join"] = join_nodes
+
+    return result
 
 
 class GraphHTML:

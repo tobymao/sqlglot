@@ -916,6 +916,12 @@ class ExasolGenerator(generator.Generator):
             )
             return self.sql(select)
 
+        if expression.name == "DATABASES":
+            select = exp.select(exp.column("SCHEMA_NAME")).from_(
+                exp.table_("EXA_SCHEMAS", db="SYS")
+            )
+            return self.sql(select)
+
         return super().show_sql(expression)
 
     def collate_sql(self, expression: exp.Collate) -> str:

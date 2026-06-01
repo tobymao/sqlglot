@@ -1000,6 +1000,18 @@ class TestExasol(Validator):
             },
         )
 
+    def test_show_databases(self):
+        self.validate_all(
+            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
+            read={"mysql": "SHOW DATABASES"},
+            write={"exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS"},
+        )
+        self.validate_all(
+            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
+            read={"mysql": "SHOW SCHEMAS"},
+            write={"exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS"},
+        )
+
     def test_group_by_alias_local(self):
         # GROUP BY bare alias -> LOCAL prefix
         self.validate_all(

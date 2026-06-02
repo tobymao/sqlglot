@@ -20,7 +20,7 @@ def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
 class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
-    PIVOT_COLUMN_NAMING = "spark"
+    PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
 
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,

@@ -2468,16 +2468,21 @@ class Generator:
         if not columns or len(expression.fields) != 1:
             return None
 
+        args = expression.args
         parser_cls = self.dialect.parser_class
 
-        # If the source and target emit identical values (or source is missing), exit early
+        tgt_identify_pivot_strings = parser_cls.IDENTIFY_PIVOT_STRINGS
+        tgt_prefixed_pivot_columns = parser_cls.PREFIXED_PIVOT_COLUMNS
+        tgt_pivot_column_naming = parser_cls.PIVOT_COLUMN_NAMING
+
+        src_identify_pivot_strings = args.get("identify_pivot_strings", tgt_identify_pivot_strings)
+        src_prefixed_pivot_columns = args.get("prefixed_pivot_columns", tgt_prefixed_pivot_columns)
+        src_pivot_column_naming = args.get("pivot_column_naming", tgt_pivot_column_naming)
+
         if (
-            expression.args.get("identify_pivot_strings", parser_cls.IDENTIFY_PIVOT_STRINGS)
-            == parser_cls.IDENTIFY_PIVOT_STRINGS
-            and expression.args.get("prefixed_pivot_columns", parser_cls.PREFIXED_PIVOT_COLUMNS)
-            == parser_cls.PREFIXED_PIVOT_COLUMNS
-            and expression.args.get("pivot_column_naming", parser_cls.PIVOT_COLUMN_NAMING)
-            == parser_cls.PIVOT_COLUMN_NAMING
+            src_identify_pivot_strings == tgt_identify_pivot_strings
+            and src_prefixed_pivot_columns == tgt_prefixed_pivot_columns
+            and src_pivot_column_naming == tgt_pivot_column_naming
         ):
             return None
 
@@ -2486,23 +2491,20 @@ class Generator:
 
         # Derive the per-value suffix from the first stored column vs the first IN-list value.
         # This correctly handles dialects (e.g. Spark single-agg) that ignore agg aliases.
-        source_identify = expression.args.get("identify_pivot_strings", False)
-        first_base = in_exprs[0].sql() if source_identify else in_exprs[0].alias_or_name
+        first_base = in_exprs[0].sql() if src_identify_pivot_strings else in_exprs[0].alias_or_name
         first_stored = columns[0].name
 
         # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)
         if not first_stored.startswith(first_base):
             return None
-        suffix = first_stored[len(first_base) :]
 
-        target_identify = parser_cls.IDENTIFY_PIVOT_STRINGS
-        target_naming = parser_cls.PIVOT_COLUMN_NAMING
+        suffix = first_stored[len(first_base) :]
 
         # Whether the target dialect would append an agg-name suffix for this pivot.
         # Spark single-agg uniquely drops the agg alias entirely.
-        target_has_suffix = (len(expression.expressions) > 1 or target_naming != "spark") and any(
-            a.alias for a in expression.expressions
-        )
+        target_has_suffix = (
+            len(expression.expressions) > 1 or tgt_pivot_column_naming != "agg_name_if_multiple"
+        ) and any(a.alias for a in expression.expressions)
         source_has_suffix = suffix != ""
 
         new_exprs: list[exp.Expression] = []
@@ -2515,7 +2517,7 @@ class Generator:
             i = val_idx * step
             stored_full = columns[i].name
             stored_value = stored_full[: -len(suffix)] if suffix else stored_full
-            target_value = e.sql() if target_identify else e.alias_or_name
+            target_value = e.sql() if tgt_identify_pivot_strings else e.alias_or_name
 
             # Source had a suffix, but target won't apply one
             if source_has_suffix and not target_has_suffix:
@@ -2531,6 +2533,7 @@ class Generator:
                 modified = True
             else:
                 new_exprs.append(e)
+
         return new_exprs if modified else None
 
     def pivot_sql(self, expression: exp.Pivot) -> str:

@@ -1755,7 +1755,11 @@ class Parser:
 
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = False
     IDENTIFY_PIVOT_STRINGS: t.ClassVar = False
-    PIVOT_COLUMN_NAMING: t.ClassVar[str] = ""
+    # Controls when an aggregation's name is included in a pivoted column's name:
+    # "agg_name_if_aliased" - only for aggregations that carry an explicit alias
+    # "agg_name_if_aliased_or_multiple" - if aliased, or whenever there are multiple aggregations
+    # "agg_name_if_multiple" - only when there are multiple aggregations (a lone agg is value-only)
+    PIVOT_COLUMN_NAMING: t.ClassVar[str] = "agg_name_if_aliased"
 
     LOG_DEFAULTS_TO_LN: t.ClassVar = False
 

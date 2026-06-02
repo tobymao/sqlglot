@@ -4125,7 +4125,7 @@ class Parser:
             normalized_table = _norm(normalized_table, dialect=self.dialect)
 
             if isinstance(table, exp.Table) and not join.args.get("on"):
-                if normalized_table.parts[0].name in refs:
+                if len(normalized_table.parts) > 1 and normalized_table.parts[0].name in refs:
                     table_as_column = table.to_column()
                     unnest = exp.Unnest(expressions=[table_as_column])
 

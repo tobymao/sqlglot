@@ -1303,12 +1303,10 @@ class SnowflakeParser(parser.Parser):
         result.set("zero_start", True)
         return result
 
-    def build_cast(self, strict: bool, **kwargs) -> exp.Cast:
+    def build_cast(self, strict: bool, **kwargs) -> exp.Expr:
         to = kwargs.get("to")
-        if to and to.this == exp.DataType.Type.BOOLEAN:
-            return t.cast(
-                exp.Cast, self.expression(exp.ToBoolean(this=kwargs["this"], safe=not strict))
-            )
+        if not strict and to and to.this == exp.DataType.Type.BOOLEAN:
+            return self.expression(exp.ToBoolean(this=kwargs["this"], safe=True))
         cast = super().build_cast(strict, **kwargs)
         if (
             isinstance(cast, exp.TryCast)

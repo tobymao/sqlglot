@@ -1755,6 +1755,7 @@ class Parser:
 
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = False
     IDENTIFY_PIVOT_STRINGS: t.ClassVar = False
+    PIVOT_COLUMN_NAMING: t.ClassVar[str] = ""
 
     LOG_DEFAULTS_TO_LN: t.ClassVar = False
 
@@ -5281,6 +5282,9 @@ class Parser:
                     columns.append(exp.to_identifier("_".join(fld_parts)))
 
             pivot.set("columns", columns)
+            pivot.set("identify_pivot_strings", self.IDENTIFY_PIVOT_STRINGS)
+            pivot.set("prefixed_pivot_columns", self.PREFIXED_PIVOT_COLUMNS)
+            pivot.set("pivot_column_naming", self.PIVOT_COLUMN_NAMING)
 
         return pivot
 

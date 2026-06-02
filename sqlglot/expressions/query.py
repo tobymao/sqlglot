@@ -1758,6 +1758,9 @@ class Pivot(Expression):
         "default_on_null": False,
         "into": False,
         "with_": False,
+        "identify_pivot_strings": False,
+        "prefixed_pivot_columns": False,
+        "pivot_column_naming": False,
     }
 
     @property

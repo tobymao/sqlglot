@@ -73,6 +73,7 @@ def _convert_text_type(dtype: exp.DataType) -> exp.DataType:
 
 class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
+    PIVOT_COLUMN_NAMING = "duckdb"
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,

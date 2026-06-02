@@ -2461,6 +2461,78 @@ class Generator:
 
         return f" {tablesample_keyword or self.TABLESAMPLE_KEYWORDS} {method}{expr}{seed}"
 
+    def _pivot_in_value_aliases(self, expression: exp.Pivot) -> list[exp.Expression] | None:
+        # Returns the rewritten field.expressions list with PivotAlias wrappers injected where
+        # the stored column name differs from the target dialect's natural output.
+        columns = expression.args.get("columns")
+        if not columns or len(expression.fields) != 1:
+            return None
+
+        parser_cls = self.dialect.parser_class
+
+        # If the source and target emit identical values (or source is missing), exit early
+        if (
+            expression.args.get("identify_pivot_strings", parser_cls.IDENTIFY_PIVOT_STRINGS)
+            == parser_cls.IDENTIFY_PIVOT_STRINGS
+            and expression.args.get("prefixed_pivot_columns", parser_cls.PREFIXED_PIVOT_COLUMNS)
+            == parser_cls.PREFIXED_PIVOT_COLUMNS
+            and expression.args.get("pivot_column_naming", parser_cls.PIVOT_COLUMN_NAMING)
+            == parser_cls.PIVOT_COLUMN_NAMING
+        ):
+            return None
+
+        in_exprs = expression.fields[0].expressions
+        step = len(columns) // len(in_exprs)
+
+        # Derive the per-value suffix from the first stored column vs the first IN-list value.
+        # This correctly handles dialects (e.g. Spark single-agg) that ignore agg aliases.
+        source_identify = expression.args.get("identify_pivot_strings", False)
+        first_base = in_exprs[0].sql() if source_identify else in_exprs[0].alias_or_name
+        first_stored = columns[0].name
+
+        # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)
+        if not first_stored.startswith(first_base):
+            return None
+        suffix = first_stored[len(first_base) :]
+
+        target_identify = parser_cls.IDENTIFY_PIVOT_STRINGS
+        target_naming = parser_cls.PIVOT_COLUMN_NAMING
+
+        # Whether the target dialect would append an agg-name suffix for this pivot.
+        # Spark single-agg uniquely drops the agg alias entirely.
+        target_has_suffix = (len(expression.expressions) > 1 or target_naming != "spark") and any(
+            a.alias for a in expression.expressions
+        )
+        source_has_suffix = suffix != ""
+
+        new_exprs: list[exp.Expression] = []
+        modified = False
+        for val_idx, e in enumerate(in_exprs):
+            if isinstance(e, exp.PivotAlias):
+                new_exprs.append(e)
+                continue
+
+            i = val_idx * step
+            stored_full = columns[i].name
+            stored_value = stored_full[: -len(suffix)] if suffix else stored_full
+            target_value = e.sql() if target_identify else e.alias_or_name
+
+            # Source had a suffix, but target won't apply one
+            if source_has_suffix and not target_has_suffix:
+                new_exprs.append(
+                    exp.PivotAlias(this=e, alias=exp.to_identifier(stored_full, quoted=True))
+                )
+                modified = True
+            # Value-part mismatch (e.g. Snowflake's literal-style values vs others).
+            elif stored_value != target_value:
+                new_exprs.append(
+                    exp.PivotAlias(this=e, alias=exp.to_identifier(stored_value, quoted=True))
+                )
+                modified = True
+            else:
+                new_exprs.append(e)
+        return new_exprs if modified else None
+
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)
         direction = "UNPIVOT" if expression.unpivot else "PIVOT"
@@ -2479,6 +2551,12 @@ class Generator:
                 using = f"{self.seg('USING')} {using}" if using else ""
                 sql = f"{direction} {this}{on}{into}{using}{group}"
             return self.prepend_ctes(expression, sql)
+
+        if not expression.unpivot:
+            # Wrap IN-list values with explicit aliases where the target dialect would differ
+            new_field_exprs = self._pivot_in_value_aliases(expression)
+            if new_field_exprs is not None:
+                expression.fields[0].set("expressions", new_field_exprs)
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""

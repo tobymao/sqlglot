@@ -341,6 +341,14 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
+        # A multi-argument XOR is a Connector with more than two operands, which
+        # previously crashed predicate-length estimation with
+        # "ValueError: too many values to unpack". See #7698.
+        self.assertEqual(
+            normalization_distance(parse_one("(a AND b) OR XOR(c, d, e)", dialect="mysql")),
+            4,
+        )
+
         self.check_file("normalize", normalize, schema=self.schema)
 
     @patch("sqlglot.generator.logger")

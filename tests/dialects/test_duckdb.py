@@ -1848,8 +1848,8 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT STRPTIME('15:30:00.123456', '%H:%M:%S.%f')",
-            read={"bigquery": "SELECT PARSE_DATETIME('%H:%M:%E6S', '15:30:00.123456')"},
+            "SELECT STRPTIME('1970-01-01 15:30:00.123456', '%Y-%m-%d %H:%M:%S.%f')",
+            read={"bigquery": "SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%E6S', '1970-01-01 15:30:00.123456')"},
         )
         self.validate_all(
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",

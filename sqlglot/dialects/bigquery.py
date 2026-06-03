@@ -72,18 +72,28 @@ class BigQuery(Dialect):
     }
 
     FORMAT_MAPPING = {
+        "dd": "%d",
         "DD": "%d",
+        "mm": "%m",
         "MM": "%m",
+        "mon": "%b",
         "MON": "%b",
+        "month": "%B",
         "MONTH": "%B",
+        "yyyy": "%Y",
         "YYYY": "%Y",
+        "yy": "%y",
         "YY": "%y",
-        "HH": "%I",
         "HH12": "%I",
+        "HH": "%I",
+        "hh24": "%H",
         "HH24": "%H",
+        "mi": "%M",
         "MI": "%M",
+        "ss": "%S",
         "SS": "%S",
         "SSSSS": "%f",
+        "tzh": "%z",
         "TZH": "%z",
     }
 

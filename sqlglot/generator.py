@@ -9,7 +9,7 @@ from functools import reduce, wraps
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import csv, name_sequence, seq_get
+from sqlglot.helper import csv, mypyc_attr, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -92,6 +92,7 @@ def _build_dispatch(
     return dispatch
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.

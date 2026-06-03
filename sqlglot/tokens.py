@@ -4,6 +4,7 @@ import threading
 import typing as t
 
 from sqlglot.trie import new_trie
+from sqlglot.helper import mypyc_attr
 
 from sqlglot.tokenizer_core import Token, TokenizerCore, TokenType
 
@@ -132,6 +133,7 @@ class _TokenizerBase:
         )
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Tokenizer(_TokenizerBase):
     SINGLE_TOKENS = {
         "(": TokenType.L_PAREN,

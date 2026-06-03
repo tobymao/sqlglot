@@ -16,7 +16,7 @@ from sqlglot.errors import (
     merge_errors,
 )
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import ensure_list, i64, seq_get
+from sqlglot.helper import ensure_list, i64, mypyc_attr, seq_get
 from sqlglot.trie import new_trie
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -287,6 +287,7 @@ def _unpivot_target(expr: exp.Expr) -> exp.Expr:
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Parser:
     """
     Parser consumes a list of tokens produced by the Tokenizer and produces a parsed syntax tree.
@@ -1887,7 +1888,7 @@ class Parser:
         self._chunk_index = 0
         self._node_count = 0
 
-    def _advance(self, times: i64 = 1) -> None:
+    def _advance(self, times: int = 1) -> None:
         index = self._index + times
         self._index = index
         tokens = self._tokens

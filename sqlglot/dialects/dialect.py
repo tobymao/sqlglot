@@ -18,6 +18,7 @@ from sqlglot.helper import (
     AutoName,
     flatten,
     is_int,
+    mypyc_attr,
     seq_get,
     suggest_closest_match_and_fail,
     to_bool,
@@ -321,6 +322,7 @@ class _Dialect(type):
         return klass
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Dialect(metaclass=_Dialect):
     INDEX_OFFSET = 0
     """The base index offset for arrays."""

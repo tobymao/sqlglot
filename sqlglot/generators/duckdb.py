@@ -2651,6 +2651,10 @@ class DuckDBGenerator(generator.Generator):
             )
         )
 
+    def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
+        formatted_time = self.format_time(expression)
+        return self.sql(self.func("STRPTIME", expression.this, formatted_time))
+
     def parsetime_sql(self, expression: exp.ParseTime) -> str:
         formatted_time = self.format_time(expression)
         return self.sql(

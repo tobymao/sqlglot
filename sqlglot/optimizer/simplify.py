@@ -1522,6 +1522,7 @@ class Gen:
     def gen(self, expression: exp.Expr, comments: bool = False) -> str:
         self.stack = [expression]
         self.sqls.clear()
+        dispatch = GEN_DISPATCH
 
         while self.stack:
             node = self.stack.pop()
@@ -1530,10 +1531,10 @@ class Gen:
                 if comments and node.comments:
                     self.stack.append(f" /*{','.join(node.comments)}*/")
 
-                exp_handler_name = f"{node.key}_sql"
+                handler = dispatch.get(node.key)
 
-                if hasattr(self, exp_handler_name):
-                    getattr(self, exp_handler_name)(node)
+                if handler is not None:
+                    handler(self, node)
                 elif isinstance(node, exp.Func):
                     self._function(node)
                 else:
@@ -1762,3 +1763,16 @@ class Gen:
             self.stack.append(kvs)
             return True
         return False
+
+
+def _build_gen_dispatch() -> dict[str, t.Callable[..., None]]:
+    # Precompute {expr key -> unbound handler}, mirroring the generator's _build_dispatch, so gen()
+    # avoids the per-node f-string + hasattr/getattr lookup (which mypyc can't devirtualize).
+    dispatch: dict[str, t.Callable[..., None]] = {}
+    for name in dir(Gen):
+        if name.endswith("_sql") and not name.startswith("_"):
+            dispatch[name[:-4]] = getattr(Gen, name)
+    return dispatch
+
+
+GEN_DISPATCH = _build_gen_dispatch()

@@ -1306,7 +1306,7 @@ class SnowflakeParser(parser.Parser):
     def build_cast(self, strict: bool, **kwargs) -> exp.Expr:
         to = kwargs.get("to")
         if not strict and to and to.this == exp.DataType.Type.BOOLEAN:
-            return self.expression(exp.ToBoolean(this=kwargs["this"], safe=True))
+            return self.expression(exp.ToBoolean(this=kwargs.get("this"), safe=True))
         cast = super().build_cast(strict, **kwargs)
         if (
             isinstance(cast, exp.TryCast)

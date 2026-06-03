@@ -4326,6 +4326,27 @@ class DuckDBGenerator(generator.Generator):
 
         return self.func(func, this, decimals, truncate)
 
+    def trycast_sql(self, expression: exp.TryCast) -> str:
+        to = expression.to
+        to_type = to.this
+
+        if (
+            expression.args.get("null_on_text_overflow")
+            and to_type in exp.DataType.TEXT_TYPES
+            and to.expressions
+        ):
+            src = expression.this
+            return self.sql(
+                exp.case()
+                .when(
+                    exp.LTE(this=exp.func("LENGTH", src), expression=to.expressions[0].this),
+                    exp.cast(src, "TEXT"),
+                )
+                .else_(exp.Null())
+            )
+
+        return super().trycast_sql(expression)
+
     def strtok_sql(self, expression: exp.Strtok) -> str:
         string_arg = expression.this
         delimiter_arg = expression.args.get("delimiter")

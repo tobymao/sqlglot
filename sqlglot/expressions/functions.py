@@ -70,7 +70,7 @@ class Cast(Expression, Func):
 
 
 class TryCast(Cast):
-    arg_types = {**Cast.arg_types, "requires_string": False}
+    arg_types = {**Cast.arg_types, "requires_string": False, "null_on_text_overflow": False}
 
 
 class JSONCast(Cast):

@@ -1843,7 +1843,9 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT STRPTIME('Thu Dec 25 07:30:00 2008', '%a %b %-d %I:%M:%S %Y')",
-            read={"bigquery": "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"},
+            read={
+                "bigquery": "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"
+            },
         )
         self.validate_all(
             "SELECT STRPTIME('15:30:00.123456', '%H:%M:%S.%f')",

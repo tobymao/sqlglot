@@ -837,26 +837,35 @@ class Expression(Expr):
     def __hash__(self) -> int:
         if self._hash is None:
             nodes: list[Expr] = []
-            queue: deque[Expr] = deque()
-            queue.append(self)
+            stack: list[Expr] = [self]
 
-            while queue:
-                node = queue.popleft()
+            # Collect nodes, finding child expressions inline instead of via the
+            # iter_expressions generator (whose per-node generator object dominates the
+            # hash's cost). reversed(nodes) is a valid post-order regardless of DFS/BFS.
+            while stack:
+                node = stack.pop()
                 nodes.append(node)
 
-                for child in node.iter_expressions():
-                    if child._hash is None:
-                        queue.append(child)
+                for v in node.args.values():
+                    if isinstance(v, Expr):
+                        if v._hash is None:
+                            stack.append(v)
+                    elif type(v) is list:
+                        for x in v:
+                            if isinstance(x, Expr) and x._hash is None:
+                                stack.append(x)
 
             for node in reversed(nodes):
                 hash_ = hash(node.key)
 
                 if node._hash_raw_args:
-                    for k, v in sorted(node.args.items()):
+                    for k in sorted(node.args):
+                        v = node.args[k]
                         if v:
                             hash_ = hash((hash_, k, v))
                 else:
-                    for k, v in sorted(node.args.items()):
+                    for k in sorted(node.args):
+                        v = node.args[k]
                         vt = type(v)
 
                         if vt is list:

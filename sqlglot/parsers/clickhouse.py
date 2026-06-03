@@ -296,7 +296,6 @@ class ClickHouseParser(parser.Parser):
         "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
         "UNIQ": exp.ApproxDistinct.from_arg_list,
-        "XOR": lambda args: exp.Xor(expressions=args),
         "MD5": exp.MD5Digest.from_arg_list,
         "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
         "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
@@ -370,6 +369,7 @@ class ClickHouseParser(parser.Parser):
         "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
         "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
         "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
+        "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
     }
 
     PROPERTY_PARSERS = {

@@ -454,22 +454,24 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT xor(0, 1, xor(1, 0, 0))",
             write={
-                "clickhouse": "SELECT xor(0, 1, xor(1, 0, 0))",
-                "mysql": "SELECT 0 XOR 1 XOR 1 XOR 0 XOR 0",
+                "clickhouse": "SELECT xor(xor(0, 1), (xor(xor(1, 0), 0)))",
+                "mysql": "SELECT 0 XOR 1 XOR (1 XOR 0 XOR 0)",
             },
         )
         self.validate_all(
             "SELECT xor(xor(1, 0), 1)",
             read={
-                "clickhouse": "SELECT xor(xor(1, 0), 1)",
                 "mysql": "SELECT 1 XOR 0 XOR 1",
             },
             write={
-                "clickhouse": "SELECT xor(xor(1, 0), 1)",
-                "mysql": "SELECT 1 XOR 0 XOR 1",
+                "clickhouse": "SELECT xor((xor(1, 0)), 1)",
+                "mysql": "SELECT (1 XOR 0) XOR 1",
             },
         )
-        self.validate_identity("SELECT xor(0, 1, 1, 0)")
+        self.validate_identity(
+            "SELECT xor(0, 1, 1, 0)",
+            "SELECT xor(xor(xor(0, 1), 1), 0)",
+        )
         self.validate_all(
             "CONCAT(a, b)",
             read={

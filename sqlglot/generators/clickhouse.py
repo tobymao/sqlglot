@@ -349,7 +349,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
         exp.Typeof: rename_func("toTypeName"),
         exp.VarMap: _map_sql,
-        exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
+        exp.Xor: lambda self, e: self.func("xor", e.this, e.expression),
         exp.MD5Digest: rename_func("MD5"),
         exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
         exp.SHA: rename_func("SHA1"),

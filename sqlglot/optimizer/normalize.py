@@ -143,7 +143,7 @@ def _predicate_lengths(
         return
 
     depth += 1
-    left, right = expression.args.values()
+    left, right = expression.left, expression.right
 
     if isinstance(expression, exp.And if dnf else exp.Or):
         for a in _predicate_lengths(left, dnf, max_, depth):

@@ -341,6 +341,16 @@ class TestOptimizer(unittest.TestCase):
             "x AND (y OR z)",
         )
 
+        # Snowflake's BOOLXOR builds a Xor connector carrying a `round_input` arg, so unpacking
+        # via args.values() yields 3 values. The enclosing predicate isn't normalized, which forces
+        # _predicate_lengths to recurse into the Xor node.
+        self.assertEqual(
+            optimizer.normalize.normalize(
+                parse_one("(a AND b) OR BOOLXOR(x, y)", read="snowflake"),
+            ).sql(dialect="snowflake"),
+            "((BOOLXOR(x, y)) OR a) AND ((BOOLXOR(x, y)) OR b)",
+        )
+
         self.check_file("normalize", normalize, schema=self.schema)
 
     @patch("sqlglot.generator.logger")

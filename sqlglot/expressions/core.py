@@ -2278,8 +2278,7 @@ class Or(Expression, Connector, Func):
 
 
 class Xor(Expression, Connector, Func):
-    arg_types = {"this": False, "expression": False, "expressions": False, "round_input": False}
-    is_var_len_args = True
+    arg_types = {"this": True, "expression": True, "round_input": False}
 
 
 class Pow(Expression, Binary, Func):

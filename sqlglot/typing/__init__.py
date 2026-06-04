@@ -332,7 +332,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             e, exp.DType.BIGINT if e.args.get("big_int") else exp.DType.INT
         )
     },
-    exp.DataType: {"annotator": lambda self, e: self._set_type(e, e.copy())},
+    exp.DataType: {"annotator": lambda _, e: e},
     exp.Div: {"annotator": lambda self, e: self._annotate_div(e)},
     exp.Distinct: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Dot: {"annotator": lambda self, e: self._annotate_dot(e)},

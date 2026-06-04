@@ -10,6 +10,7 @@ import re
 import sys
 import textwrap
 import typing as t
+import zlib
 from collections import deque
 from copy import deepcopy
 from decimal import Decimal
@@ -47,6 +48,11 @@ COLUMN_PARTS = ("this", "table", "db", "catalog")
 POSITION_META_KEYS: tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
+# Cache for the deterministic crc32 of structural strings (class keys + arg names). This set is
+# bounded (one entry per Expr subclass / arg name), so caching it can't leak; literal/identifier
+# *values* are intentionally hashed without caching since their domain is unbounded.
+KEY_HASH_CACHE: dict[str, int] = {}
+
 
 @trait
 class Expr:
@@ -82,6 +88,7 @@ class Expr:
     """
 
     key: t.ClassVar[str] = "expression"
+    _key_crc: t.ClassVar[int] = zlib.crc32(b"expression")
     arg_types: t.ClassVar[dict[str, bool]] = {"this": True}
     required_args: t.ClassVar[set[str]] = {"this"}
     is_var_len_args: t.ClassVar[bool] = False
@@ -98,6 +105,7 @@ class Expr:
     _type: DataType | None
     _meta: dict[str, t.Any] | None
     _hash: int | None
+    _deterministic_hash: int | None
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -105,6 +113,7 @@ class Expr:
         # When an Expr class is created, its key is automatically set
         # to be the lowercase version of the class' name.
         cls.key = cls.__name__.lower()
+        cls._key_crc = zlib.crc32(cls.key.encode())
         cls.required_args = {k for k, v in cls.arg_types.items() if v}
         # This is so that docstrings are not inherited in pdoc
         setattr(cls, "__doc__", getattr(cls, "__doc__", None) or "")
@@ -120,6 +129,7 @@ class Expr:
         self._type: DataType | None = None
         self._meta: dict[str, t.Any] | None = None
         self._hash: int | None = None
+        self._deterministic_hash: int | None = None
 
         if not self.is_primitive:
             for arg_key, value in self.args.items():
@@ -827,6 +837,7 @@ class Expression(Expr):
         "_type",
         "_meta",
         "_hash",
+        "_deterministic_hash",
     )
 
     def __eq__(self, other: object) -> bool:
@@ -881,6 +892,83 @@ class Expression(Expr):
                 node._hash = hash_
         assert self._hash
         return self._hash
+
+    def deterministic_hash(self) -> int:
+        """
+        A stable structural hash, identical across processes/runs (unlike ``__hash__``, whose
+        ``hash(str)`` is salted by PYTHONHASHSEED). It mirrors ``__hash__``'s structure (post-order
+        walk, ``sorted(args)``, sequential fold) but routes the salted leaves -- strings and
+        ``DType`` enums -- through ``crc32`` while ints/bools keep Python's (already deterministic)
+        ``hash``. Cached per node in ``_deterministic_hash`` and invalidated alongside ``_hash`` on
+        mutation.
+        """
+        if self._deterministic_hash is None:
+            crc = zlib.crc32
+            cache = KEY_HASH_CACHE
+            cache_get = cache.get
+
+            nodes: list[Expr] = []
+            stack: list[Expr] = [self]
+            while stack:
+                node = stack.pop()
+                nodes.append(node)
+                for v in node.args.values():
+                    if isinstance(v, Expression):
+                        if v._deterministic_hash is None:
+                            stack.append(v)
+                    elif type(v) is list:
+                        for x in v:
+                            if isinstance(x, Expression) and x._deterministic_hash is None:
+                                stack.append(x)
+
+            for node in reversed(nodes):
+                hash_ = node._key_crc
+
+                if node._hash_raw_args:
+                    for k in sorted(node.args):
+                        v = node.args[k]
+                        if v:
+                            kh = cache_get(k)
+                            if kh is None:
+                                kh = crc(k.encode())
+                                cache[k] = kh
+                            hash_ = hash((hash_, kh, crc(v.encode()) if type(v) is str else v))
+                else:
+                    for k in sorted(node.args):
+                        v = node.args[k]
+                        vt = type(v)
+                        kh = cache_get(k)
+                        if kh is None:
+                            kh = crc(k.encode())
+                            cache[k] = kh
+
+                        if vt is list:
+                            for x in v:
+                                if x is not None and x is not False:
+                                    if isinstance(x, Expression):
+                                        xh = x._deterministic_hash
+                                    elif type(x) is str:
+                                        xh = crc(x.lower().encode())
+                                    elif type(x) is int or type(x) is bool:
+                                        xh = x
+                                    else:
+                                        xh = crc(str(x).encode())
+                                    hash_ = hash((hash_, kh, xh))
+                                else:
+                                    hash_ = hash((hash_, kh))
+                        elif vt is str:
+                            hash_ = hash((hash_, kh, crc(v.lower().encode())))
+                        elif isinstance(v, Expression):
+                            hash_ = hash((hash_, kh, v._deterministic_hash))
+                        elif v is not None and v is not False:
+                            if vt is int or vt is bool:
+                                hash_ = hash((hash_, kh, v))
+                            else:
+                                hash_ = hash((hash_, kh, crc(str(v).encode())))
+
+                node._deterministic_hash = hash_
+        assert self._deterministic_hash is not None
+        return self._deterministic_hash
 
     def __reduce__(
         self,
@@ -1005,6 +1093,8 @@ class Expression(Expr):
                 copy._meta = deepcopy(node._meta)
             if node._hash is not None:
                 copy._hash = node._hash
+            if node._deterministic_hash is not None:
+                copy._deterministic_hash = node._deterministic_hash
 
             for k, vs in node.args.items():
                 if isinstance(vs, Expr):
@@ -1052,8 +1142,9 @@ class Expression(Expr):
 
     def append(self, arg_key: str, value: t.Any) -> None:
         node: Expr | None = self
-        while node and node._hash is not None:
+        while node and (node._hash is not None or node._deterministic_hash is not None):
             node._hash = None
+            node._deterministic_hash = None
             node = node.parent
 
         if type(self.args.get(arg_key)) is not list:
@@ -1073,8 +1164,9 @@ class Expression(Expr):
     ) -> None:
         node: Expr | None = self
 
-        while node and node._hash is not None:
+        while node and (node._hash is not None or node._deterministic_hash is not None):
             node._hash = None
+            node._deterministic_hash = None
             node = node.parent
 
         if index is not None:

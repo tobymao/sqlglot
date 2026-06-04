@@ -187,6 +187,8 @@ class DataType(Expression):
         "collate": False,
     }
 
+    is_data_type: t.ClassVar[bool] = True
+
     Type: t.ClassVar[Type[DType]] = DType
 
     STRUCT_TYPES: t.ClassVar[set[DType]] = {

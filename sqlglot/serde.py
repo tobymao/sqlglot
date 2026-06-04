@@ -50,7 +50,7 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
 
             payload[CLASS] = klass
 
-            if node.type:
+            if node.type and node.type is not node:
                 payload[TYPE] = dump(node.type)
             if node.comments:
                 payload[COMMENTS] = node.comments

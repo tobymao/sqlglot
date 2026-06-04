@@ -88,6 +88,7 @@ class Expr:
     _hash_raw_args: t.ClassVar[bool] = False
     is_subquery: t.ClassVar[bool] = False
     is_cast: t.ClassVar[bool] = False
+    is_data_type: t.ClassVar[bool] = False
 
     args: dict[str, t.Any]
     parent: Expr | None
@@ -962,6 +963,8 @@ class Expression(Expr):
 
     @property
     def type(self) -> DataType | None:
+        if self.is_data_type:
+            return self  # type: ignore[return-value]
         if self.is_cast:
             return self._type or self.to  # type: ignore[attr-defined]
         return self._type
@@ -2552,7 +2555,7 @@ def _to_s(node: t.Any, verbose: bool = False, level: int = 0, repr_str: bool = F
     if isinstance(node, Expr):
         args = {k: v for k, v in node.args.items() if (v is not None and v != []) or verbose}
 
-        if (node.type or verbose) and type(node).__name__ != "DataType":
+        if (node.type or verbose) and not node.is_data_type:
             args["_type"] = node.type
         if node.comments or verbose:
             args["_comments"] = node.comments

@@ -140,6 +140,26 @@ def _build_to_hex(args: list) -> exp.Hex | exp.MD5:
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.LowerHex(this=arg)
 
 
+_DOMAIN_DOT = "\0"  # placeholder; cannot occur in a SQL identifier
+
+
+def _split_qualified_name(name: str, min_num_words: int) -> list[str | None]:
+    # A dotted reference (e.g. `project.dataset.table`) is split into a fixed number of parts,
+    # the first of which is the project. Domain-scoped (legacy) project IDs have the form
+    # `domain.com:project-id`, where the dots belong to the domain, not the path - and a project
+    # ID itself can't contain dots, so every such dot precedes the colon. Mask those, then let
+    # `split_num_words` split and pad as usual, to avoid corrupting the project ID.
+    # See: https://docs.cloud.google.com/artifact-registry/docs/docker/names#domain
+    colon = name.find(":")
+    if colon != -1 and "." in name[:colon]:
+        name = name[:colon].replace(".", _DOMAIN_DOT) + name[colon:]
+        return [
+            p and p.replace(_DOMAIN_DOT, ".") for p in split_num_words(name, ".", min_num_words)
+        ]
+
+    return split_num_words(name, ".", min_num_words)
+
+
 MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
@@ -419,7 +439,7 @@ class BigQueryParser(parser.Parser):
             alias = table.this
             catalog, db, this_id, *rest = (
                 exp.to_identifier(p, quoted=True)
-                for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
+                for p in _split_qualified_name(".".join(p.name for p in table.parts), 3)
             )
 
             for part in (catalog, db, this_id):
@@ -478,7 +498,7 @@ class BigQueryParser(parser.Parser):
             if any("." in p.name for p in parts):
                 catalog, db, table, this, *rest = (
                     exp.to_identifier(p, quoted=True)
-                    for p in split_num_words(".".join(p.name for p in parts), ".", 4)
+                    for p in _split_qualified_name(".".join(p.name for p in parts), 4)
                 )
 
                 if rest and this:

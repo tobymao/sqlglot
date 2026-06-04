@@ -2181,6 +2181,14 @@ class DuckDBGenerator(generator.Generator):
         """
     )
 
+    # Snowflake AUTO detects 3 DATE formats: YYYY-MM-DD (ISO-8601), MM/DD/YYYY, DD-MON-YYYY.
+    # DuckDB TRY_CAST handles ISO-8601 natively. For the other two formats we use CONTAINS('/')
+    # and REGEXP_MATCHES('[A-Za-z]') as heuristics — these correctly handle single-digit months
+    # and days (e.g. 1/5/2020, 5-JAN-2020) where a positional char check would fail.
+    # Ref: https://docs.snowflake.com/en/sql-reference/date-time-input-output#date-formats
+    _TRYCAST_DATE_SLASH_FMT = "%m/%d/%Y"
+    _TRYCAST_DATE_MON_FMT = "%d-%b-%Y"
+
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
         return self.sql(
@@ -4329,13 +4337,13 @@ class DuckDBGenerator(generator.Generator):
     def trycast_sql(self, expression: exp.TryCast) -> str:
         to = expression.to
         to_type = to.this
+        src = expression.this
 
         if (
             expression.args.get("null_on_text_overflow")
             and to_type in exp.DataType.TEXT_TYPES
             and to.expressions
         ):
-            src = expression.this
             return self.sql(
                 exp.case()
                 .when(
@@ -4343,6 +4351,24 @@ class DuckDBGenerator(generator.Generator):
                     exp.cast(src, "TEXT"),
                 )
                 .else_(exp.Null())
+            )
+        elif to_type == exp.DType.DATE and expression.args.get("probe_date_format"):
+            slash_strptime = exp.cast(
+                exp.func("TRY_STRPTIME", src, exp.Literal.string(self._TRYCAST_DATE_SLASH_FMT)),
+                "DATE",
+            )
+            mon_strptime = exp.cast(
+                exp.func("TRY_STRPTIME", src, exp.Literal.string(self._TRYCAST_DATE_MON_FMT)),
+                "DATE",
+            )
+            return self.sql(
+                exp.case()
+                .when(exp.func("CONTAINS", src, exp.Literal.string("/")), slash_strptime)
+                .when(
+                    exp.RegexpLike(this=src, expression=exp.Literal.string("[A-Za-z]")),
+                    mon_strptime,
+                )
+                .else_(exp.TryCast(this=src, to=to))
             )
 
         return super().trycast_sql(expression)

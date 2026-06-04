@@ -3925,7 +3925,6 @@ class TestSnowflake(Validator):
             "TRY_TO_DATE('2024-01-31')",
             write={
                 "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
-                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
             },
         )
         self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")

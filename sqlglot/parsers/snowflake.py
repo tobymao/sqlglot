@@ -89,11 +89,14 @@ def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callabl
         if isinstance(value, (exp.Literal, exp.Neg)) or (value and scale_or_fmt):
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
-                return (
+                cast = (
                     exp.TryCast(this=value, to=kind.into_expr(), requires_string=True)
                     if safe
                     else exp.cast(value, kind)
                 )
+                if safe and kind == exp.DType.DATE:
+                    cast.set("probe_date_format", True)
+                return cast
 
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special
             # cases so we can transpile them, since they're relatively common
@@ -1308,13 +1311,11 @@ class SnowflakeParser(parser.Parser):
         if not strict and to and to.this == exp.DataType.Type.BOOLEAN:
             return self.expression(exp.ToBoolean(this=kwargs.get("this"), safe=True))
         cast = super().build_cast(strict, **kwargs)
-        if (
-            isinstance(cast, exp.TryCast)
-            and to
-            and to.this in exp.DataType.TEXT_TYPES
-            and to.expressions
-        ):
-            cast.set("null_on_text_overflow", True)
+        if isinstance(cast, exp.TryCast) and to:
+            if to.this in exp.DataType.TEXT_TYPES and to.expressions:
+                cast.set("null_on_text_overflow", True)
+            elif to.this == exp.DType.DATE and cast.this.is_string:
+                cast.set("probe_date_format", True)
         return cast
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:

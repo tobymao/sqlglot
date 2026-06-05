@@ -75,6 +75,7 @@ class TryCast(Cast):
         "requires_string": False,
         "null_on_text_overflow": False,
         "probe_date_format": False,
+        "probe_timestamp_format": False,
     }
 
 

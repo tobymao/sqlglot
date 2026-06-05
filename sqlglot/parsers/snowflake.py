@@ -96,6 +96,8 @@ def _build_datetime(name: str, kind: exp.DType, safe: bool = False) -> t.Callabl
                 )
                 if safe and kind == exp.DType.DATE:
                     cast.set("probe_date_format", True)
+                elif safe and kind in TIMESTAMP_TYPES:
+                    cast.set("probe_timestamp_format", True)
                 return cast
 
             # Handles `TO_TIMESTAMP(str, fmt)` and `TO_TIMESTAMP(num, scale)` as special
@@ -1316,6 +1318,8 @@ class SnowflakeParser(parser.Parser):
                 cast.set("null_on_text_overflow", True)
             elif to.this == exp.DType.DATE and cast.this.is_string:
                 cast.set("probe_date_format", True)
+            elif to.this in TIMESTAMP_TYPES and cast.this.is_string:
+                cast.set("probe_timestamp_format", True)
         return cast
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:

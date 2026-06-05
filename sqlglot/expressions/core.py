@@ -1789,7 +1789,13 @@ class JoinHint(Expression):
 
 
 class Identifier(Expression):
-    arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
+    arg_types = {
+        "this": True,
+        "quoted": False,
+        "global_": False,
+        "temporary": False,
+        "identifier_func": False,
+    }
     is_primitive = True
     _hash_raw_args = True
 

@@ -5347,7 +5347,7 @@ DOUBLE;
 
 # dialect: snowflake
 PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY tbl.int_col);
-INT;
+DECIMAL(38, 3);
 
 # dialect: snowflake
 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
@@ -5355,7 +5355,7 @@ DOUBLE;
 
 # dialect: snowflake
 PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY tbl.bigint_col) OVER (PARTITION BY 1);
-BIGINT;
+DECIMAL(38, 3);
 
 # dialect: snowflake
 ARRAY_AGG(tbl.int_col) WITHIN GROUP (ORDER BY tbl.int_col);

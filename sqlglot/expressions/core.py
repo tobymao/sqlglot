@@ -48,11 +48,6 @@ COLUMN_PARTS = ("this", "table", "db", "catalog")
 POSITION_META_KEYS: tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
 
-# Cache for the deterministic crc32 of structural strings (class keys + arg names). This set is
-# bounded (one entry per Expr subclass / arg name), so caching it can't leak; literal/identifier
-# *values* are intentionally hashed without caching since their domain is unbounded.
-KEY_HASH_CACHE: dict[str, int] = {}
-
 
 @trait
 class Expr:
@@ -894,18 +889,8 @@ class Expression(Expr):
         return self._hash
 
     def deterministic_hash(self) -> int:
-        """
-        A stable structural hash, identical across processes/runs (unlike ``__hash__``, whose
-        ``hash(str)`` is salted by PYTHONHASHSEED). It mirrors ``__hash__``'s structure (post-order
-        walk, ``sorted(args)``, sequential fold) but routes the salted leaves -- strings and
-        ``DType`` enums -- through ``crc32`` while ints/bools keep Python's (already deterministic)
-        ``hash``. Cached per node in ``_deterministic_hash`` and invalidated alongside ``_hash`` on
-        mutation.
-        """
         if self._deterministic_hash is None:
             crc = zlib.crc32
-            cache = KEY_HASH_CACHE
-            cache_get = cache.get
 
             nodes: list[Expr] = []
             stack: list[Expr] = [self]
@@ -928,19 +913,13 @@ class Expression(Expr):
                     for k in sorted(node.args):
                         v = node.args[k]
                         if v:
-                            kh = cache_get(k)
-                            if kh is None:
-                                kh = crc(k.encode())
-                                cache[k] = kh
+                            kh = crc(k.encode())
                             hash_ = hash((hash_, kh, crc(v.encode()) if type(v) is str else v))
                 else:
                     for k in sorted(node.args):
                         v = node.args[k]
                         vt = type(v)
-                        kh = cache_get(k)
-                        if kh is None:
-                            kh = crc(k.encode())
-                            cache[k] = kh
+                        kh = crc(k.encode())
 
                         if vt is list:
                             for x in v:

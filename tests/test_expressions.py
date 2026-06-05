@@ -535,6 +535,43 @@ class TestExprs(unittest.TestCase):
         expr.append("expressions", exp.column("b"))
         self.assertEqual(hash(expr), hash(parse_one("SELECT a, b")))
 
+    def test_deterministic_hash(self):
+        def h(sql: str) -> int:
+            return parse_one(sql).deterministic_hash()
+
+        self.assertEqual(h("SELECT a, b + 1 FROM t"), h("SELECT a, b + 1 FROM t"))
+        self.assertNotEqual(h("SELECT a, b FROM t"), h("SELECT b, a FROM t"))
+        self.assertNotEqual(h('SELECT "a" FROM t'), h('SELECT "A" FROM t'))
+        self.assertNotEqual(h("SELECT 'x'"), h("SELECT 'X'"))
+        self.assertNotEqual(h("CAST(x AS INT)"), h("CAST(x AS TEXT)"))
+
+    def test_deterministic_hash_invalidated_on_mutation(self):
+        expr = parse_one("SELECT a")
+        expr.deterministic_hash()
+        expr.append("expressions", exp.column("b"))
+        self.assertEqual(expr.deterministic_hash(), parse_one("SELECT a, b").deterministic_hash())
+
+    def test_deterministic_hash_large_ast(self):
+        expr = parse_one("SELECT 1 UNION ALL " * 3000 + "SELECT 1")
+        self.assertEqual(expr.deterministic_hash(), expr.deterministic_hash())
+
+    def test_deterministic_hash_stable_across_processes(self):
+        import os
+        import subprocess
+
+        def run(prog, seed):
+            return subprocess.run(
+                [sys.executable, "-c", prog],
+                capture_output=True,
+                text=True,
+                check=True,
+                env={**os.environ, "PYTHONHASHSEED": seed},
+            ).stdout.strip()
+
+        dhash = "import sqlglot; print(sqlglot.parse_one(\"SELECT a, b + 1 FROM t WHERE x = 'Y'\").deterministic_hash())"
+        self.assertEqual(run(dhash, "1"), run(dhash, "2"))
+        self.assertNotEqual(run("print(hash('Y'))", "1"), run("print(hash('Y'))", "2"))
+
     def test_sql(self):
         self.assertEqual(parse_one("x + y * 2").sql(), "x + y * 2")
         self.assertEqual(parse_one('select "x"').sql(dialect="hive", pretty=True), "SELECT\n  `x`")

@@ -4427,11 +4427,11 @@ VARCHAR;
 
 # dialect: snowflake
 ROUND(42);
-DECIMAL(38, 0);
+INT;
 
 # dialect: snowflake
 ROUND(tbl.bigint_col, -1);
-DECIMAL(38, 0);
+BIGINT;
 
 # dialect: snowflake
 ROUND(tbl.double_col, 0, 'HALF_TO_EVEN');
